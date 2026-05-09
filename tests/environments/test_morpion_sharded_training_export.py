@@ -284,13 +284,8 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
         "b",
     ]
     assert generation_two_update_shard["updates"][0]["backed_up_value_scalar"] == 0.4
-    assert [node.node_id for node in loaded_snapshot.nodes] == ["a", "c", "b"]
-    assert loaded_snapshot.nodes[0].backed_up_value_scalar == 0.4
-    assert loaded_snapshot.nodes[1].backed_up_value_scalar == 0.6
-    assert loaded_snapshot.nodes[2].backed_up_value_scalar == 1.4
-    assert loaded_snapshot.nodes[0].metadata == {"tag": "gen2-a"}
-    assert loaded_snapshot.nodes[1].metadata == {"tag": "gen2-c"}
-    assert loaded_snapshot.nodes[2].metadata == {"tag": "gen2-b"}
+    assert generation_two_update_shard["updates"][0]["child_ids"] == ["c", "b"]
+    assert loaded_snapshot.nodes == expected_snapshot.nodes
     assert training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot) == (
         training_tree_snapshot_to_morpion_supervised_rows(expected_snapshot)
     )

@@ -48,11 +48,16 @@ class MorpionShardedTrainingGenerationManifest:
 
 @dataclass(frozen=True, slots=True)
 class MorpionShardedTrainingNodeRecord:
-    """Immutable node data recorded only once at node creation generation."""
+    """Immutable node data recorded only once at node creation generation.
+
+    ``parent_ids`` are treated as stable ancestry links for the current sharded
+    Morpion export. ``child_ids`` are intentionally excluded here because the
+    live search can open new branches under an existing node across later
+    generations.
+    """
 
     node_id: str
     parent_ids: tuple[str, ...]
-    child_ids: tuple[str, ...]
     depth: int
     creation_generation: int
     state_ref_payload: dict[str, object] | None
@@ -60,10 +65,16 @@ class MorpionShardedTrainingNodeRecord:
 
 @dataclass(frozen=True, slots=True)
 class MorpionShardedTrainingNodeUpdate:
-    """Mutable per-generation node data for one exported generation."""
+    """Mutable per-generation node data for one exported generation.
+
+    ``child_ids`` live here because opened-child topology can change between
+    generations even when the node itself is old enough to reuse its immutable
+    state payload.
+    """
 
     node_id: str
     order_index: int
+    child_ids: tuple[str, ...]
     direct_value_scalar: float | None
     backed_up_value_scalar: float | None
     is_terminal: bool
@@ -114,6 +125,7 @@ def save_morpion_sharded_training_tree_from_live_nodes(
             MorpionShardedTrainingNodeUpdate(
                 node_id=update_snapshot.node_id,
                 order_index=order_index,
+                child_ids=update_snapshot.child_ids,
                 direct_value_scalar=update_snapshot.direct_value_scalar,
                 backed_up_value_scalar=update_snapshot.backed_up_value_scalar,
                 is_terminal=update_snapshot.is_terminal,
@@ -135,7 +147,6 @@ def save_morpion_sharded_training_tree_from_live_nodes(
             MorpionShardedTrainingNodeRecord(
                 node_id=full_snapshot.node_id,
                 parent_ids=full_snapshot.parent_ids,
-                child_ids=full_snapshot.child_ids,
                 depth=full_snapshot.depth,
                 creation_generation=generation,
                 state_ref_payload=None
@@ -250,7 +261,7 @@ def _merge_node_record_and_update(
     return TrainingNodeSnapshot(
         node_id=record.node_id,
         parent_ids=record.parent_ids,
-        child_ids=record.child_ids,
+        child_ids=update.child_ids,
         depth=record.depth,
         state_ref_payload=None
         if record.state_ref_payload is None
@@ -301,7 +312,6 @@ def _node_record_to_dict(record: MorpionShardedTrainingNodeRecord) -> dict[str, 
     return {
         "node_id": record.node_id,
         "parent_ids": list(record.parent_ids),
-        "child_ids": list(record.child_ids),
         "depth": record.depth,
         "creation_generation": record.creation_generation,
         "state_ref_payload": None
@@ -315,6 +325,7 @@ def _node_update_to_dict(update: MorpionShardedTrainingNodeUpdate) -> dict[str, 
     return {
         "node_id": update.node_id,
         "order_index": update.order_index,
+        "child_ids": list(update.child_ids),
         "direct_value_scalar": update.direct_value_scalar,
         "backed_up_value_scalar": update.backed_up_value_scalar,
         "is_terminal": update.is_terminal,
@@ -331,8 +342,10 @@ def _node_record_from_dict(value: object) -> MorpionShardedTrainingNodeRecord:
     raw_state_ref_payload = payload.get("state_ref_payload")
     return MorpionShardedTrainingNodeRecord(
         node_id=str(payload["node_id"]),
-        parent_ids=tuple(str(parent_id) for parent_id in cast("list[object]", payload.get("parent_ids", []))),
-        child_ids=tuple(str(child_id) for child_id in cast("list[object]", payload.get("child_ids", []))),
+        parent_ids=tuple(
+            str(parent_id)
+            for parent_id in cast("list[object]", payload.get("parent_ids", []))
+        ),
         depth=int(payload.get("depth", 0)),
         creation_generation=int(payload.get("creation_generation", 0)),
         state_ref_payload=None
@@ -347,6 +360,10 @@ def _node_update_from_dict(value: object) -> MorpionShardedTrainingNodeUpdate:
     return MorpionShardedTrainingNodeUpdate(
         node_id=str(payload["node_id"]),
         order_index=int(payload.get("order_index", 0)),
+        child_ids=tuple(
+            str(child_id)
+            for child_id in cast("list[object]", payload.get("child_ids", []))
+        ),
         direct_value_scalar=_optional_float(payload.get("direct_value_scalar")),
         backed_up_value_scalar=_optional_float(payload.get("backed_up_value_scalar")),
         is_terminal=bool(payload.get("is_terminal", False)),
