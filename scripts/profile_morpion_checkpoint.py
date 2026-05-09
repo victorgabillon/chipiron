@@ -5,13 +5,21 @@ from __future__ import annotations
 
 import argparse
 import cProfile
-import json
 import logging
 import pstats
-from dataclasses import asdict
 from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, TypeVar
+
+from anemone.checkpoints import (
+    DEFAULT_CHECKPOINT_FILE_FORMAT,
+    checkpoint_cli_name,
+    checkpoint_format_from_cli_name,
+    checkpoint_output_path,
+    checkpoint_payload_to_jsonable,
+    resolve_latest_generation_checkpoint_path,
+    write_checkpoint_json_payload,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -20,6 +28,7 @@ if TYPE_CHECKING:
 DEFAULT_TARGET_NODES = 50_000
 DEFAULT_GROWTH_STEPS_PER_BATCH = 100
 DEFAULT_TOP_FUNCTIONS = 80
+DEFAULT_CHECKPOINT_FORMAT = checkpoint_cli_name(DEFAULT_CHECKPOINT_FILE_FORMAT)
 
 _T = TypeVar("_T")
 
@@ -48,13 +57,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--checkpoint",
         type=Path,
         default=None,
-        help="Checkpoint JSON path for load mode. Defaults to the latest runtime checkpoint in work-dir.",
+        help="Checkpoint path for load mode. Defaults to the latest runtime checkpoint in work-dir.",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=None,
-        help="Optional JSON output path. Required only when dump-json or dump-zstd is enabled.",
+        help="Optional checkpoint output path. Required only when --dump-json is enabled.",
     )
     parser.add_argument(
         "--profile-output",
@@ -84,12 +93,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--dump-json",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="Whether to run dataclasses.asdict and JSON dump timing.",
+        help="Whether to serialize and write a checkpoint payload to --output.",
     )
     parser.add_argument(
         "--dump-zstd",
         action="store_true",
-        help="Optionally write a zstd-compressed JSON payload next to --output.",
+        help="Deprecated alias for --checkpoint-format json-zst plus --dump-json.",
+    )
+    parser.add_argument(
+        "--checkpoint-format",
+        choices=("json", "json-gz", "json-zst"),
+        default=DEFAULT_CHECKPOINT_FORMAT,
+        help="Output format used when --dump-json is enabled.",
     )
     parser.add_argument(
         "--log-level",
@@ -111,7 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="profile_mode",
         action="store_const",
         const="full_save",
-        help="Profile payload build plus optional asdict and dump phases.",
+        help="Profile payload build plus optional payload-to-JSON and write phases.",
     )
     return parser
 
@@ -125,33 +140,7 @@ def _time_call(function: Callable[[], _T]) -> tuple[_T, float]:
 
 def _resolve_latest_runtime_checkpoint(runtime_checkpoint_dir: Path) -> Path:
     """Return the latest generation checkpoint from one runtime checkpoint dir."""
-    latest_generation: int | None = None
-    latest_path: Path | None = None
-    for path in runtime_checkpoint_dir.glob("generation_*.json"):
-        generation = _parse_generation_json_name(path)
-        if generation is None:
-            continue
-        if latest_generation is None or generation > latest_generation:
-            latest_generation = generation
-            latest_path = path
-    if latest_path is None:
-        raise FileNotFoundError(
-            f"No runtime checkpoint found in {runtime_checkpoint_dir!s}."
-        )
-    return latest_path
-
-
-def _parse_generation_json_name(path: Path) -> int | None:
-    """Parse generation_XXXXXX.json names into an integer generation index."""
-    if path.suffix != ".json":
-        return None
-    stem = path.stem
-    if not stem.startswith("generation_"):
-        return None
-    generation_text = stem.removeprefix("generation_")
-    if not generation_text.isdigit():
-        return None
-    return int(generation_text)
+    return resolve_latest_generation_checkpoint_path(runtime_checkpoint_dir)
 
 
 def _configure_logging(log_level: str) -> None:
@@ -192,8 +181,11 @@ def _print_module_paths(modules: dict[str, Any]) -> None:
 def _require_output_path(args: argparse.Namespace) -> Path:
     """Return the required output path for dump modes or fail clearly."""
     if args.output is None:
-        raise ValueError("--output is required when --dump-json or --dump-zstd is used.")
-    return Path(args.output)
+        raise ValueError("--output is required when --dump-json is enabled.")
+    return checkpoint_output_path(
+        args.output,
+        file_format=checkpoint_format_from_cli_name(args.checkpoint_format),
+    )
 
 
 def _load_runner_for_mode(
@@ -299,7 +291,11 @@ def _profile_checkpoint_save(
         )
     )
 
-    if args.dump_json or args.dump_zstd:
+    if args.dump_zstd:
+        args.dump_json = True
+        args.checkpoint_format = "json-zst"
+
+    if args.dump_json:
         output_path = _require_output_path(args)
         output_path.parent.mkdir(parents=True, exist_ok=True)
     else:
@@ -308,14 +304,16 @@ def _profile_checkpoint_save(
     profile_output = Path(args.profile_output)
     profile_output.parent.mkdir(parents=True, exist_ok=True)
     profiler = cProfile.Profile()
-    payload_dict: dict[str, Any] | None = None
+    payload_jsonable: object | None = None
     payload: Any
     payload_build_s: float
-    asdict_s: float | None = None
-    json_dump_s: float | None = None
-    json_dump_bytes: int | None = None
-    zstd_dump_s: float | None = None
-    zstd_dump_bytes: int | None = None
+    jsonable_s: float | None = None
+    output_bytes: int | None = None
+    json_encode_s: float | None = None
+    compressed_write_s: float | None = None
+    uncompressed_bytes: int | None = None
+    compression_ratio: float | None = None
+    output_format: str | None = None
 
     rss_before_mb = runner_module._current_rss_mb()
     total_started_at = perf_counter()
@@ -332,44 +330,45 @@ def _profile_checkpoint_save(
     rss_after_payload_build_mb = runner_module._current_rss_mb()
     print(f"[profile] phase=payload_build elapsed_s={payload_build_s:.6f}")
 
-    needs_payload_dict = bool(args.dump_json or args.dump_zstd)
-    if needs_payload_dict:
-        payload_dict, asdict_s = _time_call(lambda: asdict(payload))
+    needs_payload_jsonable = bool(args.dump_json)
+    if needs_payload_jsonable:
+        payload_jsonable, jsonable_s = _time_call(
+            lambda: checkpoint_payload_to_jsonable(payload)
+        )
         rss_after_asdict_mb = runner_module._current_rss_mb()
-        print(f"[profile] phase=asdict elapsed_s={asdict_s:.6f}")
+        print(f"[profile] phase=payload_to_jsonable elapsed_s={jsonable_s:.6f}")
     else:
         rss_after_asdict_mb = None
-        print("[profile] phase=asdict skipped=true")
+        print("[profile] phase=payload_to_jsonable skipped=true")
 
     if args.dump_json:
         assert output_path is not None
-        json_dump_bytes, json_dump_s = _time_call(
-            lambda: _dump_json_payload(payload_dict, output_path)
+        write_stats, write_elapsed_s = _time_call(
+            lambda: write_checkpoint_json_payload(payload_jsonable, output_path)
         )
+        output_bytes = write_stats.compressed_bytes
+        json_encode_s = write_stats.json_encode_s
+        compressed_write_s = write_stats.compressed_write_s
+        uncompressed_bytes = write_stats.uncompressed_bytes
+        compression_ratio = write_stats.compression_ratio
+        output_format = write_stats.file_format
         print(
-            "[profile] phase=json_dump elapsed_s=%.6f bytes=%s output=%s"
-            % (json_dump_s, json_dump_bytes, output_path)
+            "[profile] phase=checkpoint_write elapsed_s=%.6f format=%s json_encode_s=%.6f compressed_write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s output=%s"
+            % (
+                write_elapsed_s,
+                write_stats.file_format,
+                write_stats.json_encode_s,
+                _format_optional_number(write_stats.compressed_write_s),
+                write_stats.compressed_bytes,
+                write_stats.uncompressed_bytes,
+                _format_optional_number(write_stats.compression_ratio),
+                write_stats.output_path,
+            )
         )
     else:
-        print("[profile] phase=json_dump skipped=true")
+        print("[profile] phase=checkpoint_write skipped=true")
 
     rss_after_json_dump_mb = runner_module._current_rss_mb()
-
-    if args.dump_zstd:
-        assert output_path is not None
-        zstd_result, zstd_dump_s = _time_call(
-            lambda: _dump_zstd_payload(payload_dict, output_path)
-        )
-        if zstd_result is None:
-            print("[profile] phase=zstd_dump skipped=true reason=zstandard_not_installed")
-        else:
-            zstd_path, zstd_dump_bytes = zstd_result
-            print(
-                "[profile] phase=zstd_dump elapsed_s=%.6f bytes=%s output=%s"
-                % (zstd_dump_s, zstd_dump_bytes, zstd_path)
-            )
-    else:
-        print("[profile] phase=zstd_dump skipped=true")
 
     if args.profile_mode == "full_save":
         profiler.disable()
@@ -397,11 +396,15 @@ def _profile_checkpoint_save(
         "profile",
         runner_module.CheckpointIoMetrics(
             path=str(output_path) if output_path is not None else "none",
-            bytes=json_dump_bytes,
+            bytes=output_bytes,
+            file_format=output_format,
             payload_build_s=payload_build_s,
-            asdict_s=asdict_s,
-            json_dump_s=json_dump_s,
+            jsonable_s=jsonable_s,
+            json_encode_s=json_encode_s,
+            compressed_write_s=compressed_write_s,
             total_s=total_s,
+            uncompressed_bytes=uncompressed_bytes,
+            compression_ratio=compression_ratio,
             rss_before_mb=rss_before_mb,
             rss_after_mb=rss_after_total_mb,
             node_count=node_count,
@@ -425,44 +428,6 @@ def _profile_checkpoint_save(
             selector_fields["checkpoint_selector_state_version"],
         )
     )
-
-
-def _dump_json_payload(payload_dict: dict[str, Any] | None, output_path: Path) -> int:
-    """Write JSON with the same formatting used by production checkpoint saves."""
-    if payload_dict is None:
-        raise ValueError("Payload dict is required before JSON dumping.")
-    with output_path.open("w", encoding="utf-8") as handle:
-        json.dump(payload_dict, handle, indent=2, sort_keys=True)
-    return output_path.stat().st_size
-
-
-def _dump_zstd_payload(
-    payload_dict: dict[str, Any] | None,
-    output_path: Path,
-) -> tuple[Path, int] | None:
-    """Write the payload dict as zstd-compressed JSON when zstandard is available."""
-    if payload_dict is None:
-        raise ValueError("Payload dict is required before zstd dumping.")
-    try:
-        import zstandard
-    except ImportError:
-        return None
-
-    json_bytes = json.dumps(payload_dict, indent=2, sort_keys=True).encode("utf-8")
-    zstd_path = _zstd_output_path(output_path)
-    compressor = zstandard.ZstdCompressor()
-    with zstd_path.open("wb") as handle:
-        handle.write(compressor.compress(json_bytes))
-    return zstd_path, zstd_path.stat().st_size
-
-
-def _zstd_output_path(output_path: Path) -> Path:
-    """Return the zstd output path derived from the optional JSON output path."""
-    if output_path.suffix:
-        return output_path.with_suffix(f"{output_path.suffix}.zst")
-    return output_path.with_name(f"{output_path.name}.zst")
-
-
 def _print_cprofile_stats(profiler: cProfile.Profile, top: int) -> None:
     """Print the top cumulative and total-time cProfile entries."""
     print(f"[profile] stats sort=cumulative top={top}")

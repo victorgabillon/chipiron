@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from anemone.checkpoints import checkpoint_path_for_generation, default_checkpoint_file_suffix
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
@@ -50,7 +52,7 @@ def test_resolve_latest_runtime_checkpoint_picks_highest_generation(
         "{}",
         encoding="utf-8",
     )
-    (runtime_checkpoint_dir / "generation_000010.json").write_text(
+    checkpoint_path_for_generation(runtime_checkpoint_dir, 10).write_text(
         "{}",
         encoding="utf-8",
     )
@@ -61,7 +63,7 @@ def test_resolve_latest_runtime_checkpoint_picks_highest_generation(
 
     resolved = profile_module._resolve_latest_runtime_checkpoint(runtime_checkpoint_dir)
 
-    assert resolved == runtime_checkpoint_dir / "generation_000010.json"
+    assert resolved == checkpoint_path_for_generation(runtime_checkpoint_dir, 10)
 
 
 def test_time_call_returns_result_and_elapsed() -> None:
@@ -83,12 +85,14 @@ def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> Non
             "--checkpoint",
             str(tmp_path / "generation_000001.json"),
             "--output",
-            str(tmp_path / "profiled_checkpoint.json"),
+            str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
             "--profile-output",
             str(tmp_path / "checkpoint.prof"),
             "--top",
             "12",
             "--dump-json",
+            "--checkpoint-format",
+            "json-zst",
             "--profile-full-save",
         ]
     )
@@ -97,6 +101,7 @@ def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> Non
     assert args.work_dir == tmp_path
     assert args.profile_mode == "full_save"
     assert args.dump_json is True
+    assert args.checkpoint_format == "json-zst"
     assert args.top == 12
 
 
@@ -136,4 +141,5 @@ def test_profile_script_smoke_grow_mode_without_json_dump(
     assert "chipiron:" in captured.out
     assert "atomheart:" in captured.out
     assert "[profile] phase=payload_build" in captured.out
+    assert "[profile] phase=checkpoint_write skipped=true" in captured.out
     assert "[profile] phase=cprofile_dump" in captured.out

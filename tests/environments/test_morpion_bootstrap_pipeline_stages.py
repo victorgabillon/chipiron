@@ -424,7 +424,9 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
 
     assert run_state.generation == 1
     assert manifest.tree_snapshot_path == "tree_exports/generation_000001.json"
-    assert manifest.runtime_checkpoint_path == "search_checkpoints/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == paths.relative_to_work_dir(
+        paths.runtime_checkpoint_path_for_generation(1)
+    )
     assert manifest.rows_path is None
     assert manifest.dataset_status == "not_started"
     assert manifest.training_status == "not_started"
@@ -566,7 +568,9 @@ def test_growth_stage_consumes_pending_reevaluation_patch_before_growth(
     assert not paths.pipeline_reevaluation_patch_path.exists()
     assert run_state.generation == 1
     assert manifest.tree_snapshot_path == "tree_exports/generation_000001.json"
-    assert manifest.runtime_checkpoint_path == "search_checkpoints/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == paths.relative_to_work_dir(
+        paths.runtime_checkpoint_path_for_generation(1)
+    )
 
 
 def test_growth_stage_keeps_patch_when_patch_application_fails(tmp_path: Path) -> None:

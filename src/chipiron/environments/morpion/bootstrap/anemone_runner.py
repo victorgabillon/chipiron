@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import resource
 import sys
 import time
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from random import Random
 from time import perf_counter
@@ -20,7 +19,10 @@ from anemone.checkpoints import (
     LinooSelectorCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
+    checkpoint_payload_to_jsonable,
+    load_checkpoint_json_payload,
     load_search_from_checkpoint_payload,
+    write_checkpoint_json_payload,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -100,13 +102,17 @@ class CheckpointIoMetrics:
 
     path: str
     bytes: int | None = None
+    file_format: str | None = None
     payload_build_s: float | None = None
-    asdict_s: float | None = None
-    json_dump_s: float | None = None
+    jsonable_s: float | None = None
+    json_encode_s: float | None = None
+    compressed_write_s: float | None = None
     json_load_s: float | None = None
     payload_decode_s: float | None = None
     runtime_rebuild_s: float | None = None
     total_s: float | None = None
+    uncompressed_bytes: int | None = None
+    compression_ratio: float | None = None
     rss_before_mb: float | None = None
     rss_after_mb: float | None = None
     node_count: int | None = None
@@ -476,17 +482,22 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
         f"anchors={_metric_value(metrics.anchor_count)}",
         f"deltas={_metric_value(metrics.delta_count)}",
     ]
+    if metrics.file_format is not None:
+        parts.append(f"format={metrics.file_format}")
     if metrics.cache is not None:
         parts.append(f"cache={metrics.cache}")
     parts.extend(
         [
             f"payload_build_s={_metric_value(metrics.payload_build_s)}",
-            f"asdict_s={_metric_value(metrics.asdict_s)}",
-            f"json_dump_s={_metric_value(metrics.json_dump_s)}",
+            f"jsonable_s={_metric_value(metrics.jsonable_s)}",
+            f"json_encode_s={_metric_value(metrics.json_encode_s)}",
+            f"compressed_write_s={_metric_value(metrics.compressed_write_s)}",
             f"json_load_s={_metric_value(metrics.json_load_s)}",
             f"payload_decode_s={_metric_value(metrics.payload_decode_s)}",
             f"runtime_rebuild_s={_metric_value(metrics.runtime_rebuild_s)}",
             f"total_s={_metric_value(metrics.total_s)}",
+            f"uncompressed_bytes={_metric_value(metrics.uncompressed_bytes)}",
+            f"compression_ratio={_metric_value(metrics.compression_ratio)}",
             f"rss_before_mb={_metric_value(metrics.rss_before_mb)}",
             f"rss_after_mb={_metric_value(metrics.rss_after_mb)}",
         ]
@@ -1468,7 +1479,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         return self._runtime
 
     def save_checkpoint(self, output_path: str | Path) -> None:
-        """Persist the live Anemone runtime as a checkpoint JSON file."""
+        """Persist the live Anemone runtime as a checkpoint file."""
         runtime = self._require_runtime()
         output = Path(output_path)
 
@@ -1508,38 +1519,41 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             ),
         )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
-        asdict_started_at = time.perf_counter()
-        payload_dict = asdict(payload)
-        asdict_elapsed_s = time.perf_counter() - asdict_started_at
+        jsonable_started_at = time.perf_counter()
+        payload_jsonable = checkpoint_payload_to_jsonable(payload)
+        jsonable_elapsed_s = time.perf_counter() - jsonable_started_at
         LOGGER.info(
-            "[checkpoint] asdict_done path=%s elapsed=%.3fs",
+            "[checkpoint] payload_jsonable_done path=%s elapsed=%.3fs",
             str(output),
-            asdict_elapsed_s,
+            jsonable_elapsed_s,
         )
 
-        output.parent.mkdir(parents=True, exist_ok=True)
-        json_dump_started_at = time.perf_counter()
-        with open(output, "w", encoding="utf-8") as handle:
-            json.dump(payload_dict, handle, indent=2, sort_keys=True)
-        json_dump_elapsed_s = time.perf_counter() - json_dump_started_at
-        bytes_written = output.stat().st_size
+        write_stats = write_checkpoint_json_payload(payload_jsonable, output)
         LOGGER.info(
-            "[checkpoint] json_dump_done path=%s elapsed=%.3fs bytes=%s",
-            str(output),
-            json_dump_elapsed_s,
-            bytes_written,
+            "[checkpoint] checkpoint_write_done path=%s format=%s json_encode_s=%.3fs compressed_write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s",
+            str(write_stats.output_path),
+            write_stats.file_format,
+            write_stats.json_encode_s,
+            _metric_value(write_stats.compressed_write_s),
+            write_stats.compressed_bytes,
+            write_stats.uncompressed_bytes,
+            _metric_value(write_stats.compression_ratio),
         )
         elapsed_s = time.perf_counter() - save_started_at
         rss_after_mb = _current_rss_mb()
         _log_checkpoint_metrics(
             "save",
             CheckpointIoMetrics(
-                path=str(output),
-                bytes=bytes_written,
+                path=str(write_stats.output_path),
+                bytes=write_stats.compressed_bytes,
+                file_format=write_stats.file_format,
                 payload_build_s=payload_elapsed_s,
-                asdict_s=asdict_elapsed_s,
-                json_dump_s=json_dump_elapsed_s,
+                jsonable_s=jsonable_elapsed_s,
+                json_encode_s=write_stats.json_encode_s,
+                compressed_write_s=write_stats.compressed_write_s,
                 total_s=elapsed_s,
+                uncompressed_bytes=write_stats.uncompressed_bytes,
+                compression_ratio=write_stats.compression_ratio,
                 rss_before_mb=rss_before_mb,
                 rss_after_mb=rss_after_mb,
                 node_count=node_count,
@@ -1549,7 +1563,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         LOGGER.info(
             "[checkpoint] save_done path=%s elapsed=%.3fs",
-            str(output),
+            str(write_stats.output_path),
             elapsed_s,
         )
 
@@ -1557,38 +1571,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 def load_morpion_search_checkpoint_payload(
     path: str | Path,
 ) -> SearchRuntimeCheckpointPayload:
-    """Load a persisted search checkpoint payload from JSON and validate shape."""
+    """Load a persisted search checkpoint payload and validate shape."""
     resolved_path = Path(path)
     LOGGER.info("[checkpoint] load_start path=%s", str(resolved_path))
     rss_before_mb = _current_rss_mb()
     started_at = time.perf_counter()
     try:
-        path_stat = resolved_path.stat()
-    except FileNotFoundError as exc:
-        raise InvalidMorpionSearchCheckpointError(
-            resolved_path,
-            "file does not exist",
-        ) from exc
-
-    try:
-        json_read_started_at = time.perf_counter()
-        with open(resolved_path, encoding="utf-8") as handle:
-            raw_payload = json.load(handle)
-        json_read_elapsed_s = time.perf_counter() - json_read_started_at
+        raw_payload, read_stats = load_checkpoint_json_payload(resolved_path)
         LOGGER.info(
-            "[checkpoint] json_load_done path=%s elapsed=%.3fs",
+            "[checkpoint] json_load_done path=%s format=%s elapsed=%.3fs bytes=%s",
             str(resolved_path),
-            json_read_elapsed_s,
+            read_stats.file_format,
+            read_stats.json_load_s,
+            read_stats.compressed_bytes,
         )
     except FileNotFoundError as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
             "file does not exist",
         ) from exc
-    except json.JSONDecodeError as exc:
+    except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
-            "invalid JSON",
+            f"invalid checkpoint payload: {exc}",
         ) from exc
 
     try:
@@ -1614,8 +1619,9 @@ def load_morpion_search_checkpoint_payload(
             "payload_load",
             CheckpointIoMetrics(
                 path=str(resolved_path),
-                bytes=path_stat.st_size,
-                json_load_s=json_read_elapsed_s,
+                bytes=read_stats.compressed_bytes,
+                file_format=read_stats.file_format,
+                json_load_s=read_stats.json_load_s,
                 payload_decode_s=payload_decode_elapsed_s,
                 total_s=total_s,
                 rss_before_mb=rss_before_mb,

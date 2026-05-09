@@ -50,9 +50,11 @@ if "anemone" not in sys.modules:
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
+    DEFAULT_CHECKPOINT_FILE_FORMAT,
     DeltaCheckpointStatePayload,
     SearchRuntimeCheckpointPayload,
     TreeCheckpointPayload,
+    checkpoint_file_suffix,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -739,12 +741,32 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("operation=payload_load" in line for line in metrics_lines)
     assert any("operation=runtime_restore" in line for line in metrics_lines)
     assert any("bytes=" in line for line in metrics_lines)
+    assert any("format=" in line for line in metrics_lines)
     assert any("nodes=" in line for line in metrics_lines)
     assert any("anchors=" in line for line in metrics_lines)
     assert any("deltas=" in line for line in metrics_lines)
+    assert any("jsonable_s=" in line for line in metrics_lines)
+    assert any("json_encode_s=" in line for line in metrics_lines)
     assert emitted_output == "" or "[checkpoint-profile]" in emitted_output
     assert "checkpoint_selector_state_present=" in caplog.text
     assert "restore_checkpoint_selector_state_present=" in caplog.text
+
+
+def test_checkpoint_roundtrip_supports_default_compressed_format(tmp_path: Path) -> None:
+    """The runner should save and restore the preferred compressed checkpoint format."""
+    checkpoint_path = tmp_path / (
+        f"tree_checkpoint{checkpoint_file_suffix(DEFAULT_CHECKPOINT_FILE_FORMAT)}"
+    )
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(4)
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, None)
+
+    assert checkpoint_path.is_file()
+    assert second_runner.current_tree_size() >= 1
 
 
 def test_checkpoint_validation_payload_is_reused_for_immediate_restore(

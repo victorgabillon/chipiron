@@ -12,6 +12,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from anemone.checkpoints import resolve_latest_generation_checkpoint_path
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
@@ -45,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--checkpoint",
         type=Path,
         default=None,
-        help="Checkpoint JSON path for load mode. Defaults to the latest runtime checkpoint in work-dir.",
+        help="Checkpoint path for load mode. Defaults to the latest runtime checkpoint in work-dir.",
     )
     parser.add_argument(
         "--output",
@@ -105,33 +107,7 @@ def _time_call(function: Callable[[], _T]) -> tuple[_T, float]:
 
 def _resolve_latest_runtime_checkpoint(runtime_checkpoint_dir: Path) -> Path:
     """Return the latest generation checkpoint from one runtime checkpoint dir."""
-    latest_generation: int | None = None
-    latest_path: Path | None = None
-    for path in runtime_checkpoint_dir.glob("generation_*.json"):
-        generation = _parse_generation_json_name(path)
-        if generation is None:
-            continue
-        if latest_generation is None or generation > latest_generation:
-            latest_generation = generation
-            latest_path = path
-    if latest_path is None:
-        raise FileNotFoundError(
-            f"No runtime checkpoint found in {runtime_checkpoint_dir!s}."
-        )
-    return latest_path
-
-
-def _parse_generation_json_name(path: Path) -> int | None:
-    """Parse generation_XXXXXX.json names into an integer generation index."""
-    if path.suffix != ".json":
-        return None
-    stem = path.stem
-    if not stem.startswith("generation_"):
-        return None
-    generation_text = stem.removeprefix("generation_")
-    if not generation_text.isdigit():
-        return None
-    return int(generation_text)
+    return resolve_latest_generation_checkpoint_path(runtime_checkpoint_dir)
 
 
 def _configure_logging(log_level: str) -> None:

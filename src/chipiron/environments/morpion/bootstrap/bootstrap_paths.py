@@ -6,6 +6,11 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from anemone.checkpoints import (
+    checkpoint_path_for_generation,
+    parse_generation_checkpoint_name,
+)
+
 from .bootstrap_errors import (
     InvalidBootstrapArtifactPathError,
     InvalidGenerationRetentionCountError,
@@ -95,7 +100,7 @@ class MorpionBootstrapPaths:
 
     def runtime_checkpoint_path_for_generation(self, generation: int) -> Path:
         """Return the runtime checkpoint path for one saved generation."""
-        return self.runtime_checkpoint_dir / f"generation_{generation:06d}.json"
+        return checkpoint_path_for_generation(self.runtime_checkpoint_dir, generation)
 
     def model_generation_dir_for_generation(self, generation: int) -> Path:
         """Return the model root directory for one saved generation."""
@@ -189,38 +194,36 @@ class MorpionBootstrapPaths:
 
 
 def _generation_file_sort_key(path: Path) -> int | None:
-    """Return the parsed generation index for ``generation_XXXXXX.json`` files."""
-    stem = path.stem
-    prefix = "generation_"
-    if path.suffix != ".json" or not stem.startswith(prefix):
-        return None
-    generation_text = stem.removeprefix(prefix)
-    if not generation_text.isdigit():
-        return None
-    return int(generation_text)
+    """Return the parsed generation index across supported checkpoint suffixes."""
+    return parse_generation_checkpoint_name(path)
 
 
 def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
-    """Delete old ``generation_*.json`` files while keeping the newest ones."""
+    """Delete old generation checkpoint files while keeping the newest generations."""
     if keep_latest < 1:
         raise InvalidGenerationRetentionCountError(keep_latest)
 
-    generation_files = [
-        (generation, path)
-        for path in directory.iterdir()
-        if path.is_file()
-        for generation in [_generation_file_sort_key(path)]
-        if generation is not None
-    ]
-    generation_files.sort(key=lambda item: item[0], reverse=True)
+    generation_to_paths: dict[int, list[Path]] = {}
+    for path in directory.iterdir():
+        if not path.is_file():
+            continue
+        generation = _generation_file_sort_key(path)
+        if generation is None:
+            continue
+        generation_to_paths.setdefault(generation, []).append(path)
+
+    kept_generations = set(sorted(generation_to_paths, reverse=True)[:keep_latest])
     deleted_count = 0
-    for _generation, path in generation_files[keep_latest:]:
-        path.unlink()
-        deleted_count += 1
-        LOGGER.info("[retention] deleted path=%s", str(path))
+    for generation, paths in generation_to_paths.items():
+        if generation in kept_generations:
+            continue
+        for path in paths:
+            path.unlink()
+            deleted_count += 1
+            LOGGER.info("[retention] deleted path=%s", str(path))
     LOGGER.info(
         "[retention] prune_done kept=%s deleted=%s",
-        min(keep_latest, len(generation_files)),
+        len(kept_generations),
         deleted_count,
     )
 
