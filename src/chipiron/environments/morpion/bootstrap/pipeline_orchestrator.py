@@ -275,9 +275,8 @@ def _build_dataset_selection_diagnostics(
         claim = _load_dataset_claim_for_diagnostics(claim_path)
         if claim is None:
             claimable_generations.append(generation)
-            if selected_generation is None:
-                selected_generation = generation
-                selected_manifest = manifest
+            selected_generation = generation
+            selected_manifest = manifest
             continue
 
         if pipeline_stage_claim_is_expired(claim, now_unix_s=now_unix_s):
@@ -289,9 +288,8 @@ def _build_dataset_selection_diagnostics(
                 claim.expires_at_utc,
             )
             claimable_generations.append(generation)
-            if selected_generation is None:
-                selected_generation = generation
-                selected_manifest = manifest
+            selected_generation = generation
+            selected_manifest = manifest
             continue
 
         LOGGER.info(
@@ -344,8 +342,8 @@ def training_stage_is_pending(manifest: MorpionPipelineGenerationManifest) -> bo
 def select_next_dataset_generation(
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
 ) -> int | None:
-    """Return the oldest generation whose dataset stage is pending."""
-    for generation in sorted(manifests):
+    """Return the latest generation whose dataset stage is pending."""
+    for generation in sorted(manifests, reverse=True):
         if dataset_stage_is_pending(manifests[generation]):
             return generation
     return None
@@ -354,8 +352,8 @@ def select_next_dataset_generation(
 def select_next_training_generation(
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
 ) -> int | None:
-    """Return the oldest generation whose training stage is pending."""
-    for generation in sorted(manifests):
+    """Return the latest generation whose training stage is pending."""
+    for generation in sorted(manifests, reverse=True):
         if training_stage_is_pending(manifests[generation]):
             return generation
     return None
@@ -367,8 +365,8 @@ def select_next_claimable_dataset_generation(
     *,
     now_unix_s: float | None = None,
 ) -> int | None:
-    """Return the oldest pending dataset generation without an active claim."""
-    for generation in sorted(manifests):
+    """Return the latest pending dataset generation without an active claim."""
+    for generation in sorted(manifests, reverse=True):
         if not dataset_stage_is_pending(manifests[generation]):
             continue
         claim = load_active_pipeline_stage_claim(
@@ -386,8 +384,8 @@ def select_next_claimable_training_generation(
     *,
     now_unix_s: float | None = None,
 ) -> int | None:
-    """Return the oldest pending training generation without an active claim."""
-    for generation in sorted(manifests):
+    """Return the latest pending training generation without an active claim."""
+    for generation in sorted(manifests, reverse=True):
         if not training_stage_is_pending(manifests[generation]):
             continue
         claim = load_active_pipeline_stage_claim(
@@ -406,7 +404,7 @@ def run_next_pipeline_dataset_stage_once(
     claim_owner: str | None = None,
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
-    """Run the oldest claimable pending dataset generation once, if any."""
+    """Run the latest claimable pending dataset generation once, if any."""
     invocation_started_at = time.perf_counter()
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
@@ -456,7 +454,7 @@ def run_next_pipeline_dataset_stage_once(
 
     assert diagnostics.selected_manifest is not None
     LOGGER.info(
-        "[pipeline] dataset_selection_done selected_generation=%s reason=oldest_claimable tree_export=%s manifest=%s",
+        "[pipeline] dataset_selection_done selected_generation=%s reason=latest_claimable tree_export=%s manifest=%s",
         generation,
         _render_optional_log_value(diagnostics.selected_manifest.tree_snapshot_path),
         paths.pipeline_manifest_path_for_generation(generation),
@@ -497,23 +495,50 @@ def run_next_pipeline_training_stage_once(
     claim_owner: str | None = None,
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
-    """Run the oldest claimable pending training generation once, if any."""
+    """Run the latest claimable pending training generation once, if any."""
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifests = load_available_pipeline_manifests(paths)
+    pending_generations = tuple(
+        generation
+        for generation in sorted(manifests)
+        if training_stage_is_pending(manifests[generation])
+    )
+    claimable_generations = tuple(
+        generation
+        for generation in sorted(manifests)
+        if training_stage_is_pending(manifests[generation])
+        and load_active_pipeline_stage_claim(
+            paths.pipeline_training_claim_path_for_generation(generation),
+            now_unix_s=now_unix_s,
+        )
+        is None
+    )
+    LOGGER.info(
+        "[pipeline] training_selection_start pending_generations=%s claimable_generations=%s",
+        _render_generation_list(pending_generations),
+        _render_generation_list(claimable_generations),
+    )
     generation = select_next_claimable_training_generation(
         paths,
         manifests,
         now_unix_s=now_unix_s,
     )
     if generation is None:
+        LOGGER.info("[pipeline] training_worker_idle reason=no_claimable_generation")
         return MorpionPipelineWorkerResult(
             stage="training",
             generation=None,
             ran_stage=False,
             reason="no_pending_work",
         )
+
+    LOGGER.info(
+        "[pipeline] training_selection_done selected_generation=%s reason=latest_claimable manifest=%s",
+        generation,
+        paths.pipeline_manifest_path_for_generation(generation),
+    )
 
     run_pipeline_training_stage(
         args,

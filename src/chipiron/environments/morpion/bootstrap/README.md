@@ -224,9 +224,9 @@ Example GPU placement:
 * `growth`: loads/restores runtime, consumes a pending reevaluation patch if
   present, grows the tree, then exports checkpoint/tree snapshot/manifest
   artifacts.
-* `dataset_worker`: finds the oldest claimable pending dataset generation and
+* `dataset_worker`: finds the latest claimable pending dataset generation and
   extracts rows once.
-* `training_worker`: finds the oldest claimable pending training generation and
+* `training_worker`: finds the latest claimable pending training generation and
   trains/selects the active evaluator once.
 * `reevaluation`: reads `pipeline/active_model.json`, reevaluates up to N nodes,
   and writes one singleton patch if no patch is pending.

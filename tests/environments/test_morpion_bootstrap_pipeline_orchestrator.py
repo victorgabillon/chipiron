@@ -372,15 +372,15 @@ def test_pending_stage_predicates_cover_dataset_and_training_cases() -> None:
     )
 
 
-def test_select_next_dataset_generation_returns_oldest_pending() -> None:
-    """Dataset selection should use ascending numeric generation order."""
+def test_select_next_dataset_generation_returns_latest_pending() -> None:
+    """Dataset selection should prefer the highest pending generation."""
     manifests = {
         3: _dataset_manifest(3),
         1: _dataset_manifest(1, dataset_status="done"),
         2: _dataset_manifest(2),
     }
 
-    assert select_next_dataset_generation(manifests) == 2
+    assert select_next_dataset_generation(manifests) == 3
 
 
 def test_select_next_dataset_generation_returns_none_without_pending() -> None:
@@ -394,15 +394,15 @@ def test_select_next_dataset_generation_returns_none_without_pending() -> None:
     assert select_next_dataset_generation(manifests) is None
 
 
-def test_select_next_training_generation_returns_oldest_pending() -> None:
-    """Training selection should use ascending numeric generation order."""
+def test_select_next_training_generation_returns_latest_pending() -> None:
+    """Training selection should prefer the highest pending generation."""
     manifests = {
         3: _training_manifest(3, training_status="failed"),
         1: _training_manifest(1, training_status="done"),
         2: _training_manifest(2, training_status="not_started"),
     }
 
-    assert select_next_training_generation(manifests) == 2
+    assert select_next_training_generation(manifests) == 3
 
 
 def test_select_next_training_generation_returns_none_without_pending() -> None:
@@ -419,7 +419,7 @@ def test_select_next_training_generation_returns_none_without_pending() -> None:
 def test_select_next_claimable_dataset_generation_skips_active_claim(
     tmp_path: Path,
 ) -> None:
-    """Claim-aware dataset selection should skip actively claimed generations."""
+    """Claim-aware dataset selection should skip the latest active claim."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     manifests = {
         1: _dataset_manifest(1),
@@ -427,11 +427,11 @@ def test_select_next_claimable_dataset_generation_skips_active_claim(
     }
     claim_pipeline_stage(
         stage="dataset",
-        generation=1,
-        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        generation=2,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(2),
         now_unix_s=1000.0,
         ttl_seconds=100.0,
-        claim_id="dataset-claim-1",
+        claim_id="dataset-claim-2",
     )
 
     selected = select_next_claimable_dataset_generation(
@@ -440,7 +440,7 @@ def test_select_next_claimable_dataset_generation_skips_active_claim(
         now_unix_s=1001.0,
     )
 
-    assert selected == 2
+    assert selected == 1
 
 
 def test_select_next_claimable_dataset_generation_allows_expired_claim(
@@ -471,7 +471,7 @@ def test_select_next_claimable_dataset_generation_allows_expired_claim(
 def test_select_next_claimable_training_generation_skips_active_claim(
     tmp_path: Path,
 ) -> None:
-    """Claim-aware training selection should skip actively claimed generations."""
+    """Claim-aware training selection should skip the latest active claim."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     manifests = {
         1: _training_manifest(1),
@@ -479,11 +479,11 @@ def test_select_next_claimable_training_generation_skips_active_claim(
     }
     claim_pipeline_stage(
         stage="training",
-        generation=1,
-        claim_path=paths.pipeline_training_claim_path_for_generation(1),
+        generation=2,
+        claim_path=paths.pipeline_training_claim_path_for_generation(2),
         now_unix_s=1000.0,
         ttl_seconds=100.0,
-        claim_id="training-claim-1",
+        claim_id="training-claim-2",
     )
 
     selected = select_next_claimable_training_generation(
@@ -492,7 +492,7 @@ def test_select_next_claimable_training_generation_skips_active_claim(
         now_unix_s=1001.0,
     )
 
-    assert selected == 2
+    assert selected == 1
 
 
 def test_dataset_worker_returns_no_work(
@@ -559,11 +559,11 @@ def test_training_worker_returns_no_work(tmp_path: Path) -> None:
     )
 
 
-def test_dataset_worker_runs_oldest_claimable_generation(
+def test_dataset_worker_runs_latest_claimable_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Autonomous dataset worker should run one oldest claimable generation."""
+    """Autonomous dataset worker should run one latest claimable generation."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
     save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
@@ -588,20 +588,20 @@ def test_dataset_worker_runs_oldest_claimable_generation(
 
     result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
 
-    assert captured == [1]
+    assert captured == [2]
     assert result == MorpionPipelineWorkerResult(
         stage="dataset",
-        generation=1,
+        generation=2,
         ran_stage=True,
         reason=None,
     )
 
 
-def test_training_worker_runs_oldest_claimable_generation(
+def test_training_worker_runs_latest_claimable_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Autonomous training worker should run one oldest claimable generation."""
+    """Autonomous training worker should run one latest claimable generation."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
     save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
@@ -626,31 +626,31 @@ def test_training_worker_runs_oldest_claimable_generation(
 
     result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
 
-    assert captured == [1]
+    assert captured == [2]
     assert result == MorpionPipelineWorkerResult(
         stage="training",
-        generation=1,
+        generation=2,
         ran_stage=True,
         reason=None,
     )
 
 
-def test_dataset_worker_skips_actively_claimed_oldest_generation(
+def test_dataset_worker_skips_actively_claimed_latest_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Autonomous dataset worker should skip active claims during selection."""
+    """Autonomous dataset worker should skip an active latest claim during selection."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
     save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
     claim_pipeline_stage(
         stage="dataset",
-        generation=1,
-        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        generation=2,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(2),
         now_unix_s=1000.0,
         ttl_seconds=100.0,
-        claim_id="dataset-claim-1",
+        claim_id="dataset-claim-2",
     )
     captured: list[int] = []
 
@@ -679,28 +679,29 @@ def test_dataset_worker_skips_actively_claimed_oldest_generation(
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
-    assert captured == [2]
-    assert result.generation == 2
+    assert captured == [1]
+    assert result.generation == 1
     assert result.ran_stage is True
-    assert "dataset_skip generation=1 reason=active_claim_exists" in messages
-    assert "dataset_selection_done selected_generation=2 reason=oldest_claimable" in messages
+    assert "dataset_skip generation=2 reason=active_claim_exists" in messages
+    assert "dataset_selection_done selected_generation=1 reason=latest_claimable" in messages
 
 
-def test_training_worker_skips_actively_claimed_oldest_generation(
+def test_training_worker_skips_actively_claimed_latest_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Autonomous training worker should skip active claims during selection."""
+    """Autonomous training worker should skip an active latest claim during selection."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
     save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
     claim_pipeline_stage(
         stage="training",
-        generation=1,
-        claim_path=paths.pipeline_training_claim_path_for_generation(1),
+        generation=2,
+        claim_path=paths.pipeline_training_claim_path_for_generation(2),
         now_unix_s=1000.0,
         ttl_seconds=100.0,
-        claim_id="training-claim-1",
+        claim_id="training-claim-2",
     )
     captured: list[int] = []
 
@@ -721,14 +722,19 @@ def test_training_worker_skips_actively_claimed_oldest_generation(
         _fake_training_stage,
     )
 
-    result = run_next_pipeline_training_stage_once(
-        _artifact_pipeline_args(tmp_path),
-        now_unix_s=1001.0,
-    )
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=1001.0,
+        )
 
-    assert captured == [2]
-    assert result.generation == 2
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [1]
+    assert result.generation == 1
     assert result.ran_stage is True
+    assert "training_selection_start pending_generations=1,2 claimable_generations=1" in messages
+    assert "training_selection_done selected_generation=1 reason=latest_claimable" in messages
 
 
 def test_dataset_worker_allows_expired_claim(
