@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import time
 import uuid
@@ -35,6 +36,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _negative_max_nodes_per_patch_error() -> ValueError:
@@ -90,6 +94,13 @@ def _save_reevaluation_patch_exclusive(
     except FileExistsError:
         return False
     return True
+
+
+def _metric_value(value: object | None) -> str:
+    """Render one optional reevaluation log field as a stable string."""
+    if value is None:
+        return "none"
+    return str(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -346,6 +357,13 @@ def run_morpion_reevaluation_worker_once(
             end_cursor=None,
             completed_full_pass_count=None,
         )
+    
+    LOGGER.info(
+        "[reevaluation] active_model generation=%s evaluator=%s bundle=%s",
+        active_model.generation,
+        active_model.evaluator_name,
+        active_model.model_bundle_path,
+    )
 
     if paths.pipeline_reevaluation_patch_path.exists():
         return MorpionReevaluationWorkerResult(
@@ -479,6 +497,16 @@ def run_morpion_reevaluation_worker_once(
             end_cursor=None,
             completed_full_pass_count=None,
         )
+
+    LOGGER.info(
+        "[reevaluation-patch] create_done patch_id=%s rows=%s direct_updates=%s tree_generation=%s start_cursor=%s end_cursor=%s",
+        patch.patch_id,
+        len(patch.rows),
+        len(patch.rows),
+        _metric_value(patch.tree_generation),
+        _metric_value(patch.start_cursor),
+        _metric_value(patch.end_cursor),
+    )
 
     next_completed_full_pass_count = completed_full_pass_count + int(
         completed_full_pass

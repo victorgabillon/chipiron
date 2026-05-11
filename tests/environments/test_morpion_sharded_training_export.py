@@ -170,8 +170,15 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     assert stats.reused_node_count == 0
     assert loaded_snapshot.root_node_id == expected_snapshot.root_node_id
     assert loaded_snapshot.nodes == expected_snapshot.nodes
-    assert training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot) == (
-        training_tree_snapshot_to_morpion_supervised_rows(expected_snapshot)
+    loaded_rows = training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot)
+    expected_rows = training_tree_snapshot_to_morpion_supervised_rows(expected_snapshot)
+
+    assert loaded_rows == expected_rows
+    assert tuple(row.node_id for row in loaded_rows.rows) == ("root", "leaf")
+    assert tuple(row.target_value for row in loaded_rows.rows) == (0.5, 1.0)
+    assert tuple(row.metadata["target_source"] for row in loaded_rows.rows) == (
+        "backed_up_value",
+        "backed_up_value",
     )
 
 
@@ -293,6 +300,13 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
     assert generation_two_update_shard["updates"][0]["backed_up_value_scalar"] == 0.4
     assert generation_two_update_shard["updates"][0]["child_ids"] == ["c", "b"]
     assert loaded_snapshot.nodes == expected_snapshot.nodes
-    assert training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot) == (
-        training_tree_snapshot_to_morpion_supervised_rows(expected_snapshot)
+    loaded_rows = training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot)
+    expected_rows = training_tree_snapshot_to_morpion_supervised_rows(expected_snapshot)
+
+    assert loaded_rows == expected_rows
+    assert tuple(row.node_id for row in loaded_rows.rows) == ("a", "c", "b")
+    assert tuple(row.metadata["target_source"] for row in loaded_rows.rows) == (
+        "backed_up_value",
+        "backed_up_value",
+        "backed_up_value",
     )

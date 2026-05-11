@@ -176,6 +176,7 @@ def test_training_node_can_prefer_direct_value() -> None:
 
     assert row is not None
     assert row.target_value == 0.5
+    assert row.metadata["target_source"] == "terminal_exact_value"
 
 
 def test_training_node_filters_work() -> None:
@@ -193,6 +194,7 @@ def test_training_node_filters_work() -> None:
             _make_training_node(
                 state_ref_payload=payload,
                 direct_value_scalar=0.5,
+                is_exact=False,
                 backed_up_value_scalar=None,
             )
         )
@@ -205,6 +207,76 @@ def test_training_node_filters_work() -> None:
         )
         is None
     )
+
+
+def test_training_node_uses_terminal_exact_fallback_when_backup_missing() -> None:
+    """Exact or terminal nodes should keep a trusted target when backup is absent."""
+    row = training_node_to_morpion_supervised_row(
+        _make_training_node(
+            state_ref_payload=_make_morpion_payload(),
+            direct_value_scalar=0.5,
+            backed_up_value_scalar=None,
+            is_exact=True,
+            is_terminal=False,
+        )
+    )
+
+    assert row is not None
+    assert row.target_value == 0.5
+    assert row.metadata["target_source"] == "terminal_exact_value"
+
+
+def test_snapshot_metadata_records_target_sources_and_skipped_no_target() -> None:
+    """Snapshot extraction metadata should expose target provenance counts."""
+    payload = _make_morpion_payload()
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_training_node(
+                node_id="backed",
+                state_ref_payload=payload,
+                direct_value_scalar=0.25,
+                backed_up_value_scalar=1.25,
+                is_exact=False,
+            ),
+            _make_training_node(
+                node_id="exact-fallback",
+                state_ref_payload=payload,
+                direct_value_scalar=0.75,
+                backed_up_value_scalar=None,
+                is_exact=True,
+            ),
+            _make_training_node(
+                node_id="frontier-direct-only",
+                state_ref_payload=payload,
+                direct_value_scalar=0.5,
+                backed_up_value_scalar=None,
+                is_exact=False,
+                is_terminal=False,
+            ),
+            _make_training_node(
+                node_id="no-usable-value",
+                state_ref_payload=payload,
+                direct_value_scalar=None,
+                backed_up_value_scalar=None,
+                is_exact=False,
+                is_terminal=False,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
+
+    assert tuple(row.node_id for row in rows.rows) == ("backed", "exact-fallback")
+    assert rows.rows[0].metadata["target_source"] == "backed_up_value"
+    assert rows.rows[1].metadata["target_source"] == "terminal_exact_value"
+    assert rows.metadata["target_source_counts"] == {
+        "backed_up_value": 1,
+        "terminal_exact_value": 1,
+        "direct_value_frontier_fallback": 0,
+    }
+    assert rows.metadata["skipped_no_target_count"] == 2
     assert (
         training_node_to_morpion_supervised_row(
             _make_training_node(state_ref_payload=payload, visit_count=1),

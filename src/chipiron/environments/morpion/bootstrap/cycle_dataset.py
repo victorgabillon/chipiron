@@ -82,13 +82,24 @@ def extract_rows_from_training_snapshot(
         use_backed_up_value=args.use_backed_up_value,
         metadata={"bootstrap_generation": generation},
     )
-    return apply_dataset_family_target_policy(
+    rows = apply_dataset_family_target_policy(
         snapshot=snapshot,
         rows=rows,
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
     )
+    target_source_counts = rows.metadata.get("target_source_counts", {})
+    LOGGER.info(
+        "[dataset-targets] generation=%s rows=%s backed_up=%s terminal_exact=%s direct_frontier_fallback=%s skipped_no_target=%s",
+        generation,
+        len(rows.rows),
+        target_source_counts.get("backed_up_value", 0),
+        target_source_counts.get("terminal_exact_value", 0),
+        target_source_counts.get("direct_value_frontier_fallback", 0),
+        rows.metadata.get("skipped_no_target_count", 0),
+    )
+    return rows
 
 
 def export_training_snapshot_for_generation(

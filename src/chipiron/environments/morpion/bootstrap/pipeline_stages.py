@@ -969,6 +969,14 @@ def run_pipeline_training_stage(
             paths.pipeline_active_model_path,
         )
         LOGGER.info(
+            "[pipeline] active_model_update generation=%s evaluator=%s model_bundle=%s",
+            generation,
+            training_result.selected_evaluator_name,
+            training_result.model_bundle_paths[
+                training_result.selected_evaluator_name
+            ],
+        )
+        LOGGER.info(
             "[pipeline] training_done generation=%s selected=%s",
             generation,
             training_result.selected_evaluator_name,

@@ -845,6 +845,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_artifact_path: Path | None = None
         self._linoo_selection_table_cycle_index: int | None = None
         self._linoo_selection_table_generation: int | None = None
+        self._last_reevaluation_patch_apply_metrics: dict[str, object] | None = None
 
     def configure_linoo_selection_table_artifact(
         self,
@@ -1280,6 +1281,19 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 ),
                 _metric_value(selector_invalidated),
             )
+        self._last_reevaluation_patch_apply_metrics = {
+            "patch_id": patch.patch_id,
+            "applied": result.applied_count,
+            "missing": len(result.missing_node_ids),
+            "recomputed": result.recomputed_count,
+            "selector_invalidated": selector_invalidated,
+        }
+        LOGGER.info(
+            "[reevaluation-patch] backup_refresh_done affected_nodes=%s ancestors_recomputed=%s selector_invalidated=%s",
+            result.applied_count,
+            result.recomputed_count,
+            _metric_value(selector_invalidated),
+        )
         LOGGER.info(
             "[reevaluation-patch] runner_apply_done "
             "patch_id=%s requested=%s applied=%s missing=%s recomputed=%s selector_invalidated=%s",
@@ -1291,6 +1305,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             _metric_value(selector_invalidated),
         )
         return result.applied_count
+
+    @property
+    def last_reevaluation_patch_apply_metrics(self) -> dict[str, object] | None:
+        """Return the last detailed reevaluation patch apply metrics, if any."""
+        if self._last_reevaluation_patch_apply_metrics is None:
+            return None
+        return dict(self._last_reevaluation_patch_apply_metrics)
 
     def current_runtime_config(self) -> MorpionBootstrapEffectiveRuntimeConfig:
         """Return the effective runtime config used to build the live runtime."""

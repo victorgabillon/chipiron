@@ -133,9 +133,13 @@ def training_node_to_morpion_supervised_row(
     if node.state_ref_payload is None:
         return None
 
-    target_value = _choose_target_value(node, use_backed_up_value=use_backed_up_value)
-    if target_value is None:
+    target = _choose_target_value_and_source(
+        node,
+        use_backed_up_value=use_backed_up_value,
+    )
+    if target is None:
         return None
+    target_value, target_source = target
 
     if not _passes_filters(
         node,
@@ -159,7 +163,7 @@ def training_node_to_morpion_supervised_row(
         visit_count=node.visit_count,
         direct_value=node.direct_value_scalar,
         over_event_label=node.over_event_label,
-        metadata=dict(node.metadata),
+        metadata={**dict(node.metadata), "target_source": target_source},
     )
 
 
@@ -174,6 +178,13 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     metadata: dict[str, object] | None = None,
 ) -> MorpionSupervisedRows:
     """Extract ordered raw Morpion supervised rows from one training snapshot."""
+    skipped_no_target_count = _count_skipped_no_target_nodes(
+        snapshot,
+        require_exact_or_terminal=require_exact_or_terminal,
+        min_depth=min_depth,
+        min_visit_count=min_visit_count,
+        use_backed_up_value=use_backed_up_value,
+    )
     rows = tuple(
         row
         for row in (
@@ -190,6 +201,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     )
     if max_rows is not None:
         rows = rows[:max_rows]
+    target_source_counts = _target_source_counts(rows)
     return MorpionSupervisedRows(
         rows=rows,
         metadata=_build_rows_metadata(
@@ -201,6 +213,8 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
             num_rows=len(rows),
+            skipped_no_target_count=skipped_no_target_count,
+            target_source_counts=target_source_counts,
         ),
     )
 
@@ -304,15 +318,64 @@ def _payload_mapping(payload: object) -> dict[str, Any]:
     return normalized_payload
 
 
-def _choose_target_value(
+def _choose_target_value_and_source(
     node: TrainingNodeSnapshot,
     *,
     use_backed_up_value: bool,
-) -> float | None:
-    """Return the preferred target scalar with no fallback to the other field."""
-    if use_backed_up_value:
-        return node.backed_up_value_scalar
-    return node.direct_value_scalar
+) -> tuple[float, str] | None:
+    """Return the preferred target scalar together with its provenance label."""
+    if use_backed_up_value and node.backed_up_value_scalar is not None:
+        return float(node.backed_up_value_scalar), "backed_up_value"
+    if (node.is_exact or node.is_terminal) and node.direct_value_scalar is not None:
+        return float(node.direct_value_scalar), "terminal_exact_value"
+    if not use_backed_up_value and node.direct_value_scalar is not None:
+        return float(node.direct_value_scalar), "direct_value_frontier_fallback"
+    if not use_backed_up_value and node.backed_up_value_scalar is not None:
+        return float(node.backed_up_value_scalar), "backed_up_value"
+    return None
+
+
+def _count_skipped_no_target_nodes(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    require_exact_or_terminal: bool,
+    min_depth: int | None,
+    min_visit_count: int | None,
+    use_backed_up_value: bool,
+) -> int:
+    """Return how many otherwise eligible nodes lacked a usable target."""
+    return sum(
+        1
+        for node in snapshot.nodes
+        if node.state_ref_payload is not None
+        and _passes_filters(
+            node,
+            require_exact_or_terminal=require_exact_or_terminal,
+            min_depth=min_depth,
+            min_visit_count=min_visit_count,
+        )
+        and _choose_target_value_and_source(
+            node,
+            use_backed_up_value=use_backed_up_value,
+        )
+        is None
+    )
+
+
+def _target_source_counts(
+    rows: tuple[MorpionSupervisedRow, ...],
+) -> dict[str, int]:
+    """Return compact per-source counts for the extracted rows."""
+    counts = {
+        "backed_up_value": 0,
+        "terminal_exact_value": 0,
+        "direct_value_frontier_fallback": 0,
+    }
+    for row in rows:
+        source = row.metadata.get("target_source")
+        if isinstance(source, str) and source in counts:
+            counts[source] += 1
+    return counts
 
 
 def _load_morpion_state_from_payload(payload: dict[str, Any]) -> AtomMorpionState:
@@ -353,6 +416,8 @@ def _build_rows_metadata(
     max_rows: int | None,
     use_backed_up_value: bool,
     num_rows: int,
+    skipped_no_target_count: int,
+    target_source_counts: dict[str, int],
 ) -> dict[str, Any]:
     """Build dataset metadata for one extraction pass."""
     built_metadata: dict[str, Any] = {
@@ -367,6 +432,8 @@ def _build_rows_metadata(
         "max_rows": max_rows,
         "use_backed_up_value": use_backed_up_value,
         "num_rows": num_rows,
+        "skipped_no_target_count": skipped_no_target_count,
+        "target_source_counts": dict(target_source_counts),
     }
     if metadata is not None:
         built_metadata.update(metadata)

@@ -350,6 +350,39 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
     assert cursor.last_patch_id == "patch-1"
 
 
+def test_worker_logs_active_model_and_patch_creation(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Worker logs should expose the active evaluator generation and patch creation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    _write_active_model(paths, generation=4, evaluator_name="best")
+    _write_manifest_with_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("node-b", "node-a")),
+    )
+
+    with caplog.at_level("INFO"):
+        run_morpion_reevaluation_worker_once(
+            _artifact_pipeline_args(tmp_path),
+            max_nodes_per_patch=1,
+            patch_id="patch-log",
+            use_snapshot_value_fallback=True,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert (
+        "[reevaluation] active_model generation=4 evaluator=best "
+        "bundle=models/generation_000002/default"
+    ) in messages
+    assert (
+        "[reevaluation-patch] create_done patch_id=patch-log rows=1 direct_updates=1"
+    ) in messages
+
+
 def test_build_active_model_reevaluation_evaluator_resolves_relative_path(
     tmp_path: Path,
 ) -> None:

@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+def _metric_value(value: object | None) -> str:
+    """Render one optional reevaluation metric for structured logs."""
+    if value is None:
+        return "none"
+    return str(value)
+
+
 def _missing_runner_patch_hook_error() -> NotImplementedError:
     """Build the stable missing-runner patch hook error."""
     return NotImplementedError(
@@ -111,11 +118,27 @@ def apply_pending_reevaluation_patch_to_runner(
         )
         raise
 
+    apply_metrics = getattr(runner, "last_reevaluation_patch_apply_metrics", None)
+    if callable(apply_metrics):
+        apply_metrics = apply_metrics()
     delete_reevaluation_patch(patch_path)
     LOGGER.info(
-        "[reevaluation-patch] apply_done patch_id=%s applied=%s",
+        "[reevaluation-patch] apply_done patch_id=%s applied=%s missing=%s recomputed=%s selector_invalidated=%s",
         patch.patch_id,
         applied_count,
+        _metric_value(
+            apply_metrics.get("missing") if isinstance(apply_metrics, dict) else None
+        ),
+        _metric_value(
+            apply_metrics.get("recomputed")
+            if isinstance(apply_metrics, dict)
+            else None
+        ),
+        _metric_value(
+            apply_metrics.get("selector_invalidated")
+            if isinstance(apply_metrics, dict)
+            else None
+        ),
     )
     return MorpionReevaluationPatchConsumptionResult(
         patch_found=True,

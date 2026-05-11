@@ -144,14 +144,16 @@ def _dataset_row_with_family_target_metadata(
 ) -> MorpionSupervisedRow:
     effective_target = family_targets.effective_targets.get(row.node_id, raw_target)
     metadata = dict(row.metadata)
+    target_source = _dataset_row_target_source(
+        row,
+        selected_child_id=selected_child_id,
+    )
     metadata.update(
         {
             "raw_target": raw_target,
             "effective_target": effective_target,
-            "target_source": _dataset_row_target_source(
-                row,
-                selected_child_id=selected_child_id,
-            ),
+            "target_source": target_source,
+            "raw_target_source": target_source,
             "selected_child_id": selected_child_id,
             "family_representative_node_id": family_targets.representative_by_node.get(
                 row.node_id,
@@ -195,11 +197,14 @@ def _dataset_row_target_source(
     *,
     selected_child_id: str | None,
 ) -> str:
+    existing_source = row.metadata.get("target_source")
+    if isinstance(existing_source, str) and existing_source:
+        return existing_source
     if row.is_exact or row.is_terminal:
-        return "ground_truth_exact_or_terminal"
+        return "terminal_exact_value"
     if selected_child_id is not None:
-        return "child_backup"
-    return "frontier_prediction"
+        return "backed_up_value"
+    return "direct_value_frontier_fallback"
 
 
 def _dataset_family_target_summary(

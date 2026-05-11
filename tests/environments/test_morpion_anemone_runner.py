@@ -450,7 +450,12 @@ def test_apply_reevaluation_patch_converts_rows_to_anemone_updates(
         "patch_id=patch-1 requested=2 applied=1 missing=1 recomputed=3 "
         "selector_invalidated=none"
     )
+    refresh_log = (
+        "[reevaluation-patch] backup_refresh_done "
+        "affected_nodes=1 ancestors_recomputed=3 selector_invalidated=none"
+    )
     assert done_log in caplog.text
+    assert refresh_log in caplog.text
 
 
 def test_apply_reevaluation_patch_blends_direct_value_when_configured(

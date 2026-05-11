@@ -828,6 +828,33 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
     assert not paths.pipeline_training_claim_path_for_generation(1).exists()
 
 
+def test_training_stage_logs_active_model_update(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Training stage logs should expose the published active-model generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    with caplog.at_level(logging.INFO):
+        run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "[pipeline] active_model_update generation=1 evaluator=" in messages
+
+
 def test_training_stage_requires_done_dataset(tmp_path: Path) -> None:
     """Training stage should reject manifests whose dataset stage is incomplete."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
