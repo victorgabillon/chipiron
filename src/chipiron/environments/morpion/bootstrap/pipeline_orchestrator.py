@@ -240,8 +240,6 @@ def _build_dataset_selection_diagnostics(
     )
     pending_generations: list[int] = []
     claimable_generations: list[int] = []
-    selected_generation: int | None = None
-    selected_manifest: MorpionPipelineGenerationManifest | None = None
 
     for generation in sorted(manifests):
         manifest = manifests[generation]
@@ -275,8 +273,6 @@ def _build_dataset_selection_diagnostics(
         claim = _load_dataset_claim_for_diagnostics(claim_path)
         if claim is None:
             claimable_generations.append(generation)
-            selected_generation = generation
-            selected_manifest = manifest
             continue
 
         if pipeline_stage_claim_is_expired(claim, now_unix_s=now_unix_s):
@@ -288,8 +284,6 @@ def _build_dataset_selection_diagnostics(
                 claim.expires_at_utc,
             )
             claimable_generations.append(generation)
-            selected_generation = generation
-            selected_manifest = manifest
             continue
 
         LOGGER.info(
@@ -299,6 +293,13 @@ def _build_dataset_selection_diagnostics(
             _render_optional_log_value(claim.owner),
             claim.expires_at_utc,
         )
+
+    selected_generation = (
+        claimable_generations[-1] if claimable_generations else None
+    )
+    selected_manifest = (
+        manifests[selected_generation] if selected_generation is not None else None
+    )
 
     return _DatasetSelectionDiagnostics(
         latest_tree_generation=latest_tree_generation,
