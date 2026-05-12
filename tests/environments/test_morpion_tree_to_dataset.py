@@ -176,7 +176,7 @@ def test_training_node_can_prefer_direct_value() -> None:
 
     assert row is not None
     assert row.target_value == 0.5
-    assert row.metadata["target_source"] == "terminal_exact_value"
+    assert row.metadata["target_source"] == "exact_or_terminal_direct_value"
 
 
 def test_training_node_filters_work() -> None:
@@ -223,7 +223,7 @@ def test_training_node_uses_terminal_exact_fallback_when_backup_missing() -> Non
 
     assert row is not None
     assert row.target_value == 0.5
-    assert row.metadata["target_source"] == "terminal_exact_value"
+    assert row.metadata["target_source"] == "exact_or_terminal_direct_value"
 
 
 def test_snapshot_metadata_records_target_sources_and_skipped_no_target() -> None:
@@ -270,10 +270,10 @@ def test_snapshot_metadata_records_target_sources_and_skipped_no_target() -> Non
 
     assert tuple(row.node_id for row in rows.rows) == ("backed", "exact-fallback")
     assert rows.rows[0].metadata["target_source"] == "backed_up_value"
-    assert rows.rows[1].metadata["target_source"] == "terminal_exact_value"
+    assert rows.rows[1].metadata["target_source"] == "exact_or_terminal_direct_value"
     assert rows.metadata["target_source_counts"] == {
         "backed_up_value": 1,
-        "terminal_exact_value": 1,
+        "exact_or_terminal_direct_value": 1,
         "direct_value_frontier_fallback": 0,
     }
     assert rows.metadata["skipped_no_target_count"] == 2

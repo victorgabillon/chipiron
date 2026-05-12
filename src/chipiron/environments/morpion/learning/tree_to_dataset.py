@@ -327,7 +327,7 @@ def _choose_target_value_and_source(
     if use_backed_up_value and node.backed_up_value_scalar is not None:
         return float(node.backed_up_value_scalar), "backed_up_value"
     if (node.is_exact or node.is_terminal) and node.direct_value_scalar is not None:
-        return float(node.direct_value_scalar), "terminal_exact_value"
+        return float(node.direct_value_scalar), "exact_or_terminal_direct_value"
     if not use_backed_up_value and node.direct_value_scalar is not None:
         return float(node.direct_value_scalar), "direct_value_frontier_fallback"
     if not use_backed_up_value and node.backed_up_value_scalar is not None:
@@ -368,7 +368,7 @@ def _target_source_counts(
     """Return compact per-source counts for the extracted rows."""
     counts = {
         "backed_up_value": 0,
-        "terminal_exact_value": 0,
+        "exact_or_terminal_direct_value": 0,
         "direct_value_frontier_fallback": 0,
     }
     for row in rows:

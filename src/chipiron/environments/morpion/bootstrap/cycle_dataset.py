@@ -91,11 +91,11 @@ def extract_rows_from_training_snapshot(
     )
     target_source_counts = rows.metadata.get("target_source_counts", {})
     LOGGER.info(
-        "[dataset-targets] generation=%s rows=%s backed_up=%s terminal_exact=%s direct_frontier_fallback=%s skipped_no_target=%s",
+        "[dataset-targets] generation=%s rows=%s backed_up=%s exact_or_terminal_direct=%s direct_frontier_fallback=%s skipped_no_target=%s",
         generation,
         len(rows.rows),
         target_source_counts.get("backed_up_value", 0),
-        target_source_counts.get("terminal_exact_value", 0),
+        target_source_counts.get("exact_or_terminal_direct_value", 0),
         target_source_counts.get("direct_value_frontier_fallback", 0),
         rows.metadata.get("skipped_no_target_count", 0),
     )

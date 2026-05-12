@@ -154,6 +154,14 @@ def _dataset_row_with_family_target_metadata(
             "effective_target": effective_target,
             "target_source": target_source,
             "raw_target_source": target_source,
+            "effective_target_source": _effective_target_source(
+                raw_target=raw_target,
+                effective_target=effective_target,
+                family_target_rule=family_targets.family_target_rule_by_node.get(
+                    row.node_id,
+                    "raw_backup",
+                ),
+            ),
             "selected_child_id": selected_child_id,
             "family_representative_node_id": family_targets.representative_by_node.get(
                 row.node_id,
@@ -201,10 +209,22 @@ def _dataset_row_target_source(
     if isinstance(existing_source, str) and existing_source:
         return existing_source
     if row.is_exact or row.is_terminal:
-        return "terminal_exact_value"
+        return "exact_or_terminal_direct_value"
     if selected_child_id is not None:
         return "backed_up_value"
     return "direct_value_frontier_fallback"
+
+
+def _effective_target_source(
+    *,
+    raw_target: float,
+    effective_target: float,
+    family_target_rule: str,
+) -> str:
+    """Return whether the effective target stayed raw or was altered by family policy."""
+    if effective_target == raw_target:
+        return "raw_target"
+    return family_target_rule
 
 
 def _dataset_family_target_summary(
