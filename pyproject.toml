@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chipiron"
-version = "0.2.2"
+version = "0.2.3"
 description = "chipiron plays games"
 keywords = ["games", "AI", "torch"]
 classifiers = [
@@ -34,9 +34,9 @@ dependencies = [
   "zstandard",
   "rich",
   "valanga==0.2.5",
-  "atomheart==0.2.9",
+  "atomheart==0.2.10",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.19",
+  "algorhino-anemone==0.2.20",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
@@ -398,9 +398,9 @@ deps = [
   "torchinfo",
   "platformdirs>=4.9.2",
   "valanga==0.2.5",
-  "atomheart==0.2.9",
+  "atomheart==0.2.10",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.19",
+  "algorhino-anemone==0.2.20",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
@@ -459,9 +459,9 @@ deps = [
   "zstandard",
   "rich",
   "valanga==0.2.5",
-  "atomheart==0.2.9",
+  "atomheart==0.2.10",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.19",
+  "algorhino-anemone==0.2.20",
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",

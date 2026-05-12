@@ -154,11 +154,17 @@ if "chipiron.environments.morpion.bootstrap.evaluator_diagnostics" not in sys.mo
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(asdict(diagnostics)) + "\n", encoding="utf-8")
 
+    def _load_previous_evaluator_for_diagnostics(_path: Path) -> None:
+        return None
+
     _diagnostics_stub.MorpionEvaluatorTrainingDiagnostics = (
         _MorpionEvaluatorTrainingDiagnostics
     )
     _diagnostics_stub.build_evaluator_training_diagnostics = (
         _build_evaluator_training_diagnostics
+    )
+    _diagnostics_stub.load_previous_evaluator_for_diagnostics = (
+        _load_previous_evaluator_for_diagnostics
     )
     _diagnostics_stub.save_evaluator_training_diagnostics = (
         _save_evaluator_training_diagnostics
@@ -198,42 +204,6 @@ if "chipiron.environments.morpion.bootstrap.evaluator_family" not in sys.modules
         _family_stub
     )
 
-if "chipiron.environments.morpion.bootstrap.evaluator_sanity_check" not in sys.modules:
-    _sanity_stub = ModuleType(
-        "chipiron.environments.morpion.bootstrap.evaluator_sanity_check"
-    )
-
-    class _EmptyMorpionSanityDatasetError(ValueError):
-        pass
-
-    def _build_backup_target_diagnostics(**_kwargs: object) -> dict[str, object]:
-        return {}
-
-    def _terminal_path_nodes(snapshot: object) -> tuple[object, ...]:
-        return tuple(getattr(snapshot, "nodes", ()))
-
-    def _top_terminal_path_nodes(
-        snapshot: object,
-        *,
-        max_terminal_nodes: int,
-    ) -> tuple[object, ...]:
-        terminal_nodes = [
-            node
-            for node in getattr(snapshot, "nodes", ())
-            if getattr(node, "is_terminal", False) or getattr(node, "is_exact", False)
-        ]
-        terminal_nodes.sort(key=lambda node: getattr(node, "depth", 0), reverse=True)
-        return tuple(terminal_nodes[:max_terminal_nodes])
-
-    _sanity_stub.EmptyMorpionSanityDatasetError = _EmptyMorpionSanityDatasetError
-    _sanity_stub.MorpionSanityDatasetMode = str
-    _sanity_stub.build_backup_target_diagnostics = _build_backup_target_diagnostics
-    _sanity_stub.terminal_path_nodes = _terminal_path_nodes
-    _sanity_stub.top_terminal_path_nodes = _top_terminal_path_nodes
-    sys.modules["chipiron.environments.morpion.bootstrap.evaluator_sanity_check"] = (
-        _sanity_stub
-    )
-
 if "chipiron.environments.morpion.learning" not in sys.modules:
     _learning_stub = ModuleType("chipiron.environments.morpion.learning")
 
@@ -271,10 +241,75 @@ if "chipiron.environments.morpion.learning" not in sys.modules:
         }
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
+    def _load_morpion_supervised_rows(path: Path) -> _MorpionSupervisedRows:
+        payload = cast("dict[str, object]", json.loads(path.read_text(encoding="utf-8")))
+        rows_payload = cast("list[dict[str, object]]", payload.get("rows", []))
+        rows = tuple(
+            _MorpionSupervisedRow(**row_payload) for row_payload in rows_payload
+        )
+        return _MorpionSupervisedRows(
+            rows=rows,
+            metadata=cast("dict[str, object]", payload.get("metadata", {})),
+        )
+
+    def _training_node_to_morpion_supervised_row(
+        node: object,
+        *,
+        target_value: float,
+        metadata: dict[str, object] | None = None,
+    ) -> _MorpionSupervisedRow:
+        return _MorpionSupervisedRow(
+            node_id=str(getattr(node, "node_id")),
+            state_ref_payload=cast(
+                "dict[str, object]", getattr(node, "state_ref_payload", {})
+            ),
+            target_value=target_value,
+            is_terminal=bool(getattr(node, "is_terminal", False)),
+            is_exact=bool(getattr(node, "is_exact", False)),
+            depth=int(getattr(node, "depth", 0)),
+            visit_count=cast("int | None", getattr(node, "visit_count", None)),
+            direct_value=cast("float | None", getattr(node, "direct_value_scalar", None)),
+            over_event_label=cast(
+                "str | None", getattr(node, "over_event_label", None)
+            ),
+            metadata={} if metadata is None else dict(metadata),
+        )
+
+    def _training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot: object,
+        *,
+        metadata: dict[str, object] | None = None,
+    ) -> _MorpionSupervisedRows:
+        rows = tuple(
+            _training_node_to_morpion_supervised_row(
+                node,
+                target_value=float(
+                    getattr(node, "backed_up_value_scalar", None)
+                    if getattr(node, "backed_up_value_scalar", None) is not None
+                    else getattr(node, "direct_value_scalar", 0.0)
+                ),
+                metadata=metadata,
+            )
+            for node in getattr(snapshot, "nodes", ())
+            if getattr(node, "backed_up_value_scalar", None) is not None
+            or getattr(node, "direct_value_scalar", None) is not None
+        )
+        return _MorpionSupervisedRows(
+            rows=rows,
+            metadata={} if metadata is None else dict(metadata),
+        )
+
     _learning_stub.MorpionSupervisedRow = _MorpionSupervisedRow
     _learning_stub.MorpionSupervisedRows = _MorpionSupervisedRows
     _learning_stub.decode_morpion_state_ref_payload = _decode_morpion_state_ref_payload
+    _learning_stub.load_morpion_supervised_rows = _load_morpion_supervised_rows
     _learning_stub.save_morpion_supervised_rows = _save_morpion_supervised_rows
+    _learning_stub.training_node_to_morpion_supervised_row = (
+        _training_node_to_morpion_supervised_row
+    )
+    _learning_stub.training_tree_snapshot_to_morpion_supervised_rows = (
+        _training_tree_snapshot_to_morpion_supervised_rows
+    )
     sys.modules["chipiron.environments.morpion.learning"] = _learning_stub
 
 if "chipiron.environments.morpion.types" not in sys.modules:
