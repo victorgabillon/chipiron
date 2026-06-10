@@ -187,7 +187,9 @@ def _profile_training_export(
         "[profile] runtime nodes=%s branches=%s"
         % (
             runner.current_tree_size(),
-            runtime_branch_count if isinstance(runtime_branch_count, int) else "unknown",
+            runtime_branch_count
+            if isinstance(runtime_branch_count, int)
+            else "unknown",
         )
     )
 

@@ -516,7 +516,9 @@ def test_reevaluate_tree_for_policy_invalid_value_raises() -> None:
 
 def test_validate_pipeline_mode_accepts_single_process(tmp_path: Path) -> None:
     """Single-process mode should preserve current bootstrap behavior."""
-    bootstrap_loop_module._validate_pipeline_mode(MorpionBootstrapArgs(work_dir=tmp_path))
+    bootstrap_loop_module._validate_pipeline_mode(
+        MorpionBootstrapArgs(work_dir=tmp_path)
+    )
 
 
 def test_validate_pipeline_mode_accepts_artifact_pipeline(
@@ -615,7 +617,9 @@ def test_run_bootstrap_loop_artifact_pipeline_fails_before_writing_config(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
 
-    with pytest.raises(NotImplementedError, match="only supports pipeline_mode='single_process'"):
+    with pytest.raises(
+        NotImplementedError, match="only supports pipeline_mode='single_process'"
+    ):
         run_morpion_bootstrap_loop(
             MorpionBootstrapArgs(
                 work_dir=tmp_path,
@@ -971,9 +975,7 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     assert next_state.generation == 2
     assert next_state.cycle_index == 12
     assert next_state.latest_tree_snapshot_path == str(
-        paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
-            paths.work_dir
-        )
+        paths.sharded_tree_snapshot_path_for_generation(2).relative_to(paths.work_dir)
     )
     assert next_state.latest_rows_path == "rows/generation_000002.json"
     assert next_state.latest_model_bundle_paths == {
@@ -1031,13 +1033,8 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
         paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
     )
     assert next_state.latest_rows_path == "rows/generation_000001.json"
-    assert (
-        next_state.latest_runtime_checkpoint_path
-        == str(
-            paths.runtime_checkpoint_path_for_generation(1).relative_to(
-                paths.work_dir
-            )
-        )
+    assert next_state.latest_runtime_checkpoint_path == str(
+        paths.runtime_checkpoint_path_for_generation(1).relative_to(paths.work_dir)
     )
     assert next_state.latest_model_bundle_paths == {
         "default": "models/generation_000001/default"
@@ -1201,21 +1198,11 @@ def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
     assert first_state.generation == 1
     assert second_state.generation == 2
     assert third_state.generation == 3
-    assert (
-        third_state.latest_runtime_checkpoint_path
-        == str(
-            paths.runtime_checkpoint_path_for_generation(3).relative_to(
-                paths.work_dir
-            )
-        )
+    assert third_state.latest_runtime_checkpoint_path == str(
+        paths.runtime_checkpoint_path_for_generation(3).relative_to(paths.work_dir)
     )
-    assert (
-        third_state.latest_tree_snapshot_path
-        == str(
-            paths.sharded_tree_snapshot_path_for_generation(3).relative_to(
-                paths.work_dir
-            )
-        )
+    assert third_state.latest_tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(3).relative_to(paths.work_dir)
     )
     assert sorted(
         path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json*")
@@ -1224,8 +1211,7 @@ def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
         paths.runtime_checkpoint_path_for_generation(3).name,
     ]
     assert sorted(
-        path.name
-        for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
+        path.name for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
     ) == [
         paths.sharded_tree_snapshot_path_for_generation(1).name,
         paths.sharded_tree_snapshot_path_for_generation(2).name,
@@ -1280,8 +1266,7 @@ def test_loop_does_not_prune_previous_artifacts_when_run_state_save_fails(
         paths.runtime_checkpoint_path_for_generation(3).name,
     ]
     assert sorted(
-        path.name
-        for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
+        path.name for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
     ) == [
         paths.sharded_tree_snapshot_path_for_generation(1).name,
         paths.sharded_tree_snapshot_path_for_generation(2).name,
@@ -1338,13 +1323,8 @@ def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_f
 
     run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
-    assert (
-        first_state.latest_tree_snapshot_path
-        == str(
-            paths.sharded_tree_snapshot_path_for_generation(1).relative_to(
-                paths.work_dir
-            )
-        )
+    assert first_state.latest_tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
     )
     assert runner.load_calls[1] == (
         str(paths.runtime_checkpoint_path_for_generation(1)),

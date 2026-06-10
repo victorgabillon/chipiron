@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from .control import MorpionBootstrapEffectiveRuntimeConfig
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from .control import MorpionBootstrapEffectiveRuntimeConfig
 
 
 class MorpionSearchRunner(Protocol):

@@ -6,14 +6,14 @@ import math
 import os
 import random
 from dataclasses import dataclass, field
-from typing import Any
 
 import torch
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Subset
 
-from chipiron.environments.morpion.players.evaluators.datasets import (
+from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
+    MorpionSupervisedSample,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
@@ -23,6 +23,18 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 
 from .bundle import save_morpion_model_bundle
 from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regressor
+
+type MorpionRegressionDataset = (
+    MorpionSupervisedDataset | Subset[MorpionSupervisedSample]
+)
+
+
+class InvalidValidationFractionError(ValueError):
+    """Raised when supervised-training validation splitting is outside bounds."""
+
+    def __init__(self) -> None:
+        """Initialize the invalid-validation-fraction error."""
+        super().__init__("validation_fraction must be in [0.0, 1.0).")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +62,7 @@ class MorpionTrainingArgs:
             or self.validation_fraction < 0.0
             or self.validation_fraction >= 1.0
         ):
-            raise ValueError("validation_fraction must be in [0.0, 1.0).")
+            raise InvalidValidationFractionError
         subset = resolve_morpion_feature_subset(
             feature_subset_name=self.feature_subset_name,
             feature_names=None if not self.feature_names else self.feature_names,
@@ -174,7 +186,7 @@ def _split_train_validation_dataset(
     *,
     validation_fraction: float,
     validation_seed: int,
-) -> tuple[Subset[MorpionSupervisedDataset], Subset[MorpionSupervisedDataset]]:
+) -> tuple[Subset[MorpionSupervisedSample], Subset[MorpionSupervisedSample]]:
     """Return deterministic train/validation subsets for one supervised dataset."""
     sample_count = len(dataset)
     indices = list(range(sample_count))
@@ -192,7 +204,7 @@ def _split_train_validation_dataset(
 
 def _evaluate_regression_metrics(
     model: MorpionRegressor,
-    dataset: Dataset[Any],
+    dataset: MorpionRegressionDataset,
     *,
     batch_size: int,
 ) -> tuple[float, float]:

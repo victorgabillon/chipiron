@@ -8,7 +8,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from anemone.checkpoints import checkpoint_path_for_generation, default_checkpoint_file_suffix
+from anemone.checkpoints import (
+    checkpoint_path_for_generation,
+    default_checkpoint_file_suffix,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"

@@ -146,7 +146,12 @@ class FakeMorpionSearchRunner:
         reevaluate_tree: bool = False,
     ) -> None:
         """Accept launcher loop restore inputs without side effects."""
-        del tree_snapshot_path, model_bundle_path, effective_runtime_config, reevaluate_tree
+        del (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -265,7 +270,10 @@ def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> Non
     assert "run state: absent" in summary
     assert "history: absent" in summary
     assert "training export mode: flat (legacy compatibility/debug)" in summary
-    assert "runtime checkpoint format: json-zst (default; legacy .json checkpoints still load)" in summary
+    assert (
+        "runtime checkpoint format: json-zst (default; legacy .json checkpoints still load)"
+        in summary
+    )
     assert "latest runtime checkpoint: none" in summary
     assert "latest training artifact: none" in summary
     assert f"work dir: {tmp_path.resolve()}" in summary
@@ -322,9 +330,7 @@ def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
     assert "history: present" in summary
     assert "latest generation: 3" in summary
     assert "latest cycle: 7" in summary
-    assert (
-        "training export mode: flat (legacy compatibility/debug)" in summary
-    )
+    assert "training export mode: flat (legacy compatibility/debug)" in summary
     assert (
         "latest runtime checkpoint: search_checkpoints/generation_000003.json.zst"
         in summary
@@ -525,7 +531,9 @@ def test_launcher_cli_main_parses_and_dispatches(
 
 def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
     """CLI defaults should preserve current attach-only single-process behavior."""
-    launcher_args = launcher_module.launcher_args_from_cli(["--work-dir", str(tmp_path)])
+    launcher_args = launcher_module.launcher_args_from_cli(
+        ["--work-dir", str(tmp_path)]
+    )
 
     assert (
         launcher_args.bootstrap_args.evaluator_update_policy
@@ -558,7 +566,9 @@ def test_resume_uses_persisted_training_export_mode_when_cli_omits_it(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
 
-    launcher_args = launcher_module.launcher_args_from_cli(["--work-dir", str(tmp_path)])
+    launcher_args = launcher_module.launcher_args_from_cli(
+        ["--work-dir", str(tmp_path)]
+    )
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
     assert (
@@ -596,7 +606,9 @@ def test_resume_explicit_training_export_mode_override_hits_compatibility_check(
         ]
     )
 
-    with pytest.raises(IncompatibleStageBootstrapConfigError, match="training_export_mode"):
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError, match="training_export_mode"
+    ):
         launcher_module._collect_launcher_startup_status(launcher_args)
 
 

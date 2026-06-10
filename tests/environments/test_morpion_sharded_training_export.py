@@ -91,7 +91,9 @@ def _value_to_scalar(value: object | None) -> float | None:
     return float(cast("int | float", value))
 
 
-def _expected_snapshot(nodes: tuple[_LiveNode, ...], *, root_node_id: str) -> TrainingTreeSnapshot:
+def _expected_snapshot(
+    nodes: tuple[_LiveNode, ...], *, root_node_id: str
+) -> TrainingTreeSnapshot:
     """Build the flat training snapshot that the sharded reader should match."""
     return TrainingTreeSnapshot(
         root_node_id=root_node_id,
@@ -145,16 +147,20 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     )
     nodes = (root_node, leaf_node)
 
-    generation_manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=nodes,
-        root_node_id="root",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=nodes,
+            root_node_id="root",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
-    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(generation_manifest_path)
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
     expected_snapshot = _expected_snapshot(nodes, root_node_id="root")
 
     manifest_payload = json.loads(generation_manifest_path.read_text(encoding="utf-8"))
@@ -182,7 +188,9 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     )
 
 
-def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: Path) -> None:
+def test_sharded_generation_two_reuses_old_nodes_without_state_access(
+    tmp_path: Path,
+) -> None:
     """Generation two should only serialize new-node state payloads."""
     output_dir = tmp_path / "tree_exports_sharded"
     generation_one_nodes = (
@@ -211,14 +219,16 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
             metadata={"tag": "gen1-b"},
         ),
     )
-    _generation_one_manifest_path, generation_one_stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=generation_one_nodes,
-        root_node_id="a",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    _generation_one_manifest_path, generation_one_stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=generation_one_nodes,
+            root_node_id="a",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
 
     old_a = _LiveNode(
@@ -261,16 +271,20 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
     )
     generation_two_nodes = (old_a, new_c, old_b)
 
-    generation_manifest_path, generation_two_stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=generation_two_nodes,
-        root_node_id="a",
-        output_dir=output_dir,
-        generation=2,
-        state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, generation_two_stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=generation_two_nodes,
+            root_node_id="a",
+            output_dir=output_dir,
+            generation=2,
+            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
-    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(generation_manifest_path)
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
     expected_snapshot = _expected_snapshot(generation_two_nodes, root_node_id="a")
 
     generation_two_node_shard = json.loads(

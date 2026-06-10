@@ -290,7 +290,9 @@ class MorpionPipelineGenerationManifest:
     runtime_checkpoint_path: str | None = None
     tree_snapshot_path: str | None = None
     rows_path: str | None = None
-    model_bundle_paths: dict[str, str] = field(default_factory=_empty_model_bundle_paths)
+    model_bundle_paths: dict[str, str] = field(
+        default_factory=_empty_model_bundle_paths
+    )
     selected_evaluator_name: str | None = None
     dataset_status: MorpionPipelineDatasetStatus = "not_started"
     training_status: MorpionPipelineTrainingStatus = "not_started"
@@ -319,7 +321,9 @@ class MorpionPipelineGenerationManifest:
         object.__setattr__(
             self,
             "tree_snapshot_path",
-            _optional_path_str(self.tree_snapshot_path, field_name="tree_snapshot_path"),
+            _optional_path_str(
+                self.tree_snapshot_path, field_name="tree_snapshot_path"
+            ),
         )
         object.__setattr__(
             self,
@@ -331,12 +335,6 @@ class MorpionPipelineGenerationManifest:
             "model_bundle_paths",
             _model_bundle_paths_dict(self.model_bundle_paths),
         )
-        if self.selected_evaluator_name is not None and not isinstance(
-            self.selected_evaluator_name, str
-        ):
-            raise _invalid_field_error(
-                "selected_evaluator_name", "must be a string or null"
-            )
         object.__setattr__(self, "dataset_status", _dataset_status(self.dataset_status))
         object.__setattr__(
             self,
@@ -838,11 +836,12 @@ def _reevaluation_patch_rows_tuple(
     """Return one validated immutable reevaluation-patch row sequence."""
     if not isinstance(value, list | tuple):
         raise _invalid_field_error("rows", "must be a list or tuple of patch rows")
+    items = cast("list[object] | tuple[object, ...]", value)
     return tuple(
         item
         if isinstance(item, MorpionReevaluationPatchRow)
         else reevaluation_patch_row_from_dict(item)
-        for item in value
+        for item in items
     )
 
 
@@ -1015,7 +1014,9 @@ def pipeline_manifest_from_dict(data: object) -> MorpionPipelineGenerationManife
     """Deserialize one pipeline generation manifest from JSON-friendly data."""
     payload = _top_level_mapping(data)
     return MorpionPipelineGenerationManifest(
-        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        generation=_require_generation(
+            payload.get("generation"), field_name="generation"
+        ),
         created_at_utc=_require_str(
             payload.get("created_at_utc"), field_name="created_at_utc"
         ),
@@ -1034,9 +1035,7 @@ def pipeline_manifest_from_dict(data: object) -> MorpionPipelineGenerationManife
             field_name="selected_evaluator_name",
         ),
         dataset_status=_dataset_status(payload.get("dataset_status", "not_started")),
-        training_status=_training_status(
-            payload.get("training_status", "not_started")
-        ),
+        training_status=_training_status(payload.get("training_status", "not_started")),
         metadata=_metadata_dict(payload.get("metadata")),
     )
 
@@ -1058,7 +1057,9 @@ def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
     """Deserialize one active-model record from JSON-friendly data."""
     payload = _top_level_mapping(data)
     return MorpionPipelineActiveModel(
-        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        generation=_require_generation(
+            payload.get("generation"), field_name="generation"
+        ),
         evaluator_name=_require_str(
             payload.get("evaluator_name"), field_name="evaluator_name"
         ),
@@ -1169,7 +1170,9 @@ def pipeline_training_status_from_dict(
     """Deserialize one training-status artifact from JSON-friendly data."""
     payload = _top_level_mapping(data)
     return MorpionPipelineTrainingStatusArtifact(
-        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        generation=_require_generation(
+            payload.get("generation"), field_name="generation"
+        ),
         status=_training_status(payload.get("status", "not_started")),
         updated_at_utc=_require_non_empty_str(
             payload.get("updated_at_utc"),
@@ -1212,7 +1215,9 @@ def pipeline_dataset_status_from_dict(
     """Deserialize one dataset-status artifact from JSON-friendly data."""
     payload = _top_level_mapping(data)
     return MorpionPipelineDatasetStatusArtifact(
-        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        generation=_require_generation(
+            payload.get("generation"), field_name="generation"
+        ),
         status=_dataset_status(payload.get("status", "not_started")),
         updated_at_utc=_require_non_empty_str(
             payload.get("updated_at_utc"),
@@ -1249,7 +1254,9 @@ def pipeline_stage_claim_from_dict(data: object) -> MorpionPipelineStageClaim:
     """Deserialize one stage-claim record from JSON-friendly data."""
     payload = _top_level_mapping(data)
     return MorpionPipelineStageClaim(
-        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        generation=_require_generation(
+            payload.get("generation"), field_name="generation"
+        ),
         stage=_stage_name(payload.get("stage")),
         claim_id=_require_str(payload.get("claim_id"), field_name="claim_id"),
         claimed_at_utc=_require_str(
@@ -1343,7 +1350,9 @@ def reevaluation_patch_from_dict(data: object) -> MorpionReevaluationPatch:
             payload.get("tree_generation"),
             field_name="tree_generation",
         ),
-        start_cursor=_optional_str(payload.get("start_cursor"), field_name="start_cursor"),
+        start_cursor=_optional_str(
+            payload.get("start_cursor"), field_name="start_cursor"
+        ),
         end_cursor=_optional_str(payload.get("end_cursor"), field_name="end_cursor"),
         metadata=_metadata_dict(payload.get("metadata")),
     )
@@ -1454,7 +1463,9 @@ def load_pipeline_active_model(path: Path) -> MorpionPipelineActiveModel:
     return pipeline_active_model_from_dict(payload)
 
 
-def load_pipeline_training_status_file(path: Path) -> MorpionPipelineTrainingStatusArtifact:
+def load_pipeline_training_status_file(
+    path: Path,
+) -> MorpionPipelineTrainingStatusArtifact:
     """Load one training-status artifact from disk."""
     if not path.is_file():
         raise _missing_manifest_error(path)
@@ -1465,7 +1476,9 @@ def load_pipeline_training_status_file(path: Path) -> MorpionPipelineTrainingSta
     return pipeline_training_status_from_dict(payload)
 
 
-def load_pipeline_dataset_status_file(path: Path) -> MorpionPipelineDatasetStatusArtifact:
+def load_pipeline_dataset_status_file(
+    path: Path,
+) -> MorpionPipelineDatasetStatusArtifact:
     """Load one dataset-status artifact from disk."""
     if not path.is_file():
         raise _missing_manifest_error(path)
@@ -1612,9 +1625,7 @@ def save_pipeline_stage_status_file(
             "generation": _require_generation(generation, field_name="generation"),
             "metadata": _metadata_dict(metadata),
             "status": _require_str(status, field_name="status"),
-            "updated_at_utc": _require_str(
-                updated_at_utc, field_name="updated_at_utc"
-            ),
+            "updated_at_utc": _require_str(updated_at_utc, field_name="updated_at_utc"),
         },
         path,
     )
@@ -1654,7 +1665,8 @@ def save_pipeline_training_status_file(
     metadata: Mapping[str, object] | None,
     selected_evaluator_name: str | None = None,
     selection_policy: str | None = None,
-    evaluator_results: Mapping[str, MorpionPipelineEvaluatorTrainingResult] | None = None,
+    evaluator_results: Mapping[str, MorpionPipelineEvaluatorTrainingResult]
+    | None = None,
     path: Path,
 ) -> None:
     """Persist one validated training-stage status artifact atomically."""
@@ -1680,14 +1692,14 @@ __all__ = [
     "InvalidMorpionPipelineArtifactError",
     "MissingMorpionPipelineArtifactError",
     "MorpionPipelineActiveModel",
-    "MorpionPipelineDatasetStatusArtifact",
     "MorpionPipelineDatasetStatus",
+    "MorpionPipelineDatasetStatusArtifact",
     "MorpionPipelineEvaluatorTrainingResult",
     "MorpionPipelineGenerationManifest",
     "MorpionPipelineStageClaim",
     "MorpionPipelineStageName",
-    "MorpionPipelineTrainingStatusArtifact",
     "MorpionPipelineTrainingStatus",
+    "MorpionPipelineTrainingStatusArtifact",
     "MorpionReevaluationCursor",
     "MorpionReevaluationPatch",
     "MorpionReevaluationPatchRow",

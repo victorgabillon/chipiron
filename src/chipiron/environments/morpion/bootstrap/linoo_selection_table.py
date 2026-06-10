@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,7 +145,9 @@ def save_linoo_selection_table(table: LinooSelectionTable, path: str | Path) -> 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
     with tmp_path.open("w", encoding="utf-8") as handle:
-        json.dump(linoo_selection_table_to_dict(table), handle, indent=2, sort_keys=True)
+        json.dump(
+            linoo_selection_table_to_dict(table), handle, indent=2, sort_keys=True
+        )
         handle.write("\n")
     tmp_path.replace(output_path)
 
@@ -158,11 +163,14 @@ def load_linoo_selection_table(path: str | Path) -> LinooSelectionTable | None:
         return None
     if not isinstance(payload, dict):
         return None
-    return _linoo_selection_table_from_payload(payload)
+    raw_payload = cast("dict[object, object]", payload)
+    if not all(isinstance(key, str) for key in raw_payload):
+        return None
+    return _linoo_selection_table_from_payload(cast("dict[str, object]", raw_payload))
 
 
 def _linoo_selection_table_from_payload(
-    payload: dict[Any, Any],
+    payload: Mapping[str, object],
 ) -> LinooSelectionTable | None:
     updated_at_utc = payload.get("updated_at_utc")
     step = payload.get("step")
@@ -171,11 +179,17 @@ def _linoo_selection_table_from_payload(
         return None
     if not isinstance(rows_payload, list):
         return None
+    typed_rows_payload = cast("list[object]", rows_payload)
     rows: list[LinooSelectionTableRow] = []
-    for row_payload in rows_payload:
+    for row_payload in typed_rows_payload:
         if not isinstance(row_payload, dict):
             return None
-        row = _linoo_selection_table_row_from_payload(row_payload)
+        typed_row_payload = cast("dict[object, object]", row_payload)
+        if not all(isinstance(key, str) for key in typed_row_payload):
+            return None
+        row = _linoo_selection_table_row_from_payload(
+            cast("dict[str, object]", typed_row_payload)
+        )
         if row is None:
             return None
         rows.append(row)
@@ -191,7 +205,7 @@ def _linoo_selection_table_from_payload(
 
 
 def _linoo_selection_table_row_from_payload(
-    payload: dict[Any, Any],
+    payload: Mapping[str, object],
 ) -> LinooSelectionTableRow | None:
     depth = payload.get("depth")
     opened = payload.get("opened")

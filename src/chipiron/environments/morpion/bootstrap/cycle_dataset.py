@@ -16,7 +16,6 @@ from chipiron.environments.morpion.learning import (
 )
 
 from .bootstrap_errors import (
-    MissingBootstrapDatasetRowsError,
     MissingBootstrapFrontierStatusError,
     MissingBootstrapRecordStatusError,
     MissingSavedBootstrapArtifactError,
@@ -42,6 +41,11 @@ if TYPE_CHECKING:
     from .search_runner_protocol import MorpionSearchRunner
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _invalid_sharded_training_export_path_error() -> TypeError:
+    """Return the stable invalid sharded-export path error."""
+    return TypeError("sharded training export must return a filesystem path")
 
 
 def _unsupported_sharded_training_export_error() -> TypeError:
@@ -124,12 +128,16 @@ def export_training_snapshot_for_generation(
     if not callable(export_sharded):
         raise _unsupported_sharded_training_export_error()
 
-    sharded_path = Path(
-        export_sharded(
-            paths.sharded_tree_snapshot_dir,
-            generation=generation,
-        )
+    exported_path = export_sharded(
+        paths.sharded_tree_snapshot_dir,
+        generation=generation,
     )
+    if isinstance(exported_path, Path):
+        sharded_path = exported_path
+    elif isinstance(exported_path, str):
+        sharded_path = Path(exported_path)
+    else:
+        raise _invalid_sharded_training_export_path_error()
     if args.training_export_mode == "sharded":
         LOGGER.info(
             "[save] training_export_selected mode=%s output=%s",
@@ -234,7 +242,9 @@ def build_and_save_dataset_for_generation(
             "[frontier] resolve_done elapsed=%.3fs candidates=%s best_total_points=%s method=depth_metadata",
             time.perf_counter() - frontier_started_at,
             frontier_candidate_count,
-            None if frontier_status is None else frontier_status.current_best_total_points,
+            None
+            if frontier_status is None
+            else frontier_status.current_best_total_points,
         )
     if frontier_status is None:
         frontier_error = MissingBootstrapFrontierStatusError()
@@ -243,7 +253,7 @@ def build_and_save_dataset_for_generation(
     LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
     memory.log("before_dataset_extract")
     extract_started_at = time.perf_counter()
-    rows: MorpionSupervisedRows | None = None
+    rows: MorpionSupervisedRows
     try:
         rows = extract_rows_from_training_snapshot(
             args=args,
@@ -252,15 +262,18 @@ def build_and_save_dataset_for_generation(
         )
         memory.log("after_dataset_extract")
         memory.log("after_dataset_family_target_policy")
-    finally:
+    except Exception:
         LOGGER.info(
             "[dataset] extract_done rows=%s elapsed=%.3fs",
-            None if rows is None else len(rows.rows),
+            None,
             time.perf_counter() - extract_started_at,
         )
-    if rows is None:
-        dataset_rows_error = MissingBootstrapDatasetRowsError()
-        raise dataset_rows_error
+        raise
+    LOGGER.info(
+        "[dataset] extract_done rows=%s elapsed=%.3fs",
+        len(rows.rows),
+        time.perf_counter() - extract_started_at,
+    )
 
     LOGGER.info(
         "[dataset] family_targets policy=%s blend=%.3f rows_in_exact_family=%s num_exact_families=%s effective_minus_raw_mean_abs=%s effective_minus_raw_max_abs=%s",

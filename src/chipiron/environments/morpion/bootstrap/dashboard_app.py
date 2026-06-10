@@ -7,7 +7,7 @@ import time
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from matplotlib import pyplot as plt
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from .history import MorpionBootstrapTreeStatus
+    from .tree_inspector import MorpionBootstrapChildSummary
 
 from .bootstrap_loop import MorpionBootstrapPaths
 from .config import (
@@ -356,6 +357,13 @@ def run_dashboard_app(work_dir: Path) -> None:
         selectable_force_evaluator_options = (
             force_evaluator_options if force_evaluator_options else ("",)
         )
+
+        def _format_option(value: str) -> str:
+            return _format_force_evaluator_option(
+                value,
+                configured_evaluator_names=configured_evaluator_names,
+            )
+
         force_evaluator = st.selectbox(
             "Forced evaluator",
             options=selectable_force_evaluator_options,
@@ -364,10 +372,7 @@ def run_dashboard_app(work_dir: Path) -> None:
                 control.force_evaluator,
             ),
             disabled=(force_evaluator_mode != "forced" or not force_evaluator_options),
-            format_func=lambda value: _format_force_evaluator_option(
-                value,
-                configured_evaluator_names=configured_evaluator_names,
-            ),
+            format_func=_format_option,
         )
 
         _render_runtime_control_section(st=st, summary=runtime_summary)
@@ -1184,7 +1189,7 @@ def _render_tree_inspector_navigation(
 
 
 def _selected_child_node_id_for_branch(
-    child_summaries: tuple[Any, ...],
+    child_summaries: tuple[MorpionBootstrapChildSummary, ...],
     branch_label: str,
 ) -> str | None:
     """Return the expanded child node id for the selected branch row."""
@@ -1631,6 +1636,13 @@ def _summary_layer(
     }
 
 
+def _status_layer(value: object) -> dict[str, object | None]:
+    """Return one validated dashboard status-layer mapping."""
+    if not isinstance(value, dict):
+        return {}
+    return cast("dict[str, object | None]", value)
+
+
 def _render_pending_changes_section(
     *,
     st: Any,
@@ -1754,8 +1766,8 @@ def _render_evaluator_control_section(
     _render_status_layers(
         st=st,
         summary={
-            "selection_mode": summary["selection_mode"],
-            "forced_evaluator": summary["forced_evaluator"],
+            "selection_mode": _status_layer(summary["selection_mode"]),
+            "forced_evaluator": _status_layer(summary["forced_evaluator"]),
         },
     )
     st.write(
@@ -1781,7 +1793,7 @@ def _render_runtime_control_section(
     )
     _render_status_layers(
         st=st,
-        summary={"tree_branch_limit": summary["tree_branch_limit"]},
+        summary={"tree_branch_limit": _status_layer(summary["tree_branch_limit"])},
     )
     st.write(
         "Effective runtime hash:", _format_value(summary["effective_runtime_hash"])
@@ -1876,11 +1888,6 @@ def _format_bool_icon(value: bool | None) -> str:
     if value is False:
         return "✖"
     return "—"
-
-
-def _format_optional_runtime_override(value: int | None) -> str:
-    """Render one optional runtime override for human dashboard display."""
-    return "unset" if value is None else str(value)
 
 
 def _force_evaluator_option_index(

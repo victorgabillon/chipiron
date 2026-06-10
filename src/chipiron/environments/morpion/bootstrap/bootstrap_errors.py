@@ -39,6 +39,14 @@ class InvalidGenerationRetentionCountError(ValueError):
         )
 
 
+class InvalidReevaluationBlendAlphaError(ValueError):
+    """Raised when reevaluation blending is configured outside the unit interval."""
+
+    def __init__(self) -> None:
+        """Initialize the invalid-reevaluation-blend-alpha error."""
+        super().__init__("reevaluation_blend_alpha must be in [0.0, 1.0].")
+
+
 class InconsistentMorpionEvaluatorSpecNameError(ValueError):
     """Raised when one evaluator spec name does not match its config key."""
 
@@ -217,6 +225,7 @@ __all__ = [
     "InconsistentMorpionEvaluatorSpecNameError",
     "InvalidBootstrapArtifactPathError",
     "InvalidGenerationRetentionCountError",
+    "InvalidReevaluationBlendAlphaError",
     "MissingActiveMorpionEvaluatorError",
     "MissingBootstrapDatasetRowsError",
     "MissingBootstrapFrontierStatusError",

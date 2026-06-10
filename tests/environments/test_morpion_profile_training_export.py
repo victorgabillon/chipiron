@@ -58,9 +58,7 @@ def test_resolve_latest_runtime_checkpoint_picks_highest_generation(
         encoding="utf-8",
     )
 
-    resolved = profile_module._resolve_latest_runtime_checkpoint(
-        runtime_checkpoint_dir
-    )
+    resolved = profile_module._resolve_latest_runtime_checkpoint(runtime_checkpoint_dir)
 
     assert resolved == runtime_checkpoint_dir / "generation_000010.json"
 

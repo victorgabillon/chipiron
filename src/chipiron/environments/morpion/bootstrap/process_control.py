@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .bootstrap_loop import MorpionBootstrapPaths
@@ -264,8 +264,9 @@ def register_current_launcher_process(
     paths: MorpionBootstrapPaths,
 ) -> MorpionBootstrapProcessState:
     """Register the current process as the active launcher for this work dir."""
+    pid = os.getpid()
     state = MorpionBootstrapProcessState(
-        pid=os.getpid(),
+        pid=pid,
         is_running=True,
         command=launcher_command_for_work_dir(paths.work_dir),
         work_dir=str(paths.work_dir),
@@ -275,7 +276,7 @@ def register_current_launcher_process(
         last_stop_reason=None,
         status_label="running",
     )
-    _write_pid_file(paths.launcher_pid_path, state.pid)
+    _write_pid_file(paths.launcher_pid_path, pid)
     _write_process_state_file(paths.launcher_process_state_path, state)
     return state
 
@@ -354,7 +355,12 @@ def _read_process_state_file(path: Path) -> dict[str, object] | None:
         loaded = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return loaded if isinstance(loaded, dict) else None
+    if not isinstance(loaded, dict):
+        return None
+    raw_loaded = cast("dict[object, object]", loaded)
+    if not all(isinstance(key, str) for key in raw_loaded):
+        return None
+    return cast("dict[str, object]", raw_loaded)
 
 
 def _write_process_state_file(path: Path, state: MorpionBootstrapProcessState) -> None:
@@ -406,10 +412,14 @@ def _stopped_process_state(
 
 def _coerce_command(value: object, *, default: tuple[str, ...]) -> tuple[str, ...]:
     """Return one persisted command tuple or a stable default."""
-    if isinstance(value, list) and all(isinstance(part, str) for part in value):
-        return tuple(value)
-    if isinstance(value, tuple) and all(isinstance(part, str) for part in value):
-        return value
+    if isinstance(value, list):
+        list_parts = cast("list[object]", value)
+        if all(isinstance(part, str) for part in list_parts):
+            return tuple(str(part) for part in list_parts)
+    if isinstance(value, tuple):
+        tuple_parts = cast("tuple[object, ...]", value)
+        if all(isinstance(part, str) for part in tuple_parts):
+            return tuple(str(part) for part in tuple_parts)
     return default
 
 

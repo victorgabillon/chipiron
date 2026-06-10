@@ -110,7 +110,9 @@ def _build_stage_claim(
     )
 
 
-def _write_claim_json_exclusive(claim: MorpionPipelineStageClaim, claim_path: Path) -> None:
+def _write_claim_json_exclusive(
+    claim: MorpionPipelineStageClaim, claim_path: Path
+) -> None:
     """Create one claim file using exclusive creation semantics."""
     claim_path.parent.mkdir(parents=True, exist_ok=True)
     with claim_path.open("x", encoding="utf-8") as handle:

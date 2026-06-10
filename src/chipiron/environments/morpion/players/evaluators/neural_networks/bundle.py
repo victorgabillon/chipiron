@@ -402,7 +402,7 @@ def _load_feature_subset(
         return full_morpion_feature_subset()
 
     subset = resolve_morpion_feature_subset(
-        feature_subset_name=cast("str | None", raw_feature_subset_name),
+        feature_subset_name=raw_feature_subset_name,
         feature_names=feature_names,
     )
     if subset.dimension != input_dim:

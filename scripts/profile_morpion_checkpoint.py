@@ -286,7 +286,9 @@ def _profile_checkpoint_save(
         "[profile] runtime nodes=%s branches=%s"
         % (
             runner.current_tree_size(),
-            runtime_branch_count if isinstance(runtime_branch_count, int) else "unknown",
+            runtime_branch_count
+            if isinstance(runtime_branch_count, int)
+            else "unknown",
         )
     )
 
@@ -392,7 +394,9 @@ def _profile_checkpoint_save(
     print(f"[profile] phase=cprofile_dump output={profile_output}")
     _print_cprofile_stats(profiler, args.top)
 
-    node_count, anchor_count, delta_count = runner_module._checkpoint_node_counts(payload)
+    node_count, anchor_count, delta_count = runner_module._checkpoint_node_counts(
+        payload
+    )
     runner_module._log_checkpoint_metrics(
         "profile",
         runner_module.CheckpointIoMetrics(
@@ -423,7 +427,9 @@ def _profile_checkpoint_save(
         "[profile-checkpoint] nodes=%s branches=%s anchors=%s deltas=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s"
         % (
             node_count,
-            runtime_branch_count if isinstance(runtime_branch_count, int) else "unknown",
+            runtime_branch_count
+            if isinstance(runtime_branch_count, int)
+            else "unknown",
             anchor_count,
             delta_count,
             selector_fields["checkpoint_selector_state_present"],
@@ -431,6 +437,8 @@ def _profile_checkpoint_save(
             selector_fields["checkpoint_selector_state_version"],
         )
     )
+
+
 def _print_cprofile_stats(profiler: cProfile.Profile, top: int) -> None:
     """Print the top cumulative and total-time cProfile entries."""
     print(f"[profile] stats sort=cumulative top={top}")

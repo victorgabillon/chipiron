@@ -442,8 +442,7 @@ def test_apply_reevaluation_patch_converts_rows_to_anemone_updates(
     assert second.is_exact is True
     assert second.is_terminal is None
     assert (
-        "[reevaluation-patch] runner_apply_start patch_id=patch-1 rows=2"
-        in caplog.text
+        "[reevaluation-patch] runner_apply_start patch_id=patch-1 rows=2" in caplog.text
     )
     done_log = (
         "[reevaluation-patch] runner_apply_done "
@@ -507,11 +506,13 @@ def test_blended_reevaluation_patch_invalidates_selector_when_values_change() ->
         rows=(MorpionReevaluationPatchRow(node_id="node-a", direct_value=0.0),),
     )
 
-    result, selector_invalidated = anemone_runner_module._apply_blended_reevaluation_patch(
-        runtime=runtime,
-        patch=patch,
-        blend_alpha=0.2,
-        blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+    result, selector_invalidated = (
+        anemone_runner_module._apply_blended_reevaluation_patch(
+            runtime=runtime,
+            patch=patch,
+            blend_alpha=0.2,
+            blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+        )
     )
 
     assert result.applied_count == 1
@@ -533,11 +534,13 @@ def test_blended_reevaluation_patch_does_not_invalidate_selector_for_noop() -> N
         rows=(MorpionReevaluationPatchRow(node_id="node-a", direct_value=10.0),),
     )
 
-    result, selector_invalidated = anemone_runner_module._apply_blended_reevaluation_patch(
-        runtime=runtime,
-        patch=patch,
-        blend_alpha=0.2,
-        blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+    result, selector_invalidated = (
+        anemone_runner_module._apply_blended_reevaluation_patch(
+            runtime=runtime,
+            patch=patch,
+            blend_alpha=0.2,
+            blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+        )
     )
 
     assert result.applied_count == 1
@@ -760,7 +763,9 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert "restore_checkpoint_selector_state_present=" in caplog.text
 
 
-def test_checkpoint_roundtrip_supports_default_compressed_format(tmp_path: Path) -> None:
+def test_checkpoint_roundtrip_supports_default_compressed_format(
+    tmp_path: Path,
+) -> None:
     """The runner should save and restore the preferred compressed checkpoint format."""
     checkpoint_path = tmp_path / (
         f"tree_checkpoint{checkpoint_file_suffix(DEFAULT_CHECKPOINT_FILE_FORMAT)}"
@@ -1160,7 +1165,10 @@ def test_runner_growth_logs_unknown_timing_fields_without_crashing(
 
     assert "[growth-timing] step=1 total_s=unknown" in caplog.text
     assert "rows=unknown" not in caplog.text
-    assert "[growth-selection-table-timing] step=1 rows=0 format_s=unknown log_s=unknown" in caplog.text
+    assert (
+        "[growth-selection-table-timing] step=1 rows=0 format_s=unknown log_s=unknown"
+        in caplog.text
+    )
 
 
 def test_selector_growth_diagnostic_fields_extract_required_values() -> None:
@@ -1182,9 +1190,7 @@ def test_selector_growth_diagnostic_fields_extract_required_values() -> None:
 
 def test_selector_growth_diagnostic_fields_tolerate_missing_values() -> None:
     """Growth log helpers should leave missing selector fields unset."""
-    fields = anemone_runner_module._selector_growth_diagnostic_fields(
-        SimpleNamespace()
-    )
+    fields = anemone_runner_module._selector_growth_diagnostic_fields(SimpleNamespace())
 
     assert fields["selector_state_rebuilt"] is None
     assert fields["selector_nodes_incrementally_updated"] is None
@@ -1318,7 +1324,9 @@ def test_load_or_create_reevaluate_all_fails_loudly_when_runtime_lacks_support(
         lambda: _RuntimeWithoutRefresh(),
     )
 
-    with pytest.raises(NotImplementedError, match="does not yet support full tree reevaluation"):
+    with pytest.raises(
+        NotImplementedError, match="does not yet support full tree reevaluation"
+    ):
         runner._set_runtime_evaluator_from_bundle(bundle_path, reevaluate_tree=True)
 
 
@@ -1585,11 +1593,11 @@ def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
     assert runner.current_runtime_config().tree_branch_limit == 64
     assert second_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
         "reevaluation_blend_alpha": 1.0,
-        "tree_branch_limit": 64
+        "tree_branch_limit": 64,
     }
     assert history[-1].metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
         "reevaluation_blend_alpha": 1.0,
-        "tree_branch_limit": 64
+        "tree_branch_limit": 64,
     }
 
 

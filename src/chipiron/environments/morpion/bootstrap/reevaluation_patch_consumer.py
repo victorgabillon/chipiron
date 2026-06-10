@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
@@ -127,15 +127,17 @@ def apply_pending_reevaluation_patch_to_runner(
         patch.patch_id,
         applied_count,
         _metric_value(
-            apply_metrics.get("missing") if isinstance(apply_metrics, dict) else None
-        ),
-        _metric_value(
-            apply_metrics.get("recomputed")
+            cast("dict[str, object]", apply_metrics).get("missing")
             if isinstance(apply_metrics, dict)
             else None
         ),
         _metric_value(
-            apply_metrics.get("selector_invalidated")
+            cast("dict[str, object]", apply_metrics).get("recomputed")
+            if isinstance(apply_metrics, dict)
+            else None
+        ),
+        _metric_value(
+            cast("dict[str, object]", apply_metrics).get("selector_invalidated")
             if isinstance(apply_metrics, dict)
             else None
         ),

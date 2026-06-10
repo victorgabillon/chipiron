@@ -13,6 +13,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
 
+from .bootstrap_errors import InvalidReevaluationBlendAlphaError
 from .record_status import (
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -61,7 +62,7 @@ class MorpionBootstrapRuntimeConfig:
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
-            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
+            raise InvalidReevaluationBlendAlphaError
 
 
 @dataclass(frozen=True, slots=True)
@@ -766,9 +767,7 @@ def _stage_bootstrap_config_field_values(
     }
 
 
-def _config_field_is_owned_by_stage(
-    field_name: str, owned_fields: set[str]
-) -> bool:
+def _config_field_is_owned_by_stage(field_name: str, owned_fields: set[str]) -> bool:
     """Return whether one persisted config field is represented by owned args."""
     if field_name in owned_fields:
         return True
@@ -884,7 +883,8 @@ def _optional_int_tuple(value: object, *, field_name: str) -> tuple[int, ...] | 
         return None
     if not isinstance(value, list | tuple):
         raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
-    return tuple(_coerce_int(item, field_name=field_name) for item in value)
+    items = cast("list[object] | tuple[object, ...]", value)
+    return tuple(_coerce_int(item, field_name=field_name) for item in items)
 
 
 def _optional_str_tuple(value: object, *, field_name: str) -> tuple[str, ...]:
@@ -912,14 +912,14 @@ __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
+    "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
+    "STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS",
     "IncompatibleStageBootstrapConfigError",
     "MalformedMorpionBootstrapConfigError",
     "MorpionBootstrapConfig",
     "MorpionBootstrapDatasetConfig",
     "MorpionBootstrapExperimentIdentityConfig",
     "MorpionBootstrapRuntimeConfig",
-    "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
-    "STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS",
     "UnsafeMorpionBootstrapConfigChangeError",
     "bootstrap_config_from_args",
     "bootstrap_config_from_dict",

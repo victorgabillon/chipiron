@@ -445,11 +445,16 @@ def test_pipeline_growth_stage_without_active_model_uses_none(
     runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
 
     with caplog.at_level(logging.INFO):
-        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+        run_pipeline_growth_stage(
+            _artifact_pipeline_args(tmp_path), runner, max_cycles=1
+        )
 
     assert runner.load_calls == [(None, None)]
     messages = "\n".join(record.getMessage() for record in caplog.records)
-    assert "[growth] active_model_status source=none evaluator=none model_bundle=none" in messages
+    assert (
+        "[growth] active_model_status source=none evaluator=none model_bundle=none"
+        in messages
+    )
 
 
 def test_pipeline_growth_stage_uses_pipeline_active_model_for_restore(
@@ -486,7 +491,9 @@ def test_pipeline_growth_stage_uses_pipeline_active_model_for_restore(
     runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
 
     with caplog.at_level(logging.INFO):
-        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+        run_pipeline_growth_stage(
+            _artifact_pipeline_args(tmp_path), runner, max_cycles=1
+        )
 
     assert runner.load_calls == [(None, str(model_bundle_path))]
     messages = "\n".join(record.getMessage() for record in caplog.records)
@@ -516,12 +523,20 @@ def test_pipeline_growth_stage_missing_active_model_bundle_logs_warning(
     runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
 
     with caplog.at_level(logging.INFO):
-        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+        run_pipeline_growth_stage(
+            _artifact_pipeline_args(tmp_path), runner, max_cycles=1
+        )
 
     assert runner.load_calls == [(None, None)]
     messages = "\n".join(record.getMessage() for record in caplog.records)
-    assert "[growth] active_model_missing_bundle source=pipeline_active_model generation=8 evaluator=linear_5" in messages
-    assert "[growth] active_model_status source=none evaluator=none model_bundle=none" in messages
+    assert (
+        "[growth] active_model_missing_bundle source=pipeline_active_model generation=8 evaluator=linear_5"
+        in messages
+    )
+    assert (
+        "[growth] active_model_status source=none evaluator=none model_bundle=none"
+        in messages
+    )
 
 
 def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> None:
@@ -671,7 +686,9 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     )
 
     with caplog.at_level(logging.INFO):
-        manifest = run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+        manifest = run_pipeline_dataset_stage(
+            _artifact_pipeline_args(tmp_path), generation=1
+        )
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
     dataset_status = load_pipeline_dataset_status_file(
@@ -800,7 +817,9 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
         paths.pipeline_manifest_path_for_generation(1),
     )
 
-    manifest = run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
+    manifest = run_pipeline_training_stage(
+        _artifact_pipeline_args(tmp_path), generation=1
+    )
     active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
     training_status = load_pipeline_training_status_file(
         paths.pipeline_training_status_path_for_generation(1)
@@ -822,7 +841,9 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
         MorpionPipelineEvaluatorTrainingResult,
     )
     assert (
-        training_status.evaluator_results[manifest.selected_evaluator_name].model_bundle_path
+        training_status.evaluator_results[
+            manifest.selected_evaluator_name
+        ].model_bundle_path
         == manifest.model_bundle_paths[manifest.selected_evaluator_name]
     )
     assert not paths.pipeline_training_claim_path_for_generation(1).exists()
@@ -948,7 +969,9 @@ def test_launcher_dispatches_dataset_stage(
             created_at_utc="2026-04-28T12:00:00Z",
         )
 
-    monkeypatch.setattr(launcher_module, "run_pipeline_dataset_stage", _fake_dataset_stage)
+    monkeypatch.setattr(
+        launcher_module, "run_pipeline_dataset_stage", _fake_dataset_stage
+    )
 
     launcher_args = launcher_module.launcher_args_from_cli(
         [
@@ -991,8 +1014,12 @@ def test_launcher_dispatches_growth_stage(
     def _unexpected_full_loop(*args: object, **kwargs: object) -> object:
         raise _unexpected_full_loop_error()
 
-    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
-    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _unexpected_full_loop)
+    monkeypatch.setattr(
+        launcher_module, "run_pipeline_growth_stage", _fake_growth_stage
+    )
+    monkeypatch.setattr(
+        launcher_module, "run_morpion_bootstrap_loop", _unexpected_full_loop
+    )
 
     launcher_args = launcher_module.launcher_args_from_cli(
         [
@@ -1191,7 +1218,9 @@ def test_artifact_pipeline_dataset_worker_dispatches_autonomous_worker(
     def _unexpected_runner(*args: object, **kwargs: object) -> object:
         raise _unexpected_pipeline_worker_runner_error()
 
-    monkeypatch.setattr(launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner)
+    monkeypatch.setattr(
+        launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner
+    )
     monkeypatch.setattr(
         launcher_module,
         "run_next_pipeline_dataset_stage_once",
@@ -1252,9 +1281,9 @@ def test_artifact_pipeline_worker_first_run_writes_bootstrap_config(
         launcher_args.bootstrap_args,
         evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     )
-    assert load_bootstrap_config(paths.bootstrap_config_path) == bootstrap_config_from_args(
-        expected_args
-    )
+    assert load_bootstrap_config(
+        paths.bootstrap_config_path
+    ) == bootstrap_config_from_args(expected_args)
 
 
 def test_dataset_worker_rejects_owned_persisted_config_difference(
@@ -1390,7 +1419,9 @@ def test_growth_stage_uses_requested_runtime_batch_size(
             last_save_unix_s=None,
         )
 
-    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
+    monkeypatch.setattr(
+        launcher_module, "run_pipeline_growth_stage", _fake_growth_stage
+    )
 
     launcher_args = launcher_module.launcher_args_from_cli(
         [
@@ -1455,7 +1486,9 @@ def test_growth_stage_uses_requested_tree_branch_limit(
             last_save_unix_s=None,
         )
 
-    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
+    monkeypatch.setattr(
+        launcher_module, "run_pipeline_growth_stage", _fake_growth_stage
+    )
 
     launcher_args = launcher_module.launcher_args_from_cli(
         [
@@ -1475,7 +1508,12 @@ def test_growth_stage_uses_requested_tree_branch_limit(
     run_morpion_bootstrap_experiment(launcher_args)
 
     assert len(captured_runner_args) == 1
-    assert getattr(captured_runner_args[0], "search_args").stopping_criterion.tree_branch_limit == 128
+    assert (
+        getattr(
+            captured_runner_args[0], "search_args"
+        ).stopping_criterion.tree_branch_limit
+        == 128
+    )
 
 
 def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(
@@ -1493,7 +1531,9 @@ def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(
     def _unexpected_runner(*args: object, **kwargs: object) -> object:
         raise _unexpected_pipeline_worker_runner_error()
 
-    monkeypatch.setattr(launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner)
+    monkeypatch.setattr(
+        launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner
+    )
     monkeypatch.setattr(
         launcher_module,
         "run_next_pipeline_training_stage_once",
@@ -1521,7 +1561,14 @@ def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(
 
 @pytest.mark.parametrize(
     "pipeline_stage",
-    ["growth", "dataset", "dataset_worker", "training", "training_worker", "reevaluation"],
+    [
+        "growth",
+        "dataset",
+        "dataset_worker",
+        "training",
+        "training_worker",
+        "reevaluation",
+    ],
 )
 def test_single_process_rejects_non_loop_pipeline_stage(
     tmp_path: Path,

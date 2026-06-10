@@ -444,7 +444,9 @@ def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() 
     assert loaded.selected_evaluator_name is None
 
 
-def test_pipeline_training_status_old_evaluator_result_defaults_validation_fields() -> None:
+def test_pipeline_training_status_old_evaluator_result_defaults_validation_fields() -> (
+    None
+):
     """Old evaluator results without validation metrics should still deserialize."""
     loaded = pipeline_training_status_from_dict(
         {
@@ -543,10 +545,7 @@ def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
     )
     assert (
         paths.pipeline_dataset_status_path_for_generation(1)
-        == tmp_path.resolve()
-        / "pipeline"
-        / "generation_000001"
-        / "dataset_status.json"
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "dataset_status.json"
     )
     assert (
         paths.pipeline_training_status_path_for_generation(1)
@@ -557,17 +556,11 @@ def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
     )
     assert (
         paths.pipeline_dataset_claim_path_for_generation(1)
-        == tmp_path.resolve()
-        / "pipeline"
-        / "generation_000001"
-        / "dataset_claim.json"
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "dataset_claim.json"
     )
     assert (
         paths.pipeline_training_claim_path_for_generation(1)
-        == tmp_path.resolve()
-        / "pipeline"
-        / "generation_000001"
-        / "training_claim.json"
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "training_claim.json"
     )
     assert (
         paths.pipeline_active_model_path
@@ -779,11 +772,12 @@ def test_invalid_reevaluation_artifacts_reject(
 
 def test_package_root_reexports_reevaluation_artifacts() -> None:
     """Package root should re-export the reevaluation artifact public API."""
-    assert MorpionReevaluationPatch is pipeline_artifacts_module.MorpionReevaluationPatch
+    assert (
+        MorpionReevaluationPatch is pipeline_artifacts_module.MorpionReevaluationPatch
+    )
     assert save_reevaluation_patch is pipeline_artifacts_module.save_reevaluation_patch
     assert (
-        load_reevaluation_cursor
-        is pipeline_artifacts_module.load_reevaluation_cursor
+        load_reevaluation_cursor is pipeline_artifacts_module.load_reevaluation_cursor
     )
 
 
@@ -812,7 +806,9 @@ def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -
         paths.pipeline_dataset_status_path_for_generation(1).read_text(encoding="utf-8")
     )
     training_status_payload = json.loads(
-        paths.pipeline_training_status_path_for_generation(1).read_text(encoding="utf-8")
+        paths.pipeline_training_status_path_for_generation(1).read_text(
+            encoding="utf-8"
+        )
     )
 
     assert manifest.dataset_status == "done"
@@ -833,11 +829,18 @@ def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -
     assert active_model.evaluator_name == manifest.selected_evaluator_name
     assert dataset_status_payload["status"] == "done"
     assert training_status_payload["status"] == "done"
-    assert training_status_payload["selected_evaluator_name"] == manifest.selected_evaluator_name
-    assert training_status_payload["selection_policy"] == "lowest_final_loss"
-    assert set(training_status_payload["evaluator_results"]) == set(manifest.model_bundle_paths)
     assert (
-        training_status_payload["evaluator_results"][manifest.selected_evaluator_name]["model_bundle_path"]
+        training_status_payload["selected_evaluator_name"]
+        == manifest.selected_evaluator_name
+    )
+    assert training_status_payload["selection_policy"] == "lowest_final_loss"
+    assert set(training_status_payload["evaluator_results"]) == set(
+        manifest.model_bundle_paths
+    )
+    assert (
+        training_status_payload["evaluator_results"][manifest.selected_evaluator_name][
+            "model_bundle_path"
+        ]
         == manifest.model_bundle_paths[manifest.selected_evaluator_name]
     )
 
@@ -871,7 +874,9 @@ def test_empty_dataset_save_writes_manifest_without_active_model(
         paths.pipeline_dataset_status_path_for_generation(1).read_text(encoding="utf-8")
     )
     training_status_payload = json.loads(
-        paths.pipeline_training_status_path_for_generation(1).read_text(encoding="utf-8")
+        paths.pipeline_training_status_path_for_generation(1).read_text(
+            encoding="utf-8"
+        )
     )
 
     assert manifest.dataset_status == "done"

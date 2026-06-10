@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from anemone.training_export.builders import build_training_node_snapshot
@@ -16,6 +16,18 @@ from anemone.training_export.model import (
 
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND = "morpion_sharded_training_export"
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION = 1
+
+
+def _invalid_int_like_json_field_error(field_name: str) -> TypeError:
+    """Return the stable invalid int-like JSON-field error."""
+    return TypeError(f"{field_name} must be int-like")
+
+
+def _required_int(value: object, *, field_name: str) -> int:
+    """Return one required int-like JSON field or raise."""
+    if isinstance(value, bool) or not isinstance(value, int | float | str):
+        raise _invalid_int_like_json_field_error(field_name)
+    return int(value)
 
 
 def _empty_metadata() -> dict[str, object]:
@@ -99,7 +111,7 @@ class MorpionShardedTrainingNodeUpdate:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from anemone.training_export.builders import StateRefDumper, ValueScalarExtractor
 
@@ -239,7 +251,9 @@ def load_morpion_sharded_training_tree_snapshot(
 
     node_records_by_id: dict[str, MorpionShardedTrainingNodeRecord] = {}
     for shard_generation in range(1, generation_manifest.generation + 1):
-        relative_manifest_path = root_manifest.generation_manifests.get(str(shard_generation))
+        relative_manifest_path = root_manifest.generation_manifests.get(
+            str(shard_generation)
+        )
         if relative_manifest_path is None:
             continue
         shard_manifest = _load_generation_manifest(root / relative_manifest_path)
@@ -364,8 +378,11 @@ def _node_record_from_dict(value: object) -> MorpionShardedTrainingNodeRecord:
             str(parent_id)
             for parent_id in cast("list[object]", payload.get("parent_ids", []))
         ),
-        depth=int(payload.get("depth", 0)),
-        creation_generation=int(payload.get("creation_generation", 0)),
+        depth=_required_int(payload.get("depth", 0), field_name="depth"),
+        creation_generation=_required_int(
+            payload.get("creation_generation", 0),
+            field_name="creation_generation",
+        ),
         state_ref_payload=None
         if raw_state_ref_payload is None
         else dict(cast("dict[str, object]", raw_state_ref_payload)),
@@ -377,7 +394,9 @@ def _node_update_from_dict(value: object) -> MorpionShardedTrainingNodeUpdate:
     payload = cast("dict[str, object]", value)
     return MorpionShardedTrainingNodeUpdate(
         node_id=str(payload["node_id"]),
-        order_index=int(payload.get("order_index", 0)),
+        order_index=_required_int(
+            payload.get("order_index", 0), field_name="order_index"
+        ),
         child_ids=tuple(
             str(child_id)
             for child_id in cast("list[object]", payload.get("child_ids", []))
@@ -401,7 +420,10 @@ def _load_root_manifest(path: Path) -> MorpionShardedTrainingExportManifest:
         )
     payload = _read_json(path)
     return MorpionShardedTrainingExportManifest(
-        latest_generation=int(payload.get("latest_generation", 0)),
+        latest_generation=_required_int(
+            payload.get("latest_generation", 0),
+            field_name="latest_generation",
+        ),
         generation_manifests=dict(
             cast("dict[str, str]", payload.get("generation_manifests", {}))
         ),
@@ -414,10 +436,13 @@ def _load_generation_manifest(path: Path) -> MorpionShardedTrainingGenerationMan
     """Load one per-generation sharded-export manifest."""
     payload = _read_json(path)
     return MorpionShardedTrainingGenerationManifest(
-        generation=int(payload["generation"]),
+        generation=_required_int(payload["generation"], field_name="generation"),
         root_node_id=str(payload["root_node_id"]),
-        node_count=int(payload.get("node_count", 0)),
-        new_node_count=int(payload.get("new_node_count", 0)),
+        node_count=_required_int(payload.get("node_count", 0), field_name="node_count"),
+        new_node_count=_required_int(
+            payload.get("new_node_count", 0),
+            field_name="new_node_count",
+        ),
         node_shard_path=str(payload["node_shard_path"]),
         update_shard_path=str(payload["update_shard_path"]),
         metadata=dict(cast("dict[str, object]", payload.get("metadata", {}))),
@@ -433,13 +458,21 @@ def _load_node_index(path: Path) -> dict[str, int]:
         "dict[str, object]",
         payload.get("node_id_to_creation_generation", {}),
     )
-    return {node_id: int(creation_generation) for node_id, creation_generation in raw_mapping.items()}
+    return {
+        node_id: _required_int(
+            creation_generation,
+            field_name="node_id_to_creation_generation",
+        )
+        for node_id, creation_generation in raw_mapping.items()
+    }
 
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     """Persist one JSON artifact with stable indentation."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -471,8 +504,8 @@ def _optional_str(value: object) -> str | None:
 __all__ = [
     "MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND",
     "MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION",
-    "MorpionShardedTrainingExportStats",
     "MorpionShardedTrainingExportManifest",
+    "MorpionShardedTrainingExportStats",
     "MorpionShardedTrainingGenerationManifest",
     "MorpionShardedTrainingNodeRecord",
     "MorpionShardedTrainingNodeUpdate",

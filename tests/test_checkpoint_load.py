@@ -14,7 +14,9 @@ from anemone.checkpoints import (
     write_checkpoint_json_payload,
 )
 import anemone.checkpoints.io as checkpoint_io_module
-from chipiron.environments.morpion.bootstrap.bootstrap_paths import prune_generation_files
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+    prune_generation_files,
+)
 
 
 def test_checkpoint_json_payload_roundtrip_supports_plain_and_compressed(

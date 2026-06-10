@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
@@ -26,6 +26,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 from chipiron.environments.morpion.types import MorpionDynamics
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
@@ -430,26 +432,37 @@ def _mapping(value: object) -> dict[str, Any]:
     """Return one string-keyed mapping or raise ``TypeError``."""
     if not isinstance(value, dict):
         raise _EXPECTED_JSON_OBJECT_MAPPING_ERROR
-    return dict(value)
+    raw_mapping = cast("dict[object, object]", value)
+    if not all(isinstance(key, str) for key in raw_mapping):
+        raise _EXPECTED_JSON_OBJECT_MAPPING_ERROR
+    return dict(cast("Mapping[str, Any]", raw_mapping))
 
 
 def _list_of_mappings(value: object) -> list[dict[str, Any]]:
     """Return one list of mapping payloads or raise ``TypeError``."""
     if not isinstance(value, list):
         raise _EXPECTED_JSON_ARRAY_OF_OBJECTS_ERROR
-    return [_mapping(item) for item in value]
+    items = cast("list[object]", value)
+    return [_mapping(item) for item in items]
 
 
 def _optional_float(value: object) -> float | None:
     """Return one optional float-like value."""
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
-    return float(value)
+    if not isinstance(value, int | float | str):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 
 def _optional_int(value: object) -> int | None:
     """Return one optional int-like value."""
     if value is None or isinstance(value, bool):
+        return None
+    if not isinstance(value, int | float | str):
         return None
     try:
         return int(value)
@@ -465,7 +478,12 @@ def _optional_str(value: object) -> str | None:
 
 
 def _diagnostic_mapping(value: object) -> dict[str, object]:
-    return value if isinstance(value, dict) else {}
+    if not isinstance(value, dict):
+        return {}
+    raw_mapping = cast("dict[object, object]", value)
+    if not all(isinstance(key, str) for key in raw_mapping):
+        return {}
+    return dict(cast("Mapping[str, object]", raw_mapping))
 
 
 def _diagnostic_optional_float(value: object, key: str) -> float | None:

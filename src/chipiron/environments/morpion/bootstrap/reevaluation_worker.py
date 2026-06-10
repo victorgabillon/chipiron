@@ -46,7 +46,9 @@ def _negative_max_nodes_per_patch_error() -> ValueError:
     return ValueError("max_nodes_per_patch must be >= 0")
 
 
-def _reevaluation_bundle_missing_error(path: object) -> MissingMorpionPipelineArtifactError:
+def _reevaluation_bundle_missing_error(
+    path: object,
+) -> MissingMorpionPipelineArtifactError:
     """Build the stable missing-active-model-bundle error."""
     return MissingMorpionPipelineArtifactError(
         f"Morpion reevaluation active-model bundle does not exist: {path}"
@@ -62,6 +64,8 @@ def _non_finite_direct_value_error(node_id: str) -> ValueError:
 
 def _finite_direct_value(raw_value: object, *, node_id: str) -> float:
     """Coerce one evaluator output to a finite patch-row scalar."""
+    if isinstance(raw_value, bool) or not isinstance(raw_value, int | float | str):
+        raise _non_finite_direct_value_error(node_id)
     try:
         direct_value = float(raw_value)
     except (TypeError, ValueError) as exc:
@@ -81,6 +85,13 @@ def _extract_score(raw_evaluation: object, *, node_id: str) -> float:
     return _finite_direct_value(raw_evaluation, node_id=node_id)
 
 
+def _required_terminal_value(value: object | None, *, node_id: str) -> float:
+    """Return one already-persisted terminal value for reevaluation."""
+    if value is None:
+        raise _non_finite_direct_value_error(node_id)
+    return _finite_direct_value(value, node_id=node_id)
+
+
 def _save_reevaluation_patch_exclusive(
     patch: MorpionReevaluationPatch,
     path: Path,
@@ -89,7 +100,9 @@ def _save_reevaluation_patch_exclusive(
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("x", encoding="utf-8") as handle:
-            json.dump(reevaluation_patch_to_dict(patch), handle, indent=2, sort_keys=True)
+            json.dump(
+                reevaluation_patch_to_dict(patch), handle, indent=2, sort_keys=True
+            )
             handle.write("\n")
     except FileExistsError:
         return False
@@ -127,6 +140,7 @@ class MorpionNodeReevaluationEvaluator(Protocol):
         node_ids: Sequence[str],
     ) -> tuple[MorpionReevaluationPatchRow, ...]:
         """Return reevaluation rows for the selected snapshot node ids."""
+        ...
 
 
 @dataclass(slots=True)
@@ -171,7 +185,10 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         for node_id in node_ids:
             node = nodes_by_id[node_id]
             if node.is_terminal and node.backed_up_value_scalar is not None:
-                direct_value = float(node.backed_up_value_scalar)
+                direct_value = _required_terminal_value(
+                    node.backed_up_value_scalar,
+                    node_id=node_id,
+                )
                 source = "terminal_existing_value"
             else:
                 state = self._load_snapshot_state(node.state_ref_payload)
@@ -192,6 +209,7 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                 )
             )
         return tuple(rows)
+        raise AssertionError("unreachable")
 
 
 def build_active_model_reevaluation_evaluator(
@@ -254,14 +272,14 @@ def select_reevaluation_node_window(
         return (), None, False
 
     try:
-        start_index = 0 if start_cursor is None else ordered_node_ids.index(start_cursor)
+        start_index = (
+            0 if start_cursor is None else ordered_node_ids.index(start_cursor)
+        )
     except ValueError:
         start_index = 0
 
     if max_nodes >= len(ordered_node_ids):
-        selected = (
-            ordered_node_ids[start_index:] + ordered_node_ids[:start_index]
-        )
+        selected = ordered_node_ids[start_index:] + ordered_node_ids[:start_index]
         return selected, ordered_node_ids[0], True
 
     selected_node_ids: list[str] = []
@@ -357,7 +375,7 @@ def run_morpion_reevaluation_worker_once(
             end_cursor=None,
             completed_full_pass_count=None,
         )
-    
+
     LOGGER.info(
         "[reevaluation] active_model generation=%s evaluator=%s bundle=%s",
         active_model.generation,

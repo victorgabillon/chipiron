@@ -115,7 +115,12 @@ class FakeMorpionSearchRunner:
         reevaluate_tree: bool = False,
     ) -> None:
         """Accept restore inputs without mutating external state."""
-        del tree_snapshot_path, model_bundle_path, effective_runtime_config, reevaluate_tree
+        del (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -653,7 +658,10 @@ def test_dataset_worker_logs_latest_completed_dataset_summary(
             created_at_utc="2026-04-28T12:00:00Z",
             rows_path="rows/generation_000001.json",
             dataset_status="done",
-            metadata={"dataset_rows": 12, "dataset_completed_at_utc": "2026-04-28T12:03:00Z"},
+            metadata={
+                "dataset_rows": 12,
+                "dataset_completed_at_utc": "2026-04-28T12:03:00Z",
+            },
         ),
         paths.pipeline_manifest_path_for_generation(1),
     )
@@ -687,8 +695,12 @@ def test_dataset_worker_runs_latest_claimable_generation(
 ) -> None:
     """Autonomous dataset worker should run one latest claimable generation."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
-    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(
+        _dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
     captured: list[int] = []
 
     def _fake_dataset_stage(
@@ -725,8 +737,12 @@ def test_training_worker_runs_latest_claimable_generation(
 ) -> None:
     """Autonomous training worker should run one latest claimable generation."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
-    save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(
+        _training_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    save_pipeline_manifest(
+        _training_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
     captured: list[int] = []
 
     def _fake_training_stage(
@@ -764,8 +780,12 @@ def test_dataset_worker_skips_actively_claimed_latest_generation(
 ) -> None:
     """Autonomous dataset worker should skip an active latest claim during selection."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
-    save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    save_pipeline_manifest(
+        _dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
     claim_pipeline_stage(
         stage="dataset",
         generation=2,
@@ -805,7 +825,10 @@ def test_dataset_worker_skips_actively_claimed_latest_generation(
     assert result.generation == 1
     assert result.ran_stage is True
     assert "dataset_skip generation=2 reason=active_claim_exists" in messages
-    assert "dataset_selection_done selected_generation=1 reason=latest_claimable" in messages
+    assert (
+        "dataset_selection_done selected_generation=1 reason=latest_claimable"
+        in messages
+    )
 
 
 def test_training_worker_skips_actively_claimed_latest_generation(
@@ -815,8 +838,12 @@ def test_training_worker_skips_actively_claimed_latest_generation(
 ) -> None:
     """Autonomous training worker should skip an active latest claim during selection."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
-    save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    save_pipeline_manifest(
+        _training_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    save_pipeline_manifest(
+        _training_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
     claim_pipeline_stage(
         stage="training",
         generation=2,
@@ -855,8 +882,14 @@ def test_training_worker_skips_actively_claimed_latest_generation(
     assert captured == [1]
     assert result.generation == 1
     assert result.ran_stage is True
-    assert "training_selection_start pending_generations=1,2 claimable_generations=1" in messages
-    assert "training_selection_done selected_generation=1 reason=latest_claimable" in messages
+    assert (
+        "training_selection_start pending_generations=1,2 claimable_generations=1"
+        in messages
+    )
+    assert (
+        "training_selection_done selected_generation=1 reason=latest_claimable"
+        in messages
+    )
 
 
 def test_dataset_worker_allows_expired_claim(
@@ -865,7 +898,9 @@ def test_dataset_worker_allows_expired_claim(
 ) -> None:
     """Autonomous dataset worker should treat expired claims as claimable."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
     claim_pipeline_stage(
         stage="dataset",
         generation=1,
@@ -971,11 +1006,15 @@ def test_orchestrator_processes_all_pending_generations_in_sorted_order(
     # so the same orchestration pass should train both generations in order.
     assert result.training_generations == (1, 2)
     assert (
-        load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1)).training_status
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(1)
+        ).training_status
         == "done"
     )
     assert (
-        load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(2)).training_status
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(2)
+        ).training_status
         == "done"
     )
 

@@ -391,7 +391,9 @@ def _index_checkpoint_payload(
     nodes_by_id = {
         node_payload.node_id: node_payload for node_payload in payload.tree.nodes
     }
-    parent_ids_by_node_id = {node_id: [] for node_id in nodes_by_id}
+    parent_ids_by_node_id: dict[int, list[int]] = {
+        node_id: [] for node_id in nodes_by_id
+    }
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]] = {}
 
     for node_payload in payload.tree.nodes:
@@ -643,7 +645,7 @@ def _decode_node_state(
         decoded_state = dynamics.wrap_atomheart_state(
             state_codec.load_anchor_ref(state_payload.anchor_ref)
         )
-    elif isinstance(state_payload, DeltaCheckpointStatePayload):
+    else:
         decoded_state = _decode_delta_checkpoint_state(
             node_payload=node_payload,
             state_payload=state_payload,
@@ -651,12 +653,6 @@ def _decode_node_state(
             decoded_states_by_node_id=decoded_states_by_node_id,
             state_codec=state_codec,
             dynamics=dynamics,
-        )
-    else:
-        raise InvalidMorpionSearchCheckpointError(
-            Path("<in-memory>"),
-            f"node {node_payload.node_id} has unsupported state payload "
-            f"{type(state_payload).__name__}",
         )
     decoded_states_by_node_id[node_payload.node_id] = decoded_state
     return decoded_state

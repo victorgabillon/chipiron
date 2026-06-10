@@ -22,7 +22,7 @@ from collections import Counter
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from types import FrameType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -114,19 +114,20 @@ class MemoryDiagnostics:
 
     def _build_process(self) -> object | None:
         try:
-            import psutil  # type: ignore[import-not-found]
+            import psutil
         except ImportError:
             LOGGER.warning("[memory] psutil_unavailable rss_vms_logging=false")
             self._warned_psutil_unavailable = True
             return None
-        return psutil.Process(os.getpid())
+        return cast("object", psutil.Process(os.getpid()))
 
     def _log_process_memory(self, tag: str) -> None:
         if self._process is None:
             if not self._warned_psutil_unavailable:
                 self._process = self._build_process()
             return
-        memory_info = self._process.memory_info()
+        process = cast("Any", self._process)
+        memory_info = process.memory_info()
         LOGGER.info(
             "[memory] tag=%s rss_mb=%.3f vms_mb=%.3f",
             tag,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 @lru_cache(maxsize=1)
@@ -50,4 +50,6 @@ def render_clickable_morpion_board(
         default=None,
         key=key,
     )
-    return value if isinstance(value, Mapping) else None
+    if not isinstance(value, Mapping):
+        return None
+    return cast("Mapping[str, Any]", value)

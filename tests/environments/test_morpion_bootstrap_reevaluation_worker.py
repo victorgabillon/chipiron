@@ -434,7 +434,9 @@ def test_active_model_reevaluation_evaluator_uses_model_and_terminal_values(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
     active_model = _write_active_model(paths)
-    bundle_path = cast("Path", paths.resolve_work_dir_path(active_model.model_bundle_path))
+    bundle_path = cast(
+        "Path", paths.resolve_work_dir_path(active_model.model_bundle_path)
+    )
     bundle_path.mkdir(parents=True)
     snapshot = _make_training_snapshot(("a", "b"))
     stub_evaluator = _StubLoadedEvaluator((42.5,))
@@ -565,8 +567,14 @@ def test_worker_does_not_overwrite_pending_patch(tmp_path: Path) -> None:
 
     assert not result.patch_written
     assert result.reason == "pending_patch_exists"
-    assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == existing_patch
-    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == existing_cursor
+    assert (
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+        == existing_patch
+    )
+    assert (
+        load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+        == existing_cursor
+    )
 
 
 def test_worker_does_not_advance_cursor_when_patch_race_is_lost(
@@ -636,8 +644,14 @@ def test_worker_does_not_advance_cursor_when_patch_race_is_lost(
 
     assert not result.patch_written
     assert result.reason == "pending_patch_exists"
-    assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == competing_patch
-    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == existing_cursor
+    assert (
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+        == competing_patch
+    )
+    assert (
+        load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+        == existing_cursor
+    )
 
 
 def test_worker_continues_from_cursor_and_wraps(tmp_path: Path) -> None:
@@ -769,7 +783,10 @@ def test_worker_zero_max_nodes_returns_without_writing(tmp_path: Path) -> None:
     assert not result.patch_written
     assert result.reason == "max_nodes_per_patch_zero"
     assert not paths.pipeline_reevaluation_patch_path.exists()
-    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == existing_cursor
+    assert (
+        load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+        == existing_cursor
+    )
 
 
 def test_package_root_reexports_reevaluation_worker_api() -> None:

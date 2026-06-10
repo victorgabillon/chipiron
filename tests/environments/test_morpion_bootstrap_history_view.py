@@ -1073,10 +1073,21 @@ def test_dashboard_data_prefers_dataset_status_artifacts_for_record_and_frontier
         paths.pipeline_dataset_status_path_for_generation(2)
     )
 
-    assert dashboard_data.latest_certified_record_status == latest_dataset_status.record_status
-    assert dashboard_data.latest_frontier_status == latest_dataset_status.frontier_status
-    assert tuple(point.value for point in dashboard_data.certified_record_score) == (14, 16)
-    assert tuple(point.value for point in dashboard_data.record_total_points) == (50, 52)
+    assert (
+        dashboard_data.latest_certified_record_status
+        == latest_dataset_status.record_status
+    )
+    assert (
+        dashboard_data.latest_frontier_status == latest_dataset_status.frontier_status
+    )
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        14,
+        16,
+    )
+    assert tuple(point.value for point in dashboard_data.record_total_points) == (
+        50,
+        52,
+    )
     assert dashboard_data.dataset_num_rows == ()
     assert dashboard_data.run_summary.latest_record_score == 16
     assert dashboard_data.run_summary.latest_frontier_total_points == 53
@@ -1143,7 +1154,10 @@ def test_dashboard_data_tolerates_dataset_status_without_dataset_rows(
 
     dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
 
-    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (None, 990)
+    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (
+        None,
+        990,
+    )
 
 
 def test_dashboard_data_uses_latest_non_null_dataset_status_for_record_and_frontier(
@@ -1193,7 +1207,9 @@ def test_dashboard_data_uses_latest_non_null_dataset_status_for_record_and_front
     assert dashboard_data.latest_certified_record_status.current_best_total_points == 50
     assert dashboard_data.latest_frontier_status is not None
     assert dashboard_data.latest_frontier_status.current_best_total_points == 51
-    assert tuple(point.value for point in dashboard_data.certified_record_score) == (14,)
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        14,
+    )
     assert tuple(point.value for point in dashboard_data.record_total_points) == (50,)
 
 
@@ -1223,7 +1239,9 @@ def test_dashboard_data_falls_back_to_history_without_dataset_status_artifacts(
     assert dashboard_data.latest_certified_record_status.current_best_total_points == 48
     assert dashboard_data.latest_frontier_status is not None
     assert dashboard_data.latest_frontier_status.current_best_total_points == 48
-    assert tuple(point.value for point in dashboard_data.certified_record_score) == (12,)
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        12,
+    )
     assert tuple(point.value for point in dashboard_data.record_total_points) == (48,)
     assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (None,)
     assert dashboard_data.latest_tree_node_classification_summary is None
@@ -1364,6 +1382,7 @@ def test_dashboard_data_tolerates_snapshot_nodes_without_exact_terminal_flags(
             unknown_classification_nodes=2,
         )
     )
+
 
 def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -> None:
     """Depth distribution should fall back to the latest saved tree snapshot."""

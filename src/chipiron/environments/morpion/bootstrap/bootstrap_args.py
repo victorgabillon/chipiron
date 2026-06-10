@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .bootstrap_errors import ConflictingMorpionEvaluatorConfigurationError
+from .bootstrap_errors import (
+    ConflictingMorpionEvaluatorConfigurationError,
+    InvalidReevaluationBlendAlphaError,
+)
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import morpion_evaluators_config_from_preset
@@ -73,7 +76,7 @@ class MorpionBootstrapArgs:
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
-            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
+            raise InvalidReevaluationBlendAlphaError
 
     def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
         """Resolve the explicit or legacy single-evaluator config."""

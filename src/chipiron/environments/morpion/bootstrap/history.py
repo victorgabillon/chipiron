@@ -35,6 +35,11 @@ def _empty_model_bundle_paths() -> dict[str, str]:
     return {}
 
 
+def _empty_depth_node_counts() -> dict[int, int]:
+    """Return a typed empty depth-count mapping."""
+    return {}
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorMetrics:
     """Metrics for one evaluator trained during a bootstrap cycle."""
@@ -64,7 +69,7 @@ class MorpionBootstrapTreeStatus:
     root_visit_count: int | None = None
     min_depth_present: int | None = None
     max_depth_present: int | None = None
-    depth_node_counts: dict[int, int] = field(default_factory=dict)
+    depth_node_counts: dict[int, int] = field(default_factory=_empty_depth_node_counts)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1049,6 +1054,7 @@ __all__ = [
     "MorpionBootstrapArtifacts",
     "MorpionBootstrapDatasetStatus",
     "MorpionBootstrapEvent",
+    "MorpionBootstrapFrontierStatus",
     "MorpionBootstrapHistoryPaths",
     "MorpionBootstrapHistoryRecorder",
     "MorpionBootstrapLatestStatus",

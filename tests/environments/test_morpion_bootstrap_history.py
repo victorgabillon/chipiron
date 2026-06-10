@@ -148,7 +148,12 @@ class FakeMorpionSearchRunner:
         reevaluate_tree: bool = False,
     ) -> None:
         """Ignore inputs for the fake runner."""
-        _ = tree_snapshot_path, model_bundle_path, effective_runtime_config, reevaluate_tree
+        _ = (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""

@@ -419,6 +419,7 @@ def test_reevaluation_ignores_growth_runtime_drift(tmp_path: Path) -> None:
         requested_config=requested,
     )
 
+
 def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> None:
     """Args should normalize into one canonical persisted config object."""
     config = bootstrap_config_from_args(_make_args(tmp_path))
@@ -490,7 +491,9 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
                 name: {
                     "name": spec.name,
                     "model_type": spec.model_type,
-                    "hidden_sizes": None if spec.hidden_sizes is None else list(spec.hidden_sizes),
+                    "hidden_sizes": None
+                    if spec.hidden_sizes is None
+                    else list(spec.hidden_sizes),
                     "num_epochs": spec.num_epochs,
                     "batch_size": spec.batch_size,
                     "learning_rate": spec.learning_rate,

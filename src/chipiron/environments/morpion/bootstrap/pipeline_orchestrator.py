@@ -8,7 +8,6 @@ import re
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from .bootstrap_paths import MorpionBootstrapPaths
@@ -17,12 +16,15 @@ from .pipeline_artifacts import (
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
     MorpionPipelineStageName,
-    load_pipeline_stage_claim,
     load_pipeline_manifest,
+    load_pipeline_stage_claim,
 )
-from .pipeline_claims import load_active_pipeline_stage_claim, pipeline_stage_claim_is_expired
+from .pipeline_claims import (
+    load_active_pipeline_stage_claim,
+    pipeline_stage_claim_is_expired,
+)
 from .pipeline_stages import (
-    _require_artifact_pipeline_mode,
+    require_artifact_pipeline_mode,
     run_pipeline_dataset_stage,
     run_pipeline_growth_stage,
     run_pipeline_training_stage,
@@ -30,6 +32,7 @@ from .pipeline_stages import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .run_state import MorpionBootstrapRunState
@@ -100,7 +103,9 @@ def list_pipeline_manifest_generations(paths: MorpionBootstrapPaths) -> tuple[in
     return tuple(sorted(generations))
 
 
-def _list_pipeline_generation_directories(paths: MorpionBootstrapPaths) -> tuple[int, ...]:
+def _list_pipeline_generation_directories(
+    paths: MorpionBootstrapPaths,
+) -> tuple[int, ...]:
     """Return sorted generation directories whether or not a manifest exists."""
     if not paths.pipeline_dir.is_dir():
         return ()
@@ -192,7 +197,9 @@ def _latest_dataset_summary(
     if created_at_utc is None:
         metadata_created_at = manifest.metadata.get("dataset_completed_at_utc")
         created_at_utc = (
-            metadata_created_at if isinstance(metadata_created_at, str) else manifest.created_at_utc
+            metadata_created_at
+            if isinstance(metadata_created_at, str)
+            else manifest.created_at_utc
         )
 
     return _LatestDatasetSummary(
@@ -294,9 +301,7 @@ def _build_dataset_selection_diagnostics(
             claim.expires_at_utc,
         )
 
-    selected_generation = (
-        claimable_generations[-1] if claimable_generations else None
-    )
+    selected_generation = claimable_generations[-1] if claimable_generations else None
     selected_manifest = (
         manifests[selected_generation] if selected_generation is not None else None
     )
@@ -308,7 +313,6 @@ def _build_dataset_selection_diagnostics(
         selected_generation=selected_generation,
         selected_manifest=selected_manifest,
     )
-
 
 
 def load_available_pipeline_manifests(
@@ -325,10 +329,10 @@ def load_available_pipeline_manifests(
 
 def dataset_stage_is_pending(manifest: MorpionPipelineGenerationManifest) -> bool:
     """Return whether one manifest is ready for dataset extraction."""
-    return (
-        manifest.tree_snapshot_path is not None
-        and manifest.dataset_status in {"not_started", "failed"}
-    )
+    return manifest.tree_snapshot_path is not None and manifest.dataset_status in {
+        "not_started",
+        "failed",
+    }
 
 
 def training_stage_is_pending(manifest: MorpionPipelineGenerationManifest) -> bool:
@@ -407,7 +411,7 @@ def run_next_pipeline_dataset_stage_once(
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending dataset generation once, if any."""
     invocation_started_at = time.perf_counter()
-    _require_artifact_pipeline_mode(args)
+    require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     LOGGER.info(
@@ -497,7 +501,7 @@ def run_next_pipeline_training_stage_once(
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending training generation once, if any."""
-    _require_artifact_pipeline_mode(args)
+    require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifests = load_available_pipeline_manifests(paths)
@@ -562,7 +566,7 @@ def run_morpion_artifact_pipeline_once(
     max_growth_cycles: int = 1,
 ) -> MorpionPipelineOrchestratorResult:
     """Run growth, dataset, and training stages sequentially via artifacts."""
-    _require_artifact_pipeline_mode(args)
+    require_artifact_pipeline_mode(args)
     if max_growth_cycles < 0:
         raise _negative_max_growth_cycles_error()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
@@ -583,7 +587,9 @@ def run_morpion_artifact_pipeline_once(
             max_cycles=max_growth_cycles,
         )
     else:
-        LOGGER.info("[pipeline] orchestrator_growth_skipped reason=max_growth_cycles_zero")
+        LOGGER.info(
+            "[pipeline] orchestrator_growth_skipped reason=max_growth_cycles_zero"
+        )
 
     manifests = load_available_pipeline_manifests(paths)
 
@@ -592,7 +598,9 @@ def run_morpion_artifact_pipeline_once(
         manifest = manifests[generation]
         if not dataset_stage_is_pending(manifest):
             continue
-        LOGGER.info("[pipeline] orchestrator_dataset_dispatch generation=%s", generation)
+        LOGGER.info(
+            "[pipeline] orchestrator_dataset_dispatch generation=%s", generation
+        )
         run_pipeline_dataset_stage(args, generation=generation)
         dataset_generations.append(generation)
 
@@ -603,7 +611,9 @@ def run_morpion_artifact_pipeline_once(
         manifest = manifests[generation]
         if not training_stage_is_pending(manifest):
             continue
-        LOGGER.info("[pipeline] orchestrator_training_dispatch generation=%s", generation)
+        LOGGER.info(
+            "[pipeline] orchestrator_training_dispatch generation=%s", generation
+        )
         run_pipeline_training_stage(args, generation=generation)
         training_generations.append(generation)
 

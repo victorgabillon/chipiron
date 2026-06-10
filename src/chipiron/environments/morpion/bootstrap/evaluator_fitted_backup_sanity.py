@@ -69,6 +69,19 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 
+
+def _missing_numeric_metric_error(field_name: str) -> TypeError:
+    """Return the stable missing-numeric-metric error."""
+    return TypeError(f"{field_name} must be numeric")
+
+
+def _required_float_metric(value: float | str | None, *, field_name: str) -> float:
+    """Return one required numeric metric value or raise."""
+    if value is None:
+        raise _missing_numeric_metric_error(field_name)
+    return float(value)
+
+
 FittedBackupSelectionMode = Literal[
     "prefix",
     "exact_terminal_plus_prefix",
@@ -335,7 +348,10 @@ def run_fitted_backup_sanity(
             family_targets=family_targets,
             selected_node_ids=selected_node_ids,
             previous_effective_targets=previous_effective_targets,
-            final_loss=float(metrics["final_loss"]),
+            final_loss=_required_float_metric(
+                metrics["final_loss"],
+                field_name="final_loss",
+            ),
             mae_after=diagnostics.mae_after,
             max_abs_error_after=diagnostics.max_abs_error_after,
             previous_predictions=previous_predictions,
@@ -1235,7 +1251,9 @@ def _std(values: list[float]) -> float | None:
     if not values:
         return None
     mean = sum(values) / float(len(values))
-    return (sum((value - mean) ** 2 for value in values) / float(len(values))) ** 0.5
+    return float(
+        (sum((value - mean) ** 2 for value in values) / float(len(values))) ** 0.5
+    )
 
 
 if __name__ == "__main__":

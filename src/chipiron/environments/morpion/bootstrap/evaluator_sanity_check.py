@@ -52,6 +52,30 @@ MorpionSanityDatasetMode = Literal[
 ]
 
 
+def _invalid_float_like_value_error(field_name: str) -> TypeError:
+    """Return the stable invalid float-like value error."""
+    return TypeError(f"{field_name} must be float-like")
+
+
+def _invalid_int_like_value_error(field_name: str) -> TypeError:
+    """Return the stable invalid int-like value error."""
+    return TypeError(f"{field_name} must be int-like")
+
+
+def _required_float_value(value: object, *, field_name: str) -> float:
+    """Return one required float-like payload value or raise."""
+    if isinstance(value, bool) or not isinstance(value, int | float | str):
+        raise _invalid_float_like_value_error(field_name)
+    return float(value)
+
+
+def _required_int_value(value: object, *, field_name: str) -> int:
+    """Return one required int-like payload value or raise."""
+    if isinstance(value, bool) or not isinstance(value, int | float | str):
+        raise _invalid_int_like_value_error(field_name)
+    return int(value)
+
+
 class MissingMorpionSanitySnapshotError(FileNotFoundError):
     """Raised when no usable tree export can be found."""
 
@@ -262,9 +286,18 @@ def run_evaluator_sanity_check(args: MorpionEvaluatorSanityArgs) -> dict[str, ob
         )
 
         evaluator_summaries[evaluator_name] = {
-            "final_loss": float(metrics["final_loss"]),
-            "num_epochs": int(metrics["num_epochs"]),
-            "num_samples": int(metrics["num_samples"]),
+            "final_loss": _required_float_value(
+                metrics["final_loss"],
+                field_name="final_loss",
+            ),
+            "num_epochs": _required_int_value(
+                metrics["num_epochs"],
+                field_name="num_epochs",
+            ),
+            "num_samples": _required_int_value(
+                metrics["num_samples"],
+                field_name="num_samples",
+            ),
             "mae_before": diagnostics.mae_before,
             "mae_after": diagnostics.mae_after,
             "max_abs_error_before": diagnostics.max_abs_error_before,
@@ -367,9 +400,21 @@ def build_backup_target_diagnostics(
         for row in row_payloads
         if row["direct_value"] is not None and row["backed_up_value"] is not None
     ]
-    deltas = [float(row["delta"]) for row in comparable_rows]
-    direct_values = [float(row["direct_value"]) for row in comparable_rows]
-    backed_up_values = [float(row["backed_up_value"]) for row in comparable_rows]
+    deltas = [
+        _required_float_value(row["delta"], field_name="delta")
+        for row in comparable_rows
+    ]
+    direct_values = [
+        _required_float_value(row["direct_value"], field_name="direct_value")
+        for row in comparable_rows
+    ]
+    backed_up_values = [
+        _required_float_value(
+            row["backed_up_value"],
+            field_name="backed_up_value",
+        )
+        for row in comparable_rows
+    ]
 
     return {
         "created_at": created_at,
@@ -717,7 +762,7 @@ def _pearson_correlation(
     denominator = (left_variance * right_variance) ** 0.5
     if denominator == 0.0:
         return None
-    return numerator / denominator
+    return float(numerator / denominator)
 
 
 def _mean_squared_error(
@@ -773,11 +818,25 @@ def _target_group_summary(rows: list[dict[str, object]]) -> dict[str, object]:
         for row in rows
         if row["direct_value"] is not None and row["backed_up_value"] is not None
     ]
-    direct_values = [float(row["direct_value"]) for row in comparable_rows]
-    backed_up_values = [float(row["backed_up_value"]) for row in comparable_rows]
-    deltas = [float(row["delta"]) for row in comparable_rows]
+    direct_values = [
+        _required_float_value(row["direct_value"], field_name="direct_value")
+        for row in comparable_rows
+    ]
+    backed_up_values = [
+        _required_float_value(
+            row["backed_up_value"],
+            field_name="backed_up_value",
+        )
+        for row in comparable_rows
+    ]
+    deltas = [
+        _required_float_value(row["delta"], field_name="delta")
+        for row in comparable_rows
+    ]
     visit_counts = [
-        int(row["visit_count"]) for row in rows if row["visit_count"] is not None
+        _required_int_value(row["visit_count"], field_name="visit_count")
+        for row in rows
+        if row["visit_count"] is not None
     ]
     exact_count = sum(1 for row in rows if row["is_exact_or_terminal"] is True)
     return {
@@ -803,7 +862,10 @@ def _top_worst_deltas(
 ) -> list[dict[str, object]]:
     """Return the rows with the largest direct/backed-up absolute deltas."""
     comparable_rows = [row for row in rows if row["abs_delta"] is not None]
-    comparable_rows.sort(key=lambda row: float(row["abs_delta"]), reverse=True)
+    comparable_rows.sort(
+        key=lambda row: _required_float_value(row["abs_delta"], field_name="abs_delta"),
+        reverse=True,
+    )
     return comparable_rows[:limit]
 
 

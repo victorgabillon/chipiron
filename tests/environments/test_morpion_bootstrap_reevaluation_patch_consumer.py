@@ -286,7 +286,9 @@ def test_missing_runner_hook_raises_without_deleting_patch(tmp_path: Path) -> No
     assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == patch
 
 
-def test_invalid_runner_return_type_raises_without_deleting_patch(tmp_path: Path) -> None:
+def test_invalid_runner_return_type_raises_without_deleting_patch(
+    tmp_path: Path,
+) -> None:
     """Consumer should reject invalid hook return types without deleting the patch."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()

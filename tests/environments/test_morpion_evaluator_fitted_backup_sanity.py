@@ -242,7 +242,9 @@ if "chipiron.environments.morpion.learning" not in sys.modules:
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     def _load_morpion_supervised_rows(path: Path) -> _MorpionSupervisedRows:
-        payload = cast("dict[str, object]", json.loads(path.read_text(encoding="utf-8")))
+        payload = cast(
+            "dict[str, object]", json.loads(path.read_text(encoding="utf-8"))
+        )
         rows_payload = cast("list[dict[str, object]]", payload.get("rows", []))
         rows = tuple(
             _MorpionSupervisedRow(**row_payload) for row_payload in rows_payload
@@ -268,7 +270,9 @@ if "chipiron.environments.morpion.learning" not in sys.modules:
             is_exact=bool(getattr(node, "is_exact", False)),
             depth=int(getattr(node, "depth", 0)),
             visit_count=cast("int | None", getattr(node, "visit_count", None)),
-            direct_value=cast("float | None", getattr(node, "direct_value_scalar", None)),
+            direct_value=cast(
+                "float | None", getattr(node, "direct_value_scalar", None)
+            ),
             over_event_label=cast(
                 "str | None", getattr(node, "over_event_label", None)
             ),

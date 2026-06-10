@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from atomheart.games.morpion import (
     MorpionDynamics as AtomMorpionDynamics,
@@ -303,8 +303,9 @@ def _normalized_state_ref_payload_mapping(
     """Return a normalized string-keyed payload mapping."""
     if not isinstance(payload, Mapping):
         raise MorpionNumberedPointReplayError.payload_must_be_mapping()
+    typed_payload = cast("Mapping[object, object]", payload)
     normalized_payload: dict[str, object] = {}
-    for key_obj, value_obj in payload.items():
+    for key_obj, value_obj in typed_payload.items():
         if not isinstance(key_obj, str):
             raise MorpionNumberedPointReplayError.payload_must_be_mapping()
         normalized_payload[key_obj] = value_obj
@@ -326,7 +327,7 @@ def _state_ref_payload_variant(payload: Mapping[str, object]) -> AtomMorpionVari
 
 def _state_ref_payload_played_moves(
     payload: Mapping[str, object],
-) -> Sequence[object]:
+) -> tuple[object, ...]:
     """Return the raw ordered move sequence from one checkpoint payload."""
     raw_played_moves = payload.get("played_moves")
     if raw_played_moves is None:
@@ -335,7 +336,7 @@ def _state_ref_payload_played_moves(
         raw_played_moves, str | bytes | bytearray
     ):
         raise MorpionNumberedPointReplayError.played_moves_must_be_sequence()
-    return raw_played_moves
+    return tuple(cast("Sequence[object]", raw_played_moves))
 
 
 def _state_ref_payload_move(payload: object, index: int) -> AtomMorpionMove:
@@ -344,12 +345,16 @@ def _state_ref_payload_move(payload: object, index: int) -> AtomMorpionMove:
         payload, str | bytes | bytearray
     ):
         raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
-    values = list(payload)
+    typed_payload = cast("Sequence[object]", payload)
+    values = tuple(typed_payload)
     if len(values) != 4 or not all(
         isinstance(value, int) and not isinstance(value, bool) for value in values
     ):
-        raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
-    x1, y1, x2, y2 = (int(value) for value in values)
+        raise MorpionNumberedPointReplayError.invalid_move_payload(
+            index,
+            typed_payload,
+        )
+    x1, y1, x2, y2 = cast("tuple[int, int, int, int]", values)
     move = (x1, y1, x2, y2)
     return move if (x1, y1) <= (x2, y2) else (x2, y2, x1, y1)
 

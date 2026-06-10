@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from matplotlib import dates as mdates
 from matplotlib import pyplot as plt
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
+
+    from matplotlib.axes import Axes
+    from matplotlib.ticker import Formatter, Locator
 
     from .history_view import (
         ActiveEvaluatorTimeSeriesPoint,
@@ -18,6 +21,20 @@ if TYPE_CHECKING:
         OptionalIntTimeSeriesPoint,
         TreeDepthDistributionRow,
     )
+
+
+_date2num: Callable[[datetime], float] = cast(
+    "Callable[[datetime], float]",
+    mdates.date2num,
+)
+_date_formatter: Callable[..., Formatter] = cast(
+    "Callable[..., Formatter]",
+    mdates.DateFormatter,
+)
+_auto_date_locator: Callable[[], Locator] = cast(
+    "Callable[[], Locator]",
+    mdates.AutoDateLocator,
+)
 
 
 def plot_tree_size(series: tuple[IntTimeSeriesPoint, ...]) -> None:
@@ -61,7 +78,13 @@ def plot_certified_record_score(
     if not x_values or not y_values:
         _render_empty_message(axis, "No certified record yet.")
         return
-    axis.plot(x_values, y_values, marker="o", label="certified record")
+    _plot_datetime_series(
+        axis,
+        x_values,
+        y_values,
+        label="certified record",
+        marker="o",
+    )
     _format_datetime_axis(axis, x_values, format_string="%Y-%m-%d %H:%M")
 
 
@@ -94,7 +117,7 @@ def plot_evaluator_losses(
             x_values, y_values = _positive_points(x_values, y_values)
         if len(x_values) < 2:
             continue
-        axis.plot(x_values, y_values, label=evaluator_name)
+        _plot_datetime_series(axis, x_values, y_values, label=evaluator_name)
         plotted_any_line = True
         plotted_x_values.extend(x_values)
 
@@ -147,7 +170,7 @@ def plot_active_evaluator(
         for point in series
         if point.active_evaluator_name is not None
     ]
-    axis.plot(x_values, y_values, label="active evaluator")
+    _plot_datetime_series(axis, x_values, y_values, label="active evaluator")
     axis.set_yticks(list(name_to_y.values()), list(name_to_y.keys()))
     _format_datetime_axis(axis, x_values)
 
@@ -169,7 +192,7 @@ def plot_tree_depth_distribution(
     )
 
 
-def _new_axis() -> plt.Axes:
+def _new_axis() -> Axes:
     """Create one fresh figure and return its default axis."""
     figure = plt.figure()
     return figure.gca()
@@ -236,7 +259,7 @@ def _parse_timestamp_utc(timestamp_utc: str) -> datetime | None:
 
 
 def _plot_if_enough_points(
-    axis: plt.Axes,
+    axis: Axes,
     x_values: Sequence[datetime],
     y_values: Sequence[int | float],
     *,
@@ -246,8 +269,24 @@ def _plot_if_enough_points(
     if len(x_values) < 2 or len(y_values) < 2:
         _render_waiting_for_history(axis)
         return False
-    axis.plot(x_values, y_values, label=label)
+    _plot_datetime_series(axis, x_values, y_values, label=label)
     return True
+
+
+def _plot_datetime_series(
+    axis: Axes,
+    x_values: Sequence[datetime],
+    y_values: Sequence[int | float],
+    *,
+    label: str,
+    marker: str | None = None,
+) -> None:
+    """Plot one datetime series using explicit Matplotlib date conversion."""
+    date_numbers = [_date2num(timestamp) for timestamp in x_values]
+    if marker is None:
+        axis.plot(date_numbers, y_values, label=label)
+        return
+    axis.plot(date_numbers, y_values, label=label, marker=marker)
 
 
 def _positive_points(
@@ -265,12 +304,12 @@ def _positive_points(
     return filtered_x_values, filtered_y_values
 
 
-def _render_waiting_for_history(axis: plt.Axes) -> None:
+def _render_waiting_for_history(axis: Axes) -> None:
     """Render a consistent empty-state message inside one plot axis."""
     _render_empty_message(axis, "Waiting for more history to draw this plot.")
 
 
-def _render_empty_message(axis: plt.Axes, message: str) -> None:
+def _render_empty_message(axis: Axes, message: str) -> None:
     """Render one consistent empty-state message inside one plot axis."""
     axis.text(
         0.5,
@@ -285,7 +324,7 @@ def _render_empty_message(axis: plt.Axes, message: str) -> None:
 
 
 def _format_datetime_axis(
-    axis: plt.Axes,
+    axis: Axes,
     x_values: Sequence[datetime],
     *,
     format_string: str | None = None,
@@ -294,7 +333,7 @@ def _format_datetime_axis(
     if not x_values:
         return
     span_seconds = (max(x_values) - min(x_values)).total_seconds()
-    formatter = mdates.DateFormatter(
+    formatter = _date_formatter(
         (
             format_string
             if format_string is not None
@@ -305,7 +344,7 @@ def _format_datetime_axis(
         tz=x_values[0].tzinfo,
     )
     axis.xaxis.set_major_formatter(formatter)
-    axis.xaxis.set_major_locator(mdates.AutoDateLocator())
+    axis.xaxis.set_major_locator(_auto_date_locator())
     axis.figure.autofmt_xdate(rotation=30, ha="right")
 
 

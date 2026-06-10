@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass, field, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from .bootstrap_errors import InvalidReevaluationBlendAlphaError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
@@ -28,14 +31,11 @@ class MorpionBootstrapRuntimeControl:
 
     def __post_init__(self) -> None:
         """Validate optional runtime-control scalars."""
-        if (
-            self.reevaluation_blend_alpha is not None
-            and (
-                isinstance(self.reevaluation_blend_alpha, bool)
-                or not 0.0 <= self.reevaluation_blend_alpha <= 1.0
-            )
+        if self.reevaluation_blend_alpha is not None and (
+            isinstance(self.reevaluation_blend_alpha, bool)
+            or not 0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
-            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
+            raise InvalidReevaluationBlendAlphaError
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +50,7 @@ class MorpionBootstrapEffectiveRuntimeConfig:
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
-            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
+            raise InvalidReevaluationBlendAlphaError
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,21 +80,24 @@ def load_bootstrap_control(path: Path) -> MorpionBootstrapControl:
         loaded = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return MorpionBootstrapControl()
-    if not isinstance(loaded, dict):
+    loaded_mapping = _object_mapping_or_none(loaded)
+    if loaded_mapping is None:
         return MorpionBootstrapControl()
 
     return MorpionBootstrapControl(
         max_growth_steps_per_cycle=_optional_int(
-            loaded.get("max_growth_steps_per_cycle")
+            loaded_mapping.get("max_growth_steps_per_cycle")
         ),
-        max_rows=_optional_int(loaded.get("max_rows")),
-        use_backed_up_value=_optional_bool(loaded.get("use_backed_up_value")),
-        save_after_seconds=_optional_float(loaded.get("save_after_seconds")),
+        max_rows=_optional_int(loaded_mapping.get("max_rows")),
+        use_backed_up_value=_optional_bool(loaded_mapping.get("use_backed_up_value")),
+        save_after_seconds=_optional_float(loaded_mapping.get("save_after_seconds")),
         save_after_tree_growth_factor=_optional_float(
-            loaded.get("save_after_tree_growth_factor")
+            loaded_mapping.get("save_after_tree_growth_factor")
         ),
-        force_evaluator=_optional_force_evaluator(loaded.get("force_evaluator")),
-        runtime=_optional_runtime_control(loaded.get("runtime")),
+        force_evaluator=_optional_force_evaluator(
+            loaded_mapping.get("force_evaluator")
+        ),
+        runtime=_optional_runtime_control(loaded_mapping.get("runtime")),
     )
 
 
@@ -112,22 +115,30 @@ def apply_control_to_args(
     control: MorpionBootstrapControl,
 ) -> MorpionBootstrapArgs:
     """Return args overridden by the non-None live control fields."""
-    replacements: dict[str, object] = {}
-    if control.max_growth_steps_per_cycle is not None:
-        replacements["max_growth_steps_per_cycle"] = control.max_growth_steps_per_cycle
-    if control.max_rows is not None:
-        replacements["max_rows"] = control.max_rows
-    if control.use_backed_up_value is not None:
-        replacements["use_backed_up_value"] = control.use_backed_up_value
-    if control.save_after_seconds is not None:
-        replacements["save_after_seconds"] = control.save_after_seconds
-    if control.save_after_tree_growth_factor is not None:
-        replacements["save_after_tree_growth_factor"] = (
+    return replace(
+        args,
+        max_growth_steps_per_cycle=(
+            control.max_growth_steps_per_cycle
+            if control.max_growth_steps_per_cycle is not None
+            else args.max_growth_steps_per_cycle
+        ),
+        max_rows=control.max_rows if control.max_rows is not None else args.max_rows,
+        use_backed_up_value=(
+            control.use_backed_up_value
+            if control.use_backed_up_value is not None
+            else args.use_backed_up_value
+        ),
+        save_after_seconds=(
+            control.save_after_seconds
+            if control.save_after_seconds is not None
+            else args.save_after_seconds
+        ),
+        save_after_tree_growth_factor=(
             control.save_after_tree_growth_factor
-        )
-    if not replacements:
-        return args
-    return replace(args, **replacements)
+            if control.save_after_tree_growth_factor is not None
+            else args.save_after_tree_growth_factor
+        ),
+    )
 
 
 def bootstrap_control_to_dict(control: MorpionBootstrapControl) -> dict[str, object]:
@@ -144,20 +155,21 @@ def bootstrap_runtime_control_to_dict(
 
 def bootstrap_control_from_metadata(value: object) -> MorpionBootstrapControl:
     """Deserialize one applied-control metadata payload tolerantly."""
-    if not isinstance(value, dict):
+    value_mapping = _object_mapping_or_none(value)
+    if value_mapping is None:
         return MorpionBootstrapControl()
     return MorpionBootstrapControl(
         max_growth_steps_per_cycle=_optional_int(
-            value.get("max_growth_steps_per_cycle")
+            value_mapping.get("max_growth_steps_per_cycle")
         ),
-        max_rows=_optional_int(value.get("max_rows")),
-        use_backed_up_value=_optional_bool(value.get("use_backed_up_value")),
-        save_after_seconds=_optional_float(value.get("save_after_seconds")),
+        max_rows=_optional_int(value_mapping.get("max_rows")),
+        use_backed_up_value=_optional_bool(value_mapping.get("use_backed_up_value")),
+        save_after_seconds=_optional_float(value_mapping.get("save_after_seconds")),
         save_after_tree_growth_factor=_optional_float(
-            value.get("save_after_tree_growth_factor")
+            value_mapping.get("save_after_tree_growth_factor")
         ),
-        force_evaluator=_optional_force_evaluator(value.get("force_evaluator")),
-        runtime=_optional_runtime_control(value.get("runtime")),
+        force_evaluator=_optional_force_evaluator(value_mapping.get("force_evaluator")),
+        runtime=_optional_runtime_control(value_mapping.get("runtime")),
     )
 
 
@@ -202,13 +214,14 @@ def effective_runtime_config_from_metadata(
     value: object,
 ) -> MorpionBootstrapEffectiveRuntimeConfig | None:
     """Deserialize one effective-runtime metadata payload tolerantly."""
-    if not isinstance(value, dict):
+    value_mapping = _object_mapping_or_none(value)
+    if value_mapping is None:
         return None
-    tree_branch_limit = _optional_int(value.get("tree_branch_limit"))
+    tree_branch_limit = _optional_int(value_mapping.get("tree_branch_limit"))
     if tree_branch_limit is None:
         return None
     reevaluation_blend_alpha = _optional_unit_float(
-        value.get("reevaluation_blend_alpha")
+        value_mapping.get("reevaluation_blend_alpha")
     )
     if reevaluation_blend_alpha is None:
         reevaluation_blend_alpha = 1.0
@@ -282,14 +295,25 @@ def _optional_force_evaluator(value: object) -> str | None:
 
 def _optional_runtime_control(value: object) -> MorpionBootstrapRuntimeControl:
     """Return one optional runtime-control subsection from JSON-friendly data."""
-    if not isinstance(value, dict):
+    value_mapping = _object_mapping_or_none(value)
+    if value_mapping is None:
         return MorpionBootstrapRuntimeControl()
     return MorpionBootstrapRuntimeControl(
-        tree_branch_limit=_optional_int(value.get("tree_branch_limit")),
+        tree_branch_limit=_optional_int(value_mapping.get("tree_branch_limit")),
         reevaluation_blend_alpha=_optional_unit_float(
-            value.get("reevaluation_blend_alpha")
+            value_mapping.get("reevaluation_blend_alpha")
         ),
     )
+
+
+def _object_mapping_or_none(value: object) -> Mapping[str, object] | None:
+    """Return a string-keyed mapping view when ``value`` is dict-shaped."""
+    if not isinstance(value, dict):
+        return None
+    raw_mapping = cast("dict[object, object]", value)
+    if not all(isinstance(key, str) for key in raw_mapping):
+        return None
+    return cast("Mapping[str, object]", raw_mapping)
 
 
 __all__ = [

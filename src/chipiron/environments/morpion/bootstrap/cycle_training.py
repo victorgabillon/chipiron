@@ -48,6 +48,25 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+class InvalidTrainingMetricError(TypeError):
+    """Raised when persisted training metrics have the wrong value shape."""
+
+    @classmethod
+    def expected_numeric(cls, key: str) -> InvalidTrainingMetricError:
+        """Build the canonical numeric-metric error."""
+        return cls(f"Training metric {key!r} must be numeric.")
+
+    @classmethod
+    def expected_optional_numeric(cls, key: str) -> InvalidTrainingMetricError:
+        """Build the canonical optional-numeric-metric error."""
+        return cls(f"Training metric {key!r} must be numeric or None.")
+
+    @classmethod
+    def expected_optional_string(cls, key: str) -> InvalidTrainingMetricError:
+        """Build the canonical optional-string-metric error."""
+        return cls(f"Training metric {key!r} must be a string or None.")
+
+
 @dataclass(frozen=True, slots=True)
 class BootstrapTrainingResult:
     """Metrics and selected evaluator produced by bootstrap model training."""
@@ -124,17 +143,21 @@ def select_active_evaluator_name(
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
 ) -> str:
     """Select the active evaluator using validation loss, falling back to final loss."""
-    selectable_losses = {
-        evaluator_name: _selection_loss(metrics)
-        for evaluator_name, metrics in evaluator_metrics.items()
-        if _selection_loss(metrics) is not None
-    }
+    selectable_losses: list[tuple[str, float]] = []
+    for evaluator_name, metrics in evaluator_metrics.items():
+        selection_loss = _selection_loss(metrics)
+        if selection_loss is not None:
+            selectable_losses.append((evaluator_name, selection_loss))
     if not selectable_losses:
         raise NoSelectableMorpionEvaluatorError
-    return min(
-        selectable_losses,
-        key=lambda evaluator_name: selectable_losses[evaluator_name],
-    )
+    return min(selectable_losses, key=lambda item: item[1])[0]
+
+
+def _required_metric_float(value: float | None, *, key: str) -> float:
+    """Return one required numeric metric value or raise."""
+    if value is None:
+        raise InvalidTrainingMetricError.expected_numeric(key)
+    return value
 
 
 def _selection_loss(metrics: MorpionEvaluatorMetrics) -> float | None:
@@ -160,7 +183,7 @@ def _metric_float(metrics: Mapping[str, object], key: str) -> float:
     value = metrics[key]
     if not isinstance(value, bool) and isinstance(value, int | float):
         return float(value)
-    raise TypeError(f"Training metric {key!r} must be numeric.")
+    raise InvalidTrainingMetricError.expected_numeric(key)
 
 
 def _metric_optional_float(metrics: Mapping[str, object], key: str) -> float | None:
@@ -169,7 +192,7 @@ def _metric_optional_float(metrics: Mapping[str, object], key: str) -> float | N
         return None
     if not isinstance(value, bool) and isinstance(value, int | float):
         return float(value)
-    raise TypeError(f"Training metric {key!r} must be numeric or None.")
+    raise InvalidTrainingMetricError.expected_optional_numeric(key)
 
 
 def _metric_int(
@@ -191,7 +214,7 @@ def _metric_optional_str(metrics: Mapping[str, object], key: str) -> str | None:
         return None
     if isinstance(value, str):
         return value
-    raise TypeError(f"Training metric {key!r} must be a string or None.")
+    raise InvalidTrainingMetricError.expected_optional_string(key)
 
 
 def select_or_force_active_evaluator_name(
@@ -291,7 +314,10 @@ def train_and_select_evaluators(
             model_bundle_path
         )
         evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
-            final_loss=evaluator_metrics[evaluator_name].final_loss,
+            final_loss=_required_metric_float(
+                evaluator_metrics[evaluator_name].final_loss,
+                key="final_loss",
+            ),
             train_loss=evaluator_metrics[evaluator_name].train_loss,
             validation_loss=evaluator_metrics[evaluator_name].validation_loss,
             train_mae=evaluator_metrics[evaluator_name].train_mae,

@@ -5,16 +5,12 @@ from __future__ import annotations
 import argparse
 import logging
 import shlex
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
 from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_name
-
-try:
-    from anemone.utils.logger import set_checkpoint_logger_level
-except ImportError:
-    set_checkpoint_logger_level = None
 
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
@@ -36,7 +32,6 @@ from .config import (
 )
 from .control import (
     MorpionBootstrapControl,
-    MorpionBootstrapEffectiveRuntimeConfig,
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
 )
@@ -75,6 +70,9 @@ if TYPE_CHECKING:
 
     from .pipeline_artifacts import MorpionPipelineGenerationManifest
     from .pv_family_targets import PvFamilyTargetPolicy
+
+
+type CheckpointLoggerSetter = Callable[[int], None]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -382,14 +380,24 @@ def _build_launcher_runner(
 
 def _configure_anemone_checkpoint_logging(*, verbose_checkpoint_logs: bool) -> None:
     """Set checkpoint-internals verbosity for normal versus debug launcher runs."""
-    if set_checkpoint_logger_level is None:
+    checkpoint_logger_level_setter = _load_checkpoint_logger_level_setter()
+    if checkpoint_logger_level_setter is None:
         LOGGER.warning(
             "[launcher] checkpoint_log_config_skipped reason=missing_anemone_setter"
         )
         return
-    set_checkpoint_logger_level(
+    checkpoint_logger_level_setter(
         logging.DEBUG if verbose_checkpoint_logs else logging.INFO
     )
+
+
+def _load_checkpoint_logger_level_setter() -> CheckpointLoggerSetter | None:
+    """Resolve the optional Anemone checkpoint logger setter lazily."""
+    try:
+        from anemone.utils.logger import set_checkpoint_logger_level
+    except ImportError:
+        return None
+    return cast("CheckpointLoggerSetter", set_checkpoint_logger_level)
 
 
 def _render_launcher_startup_summary(
@@ -468,9 +476,15 @@ def _render_training_export_mode_note(training_export_mode: str) -> str:
     return "legacy compatibility/debug"
 
 
-def _latest_runtime_checkpoint_path(startup_status: _LauncherStartupStatus) -> str | None:
+def _latest_runtime_checkpoint_path(
+    startup_status: _LauncherStartupStatus,
+) -> str | None:
     """Return the newest known runtime checkpoint path from persisted state."""
-    latest_event = startup_status.latest_status.latest_event if startup_status.latest_status else None
+    latest_event = (
+        startup_status.latest_status.latest_event
+        if startup_status.latest_status
+        else None
+    )
     latest_event_path = (
         None if latest_event is None else latest_event.artifacts.runtime_checkpoint_path
     )
@@ -480,9 +494,15 @@ def _latest_runtime_checkpoint_path(startup_status: _LauncherStartupStatus) -> s
     return None if run_state is None else run_state.latest_runtime_checkpoint_path
 
 
-def _latest_training_artifact_path(startup_status: _LauncherStartupStatus) -> str | None:
+def _latest_training_artifact_path(
+    startup_status: _LauncherStartupStatus,
+) -> str | None:
     """Return the newest known flat export or sharded generation manifest path."""
-    latest_event = startup_status.latest_status.latest_event if startup_status.latest_status else None
+    latest_event = (
+        startup_status.latest_status.latest_event
+        if startup_status.latest_status
+        else None
+    )
     latest_event_path = (
         None if latest_event is None else latest_event.artifacts.tree_snapshot_path
     )
@@ -736,7 +756,10 @@ def _validate_pipeline_stage_cli(
         parser.error(
             "--pipeline-stage is only valid with 'loop' when --pipeline-mode is single_process."
         )
-    if pipeline_generation is not None and pipeline_stage not in {"dataset", "training"}:
+    if pipeline_generation is not None and pipeline_stage not in {
+        "dataset",
+        "training",
+    }:
         parser.error(
             "--pipeline-generation is only valid with --pipeline-stage dataset or training."
         )

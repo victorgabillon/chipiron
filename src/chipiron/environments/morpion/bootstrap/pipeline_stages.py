@@ -31,7 +31,11 @@ from .control import (
 )
 from .cycle_dataset import (
     export_training_snapshot_for_generation as _export_training_snapshot_for_generation,
+)
+from .cycle_dataset import (
     extract_rows_from_training_snapshot as _extract_rows_from_training_snapshot,
+)
+from .cycle_dataset import (
     load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
 )
 from .cycle_metadata import build_bootstrap_event
@@ -43,8 +47,8 @@ from .cycle_metadata import with_config_hash_metadata as _with_config_hash_metad
 from .cycle_pipeline_manifest import (
     write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
 )
-from .cycle_runtime import build_no_save_run_state as _build_no_save_run_state
 from .cycle_runtime import ResolvedActiveMorpionModelBundle
+from .cycle_runtime import build_no_save_run_state as _build_no_save_run_state
 from .cycle_runtime import (
     prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
 )
@@ -70,8 +74,10 @@ from .history import MorpionBootstrapHistoryRecorder
 from .memory_diagnostics import MemoryDiagnostics
 from .pipeline_artifacts import (
     MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatus,
     MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
+    MorpionPipelineTrainingStatus,
     load_pipeline_active_model,
     load_pipeline_dataset_status_file,
     load_pipeline_manifest,
@@ -85,6 +91,8 @@ from .pipeline_claims import (
     release_pipeline_stage_claim,
 )
 from .record_status import (
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapRecordStatus,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
     resolve_frontier_status_for_cycle_with_metadata,
@@ -118,11 +126,18 @@ def _require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
         raise _artifact_pipeline_mode_required_error()
 
 
+def require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
+    """Public wrapper around the artifact-pipeline mode requirement."""
+    _require_artifact_pipeline_mode(args)
+
+
 class MissingPipelineTreeSnapshotFileError(FileNotFoundError):
     """Raised when a pipeline dataset stage cannot find its tree snapshot."""
 
     @classmethod
-    def from_path(cls, tree_snapshot_path: Path | None) -> MissingPipelineTreeSnapshotFileError:
+    def from_path(
+        cls, tree_snapshot_path: Path | None
+    ) -> MissingPipelineTreeSnapshotFileError:
         """Build one missing-tree-snapshot error with the resolved path."""
         return cls(f"Pipeline tree snapshot does not exist: {tree_snapshot_path}")
 
@@ -151,7 +166,9 @@ def _dataset_stage_requires_done_status_error() -> ValueError:
     return ValueError("manifest.dataset_status == 'done' is required")
 
 
-def _raise_missing_tree_snapshot_file_error(tree_snapshot_path: Path | None) -> NoReturn:
+def _raise_missing_tree_snapshot_file_error(
+    tree_snapshot_path: Path | None,
+) -> NoReturn:
     """Raise the canonical dataset-stage missing snapshot file error."""
     raise MissingPipelineTreeSnapshotFileError.from_path(tree_snapshot_path)
 
@@ -208,7 +225,9 @@ def _latest_prior_dataset_status_artifact(
 ) -> MorpionPipelineDatasetStatusArtifact | None:
     """Return the latest readable dataset-status artifact before one generation."""
     for previous_generation in range(generation - 1, -1, -1):
-        status_path = paths.pipeline_dataset_status_path_for_generation(previous_generation)
+        status_path = paths.pipeline_dataset_status_path_for_generation(
+            previous_generation
+        )
         if not status_path.is_file():
             continue
         try:
@@ -226,7 +245,7 @@ def _resolve_previous_pipeline_record_status(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
-):
+) -> MorpionBootstrapRecordStatus | None:
     """Return the previous record status for one pipeline dataset generation."""
     latest_dataset_status = _latest_prior_dataset_status_artifact(
         paths=paths,
@@ -243,7 +262,7 @@ def _resolve_previous_pipeline_frontier_status(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
-):
+) -> MorpionBootstrapFrontierStatus | None:
     """Return the previous frontier status for one pipeline dataset generation."""
     latest_dataset_status = _latest_prior_dataset_status_artifact(
         paths=paths,
@@ -260,12 +279,14 @@ def _save_dataset_manifest_status(
     *,
     paths: MorpionBootstrapPaths,
     manifest: MorpionPipelineGenerationManifest,
-    dataset_status: str,
+    dataset_status: MorpionPipelineDatasetStatus,
     timestamp_utc: str,
 ) -> MorpionPipelineGenerationManifest:
     """Persist one updated dataset-stage manifest and matching status file."""
     next_manifest = replace(manifest, dataset_status=dataset_status)
-    save_pipeline_manifest(next_manifest, _pipeline_manifest_path(paths, manifest.generation))
+    save_pipeline_manifest(
+        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
+    )
     save_pipeline_dataset_status_file(
         generation=manifest.generation,
         dataset_status=next_manifest.dataset_status,
@@ -280,12 +301,14 @@ def _save_training_manifest_status(
     *,
     paths: MorpionBootstrapPaths,
     manifest: MorpionPipelineGenerationManifest,
-    training_status: str,
+    training_status: MorpionPipelineTrainingStatus,
     timestamp_utc: str,
 ) -> MorpionPipelineGenerationManifest:
     """Persist one updated training-stage manifest and matching status file."""
     next_manifest = replace(manifest, training_status=training_status)
-    save_pipeline_manifest(next_manifest, _pipeline_manifest_path(paths, manifest.generation))
+    save_pipeline_manifest(
+        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
+    )
     save_pipeline_training_status_file(
         generation=manifest.generation,
         training_status=next_manifest.training_status,
@@ -321,17 +344,16 @@ def _resolve_pipeline_active_model_for_growth(
 ) -> ResolvedActiveMorpionModelBundle:
     """Resolve the active model for artifact-pipeline growth from the pipeline artifact."""
     if not paths.pipeline_active_model_path.is_file():
-        LOGGER.info("[growth] active_model_status source=none evaluator=none model_bundle=none")
+        LOGGER.info(
+            "[growth] active_model_status source=none evaluator=none model_bundle=none"
+        )
         return ResolvedActiveMorpionModelBundle(
             active_evaluator_name=None,
             model_bundle_path=None,
         )
 
     active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
-    if (
-        force_evaluator is not None
-        and active_model.evaluator_name != force_evaluator
-    ):
+    if force_evaluator is not None and active_model.evaluator_name != force_evaluator:
         LOGGER.warning(
             "[growth] active_model_force_evaluator_mismatch requested=%s active=%s artifact=%s",
             force_evaluator,
@@ -347,7 +369,9 @@ def _resolve_pipeline_active_model_for_growth(
             model_bundle_path,
             paths.pipeline_active_model_path,
         )
-        LOGGER.info("[growth] active_model_status source=none evaluator=none model_bundle=none")
+        LOGGER.info(
+            "[growth] active_model_status source=none evaluator=none model_bundle=none"
+        )
         return ResolvedActiveMorpionModelBundle(
             active_evaluator_name=None,
             model_bundle_path=None,
@@ -578,7 +602,9 @@ def _run_one_pipeline_growth_cycle_impl(
         return next_run_state
 
     generation = run_state.generation + 1
-    LOGGER.info("[save] decision_done triggered=true reason=%s", save_reason or "unknown")
+    LOGGER.info(
+        "[save] decision_done triggered=true reason=%s", save_reason or "unknown"
+    )
     runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
@@ -770,7 +796,7 @@ def run_pipeline_dataset_stage(
             "[record] resolve_done generation=%s elapsed=%.3fs best_total_points=%s",
             generation,
             time.perf_counter() - record_started_at,
-            None if record_status is None else record_status.current_best_total_points,
+            record_status.current_best_total_points,
         )
         LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
         frontier_started_at = time.perf_counter()
@@ -784,9 +810,7 @@ def run_pipeline_dataset_stage(
             generation,
             time.perf_counter() - frontier_started_at,
             frontier_resolution.candidate_count,
-            None
-            if frontier_status is None
-            else frontier_status.current_best_total_points,
+            frontier_status.current_best_total_points,
         )
         rows = _extract_rows_from_training_snapshot(
             args=args,
@@ -972,9 +996,7 @@ def run_pipeline_training_stage(
             "[pipeline] active_model_update generation=%s evaluator=%s model_bundle=%s",
             generation,
             training_result.selected_evaluator_name,
-            training_result.model_bundle_paths[
-                training_result.selected_evaluator_name
-            ],
+            training_result.model_bundle_paths[training_result.selected_evaluator_name],
         )
         LOGGER.info(
             "[pipeline] training_done generation=%s selected=%s",

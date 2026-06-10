@@ -25,7 +25,6 @@ from anemone.checkpoints import (
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
-    checkpoint_payload_for_reuse_or_none,
 )
 from anemone.factory import (
     SearchArgs,
@@ -40,11 +39,13 @@ from anemone.node_selector.node_selector_types import NodeSelectorType
 from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
     TreeBranchLimit,
     TreeBranchLimitArgs,
 )
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import (
+    TrainingTreeSnapshot,
     build_training_tree_snapshot,
     save_training_tree_snapshot,
 )
@@ -81,9 +82,21 @@ from .sharded_training_export import (
 )
 
 if TYPE_CHECKING:
-    from .pipeline_artifacts import MorpionReevaluationPatch
+    from collections.abc import Mapping
+
+    from .pipeline_artifacts import (
+        MorpionReevaluationPatch,
+        MorpionReevaluationPatchRow,
+    )
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _invalid_checkpoint_payload_mapping_error() -> TypeError:
+    """Return the stable invalid checkpoint-payload mapping error."""
+    return TypeError("checkpoint payload must be a string-keyed mapping")
+
+
 _TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (
     "Morpion bootstrap runtime reconfiguration currently supports only "
     "TreeBranchLimitArgs stopping criteria."
@@ -132,7 +145,7 @@ class _ValidatedCheckpointPayloadCacheEntry:
     payload: SearchRuntimeCheckpointPayload
 
 
-_VALIDATED_CHECKPOINT_PAYLOAD_CACHE: _ValidatedCheckpointPayloadCacheEntry | None = None
+_validated_checkpoint_payload_cache: _ValidatedCheckpointPayloadCacheEntry | None = None
 
 
 @dataclass(slots=True)
@@ -180,13 +193,17 @@ class MorpionTrainingExportProfile:
 
     def observe_state_handle(self, node: object) -> None:
         """Classify one raw state handle without forcing state resolution."""
-        raw_handle = getattr(node, "state_handle", None)
+        raw_handle: object = getattr(node, "state_handle", None)
         if isinstance(raw_handle, CheckpointBackedStateHandle):
             self.checkpoint_backed_state_handles += 1
         # Profiling only for now: current Morpion training-export consumers decode
         # state_ref_payload via the anchor-only load_state_ref path, so reusable
         # checkpoint delta payloads are not yet drop-in compatible.
-        reusable_payload = checkpoint_payload_for_reuse_or_none(raw_handle)
+        reusable_payload = (
+            raw_handle.checkpoint_payload_for_reuse_or_none()
+            if isinstance(raw_handle, CheckpointBackedStateHandle)
+            else None
+        )
         if reusable_payload is not None:
             self.reusable_checkpoint_payloads += 1
             return
@@ -309,7 +326,9 @@ def _format_training_export_profile_rates(profile: MorpionTrainingExportProfile)
 
 def _log_training_export_profile(profile: MorpionTrainingExportProfile) -> None:
     """Emit stable aggregate profile logs for one training export build."""
-    LOGGER.info("[training-export-profile] %s", _format_training_export_profile(profile))
+    LOGGER.info(
+        "[training-export-profile] %s", _format_training_export_profile(profile)
+    )
     LOGGER.info(
         "[training-export-profile-rates] %s",
         _format_training_export_profile_rates(profile),
@@ -348,7 +367,7 @@ def _selector_report_row_count(selector_report: object | None) -> int | None:
         row_count = len(depth_rows)
     except TypeError:
         return None
-    return row_count if isinstance(row_count, int) else None
+    return row_count
 
 
 def _selector_growth_diagnostic_fields(
@@ -393,7 +412,9 @@ def _checkpoint_selector_state_fields(
 
 def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
     """Invalidate selector caches when the runtime or selector exposes a hook."""
-    invalidate_runtime = getattr(runtime, "_invalidate_selector_cache_if_supported", None)
+    invalidate_runtime = getattr(
+        runtime, "_invalidate_selector_cache_if_supported", None
+    )
     if callable(invalidate_runtime):
         return bool(invalidate_runtime())
 
@@ -410,8 +431,8 @@ def _default_search_args() -> SearchArgs:
     """Build the default Morpion tree-search args used by the bootstrap runner."""
     return SearchArgs(
         node_selector=ComposedNodeSelectorArgs(
-            type="Composed",
-            priority=NoPriorityCheckArgs(type="PriorityNoop"),
+            type=NodeSelectorType.COMPOSED,
+            priority=NoPriorityCheckArgs(type=NodeSelectorType.PRIORITY_NOOP),
             base=LinooArgs(type=NodeSelectorType.LINOO),
         ),
         opening_type=OpeningType.ALL_CHILDREN,
@@ -420,7 +441,7 @@ def _default_search_args() -> SearchArgs:
             temperature=1.0,
         ),
         stopping_criterion=TreeBranchLimitArgs(
-            type="tree_branch_limit",
+            type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
             tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
         ),
     )
@@ -521,13 +542,13 @@ def cache_morpion_search_checkpoint_payload_for_restore(
     payload: SearchRuntimeCheckpointPayload,
 ) -> None:
     """Retain one validated payload for an immediately following restore."""
-    global _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
+    global _validated_checkpoint_payload_cache
     try:
         resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
     except FileNotFoundError:
-        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        _validated_checkpoint_payload_cache = None
         return
-    _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = _ValidatedCheckpointPayloadCacheEntry(
+    _validated_checkpoint_payload_cache = _ValidatedCheckpointPayloadCacheEntry(
         path=resolved_path,
         bytes=bytes_loaded,
         mtime_ns=mtime_ns,
@@ -539,23 +560,23 @@ def _pop_cached_morpion_search_checkpoint_payload_for_restore(
     path: str | Path,
 ) -> tuple[SearchRuntimeCheckpointPayload, int] | None:
     """Return and clear the matching validated payload cache entry, if any."""
-    global _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
-    entry = _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
+    global _validated_checkpoint_payload_cache
+    entry = _validated_checkpoint_payload_cache
     if entry is None:
         return None
     try:
         resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
     except FileNotFoundError:
-        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        _validated_checkpoint_payload_cache = None
         return None
     if (
         entry.path != resolved_path
         or entry.bytes != bytes_loaded
         or entry.mtime_ns != mtime_ns
     ):
-        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        _validated_checkpoint_payload_cache = None
         return None
-    _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+    _validated_checkpoint_payload_cache = None
     return entry.payload, entry.bytes
 
 
@@ -650,9 +671,11 @@ class _ChipironMorpionStateCheckpointCodec:
         )
         return result
 
-    def load_anchor_ref(self, payload: object) -> MorpionState:
+    def load_anchor_ref(self, anchor_ref: object) -> MorpionState:
         """Restore one anchor snapshot through Atomheart, then wrap it for Chipiron."""
-        return self.dynamics.wrap_atomheart_state(self.inner.load_anchor_ref(payload))
+        return self.dynamics.wrap_atomheart_state(
+            self.inner.load_anchor_ref(anchor_ref)
+        )
 
     def load_child_from_delta(
         self,
@@ -688,9 +711,9 @@ class _ChipironMorpionStateCheckpointCodec:
         inner_snapshot = getattr(self.inner, "checkpoint_profile_snapshot", None)
         if callable(inner_snapshot):
             snapshot = inner_snapshot()
-            if isinstance(snapshot, dict):
-                return snapshot
-            return dict(snapshot)
+            snapshot_mapping = _string_key_mapping_or_none(snapshot)
+            if snapshot_mapping is not None:
+                return dict(snapshot_mapping)
         return {
             "chipiron_morpion_anchor_avg_ms": _checkpoint_profile_average_ms(
                 self._profile.anchor_total_s,
@@ -791,7 +814,7 @@ class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
             )
 
         morpion_state = cast("MorpionState", state)
-        tensor = self.feature_converter.state_to_tensor(morpion_state)
+        tensor = cast("Any", self.feature_converter.state_to_tensor(morpion_state))
         regressor = cast("Any", self.regressor)
         raw_output = regressor(tensor)
         score = float(raw_output.detach().cpu().reshape(-1)[0].item())
@@ -855,9 +878,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         generation: int | None = None,
     ) -> None:
         """Configure optional latest Linoo table persistence for growth steps."""
-        self._linoo_selection_table_artifact_path = (
-            None if path is None else Path(path)
-        )
+        self._linoo_selection_table_artifact_path = None if path is None else Path(path)
         self._linoo_selection_table_cycle_index = cycle_index
         self._linoo_selection_table_generation = generation
 
@@ -980,7 +1001,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             if not isinstance(selected_depth, int):
                 node_selector = getattr(runtime, "node_selector", None)
                 uniform_selector = getattr(node_selector, "base", node_selector)
-                selected_depth = getattr(uniform_selector, "current_depth_to_expand", None)
+                selected_depth = getattr(
+                    uniform_selector, "current_depth_to_expand", None
+                )
             selector_report_rows = (
                 getattr(step_report, "selector_report_rows", None)
                 if step_report is not None
@@ -993,22 +1016,34 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier=%s heap_registered=%s stale_skipped=%s selector_state_rebuilt=%s selector_nodes_incrementally_updated=%s selector_total_nodes_scanned=%s selector_frontier_nodes_scanned=%s",
                 steps_executed,
                 _format_optional_seconds(
-                    getattr(step_report, "total_s", None) if step_report is not None else None
+                    getattr(step_report, "total_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(
-                    getattr(step_report, "select_s", None) if step_report is not None else None
+                    getattr(step_report, "select_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(
-                    getattr(step_report, "limit_s", None) if step_report is not None else None
+                    getattr(step_report, "limit_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(
-                    getattr(step_report, "expand_s", None) if step_report is not None else None
+                    getattr(step_report, "expand_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(
-                    getattr(step_report, "evaluate_s", None) if step_report is not None else None
+                    getattr(step_report, "evaluate_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(
-                    getattr(step_report, "propagate_s", None) if step_report is not None else None
+                    getattr(step_report, "propagate_s", None)
+                    if step_report is not None
+                    else None
                 ),
                 _format_optional_seconds(getattr(selector_report, "total_s", None)),
                 _format_optional_seconds(
@@ -1023,7 +1058,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _format_optional_seconds(
                     getattr(selector_report, "choose_node_s", None)
                 ),
-                _format_optional_seconds(getattr(selector_report, "make_report_s", None)),
+                _format_optional_seconds(
+                    getattr(selector_report, "make_report_s", None)
+                ),
                 _format_optional_int_log(selector_report_rows),
                 _format_optional_int_log(
                     getattr(selector_report, "total_nodes_scanned", None)
@@ -1045,9 +1082,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     selector_diagnostics["selector_nodes_incrementally_updated"]
                 ),
                 _metric_value(selector_diagnostics["selector_total_nodes_scanned"]),
-                _metric_value(
-                    selector_diagnostics["selector_frontier_nodes_scanned"]
-                ),
+                _metric_value(selector_diagnostics["selector_frontier_nodes_scanned"]),
             )
             if step_report is not None:
                 self._log_and_persist_linoo_selection_table(
@@ -1170,12 +1205,16 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         started_at = time.perf_counter()
+
+        def state_ref_dumper(state: object) -> object:
+            return self._state_codec.dump_state_ref(cast("MorpionState", state))
+
         manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
             nodes=ordered_nodes,
             root_node_id=str(runtime.tree.root_node.id),
             output_dir=output_dir,
             generation=generation,
-            state_ref_dumper=self._state_codec.dump_state_ref,
+            state_ref_dumper=state_ref_dumper,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
         )
@@ -1191,16 +1230,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def build_training_tree_snapshot_payload(
         self,
-    ) -> tuple[object, MorpionTrainingExportProfile]:
+    ) -> tuple[TrainingTreeSnapshot, MorpionTrainingExportProfile]:
         """Build a training snapshot plus aggregate profiling for the live tree."""
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         profile = MorpionTrainingExportProfile()
         started_at = perf_counter()
+
+        def state_ref_dumper(state: object) -> object:
+            return self._state_codec.dump_state_ref(cast("MorpionState", state))
+
         snapshot = build_training_tree_snapshot(
             ordered_nodes,
             root_node_id=str(runtime.tree.root_node.id),
-            state_ref_dumper=self._state_codec.dump_state_ref,
+            state_ref_dumper=state_ref_dumper,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
             profile=profile,
@@ -1276,9 +1319,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 blend_metrics.count,
                 _metric_value(_blend_average(blend_metrics.old_sum, blend_metrics)),
                 _metric_value(_blend_average(blend_metrics.new_sum, blend_metrics)),
-                _metric_value(
-                    _blend_average(blend_metrics.blended_sum, blend_metrics)
-                ),
+                _metric_value(_blend_average(blend_metrics.blended_sum, blend_metrics)),
                 _metric_value(selector_invalidated),
             )
         self._last_reevaluation_patch_apply_metrics = {
@@ -1304,7 +1345,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             result.recomputed_count,
             _metric_value(selector_invalidated),
         )
-        return result.applied_count
+        return int(result.applied_count)
 
     @property
     def last_reevaluation_patch_apply_metrics(self) -> dict[str, object] | None:
@@ -1325,15 +1366,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> object:
         """Create a fresh single-tree Morpion runtime with the selected evaluator."""
         evaluator = self._build_master_evaluator(model_bundle_path)
-        return create_tree_and_value_exploration_with_tree_eval_factory(
-            state_type=MorpionState,
-            dynamics=self._dynamics,
-            starting_state=self._dynamics.wrap_atomheart_state(initial_state()),
-            args=search_args,
-            random_generator=self._random_generator,
-            master_state_evaluator=evaluator,
-            state_representation_factory=None,
-            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+        return cast(
+            "object",
+            create_tree_and_value_exploration_with_tree_eval_factory(
+                state_type=MorpionState,
+                dynamics=self._dynamics,
+                starting_state=self._dynamics.wrap_atomheart_state(initial_state()),
+                args=search_args,
+                random_generator=self._random_generator,
+                master_state_evaluator=evaluator,
+                state_representation_factory=None,
+                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            ),
         )
 
     def _load_runtime_from_checkpoint(
@@ -1372,9 +1416,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 ]
             ),
             _metric_value(
-                restore_selector_state_fields[
-                    "restore_checkpoint_selector_state_type"
-                ]
+                restore_selector_state_fields["restore_checkpoint_selector_state_type"]
             ),
             _metric_value(
                 restore_selector_state_fields[
@@ -1398,19 +1440,22 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         rss_before_mb = _current_rss_mb()
         runtime_started_at = time.perf_counter()
         try:
-            runtime = load_search_from_checkpoint_payload(
-                payload,
-                state_codec=self._state_codec,
-                dynamics=self._dynamics,
-                args=search_args,
-                state_type=MorpionState,
-                master_state_value_evaluator=self._build_master_evaluator(None),
-                random_generator=self._random_generator,
-                state_representation_factory=None,
-                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            runtime = cast(
+                "object",
+                load_search_from_checkpoint_payload(
+                    payload,
+                    state_codec=self._state_codec,
+                    dynamics=self._dynamics,
+                    args=search_args,
+                    state_type=MorpionState,
+                    master_state_value_evaluator=self._build_master_evaluator(None),
+                    random_generator=self._random_generator,
+                    state_representation_factory=None,
+                    node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+                ),
             )
         finally:
-            payload = None
+            del payload
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
         rss_after_mb = _current_rss_mb()
         LOGGER.info(
@@ -1530,17 +1575,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
             str(output),
             _metric_value(
-                checkpoint_selector_state_fields[
-                    "checkpoint_selector_state_present"
-                ]
+                checkpoint_selector_state_fields["checkpoint_selector_state_present"]
             ),
             _metric_value(
                 checkpoint_selector_state_fields["checkpoint_selector_state_type"]
             ),
             _metric_value(
-                checkpoint_selector_state_fields[
-                    "checkpoint_selector_state_version"
-                ]
+                checkpoint_selector_state_fields["checkpoint_selector_state_version"]
             ),
         )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
@@ -1664,8 +1705,8 @@ def load_morpion_search_checkpoint_payload(
                 cache="miss",
             ),
         )
-        raw_payload = None
-        normalized_payload = None
+        del raw_payload
+        del normalized_payload
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
@@ -1677,16 +1718,29 @@ def load_morpion_search_checkpoint_payload(
 
 def _mapping(data: object) -> dict[str, object] | None:
     """Return ``data`` as a mutable mapping when possible."""
-    return dict(data) if isinstance(data, dict) else None
+    mapping = _string_key_mapping_or_none(data)
+    if mapping is None:
+        return None
+    return dict(mapping)
+
+
+def _string_key_mapping_or_none(data: object) -> Mapping[str, object] | None:
+    """Return ``data`` as a string-keyed mapping when possible."""
+    if not isinstance(data, dict):
+        return None
+    raw_mapping = cast("dict[object, object]", data)
+    if not all(isinstance(key, str) for key in raw_mapping):
+        return None
+    return cast("Mapping[str, object]", raw_mapping)
 
 
 def _normalize_search_checkpoint_payload_for_dacite(
     raw_payload: object,
-) -> object:
+) -> dict[str, object]:
     """Normalize union payload fields so dacite can rebuild checkpoint dataclasses."""
     normalized_payload = _mapping(raw_payload)
     if normalized_payload is None:
-        return raw_payload
+        raise _invalid_checkpoint_payload_mapping_error()
 
     normalized_selector_state = _mapping(normalized_payload.get("selector_state"))
     if normalized_selector_state is not None:
@@ -1698,15 +1752,16 @@ def _normalize_search_checkpoint_payload_for_dacite(
 
     normalized_tree = _mapping(normalized_payload.get("tree"))
     if normalized_tree is None:
-        return raw_payload
+        return normalized_payload
 
     raw_nodes = normalized_tree.get("nodes")
     if not isinstance(raw_nodes, list):
-        return raw_payload
+        return normalized_payload
+    node_payloads = cast("list[object]", raw_nodes)
 
     normalized_tree["nodes"] = [
         _normalize_algorithm_node_payload_for_dacite(node_payload)
-        for node_payload in raw_nodes
+        for node_payload in node_payloads
     ]
     normalized_payload["tree"] = normalized_tree
     return normalized_payload
@@ -1737,13 +1792,13 @@ def _checkpoint_state_payload_from_dict(
     if "anchor_ref" in normalized_state_payload:
         return from_dict(
             data_class=AnchorCheckpointStatePayload,
-            data=normalized_state_payload,
+            data=cast("Any", normalized_state_payload),
             config=Config(cast=[tuple], check_types=False),
         )
     if "delta_ref" in normalized_state_payload:
         return from_dict(
             data_class=DeltaCheckpointStatePayload,
-            data=normalized_state_payload,
+            data=cast("Any", normalized_state_payload),
             config=Config(cast=[tuple], check_types=False),
         )
     return raw_state_payload
@@ -1904,9 +1959,7 @@ def _recompute_after_blended_reevaluation(
         return 0
     tree_manager = runtime.tree_manager
     recomputed_nodes = (
-        tree_manager.value_propagator.propagate_after_local_value_changes(
-            changed_nodes
-        )
+        tree_manager.value_propagator.propagate_after_local_value_changes(changed_nodes)
     )
     tree_manager.refresh_exploration_indices(tree=runtime.tree)
     return len(recomputed_nodes)
@@ -1914,13 +1967,13 @@ def _recompute_after_blended_reevaluation(
 
 def _reevaluation_patch_direct_value(
     *,
-    row: object,
+    row: MorpionReevaluationPatchRow,
     live_node: object | None,
     blend_alpha: float,
     blend_metrics: _ReevaluationBlendMetrics,
 ) -> float:
     """Return the direct value to write for one reevaluation patch row."""
-    new_value = float(getattr(row, "direct_value"))
+    new_value = float(row.direct_value)
     if blend_alpha >= 1.0 or live_node is None:
         return new_value
     if _patch_row_is_authoritative(row) or _live_node_is_authoritative(live_node):
@@ -2010,11 +2063,15 @@ def _runtime_can_step(runtime: Any) -> bool:
     current_depth_to_expand = getattr(uniform_selector, "current_depth_to_expand", None)
     if not isinstance(current_depth_to_expand, int):
         return True
+    if tree is None:
+        return True
     tree_depth = tree.tree_root_tree_depth + current_depth_to_expand
     descendants = getattr(tree, "descendants", None)
     has_tree_depth = getattr(descendants, "has_tree_depth", None)
     if callable(has_tree_depth):
         return bool(has_tree_depth(tree_depth))
+    if descendants is None:
+        return True
     return tree_depth in descendants
 
 
@@ -2068,7 +2125,11 @@ def _live_tree_node_count(runtime: Any) -> int:
     descendants = getattr(tree, "descendants", None)
     get_count = getattr(descendants, "get_count", None)
     if callable(get_count):
-        return int(get_count())
+        count = get_count()
+        if isinstance(count, bool):
+            return int(count)
+        if isinstance(count, int | float | str):
+            return int(count)
     return len(runtime._all_nodes_in_tree_order())
 
 

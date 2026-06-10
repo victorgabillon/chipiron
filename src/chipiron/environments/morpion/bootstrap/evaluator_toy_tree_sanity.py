@@ -30,11 +30,14 @@ import random
 from dataclasses import asdict, dataclass, replace
 from itertools import pairwise
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, TypedDict, cast
 
 import numpy as np
 import torch
 from torch import nn
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 ToyCaseName = Literal[
     "A_stable_terminal_wins",
@@ -228,6 +231,21 @@ class ToyIterationMetric:
     linear_a_value_from_weights: float | None
 
 
+class ToyStrategyComparisonRow(TypedDict):
+    """One typed row in the strategy-comparison summary table."""
+
+    strategy: str
+    final_root_target: float
+    final_root_prediction: float
+    max_target_drift: float
+    max_prediction_drift: float
+    diverged: bool
+    root_argmax_history_short: str
+
+
+type ToyCsvRow = ToyIterationMetric | ToyNodeHistoryRow
+
+
 @dataclass(frozen=True, slots=True)
 class ToyNodeHistoryRow:
     """Per-node row for later plotting and diagnosis."""
@@ -324,7 +342,7 @@ class ToyValueNet(nn.Module):
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Predict scalar values for a batch of feature vectors."""
-        return self.network(features).squeeze(-1)
+        return cast("torch.Tensor", self.network(features).squeeze(-1))
 
     def _zero_final_layer(self) -> None:
         """Set the final linear layer to predict zero initially."""
@@ -363,7 +381,7 @@ class ToyLinearNoBiasNet(nn.Module):
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Predict scalar values for a batch of feature vectors."""
-        return self.linear(features).squeeze(-1)
+        return cast("torch.Tensor", self.linear(features).squeeze(-1))
 
 
 def make_toy_model(config: ToyRunConfig, feature_dim: int) -> nn.Module:
@@ -707,7 +725,8 @@ def train_weighted_regressor(
             loss = torch.sum(batch_weights * (prediction - batch_targets).square())
             loss = loss / torch.clamp(torch.sum(batch_weights), min=1e-12)
             optimizer.zero_grad()
-            loss.backward()
+            backward = cast("Callable[[], None]", loss.backward)
+            backward()
             optimizer.step()
             epoch_loss_num += float(
                 torch.sum(
@@ -853,7 +872,9 @@ def predict_all_nodes(model: nn.Module, tree: ToyTree) -> dict[int, float]:
     return {node_id: float(value) for node_id, value in zip(node_ids, raw, strict=True)}
 
 
-def compare_strategies(base_config: ToyRunConfig) -> tuple[dict[str, object], ...]:
+def compare_strategies(
+    base_config: ToyRunConfig,
+) -> tuple[ToyStrategyComparisonRow, ...]:
     """Run a small fixed mitigation matrix and print a comparison table."""
     strategies = (
         (
@@ -959,7 +980,7 @@ def compare_strategies(base_config: ToyRunConfig) -> tuple[dict[str, object], ..
             ),
         ),
     )
-    comparison: list[dict[str, object]] = []
+    comparison: list[ToyStrategyComparisonRow] = []
     for strategy_name, config in strategies:
         result = run_toy_tree_sanity(config)
         final_metric = result.metrics[-1]
@@ -1199,8 +1220,10 @@ def _family_aggregate(
 def _linear_weights(model: nn.Module) -> tuple[float, ...] | None:
     if not isinstance(model, ToyLinearNoBiasNet):
         return None
+    flattened_weights = model.linear.weight.detach().cpu().flatten()
     return tuple(
-        float(value) for value in model.linear.weight.detach().cpu().flatten().tolist()
+        float(flattened_weights[index].item())
+        for index in range(flattened_weights.numel())
     )
 
 
@@ -1314,7 +1337,7 @@ def _iteration_metric(
         num_child_backup_rows=row_counts["child_backup"],
         num_frontier_rows=row_counts["frontier_prediction"],
         weighted_train_loss_final=final_loss,
-        unweighted_mae_all_rows=_row_mae(rows, prediction_after),
+        unweighted_mae_all_rows=_required_row_mae(rows, prediction_after),
         mae_exact=_row_mae(
             rows, prediction_after, source="ground_truth_exact_or_terminal"
         ),
@@ -1386,6 +1409,15 @@ def _row_mae(
     if not selected:
         return None
     return _mean([abs(predictions[row.node_id] - row.target) for row in selected])
+
+
+def _required_row_mae(
+    rows: tuple[ToyTrainingRow, ...],
+    predictions: dict[int, float],
+) -> float:
+    """Return the overall row MAE, defaulting to zero when no rows exist."""
+    value = _row_mae(rows, predictions)
+    return 0.0 if value is None else value
 
 
 def _mean(values: list[float]) -> float:
@@ -1504,7 +1536,7 @@ def _linear_weight_text(metric: ToyIterationMetric) -> str:
     )
 
 
-def _print_comparison(comparison: list[dict[str, object]]) -> None:
+def _print_comparison(comparison: list[ToyStrategyComparisonRow]) -> None:
     print("\nStrategy comparison")
     print(
         "strategy final_root_target final_root_prediction max_target_drift "
@@ -1513,17 +1545,19 @@ def _print_comparison(comparison: list[dict[str, object]]) -> None:
     for row in comparison:
         print(
             f"{row['strategy']} "
-            f"{float(row['final_root_target']):.3f} "
-            f"{float(row['final_root_prediction']):.3f} "
-            f"{float(row['max_target_drift']):.3f} "
-            f"{float(row['max_prediction_drift']):.3f} "
+            f"{row['final_root_target']:.3f} "
+            f"{row['final_root_prediction']:.3f} "
+            f"{row['max_target_drift']:.3f} "
+            f"{row['max_prediction_drift']:.3f} "
             f"{row['diverged']} "
             f"{row['root_argmax_history_short']}"
         )
 
 
 def _short_history(values: object) -> str:
-    sequence = list(values)
+    if not hasattr(values, "__iter__"):
+        return str(values)
+    sequence = list(cast("Iterable[object]", values))
     if len(sequence) <= 8:
         return ",".join(str(value) for value in sequence)
     head = ",".join(str(value) for value in sequence[:4])
@@ -1542,7 +1576,7 @@ def _write_tree_config(path: Path, tree: ToyTree, config: ToyRunConfig) -> None:
     )
 
 
-def _write_csv(path: Path, rows: tuple[object, ...]) -> None:
+def _write_csv(path: Path, rows: tuple[ToyCsvRow, ...]) -> None:
     if not rows:
         return
     path.parent.mkdir(parents=True, exist_ok=True)

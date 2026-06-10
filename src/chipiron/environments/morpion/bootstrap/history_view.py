@@ -274,7 +274,9 @@ def _dataset_status_artifacts(
 ) -> tuple[MorpionPipelineDatasetStatusArtifact, ...]:
     """Return readable dataset-status artifacts sorted by generation."""
     statuses: list[MorpionPipelineDatasetStatusArtifact] = []
-    for status_path in sorted(paths.pipeline_dir.glob("generation_*/dataset_status.json")):
+    for status_path in sorted(
+        paths.pipeline_dir.glob("generation_*/dataset_status.json")
+    ):
         try:
             statuses.append(load_pipeline_dataset_status_file(status_path))
         except Exception:
@@ -292,15 +294,6 @@ def _dataset_statuses_with_record(
     """Return dataset-status artifacts that contain a certified record status."""
     return tuple(
         status for status in dataset_statuses if status.record_status is not None
-    )
-
-
-def _dataset_statuses_with_frontier(
-    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
-) -> tuple[MorpionPipelineDatasetStatusArtifact, ...]:
-    """Return dataset-status artifacts that contain a frontier status."""
-    return tuple(
-        status for status in dataset_statuses if status.frontier_status is not None
     )
 
 
@@ -330,7 +323,6 @@ def summarize_bootstrap_run(
     """Summarize the latest known bootstrap run state for dashboard display."""
     history = run_view.history
     latest_event = _latest_known_event(run_view)
-    latest_run_state = run_view.run_state
 
     num_cycles = len(history)
     num_train_cycles = sum(1 for event in history if event.training.triggered)
@@ -605,7 +597,6 @@ def summarize_record_progress(
     total_points_series: Sequence[OptionalIntTimeSeriesPoint],
 ) -> MorpionRecordProgressSummary:
     """Summarize canonical Morpion record progression across time series."""
-
     latest_score = None if not score_series else score_series[-1].value
     best_score = max(
         (point.value for point in score_series if point.value is not None),
@@ -656,12 +647,16 @@ def build_morpion_bootstrap_dashboard_data(
         if record_dataset_statuses
         else record_total_points_series(history)
     )
-    artifact_dataset_num_rows = _dataset_status_dataset_num_rows_series(dataset_statuses)
+    artifact_dataset_num_rows = _dataset_status_dataset_num_rows_series(
+        dataset_statuses
+    )
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
         disk_usage_summary=build_disk_usage_summary(run_view.work_dir),
         latest_tree_snapshot_status_message=resolved_tree_snapshot.status_message,
-        latest_tree_status=_latest_tree_status(run_view, latest_snapshot=latest_snapshot),
+        latest_tree_status=_latest_tree_status(
+            run_view, latest_snapshot=latest_snapshot
+        ),
         latest_tree_node_classification_summary=summarize_tree_node_classification(
             latest_snapshot
         ),
@@ -762,7 +757,9 @@ def _evaluator_loss_series_by_name_from_training_status(
 ) -> Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
     """Return evaluator loss series keyed by evaluator name from training artifacts."""
     series_by_name: dict[str, list[OptionalFloatTimeSeriesPoint]] = {}
-    for status_path in sorted(paths.pipeline_dir.glob("generation_*/training_status.json")):
+    for status_path in sorted(
+        paths.pipeline_dir.glob("generation_*/training_status.json")
+    ):
         try:
             status = load_pipeline_training_status_file(status_path)
         except Exception:
@@ -1134,13 +1131,6 @@ def _latest_frontier_status(
     if run_view.run_state is not None:
         return run_view.run_state.latest_frontier_status
     return None
-
-
-def _latest_tree_snapshot_path(
-    run_view: MorpionBootstrapRunView,
-) -> Path | None:
-    """Return the latest persisted tree snapshot path for one run view."""
-    return _resolve_latest_tree_snapshot_reference(run_view).snapshot_path
 
 
 def _resolve_latest_tree_snapshot_reference(

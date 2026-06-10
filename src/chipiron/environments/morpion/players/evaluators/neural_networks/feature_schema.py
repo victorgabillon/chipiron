@@ -333,8 +333,6 @@ def _validate_ordered_feature_names(
     seen: set[str] = set()
     duplicates: list[str] = []
     for feature_name in feature_names:
-        if not isinstance(feature_name, str):
-            raise InvalidMorpionFeatureSubsetError.non_string_context(context)
         if feature_name in seen:
             duplicates.append(feature_name)
         seen.add(feature_name)
