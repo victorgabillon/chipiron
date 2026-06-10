@@ -6,10 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chipiron.displays.gui_protocol import UpdatePayload, UpdGameStatus, UpdStateGeneric
-from chipiron.environments.morpion.morpion_display import (
-    MorpionDisplayPayload,
-    build_morpion_display_payload,
-)
+from chipiron.environments.morpion.morpion_display import build_morpion_display_payload
 from chipiron.environments.morpion.types import (
     MorpionDynamics,
     MorpionState,
@@ -21,9 +18,6 @@ if TYPE_CHECKING:
     from valanga.game import Seed
 
     from chipiron.games.domain.game.game_playing_status import PlayingStatus
-
-
-__all__ = ["MorpionDisplayPayload", "MorpionGuiEncoder"]
 
 
 @dataclass(frozen=True, slots=True)

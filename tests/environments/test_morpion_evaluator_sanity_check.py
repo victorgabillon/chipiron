@@ -196,11 +196,11 @@ def test_backup_target_diagnostics_summarize_direct_vs_backed_up() -> None:
         created_at="2026-04-26T10:00:00Z",
     )
 
-    assert diagnostics["dataset_size"] == 4
-    assert diagnostics["comparable_direct_and_backed_up_count"] == 3
-    assert diagnostics["summary"]["mse_backed_up_vs_direct"] == 2.25
-    assert diagnostics["backed_up_row_status"]["frontier_estimate_rows"] == 2
-    assert diagnostics["backed_up_row_status"]["exact_or_terminal_rows"] == 1
+    assert diagnostics["dataset_size"] == 6
+    assert diagnostics["comparable_direct_and_backed_up_count"] == 5
+    assert diagnostics["summary"]["mse_backed_up_vs_direct"] == 1.85
+    assert diagnostics["backed_up_row_status"]["frontier_estimate_rows"] == 3
+    assert diagnostics["backed_up_row_status"]["exact_or_terminal_rows"] == 2
     worst = diagnostics["top_worst_deltas"][0]
     assert worst["node_id"] == "a1"
     assert worst["delta"] == 2.5

@@ -145,10 +145,10 @@ def test_dashboard_cli_runs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     captured = capsys.readouterr().out
     assert "=== Morpion Bootstrap Run Summary ===" in captured
     assert "cycles: 1 (train: 1, no-train: 0)" in captured
-    assert "latest record: 12 moves (48 points)" in captured
+    assert "=== Certified Record Progress ===" in captured
+    assert "latest: 12" in captured
     assert "=== Evaluator Selection ===" in captured
     assert "linear: 1" in captured
-    assert "=== Record Progress ===" in captured
     assert "best: 12 (first reached at cycle 0)" in captured
 
 

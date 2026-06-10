@@ -259,7 +259,7 @@ def resolve_latest_runtime_checkpoint(
             )
 
     checkpoint_candidates = sorted(
-        paths.runtime_checkpoint_dir.glob("generation_*.json")
+        paths.runtime_checkpoint_dir.glob("generation_*.json*")
     )
     if checkpoint_candidates:
         fallback_message = metadata_warning

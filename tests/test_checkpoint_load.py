@@ -59,7 +59,7 @@ def test_checkpoint_zstd_write_avoids_streaming_writer(
         ZstdDecompressor=lambda: None,
     )
 
-    monkeypatch.setattr(checkpoint_io_module, "_zstandard", fake_zstandard)
+    monkeypatch.setattr(checkpoint_io_module, "_zstandard_module", fake_zstandard)
     output_path = tmp_path / "unused.json.zst"
     compressed_stats = checkpoint_io_module.write_checkpoint_json_payload(
         {"generation": 12, "nodes": [{"id": 1}]},

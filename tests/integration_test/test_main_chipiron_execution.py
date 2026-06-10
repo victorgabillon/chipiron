@@ -4,6 +4,10 @@ import os
 import subprocess
 import sys
 
+TESTS_ROOT = os.path.dirname(__file__)
+REPO_ROOT = os.path.abspath(os.path.join(TESTS_ROOT, "../.."))
+ANEMONE_SRC = os.path.abspath(os.path.join(REPO_ROOT, "../anemone/src"))
+
 SCRIPT_PATH = os.path.join(
     os.path.dirname(__file__), "../../src/chipiron/scripts/main_chipiron.py"
 )
@@ -50,6 +54,14 @@ def test_main_chipiron_one_match_executes() -> None:
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["MPLBACKEND"] = "Agg"
+    env["PYTHONPATH"] = os.pathsep.join(
+        path
+        for path in (
+            ANEMONE_SRC,
+            env.get("PYTHONPATH"),
+        )
+        if path
+    )
 
     returncode, output = run_with_live_output(cmd, env)
 

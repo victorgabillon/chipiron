@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -102,6 +103,9 @@ from chipiron.environments.morpion.bootstrap import (
     save_reevaluation_cursor,
     save_reevaluation_patch,
 )
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
 from chipiron.environments.morpion.learning import MorpionSupervisedRows
 
 
@@ -112,7 +116,7 @@ def _make_morpion_payload() -> dict[str, object]:
     first_action = dynamics.all_legal_actions(start_state)[0]
     next_state = dynamics.step(start_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
-    return codec.dump_state_ref(next_state)
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
 
 
 def _make_training_snapshot(
@@ -187,6 +191,30 @@ class FakeMorpionSearchRunner:
         )
         save_training_tree_snapshot(snapshot, output_path)
 
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded export mirroring the flat training snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
+        )
+        return manifest_path
+
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Write one checkpoint placeholder so save-branch manifests can point to it."""
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -196,6 +224,68 @@ class FakeMorpionSearchRunner:
         """Return the current predefined tree size."""
         index = max(self._cycle_index, 0)
         return self._tree_sizes[index]
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
 
 
 def _empty_rows_bundle(*, generation: int = 1) -> MorpionSupervisedRows:
@@ -727,9 +817,13 @@ def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -
 
     assert manifest.dataset_status == "done"
     assert manifest.training_status == "done"
-    assert manifest.tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert manifest.tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
+    )
     assert manifest.rows_path == "rows/generation_000001.json"
-    assert manifest.runtime_checkpoint_path == "search_checkpoints/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == str(
+        paths.runtime_checkpoint_path_for_generation(1).relative_to(paths.work_dir)
+    )
     assert manifest.selected_evaluator_name is not None
     assert (
         manifest.model_bundle_paths[manifest.selected_evaluator_name]

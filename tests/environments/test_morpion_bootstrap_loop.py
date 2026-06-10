@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 import logging
 import sys
@@ -98,6 +99,9 @@ from chipiron.environments.morpion.bootstrap.dataset_family_targets import (
 from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
     diagnostics_path,
     load_evaluator_training_diagnostics,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
 )
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
@@ -279,6 +283,30 @@ class FakeMorpionSearchRunner:
         )
         save_training_tree_snapshot(snapshot, output_path)
 
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded training export using the same deterministic snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
+        )
+        return manifest_path
+
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Write one real runtime checkpoint so resume-path validation can run."""
         self.checkpoint_calls.append(str(output_path))
@@ -315,6 +343,68 @@ def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
             ),
         }
     )
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
 
 
 def _patch_reported_losses(
@@ -848,7 +938,11 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     run_state = MorpionBootstrapRunState(
         generation=2,
         cycle_index=11,
-        latest_tree_snapshot_path="tree_exports/generation_000002.json",
+        latest_tree_snapshot_path=str(
+            paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
+                paths.work_dir
+            )
+        ),
         latest_rows_path="rows/generation_000002.json",
         latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
         active_evaluator_name="linear",
@@ -876,7 +970,11 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
 
     assert next_state.generation == 2
     assert next_state.cycle_index == 12
-    assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000002.json"
+    assert next_state.latest_tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
+            paths.work_dir
+        )
+    )
     assert next_state.latest_rows_path == "rows/generation_000002.json"
     assert next_state.latest_model_bundle_paths == {
         "linear": "models/generation_000002/linear"
@@ -929,11 +1027,17 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     assert next_state.cycle_index == 0
     assert next_state.tree_size_at_last_save == 10
     assert next_state.last_save_unix_s == 200.0
-    assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert next_state.latest_tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
+    )
     assert next_state.latest_rows_path == "rows/generation_000001.json"
     assert (
         next_state.latest_runtime_checkpoint_path
-        == "search_checkpoints/generation_000001.json"
+        == str(
+            paths.runtime_checkpoint_path_for_generation(1).relative_to(
+                paths.work_dir
+            )
+        )
     )
     assert next_state.latest_model_bundle_paths == {
         "default": "models/generation_000001/default"
@@ -1099,17 +1203,34 @@ def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
     assert third_state.generation == 3
     assert (
         third_state.latest_runtime_checkpoint_path
-        == "search_checkpoints/generation_000003.json"
+        == str(
+            paths.runtime_checkpoint_path_for_generation(3).relative_to(
+                paths.work_dir
+            )
+        )
     )
     assert (
-        third_state.latest_tree_snapshot_path == "tree_exports/generation_000003.json"
+        third_state.latest_tree_snapshot_path
+        == str(
+            paths.sharded_tree_snapshot_path_for_generation(3).relative_to(
+                paths.work_dir
+            )
+        )
     )
     assert sorted(
-        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
-    ) == ["generation_000002.json", "generation_000003.json"]
+        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json*")
+    ) == [
+        paths.runtime_checkpoint_path_for_generation(2).name,
+        paths.runtime_checkpoint_path_for_generation(3).name,
+    ]
     assert sorted(
-        path.name for path in paths.tree_snapshot_dir.glob("generation_*.json")
-    ) == ["generation_000002.json", "generation_000003.json"]
+        path.name
+        for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
+    ) == [
+        paths.sharded_tree_snapshot_path_for_generation(1).name,
+        paths.sharded_tree_snapshot_path_for_generation(2).name,
+        paths.sharded_tree_snapshot_path_for_generation(3).name,
+    ]
     assert paths.rows_path_for_generation(1).is_file()
     assert paths.rows_path_for_generation(2).is_file()
     assert paths.rows_path_for_generation(3).is_file()
@@ -1152,18 +1273,19 @@ def test_loop_does_not_prune_previous_artifacts_when_run_state_save_fails(
         run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
     assert sorted(
-        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
+        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json*")
     ) == [
-        "generation_000001.json",
-        "generation_000002.json",
-        "generation_000003.json",
+        paths.runtime_checkpoint_path_for_generation(1).name,
+        paths.runtime_checkpoint_path_for_generation(2).name,
+        paths.runtime_checkpoint_path_for_generation(3).name,
     ]
     assert sorted(
-        path.name for path in paths.tree_snapshot_dir.glob("generation_*.json")
+        path.name
+        for path in paths.sharded_tree_snapshot_dir.glob("generation_*.json")
     ) == [
-        "generation_000001.json",
-        "generation_000002.json",
-        "generation_000003.json",
+        paths.sharded_tree_snapshot_path_for_generation(1).name,
+        paths.sharded_tree_snapshot_path_for_generation(2).name,
+        paths.sharded_tree_snapshot_path_for_generation(3).name,
     ]
 
 
@@ -1217,7 +1339,12 @@ def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_f
     run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
     assert (
-        first_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+        first_state.latest_tree_snapshot_path
+        == str(
+            paths.sharded_tree_snapshot_path_for_generation(1).relative_to(
+                paths.work_dir
+            )
+        )
     )
     assert runner.load_calls[1] == (
         str(paths.runtime_checkpoint_path_for_generation(1)),
@@ -1366,7 +1493,11 @@ def test_resume_fails_for_unknown_active_evaluator(tmp_path: Path) -> None:
             run_state=MorpionBootstrapRunState(
                 generation=2,
                 cycle_index=11,
-                latest_tree_snapshot_path="tree_exports/generation_000002.json",
+                latest_tree_snapshot_path=str(
+                    paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
+                        paths.work_dir
+                    )
+                ),
                 latest_rows_path="rows/generation_000002.json",
                 latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
                 active_evaluator_name="mlp",
@@ -1397,7 +1528,11 @@ def test_resume_fails_for_missing_active_evaluator_with_multiple_bundles(
             run_state=MorpionBootstrapRunState(
                 generation=2,
                 cycle_index=11,
-                latest_tree_snapshot_path="tree_exports/generation_000002.json",
+                latest_tree_snapshot_path=str(
+                    paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
+                        paths.work_dir
+                    )
+                ),
                 latest_rows_path="rows/generation_000002.json",
                 latest_model_bundle_paths={
                     "linear": "models/generation_000002/linear",
@@ -1426,7 +1561,11 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
         run_state=MorpionBootstrapRunState(
             generation=2,
             cycle_index=11,
-            latest_tree_snapshot_path="tree_exports/generation_000002.json",
+            latest_tree_snapshot_path=str(
+                paths.sharded_tree_snapshot_path_for_generation(2).relative_to(
+                    paths.work_dir
+                )
+            ),
             latest_rows_path="rows/generation_000002.json",
             latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
             active_evaluator_name=None,
@@ -1539,7 +1678,9 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
     assert state.active_evaluator_name is None
     assert state.latest_model_bundle_paths is None
     assert state.latest_rows_path == "rows/generation_000001.json"
-    assert state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert state.latest_tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
+    )
     assert state.metadata[
         bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY
     ] == (bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON)
@@ -1575,7 +1716,11 @@ def test_empty_dataset_resume_preserves_previous_evaluator_state(
     previous_state = MorpionBootstrapRunState(
         generation=1,
         cycle_index=0,
-        latest_tree_snapshot_path="tree_exports/generation_000001.json",
+        latest_tree_snapshot_path=str(
+            paths.sharded_tree_snapshot_path_for_generation(1).relative_to(
+                paths.work_dir
+            )
+        ),
         latest_rows_path="rows/generation_000001.json",
         latest_model_bundle_paths=previous_bundle_paths,
         active_evaluator_name="linear",

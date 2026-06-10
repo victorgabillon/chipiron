@@ -36,7 +36,7 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.factory impo
 )
 from chipiron.environments.deps import MorpionEnvironmentDeps
 from chipiron.environments.environment import make_environment
-from chipiron.environments.morpion.morpion_gui_encoder import MorpionDisplayPayload
+from chipiron.environments.morpion.morpion_display import MorpionDisplayPayload
 from chipiron.environments.morpion.morpion_rules import MorpionRules
 from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
     MorpionStateEvaluator,
