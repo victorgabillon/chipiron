@@ -815,11 +815,6 @@ def test_checkpoint_validation_payload_is_reused_for_immediate_restore(
 
     monkeypatch.setattr(
         anemone_runner_module,
-        "_VALIDATED_CHECKPOINT_PAYLOAD_CACHE",
-        None,
-    )
-    monkeypatch.setattr(
-        anemone_runner_module,
         "load_morpion_search_checkpoint_payload",
         _fake_payload_loader,
     )

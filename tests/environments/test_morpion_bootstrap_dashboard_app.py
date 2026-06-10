@@ -80,7 +80,6 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _force_evaluator_options,
     _format_force_evaluator_option,
     _format_force_evaluator_state,
-    _format_optional_runtime_override,
     _format_value,
     _has_pending_control_changes,
     _is_stale_forced_evaluator,
@@ -802,8 +801,6 @@ def test_format_helpers() -> None:
     """Formatting helpers should keep absent values explicit in the UI."""
     assert _format_value(None) == "n/a"
     assert _format_value(7) == "7"
-    assert _format_optional_runtime_override(None) == "unset"
-    assert _format_optional_runtime_override(64) == "64"
     assert _format_force_evaluator_option("") == "No configured evaluators"
     assert _format_force_evaluator_option("mlp") == "mlp (stale / not configured)"
 

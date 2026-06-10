@@ -380,9 +380,11 @@ def test_launcher_configures_checkpoint_logger_level() -> None:
     def _fake_set_checkpoint_logger_level(level: int) -> None:
         received_levels.append(level)
 
-    original_setter = launcher_module.set_checkpoint_logger_level
+    original_loader = launcher_module._load_checkpoint_logger_level_setter
     try:
-        launcher_module.set_checkpoint_logger_level = _fake_set_checkpoint_logger_level
+        launcher_module._load_checkpoint_logger_level_setter = lambda: (
+            _fake_set_checkpoint_logger_level
+        )
 
         launcher_module._configure_anemone_checkpoint_logging(
             verbose_checkpoint_logs=False
@@ -391,7 +393,7 @@ def test_launcher_configures_checkpoint_logger_level() -> None:
             verbose_checkpoint_logs=True
         )
     finally:
-        launcher_module.set_checkpoint_logger_level = original_setter
+        launcher_module._load_checkpoint_logger_level_setter = original_loader
 
     assert received_levels == [logging.INFO, logging.DEBUG]
 
@@ -400,16 +402,16 @@ def test_launcher_checkpoint_logging_noops_when_setter_unavailable(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Old installed Anemone should not crash launcher import-time logging config."""
-    original_setter = launcher_module.set_checkpoint_logger_level
+    original_loader = launcher_module._load_checkpoint_logger_level_setter
     caplog.set_level(logging.WARNING)
     try:
-        launcher_module.set_checkpoint_logger_level = None
+        launcher_module._load_checkpoint_logger_level_setter = lambda: None
 
         launcher_module._configure_anemone_checkpoint_logging(
             verbose_checkpoint_logs=False
         )
     finally:
-        launcher_module.set_checkpoint_logger_level = original_setter
+        launcher_module._load_checkpoint_logger_level_setter = original_loader
 
     assert "checkpoint_log_config_skipped" in caplog.text
 
