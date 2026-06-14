@@ -46,7 +46,6 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import (
-    TrainingNodeSnapshot,
     TrainingTreeSnapshot,
     save_training_tree_snapshot,
 )
@@ -62,24 +61,29 @@ from chipiron.environments.morpion.bootstrap import (
     DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
+    RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
     IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapConfig,
     MorpionBootstrapDatasetConfig,
     MorpionBootstrapExperimentIdentityConfig,
     MorpionBootstrapPaths,
+    MorpionBootstrapRolloutConfig,
     MorpionBootstrapRuntimeConfig,
+    MorpionBootstrapSearchConfig,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     UnsafeMorpionBootstrapConfigChangeError,
-    RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
     bootstrap_config_from_args,
+    bootstrap_config_from_dict,
     bootstrap_config_sha256,
+    bootstrap_config_to_dict,
     bootstrap_fields_owned_by_stage,
     canonical_morpion_evaluator_family_config,
     dataset_stage_owned_bootstrap_fields,
@@ -98,6 +102,9 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 
@@ -123,7 +130,7 @@ def _make_training_snapshot(
     *, target_value: float, root_node_id: str
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for config-path tests."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),
@@ -330,6 +337,42 @@ def test_growth_worker_allows_runtime_save_after_tree_growth_factor_drift(
         persisted_config=persisted,
         requested_config=requested,
     )
+
+
+def test_default_rollout_config_preserves_legacy_python_behavior() -> None:
+    """Rollout should be disabled unless a launcher explicitly enables it."""
+    rollout = MorpionBootstrapRolloutConfig()
+
+    assert rollout.enabled is False
+    assert rollout.max_extra_steps is None
+    assert rollout.action_selector_kind == "random_openable"
+    assert rollout.random_seed == 0
+    assert rollout.stop_on_existing_node is False
+
+
+def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> None:
+    """Persisted bootstrap config should include the rollout search settings."""
+    args = replace(
+        _make_args(tmp_path),
+        search=MorpionBootstrapSearchConfig(
+            rollout=MorpionBootstrapRolloutConfig(enabled=True)
+        ),
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["search"] == {
+        "rollout": {
+            "enabled": True,
+            "max_extra_steps": None,
+            "action_selector_kind": "random_openable",
+            "random_seed": 0,
+            "stop_on_existing_node": False,
+        }
+    }
+    assert loaded.search.rollout == config.search.rollout
 
 
 def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
@@ -706,26 +749,23 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert bootstrap_fields_owned_by_stage("dataset_worker") == (
         dataset_stage_owned_bootstrap_fields()
     )
-    assert GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
+    assert {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
-    }
-    assert RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
+    } == GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    assert {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
-    }
+    } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
     assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
-        "max_growth_steps_per_cycle",
-        "tree_branch_limit",
-        "reevaluation_blend_alpha",
-        "save_after_seconds",
-        "save_after_tree_growth_factor",
+        *GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+        *GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
     }
 
 
@@ -1014,6 +1054,8 @@ def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    assert load_bootstrap_config(config_path).runtime.tree_branch_limit == (
-        DEFAULT_MORPION_TREE_BRANCH_LIMIT
-    )
+    loaded_config = load_bootstrap_config(config_path)
+
+    assert loaded_config.runtime.tree_branch_limit == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    assert loaded_config.search.rollout.enabled is False
+    assert loaded_config.search.rollout.max_extra_steps is None

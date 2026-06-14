@@ -79,6 +79,46 @@ class MorpionBootstrapDatasetConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionBootstrapRolloutConfig:
+    """Search expansion rollout settings for Morpion bootstrap.
+
+    Disabled by default to preserve old Python launcher behavior.
+    ``max_extra_steps=None`` means Anemone rollout continues until a normal stop
+    condition.
+    """
+
+    enabled: bool = False
+    max_extra_steps: int | None = None
+    action_selector_kind: str = "random_openable"
+    random_seed: int | None = 0
+    stop_on_existing_node: bool = False
+
+    def __post_init__(self) -> None:
+        """Validate rollout scalar controls."""
+        if isinstance(self.max_extra_steps, bool):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "search.rollout.max_extra_steps"
+            )
+        if self.max_extra_steps is not None and self.max_extra_steps < 0:
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "search.rollout.max_extra_steps"
+            )
+        if isinstance(self.random_seed, bool):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "search.rollout.random_seed"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapSearchConfig:
+    """Search behavior controls for one persistent Morpion bootstrap run."""
+
+    rollout: MorpionBootstrapRolloutConfig = field(
+        default_factory=MorpionBootstrapRolloutConfig
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionBootstrapExperimentIdentityConfig:
     """Semantic identity fields that define one Morpion bootstrap run."""
 
@@ -96,6 +136,9 @@ class MorpionBootstrapConfig:
     runtime: MorpionBootstrapRuntimeConfig
     dataset: MorpionBootstrapDatasetConfig
     evaluators: MorpionEvaluatorsConfig
+    search: MorpionBootstrapSearchConfig = field(
+        default_factory=MorpionBootstrapSearchConfig
+    )
     validation_fraction: float = 0.2
     validation_seed: int = 0
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
@@ -225,12 +268,27 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
     }
 )
 
+GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS = frozenset(
+    {
+        "rollout_after_opening",
+        "rollout_max_extra_steps",
+        "rollout_action_selector_kind",
+        "rollout_random_seed",
+        "rollout_stop_on_existing_node",
+    }
+)
+
 STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS: dict[str, frozenset[str]] = {
-    "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    "dataset_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    "training": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    "training_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    "reevaluation": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    "dataset_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    "training": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    "training_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    "reevaluation": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
 }
 
 RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
@@ -264,6 +322,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             family_prediction_blend=args.dataset_family_prediction_blend,
         ),
         evaluators=args.resolved_evaluators_config(),
+        search=args.search,
         validation_fraction=args.validation_fraction,
         validation_seed=args.validation_seed,
         evaluator_update_policy=args.evaluator_update_policy,
@@ -296,6 +355,15 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "use_backed_up_value": config.dataset.use_backed_up_value,
             "family_target_policy": config.dataset.family_target_policy,
             "family_prediction_blend": config.dataset.family_prediction_blend,
+        },
+        "search": {
+            "rollout": {
+                "enabled": config.search.rollout.enabled,
+                "max_extra_steps": config.search.rollout.max_extra_steps,
+                "action_selector_kind": config.search.rollout.action_selector_kind,
+                "random_seed": config.search.rollout.random_seed,
+                "stop_on_existing_node": config.search.rollout.stop_on_existing_node,
+            }
         },
         "evaluators": _evaluators_config_to_dict(config.evaluators),
         "validation_fraction": config.validation_fraction,
@@ -474,6 +542,7 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             ),
         ),
         evaluators=evaluators,
+        search=_search_config_from_payload(payload.get("search")),
         validation_fraction=_coerce_float(
             payload.get("validation_fraction", 0.2),
             field_name="validation_fraction",
@@ -567,6 +636,13 @@ def diff_bootstrap_configs(
     )
     if previous.evaluators != current.evaluators:
         differences.append("evaluators")
+    differences.extend(
+        _diff_dataclass_section(
+            previous.search.rollout,
+            current.search.rollout,
+            prefix="search.rollout",
+        )
+    )
     if previous.validation_fraction != current.validation_fraction:
         differences.append("validation_fraction")
     if previous.validation_seed != current.validation_seed:
@@ -645,6 +721,11 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "save_after_seconds",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
+        "rollout_after_opening",
+        "rollout_max_extra_steps",
+        "rollout_action_selector_kind",
+        "rollout_random_seed",
+        "rollout_stop_on_existing_node",
         "evaluator_update_policy",
         "training_export_mode",
     )
@@ -710,11 +791,13 @@ def _diff_dataclass_section(
         MorpionBootstrapExperimentIdentityConfig
         | MorpionBootstrapRuntimeConfig
         | MorpionBootstrapDatasetConfig
+        | MorpionBootstrapRolloutConfig
     ),
     current: (
         MorpionBootstrapExperimentIdentityConfig
         | MorpionBootstrapRuntimeConfig
         | MorpionBootstrapDatasetConfig
+        | MorpionBootstrapRolloutConfig
     ),
     *,
     prefix: str,
@@ -751,6 +834,11 @@ def _stage_bootstrap_config_field_values(
         "save_after_seconds": config.runtime.save_after_seconds,
         "tree_branch_limit": config.runtime.tree_branch_limit,
         "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
+        "rollout_after_opening": config.search.rollout.enabled,
+        "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
+        "rollout_action_selector_kind": config.search.rollout.action_selector_kind,
+        "rollout_random_seed": config.search.rollout.random_seed,
+        "rollout_stop_on_existing_node": config.search.rollout.stop_on_existing_node,
         "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
         "min_depth": config.dataset.min_depth,
         "min_visit_count": config.dataset.min_visit_count,
@@ -787,6 +875,41 @@ def _config_field_is_owned_by_stage(field_name: str, owned_fields: set[str]) -> 
             & owned_fields
         )
     return False
+
+
+def _search_config_from_payload(value: object) -> MorpionBootstrapSearchConfig:
+    """Deserialize the optional search config section with legacy defaults."""
+    if value is None:
+        return MorpionBootstrapSearchConfig()
+    search = _require_section_mapping(value, section_name="search")
+    rollout_data = search.get("rollout")
+    if rollout_data is None:
+        return MorpionBootstrapSearchConfig()
+    rollout = _require_section_mapping(rollout_data, section_name="search.rollout")
+    return MorpionBootstrapSearchConfig(
+        rollout=MorpionBootstrapRolloutConfig(
+            enabled=_required_bool(
+                rollout.get("enabled", False),
+                field_name="search.rollout.enabled",
+            ),
+            max_extra_steps=_optional_int(
+                rollout.get("max_extra_steps"),
+                field_name="search.rollout.max_extra_steps",
+            ),
+            action_selector_kind=_required_str(
+                rollout.get("action_selector_kind", "random_openable"),
+                field_name="search.rollout.action_selector_kind",
+            ),
+            random_seed=_optional_int(
+                rollout.get("random_seed", 0),
+                field_name="search.rollout.random_seed",
+            ),
+            stop_on_existing_node=_required_bool(
+                rollout.get("stop_on_existing_node", False),
+                field_name="search.rollout.stop_on_existing_node",
+            ),
+        )
+    )
 
 
 def _evaluators_config_to_dict(config: MorpionEvaluatorsConfig) -> dict[str, object]:
@@ -912,6 +1035,7 @@ __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
+    "GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS",
     "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
     "STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS",
     "IncompatibleStageBootstrapConfigError",
@@ -919,12 +1043,15 @@ __all__ = [
     "MorpionBootstrapConfig",
     "MorpionBootstrapDatasetConfig",
     "MorpionBootstrapExperimentIdentityConfig",
+    "MorpionBootstrapRolloutConfig",
     "MorpionBootstrapRuntimeConfig",
+    "MorpionBootstrapSearchConfig",
     "UnsafeMorpionBootstrapConfigChangeError",
     "bootstrap_config_from_args",
     "bootstrap_config_from_dict",
     "bootstrap_config_sha256",
     "bootstrap_config_to_canonical_json",
+    "bootstrap_config_to_dict",
     "bootstrap_config_to_dict",
     "bootstrap_fields_owned_by_stage",
     "dataset_stage_owned_bootstrap_fields",

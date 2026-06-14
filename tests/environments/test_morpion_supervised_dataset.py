@@ -67,6 +67,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     morpion_state_to_tensor,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -86,7 +89,7 @@ def _make_training_node(
     target_value: float,
 ) -> TrainingNodeSnapshot:
     """Build one export node that PR 5 will convert into a raw Morpion row."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=(),
         child_ids=(),

@@ -8,7 +8,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
@@ -261,7 +261,7 @@ if "chipiron.environments.morpion.learning" not in sys.modules:
         metadata: dict[str, object] | None = None,
     ) -> _MorpionSupervisedRow:
         return _MorpionSupervisedRow(
-            node_id=str(getattr(node, "node_id")),
+            node_id=str(cast("Any", node).node_id),
             state_ref_payload=cast(
                 "dict[str, object]", getattr(node, "state_ref_payload", {})
             ),
@@ -489,6 +489,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
     MorpionRegressor,
     MorpionRegressorArgs,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _node(
@@ -504,7 +507,7 @@ def _node(
     state_ref_payload: dict[str, object] | None = None,
 ) -> TrainingNodeSnapshot:
     """Build one synthetic training node."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=parent_ids,
         child_ids=child_ids,

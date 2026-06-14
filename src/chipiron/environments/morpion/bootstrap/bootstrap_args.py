@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
     InvalidReevaluationBlendAlphaError,
 )
-from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
+from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapSearchConfig
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import morpion_evaluators_config_from_preset
 from .pipeline_config import (
@@ -67,6 +67,9 @@ class MorpionBootstrapArgs:
     pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
     training_export_mode: MorpionTrainingExportMode = (
         DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    )
+    search: MorpionBootstrapSearchConfig = field(
+        default_factory=MorpionBootstrapSearchConfig
     )
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None

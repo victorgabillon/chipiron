@@ -69,6 +69,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_MODEL_ARGS_FILE_NAME,
     MORPION_MODEL_WEIGHTS_FILE_NAME,
     IncompatibleMorpionModelBundleError,
+    MorpionFeatureSubset,
     MorpionRegressorArgs,
     build_morpion_regressor,
     load_morpion_model_bundle,
@@ -80,9 +81,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
-def _feature_subset(width: int):
+def _feature_subset(width: int) -> MorpionFeatureSubset:
     """Return one deterministic explicit Morpion feature subset for tests."""
     return morpion_feature_subset_from_feature_names(
         f"handcrafted_{width}_custom",
@@ -107,7 +111,7 @@ def _make_training_node(
     target_value: float,
 ) -> TrainingNodeSnapshot:
     """Build one export node that PR 5 will convert into a raw Morpion row."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=(),
         child_ids=(),

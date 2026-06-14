@@ -65,9 +65,9 @@ from chipiron.environments.morpion.bootstrap import (
     IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
     MorpionPipelineActiveModel,
     MorpionPipelineEvaluatorTrainingResult,
-    MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
     MorpionPipelineWorkerResult,
     MorpionReevaluationPatch,
@@ -100,6 +100,9 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
     save_morpion_supervised_rows,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 if TYPE_CHECKING:
@@ -223,7 +226,7 @@ def _make_training_snapshot(
     root_node_id: str,
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for pipeline stage tests."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),
@@ -785,12 +788,14 @@ def test_dataset_stage_marks_failed_on_exception(
         paths.pipeline_manifest_path_for_generation(1),
     )
 
-    with caplog.at_level(logging.INFO):
-        with pytest.raises(
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(
             FileNotFoundError,
             match=r"Pipeline tree snapshot does not exist: .*generation_000001.json",
-        ):
-            run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+        ),
+    ):
+        run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
@@ -1509,10 +1514,7 @@ def test_growth_stage_uses_requested_tree_branch_limit(
 
     assert len(captured_runner_args) == 1
     assert (
-        getattr(
-            captured_runner_args[0], "search_args"
-        ).stopping_criterion.tree_branch_limit
-        == 128
+        captured_runner_args[0].search_args.stopping_criterion.tree_branch_limit == 128
     )
 
 

@@ -49,6 +49,12 @@ from anemone.training_export import (
     build_training_tree_snapshot,
     save_training_tree_snapshot,
 )
+from anemone.tree_manager import (
+    OpeningExpansionConfig,
+    OpeningExpansionKind,
+    RolloutActionSelectorKind,
+    RolloutExpansionConfig,
+)
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 from dacite import Config, from_dict
@@ -67,7 +73,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
-from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
+from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapRolloutConfig
 from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .cycle_timing import timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s
 from .history import MorpionBootstrapTreeStatus
@@ -427,7 +433,30 @@ def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
     return False
 
 
-def _default_search_args() -> SearchArgs:
+def _opening_expansion_config_from_rollout(
+    rollout: MorpionBootstrapRolloutConfig | None,
+) -> OpeningExpansionConfig:
+    """Build Anemone opening-expansion config from persisted Morpion rollout."""
+    if rollout is None or not rollout.enabled:
+        return OpeningExpansionConfig()
+
+    return OpeningExpansionConfig(
+        kind=OpeningExpansionKind.ROLLOUT,
+        rollout=RolloutExpansionConfig(
+            max_extra_steps=rollout.max_extra_steps,
+            action_selector_kind=RolloutActionSelectorKind(
+                rollout.action_selector_kind
+            ),
+            random_seed=rollout.random_seed,
+            stop_on_existing_node=rollout.stop_on_existing_node,
+        ),
+    )
+
+
+def _default_search_args(
+    *,
+    rollout: MorpionBootstrapRolloutConfig | None = None,
+) -> SearchArgs:
     """Build the default Morpion tree-search args used by the bootstrap runner."""
     return SearchArgs(
         node_selector=ComposedNodeSelectorArgs(
@@ -444,6 +473,7 @@ def _default_search_args() -> SearchArgs:
             type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
             tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
         ),
+        opening_expansion=_opening_expansion_config_from_rollout(rollout),
     )
 
 
@@ -452,6 +482,45 @@ def _opening_type_name(search_args: SearchArgs) -> str:
     opening_type = search_args.opening_type
     value = getattr(opening_type, "value", None)
     return value if isinstance(value, str) else str(opening_type)
+
+
+def _opening_expansion_kind_name(search_args: SearchArgs) -> str:
+    """Return a stable operator-facing opening-expansion kind label."""
+    opening_expansion = search_args.opening_expansion
+    kind = getattr(opening_expansion, "kind", None)
+    value = getattr(kind, "value", None)
+    return value if isinstance(value, str) else str(kind)
+
+
+def _log_search_rollout_config(search_args: SearchArgs) -> None:
+    """Emit the effective rollout expansion config for operator logs."""
+    opening_expansion = search_args.opening_expansion
+    rollout = getattr(opening_expansion, "rollout", None)
+    enabled = getattr(opening_expansion, "kind", None) == OpeningExpansionKind.ROLLOUT
+    LOGGER.info(
+        "[search] rollout enabled=%s max_extra_steps=%s action_selector=%s random_seed=%s stop_on_existing_node=%s",
+        enabled,
+        _metric_value(getattr(rollout, "max_extra_steps", None)),
+        _metric_value(getattr(rollout, "action_selector_kind", None)),
+        _metric_value(getattr(rollout, "random_seed", None)),
+        _metric_value(getattr(rollout, "stop_on_existing_node", None)),
+    )
+
+
+def _log_latest_rollout_report(runtime: object) -> None:
+    """Emit the latest Anemone rollout report when the runtime exposes one."""
+    tree_manager = getattr(runtime, "tree_manager", None)
+    report = getattr(tree_manager, "latest_rollout_report", None)
+    if report is None:
+        return
+    LOGGER.info(
+        "[rollout] total_edges=%s initial_edges=%s extra_edges=%s traversals=%s stops=%s",
+        _metric_value(getattr(report, "total_edge_count", None)),
+        _metric_value(getattr(report, "initial_edge_count", None)),
+        _metric_value(getattr(report, "extra_edge_count", None)),
+        _metric_value(getattr(report, "traversal_count", None)),
+        _metric_value(getattr(report, "stop_reason_counts", None)),
+    )
 
 
 def _current_rss_mb() -> float | None:
@@ -908,10 +977,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             None if model_bundle_path is None else Path(model_bundle_path)
         )
         LOGGER.info(
-            "[search] selector=%s opening_type=%s",
+            "[search] selector=%s opening_type=%s opening_expansion=%s",
             _selector_family_name(self._args.search_args),
             _opening_type_name(self._args.search_args),
+            _opening_expansion_kind_name(self._args.search_args),
         )
+        _log_search_rollout_config(self._args.search_args)
         if tree_snapshot_path is None:
             LOGGER.info(
                 "[runtime] create_start evaluator_bundle=%s",
@@ -1091,6 +1162,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     selected_depth=selected_depth,
                     selected_node_id=selected_node_id,
                 )
+            _log_latest_rollout_report(runtime)
             LOGGER.info(
                 "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s selected_node_id=%s selected_depth=%s",
                 steps_executed,

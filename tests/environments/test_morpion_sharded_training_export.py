@@ -10,12 +10,16 @@ from pathlib import Path
 from types import ModuleType
 from typing import cast
 
-import pytest
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
+
+
+def _state_access_regression_error(node_id: str) -> AssertionError:
+    """Return the stable old-node state-access regression error."""
+    return AssertionError(f"state accessed for old node {node_id}")
+
 
 if "chipiron" not in sys.modules:
     _chipiron_stub = ModuleType("chipiron")
@@ -32,7 +36,7 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
-from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+from anemone.training_export import TrainingTreeSnapshot
 from atomheart.games.morpion import MorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
@@ -43,6 +47,9 @@ from chipiron.environments.morpion.bootstrap.sharded_training_export import (
 )
 from chipiron.environments.morpion.learning import (
     training_tree_snapshot_to_morpion_supervised_rows,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 
@@ -79,7 +86,7 @@ class _LiveNode:
     def state(self) -> dict[str, object]:
         """Return the stored payload or fail when old-node access regresses."""
         if not self.allow_state_access:
-            raise AssertionError(f"state accessed for old node {self.id}")
+            raise _state_access_regression_error(self.id)
         self.state_access_count += 1
         return self.state_payload
 
@@ -98,7 +105,7 @@ def _expected_snapshot(
     return TrainingTreeSnapshot(
         root_node_id=root_node_id,
         nodes=tuple(
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id=node.id,
                 parent_ids=node.parent_ids,
                 child_ids=node.child_ids,

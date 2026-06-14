@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import logging
 import sys
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
 from typing import cast
@@ -89,6 +89,9 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
     save_morpion_supervised_rows,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 
@@ -191,7 +194,7 @@ def _make_training_snapshot(
     root_node_id: str,
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for orchestrator tests."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),

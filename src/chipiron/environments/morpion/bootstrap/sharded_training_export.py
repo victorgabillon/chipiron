@@ -290,6 +290,20 @@ def _merge_node_record_and_update(
     update: MorpionShardedTrainingNodeUpdate,
 ) -> TrainingNodeSnapshot:
     """Merge immutable and mutable shard rows into one training node snapshot."""
+    tree_value_scalar = update.backed_up_value_scalar
+    effective_value_scalar = (
+        tree_value_scalar
+        if tree_value_scalar is not None
+        else update.direct_value_scalar
+    )
+    effective_value_source = (
+        "tree_value" if tree_value_scalar is not None else "direct_value"
+    )
+    target_value_scalar = (
+        tree_value_scalar
+        if tree_value_scalar is not None
+        else update.direct_value_scalar
+    )
     return TrainingNodeSnapshot(
         node_id=record.node_id,
         parent_ids=record.parent_ids,
@@ -299,6 +313,10 @@ def _merge_node_record_and_update(
         if record.state_ref_payload is None
         else dict(record.state_ref_payload),
         direct_value_scalar=update.direct_value_scalar,
+        tree_value_scalar=tree_value_scalar,
+        effective_value_scalar=effective_value_scalar,
+        effective_value_source=effective_value_source,
+        target_value_scalar=target_value_scalar,
         backed_up_value_scalar=update.backed_up_value_scalar,
         is_terminal=update.is_terminal,
         is_exact=update.is_exact,

@@ -48,9 +48,9 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.checkpoints import (
+    DEFAULT_CHECKPOINT_FILE_FORMAT,
     AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
-    DEFAULT_CHECKPOINT_FILE_FORMAT,
     DeltaCheckpointStatePayload,
     SearchRuntimeCheckpointPayload,
     TreeCheckpointPayload,
@@ -70,6 +70,7 @@ from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import load_training_tree_snapshot
 from anemone.tree_exploration import TreeGrowthStepReport
+from anemone.tree_manager import OpeningExpansionKind, RolloutActionSelectorKind
 from anemone.utils.logger import checkpoint_logger, set_checkpoint_logger_level
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
@@ -83,6 +84,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapControl,
     MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapPaths,
+    MorpionBootstrapRolloutConfig,
     MorpionBootstrapRunState,
     MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
@@ -394,6 +396,32 @@ def test_default_search_args_use_linoo_selector() -> None:
     assert isinstance(node_selector, ComposedNodeSelectorArgs)
     assert isinstance(node_selector.base, LinooArgs)
     assert node_selector.base.type == NodeSelectorType.LINOO
+    assert (
+        runner._args.search_args.opening_expansion.kind == OpeningExpansionKind.ONE_PLY
+    )
+
+
+def test_default_search_args_can_enable_rollout_after_opening() -> None:
+    """Rollout config should map to Anemone's opening-expansion API."""
+    search_args = anemone_runner_module._default_search_args(
+        rollout=MorpionBootstrapRolloutConfig(enabled=True)
+    )
+
+    assert search_args.opening_expansion.kind == OpeningExpansionKind.ROLLOUT
+    rollout = search_args.opening_expansion.rollout
+    assert rollout.max_extra_steps is None
+    assert rollout.action_selector_kind == RolloutActionSelectorKind.RANDOM_OPENABLE
+    assert rollout.random_seed == 0
+    assert rollout.stop_on_existing_node is False
+
+
+def test_disabled_rollout_preserves_one_ply_opening_expansion() -> None:
+    """Disabled rollout should preserve Anemone's one-ply expansion default."""
+    search_args = anemone_runner_module._default_search_args(
+        rollout=MorpionBootstrapRolloutConfig(enabled=False)
+    )
+
+    assert search_args.opening_expansion.kind == OpeningExpansionKind.ONE_PLY
 
 
 def test_runner_state_codec_exposes_incremental_checkpoint_protocol() -> None:

@@ -107,6 +107,9 @@ from chipiron.environments.morpion.bootstrap.sharded_training_export import (
     save_morpion_sharded_training_tree_from_live_nodes,
 )
 from chipiron.environments.morpion.learning import MorpionSupervisedRows
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -125,7 +128,7 @@ def _make_training_snapshot(
     root_node_id: str,
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for pipeline tests."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),

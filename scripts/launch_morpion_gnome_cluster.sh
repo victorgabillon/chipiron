@@ -25,6 +25,11 @@ GROWTH_TREE_BRANCH_LIMIT=1000000
 GROWTH_MAX_STEPS_PER_CYCLE="${GROWTH_MAX_STEPS_PER_CYCLE:-100}"
 GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR="${GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR:-1.2}"
 GROWTH_SAVE_AFTER_SECONDS="${GROWTH_SAVE_AFTER_SECONDS:-10}"
+MORPION_ROLLOUT_AFTER_OPENING="${MORPION_ROLLOUT_AFTER_OPENING:-1}"
+MORPION_ROLLOUT_MAX_EXTRA_STEPS="${MORPION_ROLLOUT_MAX_EXTRA_STEPS:-none}"
+MORPION_ROLLOUT_ACTION_SELECTOR_KIND="${MORPION_ROLLOUT_ACTION_SELECTOR_KIND:-random_openable}"
+MORPION_ROLLOUT_RANDOM_SEED="${MORPION_ROLLOUT_RANDOM_SEED:-0}"
+MORPION_ROLLOUT_STOP_ON_EXISTING_NODE="${MORPION_ROLLOUT_STOP_ON_EXISTING_NODE:-0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -55,9 +60,17 @@ PY"
     -- bash -lc "$command"
 }
 
-GROWTH_ARGS="--pipeline-stage growth --tree-branch-limit $GROWTH_TREE_BRANCH_LIMIT --max-growth-steps-per-cycle $GROWTH_MAX_STEPS_PER_CYCLE --save-after-tree-growth-factor $GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR --save-after-seconds $GROWTH_SAVE_AFTER_SECONDS"
+ROLLOUT_ARGS="--rollout-max-extra-steps $MORPION_ROLLOUT_MAX_EXTRA_STEPS --rollout-action-selector-kind $MORPION_ROLLOUT_ACTION_SELECTOR_KIND --rollout-random-seed $MORPION_ROLLOUT_RANDOM_SEED"
+if [[ "$MORPION_ROLLOUT_AFTER_OPENING" == "1" ]]; then
+  ROLLOUT_ARGS="$ROLLOUT_ARGS --rollout-after-opening"
+fi
+if [[ "$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE" == "1" ]]; then
+  ROLLOUT_ARGS="$ROLLOUT_ARGS --rollout-stop-on-existing-node"
+fi
 
-launch_worker_terminal "GROWTH" "$GROWTH_SLEEP_SECONDS" "" "$GROWTH_ARGS" "growth.log" "[GROWTH] work_dir=$MORPION_WORK_DIR\n[GROWTH] anemone_repo_root=$ANEMONE_REPO_ROOT\n[GROWTH] training_export_mode=$TRAINING_EXPORT_MODE\n[GROWTH] tree_branch_limit=$GROWTH_TREE_BRANCH_LIMIT\n[GROWTH] max_growth_steps_per_cycle=$GROWTH_MAX_STEPS_PER_CYCLE\n[GROWTH] save_after_tree_growth_factor=$GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR\n[GROWTH] save_after_seconds=$GROWTH_SAVE_AFTER_SECONDS"
-launch_worker_terminal "DATASET" "$DATASET_SLEEP_SECONDS" "" "--pipeline-stage dataset_worker" "dataset.log" "[DATASET] work_dir=$MORPION_WORK_DIR\n[DATASET] anemone_repo_root=$ANEMONE_REPO_ROOT\n[DATASET] training_export_mode=$TRAINING_EXPORT_MODE"
-launch_worker_terminal "TRAINING" "$TRAINING_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=0 " "--pipeline-stage training_worker" "training.log" "[TRAINING] work_dir=$MORPION_WORK_DIR\n[TRAINING] anemone_repo_root=$ANEMONE_REPO_ROOT\n[TRAINING] training_export_mode=$TRAINING_EXPORT_MODE"
-launch_worker_terminal "REEVALUATION" "$REEVALUATION_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=1 " "--pipeline-stage reevaluation" "reevaluation.log" "[REEVALUATION] work_dir=$MORPION_WORK_DIR\n[REEVALUATION] anemone_repo_root=$ANEMONE_REPO_ROOT\n[REEVALUATION] training_export_mode=$TRAINING_EXPORT_MODE"
+GROWTH_ARGS="--pipeline-stage growth --tree-branch-limit $GROWTH_TREE_BRANCH_LIMIT --max-growth-steps-per-cycle $GROWTH_MAX_STEPS_PER_CYCLE --save-after-tree-growth-factor $GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR --save-after-seconds $GROWTH_SAVE_AFTER_SECONDS $ROLLOUT_ARGS"
+
+launch_worker_terminal "GROWTH" "$GROWTH_SLEEP_SECONDS" "" "$GROWTH_ARGS" "growth.log" "[GROWTH] work_dir=$MORPION_WORK_DIR\n[GROWTH] anemone_repo_root=$ANEMONE_REPO_ROOT\n[GROWTH] training_export_mode=$TRAINING_EXPORT_MODE\n[GROWTH] tree_branch_limit=$GROWTH_TREE_BRANCH_LIMIT\n[GROWTH] max_growth_steps_per_cycle=$GROWTH_MAX_STEPS_PER_CYCLE\n[GROWTH] save_after_tree_growth_factor=$GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR\n[GROWTH] save_after_seconds=$GROWTH_SAVE_AFTER_SECONDS\n[GROWTH] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"
+launch_worker_terminal "DATASET" "$DATASET_SLEEP_SECONDS" "" "--pipeline-stage dataset_worker $ROLLOUT_ARGS" "dataset.log" "[DATASET] work_dir=$MORPION_WORK_DIR\n[DATASET] anemone_repo_root=$ANEMONE_REPO_ROOT\n[DATASET] training_export_mode=$TRAINING_EXPORT_MODE\n[DATASET] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"
+launch_worker_terminal "TRAINING" "$TRAINING_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=0 " "--pipeline-stage training_worker $ROLLOUT_ARGS" "training.log" "[TRAINING] work_dir=$MORPION_WORK_DIR\n[TRAINING] anemone_repo_root=$ANEMONE_REPO_ROOT\n[TRAINING] training_export_mode=$TRAINING_EXPORT_MODE\n[TRAINING] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"
+launch_worker_terminal "REEVALUATION" "$REEVALUATION_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=1 " "--pipeline-stage reevaluation $ROLLOUT_ARGS" "reevaluation.log" "[REEVALUATION] work_dir=$MORPION_WORK_DIR\n[REEVALUATION] anemone_repo_root=$ANEMONE_REPO_ROOT\n[REEVALUATION] training_export_mode=$TRAINING_EXPORT_MODE\n[REEVALUATION] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"

@@ -70,6 +70,9 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
     load_morpion_supervised_rows,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -94,7 +97,7 @@ def _make_node(
     is_exact: bool = False,
 ) -> TrainingNodeSnapshot:
     """Build one valid training node for sanity-check tests."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=parent_ids,
         child_ids=child_ids,

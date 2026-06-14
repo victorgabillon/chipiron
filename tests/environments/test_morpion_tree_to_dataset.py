@@ -51,6 +51,9 @@ from chipiron.environments.morpion.learning.tree_to_dataset import (
     training_node_to_morpion_supervised_row,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -91,7 +94,7 @@ def _make_training_node(
     visit_count: int | None = 7,
 ) -> TrainingNodeSnapshot:
     """Build one training node snapshot for row-extraction tests."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=(),
         child_ids=(),

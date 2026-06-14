@@ -58,6 +58,9 @@ from chipiron.environments.morpion.bootstrap import (
     resolve_record_status_for_cycle,
     save_bootstrap_run_state,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload(move_count: int) -> dict[str, object]:
@@ -79,7 +82,7 @@ def _make_training_node(
     is_terminal: bool = False,
 ) -> TrainingNodeSnapshot:
     """Build one training-node snapshot with a known Morpion move count."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=(),
         child_ids=(),
@@ -103,7 +106,7 @@ def _make_metadata_only_training_node(
     is_terminal: bool = False,
 ) -> TrainingNodeSnapshot:
     """Build one training node whose state payload must not be decoded."""
-    return TrainingNodeSnapshot(
+    return make_training_node_snapshot(
         node_id=node_id,
         parent_ids=(),
         child_ids=(),
@@ -516,7 +519,7 @@ def test_leaderboard_keeps_only_top_100_per_variant(
         snapshot = TrainingTreeSnapshot(
             root_node_id=f"node-{move_count}",
             nodes=(
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id=f"node-{move_count}",
                     parent_ids=(),
                     child_ids=(),

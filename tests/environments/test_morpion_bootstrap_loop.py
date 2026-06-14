@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import Any, cast
@@ -116,6 +116,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
     load_morpion_model_bundle,
 )
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 _EMPTY_DATASET_TRAINING_ERROR = AssertionError(
     "training should not run for an empty extracted dataset"
@@ -153,7 +156,7 @@ def _make_training_snapshot(
     root_node_id: str,
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for the bootstrap loop."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),
@@ -180,7 +183,7 @@ def _make_family_target_training_snapshot() -> TrainingTreeSnapshot:
     return TrainingTreeSnapshot(
         root_node_id="0",
         nodes=(
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="0",
                 parent_ids=(),
                 child_ids=("2",),
@@ -194,7 +197,7 @@ def _make_family_target_training_snapshot() -> TrainingTreeSnapshot:
                 visit_count=7,
                 metadata={},
             ),
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="2",
                 parent_ids=("0",),
                 child_ids=("3",),
@@ -208,7 +211,7 @@ def _make_family_target_training_snapshot() -> TrainingTreeSnapshot:
                 visit_count=5,
                 metadata={},
             ),
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="3",
                 parent_ids=("2",),
                 child_ids=(),

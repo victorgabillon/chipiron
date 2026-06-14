@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import shlex
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -15,6 +16,7 @@ from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_n
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
+    _default_search_args,
     apply_runtime_control_to_runner_args,
 )
 from .bootstrap_args import MorpionBootstrapArgs
@@ -25,6 +27,8 @@ from .bootstrap_loop import (
 from .config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
+    MorpionBootstrapRolloutConfig,
+    MorpionBootstrapSearchConfig,
     bootstrap_config_from_args,
     load_bootstrap_config,
     save_bootstrap_config,
@@ -77,9 +81,34 @@ type CheckpointLoggerSetter = Callable[[int], None]
 LOGGER = logging.getLogger(__name__)
 
 
+_ROLLOUT_CONFIG_CLI_PREFIXES = (
+    "--rollout-max-extra-steps",
+    "--rollout-action-selector-kind",
+    "--rollout-random-seed",
+)
+
+
 def _non_loop_stage_requires_artifact_pipeline_error() -> ValueError:
     """Build the canonical launcher mode mismatch error."""
     return ValueError("artifact_pipeline mode required for non-loop stages")
+
+
+def _rollout_max_extra_steps_parse_error() -> argparse.ArgumentTypeError:
+    """Return the stable rollout max-extra-steps parse error."""
+    return argparse.ArgumentTypeError("expected 'none' or a non-negative integer")
+
+
+def _parse_optional_non_negative_int(raw: str) -> int | None:
+    """Parse a non-negative integer or an explicit unbounded sentinel."""
+    if raw.lower() in {"none", "null", "unbounded"}:
+        return None
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise _rollout_max_extra_steps_parse_error() from exc
+    if value < 0:
+        raise _rollout_max_extra_steps_parse_error()
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,6 +122,7 @@ class MorpionBootstrapLauncherArgs:
     reevaluation_max_nodes_per_patch: int = 10_000
     verbose_checkpoint_logs: bool = False
     training_export_mode_explicit: bool = False
+    rollout_config_explicit: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -284,6 +314,11 @@ def _collect_launcher_startup_status(
                 requested_bootstrap_args,
                 training_export_mode=bootstrap_config.training_export_mode,
             )
+        if not launcher_args.rollout_config_explicit:
+            requested_bootstrap_args = replace(
+                requested_bootstrap_args,
+                search=bootstrap_config.search,
+            )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
         validate_stage_bootstrap_config_compatibility(
             stage=launcher_args.pipeline_stage,
@@ -353,6 +388,7 @@ def _bootstrap_args_with_persisted_config(
         evaluator_update_policy=persisted_config.evaluator_update_policy,
         pipeline_mode=persisted_config.pipeline_mode,
         training_export_mode=persisted_config.training_export_mode,
+        search=persisted_config.search,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
     )
@@ -372,7 +408,11 @@ def _build_launcher_runner(
             tree_branch_limit=startup_status.resolved_bootstrap_args.tree_branch_limit,
         )
     runner_args = apply_runtime_control_to_runner_args(
-        AnemoneMorpionSearchRunnerArgs(),
+        AnemoneMorpionSearchRunnerArgs(
+            search_args=_default_search_args(
+                rollout=startup_status.bootstrap_config.search.rollout
+            )
+        ),
         effective_runtime_config,
     )
     return AnemoneMorpionSearchRunner(runner_args)
@@ -450,6 +490,12 @@ def _render_launcher_startup_summary(
             "tree_branch_limit: "
             f"{effective_runtime_config.tree_branch_limit} "
             f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
+            "rollout: "
+            f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
+            f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
+            f"action_selector={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
+            f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
+            f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}",
             "dashboard: "
             f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}",
             "paths:",
@@ -733,6 +779,29 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     )
     parser.add_argument(
+        "--rollout-after-opening",
+        action="store_true",
+        default=False,
+        help="Enable Anemone rollout expansion after each selected opening.",
+    )
+    parser.add_argument(
+        "--rollout-max-extra-steps",
+        type=_parse_optional_non_negative_int,
+        default=None,
+        help="'none' for unbounded-until-stop rollout, or a non-negative integer.",
+    )
+    parser.add_argument(
+        "--rollout-action-selector-kind",
+        choices=["first_openable", "random_openable", "no_rollout"],
+        default="random_openable",
+    )
+    parser.add_argument("--rollout-random-seed", type=int, default=0)
+    parser.add_argument(
+        "--rollout-stop-on-existing-node",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
         "--reevaluation-blend-alpha",
         type=float,
         default=1.0,
@@ -777,14 +846,20 @@ def launcher_args_from_cli(
     argv: Sequence[str] | None = None,
 ) -> MorpionBootstrapLauncherArgs:
     """Parse CLI arguments into the canonical launcher dataclass."""
-    argv_list = list(argv) if argv is not None else None
+    argv_list = list(argv) if argv is not None else sys.argv[1:]
     training_export_mode_explicit = False
-    if argv_list is not None:
-        training_export_mode_explicit = any(
-            argument == "--training-export-mode"
-            or argument.startswith("--training-export-mode=")
-            for argument in argv_list
-        )
+    rollout_config_explicit = False
+    training_export_mode_explicit = any(
+        argument == "--training-export-mode"
+        or argument.startswith("--training-export-mode=")
+        for argument in argv_list
+    )
+    rollout_config_explicit = any(
+        argument == "--rollout-after-opening"
+        or argument == "--rollout-stop-on-existing-node"
+        or argument.startswith(_ROLLOUT_CONFIG_CLI_PREFIXES)
+        for argument in argv_list
+    )
     parser = build_launcher_argument_parser()
     parsed = parser.parse_args(argv_list)
     _validate_pipeline_stage_cli(
@@ -829,6 +904,15 @@ def launcher_args_from_cli(
         memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
         tree_branch_limit=parsed.tree_branch_limit,
         reevaluation_blend_alpha=parsed.reevaluation_blend_alpha,
+        search=MorpionBootstrapSearchConfig(
+            rollout=MorpionBootstrapRolloutConfig(
+                enabled=parsed.rollout_after_opening,
+                max_extra_steps=parsed.rollout_max_extra_steps,
+                action_selector_kind=parsed.rollout_action_selector_kind,
+                random_seed=parsed.rollout_random_seed,
+                stop_on_existing_node=parsed.rollout_stop_on_existing_node,
+            )
+        ),
     )
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
@@ -838,6 +922,7 @@ def launcher_args_from_cli(
         reevaluation_max_nodes_per_patch=parsed.reevaluation_max_nodes_per_patch,
         verbose_checkpoint_logs=parsed.verbose_checkpoint_logs,
         training_export_mode_explicit=training_export_mode_explicit,
+        rollout_config_explicit=rollout_config_explicit,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

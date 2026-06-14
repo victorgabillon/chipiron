@@ -7,6 +7,10 @@ import json
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pytest import MonkeyPatch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -43,7 +47,6 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import (
-    TrainingNodeSnapshot,
     TrainingTreeSnapshot,
     save_training_tree_snapshot,
 )
@@ -105,6 +108,9 @@ from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     LinooSelectionTable,
     LinooSelectionTableRow,
     save_linoo_selection_table,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 
@@ -300,7 +306,7 @@ def test_build_current_certified_record_board_view_renders_numbered_points(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     snapshot = TrainingTreeSnapshot(
         nodes=(
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="certified-2",
                 parent_ids=(),
                 child_ids=(),
@@ -341,7 +347,7 @@ def test_summarize_tree_node_classification_counts_small_snapshot() -> None:
     snapshot = TrainingTreeSnapshot(
         root_node_id="root",
         nodes=(
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="root",
                 parent_ids=(),
                 child_ids=("a",),
@@ -352,7 +358,7 @@ def test_summarize_tree_node_classification_counts_small_snapshot() -> None:
                 is_terminal=False,
                 is_exact=False,
             ),
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="a",
                 parent_ids=("root",),
                 child_ids=(),
@@ -363,7 +369,7 @@ def test_summarize_tree_node_classification_counts_small_snapshot() -> None:
                 is_terminal=True,
                 is_exact=True,
             ),
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="b",
                 parent_ids=("root",),
                 child_ids=(),
@@ -374,7 +380,7 @@ def test_summarize_tree_node_classification_counts_small_snapshot() -> None:
                 is_terminal=False,
                 is_exact=True,
             ),
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id="c",
                 parent_ids=("root",),
                 child_ids=(),
@@ -1345,7 +1351,7 @@ def test_dashboard_loss_series_falls_back_to_old_final_loss(
 
 def test_dashboard_data_tolerates_snapshot_nodes_without_exact_terminal_flags(
     tmp_path: Path,
-    monkeypatch,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Snapshot classification should not crash when old-format nodes miss flags."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -1395,7 +1401,7 @@ def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -
         TrainingTreeSnapshot(
             root_node_id="root",
             nodes=(
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="root",
                     parent_ids=(),
                     child_ids=("child-1", "child-2"),
@@ -1409,7 +1415,7 @@ def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -
                     visit_count=1,
                     metadata={},
                 ),
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="child-1",
                     parent_ids=("root",),
                     child_ids=("leaf",),
@@ -1423,7 +1429,7 @@ def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -
                     visit_count=1,
                     metadata={},
                 ),
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="child-2",
                     parent_ids=("root",),
                     child_ids=(),
@@ -1437,7 +1443,7 @@ def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -
                     visit_count=1,
                     metadata={},
                 ),
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="leaf",
                     parent_ids=("child-1",),
                     child_ids=(),
@@ -1503,7 +1509,7 @@ def test_dashboard_data_falls_back_to_newest_tree_export_when_metadata_is_stale(
         TrainingTreeSnapshot(
             root_node_id="root-2",
             nodes=(
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="root-2",
                     parent_ids=(),
                     child_ids=("leaf-2",),
@@ -1517,7 +1523,7 @@ def test_dashboard_data_falls_back_to_newest_tree_export_when_metadata_is_stale(
                     visit_count=1,
                     metadata={},
                 ),
-                TrainingNodeSnapshot(
+                make_training_node_snapshot(
                     node_id="leaf-2",
                     parent_ids=("root-2",),
                     child_ids=(),

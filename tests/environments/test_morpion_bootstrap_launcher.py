@@ -8,7 +8,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import pytest
 
@@ -47,7 +47,6 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import (
-    TrainingNodeSnapshot,
     TrainingTreeSnapshot,
     save_training_tree_snapshot,
 )
@@ -62,15 +61,17 @@ from chipiron.environments.morpion.bootstrap import (
     DEFAULT_MORPION_PIPELINE_MODE,
     DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     AnemoneMorpionSearchRunnerArgs,
+    IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapLauncherArgs,
     MorpionBootstrapPaths,
+    MorpionBootstrapRolloutConfig,
     MorpionBootstrapRunState,
     MorpionBootstrapRuntimeControl,
+    MorpionBootstrapSearchConfig,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
-    IncompatibleStageBootstrapConfigError,
     initialize_bootstrap_run_state,
     run_morpion_bootstrap_experiment,
     save_bootstrap_config,
@@ -81,9 +82,9 @@ from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from
 from chipiron.environments.morpion.bootstrap.evaluator_family import (
     canonical_morpion_evaluator_family_config,
 )
-
-if TYPE_CHECKING:
-    import pytest
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -102,7 +103,7 @@ def _make_training_snapshot(
     root_node_id: str,
 ) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for launcher tests."""
-    node = TrainingNodeSnapshot(
+    node = make_training_node_snapshot(
         node_id=root_node_id,
         parent_ids=(),
         child_ids=(),
@@ -548,6 +549,63 @@ def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
     )
     assert launcher_args.bootstrap_args.training_export_mode == "sharded"
     assert launcher_args.training_export_mode_explicit is False
+    assert launcher_args.bootstrap_args.search.rollout.enabled is False
+    assert launcher_args.bootstrap_args.search.rollout.max_extra_steps is None
+
+
+def test_launcher_args_from_cli_parses_rollout_flags(tmp_path: Path) -> None:
+    """CLI rollout flags should populate persisted bootstrap search config."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--rollout-after-opening",
+            "--rollout-max-extra-steps",
+            "none",
+            "--rollout-action-selector-kind",
+            "random_openable",
+            "--rollout-random-seed",
+            "7",
+            "--rollout-stop-on-existing-node",
+        ]
+    )
+
+    rollout = launcher_args.bootstrap_args.search.rollout
+    assert rollout.enabled is True
+    assert rollout.max_extra_steps is None
+    assert rollout.action_selector_kind == "random_openable"
+    assert rollout.random_seed == 7
+    assert rollout.stop_on_existing_node is True
+
+
+def test_launcher_args_from_cli_parses_bounded_rollout_limit(tmp_path: Path) -> None:
+    """Numeric rollout max-extra-steps values should parse as integers."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--rollout-after-opening",
+            "--rollout-max-extra-steps",
+            "5",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.search.rollout.max_extra_steps == 5
+
+
+def test_launcher_args_from_cli_rejects_negative_rollout_limit(
+    tmp_path: Path,
+) -> None:
+    """Negative rollout max-extra-steps should fail parser validation."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli(
+            [
+                "--work-dir",
+                str(tmp_path),
+                "--rollout-max-extra-steps",
+                "-1",
+            ]
+        )
 
 
 @pytest.mark.parametrize("persisted_training_export_mode", ["flat", "both"])
@@ -658,6 +716,47 @@ def test_launcher_constructs_real_runner_in_normal_path(
     assert len(created_runner_args) == 1
     stopping_criterion = created_runner_args[0].search_args.stopping_criterion
     assert stopping_criterion.tree_branch_limit == 40
+
+
+def test_launcher_constructs_runner_with_persisted_rollout_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runner construction should wire persisted rollout config into SearchArgs."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+    )
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            launcher_args.bootstrap_args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        created_runner_args.append(runner_args)
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+
+    runner = launcher_module._build_launcher_runner(
+        launcher_module._collect_launcher_startup_status(launcher_args)
+    )
+
+    assert runner is not None
+    assert created_runner_args[0].search_args.opening_expansion.kind.value == "rollout"
 
 
 def test_startup_summary_renders_requested_evaluator_family_preset(

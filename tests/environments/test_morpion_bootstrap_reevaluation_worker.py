@@ -49,7 +49,6 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import (
-    TrainingNodeSnapshot,
     TrainingTreeSnapshot,
     save_training_tree_snapshot,
 )
@@ -85,6 +84,9 @@ from chipiron.environments.morpion.bootstrap import (
     save_reevaluation_patch,
     select_reevaluation_node_window,
     snapshot_values_to_patch_rows,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
 )
 
 
@@ -155,7 +157,7 @@ def _make_training_snapshot(node_ids: tuple[str, ...]) -> TrainingTreeSnapshot:
     return TrainingTreeSnapshot(
         root_node_id=node_ids[0] if node_ids else "root",
         nodes=tuple(
-            TrainingNodeSnapshot(
+            make_training_node_snapshot(
                 node_id=node_id,
                 parent_ids=(),
                 child_ids=(),
