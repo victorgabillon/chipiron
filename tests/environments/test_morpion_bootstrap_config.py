@@ -61,7 +61,8 @@ from chipiron.environments.morpion.bootstrap import (
     DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS,
+    GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
@@ -69,6 +70,7 @@ from chipiron.environments.morpion.bootstrap import (
     RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
     STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
     IncompatibleStageBootstrapConfigError,
+    MalformedMorpionBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapConfig,
     MorpionBootstrapDatasetConfig,
@@ -375,6 +377,41 @@ def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> Non
     assert loaded.search.rollout == config.search.rollout
 
 
+def test_bootstrap_config_without_search_section_is_rejected() -> None:
+    """Persisted configs must use the explicit search rollout schema."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload.pop("search")
+
+    with pytest.raises(MalformedMorpionBootstrapConfigError, match="`search`"):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_without_search_rollout_section_is_rejected() -> None:
+    """Persisted configs must include the rollout subsection explicitly."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload["search"] = {}
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match=r"`search\.rollout`",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_missing_rollout_field_is_rejected() -> None:
+    """Rollout configs should not silently fill missing persisted fields."""
+    payload = bootstrap_config_to_dict(_make_config())
+    search = cast("dict[str, object]", payload["search"])
+    rollout = cast("dict[str, object]", search["rollout"])
+    rollout.pop("max_extra_steps")
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match=r"`search\.rollout\.max_extra_steps`",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
 def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
     """Loop stage should allow the same runtime batching override."""
     args = _make_args(tmp_path)
@@ -544,6 +581,15 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
                     "feature_names": list(spec.feature_names),
                 }
                 for name, spec in config.evaluators.evaluators.items()
+            }
+        },
+        "search": {
+            "rollout": {
+                "enabled": config.search.rollout.enabled,
+                "max_extra_steps": config.search.rollout.max_extra_steps,
+                "action_selector_kind": config.search.rollout.action_selector_kind,
+                "random_seed": config.search.rollout.random_seed,
+                "stop_on_existing_node": config.search.rollout.stop_on_existing_node,
             }
         },
         "metadata": dict(config.metadata),
@@ -763,10 +809,66 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "save_after_seconds",
         "save_after_tree_growth_factor",
     } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    assert {
+        "rollout_after_opening",
+        "rollout_max_extra_steps",
+        "rollout_action_selector_kind",
+        "rollout_random_seed",
+        "rollout_stop_on_existing_node",
+    } == GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS
+    assert {
+        "search.rollout.enabled",
+        "search.rollout.max_extra_steps",
+        "search.rollout.action_selector_kind",
+        "search.rollout.random_seed",
+        "search.rollout.stop_on_existing_node",
+    } == GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS
     assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
         *GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-        *GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
     }
+
+
+def test_growth_stage_allows_rollout_config_drift(tmp_path: Path) -> None:
+    """Growth workers may change rollout settings for future expansion."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_dataset_worker_rejects_explicit_rollout_config_drift(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should inherit rollout config or match it exactly."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="rollout"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
 
 
 def test_unsafe_variant_change_is_rejected() -> None:
@@ -1047,6 +1149,15 @@ def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) ->
         "max_growth_steps_per_cycle": 8,
         "save_after_seconds": 60.0,
         "save_after_tree_growth_factor": 2.0
+    },
+    "search": {
+        "rollout": {
+            "action_selector_kind": "random_openable",
+            "enabled": false,
+            "max_extra_steps": null,
+            "random_seed": 0,
+            "stop_on_existing_node": false
+        }
     }
 }
 """.strip()

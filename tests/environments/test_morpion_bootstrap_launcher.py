@@ -78,7 +78,10 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_control,
     save_bootstrap_run_state,
 )
-from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from_args
+from chipiron.environments.morpion.bootstrap.config import (
+    bootstrap_config_from_args,
+    load_bootstrap_config,
+)
 from chipiron.environments.morpion.bootstrap.evaluator_family import (
     canonical_morpion_evaluator_family_config,
 )
@@ -670,6 +673,235 @@ def test_resume_explicit_training_export_mode_override_hits_compatibility_check(
         IncompatibleStageBootstrapConfigError, match="training_export_mode"
     ):
         launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_growth_stage_adopts_rollout_enabled_on_existing_config(
+    tmp_path: Path,
+) -> None:
+    """Growth relaunches should persist explicitly requested rollout enablement."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--rollout-after-opening",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.bootstrap_config.search.rollout.enabled is True
+    assert startup_status.resolved_bootstrap_args.search.rollout.enabled is True
+    assert load_bootstrap_config(paths.bootstrap_config_path).search.rollout.enabled is True
+
+
+def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(
+    tmp_path: Path,
+) -> None:
+    """Growth relaunches should persist explicitly requested rollout hyperparams."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--rollout-after-opening",
+            "--rollout-max-extra-steps",
+            "50",
+            "--rollout-action-selector-kind",
+            "first_openable",
+            "--rollout-random-seed",
+            "123",
+            "--rollout-stop-on-existing-node",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    rollout = startup_status.bootstrap_config.search.rollout
+    saved_rollout = load_bootstrap_config(paths.bootstrap_config_path).search.rollout
+
+    assert rollout.enabled is True
+    assert rollout.max_extra_steps == 50
+    assert rollout.action_selector_kind == "first_openable"
+    assert rollout.random_seed == 123
+    assert rollout.stop_on_existing_node is True
+    assert saved_rollout == rollout
+
+
+def test_non_growth_stage_without_rollout_flags_inherits_persisted_rollout(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should inherit persisted rollout when flags are omitted."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.resolved_bootstrap_args.search == persisted_config.search
+
+
+def test_non_growth_stage_with_matching_rollout_flags_is_accepted(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers may pass rollout flags when they match persisted config."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--rollout-after-opening",
+            "--rollout-max-extra-steps",
+            "none",
+            "--rollout-action-selector-kind",
+            "random_openable",
+            "--rollout-random-seed",
+            "0",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.bootstrap_config.search == persisted_config.search
+
+
+def test_growth_rollout_adoption_does_not_allow_dataset_drift(
+    tmp_path: Path,
+) -> None:
+    """Rollout adoption must not make unrelated config drift permissive."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            max_rows=17,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--max-rows",
+            "33",
+            "--rollout-after-opening",
+        ]
+    )
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="max_rows"):
+        launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_growth_adopted_rollout_config_reaches_runner_args(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runner construction should use rollout config adopted during startup."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--rollout-after-opening",
+        ]
+    )
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        created_runner_args.append(runner_args)
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+
+    runner = launcher_module._build_launcher_runner(
+        launcher_module._collect_launcher_startup_status(launcher_args)
+    )
+
+    assert runner is not None
+    assert created_runner_args[0].search_args.opening_expansion.kind.value == "rollout"
 
 
 def test_launcher_constructs_real_runner_in_normal_path(

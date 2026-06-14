@@ -320,6 +320,13 @@ def _collect_launcher_startup_status(
                 search=bootstrap_config.search,
             )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
+        bootstrap_config = _adopt_growth_rollout_config_if_requested(
+            persisted_config=bootstrap_config,
+            requested_config=requested_config,
+            stage=launcher_args.pipeline_stage,
+            rollout_config_explicit=launcher_args.rollout_config_explicit,
+            config_path=paths.bootstrap_config_path,
+        )
         validate_stage_bootstrap_config_compatibility(
             stage=launcher_args.pipeline_stage,
             persisted_config=bootstrap_config,
@@ -365,6 +372,63 @@ def _collect_launcher_startup_status(
         run_state_exists=run_state_exists,
         history_exists=history_exists,
         latest_status_exists=latest_status_exists,
+    )
+
+
+def _stage_can_adopt_growth_rollout_config(stage: MorpionPipelineStage) -> bool:
+    """Return whether one launcher stage performs growth expansion work."""
+    return stage in {"growth", "loop"}
+
+
+def _adopt_growth_rollout_config_if_requested(
+    *,
+    persisted_config: MorpionBootstrapConfig,
+    requested_config: MorpionBootstrapConfig,
+    stage: MorpionPipelineStage,
+    rollout_config_explicit: bool,
+    config_path: Path,
+) -> MorpionBootstrapConfig:
+    """Persist requested rollout config changes for growth-capable stages."""
+    if not rollout_config_explicit:
+        return persisted_config
+    if not _stage_can_adopt_growth_rollout_config(stage):
+        return persisted_config
+    if persisted_config.search.rollout == requested_config.search.rollout:
+        return persisted_config
+
+    adopted_config = replace(persisted_config, search=requested_config.search)
+    LOGGER.info(
+        "[config] adopting growth rollout config changes: %s",
+        "; ".join(
+            _rollout_config_change_fragments(
+                previous=persisted_config,
+                current=adopted_config,
+            )
+        ),
+    )
+    save_bootstrap_config(adopted_config, config_path)
+    return adopted_config
+
+
+def _rollout_config_change_fragments(
+    *,
+    previous: MorpionBootstrapConfig,
+    current: MorpionBootstrapConfig,
+) -> tuple[str, ...]:
+    """Return stable log fragments for changed rollout config fields."""
+    previous_rollout = previous.search.rollout
+    current_rollout = current.search.rollout
+    fields = (
+        ("enabled", "search.rollout.enabled"),
+        ("max_extra_steps", "search.rollout.max_extra_steps"),
+        ("action_selector_kind", "search.rollout.action_selector_kind"),
+        ("random_seed", "search.rollout.random_seed"),
+        ("stop_on_existing_node", "search.rollout.stop_on_existing_node"),
+    )
+    return tuple(
+        f"{config_field}: {getattr(previous_rollout, attr)!r} -> {getattr(current_rollout, attr)!r}"
+        for attr, config_field in fields
+        if getattr(previous_rollout, attr) != getattr(current_rollout, attr)
     )
 
 

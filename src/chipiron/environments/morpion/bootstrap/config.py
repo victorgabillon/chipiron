@@ -268,7 +268,7 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
     }
 )
 
-GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS = frozenset(
+GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS = frozenset(
     {
         "rollout_after_opening",
         "rollout_max_extra_steps",
@@ -278,17 +278,22 @@ GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS = frozenset(
     }
 )
 
+GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS = frozenset(
+    {
+        "search.rollout.enabled",
+        "search.rollout.max_extra_steps",
+        "search.rollout.action_selector_kind",
+        "search.rollout.random_seed",
+        "search.rollout.stop_on_existing_node",
+    }
+)
+
 STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS: dict[str, frozenset[str]] = {
-    "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
-    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
-    "dataset_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
-    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
-    "training": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
-    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
-    "training_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
-    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
-    "reevaluation": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
-    | GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS,
+    "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "dataset_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "training": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "training_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "reevaluation": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
 }
 
 RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
@@ -771,6 +776,11 @@ def validate_stage_bootstrap_config_compatibility(
         requested_value = requested_values[field_name]
         if field_name in GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS:
             continue
+        if (
+            stage in {"growth", "loop"}
+            and field_name in GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS
+        ):
+            continue
         if field_name in irrelevant_fields:
             continue
         if persisted_value != requested_value:
@@ -877,35 +887,46 @@ def _config_field_is_owned_by_stage(field_name: str, owned_fields: set[str]) -> 
     return False
 
 
+def _required_optional_int(
+    mapping: Mapping[str, object],
+    key: str,
+    *,
+    field_name: str,
+) -> int | None:
+    """Return one required nullable integer-like field or raise."""
+    if key not in mapping:
+        raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
+    return _optional_int(mapping.get(key), field_name=field_name)
+
+
 def _search_config_from_payload(value: object) -> MorpionBootstrapSearchConfig:
-    """Deserialize the optional search config section with legacy defaults."""
-    if value is None:
-        return MorpionBootstrapSearchConfig()
+    """Deserialize the required search config section."""
     search = _require_section_mapping(value, section_name="search")
-    rollout_data = search.get("rollout")
-    if rollout_data is None:
-        return MorpionBootstrapSearchConfig()
-    rollout = _require_section_mapping(rollout_data, section_name="search.rollout")
+    rollout = _require_section_mapping(
+        search.get("rollout"), section_name="search.rollout"
+    )
     return MorpionBootstrapSearchConfig(
         rollout=MorpionBootstrapRolloutConfig(
             enabled=_required_bool(
-                rollout.get("enabled", False),
+                rollout.get("enabled"),
                 field_name="search.rollout.enabled",
             ),
-            max_extra_steps=_optional_int(
-                rollout.get("max_extra_steps"),
+            max_extra_steps=_required_optional_int(
+                rollout,
+                "max_extra_steps",
                 field_name="search.rollout.max_extra_steps",
             ),
             action_selector_kind=_required_str(
-                rollout.get("action_selector_kind", "random_openable"),
+                rollout.get("action_selector_kind"),
                 field_name="search.rollout.action_selector_kind",
             ),
-            random_seed=_optional_int(
-                rollout.get("random_seed", 0),
+            random_seed=_required_optional_int(
+                rollout,
+                "random_seed",
                 field_name="search.rollout.random_seed",
             ),
             stop_on_existing_node=_required_bool(
-                rollout.get("stop_on_existing_node", False),
+                rollout.get("stop_on_existing_node"),
                 field_name="search.rollout.stop_on_existing_node",
             ),
         )
@@ -1035,7 +1056,8 @@ __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
-    "GROWTH_SEARCH_BOOTSTRAP_CONFIG_FIELDS",
+    "GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS",
+    "GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS",
     "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
     "STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS",
     "IncompatibleStageBootstrapConfigError",
