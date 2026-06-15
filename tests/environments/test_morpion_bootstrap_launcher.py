@@ -278,6 +278,7 @@ def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> Non
         "runtime checkpoint format: json-zst (default; legacy .json checkpoints still load)"
         in summary
     )
+    assert "action_selector_kind=random_legal_prefer_openable" in summary
     assert "latest runtime checkpoint: none" in summary
     assert "latest training artifact: none" in summary
     assert f"work dir: {tmp_path.resolve()}" in summary
@@ -285,6 +286,37 @@ def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> Non
         f"config: {MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path}"
         in summary
     )
+
+
+def test_startup_summary_renders_traversing_rollout_selector(
+    tmp_path: Path,
+) -> None:
+    """Startup summary should show the explicit rollout action selector kind."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=0,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(
+                    enabled=True,
+                    action_selector_kind="random_legal_prefer_openable",
+                )
+            ),
+        ),
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert "action_selector_kind=random_legal_prefer_openable" in summary
 
 
 def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
@@ -581,6 +613,34 @@ def test_launcher_args_from_cli_parses_rollout_flags(tmp_path: Path) -> None:
     assert rollout.stop_on_existing_node is True
 
 
+@pytest.mark.parametrize(
+    "action_selector_kind",
+    [
+        "first_legal_prefer_openable",
+        "random_legal_prefer_openable",
+    ],
+)
+def test_launcher_args_from_cli_accepts_traversing_rollout_selectors(
+    tmp_path: Path,
+    action_selector_kind: str,
+) -> None:
+    """CLI rollout selector choices should include traversal-capable selectors."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--rollout-after-opening",
+            "--rollout-action-selector-kind",
+            action_selector_kind,
+        ]
+    )
+
+    assert (
+        launcher_args.bootstrap_args.search.rollout.action_selector_kind
+        == action_selector_kind
+    )
+
+
 def test_launcher_args_from_cli_parses_bounded_rollout_limit(tmp_path: Path) -> None:
     """Numeric rollout max-extra-steps values should parse as integers."""
     launcher_args = launcher_module.launcher_args_from_cli(
@@ -735,7 +795,7 @@ def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(
             "--rollout-max-extra-steps",
             "50",
             "--rollout-action-selector-kind",
-            "first_openable",
+            "random_legal_prefer_openable",
             "--rollout-random-seed",
             "123",
             "--rollout-stop-on-existing-node",
@@ -748,7 +808,7 @@ def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(
 
     assert rollout.enabled is True
     assert rollout.max_extra_steps == 50
-    assert rollout.action_selector_kind == "first_openable"
+    assert rollout.action_selector_kind == "random_legal_prefer_openable"
     assert rollout.random_seed == 123
     assert rollout.stop_on_existing_node is True
     assert saved_rollout == rollout
@@ -814,7 +874,7 @@ def test_non_growth_stage_with_matching_rollout_flags_is_accepted(
             "--rollout-max-extra-steps",
             "none",
             "--rollout-action-selector-kind",
-            "random_openable",
+            "random_legal_prefer_openable",
             "--rollout-random-seed",
             "0",
         ]
@@ -823,6 +883,46 @@ def test_non_growth_stage_with_matching_rollout_flags_is_accepted(
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
     assert startup_status.bootstrap_config.search == persisted_config.search
+
+
+def test_non_growth_stage_with_explicit_rollout_selector_mismatch_is_rejected(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should reject explicit selector drift."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(
+                    enabled=True,
+                    action_selector_kind="random_openable",
+                )
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--rollout-after-opening",
+            "--rollout-action-selector-kind",
+            "random_legal_prefer_openable",
+        ]
+    )
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError,
+        match="rollout_action_selector_kind",
+    ):
+        launcher_module._collect_launcher_startup_status(launcher_args)
 
 
 def test_growth_rollout_adoption_does_not_allow_dataset_drift(

@@ -341,15 +341,49 @@ def test_growth_worker_allows_runtime_save_after_tree_growth_factor_drift(
     )
 
 
-def test_default_rollout_config_preserves_legacy_python_behavior() -> None:
+def test_default_rollout_config_keeps_rollout_disabled_with_traversing_selector() -> None:
     """Rollout should be disabled unless a launcher explicitly enables it."""
     rollout = MorpionBootstrapRolloutConfig()
 
     assert rollout.enabled is False
     assert rollout.max_extra_steps is None
-    assert rollout.action_selector_kind == "random_openable"
+    assert rollout.action_selector_kind == "random_legal_prefer_openable"
     assert rollout.random_seed == 0
     assert rollout.stop_on_existing_node is False
+
+
+@pytest.mark.parametrize(
+    "action_selector_kind",
+    [
+        "first_openable",
+        "random_openable",
+        "no_rollout",
+        "first_legal_prefer_openable",
+        "random_legal_prefer_openable",
+    ],
+)
+def test_bootstrap_config_roundtrips_rollout_action_selector_kinds(
+    tmp_path: Path,
+    action_selector_kind: str,
+) -> None:
+    """Persisted rollout config should preserve every supported selector kind."""
+    args = replace(
+        _make_args(tmp_path),
+        search=MorpionBootstrapSearchConfig(
+            rollout=MorpionBootstrapRolloutConfig(
+                enabled=True,
+                action_selector_kind=action_selector_kind,
+            )
+        ),
+    )
+
+    payload = bootstrap_config_to_dict(bootstrap_config_from_args(args))
+    loaded = bootstrap_config_from_dict(payload)
+    search_payload = cast("dict[str, object]", payload["search"])
+    rollout_payload = cast("dict[str, object]", search_payload["rollout"])
+
+    assert rollout_payload["action_selector_kind"] == action_selector_kind
+    assert loaded.search.rollout.action_selector_kind == action_selector_kind
 
 
 def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> None:
@@ -369,7 +403,7 @@ def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> Non
         "rollout": {
             "enabled": True,
             "max_extra_steps": None,
-            "action_selector_kind": "random_openable",
+            "action_selector_kind": "random_legal_prefer_openable",
             "random_seed": 0,
             "stop_on_existing_node": False,
         }
@@ -1152,7 +1186,7 @@ def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) ->
     },
     "search": {
         "rollout": {
-            "action_selector_kind": "random_openable",
+            "action_selector_kind": "random_legal_prefer_openable",
             "enabled": false,
             "max_extra_steps": null,
             "random_seed": 0,

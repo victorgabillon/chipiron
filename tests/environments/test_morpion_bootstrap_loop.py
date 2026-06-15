@@ -590,6 +590,52 @@ def test_run_one_cycle_reevaluate_all_passes_reevaluate_tree_true(
     assert runner.reevaluate_tree_calls == [True]
 
 
+def test_run_one_cycle_skips_checkpoint_when_time_elapsed_but_no_growth(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Elapsed time should not save a new generation for an unchanged tree."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    run_state = MorpionBootstrapRunState(
+        generation=7,
+        cycle_index=11,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name=None,
+        tree_size_at_last_save=100,
+        last_save_unix_s=0.0,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(100,), target_values=(1.0,))
+
+    with caplog.at_level(logging.INFO):
+        next_state = run_one_bootstrap_cycle(
+            args=MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                max_growth_steps_per_cycle=5,
+                save_after_tree_growth_factor=10.0,
+                save_after_seconds=0.0,
+            ),
+            paths=paths,
+            runner=runner,
+            run_state=run_state,
+            now_unix_s=100.0,
+        )
+
+    assert next_state.generation == 7
+    assert next_state.cycle_index == 12
+    assert next_state.latest_runtime_checkpoint_path is None
+    assert runner.grow_calls == [5]
+    assert runner.checkpoint_calls == []
+    assert runner.export_calls == []
+    assert not paths.runtime_checkpoint_path_for_generation(8).exists()
+    assert not paths.tree_snapshot_path_for_generation(8).exists()
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "[save] skipped reason=no_growth_changes nodes_added=0" in messages
+    assert "generation_000008" not in messages
+
+
 def test_run_one_cycle_reevaluate_frontier_fails_before_artifact_changes(
     tmp_path: Path,
 ) -> None:

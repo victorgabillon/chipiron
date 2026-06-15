@@ -557,7 +557,7 @@ def _render_launcher_startup_summary(
             "rollout: "
             f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
             f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
-            f"action_selector={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
+            f"action_selector_kind={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
             f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
             f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}",
             "dashboard: "
@@ -856,8 +856,14 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--rollout-action-selector-kind",
-        choices=["first_openable", "random_openable", "no_rollout"],
-        default="random_openable",
+        choices=[
+            "first_openable",
+            "random_openable",
+            "no_rollout",
+            "first_legal_prefer_openable",
+            "random_legal_prefer_openable",
+        ],
+        default="random_legal_prefer_openable",
     )
     parser.add_argument("--rollout-random-seed", type=int, default=0)
     parser.add_argument(

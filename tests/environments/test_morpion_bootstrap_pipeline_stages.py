@@ -61,6 +61,7 @@ import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 from chipiron.environments.morpion.bootstrap import (
+    AnemoneMorpionSearchRunner,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
@@ -117,17 +118,20 @@ class FakeMorpionSearchRunner:
         *,
         tree_sizes: tuple[int, ...],
         target_values: tuple[float, ...],
+        branch_counts: tuple[int, ...] | None = None,
         patch_apply_result: int | None = None,
         patch_apply_error: Exception | None = None,
     ) -> None:
         """Initialize the fake runner with per-cycle tree sizes and targets."""
         self._tree_sizes = tree_sizes
         self._target_values = target_values
+        self._branch_counts = branch_counts
         self._patch_apply_result = patch_apply_result
         self._patch_apply_error = patch_apply_error
         self._cycle_index = -1
         self.load_calls: list[tuple[str | None, str | None]] = []
         self.grow_calls: list[int] = []
+        self.checkpoint_calls: list[str] = []
         self.call_order: list[str] = []
         self.received_patches: list[MorpionReevaluationPatch] = []
 
@@ -200,6 +204,7 @@ class FakeMorpionSearchRunner:
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Write one placeholder checkpoint so manifests can point to it."""
+        self.checkpoint_calls.append(str(output_path))
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('{"checkpoint": true}\n', encoding="utf-8")
@@ -208,6 +213,13 @@ class FakeMorpionSearchRunner:
         """Return the current predefined tree size."""
         index = max(self._cycle_index, 0)
         return self._tree_sizes[index]
+
+    def current_tree_branch_count(self) -> int | None:
+        """Return the current predefined branch count when provided."""
+        if self._branch_counts is None:
+            return None
+        index = max(self._cycle_index, 0)
+        return self._branch_counts[index]
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -438,6 +450,111 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
     assert not paths.rows_path_for_generation(1).exists()
     assert not paths.pipeline_active_model_path.exists()
     assert not paths.model_generation_dir_for_generation(1).exists()
+
+
+def test_pipeline_growth_stage_skips_no_op_checkpoint_when_limit_already_reached(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An exhausted resumed growth worker should not write a new generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    branch_limit = 1_000_000
+    checkpoint_path = paths.runtime_checkpoint_path_for_generation(430)
+    checkpoint_runner = AnemoneMorpionSearchRunner()
+    checkpoint_runner.load_or_create(None, None)
+    checkpoint_runner.grow(1)
+    checkpoint_runner.save_checkpoint(checkpoint_path)
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=430,
+            cycle_index=429,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=branch_limit,
+            last_save_unix_s=0.0,
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
+        ),
+        paths.run_state_path,
+    )
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(branch_limit,),
+        target_values=(1.0,),
+        branch_counts=(branch_limit,),
+    )
+
+    with caplog.at_level(logging.INFO):
+        run_state = run_pipeline_growth_stage(
+            replace(_artifact_pipeline_args(tmp_path), tree_branch_limit=branch_limit),
+            runner,
+            max_cycles=3,
+        )
+
+    assert run_state.generation == 430
+    assert run_state.cycle_index == 430
+    assert run_state.metadata["growth_status"] == "growth_budget_already_exhausted"
+    assert run_state.metadata["checkpoint_skipped_reason"] == (
+        "no_growth_and_limit_reached"
+    )
+    assert load_bootstrap_run_state(paths.run_state_path).generation == 430
+    assert runner.load_calls == [(str(checkpoint_path), None)]
+    assert runner.grow_calls == [5]
+    assert runner.checkpoint_calls == []
+    assert not paths.runtime_checkpoint_path_for_generation(431).exists()
+    assert not paths.tree_snapshot_path_for_generation(431).exists()
+    assert not paths.pipeline_manifest_path_for_generation(431).exists()
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert (
+        "[growth] no_op_limit_reached branch_count=1000000 limit=1000000 checkpoint_skipped=true"
+        in messages
+    )
+    assert "[save] skipped reason=no_growth_changes nodes_added=0" in messages
+    assert "[pipeline] growth_stop reason=growth_budget_already_exhausted" in messages
+
+
+def test_pipeline_growth_stage_skips_checkpoint_when_time_elapsed_but_no_growth(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Elapsed time alone should not checkpoint an unchanged resumed tree."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=7,
+            cycle_index=11,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=100,
+            last_save_unix_s=0.0,
+        ),
+        paths.run_state_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(100,), target_values=(1.0,))
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        save_after_tree_growth_factor=10.0,
+        save_after_seconds=0.0,
+    )
+
+    with caplog.at_level(logging.INFO):
+        run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert run_state.generation == 7
+    assert run_state.cycle_index == 12
+    assert load_bootstrap_run_state(paths.run_state_path).generation == 7
+    assert runner.grow_calls == [5]
+    assert runner.checkpoint_calls == []
+    assert not paths.runtime_checkpoint_path_for_generation(8).exists()
+    assert not paths.tree_snapshot_path_for_generation(8).exists()
+    assert not paths.pipeline_manifest_path_for_generation(8).exists()
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "[save] skipped reason=no_growth_changes nodes_added=0" in messages
+    assert "generation_000008" not in messages
 
 
 def test_pipeline_growth_stage_without_active_model_uses_none(

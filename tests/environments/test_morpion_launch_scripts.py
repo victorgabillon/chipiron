@@ -32,6 +32,27 @@ def test_cluster_scripts_enable_rollout_defaults() -> None:
             'MORPION_ROLLOUT_AFTER_OPENING="${MORPION_ROLLOUT_AFTER_OPENING:-1}"'
             in script_text
         )
+        assert (
+            'MORPION_ROLLOUT_ACTION_SELECTOR_KIND="${MORPION_ROLLOUT_ACTION_SELECTOR_KIND:-random_legal_prefer_openable}"'
+            in script_text
+        )
+        assert (
+            "MORPION_ROLLOUT_ACTION_SELECTOR_KIND=random_legal_prefer_openable"
+            in script_text
+        )
         assert "--rollout-after-opening" in script_text
         assert "--rollout-max-extra-steps" in script_text
         assert "--rollout-action-selector-kind" in script_text
+
+
+def test_growth_cluster_supervisors_stop_on_exhausted_budget() -> None:
+    """Growth supervisors should not restart after the branch budget is exhausted."""
+    for script_name in (
+        "launch_morpion_gnome_cluster.sh",
+        "launch_morpion_tmux_cluster.sh",
+    ):
+        script_text = (_REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "growth_budget_already_exhausted" in script_text
+        assert "not restarting" in script_text
+        assert "break" in script_text

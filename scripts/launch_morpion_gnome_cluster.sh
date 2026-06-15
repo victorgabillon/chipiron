@@ -27,7 +27,8 @@ GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR="${GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR:-1.
 GROWTH_SAVE_AFTER_SECONDS="${GROWTH_SAVE_AFTER_SECONDS:-10}"
 MORPION_ROLLOUT_AFTER_OPENING="${MORPION_ROLLOUT_AFTER_OPENING:-1}"
 MORPION_ROLLOUT_MAX_EXTRA_STEPS="${MORPION_ROLLOUT_MAX_EXTRA_STEPS:-none}"
-MORPION_ROLLOUT_ACTION_SELECTOR_KIND="${MORPION_ROLLOUT_ACTION_SELECTOR_KIND:-random_openable}"
+# Example: MORPION_ROLLOUT_ACTION_SELECTOR_KIND=random_legal_prefer_openable
+MORPION_ROLLOUT_ACTION_SELECTOR_KIND="${MORPION_ROLLOUT_ACTION_SELECTOR_KIND:-random_legal_prefer_openable}"
 MORPION_ROLLOUT_RANDOM_SEED="${MORPION_ROLLOUT_RANDOM_SEED:-0}"
 MORPION_ROLLOUT_STOP_ON_EXISTING_NODE="${MORPION_ROLLOUT_STOP_ON_EXISTING_NODE:-0}"
 
@@ -49,7 +50,7 @@ launch_worker_terminal() {
   local launcher_args="$4"
   local log_name="$5"
   local startup_message="$6"
-  local command="cd \"$REPO_ROOT\" && export PYTHONPATH=\"$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}\" && export MORPION_WORK_DIR=\"$MORPION_WORK_DIR\" && trap 'echo; echo \"[$worker_name] stopped; terminal kept open\"; exec bash' INT TERM && printf '%b\\n' \"$startup_message\" && echo \"[$worker_name] python_bin=$PYTHON_BIN\" && which python && \"$PYTHON_BIN\" - <<'PY' && while true; do ${extra_prefix}\"$PYTHON_BIN\" -m chipiron.environments.morpion.bootstrap.launcher --work-dir \"$MORPION_WORK_DIR\" --pipeline-mode artifact_pipeline --training-export-mode \"$TRAINING_EXPORT_MODE\" ${launcher_args} 2>&1 | tee -a \"$LOG_DIR/$log_name\"; status=\${PIPESTATUS[0]}; echo \"[$worker_name] worker exited with status \$status; restarting in $sleep_seconds s\"; sleep $sleep_seconds; done
+  local command="cd \"$REPO_ROOT\" && export PYTHONPATH=\"$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}\" && export MORPION_WORK_DIR=\"$MORPION_WORK_DIR\" && trap 'echo; echo \"[$worker_name] stopped; terminal kept open\"; exec bash' INT TERM && printf '%b\\n' \"$startup_message\" && echo \"[$worker_name] python_bin=$PYTHON_BIN\" && which python && \"$PYTHON_BIN\" - <<'PY' && while true; do ${extra_prefix}\"$PYTHON_BIN\" -m chipiron.environments.morpion.bootstrap.launcher --work-dir \"$MORPION_WORK_DIR\" --pipeline-mode artifact_pipeline --training-export-mode \"$TRAINING_EXPORT_MODE\" ${launcher_args} 2>&1 | tee -a \"$LOG_DIR/$log_name\"; status=\${PIPESTATUS[0]}; if [[ \"$worker_name\" == \"GROWTH\" && \"\$status\" -eq 0 ]] && \"$PYTHON_BIN\" -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]); sys.exit(0 if p.is_file() and json.loads(p.read_text(encoding=\"utf-8\")).get(\"metadata\", {}).get(\"growth_status\") == \"growth_budget_already_exhausted\" else 1)' \"$MORPION_WORK_DIR/run_state.json\"; then echo \"[$worker_name] worker exited with status \$status; growth_budget_already_exhausted; not restarting\"; break; fi; echo \"[$worker_name] worker exited with status \$status; restarting in $sleep_seconds s\"; sleep $sleep_seconds; done
 import anemone, chipiron
 print(\"anemone:\", anemone.__file__)
 print(\"chipiron:\", chipiron.__file__)

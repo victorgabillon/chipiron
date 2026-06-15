@@ -48,7 +48,16 @@ from .cycle_pipeline_manifest import (
     write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
 )
 from .cycle_runtime import ResolvedActiveMorpionModelBundle
+from .cycle_runtime import (
+    GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
+    GROWTH_STATUS_METADATA_KEY,
+)
+from .cycle_runtime import (
+    build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
+)
 from .cycle_runtime import build_no_save_run_state as _build_no_save_run_state
+from .cycle_runtime import current_tree_branch_count as _current_tree_branch_count
+from .cycle_runtime import no_growth_and_limit_reached as _no_growth_and_limit_reached
 from .cycle_runtime import (
     prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
 )
@@ -432,6 +441,16 @@ def run_pipeline_growth_stage(
         if run_state.generation > previous_generation:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
+        if (
+            run_state.metadata.get(GROWTH_STATUS_METADATA_KEY)
+            == GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS
+        ):
+            LOGGER.info(
+                "[pipeline] growth_stop reason=growth_budget_already_exhausted cycle=%s generation=%s",
+                run_state.cycle_index,
+                run_state.generation,
+            )
+            break
     LOGGER.info(
         "[pipeline] growth_done generation=%s cycle=%s",
         run_state.generation,
@@ -526,7 +545,10 @@ def _run_one_pipeline_growth_cycle_impl(
         effective_runtime_config,
         reevaluate_tree=reevaluate_tree,
     )
-    apply_pending_reevaluation_patch_to_runner(paths=paths, runner=runner)
+    reevaluation_patch_result = apply_pending_reevaluation_patch_to_runner(
+        paths=paths,
+        runner=runner,
+    )
     memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
@@ -548,6 +570,8 @@ def _run_one_pipeline_growth_cycle_impl(
         current_tree_size,
         current_tree_size - tree_size_before_growth,
     )
+    nodes_added = current_tree_size - tree_size_before_growth
+    branch_count = _current_tree_branch_count(runner)
     tree_status = _resolve_tree_status(runner, current_tree_size=current_tree_size)
     frontier_status = resolve_frontier_status_for_cycle(
         snapshot=None,
@@ -571,6 +595,100 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+
+    if _no_growth_and_limit_reached(
+        nodes_added=nodes_added,
+        branch_count=branch_count,
+        tree_branch_limit=effective_runtime_config.tree_branch_limit,
+    ) and not reevaluation_patch_result.patch_applied:
+        assert branch_count is not None
+        cycle_duration_s = time.perf_counter() - cycle_started_at
+        LOGGER.info(
+            "[growth] no_op_limit_reached branch_count=%s limit=%s checkpoint_skipped=true",
+            branch_count,
+            effective_runtime_config.tree_branch_limit,
+        )
+        LOGGER.info(
+            "[save] skipped reason=no_growth_changes nodes_added=%s",
+            nodes_added,
+        )
+        LOGGER.info("[save] skipped reason=no_growth_and_limit_reached")
+        LOGGER.info(
+            "[timing] cycle_done growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            growth_duration_s,
+            0.0,
+            cycle_duration_s,
+        )
+        next_run_state = _build_growth_budget_exhausted_run_state(
+            run_state=run_state,
+            resolved_active_model=resolved_active_model,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+            cycle_index=cycle_index,
+            branch_count=branch_count,
+            tree_branch_limit=effective_runtime_config.tree_branch_limit,
+        )
+        _record_no_save_cycle_event(
+            history_recorder=history_recorder,
+            cycle_index=cycle_index,
+            timestamp_utc=timestamp_utc,
+            tree_status=tree_status,
+            frontier_status=frontier_status,
+            run_state=run_state,
+            next_run_state=next_run_state,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+        )
+        LOGGER.info(
+            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=growth_budget_already_exhausted",
+            cycle_index,
+            next_run_state.generation,
+            cycle_duration_s,
+        )
+        return next_run_state
+
+    if (
+        run_state.generation > 0
+        and nodes_added <= 0
+        and current_tree_size <= run_state.tree_size_at_last_save
+        and not reevaluation_patch_result.patch_applied
+    ):
+        cycle_duration_s = time.perf_counter() - cycle_started_at
+        LOGGER.info(
+            "[save] skipped reason=no_growth_changes nodes_added=%s",
+            nodes_added,
+        )
+        LOGGER.info(
+            "[timing] cycle_done growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            growth_duration_s,
+            0.0,
+            cycle_duration_s,
+        )
+        next_run_state = _build_no_save_run_state(
+            run_state=run_state,
+            resolved_active_model=resolved_active_model,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+            cycle_index=cycle_index,
+        )
+        _record_no_save_cycle_event(
+            history_recorder=history_recorder,
+            cycle_index=cycle_index,
+            timestamp_utc=timestamp_utc,
+            tree_status=tree_status,
+            frontier_status=frontier_status,
+            run_state=run_state,
+            next_run_state=next_run_state,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+        )
+        LOGGER.info(
+            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=no_growth_changes",
+            cycle_index,
+            next_run_state.generation,
+            cycle_duration_s,
+        )
+        return next_run_state
 
     if not save_triggered:
         cycle_duration_s = time.perf_counter() - cycle_started_at

@@ -89,7 +89,7 @@ class MorpionBootstrapRolloutConfig:
 
     enabled: bool = False
     max_extra_steps: int | None = None
-    action_selector_kind: str = "random_openable"
+    action_selector_kind: str = "random_legal_prefer_openable"
     random_seed: int | None = 0
     stop_on_existing_node: bool = False
 
