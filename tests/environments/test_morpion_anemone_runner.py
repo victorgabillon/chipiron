@@ -257,6 +257,13 @@ def test_log_latest_rollout_report_includes_path_details(
             stop_reason="terminal",
             end_is_terminal=True,
             end_is_exact=True,
+            end_was_created_node=True,
+            end_was_existing_node=False,
+            end_legal_action_count=None,
+            end_openable_action_count=None,
+            end_opened_action_count=None,
+            end_non_opened_branch_count=0,
+            no_legal_actions_but_not_terminal=False,
         ),
         SimpleNamespace(
             start_node_id="n2",
@@ -270,6 +277,13 @@ def test_log_latest_rollout_report_includes_path_details(
             stop_reason="action_selector_stop",
             end_is_terminal=False,
             end_is_exact=False,
+            end_was_created_node=False,
+            end_was_existing_node=True,
+            end_legal_action_count=3,
+            end_openable_action_count=2,
+            end_opened_action_count=1,
+            end_non_opened_branch_count=2,
+            no_legal_actions_but_not_terminal=False,
         ),
     )
     report = SimpleNamespace(
@@ -297,6 +311,57 @@ def test_log_latest_rollout_report_includes_path_details(
         "end_node_id=n5 end_depth=5 total_edges=3 initial_edges=1 "
         "extra_edges=2 traversals=2 stop_reason=terminal end_terminal=True "
         "end_exact=True"
+    ) in caplog.text
+    assert "end_created_node=True end_existing_node=False" in caplog.text
+    assert (
+        "end_legal_actions=3 end_openable_actions=2 end_opened_actions=1 "
+        "end_non_opened_branches=2"
+    ) in caplog.text
+
+
+def test_log_latest_rollout_report_warns_on_no_legal_non_terminal(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """No-legal-actions paths that are not terminal emit a diagnostic warning."""
+    caplog.set_level(logging.INFO)
+    report = SimpleNamespace(
+        total_edge_count=1,
+        initial_edge_count=1,
+        extra_edge_count=0,
+        traversal_count=0,
+        stop_reason_counts={"no_legal_actions": 1},
+        path_reports=(
+            SimpleNamespace(
+                start_node_id="n1",
+                start_depth=1,
+                end_node_id="n1",
+                end_depth=1,
+                initial_edge_count=1,
+                extra_edge_count=0,
+                traversal_count=0,
+                total_edge_count=1,
+                stop_reason="no_legal_actions",
+                end_is_terminal=False,
+                end_is_exact=False,
+                end_legal_action_count=0,
+                end_openable_action_count=0,
+                end_opened_action_count=0,
+                end_non_opened_branch_count=0,
+                no_legal_actions_but_not_terminal=True,
+            ),
+        ),
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
+    anemone_runner_module._log_latest_rollout_report(runtime)
+
+    assert "no_legal_but_not_terminal=True" in caplog.text
+    assert (
+        "[rollout-warning] no_legal_actions_but_not_terminal rollout_index=0 "
+        "end_node_id=n1 end_depth=1 end_legal_actions=0 "
+        "end_non_opened_branches=0"
     ) in caplog.text
 
 

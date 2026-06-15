@@ -542,7 +542,9 @@ def _log_latest_rollout_report(runtime: object) -> None:
             "[rollout-detail] rollout_index=%s start_node_id=%s start_depth=%s "
             "end_node_id=%s end_depth=%s total_edges=%s initial_edges=%s "
             "extra_edges=%s traversals=%s stop_reason=%s end_terminal=%s "
-            "end_exact=%s",
+            "end_exact=%s end_created_node=%s end_existing_node=%s "
+            "end_legal_actions=%s end_openable_actions=%s end_opened_actions=%s "
+            "end_non_opened_branches=%s no_legal_but_not_terminal=%s",
             rollout_index,
             _metric_value(getattr(path_report, "start_node_id", None)),
             _metric_value(getattr(path_report, "start_depth", None)),
@@ -555,7 +557,27 @@ def _log_latest_rollout_report(runtime: object) -> None:
             _metric_value(_rollout_path_stop_reason(path_report)),
             _metric_value(getattr(path_report, "end_is_terminal", None)),
             _metric_value(getattr(path_report, "end_is_exact", None)),
+            _metric_value(getattr(path_report, "end_was_created_node", None)),
+            _metric_value(getattr(path_report, "end_was_existing_node", None)),
+            _metric_value(getattr(path_report, "end_legal_action_count", None)),
+            _metric_value(getattr(path_report, "end_openable_action_count", None)),
+            _metric_value(getattr(path_report, "end_opened_action_count", None)),
+            _metric_value(getattr(path_report, "end_non_opened_branch_count", None)),
+            _metric_value(_rollout_no_legal_but_not_terminal(path_report)),
         )
+        if _rollout_no_legal_but_not_terminal(path_report):
+            LOGGER.warning(
+                "[rollout-warning] no_legal_actions_but_not_terminal "
+                "rollout_index=%s end_node_id=%s end_depth=%s "
+                "end_legal_actions=%s end_non_opened_branches=%s",
+                rollout_index,
+                _metric_value(getattr(path_report, "end_node_id", None)),
+                _metric_value(getattr(path_report, "end_depth", None)),
+                _metric_value(getattr(path_report, "end_legal_action_count", None)),
+                _metric_value(
+                    getattr(path_report, "end_non_opened_branch_count", None)
+                ),
+            )
 
 
 def _rollout_path_reports(report: object) -> tuple[object, ...]:
@@ -587,6 +609,17 @@ def _rollout_path_stop_reason(path_report: object) -> str:
     if stop_reason is None:
         return "none"
     return str(stop_reason)
+
+
+def _rollout_no_legal_but_not_terminal(path_report: object) -> bool:
+    """Return whether a path stopped with no legal actions but is not terminal."""
+    reported_flag = getattr(path_report, "no_legal_actions_but_not_terminal", None)
+    if isinstance(reported_flag, bool):
+        return reported_flag
+    return (
+        _rollout_path_stop_reason(path_report) == "no_legal_actions"
+        and getattr(path_report, "end_is_terminal", None) is False
+    )
 
 
 def _current_rss_mb() -> float | None:
