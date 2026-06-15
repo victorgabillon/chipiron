@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from atomheart.games.morpion.state import MorpionState as AtomMorpionState
 
 from anemone.training_export import load_training_tree_snapshot
+from anemone.training_export.serialization import MalformedNodesFieldError
 
 from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
 from chipiron.environments.morpion.learning import (
@@ -52,6 +53,7 @@ from .record_status import (
     select_best_certified_record_candidate_from_training_tree_snapshot,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 LOGGER = logging.getLogger(__name__)
 
@@ -742,11 +744,49 @@ def _load_resolved_training_tree_snapshot(
     snapshot_path = resolved_snapshot.snapshot_path
     if snapshot_path is None:
         return None
+    if _is_sharded_training_tree_snapshot_path(snapshot_path):
+        return _load_sharded_training_tree_snapshot_for_dashboard(snapshot_path)
     try:
         return load_training_tree_snapshot(snapshot_path)
     except OSError:
         LOGGER.exception(
             "[dashboard] latest_tree_snapshot_load_failed path=%s",
+            str(snapshot_path),
+        )
+        return None
+    except MalformedNodesFieldError:
+        sharded_snapshot = _load_sharded_training_tree_snapshot_for_dashboard(
+            snapshot_path
+        )
+        if sharded_snapshot is not None:
+            return sharded_snapshot
+        LOGGER.exception(
+            "[dashboard] latest_tree_snapshot_load_failed flat_and_sharded path=%s",
+            str(snapshot_path),
+        )
+        return None
+
+
+def _is_sharded_training_tree_snapshot_path(snapshot_path: Path) -> bool:
+    """Return whether one snapshot reference points at a sharded export."""
+    return "tree_exports_sharded" in snapshot_path.parts
+
+
+def _load_sharded_training_tree_snapshot_for_dashboard(
+    snapshot_path: Path,
+) -> object | None:
+    """Load one sharded training tree snapshot without crashing dashboard views."""
+    try:
+        return load_morpion_sharded_training_tree_snapshot(snapshot_path)
+    except OSError:
+        LOGGER.exception(
+            "[dashboard] sharded_tree_snapshot_load_failed path=%s",
+            str(snapshot_path),
+        )
+        return None
+    except Exception:
+        LOGGER.exception(
+            "[dashboard] sharded_tree_snapshot_load_failed malformed path=%s",
             str(snapshot_path),
         )
         return None
@@ -799,13 +839,8 @@ def build_current_certified_record_board_view(
     if snapshot_path is None:
         return None
 
-    try:
-        snapshot = load_training_tree_snapshot(snapshot_path)
-    except OSError:
-        LOGGER.exception(
-            "[dashboard] certified_record_board_snapshot_load_failed path=%s",
-            str(snapshot_path),
-        )
+    snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
+    if snapshot is None:
         return None
 
     candidate = select_best_certified_record_candidate_from_training_tree_snapshot(
@@ -1031,8 +1066,9 @@ def _latest_tree_num_nodes(run_view: MorpionBootstrapRunView) -> int | None:
         return latest_event.tree.num_nodes
     resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
     if resolved_snapshot.snapshot_path is not None:
-        snapshot = load_training_tree_snapshot(resolved_snapshot.snapshot_path)
-        return len(snapshot.nodes)
+        snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
+        if snapshot is not None:
+            return len(getattr(snapshot, "nodes", ()))
     if run_view.run_state is not None:
         return run_view.run_state.tree_size_at_last_save
     return None
@@ -1151,7 +1187,7 @@ def _resolve_latest_tree_snapshot_reference(
                 snapshot_path=resolved_path,
                 snapshot_source="metadata",
             )
-        latest_on_disk = _latest_generation_json_path(paths.tree_snapshot_dir)
+        latest_on_disk = _latest_tree_snapshot_generation_json_path(paths)
         if latest_on_disk is not None:
             status_message = (
                 "Tree snapshot metadata points to a missing file; using the newest "
@@ -1175,7 +1211,7 @@ def _resolve_latest_tree_snapshot_reference(
                 "tree export exists on disk."
             ),
         )
-    latest_on_disk = _latest_generation_json_path(paths.tree_snapshot_dir)
+    latest_on_disk = _latest_tree_snapshot_generation_json_path(paths)
     if latest_on_disk is None:
         return _ResolvedTreeSnapshotReference(
             snapshot_path=None,
@@ -1192,6 +1228,21 @@ def _latest_generation_json_path(directory: Path) -> Path | None:
     """Return the newest ``generation_*.json`` file from one directory."""
     candidates = sorted(directory.glob("generation_*.json"))
     return None if not candidates else candidates[-1]
+
+
+def _latest_tree_snapshot_generation_json_path(
+    paths: MorpionBootstrapPaths,
+) -> Path | None:
+    """Return the newest flat or sharded tree generation JSON file."""
+    candidates = [
+        path
+        for path in (
+            _latest_generation_json_path(paths.tree_snapshot_dir),
+            _latest_generation_json_path(paths.sharded_tree_snapshot_dir),
+        )
+        if path is not None
+    ]
+    return None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
 
 
 def _tree_depth_distribution_rows_from_counts(

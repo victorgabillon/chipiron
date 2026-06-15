@@ -110,11 +110,26 @@ def _latest_generation_json_path(directory: Path) -> Path | None:
     return None if not candidates else candidates[-1]
 
 
+def _latest_tree_snapshot_generation_json_path(
+    paths: MorpionBootstrapPaths,
+) -> Path | None:
+    """Return the newest flat or sharded tree generation JSON file."""
+    candidates = [
+        path
+        for path in (
+            _latest_generation_json_path(paths.tree_snapshot_dir),
+            _latest_generation_json_path(paths.sharded_tree_snapshot_dir),
+        )
+        if path is not None
+    ]
+    return None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
+
+
 def _cached_dashboard_data_freshness_tokens(
     paths: MorpionBootstrapPaths,
 ) -> tuple[int, ...]:
     """Return freshness tokens for dashboard-wide data rebuilds."""
-    latest_tree_snapshot_path = _latest_generation_json_path(paths.tree_snapshot_dir)
+    latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
     latest_runtime_checkpoint_path = _latest_generation_json_path(
         paths.runtime_checkpoint_dir
     )
@@ -130,6 +145,7 @@ def _cached_dashboard_data_freshness_tokens(
         _path_mtime_ns(paths.launcher_stdout_log_path),
         _path_mtime_ns(paths.launcher_stderr_log_path),
         _path_mtime_ns(paths.tree_snapshot_dir),
+        _path_mtime_ns(paths.sharded_tree_snapshot_dir),
         _path_mtime_ns(paths.runtime_checkpoint_dir),
         _path_mtime_ns(paths.rows_dir),
         _path_mtime_ns(paths.model_dir),
@@ -149,11 +165,12 @@ def _cached_certified_record_board_freshness_tokens(
     paths: MorpionBootstrapPaths,
 ) -> tuple[int, ...]:
     """Return freshness tokens for certified-record board rebuilds."""
-    latest_tree_snapshot_path = _latest_generation_json_path(paths.tree_snapshot_dir)
+    latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
     return (
         _path_mtime_ns(paths.run_state_path),
         _path_mtime_ns(paths.history_jsonl_path),
         _path_mtime_ns(paths.tree_snapshot_dir),
+        _path_mtime_ns(paths.sharded_tree_snapshot_dir),
         0
         if latest_tree_snapshot_path is None
         else _path_mtime_ns(latest_tree_snapshot_path),

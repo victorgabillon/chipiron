@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
@@ -99,6 +100,8 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.history_view import (
     DiskUsageRow,
     DiskUsageSummary,
+    _load_resolved_training_tree_snapshot,
+    _ResolvedTreeSnapshotReference,
     build_current_certified_record_board_view,
     build_disk_usage_summary,
     format_num_bytes,
@@ -108,6 +111,9 @@ from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     LinooSelectionTable,
     LinooSelectionTableRow,
     save_linoo_selection_table,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -188,12 +194,13 @@ def _make_event(
 def _make_run_state(
     *,
     tree_size_at_last_save: int = 25,
+    latest_tree_snapshot_path: str | None = "tree_exports/generation_000002.json",
 ) -> MorpionBootstrapRunState:
     """Build one representative run state for run-view loading tests."""
     return MorpionBootstrapRunState(
         generation=2,
         cycle_index=3,
-        latest_tree_snapshot_path="tree_exports/generation_000002.json",
+        latest_tree_snapshot_path=latest_tree_snapshot_path,
         latest_rows_path="rows/generation_000002.json",
         latest_model_bundle_paths={"mlp": "models/generation_000002/mlp"},
         active_evaluator_name="mlp",
@@ -220,7 +227,163 @@ def _make_morpion_payload(move_count: int) -> dict[str, object]:
         action = dynamics.all_legal_actions(state)[0]
         state = dynamics.step(state, action).next_state
     codec = MorpionStateCheckpointCodec()
-    return codec.dump_state_ref(state)
+    return cast("dict[str, object]", codec.dump_state_ref(state))
+
+
+@dataclass(slots=True)
+class _LiveNode:
+    """Small live-node stub exposing the fields used by sharded export builders."""
+
+    id: str
+    depth: int
+    state_payload: dict[str, object]
+    direct_value: float | None
+    backed_up_value: float | None
+    is_terminal: bool
+    is_exact: bool
+    visit_count: int | None
+    metadata: dict[str, object] = field(default_factory=dict)
+    parent_ids: tuple[str, ...] = ()
+    child_ids: tuple[str, ...] = ()
+    over_event_label: str | None = None
+
+    @property
+    def state(self) -> dict[str, object]:
+        """Return the state payload expected by the sharded export writer."""
+        return self.state_payload
+
+
+def _value_to_scalar(value: object | None) -> float | None:
+    """Return float scalars for the live-node stubs used in these tests."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
+
+
+def _write_small_sharded_snapshot(paths: MorpionBootstrapPaths) -> Path:
+    """Write one minimal sharded Morpion training export and return its manifest."""
+    return save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=(
+            _LiveNode(
+                id="root",
+                depth=0,
+                state_payload=_make_morpion_payload(0),
+                direct_value=0.25,
+                backed_up_value=0.5,
+                is_terminal=False,
+                is_exact=False,
+                visit_count=3,
+                child_ids=("leaf",),
+            ),
+            _LiveNode(
+                id="leaf",
+                depth=1,
+                state_payload=_make_morpion_payload(1),
+                direct_value=0.75,
+                backed_up_value=1.0,
+                is_terminal=True,
+                is_exact=True,
+                visit_count=2,
+                parent_ids=("root",),
+            ),
+        ),
+        root_node_id="root",
+        output_dir=paths.sharded_tree_snapshot_dir,
+        generation=1,
+        state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )[0]
+
+
+def test_load_resolved_training_tree_snapshot_loads_flat_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard snapshot loading should preserve flat export support."""
+    snapshot_path = tmp_path / "tree_exports" / "generation_000001.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    save_training_tree_snapshot(
+        TrainingTreeSnapshot(
+            root_node_id="root",
+            nodes=(
+                make_training_node_snapshot(
+                    node_id="root",
+                    depth=0,
+                    state_ref_payload={"kind": "root"},
+                ),
+            ),
+        ),
+        snapshot_path,
+    )
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is not None
+    assert len(snapshot.nodes) == 1
+
+
+def test_load_resolved_training_tree_snapshot_loads_sharded_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard snapshot loading should support Morpion sharded exports."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot_path = _write_small_sharded_snapshot(paths)
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is not None
+    assert snapshot.root_node_id == "root"
+    assert tuple(node.node_id for node in snapshot.nodes) == ("root", "leaf")
+
+
+def test_load_resolved_training_tree_snapshot_tolerates_malformed_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Malformed tree artifacts should not crash dashboard data loading."""
+    snapshot_path = tmp_path / "tree_exports" / "generation_000001.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_text('{"not_nodes": []}\n', encoding="utf-8")
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is None
+
+
+def test_dashboard_data_loads_run_state_sharded_tree_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard summaries should load sharded snapshots referenced by run state."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot_path = _write_small_sharded_snapshot(paths)
+    save_bootstrap_run_state(
+        _make_run_state(
+            latest_tree_snapshot_path=str(snapshot_path.relative_to(paths.work_dir)),
+        ),
+        paths.run_state_path,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.run_summary.latest_tree_num_nodes == 2
+    assert dashboard_data.latest_tree_status is not None
+    assert dashboard_data.latest_tree_status.num_nodes == 2
+    assert dashboard_data.latest_tree_node_classification_summary is not None
+    assert dashboard_data.latest_tree_node_classification_summary.total_nodes == 2
 
 
 def test_load_run_view_from_artifacts(tmp_path: Path) -> None:
