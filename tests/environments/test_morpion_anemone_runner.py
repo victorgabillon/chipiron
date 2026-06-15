@@ -239,6 +239,90 @@ class _FakeTreeManager:
         self.refresh_calls += 1
 
 
+def test_log_latest_rollout_report_includes_path_details(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Rollout report logging includes aggregate, compact, and detail records."""
+    caplog.set_level(logging.INFO)
+    path_reports = (
+        SimpleNamespace(
+            start_node_id="n1",
+            start_depth=1,
+            end_node_id="n5",
+            end_depth=5,
+            initial_edge_count=1,
+            extra_edge_count=2,
+            traversal_count=2,
+            total_edge_count=3,
+            stop_reason="terminal",
+            end_is_terminal=True,
+            end_is_exact=True,
+        ),
+        SimpleNamespace(
+            start_node_id="n2",
+            start_depth=1,
+            end_node_id="n2",
+            end_depth=1,
+            initial_edge_count=1,
+            extra_edge_count=0,
+            traversal_count=0,
+            total_edge_count=1,
+            stop_reason="action_selector_stop",
+            end_is_terminal=False,
+            end_is_exact=False,
+        ),
+    )
+    report = SimpleNamespace(
+        total_edge_count=4,
+        initial_edge_count=2,
+        extra_edge_count=2,
+        traversal_count=2,
+        stop_reason_counts={"terminal": 1, "action_selector_stop": 1},
+        path_reports=path_reports,
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
+    anemone_runner_module._log_latest_rollout_report(runtime)
+
+    assert "[rollout] total_edges=4 initial_edges=2" in caplog.text
+    assert (
+        "[rollout-lengths] count=2 total_lengths=[3, 1] extra_lengths=[2, 0]"
+        in caplog.text
+    )
+    assert "stops={'terminal': 1, 'action_selector_stop': 1}" in caplog.text
+    assert (
+        "[rollout-detail] rollout_index=0 start_node_id=n1 start_depth=1 "
+        "end_node_id=n5 end_depth=5 total_edges=3 initial_edges=1 "
+        "extra_edges=2 traversals=2 stop_reason=terminal end_terminal=True "
+        "end_exact=True"
+    ) in caplog.text
+
+
+def test_log_latest_rollout_report_supports_legacy_report(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A report without path reports still logs aggregates without crashing."""
+    caplog.set_level(logging.INFO)
+    report = SimpleNamespace(
+        total_edge_count=1,
+        initial_edge_count=1,
+        extra_edge_count=0,
+        traversal_count=0,
+        stop_reason_counts={"max_extra_steps": 1},
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
+    anemone_runner_module._log_latest_rollout_report(runtime)
+
+    assert "[rollout] total_edges=1 initial_edges=1" in caplog.text
+    assert "[rollout-lengths]" not in caplog.text
+    assert "[rollout-detail]" not in caplog.text
+
+
 class _FakeValue:
     """Tiny direct-value object with the Anemone ``score`` shape."""
 

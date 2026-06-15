@@ -521,6 +521,72 @@ def _log_latest_rollout_report(runtime: object) -> None:
         _metric_value(getattr(report, "traversal_count", None)),
         _metric_value(getattr(report, "stop_reason_counts", None)),
     )
+    path_reports = _rollout_path_reports(report)
+    if not path_reports:
+        return
+    LOGGER.info(
+        "[rollout-lengths] count=%s total_lengths=%s extra_lengths=%s stops=%s",
+        len(path_reports),
+        [
+            getattr(path_report, "total_edge_count", None)
+            for path_report in path_reports
+        ],
+        [
+            getattr(path_report, "extra_edge_count", None)
+            for path_report in path_reports
+        ],
+        _rollout_path_stop_counts(path_reports),
+    )
+    for rollout_index, path_report in enumerate(path_reports):
+        LOGGER.info(
+            "[rollout-detail] rollout_index=%s start_node_id=%s start_depth=%s "
+            "end_node_id=%s end_depth=%s total_edges=%s initial_edges=%s "
+            "extra_edges=%s traversals=%s stop_reason=%s end_terminal=%s "
+            "end_exact=%s",
+            rollout_index,
+            _metric_value(getattr(path_report, "start_node_id", None)),
+            _metric_value(getattr(path_report, "start_depth", None)),
+            _metric_value(getattr(path_report, "end_node_id", None)),
+            _metric_value(getattr(path_report, "end_depth", None)),
+            _metric_value(getattr(path_report, "total_edge_count", None)),
+            _metric_value(getattr(path_report, "initial_edge_count", None)),
+            _metric_value(getattr(path_report, "extra_edge_count", None)),
+            _metric_value(getattr(path_report, "traversal_count", None)),
+            _metric_value(_rollout_path_stop_reason(path_report)),
+            _metric_value(getattr(path_report, "end_is_terminal", None)),
+            _metric_value(getattr(path_report, "end_is_exact", None)),
+        )
+
+
+def _rollout_path_reports(report: object) -> tuple[object, ...]:
+    """Return path reports from an Anemone rollout report when available."""
+    path_reports = getattr(report, "path_reports", ())
+    if path_reports is None:
+        return ()
+    try:
+        return tuple(path_reports)
+    except TypeError:
+        return ()
+
+
+def _rollout_path_stop_counts(path_reports: tuple[object, ...]) -> dict[str, int]:
+    """Aggregate stop reasons from rollout path reports."""
+    stop_counts: dict[str, int] = {}
+    for path_report in path_reports:
+        stop_reason = _rollout_path_stop_reason(path_report)
+        stop_counts[stop_reason] = stop_counts.get(stop_reason, 0) + 1
+    return stop_counts
+
+
+def _rollout_path_stop_reason(path_report: object) -> str:
+    """Return one stable rollout path stop-reason token."""
+    stop_reason = getattr(path_report, "stop_reason", None)
+    value = getattr(stop_reason, "value", None)
+    if isinstance(value, str):
+        return value
+    if stop_reason is None:
+        return "none"
+    return str(stop_reason)
 
 
 def _current_rss_mb() -> float | None:
