@@ -34,6 +34,12 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 
+GROWTH_STATUS_METADATA_KEY = "growth_status"
+CHECKPOINT_SKIPPED_REASON_METADATA_KEY = "checkpoint_skipped_reason"
+CHECKPOINT_SKIPPED_METADATA_KEY = "checkpoint_skipped"
+GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS = "growth_budget_already_exhausted"
+NO_GROWTH_LIMIT_REACHED_CHECKPOINT_SKIP_REASON = "no_growth_and_limit_reached"
+
 _CURRENT_TREE_STATUS_TYPE_ERROR = (
     "Morpion bootstrap runner current_tree_status() must return "
     "MorpionBootstrapTreeStatus or a mapping."
@@ -164,6 +170,83 @@ def build_no_save_run_state(
     )
 
 
+def build_growth_budget_exhausted_run_state(
+    *,
+    run_state: MorpionBootstrapRunState,
+    resolved_active_model: ResolvedActiveMorpionModelBundle,
+    resolved_control: MorpionBootstrapControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+    cycle_index: int,
+    branch_count: int,
+    tree_branch_limit: int,
+) -> MorpionBootstrapRunState:
+    """Build carried-forward state for a no-op growth-limit cycle."""
+    next_state = build_no_save_run_state(
+        run_state=run_state,
+        resolved_active_model=resolved_active_model,
+        resolved_control=resolved_control,
+        effective_runtime_config=effective_runtime_config,
+        cycle_index=cycle_index,
+    )
+    next_metadata = dict(next_state.metadata)
+    next_metadata[GROWTH_STATUS_METADATA_KEY] = GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS
+    next_metadata[CHECKPOINT_SKIPPED_METADATA_KEY] = True
+    next_metadata[CHECKPOINT_SKIPPED_REASON_METADATA_KEY] = (
+        NO_GROWTH_LIMIT_REACHED_CHECKPOINT_SKIP_REASON
+    )
+    next_metadata["branch_count"] = branch_count
+    next_metadata["tree_branch_limit"] = tree_branch_limit
+    return MorpionBootstrapRunState(
+        generation=next_state.generation,
+        cycle_index=next_state.cycle_index,
+        latest_tree_snapshot_path=next_state.latest_tree_snapshot_path,
+        latest_rows_path=next_state.latest_rows_path,
+        latest_model_bundle_paths=next_state.latest_model_bundle_paths,
+        active_evaluator_name=next_state.active_evaluator_name,
+        tree_size_at_last_save=next_state.tree_size_at_last_save,
+        last_save_unix_s=next_state.last_save_unix_s,
+        latest_runtime_checkpoint_path=next_state.latest_runtime_checkpoint_path,
+        latest_record_status=next_state.latest_record_status,
+        latest_frontier_status=next_state.latest_frontier_status,
+        metadata=next_metadata,
+    )
+
+
+def current_tree_branch_count(runner: MorpionSearchRunner) -> int | None:
+    """Return the live branch count when the runner exposes it."""
+    current_branch_count = getattr(runner, "current_tree_branch_count", None)
+    if callable(current_branch_count):
+        raw_branch_count = current_branch_count()
+        if isinstance(raw_branch_count, int) and not isinstance(raw_branch_count, bool):
+            return raw_branch_count
+        return None
+
+    current_tree_status = getattr(runner, "current_tree_status", None)
+    if not callable(current_tree_status):
+        return None
+    raw_status = current_tree_status()
+    if isinstance(raw_status, Mapping):
+        return _optional_tree_int(
+            raw_status.get("branch_count"),
+            field_name="branch_count",
+        )
+    return None
+
+
+def no_growth_and_limit_reached(
+    *,
+    nodes_added: int,
+    branch_count: int | None,
+    tree_branch_limit: int,
+) -> bool:
+    """Return whether a zero-growth cycle is already at the branch limit."""
+    return (
+        nodes_added == 0
+        and branch_count is not None
+        and branch_count >= tree_branch_limit
+    )
+
+
 def resolve_tree_status(
     runner: MorpionSearchRunner,
     *,
@@ -260,6 +343,7 @@ def resolve_runtime_restore_path(
         InvalidMorpionSearchCheckpointError,
         cache_morpion_search_checkpoint_payload_for_restore,
         load_morpion_search_checkpoint_payload,
+        log_morpion_checkpoint_memory_phase,
     )
 
     candidates: list[tuple[str, Path | None]] = [
@@ -306,6 +390,11 @@ def resolve_runtime_restore_path(
             source,
             str(candidate_path),
         )
+        log_morpion_checkpoint_memory_phase(
+            "before_candidate_validation",
+            path=candidate_path,
+            generation=run_state.generation,
+        )
         try:
             payload = load_morpion_search_checkpoint_payload(candidate_path)
         except InvalidMorpionSearchCheckpointError as exc:
@@ -327,6 +416,12 @@ def resolve_runtime_restore_path(
             source,
             str(candidate_path),
         )
+        log_morpion_checkpoint_memory_phase(
+            "after_candidate_validation",
+            path=candidate_path,
+            nodes=len(payload.tree.nodes),
+            generation=run_state.generation,
+        )
         cache_morpion_search_checkpoint_payload_for_restore(candidate_path, payload)
         return candidate_path
 
@@ -336,8 +431,16 @@ def resolve_runtime_restore_path(
 
 
 __all__ = [
+    "CHECKPOINT_SKIPPED_METADATA_KEY",
+    "CHECKPOINT_SKIPPED_REASON_METADATA_KEY",
+    "GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS",
+    "GROWTH_STATUS_METADATA_KEY",
+    "NO_GROWTH_LIMIT_REACHED_CHECKPOINT_SKIP_REASON",
     "ResolvedActiveMorpionModelBundle",
+    "build_growth_budget_exhausted_run_state",
     "build_no_save_run_state",
+    "current_tree_branch_count",
+    "no_growth_and_limit_reached",
     "prune_saved_generation_artifacts",
     "resolve_active_model_bundle",
     "resolve_runtime_restore_path",

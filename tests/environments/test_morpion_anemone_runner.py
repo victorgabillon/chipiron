@@ -559,9 +559,27 @@ def test_default_search_args_can_enable_rollout_after_opening() -> None:
     assert search_args.opening_expansion.kind == OpeningExpansionKind.ROLLOUT
     rollout = search_args.opening_expansion.rollout
     assert rollout.max_extra_steps is None
-    assert rollout.action_selector_kind == RolloutActionSelectorKind.RANDOM_OPENABLE
+    assert rollout.action_selector_kind == RolloutActionSelectorKind(
+        "random_legal_prefer_openable"
+    )
     assert rollout.random_seed == 0
     assert rollout.stop_on_existing_node is False
+
+
+def test_default_search_args_can_enable_traversing_rollout_selector() -> None:
+    """Traversal-capable rollout selector strings should reach Anemone."""
+    search_args = anemone_runner_module._default_search_args(
+        rollout=MorpionBootstrapRolloutConfig(
+            enabled=True,
+            action_selector_kind="random_legal_prefer_openable",
+        )
+    )
+
+    assert search_args.opening_expansion.kind == OpeningExpansionKind.ROLLOUT
+    rollout = search_args.opening_expansion.rollout
+    assert rollout.action_selector_kind == RolloutActionSelectorKind(
+        "random_legal_prefer_openable"
+    )
 
 
 def test_disabled_rollout_preserves_one_ply_opening_expansion() -> None:
@@ -1029,9 +1047,15 @@ def test_checkpoint_validation_payload_is_reused_for_immediate_restore(
     assert restored_runtime is fake_runtime
     assert captured_payload["payload"] is payload
     assert load_calls == [checkpoint_path]
+    assert anemone_runner_module._validated_checkpoint_payload_cache is None
     assert "[checkpoint] candidate_reuse_for_restore" in caplog.text
     assert "operation=payload_load" in caplog.text
     assert "cache=hit" in caplog.text
+    assert "[memory] phase=before_candidate_validation" in caplog.text
+    assert "[memory] phase=after_candidate_validation" in caplog.text
+    assert "[memory] phase=before_runtime_restore" in caplog.text
+    assert "[memory] phase=after_runtime_rebuild" in caplog.text
+    assert "[memory] phase=after_restore_payload_release" in caplog.text
 
 
 def test_checkpoint_restore_phase_logs_are_suppressed_by_default(
@@ -1729,7 +1753,7 @@ def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The real runner should restore the same tree under a changed branch limit."""
+    """The real runner should stop cleanly when a lowered branch limit is exhausted."""
     _patch_reported_losses(
         monkeypatch,
         loss_by_evaluator_name={"linear": 0.1, "mlp": 0.2},
@@ -1760,9 +1784,13 @@ def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
     second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
     history = load_bootstrap_history(paths.history_jsonl_path)
 
-    assert second_state.generation == 2
-    assert second_state.tree_size_at_last_save >= first_saved_tree_size
+    assert second_state.generation == 1
+    assert second_state.tree_size_at_last_save == first_saved_tree_size
     assert runner.current_runtime_config().tree_branch_limit == 64
+    assert second_state.metadata["growth_status"] == "growth_budget_already_exhausted"
+    assert second_state.metadata["checkpoint_skipped_reason"] == (
+        "no_growth_and_limit_reached"
+    )
     assert second_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
         "reevaluation_blend_alpha": 1.0,
         "tree_branch_limit": 64,
