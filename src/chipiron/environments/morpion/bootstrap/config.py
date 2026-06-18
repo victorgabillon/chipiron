@@ -12,6 +12,10 @@ from typing import TYPE_CHECKING, cast
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_GRAPH_MODEL_KIND,
+    MORPION_GRAPH_TOKEN_FEATURE_DIM,
+)
 
 from .bootstrap_errors import InvalidReevaluationBlendAlphaError
 from .record_status import (
@@ -464,6 +468,72 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                             section_name=f"evaluators.evaluators.{evaluator_name}",
                         ).get("feature_names"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.feature_names",
+                    ),
+                    graph_max_tokens=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_max_tokens", 1536),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_max_tokens",
+                    ),
+                    graph_input_feature_dim=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get(
+                            "graph_input_feature_dim",
+                            MORPION_GRAPH_TOKEN_FEATURE_DIM,
+                        ),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_input_feature_dim",
+                    ),
+                    graph_d_model=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_d_model", 64),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_d_model",
+                    ),
+                    graph_n_head=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_n_head", 4),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_n_head",
+                    ),
+                    graph_n_layer=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_n_layer", 2),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_n_layer",
+                    ),
+                    graph_dim_feedforward=_coerce_int(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_dim_feedforward", 256),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_dim_feedforward",
+                    ),
+                    graph_dropout_ratio=_coerce_float(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_dropout_ratio", 0.0),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_dropout_ratio",
+                    ),
+                    graph_pooling=_required_str(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_pooling", "value_token"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_pooling",
+                    ),
+                    graph_output_tanh=_required_bool(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("graph_output_tanh", True),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_output_tanh",
                     ),
                 )
                 for evaluator_name, spec_payload in evaluator_entries.items()
@@ -945,7 +1015,7 @@ def _evaluators_config_to_dict(config: MorpionEvaluatorsConfig) -> dict[str, obj
 
 def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
     """Serialize one evaluator spec into JSON-friendly data."""
-    return {
+    payload: dict[str, object] = {
         "name": spec.name,
         "model_type": spec.model_type,
         "hidden_sizes": None if spec.hidden_sizes is None else list(spec.hidden_sizes),
@@ -954,6 +1024,44 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "learning_rate": spec.learning_rate,
         "feature_subset_name": spec.feature_subset_name,
         "feature_names": list(spec.feature_names),
+    }
+    if (
+        spec.model_type == MORPION_GRAPH_MODEL_KIND
+        or _has_non_default_graph_evaluator_settings(spec)
+    ):
+        payload.update(_graph_evaluator_settings_to_dict(spec))
+    return payload
+
+
+def _has_non_default_graph_evaluator_settings(spec: MorpionEvaluatorSpec) -> bool:
+    """Return whether graph settings differ from dataclass defaults."""
+    return (
+        spec.graph_max_tokens != 1536
+        or spec.graph_input_feature_dim != MORPION_GRAPH_TOKEN_FEATURE_DIM
+        or spec.graph_d_model != 64
+        or spec.graph_n_head != 4
+        or spec.graph_n_layer != 2
+        or spec.graph_dim_feedforward != 256
+        or spec.graph_dropout_ratio != 0.0
+        or spec.graph_pooling != "value_token"
+        or spec.graph_output_tanh is not True
+    )
+
+
+def _graph_evaluator_settings_to_dict(
+    spec: MorpionEvaluatorSpec,
+) -> dict[str, object]:
+    """Serialize graph-specific evaluator settings."""
+    return {
+        "graph_max_tokens": spec.graph_max_tokens,
+        "graph_input_feature_dim": spec.graph_input_feature_dim,
+        "graph_d_model": spec.graph_d_model,
+        "graph_n_head": spec.graph_n_head,
+        "graph_n_layer": spec.graph_n_layer,
+        "graph_dim_feedforward": spec.graph_dim_feedforward,
+        "graph_dropout_ratio": spec.graph_dropout_ratio,
+        "graph_pooling": spec.graph_pooling,
+        "graph_output_tanh": spec.graph_output_tanh,
     }
 
 

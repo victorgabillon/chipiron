@@ -39,7 +39,10 @@ from .control import (
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
 )
-from .evaluator_family import CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+from .evaluator_family import (
+    CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+)
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
@@ -653,7 +656,9 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help=(
             "Evaluator-family preset to use. If omitted, the launcher defaults "
             "to the canonical 8-model Morpion family unless explicit "
-            "evaluators_config is supplied programmatically."
+            "evaluators_config is supplied programmatically. Available presets "
+            f"include {CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET!r} and "
+            f"{CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r}."
         ),
     )
     parser.add_argument("--max-cycles", type=int, default=None)

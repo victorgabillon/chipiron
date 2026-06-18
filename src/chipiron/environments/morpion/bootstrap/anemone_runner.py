@@ -12,7 +12,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from random import Random
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
@@ -78,6 +78,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
+
+if TYPE_CHECKING:
+    from torch import Tensor
 
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapRolloutConfig
 from .control import MorpionBootstrapEffectiveRuntimeConfig
@@ -988,6 +991,14 @@ def _new_morpion_state_checkpoint_codec(
         return MorpionStateCheckpointCodec()
 
 
+class MorpionStateToTensorConverter(Protocol):
+    """Minimal interface shared by Morpion neural input converters."""
+
+    def state_to_tensor(self, state: MorpionState) -> Tensor:
+        """Convert one Morpion state to the model input tensor."""
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class AnemoneMorpionSearchRunnerArgs:
     """Configuration for the real Anemone-backed Morpion runner."""
@@ -1001,8 +1012,13 @@ class AnemoneMorpionSearchRunnerArgs:
 class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
     """Anemone-compatible Morpion evaluator backed by a saved regressor bundle."""
 
-    input_converter: object
+    input_converter: MorpionStateToTensorConverter
     regressor: object
+
+    @property
+    def feature_converter(self) -> MorpionStateToTensorConverter:
+        """Return the input converter under the legacy attribute name."""
+        return self.input_converter
 
     def evaluate(self, state: object) -> Value:
         """Evaluate a Morpion state through the loaded regressor bundle."""
@@ -1017,8 +1033,7 @@ class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
             )
 
         morpion_state = cast("MorpionState", state)
-        converter = cast("Any", self.input_converter)
-        tensor = cast("Any", converter.state_to_tensor(morpion_state))
+        tensor = self.input_converter.state_to_tensor(morpion_state)
         regressor = cast("Any", self.regressor)
         raw_output = regressor(tensor)
         score = float(raw_output.detach().cpu().reshape(-1)[0].item())

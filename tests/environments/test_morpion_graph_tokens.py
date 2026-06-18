@@ -9,6 +9,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import cast
 
+import pytest
 import torch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -67,6 +68,7 @@ from chipiron.environments.morpion.players.evaluators.datasets import (
     collate_morpion_graph_supervised_samples,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_GRAPH_DIRECTIONS,
     MORPION_GRAPH_INPUT_REPRESENTATION,
     MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
@@ -78,6 +80,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     build_morpion_regressor,
     load_morpion_model_bundle,
     save_morpion_model_bundle,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
+    DIRECTIONS,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    _direction_index_for_segment,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionTrainingArgs,
@@ -205,6 +213,62 @@ def test_graph_collate_pads_variable_token_counts() -> None:
         batch.target_tensor,
         torch.tensor([[0.25], [-0.5]], dtype=torch.float32),
     )
+
+
+def test_graph_direction_names_match_feature_extractor_order() -> None:
+    """Graph direction labels should match the raw Morpion direction indices."""
+    assert MORPION_GRAPH_DIRECTIONS == (
+        "horizontal",
+        "vertical",
+        "diag_up",
+        "diag_down",
+    )
+    horizontal_dx, horizontal_dy = DIRECTIONS[0]
+    vertical_dx, vertical_dy = DIRECTIONS[1]
+    diag_up_dx, diag_up_dy = DIRECTIONS[2]
+    diag_down_dx, diag_down_dy = DIRECTIONS[3]
+
+    assert horizontal_dy == 0
+    assert abs(horizontal_dx) == 1
+    assert vertical_dx == 0
+    assert abs(vertical_dy) == 1
+    assert abs(diag_up_dx) == abs(diag_up_dy) == 1
+    assert diag_up_dx * diag_up_dy > 0
+    assert abs(diag_down_dx) == abs(diag_down_dy) == 1
+    assert diag_down_dx * diag_down_dy < 0
+
+    assert _direction_index_for_segment(((0, 0), (1, 0))) == 0
+    assert _direction_index_for_segment(((0, 0), (0, 1))) == 1
+    assert _direction_index_for_segment(((0, 0), (1, 1))) == 2
+    assert _direction_index_for_segment(((0, 0), (1, -1))) == 3
+
+
+def test_graph_regressor_args_reject_feature_dim_mismatch() -> None:
+    """Graph models should match the v1 graph-token feature width exactly."""
+    with pytest.raises(ValueError, match="graph_input_feature_dim"):
+        MorpionRegressorArgs(
+            model_kind=MORPION_GRAPH_MODEL_KIND,
+            graph_input_feature_dim=MORPION_GRAPH_TOKEN_FEATURE_DIM + 1,
+        )
+
+
+def test_graph_regressor_args_reject_too_small_token_cap() -> None:
+    """Graph models need room for VALUE and GLOBAL tokens."""
+    with pytest.raises(ValueError, match="graph_max_tokens"):
+        MorpionRegressorArgs(
+            model_kind=MORPION_GRAPH_MODEL_KIND,
+            graph_max_tokens=1,
+        )
+
+
+def test_graph_regressor_args_reject_incompatible_attention_width() -> None:
+    """Transformer width should be divisible by the configured head count."""
+    with pytest.raises(ValueError, match="divisible"):
+        MorpionRegressorArgs(
+            model_kind=MORPION_GRAPH_MODEL_KIND,
+            graph_d_model=10,
+            graph_n_head=4,
+        )
 
 
 def test_graph_model_builds_and_runs_forward() -> None:

@@ -95,6 +95,41 @@ def resolve_previous_model_bundle_path(
     return paths.resolve_work_dir_path(relative_path)
 
 
+def morpion_training_args_from_evaluator_spec(
+    *,
+    spec: MorpionEvaluatorSpec,
+    dataset_file: str | Path,
+    output_dir: str | Path,
+    shuffle: bool,
+    validation_fraction: float,
+    validation_seed: int,
+) -> MorpionTrainingArgs:
+    """Build training args for one evaluator spec."""
+    return MorpionTrainingArgs(
+        dataset_file=dataset_file,
+        output_dir=output_dir,
+        batch_size=spec.batch_size,
+        num_epochs=spec.num_epochs,
+        learning_rate=spec.learning_rate,
+        shuffle=shuffle,
+        model_kind=spec.model_type,
+        feature_subset_name=spec.feature_subset_name,
+        feature_names=spec.feature_names,
+        hidden_sizes=spec.hidden_sizes,
+        graph_max_tokens=spec.graph_max_tokens,
+        graph_input_feature_dim=spec.graph_input_feature_dim,
+        graph_d_model=spec.graph_d_model,
+        graph_n_head=spec.graph_n_head,
+        graph_n_layer=spec.graph_n_layer,
+        graph_dim_feedforward=spec.graph_dim_feedforward,
+        graph_dropout_ratio=spec.graph_dropout_ratio,
+        graph_pooling=spec.graph_pooling,
+        graph_output_tanh=spec.graph_output_tanh,
+        validation_fraction=validation_fraction,
+        validation_seed=validation_seed,
+    )
+
+
 def persist_evaluator_training_diagnostics(
     *,
     paths: MorpionBootstrapPaths,
@@ -268,26 +303,11 @@ def train_and_select_evaluators(
         LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
         evaluator_started_at = time.perf_counter()
         trained_model, metrics = train_morpion_regressor(
-            MorpionTrainingArgs(
+            morpion_training_args_from_evaluator_spec(
+                spec=spec,
                 dataset_file=rows_path,
                 output_dir=model_bundle_path,
-                batch_size=spec.batch_size,
-                num_epochs=spec.num_epochs,
-                learning_rate=spec.learning_rate,
                 shuffle=args.shuffle,
-                model_kind=spec.model_type,
-                feature_subset_name=spec.feature_subset_name,
-                feature_names=spec.feature_names,
-                hidden_sizes=spec.hidden_sizes,
-                graph_max_tokens=spec.graph_max_tokens,
-                graph_input_feature_dim=spec.graph_input_feature_dim,
-                graph_d_model=spec.graph_d_model,
-                graph_n_head=spec.graph_n_head,
-                graph_n_layer=spec.graph_n_layer,
-                graph_dim_feedforward=spec.graph_dim_feedforward,
-                graph_dropout_ratio=spec.graph_dropout_ratio,
-                graph_pooling=spec.graph_pooling,
-                graph_output_tanh=spec.graph_output_tanh,
                 validation_fraction=args.validation_fraction,
                 validation_seed=args.validation_seed,
             )
@@ -414,6 +434,7 @@ def train_and_select_evaluators(
 __all__ = [
     "BootstrapTrainingResult",
     "MorpionTrainingArgs",
+    "morpion_training_args_from_evaluator_spec",
     "persist_evaluator_training_diagnostics",
     "resolve_previous_model_bundle_path",
     "select_active_evaluator_name",

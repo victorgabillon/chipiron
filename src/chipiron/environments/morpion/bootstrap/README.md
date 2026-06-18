@@ -36,6 +36,14 @@ Use `--verbose-checkpoint-logs` only when debugging Anemone checkpoint restore
 or build internals. Normal growth-worker runs keep those low-level restore
 phases and delta-candidate rejection logs suppressed.
 
+### Evaluator family presets
+
+The launcher default remains `canonical_8_linear_mlp_subsets`, the existing
+canonical linear/MLP evaluator family.
+
+Use `--evaluator-family canonical_linear_mlp_graph_small` to opt in to the same
+canonical linear/MLP evaluators plus one small `graph_transformer` evaluator.
+
 ### Persistence defaults
 
 Normal Morpion bootstrap runs now use this persistence layout by default:

@@ -93,11 +93,14 @@ from .dashboard_plot import (
 )
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import (
+    CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     UnknownMorpionEvaluatorFamilyPresetError,
+    canonical_linear_mlp_graph_small_morpion_evaluator_family_config,
     canonical_morpion_evaluator_family_config,
     canonical_morpion_evaluator_names,
     canonical_morpion_evaluator_specs,
+    graph_transformer_small_morpion_evaluator_spec,
     morpion_evaluators_config_from_preset,
 )
 from .history import (
@@ -324,6 +327,7 @@ __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
+    "CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
     "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
     "DEFAULT_MORPION_PIPELINE_MODE",
@@ -456,6 +460,7 @@ __all__ = [
     "build_bootstrap_event",
     "build_morpion_bootstrap_dashboard_data",
     "build_morpion_bootstrap_tree_inspector_snapshot",
+    "canonical_linear_mlp_graph_small_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
@@ -487,6 +492,7 @@ __all__ = [
     "extract_morpion_record_status_from_training_tree_snapshot",
     "extract_top_morpion_frontier_nodes_from_training_tree_snapshot",
     "fingerprint_morpion_state_payload",
+    "graph_transformer_small_morpion_evaluator_spec",
     "growth_stage_owned_bootstrap_fields",
     "initialize_bootstrap_run_state",
     "latest_status_from_dict",

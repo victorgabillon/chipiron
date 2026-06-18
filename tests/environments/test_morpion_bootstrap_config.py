@@ -104,6 +104,8 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_GRAPH_MODEL_KIND,
+    MORPION_GRAPH_TOKEN_FEATURE_DIM,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -1021,6 +1023,79 @@ def test_bootstrap_config_roundtrip_preserves_evaluator_feature_subset(
     assert loaded == config
     assert loaded.evaluators.evaluators["linear"].feature_subset_name == subset_name
     assert loaded.evaluators.evaluators["linear"].feature_names == feature_names
+
+
+def test_linear_evaluator_serialization_omits_graph_defaults() -> None:
+    """Existing linear/MLP configs should not grow graph-only default fields."""
+    payload = bootstrap_config_to_dict(_make_config())
+    evaluator_payloads = cast(
+        "dict[str, dict[str, object]]",
+        cast("dict[str, object]", payload["evaluators"])["evaluators"],
+    )
+
+    assert evaluator_payloads
+    for spec_payload in evaluator_payloads.values():
+        assert "graph_max_tokens" not in spec_payload
+        assert "graph_d_model" not in spec_payload
+        assert "graph_pooling" not in spec_payload
+
+
+def test_bootstrap_config_roundtrip_preserves_graph_evaluator_fields(
+    tmp_path: Path,
+) -> None:
+    """Persisted graph evaluator settings should survive config roundtrips."""
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "graph": MorpionEvaluatorSpec(
+                    name="graph",
+                    model_type=MORPION_GRAPH_MODEL_KIND,
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=2,
+                    learning_rate=1e-3,
+                    graph_max_tokens=321,
+                    graph_input_feature_dim=MORPION_GRAPH_TOKEN_FEATURE_DIM,
+                    graph_d_model=32,
+                    graph_n_head=4,
+                    graph_n_layer=1,
+                    graph_dim_feedforward=64,
+                    graph_dropout_ratio=0.1,
+                    graph_pooling="masked_mean",
+                    graph_output_tanh=False,
+                )
+            }
+        ),
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+    loaded_spec = loaded.evaluators.evaluators["graph"]
+    payload = bootstrap_config_to_dict(config)
+    graph_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
+            "graph"
+        ],
+    )
+
+    assert loaded == config
+    assert graph_payload["graph_max_tokens"] == 321
+    assert graph_payload["graph_d_model"] == 32
+    assert graph_payload["graph_pooling"] == "masked_mean"
+    assert loaded_spec.model_type == MORPION_GRAPH_MODEL_KIND
+    assert loaded_spec.graph_max_tokens == 321
+    assert loaded_spec.graph_d_model == 32
+    assert loaded_spec.graph_n_head == 4
+    assert loaded_spec.graph_n_layer == 1
+    assert loaded_spec.graph_dim_feedforward == 64
+    assert loaded_spec.graph_dropout_ratio == 0.1
+    assert loaded_spec.graph_pooling == "masked_mean"
+    assert loaded_spec.graph_output_tanh is False
 
 
 def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:

@@ -44,6 +44,8 @@ class MorpionRegressorArgs:
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
+        if self.model_kind == MORPION_GRAPH_MODEL_KIND:
+            _validate_graph_transformer_args(self)
         subset = resolve_morpion_feature_subset(
             feature_subset_name=self.feature_subset_name,
             feature_names=None if not self.feature_names else self.feature_names,
@@ -85,6 +87,85 @@ class MissingMorpionHiddenSizesError(ValueError):
 
 class MissingMorpionHiddenDimError(MissingMorpionHiddenSizesError):
     """Backward-compatible alias for older callers expecting the old error name."""
+
+
+class InvalidMorpionGraphRegressorArgsError(ValueError):
+    """Raised when graph-transformer regressor args are invalid."""
+
+    @classmethod
+    def invalid_input_feature_dim(
+        cls,
+        expected_dim: int,
+    ) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph input feature dimension error."""
+        return cls(
+            "graph_input_feature_dim must equal "
+            f"{expected_dim} for graph_tokens_v1."
+        )
+
+    @classmethod
+    def invalid_max_tokens(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph max-token-count error."""
+        return cls("graph_max_tokens must be >= 2.")
+
+    @classmethod
+    def invalid_d_model(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph transformer width error."""
+        return cls("graph_d_model must be > 0.")
+
+    @classmethod
+    def invalid_n_head(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph attention head count error."""
+        return cls("graph_n_head must be > 0.")
+
+    @classmethod
+    def incompatible_attention_width(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the incompatible graph attention width error."""
+        return cls("graph_d_model must be divisible by graph_n_head.")
+
+    @classmethod
+    def invalid_n_layer(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph transformer layer count error."""
+        return cls("graph_n_layer must be >= 0.")
+
+    @classmethod
+    def invalid_dim_feedforward(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph feedforward width error."""
+        return cls("graph_dim_feedforward must be > 0.")
+
+    @classmethod
+    def invalid_dropout_ratio(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph dropout ratio error."""
+        return cls("graph_dropout_ratio must be >= 0.")
+
+    @classmethod
+    def invalid_pooling(cls) -> InvalidMorpionGraphRegressorArgsError:
+        """Return the invalid graph pooling mode error."""
+        return cls("graph_pooling must be one of {'value_token', 'masked_mean'}.")
+
+
+def _validate_graph_transformer_args(args: MorpionRegressorArgs) -> None:
+    """Validate graph-token model args for the v1 Morpion token schema."""
+    if args.graph_input_feature_dim != MORPION_GRAPH_TOKEN_FEATURE_DIM:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_input_feature_dim(
+            MORPION_GRAPH_TOKEN_FEATURE_DIM
+        )
+    if args.graph_max_tokens < 2:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_max_tokens()
+    if args.graph_d_model <= 0:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_d_model()
+    if args.graph_n_head <= 0:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_n_head()
+    if args.graph_d_model % args.graph_n_head != 0:
+        raise InvalidMorpionGraphRegressorArgsError.incompatible_attention_width()
+    if args.graph_n_layer < 0:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_n_layer()
+    if args.graph_dim_feedforward <= 0:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_dim_feedforward()
+    if args.graph_dropout_ratio < 0.0:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_dropout_ratio()
+    if args.graph_pooling not in {"value_token", "masked_mean"}:
+        raise InvalidMorpionGraphRegressorArgsError.invalid_pooling()
 
 
 def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:

@@ -156,11 +156,11 @@ class MorpionGraphTokenConverter:
         )
         rows.extend(
             _edge_token(segment=segment, normalizer=normalizer)
-            for segment in sorted(state.used_unit_segments)
+            for segment in sorted(state.used_unit_segments, key=_segment_sort_key)
         )
         rows.extend(
             _move_token(action=action, normalizer=normalizer)
-            for action in sorted(actions)
+            for action in sorted(actions, key=_action_sort_key)
         )
 
         # TODO: replace deterministic tail truncation with priority-aware truncation.
@@ -237,6 +237,8 @@ def _move_token(
     normalizer: _CoordinateNormalizer,
 ) -> list[float]:
     """Return one legal-action token."""
+    # TODO: enrich MOVE tokens with explicit 5-dot/4-edge path features or
+    # relation-aware encoding.
     dir_index, _x0, _y0, missing_index = action
     point = _missing_point_from_action(action)
     row = _blank_token(MorpionGraphTokenType.MOVE)
@@ -256,6 +258,24 @@ def _candidate_points_from_actions(
 ) -> frozenset[Point]:
     """Return the set of new-dot positions represented by legal actions."""
     return frozenset(_missing_point_from_action(action) for action in actions)
+
+
+def _action_sort_key(action: MorpionAction) -> tuple[int, int, int, int]:
+    """Return a stable key for raw Morpion actions."""
+    dir_index, x0, y0, missing_index = action
+    return (int(dir_index), int(x0), int(y0), int(missing_index))
+
+
+def _segment_sort_key(
+    segment: Segment,
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return a stable key for unit segments independent of endpoint order."""
+    point_a, point_b = segment
+    ordered = tuple(sorted((point_a, point_b)))
+    return (
+        (int(ordered[0][0]), int(ordered[0][1])),
+        (int(ordered[1][0]), int(ordered[1][1])),
+    )
 
 
 def _missing_point_from_action(action: MorpionAction) -> Point:
