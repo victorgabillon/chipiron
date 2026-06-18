@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import torch
 from torch import Tensor
@@ -21,10 +21,16 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MorpionGraphTokenConverter,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +79,34 @@ class MorpionSupervisedSample(NamedTuple):
         return self.target_tensor
 
 
+class MorpionGraphSupervisedSample(NamedTuple):
+    """Tuple-like Morpion graph-token sample."""
+
+    input_tensor: Tensor
+    target_tensor: Tensor
+
+    @property
+    def is_batch(self) -> bool:
+        """Return whether this sample contains batched tensors."""
+        return self.input_tensor.ndim > 2
+
+    def get_input_layer(self) -> Tensor:
+        """Return the graph-token tensor for the sample."""
+        return self.input_tensor
+
+    def get_target_value(self) -> Tensor:
+        """Return the regression target tensor for the sample."""
+        return self.target_tensor
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionGraphSupervisedDatasetArgs:
+    """Arguments for loading Morpion rows as graph-token samples."""
+
+    file_name: str | os.PathLike[str]
+    max_tokens: int = 1536
+
+
 def process_morpion_supervised_row_to_tensors(
     row: MorpionSupervisedRow,
     *,
@@ -91,6 +125,27 @@ def process_morpion_supervised_row_to_tensors(
     input_tensor = feature_converter.state_to_tensor(chipiron_state)
     target_tensor = torch.tensor([row.target_value], dtype=torch.float32)
     return MorpionSupervisedSample(
+        input_tensor=input_tensor,
+        target_tensor=target_tensor,
+    )
+
+
+def process_morpion_supervised_row_to_graph_tensors(
+    row: MorpionSupervisedRow,
+    *,
+    dynamics: MorpionDynamics | None = None,
+    converter: MorpionGraphTokenConverter | None = None,
+) -> MorpionGraphSupervisedSample:
+    """Convert one raw Morpion supervised row into graph-token tensors."""
+    dyn = dynamics if dynamics is not None else MorpionDynamics()
+    graph_converter = (
+        converter if converter is not None else MorpionGraphTokenConverter(dynamics=dyn)
+    )
+    atom_state = decode_morpion_state_ref_payload(row.state_ref_payload)
+    chipiron_state = dyn.wrap_atomheart_state(atom_state)
+    input_tensor = graph_converter.state_to_tensor(chipiron_state)
+    target_tensor = torch.tensor([row.target_value], dtype=torch.float32)
+    return MorpionGraphSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
     )
@@ -141,6 +196,78 @@ class MorpionSupervisedDataset(Dataset[MorpionSupervisedSample]):
         return self._converter.feature_names()
 
 
+class MorpionGraphSupervisedDataset(Dataset[MorpionGraphSupervisedSample]):
+    """Eager in-memory dataset for graph-token Morpion regression rows."""
+
+    args: MorpionGraphSupervisedDatasetArgs
+    _dynamics: MorpionDynamics
+    _converter: MorpionGraphTokenConverter
+    _rows_bundle: MorpionSupervisedRows
+    _samples: tuple[MorpionGraphSupervisedSample, ...]
+
+    def __init__(self, args: MorpionGraphSupervisedDatasetArgs) -> None:
+        """Load and eagerly preprocess one persisted Morpion row file."""
+        self.args = args
+        self._dynamics = MorpionDynamics()
+        self._converter = MorpionGraphTokenConverter(
+            dynamics=self._dynamics,
+            max_tokens=args.max_tokens,
+        )
+        self._rows_bundle = load_morpion_supervised_rows(os.fspath(args.file_name))
+        self._samples = tuple(
+            process_morpion_supervised_row_to_graph_tensors(
+                row,
+                dynamics=self._dynamics,
+                converter=self._converter,
+            )
+            for row in self._rows_bundle.rows
+        )
+
+    def __len__(self) -> int:
+        """Return the number of eagerly preprocessed Morpion samples."""
+        return len(self._samples)
+
+    def __getitem__(self, index: int) -> MorpionGraphSupervisedSample:
+        """Return one preprocessed graph-token Morpion sample."""
+        return self._samples[index]
+
+    @property
+    def input_dim(self) -> int:
+        """Return the graph-token feature dimension."""
+        return self._converter.input_dim
+
+    def feature_names(self) -> tuple[str, ...]:
+        """Return the graph-token feature ordering."""
+        return self._converter.feature_names()
+
+
+def collate_morpion_graph_supervised_samples(
+    samples: Sequence[MorpionGraphSupervisedSample],
+) -> MorpionGraphSupervisedSample:
+    """Pad variable-length graph-token samples into one batch."""
+    if not samples:
+        return MorpionGraphSupervisedSample(
+            input_tensor=torch.empty((0, 0, 0), dtype=torch.float32),
+            target_tensor=torch.empty((0, 1), dtype=torch.float32),
+        )
+    batch_size = len(samples)
+    max_token_count = max(sample.input_tensor.shape[0] for sample in samples)
+    feature_dim = samples[0].input_tensor.shape[1]
+    input_tensor = torch.zeros(
+        (batch_size, max_token_count, feature_dim),
+        dtype=samples[0].input_tensor.dtype,
+    )
+    target_tensor = torch.zeros((batch_size, 1), dtype=samples[0].target_tensor.dtype)
+    for index, sample in enumerate(samples):
+        token_count = sample.input_tensor.shape[0]
+        input_tensor[index, :token_count, :] = sample.input_tensor
+        target_tensor[index, :] = sample.target_tensor.reshape(1)
+    return MorpionGraphSupervisedSample(
+        input_tensor=input_tensor,
+        target_tensor=target_tensor,
+    )
+
+
 def load_morpion_supervised_dataset(
     args: MorpionSupervisedDatasetArgs,
 ) -> MorpionSupervisedDataset:
@@ -149,8 +276,13 @@ def load_morpion_supervised_dataset(
 
 
 __all__ = [
+    "MorpionGraphSupervisedDataset",
+    "MorpionGraphSupervisedDatasetArgs",
+    "MorpionGraphSupervisedSample",
     "MorpionSupervisedDataset",
     "MorpionSupervisedDatasetArgs",
+    "collate_morpion_graph_supervised_samples",
     "load_morpion_supervised_dataset",
+    "process_morpion_supervised_row_to_graph_tensors",
     "process_morpion_supervised_row_to_tensors",
 ]

@@ -18,6 +18,12 @@ from .feature_schema import (
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
 )
+from .graph_tokens import (
+    MORPION_GRAPH_INPUT_REPRESENTATION,
+    MORPION_GRAPH_MODEL_KIND,
+    MORPION_GRAPH_TOKEN_FEATURE_DIM,
+    MORPION_GRAPH_TOKEN_FEATURE_NAMES,
+)
 from .model import (
     MORPION_INPUT_DIM,
     MorpionRegressor,
@@ -43,6 +49,7 @@ class MorpionModelManifest:
     game_kind: str = "morpion"
     feature_schema: str = MORPION_FEATURE_SCHEMA
     input_dim: int = MORPION_INPUT_DIM
+    input_representation: str = "handcrafted_features"
     target_kind: str = "backup_value"
     model_kind: str = "linear"
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
@@ -160,6 +167,22 @@ class InvalidMorpionModelBundleError(ValueError):
         """Return the invalid-integer-like-value error."""
         return cls(f"Expected an integer-like value, got {type(value).__name__}.")
 
+    @classmethod
+    def invalid_float_like_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-float-like-value error."""
+        return cls(f"Expected a float-like value, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_bool_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-bool-value error."""
+        return cls(f"Expected a bool value, got {type(value).__name__}.")
+
 
 class IncompatibleMorpionModelBundleError(ValueError):
     """Raised when a Morpion model bundle is incompatible with current code."""
@@ -231,10 +254,15 @@ def save_morpion_model_bundle(
 
     manifest = MorpionModelManifest(
         input_dim=model_args.input_dim,
+        input_representation=(
+            MORPION_GRAPH_INPUT_REPRESENTATION
+            if model_args.model_kind == MORPION_GRAPH_MODEL_KIND
+            else "handcrafted_features"
+        ),
         model_kind=model_args.model_kind,
         feature_subset_name=model_args.feature_subset_name,
         feature_names=model_args.feature_names,
-        metadata=dict(metadata) if metadata is not None else {},
+        metadata=_bundle_metadata(model_args, metadata),
     )
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(_manifest_to_dict(manifest), handle, indent=2, sort_keys=True)
@@ -267,6 +295,25 @@ def load_morpion_regressor_for_inference(
     return model
 
 
+def _bundle_metadata(
+    model_args: MorpionRegressorArgs,
+    metadata: dict[str, object] | None,
+) -> dict[str, object]:
+    """Return manifest metadata augmented with graph-token schema details."""
+    bundle_metadata = dict(metadata) if metadata is not None else {}
+    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+        bundle_metadata.update(
+            {
+                "graph_token_feature_names": list(MORPION_GRAPH_TOKEN_FEATURE_NAMES),
+                "graph_max_tokens": model_args.graph_max_tokens,
+                "graph_d_model": model_args.graph_d_model,
+                "graph_n_head": model_args.graph_n_head,
+                "graph_n_layer": model_args.graph_n_layer,
+            }
+        )
+    return bundle_metadata
+
+
 def _load_model_args(path: Path) -> MorpionRegressorArgs:
     """Load Morpion regressor args from one JSON file."""
     with open(path, encoding="utf-8") as handle:
@@ -278,16 +325,31 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     input_dim = data.get("input_dim", MORPION_INPUT_DIM)
     if not isinstance(model_kind, str):
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
-    feature_subset = _load_feature_subset(
-        data,
-        path,
-        input_dim=_coerce_int(input_dim),
+    feature_subset = (
+        full_morpion_feature_subset()
+        if model_kind == MORPION_GRAPH_MODEL_KIND
+        else _load_feature_subset(
+            data,
+            path,
+            input_dim=_coerce_int(input_dim),
+        )
     )
     return MorpionRegressorArgs(
         model_kind=model_kind,
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
         hidden_sizes=_load_hidden_sizes(data, path),
+        graph_max_tokens=_coerce_int(data.get("graph_max_tokens", 1536)),
+        graph_input_feature_dim=_coerce_int(
+            data.get("graph_input_feature_dim", MORPION_GRAPH_TOKEN_FEATURE_DIM)
+        ),
+        graph_d_model=_coerce_int(data.get("graph_d_model", 64)),
+        graph_n_head=_coerce_int(data.get("graph_n_head", 4)),
+        graph_n_layer=_coerce_int(data.get("graph_n_layer", 2)),
+        graph_dim_feedforward=_coerce_int(data.get("graph_dim_feedforward", 256)),
+        graph_dropout_ratio=_coerce_float(data.get("graph_dropout_ratio", 0.0)),
+        graph_pooling=str(data.get("graph_pooling", "value_token")),
+        graph_output_tanh=_coerce_bool(data.get("graph_output_tanh", True)),
     )
 
 
@@ -306,13 +368,22 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
     else:
         raise InvalidMorpionModelBundleError.invalid_manifest_metadata(path)
     input_dim = _coerce_int(data.get("input_dim", MORPION_INPUT_DIM))
-    feature_subset = _load_feature_subset(data, path, input_dim=input_dim)
+    model_kind = str(data.get("model_kind", "linear"))
+    input_representation = str(
+        data.get("input_representation", "handcrafted_features")
+    )
+    feature_subset = (
+        full_morpion_feature_subset()
+        if model_kind == MORPION_GRAPH_MODEL_KIND
+        else _load_feature_subset(data, path, input_dim=input_dim)
+    )
     return MorpionModelManifest(
         game_kind=str(data.get("game_kind", "morpion")),
         feature_schema=str(data.get("feature_schema", MORPION_FEATURE_SCHEMA)),
         input_dim=input_dim,
+        input_representation=input_representation,
         target_kind=str(data.get("target_kind", "backup_value")),
-        model_kind=str(data.get("model_kind", "linear")),
+        model_kind=model_kind,
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
         metadata=metadata_dict,
@@ -325,6 +396,7 @@ def _manifest_to_dict(manifest: MorpionModelManifest) -> dict[str, object]:
         "game_kind": manifest.game_kind,
         "feature_schema": manifest.feature_schema,
         "input_dim": manifest.input_dim,
+        "input_representation": manifest.input_representation,
         "target_kind": manifest.target_kind,
         "model_kind": manifest.model_kind,
         "feature_subset_name": manifest.feature_subset_name,
@@ -340,6 +412,22 @@ def _validate_manifest_compatibility(
     """Validate that the loaded Morpion manifest matches current code."""
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
+    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+        if manifest.model_kind != MORPION_GRAPH_MODEL_KIND:
+            raise IncompatibleMorpionModelBundleError.wrong_input_dim(
+                expected_input_dim=model_args.input_dim,
+                actual_input_dim=manifest.input_dim,
+            )
+        if manifest.input_representation != MORPION_GRAPH_INPUT_REPRESENTATION:
+            raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+                manifest.input_representation
+            )
+        if manifest.input_dim != model_args.graph_input_feature_dim:
+            raise IncompatibleMorpionModelBundleError.wrong_input_dim(
+                expected_input_dim=model_args.graph_input_feature_dim,
+                actual_input_dim=manifest.input_dim,
+            )
+        return
     if manifest.feature_schema != MORPION_FEATURE_SCHEMA:
         raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
             manifest.feature_schema
@@ -358,7 +446,7 @@ def _validate_manifest_compatibility(
 
 def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
     """Serialize Morpion regressor args into JSON-friendly data."""
-    return {
+    data: dict[str, object] = {
         "model_kind": model_args.model_kind,
         "input_dim": model_args.input_dim,
         "feature_subset_name": model_args.feature_subset_name,
@@ -367,6 +455,21 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
         if model_args.hidden_sizes is None
         else list(model_args.hidden_sizes),
     }
+    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+        data.update(
+            {
+                "graph_max_tokens": model_args.graph_max_tokens,
+                "graph_input_feature_dim": model_args.graph_input_feature_dim,
+                "graph_d_model": model_args.graph_d_model,
+                "graph_n_head": model_args.graph_n_head,
+                "graph_n_layer": model_args.graph_n_layer,
+                "graph_dim_feedforward": model_args.graph_dim_feedforward,
+                "graph_dropout_ratio": model_args.graph_dropout_ratio,
+                "graph_pooling": model_args.graph_pooling,
+                "graph_output_tanh": model_args.graph_output_tanh,
+            }
+        )
+    return data
 
 
 def _load_feature_subset(
@@ -435,6 +538,29 @@ def _coerce_int(value: object) -> int:
     if isinstance(value, str):
         return int(value)
     raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+
+
+def _coerce_float(value: object) -> float:
+    """Return one JSON-loaded float-like payload as ``float``."""
+    if isinstance(value, bool):
+        raise InvalidMorpionModelBundleError.invalid_float_like_value(value)
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    raise InvalidMorpionModelBundleError.invalid_float_like_value(value)
+
+
+def _coerce_bool(value: object) -> bool:
+    """Return one JSON-loaded bool payload as ``bool``."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
+    raise InvalidMorpionModelBundleError.invalid_bool_value(value)
 
 
 def _load_hidden_sizes(

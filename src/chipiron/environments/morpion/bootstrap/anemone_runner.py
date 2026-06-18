@@ -70,6 +70,10 @@ from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator im
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     load_morpion_model_bundle,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_GRAPH_MODEL_KIND,
+    MorpionGraphTokenConverter,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
@@ -997,7 +1001,7 @@ class AnemoneMorpionSearchRunnerArgs:
 class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
     """Anemone-compatible Morpion evaluator backed by a saved regressor bundle."""
 
-    feature_converter: MorpionFeatureTensorConverter
+    input_converter: object
     regressor: object
 
     def evaluate(self, state: object) -> Value:
@@ -1013,7 +1017,8 @@ class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
             )
 
         morpion_state = cast("MorpionState", state)
-        tensor = cast("Any", self.feature_converter.state_to_tensor(morpion_state))
+        converter = cast("Any", self.input_converter)
+        tensor = cast("Any", converter.state_to_tensor(morpion_state))
         regressor = cast("Any", self.regressor)
         raw_output = regressor(tensor)
         score = float(raw_output.detach().cpu().reshape(-1)[0].item())
@@ -1031,14 +1036,21 @@ def load_morpion_evaluator_from_model_bundle(
     model, model_args, _ = load_morpion_model_bundle(model_bundle_path)
     model.eval()
     over_detector = MorpionOverEventDetector()
+    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+        input_converter = MorpionGraphTokenConverter(
+            dynamics=MorpionDynamics(),
+            max_tokens=model_args.graph_max_tokens,
+        )
+    else:
+        input_converter = MorpionFeatureTensorConverter(
+            dynamics=MorpionDynamics(),
+            feature_subset=model_args.feature_subset,
+        )
     return MorpionRegressorMasterEvaluator(
         evaluator=MorpionStateEvaluator(),
         over=over_detector,
         over_detector=over_detector,
-        feature_converter=MorpionFeatureTensorConverter(
-            dynamics=MorpionDynamics(),
-            feature_subset=model_args.feature_subset,
-        ),
+        input_converter=input_converter,
         regressor=model,
     )
 

@@ -16,18 +16,31 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_GRAPH_MODEL_KIND,
+    MORPION_GRAPH_TOKEN_FEATURE_DIM,
+)
 
 MORPION_INPUT_DIM = full_morpion_feature_subset().dimension
 
 
 @dataclass(frozen=True, slots=True)
 class MorpionRegressorArgs:
-    """Arguments for the Morpion handcrafted-feature regressor."""
+    """Arguments for Morpion neural evaluator models."""
 
     model_kind: str = "linear"
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
     feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
+    graph_max_tokens: int = 1536
+    graph_input_feature_dim: int = MORPION_GRAPH_TOKEN_FEATURE_DIM
+    graph_d_model: int = 64
+    graph_n_head: int = 4
+    graph_n_layer: int = 2
+    graph_dim_feedforward: int = 256
+    graph_dropout_ratio: float = 0.0
+    graph_pooling: str = "value_token"
+    graph_output_tanh: bool = True
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
@@ -48,7 +61,9 @@ class MorpionRegressorArgs:
 
     @property
     def input_dim(self) -> int:
-        """Return the model input width derived from the feature subset."""
+        """Return the model input width."""
+        if self.model_kind == MORPION_GRAPH_MODEL_KIND:
+            return self.graph_input_feature_dim
         return self.feature_subset.dimension
 
 
@@ -92,6 +107,24 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
             previous_dim = hidden_size
         layers.append(nn.Linear(previous_dim, 1))
         return nn.Sequential(*layers)
+    if args.model_kind == MORPION_GRAPH_MODEL_KIND:
+        from coral.neural_networks.models.entity_token_transformer_value_net import (
+            EntityTokenTransformerValueNet,
+            EntityTokenTransformerValueNetArgs,
+        )
+
+        return EntityTokenTransformerValueNet(
+            EntityTokenTransformerValueNetArgs(
+                input_feature_dim=args.graph_input_feature_dim,
+                d_model=args.graph_d_model,
+                n_head=args.graph_n_head,
+                n_layer=args.graph_n_layer,
+                dim_feedforward=args.graph_dim_feedforward,
+                dropout_ratio=args.graph_dropout_ratio,
+                pooling=args.graph_pooling,  # type: ignore[arg-type]
+                output_tanh=args.graph_output_tanh,
+            )
+        )
     raise UnsupportedMorpionModelKindError(args.model_kind)
 
 

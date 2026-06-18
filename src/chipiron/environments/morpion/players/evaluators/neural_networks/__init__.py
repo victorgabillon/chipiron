@@ -38,6 +38,15 @@ from .feature_schema import (
     subset_indices,
     validate_morpion_feature_subset,
 )
+from .graph_tokens import (
+    MORPION_GRAPH_DIRECTIONS,
+    MORPION_GRAPH_INPUT_REPRESENTATION,
+    MORPION_GRAPH_MODEL_KIND,
+    MORPION_GRAPH_TOKEN_FEATURE_DIM,
+    MORPION_GRAPH_TOKEN_FEATURE_NAMES,
+    MorpionGraphTokenConverter,
+    MorpionGraphTokenType,
+)
 from .model import (
     MORPION_INPUT_DIM,
     MissingMorpionHiddenDimError,
@@ -62,6 +71,11 @@ __all__ = [
     "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
+    "MORPION_GRAPH_DIRECTIONS",
+    "MORPION_GRAPH_INPUT_REPRESENTATION",
+    "MORPION_GRAPH_MODEL_KIND",
+    "MORPION_GRAPH_TOKEN_FEATURE_DIM",
+    "MORPION_GRAPH_TOKEN_FEATURE_NAMES",
     "MORPION_INPUT_DIM",
     "MORPION_MANIFEST_FILE_NAME",
     "MORPION_MODEL_ARGS_FILE_NAME",
@@ -77,6 +91,8 @@ __all__ = [
     "MorpionFeatureSchema",
     "MorpionFeatureSubset",
     "MorpionFeatureTensorConverter",
+    "MorpionGraphTokenConverter",
+    "MorpionGraphTokenType",
     "MorpionModelManifest",
     "MorpionNNInput",
     "MorpionRegressor",
