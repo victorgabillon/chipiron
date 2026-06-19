@@ -47,10 +47,10 @@ from .cycle_metadata import with_config_hash_metadata as _with_config_hash_metad
 from .cycle_pipeline_manifest import (
     write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
 )
-from .cycle_runtime import ResolvedActiveMorpionModelBundle
 from .cycle_runtime import (
     GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
     GROWTH_STATUS_METADATA_KEY,
+    ResolvedActiveMorpionModelBundle,
 )
 from .cycle_runtime import (
     build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
@@ -86,13 +86,16 @@ from .pipeline_artifacts import (
     MorpionPipelineDatasetStatus,
     MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
+    MorpionPipelineTrainingCursor,
     MorpionPipelineTrainingStatus,
     load_pipeline_active_model,
     load_pipeline_dataset_status_file,
     load_pipeline_manifest,
+    load_pipeline_training_cursor,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
     save_pipeline_manifest,
+    save_pipeline_training_cursor,
     save_pipeline_training_status_file,
 )
 from .pipeline_claims import (
@@ -198,6 +201,75 @@ def _pipeline_manifest_path(
 def _now_timestamp_utc() -> str:
     """Return the current UTC timestamp formatted like the bootstrap loop."""
     return _timestamp_utc_from_unix_s(time.time())
+
+
+def _optional_generation_max(left: int | None, right: int) -> int:
+    """Return max for an optional generation value and a concrete generation."""
+    return max(left if left is not None else -1, right)
+
+
+def _active_model_generation_for_training_guard(
+    paths: MorpionBootstrapPaths,
+) -> int | None:
+    """Return current active-model generation when the singleton artifact exists."""
+    if not paths.pipeline_active_model_path.is_file():
+        return None
+    return load_pipeline_active_model(paths.pipeline_active_model_path).generation
+
+
+def _training_lower_bound_generation(paths: MorpionBootstrapPaths) -> int:
+    """Return the monotonic lower bound for an explicit training stage."""
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    active_generation = _active_model_generation_for_training_guard(paths)
+    return max(
+        active_generation if active_generation is not None else -1,
+        (
+            cursor.latest_started_generation
+            if cursor.latest_started_generation is not None
+            else -1
+        ),
+        (
+            cursor.latest_completed_generation
+            if cursor.latest_completed_generation is not None
+            else -1
+        ),
+    )
+
+
+def _save_training_cursor_started(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+) -> MorpionPipelineTrainingCursor:
+    """Persist that one generation has started training."""
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    next_cursor = replace(
+        cursor,
+        latest_started_generation=_optional_generation_max(
+            cursor.latest_started_generation,
+            generation,
+        ),
+    )
+    save_pipeline_training_cursor(next_cursor, paths.pipeline_training_cursor_path)
+    return next_cursor
+
+
+def _save_training_cursor_completed(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+) -> MorpionPipelineTrainingCursor:
+    """Persist that one generation has completed training."""
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    next_cursor = replace(
+        cursor,
+        latest_completed_generation=_optional_generation_max(
+            cursor.latest_completed_generation,
+            generation,
+        ),
+    )
+    save_pipeline_training_cursor(next_cursor, paths.pipeline_training_cursor_path)
+    return next_cursor
 
 
 def _configure_linoo_selection_artifact_for_growth(
@@ -1034,6 +1106,14 @@ def run_pipeline_training_stage(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = _load_generation_manifest(paths=paths, generation=generation)
+    lower_bound_generation = _training_lower_bound_generation(paths)
+    if generation <= lower_bound_generation:
+        LOGGER.info(
+            "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s",
+            generation,
+            lower_bound_generation,
+        )
+        return manifest
     if manifest.dataset_status != "done":
         raise _dataset_stage_requires_done_status_error()
     claim = claim_pipeline_stage(
@@ -1044,6 +1124,7 @@ def run_pipeline_training_stage(
         owner=claim_owner,
         metadata={"entrypoint": "run_pipeline_training_stage"},
     )
+    _save_training_cursor_started(paths=paths, generation=generation)
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
     manifest = _save_training_manifest_status(
@@ -1098,24 +1179,39 @@ def run_pipeline_training_stage(
             evaluator_results=training_result.evaluator_results,
             path=paths.pipeline_training_status_path_for_generation(generation),
         )
-        save_pipeline_active_model(
-            MorpionPipelineActiveModel(
-                generation=generation,
-                evaluator_name=training_result.selected_evaluator_name,
-                model_bundle_path=training_result.model_bundle_paths[
+        current_active_generation = _active_model_generation_for_training_guard(paths)
+        if (
+            current_active_generation is not None
+            and generation <= current_active_generation
+        ):
+            LOGGER.info(
+                "[pipeline] active_model_update_skipped generation=%s reason=stale_generation active_generation=%s selected=%s",
+                generation,
+                current_active_generation,
+                training_result.selected_evaluator_name,
+            )
+        else:
+            save_pipeline_active_model(
+                MorpionPipelineActiveModel(
+                    generation=generation,
+                    evaluator_name=training_result.selected_evaluator_name,
+                    model_bundle_path=training_result.model_bundle_paths[
+                        training_result.selected_evaluator_name
+                    ],
+                    updated_at_utc=timestamp_utc,
+                    metadata={"selection_policy": training_result.selection_policy},
+                ),
+                paths.pipeline_active_model_path,
+            )
+            LOGGER.info(
+                "[pipeline] active_model_update generation=%s evaluator=%s model_bundle=%s",
+                generation,
+                training_result.selected_evaluator_name,
+                training_result.model_bundle_paths[
                     training_result.selected_evaluator_name
                 ],
-                updated_at_utc=timestamp_utc,
-                metadata={"selection_policy": training_result.selection_policy},
-            ),
-            paths.pipeline_active_model_path,
-        )
-        LOGGER.info(
-            "[pipeline] active_model_update generation=%s evaluator=%s model_bundle=%s",
-            generation,
-            training_result.selected_evaluator_name,
-            training_result.model_bundle_paths[training_result.selected_evaluator_name],
-        )
+            )
+        _save_training_cursor_completed(paths=paths, generation=generation)
         LOGGER.info(
             "[pipeline] training_done generation=%s selected=%s",
             generation,

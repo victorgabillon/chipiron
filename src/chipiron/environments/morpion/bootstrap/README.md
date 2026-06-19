@@ -252,6 +252,12 @@ Dataset and training workers coordinate with claim files:
 `pipeline/generation_XXXXXX/training_claim.json`. Multiple workers should not
 process the same generation concurrently, and expired claims can be taken over.
 
+Training workers are monotonic by generation. Once a generation has been
+started for training, older dataset generations are ignored by default.
+`pipeline/active_model.json` updates are also monotonic and cannot roll back to
+an older generation. Old dataset artifacts may remain on disk; pruning is
+handled separately.
+
 There is still only one live checkpoint/tree owner: the growth process. This
 avoids multiple huge checkpoint copies while reevaluation produces bounded patch
 artifacts.

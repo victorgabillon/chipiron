@@ -44,6 +44,7 @@ class MorpionBootstrapPaths:
     model_dir: Path
     pipeline_dir: Path
     pipeline_active_model_path: Path
+    pipeline_training_cursor_path: Path
 
     @classmethod
     def from_work_dir(
@@ -70,6 +71,7 @@ class MorpionBootstrapPaths:
             model_dir=root / "models",
             pipeline_dir=root / "pipeline",
             pipeline_active_model_path=root / "pipeline" / "active_model.json",
+            pipeline_training_cursor_path=root / "pipeline" / "training_cursor.json",
         )
 
     def ensure_directories(self) -> None:

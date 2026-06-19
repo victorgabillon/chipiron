@@ -13,11 +13,14 @@ from typing import TYPE_CHECKING, cast
 from .bootstrap_paths import MorpionBootstrapPaths
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
+    MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
     MorpionPipelineStageName,
+    load_pipeline_active_model,
     load_pipeline_manifest,
     load_pipeline_stage_claim,
+    load_pipeline_training_cursor,
 )
 from .pipeline_claims import (
     load_active_pipeline_stage_claim,
@@ -85,6 +88,14 @@ class _DatasetSelectionDiagnostics:
     selected_manifest: MorpionPipelineGenerationManifest | None
 
 
+@dataclass(frozen=True, slots=True)
+class _TrainingLowerBound:
+    active_generation: int | None
+    cursor_started_generation: int | None
+    cursor_completed_generation: int | None
+    generation: int
+
+
 def list_pipeline_manifest_generations(paths: MorpionBootstrapPaths) -> tuple[int, ...]:
     """Return sorted generations that have a valid generation dir and manifest."""
     if not paths.pipeline_dir.is_dir():
@@ -150,6 +161,64 @@ def _render_optional_log_value(value: object | None) -> str:
     if value is None:
         return "none"
     return str(value)
+
+
+def _active_model_generation_from_artifact(
+    active_model: MorpionPipelineActiveModel | None,
+) -> int | None:
+    """Return the active model generation when an active model exists."""
+    return None if active_model is None else active_model.generation
+
+
+def _load_pipeline_active_model_for_training_lower_bound(
+    paths: MorpionBootstrapPaths,
+) -> MorpionPipelineActiveModel | None:
+    """Load active model generation for training selection when present."""
+    if not paths.pipeline_active_model_path.is_file():
+        return None
+    return load_pipeline_active_model(paths.pipeline_active_model_path)
+
+
+def _training_lower_bound(paths: MorpionBootstrapPaths) -> _TrainingLowerBound:
+    """Return the monotonic lower bound for pipeline training selection."""
+    active_model = _load_pipeline_active_model_for_training_lower_bound(paths)
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    active_generation = _active_model_generation_from_artifact(active_model)
+    lower_bound = max(
+        active_generation if active_generation is not None else -1,
+        (
+            cursor.latest_started_generation
+            if cursor.latest_started_generation is not None
+            else -1
+        ),
+        (
+            cursor.latest_completed_generation
+            if cursor.latest_completed_generation is not None
+            else -1
+        ),
+    )
+    return _TrainingLowerBound(
+        active_generation=active_generation,
+        cursor_started_generation=cursor.latest_started_generation,
+        cursor_completed_generation=cursor.latest_completed_generation,
+        generation=lower_bound,
+    )
+
+
+def _log_stale_training_skip(
+    *,
+    generation: int,
+    lower_bound: _TrainingLowerBound,
+) -> None:
+    """Log that one training candidate is stale under monotonic selection."""
+    LOGGER.info(
+        "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s active_generation=%s cursor_started=%s cursor_completed=%s",
+        generation,
+        lower_bound.generation,
+        _render_optional_log_value(lower_bound.active_generation),
+        _render_optional_log_value(lower_bound.cursor_started_generation),
+        _render_optional_log_value(lower_bound.cursor_completed_generation),
+    )
 
 
 def _tolerant_dataset_rows(manifest: MorpionPipelineGenerationManifest) -> int | str:
@@ -356,9 +425,13 @@ def select_next_dataset_generation(
 
 def select_next_training_generation(
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
+    *,
+    lower_bound_generation: int = -1,
 ) -> int | None:
     """Return the latest generation whose training stage is pending."""
     for generation in sorted(manifests, reverse=True):
+        if generation <= lower_bound_generation:
+            continue
         if training_stage_is_pending(manifests[generation]):
             return generation
     return None
@@ -387,10 +460,13 @@ def select_next_claimable_training_generation(
     paths: MorpionBootstrapPaths,
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
     *,
+    lower_bound_generation: int = -1,
     now_unix_s: float | None = None,
 ) -> int | None:
     """Return the latest pending training generation without an active claim."""
     for generation in sorted(manifests, reverse=True):
+        if generation <= lower_bound_generation:
+            continue
         if not training_stage_is_pending(manifests[generation]):
             continue
         claim = load_active_pipeline_stage_claim(
@@ -505,15 +581,24 @@ def run_next_pipeline_training_stage_once(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifests = load_available_pipeline_manifests(paths)
+    lower_bound = _training_lower_bound(paths)
+    for generation in sorted(manifests):
+        if (
+            generation <= lower_bound.generation
+            and training_stage_is_pending(manifests[generation])
+        ):
+            _log_stale_training_skip(generation=generation, lower_bound=lower_bound)
     pending_generations = tuple(
         generation
         for generation in sorted(manifests)
-        if training_stage_is_pending(manifests[generation])
+        if generation > lower_bound.generation
+        and training_stage_is_pending(manifests[generation])
     )
     claimable_generations = tuple(
         generation
         for generation in sorted(manifests)
-        if training_stage_is_pending(manifests[generation])
+        if generation > lower_bound.generation
+        and training_stage_is_pending(manifests[generation])
         and load_active_pipeline_stage_claim(
             paths.pipeline_training_claim_path_for_generation(generation),
             now_unix_s=now_unix_s,
@@ -528,6 +613,7 @@ def run_next_pipeline_training_stage_once(
     generation = select_next_claimable_training_generation(
         paths,
         manifests,
+        lower_bound_generation=lower_bound.generation,
         now_unix_s=now_unix_s,
     )
     if generation is None:
@@ -607,15 +693,25 @@ def run_morpion_artifact_pipeline_once(
     manifests = load_available_pipeline_manifests(paths)
 
     training_generations: list[int] = []
+    lower_bound = _training_lower_bound(paths)
     for generation in sorted(manifests):
-        manifest = manifests[generation]
-        if not training_stage_is_pending(manifest):
-            continue
+        if (
+            generation <= lower_bound.generation
+            and training_stage_is_pending(manifests[generation])
+        ):
+            _log_stale_training_skip(generation=generation, lower_bound=lower_bound)
+
+    training_generation = select_next_training_generation(
+        manifests,
+        lower_bound_generation=lower_bound.generation,
+    )
+    if training_generation is not None:
         LOGGER.info(
-            "[pipeline] orchestrator_training_dispatch generation=%s", generation
+            "[pipeline] orchestrator_training_dispatch generation=%s",
+            training_generation,
         )
-        run_pipeline_training_stage(args, generation=generation)
-        training_generations.append(generation)
+        run_pipeline_training_stage(args, generation=training_generation)
+        training_generations.append(training_generation)
 
     LOGGER.info(
         "[pipeline] orchestrator_done dataset_generations=%s training_generations=%s",

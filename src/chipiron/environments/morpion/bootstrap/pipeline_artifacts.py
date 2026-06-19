@@ -107,6 +107,15 @@ def _invalid_active_model_json_error(path: Path) -> InvalidMorpionPipelineArtifa
     )
 
 
+def _invalid_training_cursor_json_error(
+    path: Path,
+) -> InvalidMorpionPipelineArtifactError:
+    """Return the stable invalid-training-cursor-json error."""
+    return InvalidMorpionPipelineArtifactError(
+        f"Morpion pipeline training-cursor artifact at {path} is not valid JSON."
+    )
+
+
 def _invalid_field_error(
     field_name: str,
     detail: str,
@@ -377,6 +386,33 @@ class MorpionPipelineActiveModel:
             _require_str(self.updated_at_utc, field_name="updated_at_utc"),
         )
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineTrainingCursor:
+    """Immutable monotonic cursor for dataset generations selected by training."""
+
+    latest_started_generation: int | None = None
+    latest_completed_generation: int | None = None
+
+    def __post_init__(self) -> None:
+        """Validate and normalize cursor fields eagerly."""
+        object.__setattr__(
+            self,
+            "latest_started_generation",
+            _optional_generation(
+                self.latest_started_generation,
+                field_name="latest_started_generation",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "latest_completed_generation",
+            _optional_generation(
+                self.latest_completed_generation,
+                field_name="latest_completed_generation",
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1073,6 +1109,33 @@ def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
     )
 
 
+def pipeline_training_cursor_to_dict(
+    cursor: MorpionPipelineTrainingCursor,
+) -> dict[str, object]:
+    """Serialize one training cursor into JSON-friendly data."""
+    return {
+        "latest_completed_generation": cursor.latest_completed_generation,
+        "latest_started_generation": cursor.latest_started_generation,
+    }
+
+
+def pipeline_training_cursor_from_dict(
+    data: object,
+) -> MorpionPipelineTrainingCursor:
+    """Deserialize one training cursor from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionPipelineTrainingCursor(
+        latest_started_generation=_optional_generation(
+            payload.get("latest_started_generation"),
+            field_name="latest_started_generation",
+        ),
+        latest_completed_generation=_optional_generation(
+            payload.get("latest_completed_generation"),
+            field_name="latest_completed_generation",
+        ),
+    )
+
+
 def pipeline_evaluator_training_result_to_dict(
     result: MorpionPipelineEvaluatorTrainingResult,
 ) -> dict[str, object]:
@@ -1463,6 +1526,25 @@ def load_pipeline_active_model(path: Path) -> MorpionPipelineActiveModel:
     return pipeline_active_model_from_dict(payload)
 
 
+def save_pipeline_training_cursor(
+    cursor: MorpionPipelineTrainingCursor,
+    path: Path,
+) -> None:
+    """Persist one training cursor atomically."""
+    _atomic_write_json(pipeline_training_cursor_to_dict(cursor), path)
+
+
+def load_pipeline_training_cursor(path: Path) -> MorpionPipelineTrainingCursor:
+    """Load the training cursor, returning an empty cursor when absent."""
+    if not path.is_file():
+        return MorpionPipelineTrainingCursor()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_training_cursor_json_error(path) from exc
+    return pipeline_training_cursor_from_dict(payload)
+
+
 def load_pipeline_training_status_file(
     path: Path,
 ) -> MorpionPipelineTrainingStatusArtifact:
@@ -1698,6 +1780,7 @@ __all__ = [
     "MorpionPipelineGenerationManifest",
     "MorpionPipelineStageClaim",
     "MorpionPipelineStageName",
+    "MorpionPipelineTrainingCursor",
     "MorpionPipelineTrainingStatus",
     "MorpionPipelineTrainingStatusArtifact",
     "MorpionReevaluationCursor",
@@ -1710,6 +1793,7 @@ __all__ = [
     "load_pipeline_dataset_status_file",
     "load_pipeline_manifest",
     "load_pipeline_stage_claim",
+    "load_pipeline_training_cursor",
     "load_pipeline_training_status_file",
     "load_reevaluation_cursor",
     "load_reevaluation_patch",
@@ -1723,6 +1807,8 @@ __all__ = [
     "pipeline_manifest_to_dict",
     "pipeline_stage_claim_from_dict",
     "pipeline_stage_claim_to_dict",
+    "pipeline_training_cursor_from_dict",
+    "pipeline_training_cursor_to_dict",
     "pipeline_training_status_from_dict",
     "pipeline_training_status_to_dict",
     "reevaluation_cursor_from_dict",
@@ -1736,6 +1822,7 @@ __all__ = [
     "save_pipeline_manifest",
     "save_pipeline_stage_claim",
     "save_pipeline_stage_status_file",
+    "save_pipeline_training_cursor",
     "save_pipeline_training_status_file",
     "save_reevaluation_cursor",
     "save_reevaluation_patch",

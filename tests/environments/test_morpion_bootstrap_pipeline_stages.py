@@ -61,15 +61,17 @@ import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 from chipiron.environments.morpion.bootstrap import (
-    AnemoneMorpionSearchRunner,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    AnemoneMorpionSearchRunner,
     IncompatibleStageBootstrapConfigError,
+    InvalidMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionPipelineActiveModel,
     MorpionPipelineEvaluatorTrainingResult,
     MorpionPipelineGenerationManifest,
+    MorpionPipelineTrainingCursor,
     MorpionPipelineWorkerResult,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
@@ -83,6 +85,7 @@ from chipiron.environments.morpion.bootstrap import (
     load_pipeline_active_model,
     load_pipeline_dataset_status_file,
     load_pipeline_manifest,
+    load_pipeline_training_cursor,
     load_pipeline_training_status_file,
     run_morpion_bootstrap_experiment,
     run_pipeline_dataset_stage,
@@ -92,7 +95,11 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
     save_pipeline_active_model,
     save_pipeline_manifest,
+    save_pipeline_training_cursor,
     save_reevaluation_patch,
+)
+from chipiron.environments.morpion.bootstrap.cycle_training import (
+    BootstrapTrainingResult,
 )
 from chipiron.environments.morpion.bootstrap.sharded_training_export import (
     save_morpion_sharded_training_tree_from_live_nodes,
@@ -276,6 +283,36 @@ def _make_rows() -> MorpionSupervisedRows:
             ),
         ),
         metadata={"bootstrap_generation": 1, "num_rows": 1},
+    )
+
+
+def _fake_training_result(
+    paths: MorpionBootstrapPaths,
+    *,
+    generation: int,
+    evaluator_name: str = "linear_5",
+) -> BootstrapTrainingResult:
+    """Build one minimal training result for mocked training-stage tests."""
+    bundle_path = paths.model_bundle_path_for_generation(generation, evaluator_name)
+    bundle_path.mkdir(parents=True, exist_ok=True)
+    relative_bundle_path = paths.relative_to_work_dir(bundle_path)
+    evaluator_result = MorpionPipelineEvaluatorTrainingResult(
+        final_loss=0.25,
+        elapsed_s=0.1,
+        model_bundle_path=relative_bundle_path,
+        num_epochs=1,
+        batch_size=1,
+        learning_rate=1e-3,
+        loss_name="mse",
+    )
+    return BootstrapTrainingResult(
+        generation=generation,
+        evaluator_metrics={},
+        evaluator_results={evaluator_name: evaluator_result},
+        model_bundle_paths={evaluator_name: relative_bundle_path},
+        selected_evaluator_name=evaluator_name,
+        selection_policy="mock_lowest_loss",
+        training_duration_s=0.1,
     )
 
 
@@ -996,6 +1033,217 @@ def test_training_stage_logs_active_model_update(
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
     assert "[pipeline] active_model_update generation=1 evaluator=" in messages
+
+
+def test_training_stage_writes_started_cursor_before_training(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training start should persist the monotonic cursor before long training."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(6)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=6,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(6),
+    )
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        del kwargs
+        cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+        assert cursor.latest_started_generation == 6
+        assert cursor.latest_completed_generation is None
+        return _fake_training_result(paths, generation=6)
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=6)
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+
+    assert cursor.latest_started_generation == 6
+    assert cursor.latest_completed_generation == 6
+
+
+def test_training_cursor_malformed_json_raises_artifact_error(
+    tmp_path: Path,
+) -> None:
+    """Malformed training cursor artifacts should not be ignored silently."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_training_cursor_path.parent.mkdir(parents=True, exist_ok=True)
+    paths.pipeline_training_cursor_path.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(InvalidMorpionPipelineArtifactError):
+        load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+
+
+def test_training_stage_skips_explicit_stale_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Explicit training should skip stale generations without marking failure."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(5)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_started_generation=6),
+        paths.pipeline_training_cursor_path,
+    )
+    original_manifest = MorpionPipelineGenerationManifest(
+        generation=5,
+        created_at_utc="2026-04-28T12:00:00Z",
+        rows_path=paths.relative_to_work_dir(rows_path),
+        dataset_status="done",
+        training_status="not_started",
+    )
+    save_pipeline_manifest(original_manifest, paths.pipeline_manifest_path_for_generation(5))
+
+    def _unexpected_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        del kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _unexpected_train_and_select,
+    )
+
+    with caplog.at_level(logging.INFO):
+        returned_manifest = run_pipeline_training_stage(
+            _artifact_pipeline_args(tmp_path),
+            generation=5,
+        )
+
+    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert returned_manifest == original_manifest
+    assert persisted_manifest.training_status == "not_started"
+    assert not paths.pipeline_active_model_path.exists()
+    assert not paths.pipeline_training_claim_path_for_generation(5).exists()
+    assert "training_skip generation=5 reason=stale_generation" in messages
+
+
+def test_training_stage_active_model_commit_cannot_go_backward(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A late older training result must not overwrite a newer active model."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(5)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=4,
+            evaluator_name="linear_5",
+            model_bundle_path="models/generation_000004/linear_5",
+            updated_at_utc="2026-04-28T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=5,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(5),
+    )
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        del kwargs
+        save_pipeline_active_model(
+            MorpionPipelineActiveModel(
+                generation=6,
+                evaluator_name="mlp_5",
+                model_bundle_path="models/generation_000006/mlp_5",
+                updated_at_utc="2026-04-28T12:10:00Z",
+            ),
+            paths.pipeline_active_model_path,
+        )
+        return _fake_training_result(paths, generation=5)
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    with caplog.at_level(logging.INFO):
+        manifest = run_pipeline_training_stage(
+            _artifact_pipeline_args(tmp_path),
+            generation=5,
+        )
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert manifest.training_status == "done"
+    assert active_model.generation == 6
+    assert active_model.evaluator_name == "mlp_5"
+    assert cursor.latest_completed_generation == 5
+    assert "active_model_update_skipped generation=5 reason=stale_generation" in messages
+
+
+def test_training_stage_newer_generation_commits_and_updates_completed_cursor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-stale training result should publish active_model and complete cursor."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(6)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=5,
+            evaluator_name="linear_5",
+            model_bundle_path="models/generation_000005/linear_5",
+            updated_at_utc="2026-04-28T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=6,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(6),
+    )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        lambda **kwargs: _fake_training_result(paths, generation=6),
+    )
+
+    run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=6)
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+
+    assert active_model.generation == 6
+    assert active_model.evaluator_name == "linear_5"
+    assert cursor.latest_started_generation == 6
+    assert cursor.latest_completed_generation == 6
 
 
 def test_training_stage_requires_done_dataset(tmp_path: Path) -> None:

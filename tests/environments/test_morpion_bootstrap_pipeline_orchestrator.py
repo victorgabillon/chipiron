@@ -61,8 +61,10 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
+    MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
     MorpionPipelineOrchestratorResult,
+    MorpionPipelineTrainingCursor,
     MorpionPipelineWorkerResult,
     claim_pipeline_stage,
     dataset_stage_is_pending,
@@ -75,7 +77,9 @@ from chipiron.environments.morpion.bootstrap import (
     run_morpion_bootstrap_experiment,
     run_next_pipeline_dataset_stage_once,
     run_next_pipeline_training_stage_once,
+    save_pipeline_active_model,
     save_pipeline_manifest,
+    save_pipeline_training_cursor,
     select_next_claimable_dataset_generation,
     select_next_claimable_training_generation,
     select_next_dataset_generation,
@@ -776,6 +780,139 @@ def test_training_worker_runs_latest_claimable_generation(
     )
 
 
+def test_training_worker_ignores_generations_older_than_cursor_started(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Training worker should not go back before the started cursor."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_started_generation=5),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (3, 4, 6):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [6]
+    assert result.generation == 6
+    assert "training_skip generation=3 reason=stale_generation" in messages
+    assert "training_skip generation=4 reason=stale_generation" in messages
+
+
+def test_training_worker_ignores_generations_older_than_active_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training worker should not select generations behind active_model."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=5,
+            evaluator_name="linear_5",
+            model_bundle_path="models/generation_000005/linear_5",
+            updated_at_utc="2026-04-28T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    for generation in (3, 4, 6):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [6]
+    assert result.generation == 6
+
+
+def test_training_worker_returns_no_work_when_all_pending_generations_are_stale(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Training worker should be idle if every pending dataset is stale."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_started_generation=10),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (7, 8, 9):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+    assert "training_worker_idle reason=no_claimable_generation" in messages
+    assert "training_skip generation=7 reason=stale_generation" in messages
+
+
 def test_dataset_worker_skips_actively_claimed_latest_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -961,10 +1098,10 @@ def test_orchestrator_runs_full_sequential_pipeline_for_new_generation(
     assert load_pipeline_active_model(paths.pipeline_active_model_path).generation == 1
 
 
-def test_orchestrator_processes_all_pending_generations_in_sorted_order(
+def test_orchestrator_trains_latest_pending_generation_monotonically(
     tmp_path: Path,
 ) -> None:
-    """Pending dataset and training generations should be handled without latest-only logic."""
+    """The local orchestrator should not train older pending generations after newer ones."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
 
@@ -1005,14 +1142,14 @@ def test_orchestrator_processes_all_pending_generations_in_sorted_order(
 
     assert result.growth_run_state is None
     assert result.dataset_generations == (1,)
-    # Generation 1 becomes training-pending after its dataset stage completes,
-    # so the same orchestration pass should train both generations in order.
-    assert result.training_generations == (1, 2)
+    # Generation 1 becomes training-pending after dataset extraction, but generation 2
+    # is newer and makes generation 1 stale for training in this pass.
+    assert result.training_generations == (2,)
     assert (
         load_pipeline_manifest(
             paths.pipeline_manifest_path_for_generation(1)
         ).training_status
-        == "done"
+        == "not_started"
     )
     assert (
         load_pipeline_manifest(
