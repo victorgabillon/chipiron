@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -72,7 +73,6 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     UnknownForcedMorpionEvaluatorError,
-    UnsupportedMorpionRuntimeReconfigurationError,
     apply_control_to_args,
     bootstrap_config_from_args,
     effective_runtime_config_from_config_and_control,
@@ -510,8 +510,10 @@ def test_loop_applies_control_between_cycles(tmp_path: Path) -> None:
     }
 
 
-def test_runtime_control_widening_fails_loudly(tmp_path: Path) -> None:
-    """Widening tree_branch_limit on an existing tree should fail explicitly."""
+def test_runtime_control_allows_tree_branch_limit_increase(
+    tmp_path: Path,
+) -> None:
+    """Increasing tree_branch_limit should allow an existing tree to continue."""
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         max_growth_steps_per_cycle=5,
@@ -526,8 +528,12 @@ def test_runtime_control_widening_fails_loudly(tmp_path: Path) -> None:
         ),
     )
 
-    with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
-        run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+
+    assert state.cycle_index == 1
+    assert runner.runtime_config_calls[-1] == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=256
+    )
 
 
 def test_runtime_reconfiguration_allows_fresh_run_with_any_limit() -> None:
@@ -564,17 +570,25 @@ def test_runtime_reconfiguration_allows_lower_limit_on_resume() -> None:
     )
 
 
-def test_runtime_reconfiguration_rejects_higher_limit_on_persisted_runtime() -> None:
-    """A persisted runtime config should reject widening, even with legacy cycles."""
+def test_runtime_reconfiguration_allows_higher_limit_on_resume(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A resumed tree may widen the runtime branch limit."""
     previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
 
-    with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
+    with caplog.at_level(logging.INFO):
         bootstrap_loop_module._validate_runtime_reconfiguration(
             previous_effective_runtime_config=previous_config,
             effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
                 tree_branch_limit=128
             ),
         )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert (
+        "[runtime-reconfig] tree_branch_limit changed previous=64 current=128 direction=increased"
+        in messages
+    )
 
 
 def test_force_evaluator(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

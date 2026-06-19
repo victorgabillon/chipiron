@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
-from .bootstrap_errors import (
-    UnknownForcedMorpionEvaluatorError,
-    UnsupportedMorpionRuntimeReconfigurationError,
-)
+from .bootstrap_errors import UnknownForcedMorpionEvaluatorError
 from .control import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     MorpionBootstrapEffectiveRuntimeConfig,
@@ -26,6 +24,7 @@ if TYPE_CHECKING:
 _INVALID_DATASET_FAMILY_BLEND_ERROR = (
     "dataset_family_prediction_blend must be between 0 and 1."
 )
+LOGGER = logging.getLogger(__name__)
 
 
 def _unknown_pipeline_mode_error(pipeline_mode: object) -> ValueError:
@@ -113,16 +112,20 @@ def validate_runtime_reconfiguration(
     """Validate that the requested runtime change stays within the supported subset."""
     if previous_effective_runtime_config is None:
         return
-    if (
-        effective_runtime_config.tree_branch_limit
-        > previous_effective_runtime_config.tree_branch_limit
-    ):
-        raise UnsupportedMorpionRuntimeReconfigurationError(
-            previous_tree_branch_limit=(
-                previous_effective_runtime_config.tree_branch_limit
-            ),
-            requested_tree_branch_limit=effective_runtime_config.tree_branch_limit,
-        )
+    previous_limit = previous_effective_runtime_config.tree_branch_limit
+    current_limit = effective_runtime_config.tree_branch_limit
+    if current_limit > previous_limit:
+        direction = "increased"
+    elif current_limit < previous_limit:
+        direction = "decreased"
+    else:
+        direction = "unchanged"
+    LOGGER.info(
+        "[runtime-reconfig] tree_branch_limit changed previous=%s current=%s direction=%s",
+        previous_limit,
+        current_limit,
+        direction,
+    )
 
 
 __all__ = [

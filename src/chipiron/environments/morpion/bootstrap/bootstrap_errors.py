@@ -132,8 +132,8 @@ class UnsupportedMorpionRuntimeReconfigurationError(ValueError):
     ) -> None:
         """Initialize the unsupported runtime reconfiguration error."""
         super().__init__(
-            "Morpion bootstrap supports only non-increasing tree_branch_limit "
-            "changes on an existing persisted tree. Requested "
+            "Morpion bootstrap does not support the requested runtime "
+            "reconfiguration. Requested tree_branch_limit "
             f"{requested_tree_branch_limit} after {previous_tree_branch_limit}."
         )
 

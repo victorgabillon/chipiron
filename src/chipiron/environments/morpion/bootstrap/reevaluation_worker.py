@@ -29,6 +29,7 @@ from .pipeline_artifacts import (
     reevaluation_patch_to_dict,
     save_reevaluation_cursor,
 )
+from .pipeline_memory import log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
 
 if TYPE_CHECKING:
@@ -347,8 +348,19 @@ def run_morpion_reevaluation_worker_once(
 
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    log_pipeline_memory(
+        stage="reevaluation",
+        event="start",
+        max_nodes=max_nodes_per_patch,
+    )
 
     if max_nodes_per_patch == 0:
+        log_pipeline_memory(
+            stage="reevaluation",
+            event="done",
+            rows=0,
+            reason="max_nodes_per_patch_zero",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="max_nodes_per_patch_zero",
@@ -364,6 +376,12 @@ def run_morpion_reevaluation_worker_once(
     try:
         active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
     except MissingMorpionPipelineArtifactError:
+        log_pipeline_memory(
+            stage="reevaluation",
+            event="done",
+            rows=0,
+            reason="missing_active_model",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="missing_active_model",
@@ -384,6 +402,13 @@ def run_morpion_reevaluation_worker_once(
     )
 
     if paths.pipeline_reevaluation_patch_path.exists():
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=active_model.generation,
+            event="done",
+            rows=0,
+            reason="pending_patch_exists",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="pending_patch_exists",
@@ -398,6 +423,13 @@ def run_morpion_reevaluation_worker_once(
 
     latest_snapshot = resolve_latest_reevaluation_tree_snapshot(paths)
     if latest_snapshot is None:
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=active_model.generation,
+            event="done",
+            rows=0,
+            reason="missing_tree_snapshot",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="missing_tree_snapshot",
@@ -411,9 +443,28 @@ def run_morpion_reevaluation_worker_once(
         )
     tree_generation, snapshot_path = latest_snapshot
 
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=tree_generation,
+        event="before_snapshot_load",
+        tree_snapshot_path=snapshot_path,
+    )
     snapshot = load_training_tree_snapshot(snapshot_path)
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=tree_generation,
+        event="after_snapshot_load",
+        node_count=len(snapshot.nodes),
+    )
     sorted_node_ids = tuple(sorted(node.node_id for node in snapshot.nodes))
     if not sorted_node_ids:
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="done",
+            rows=0,
+            reason="empty_tree_snapshot",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="empty_tree_snapshot",
@@ -453,6 +504,12 @@ def run_morpion_reevaluation_worker_once(
     selected_start_cursor = selected_node_ids[0] if selected_node_ids else None
     selected_end_cursor = selected_node_ids[-1] if selected_node_ids else None
 
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=tree_generation,
+        event="before_patch_rows_build",
+        rows=len(selected_node_ids),
+    )
     if evaluator is not None:
         patch_rows = tuple(evaluator.evaluate_patch_rows(snapshot, selected_node_ids))
     elif use_snapshot_value_fallback:
@@ -466,8 +523,21 @@ def run_morpion_reevaluation_worker_once(
             snapshot,
             selected_node_ids,
         )
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=tree_generation,
+        event="after_patch_rows_build",
+        rows=len(patch_rows),
+    )
 
     if paths.pipeline_reevaluation_patch_path.exists():
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="done",
+            rows=0,
+            reason="pending_patch_exists",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="pending_patch_exists",
@@ -504,6 +574,13 @@ def run_morpion_reevaluation_worker_once(
         patch,
         paths.pipeline_reevaluation_patch_path,
     ):
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="done",
+            rows=0,
+            reason="pending_patch_exists",
+        )
         return MorpionReevaluationWorkerResult(
             patch_written=False,
             reason="pending_patch_exists",
@@ -542,6 +619,12 @@ def run_morpion_reevaluation_worker_once(
             metadata={"source": "reevaluation_worker"},
         ),
         paths.pipeline_reevaluation_cursor_path,
+    )
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=tree_generation,
+        event="done",
+        rows=len(patch.rows),
     )
 
     return MorpionReevaluationWorkerResult(

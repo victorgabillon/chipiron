@@ -102,6 +102,7 @@ from .pipeline_claims import (
     claim_pipeline_stage,
     release_pipeline_stage_claim,
 )
+from .pipeline_memory import log_pipeline_memory
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -605,6 +606,11 @@ def _run_one_pipeline_growth_cycle_impl(
         cycle_index,
         run_state.generation,
     )
+    log_pipeline_memory(
+        stage="growth",
+        generation=run_state.generation,
+        event="start",
+    )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
     resolved_active_model = _resolve_pipeline_active_model_for_growth(
         paths=paths,
@@ -617,6 +623,15 @@ def _run_one_pipeline_growth_cycle_impl(
         effective_runtime_config,
         reevaluate_tree=reevaluate_tree,
     )
+    restored_tree_size = runner.current_tree_size()
+    restored_branch_count = _current_tree_branch_count(runner)
+    log_pipeline_memory(
+        stage="growth",
+        generation=run_state.generation,
+        event="after_checkpoint_load",
+        node_count=restored_tree_size,
+        branch_count=restored_branch_count,
+    )
     reevaluation_patch_result = apply_pending_reevaluation_patch_to_runner(
         paths=paths,
         runner=runner,
@@ -625,6 +640,14 @@ def _run_one_pipeline_growth_cycle_impl(
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
     tree_size_before_growth = runner.current_tree_size()
+    branch_count_before_growth = _current_tree_branch_count(runner)
+    log_pipeline_memory(
+        stage="growth",
+        generation=run_state.generation,
+        event="before_growth",
+        node_count=tree_size_before_growth,
+        branch_count=branch_count_before_growth,
+    )
     _configure_linoo_selection_artifact_for_growth(
         runner=runner,
         paths=paths,
@@ -644,6 +667,14 @@ def _run_one_pipeline_growth_cycle_impl(
     )
     nodes_added = current_tree_size - tree_size_before_growth
     branch_count = _current_tree_branch_count(runner)
+    log_pipeline_memory(
+        stage="growth",
+        generation=run_state.generation,
+        event="after_growth",
+        node_count=current_tree_size,
+        branch_count=branch_count,
+        nodes_added=nodes_added,
+    )
     tree_status = _resolve_tree_status(runner, current_tree_size=current_tree_size)
     frontier_status = resolve_frontier_status_for_cycle(
         snapshot=None,
@@ -717,6 +748,13 @@ def _run_one_pipeline_growth_cycle_impl(
             next_run_state.generation,
             cycle_duration_s,
         )
+        log_pipeline_memory(
+            stage="growth",
+            generation=next_run_state.generation,
+            event="done",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
         return next_run_state
 
     if (
@@ -760,6 +798,13 @@ def _run_one_pipeline_growth_cycle_impl(
             next_run_state.generation,
             cycle_duration_s,
         )
+        log_pipeline_memory(
+            stage="growth",
+            generation=next_run_state.generation,
+            event="done",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
         return next_run_state
 
     if not save_triggered:
@@ -789,6 +834,13 @@ def _run_one_pipeline_growth_cycle_impl(
             resolved_control=resolved_control,
             effective_runtime_config=effective_runtime_config,
         )
+        log_pipeline_memory(
+            stage="growth",
+            generation=next_run_state.generation,
+            event="done",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
         return next_run_state
 
     generation = run_state.generation + 1
@@ -799,6 +851,13 @@ def _run_one_pipeline_growth_cycle_impl(
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
+        log_pipeline_memory(
+            stage="growth",
+            generation=generation,
+            event="before_checkpoint_save",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
         save_checkpoint(runtime_checkpoint_path)
         if not runtime_checkpoint_path.is_file():
             raise MissingSavedBootstrapArtifactError(
@@ -893,6 +952,13 @@ def _run_one_pipeline_growth_cycle_impl(
         generation,
         cycle_duration_s,
     )
+    log_pipeline_memory(
+        stage="growth",
+        generation=generation,
+        event="done",
+        node_count=current_tree_size,
+        branch_count=branch_count,
+    )
     return next_run_state
 
 
@@ -926,6 +992,11 @@ def run_pipeline_dataset_stage(
     )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] dataset_start generation=%s", generation)
+    log_pipeline_memory(
+        stage="dataset",
+        generation=generation,
+        event="start",
+    )
     manifest = _save_dataset_manifest_status(
         paths=paths,
         manifest=manifest,
@@ -964,9 +1035,21 @@ def run_pipeline_dataset_stage(
             )
             _raise_missing_tree_snapshot_file_error(tree_snapshot_path)
         export_started_at = time.perf_counter()
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="before_snapshot_load",
+            tree_snapshot_path=tree_snapshot_path,
+        )
         snapshot = _load_training_snapshot_for_generation(
             args=args,
             artifact_path=tree_snapshot_path,
+        )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="after_snapshot_load",
+            node_count=len(snapshot.nodes),
         )
         previous_record_status = _resolve_previous_pipeline_record_status(
             paths=paths,
@@ -981,6 +1064,7 @@ def run_pipeline_dataset_stage(
         record_status = resolve_record_status_for_cycle(
             snapshot=snapshot,
             previous_record_status=previous_record_status,
+            generation=generation,
         )
         LOGGER.info(
             "[record] resolve_done generation=%s elapsed=%.3fs best_total_points=%s",
@@ -989,6 +1073,12 @@ def run_pipeline_dataset_stage(
             record_status.current_best_total_points,
         )
         LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
+        log_pipeline_memory(
+            stage="frontier",
+            generation=generation,
+            event="resolve_start",
+            nodes=len(snapshot.nodes),
+        )
         frontier_started_at = time.perf_counter()
         frontier_resolution = resolve_frontier_status_for_cycle_with_metadata(
             snapshot=snapshot,
@@ -1002,12 +1092,43 @@ def run_pipeline_dataset_stage(
             frontier_resolution.candidate_count,
             frontier_status.current_best_total_points,
         )
+        log_pipeline_memory(
+            stage="frontier",
+            generation=generation,
+            event="resolve_done",
+            candidates=frontier_resolution.candidate_count,
+        )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="before_rows_build",
+            node_count=len(snapshot.nodes),
+        )
         rows = _extract_rows_from_training_snapshot(
             args=args,
             snapshot=snapshot,
             generation=generation,
         )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="after_rows_build",
+            rows=len(rows.rows),
+        )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="before_rows_write",
+            rows=len(rows.rows),
+        )
         save_morpion_supervised_rows(rows, rows_path)
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="after_rows_write",
+            rows=len(rows.rows),
+            rows_path=rows_path,
+        )
         rows_bytes = rows_path.stat().st_size if rows_path.is_file() else 0
         export_elapsed_s = time.perf_counter() - export_started_at
         LOGGER.info(
@@ -1070,6 +1191,12 @@ def run_pipeline_dataset_stage(
             generation,
             len(rows.rows),
         )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="done",
+            rows=len(rows.rows),
+        )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
         _save_dataset_manifest_status(
@@ -1127,6 +1254,11 @@ def run_pipeline_training_stage(
     _save_training_cursor_started(paths=paths, generation=generation)
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
+    log_pipeline_memory(
+        stage="training",
+        generation=generation,
+        event="start",
+    )
     manifest = _save_training_manifest_status(
         paths=paths,
         manifest=manifest,
@@ -1137,7 +1269,19 @@ def run_pipeline_training_stage(
         rows_path = paths.resolve_work_dir_path(_require_manifest_rows_path(manifest))
         if rows_path is None or not rows_path.is_file():
             _raise_missing_rows_file_error(rows_path)
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="before_dataset_load",
+            rows_path=rows_path,
+        )
         rows = load_morpion_supervised_rows(rows_path)
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="after_dataset_load",
+            rows=len(rows.rows),
+        )
         run_state = (
             load_bootstrap_run_state(paths.run_state_path)
             if paths.run_state_path.is_file()
@@ -1216,6 +1360,12 @@ def run_pipeline_training_stage(
             "[pipeline] training_done generation=%s selected=%s",
             generation,
             training_result.selected_evaluator_name,
+        )
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="done",
+            selected=training_result.selected_evaluator_name,
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()

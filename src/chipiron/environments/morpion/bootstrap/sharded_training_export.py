@@ -14,6 +14,8 @@ from anemone.training_export.model import (
     TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
 )
 
+from .pipeline_memory import log_pipeline_memory
+
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND = "morpion_sharded_training_export"
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION = 1
 
@@ -128,6 +130,12 @@ def save_morpion_sharded_training_tree_from_live_nodes(
 ) -> tuple[Path, MorpionShardedTrainingExportStats]:
     """Persist one additive sharded training export from live ordered nodes."""
     root = Path(output_dir)
+    log_pipeline_memory(
+        stage="growth",
+        generation=generation,
+        event="before_sharded_snapshot_save",
+        node_count=len(nodes),
+    )
     node_shards_dir = root / "node_shards"
     update_shards_dir = root / "update_shards"
     node_shards_dir.mkdir(parents=True, exist_ok=True)
@@ -233,6 +241,13 @@ def save_morpion_sharded_training_tree_from_live_nodes(
             "node_id_to_creation_generation": node_index,
         },
     )
+    log_pipeline_memory(
+        stage="growth",
+        generation=generation,
+        event="after_sharded_snapshot_save",
+        node_count=len(node_updates),
+        new_node_count=len(node_records),
+    )
     return generation_manifest_path, MorpionShardedTrainingExportStats(
         generation=generation,
         node_count=len(node_updates),
@@ -247,6 +262,12 @@ def load_morpion_sharded_training_tree_snapshot(
     manifest_path = Path(generation_manifest_path)
     root = manifest_path.parent
     generation_manifest = _load_generation_manifest(manifest_path)
+    log_pipeline_memory(
+        stage="dataset",
+        generation=generation_manifest.generation,
+        event="before_sharded_snapshot_load",
+        tree_snapshot_path=manifest_path,
+    )
     root_manifest = _load_root_manifest(root / "manifest.json")
 
     node_records_by_id: dict[str, MorpionShardedTrainingNodeRecord] = {}
@@ -271,6 +292,12 @@ def load_morpion_sharded_training_tree_snapshot(
     snapshots = tuple(
         _merge_node_record_and_update(node_records_by_id[update.node_id], update)
         for update in ordered_nodes
+    )
+    log_pipeline_memory(
+        stage="dataset",
+        generation=generation_manifest.generation,
+        event="after_sharded_snapshot_load",
+        node_count=len(snapshots),
     )
     return TrainingTreeSnapshot(
         root_node_id=generation_manifest.root_node_id,

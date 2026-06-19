@@ -11,6 +11,7 @@ from .pipeline_artifacts import (
     delete_reevaluation_patch,
     load_reevaluation_patch,
 )
+from .pipeline_memory import log_pipeline_memory
 
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -77,8 +78,19 @@ def apply_pending_reevaluation_patch_to_runner(
 ) -> MorpionReevaluationPatchConsumptionResult:
     """Apply and delete one pending reevaluation patch if it exists."""
     patch_path = paths.pipeline_reevaluation_patch_path
+    log_pipeline_memory(
+        stage="reevaluation",
+        event="start",
+        patch_path=patch_path,
+    )
     if not patch_path.exists():
         LOGGER.debug("[reevaluation-patch] missing path=%s", str(patch_path))
+        log_pipeline_memory(
+            stage="reevaluation",
+            event="done",
+            rows=0,
+            reason="missing_patch",
+        )
         return MorpionReevaluationPatchConsumptionResult(
             patch_found=False,
             patch_applied=False,
@@ -91,6 +103,12 @@ def apply_pending_reevaluation_patch_to_runner(
         patch = load_reevaluation_patch(patch_path)
     except MissingMorpionPipelineArtifactError:
         LOGGER.debug("[reevaluation-patch] missing path=%s", str(patch_path))
+        log_pipeline_memory(
+            stage="reevaluation",
+            event="done",
+            rows=0,
+            reason="missing_patch",
+        )
         return MorpionReevaluationPatchConsumptionResult(
             patch_found=False,
             patch_applied=False,
@@ -98,6 +116,12 @@ def apply_pending_reevaluation_patch_to_runner(
             num_rows=0,
             reason="missing_patch",
         )
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=patch.tree_generation,
+        event="after_patch_load",
+        rows=len(patch.rows),
+    )
 
     apply_patch = getattr(runner, "apply_reevaluation_patch", None)
     if not callable(apply_patch):
@@ -141,6 +165,12 @@ def apply_pending_reevaluation_patch_to_runner(
             if isinstance(apply_metrics, dict)
             else None
         ),
+    )
+    log_pipeline_memory(
+        stage="reevaluation",
+        generation=patch.tree_generation,
+        event="done",
+        rows=applied_count,
     )
     return MorpionReevaluationPatchConsumptionResult(
         patch_found=True,

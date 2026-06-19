@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -49,6 +50,7 @@ from chipiron.environments.morpion.bootstrap import (
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
     current_record_score,
+    extract_certified_record_candidates_from_training_tree_snapshot,
     extract_morpion_record_status_from_training_tree_snapshot,
     extract_top_morpion_frontier_nodes_from_training_tree_snapshot,
     load_bootstrap_run_state,
@@ -205,6 +207,91 @@ def test_exact_terminal_node_updates_certified_record() -> None:
         current_best_is_terminal=True,
         current_best_source="certified_terminal_leaf",
     )
+
+
+def test_certified_candidate_scan_logs_compact_info(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Certified scans should summarize candidates without info-logging each one."""
+    import chipiron.environments.morpion.bootstrap.record_status as record_status
+
+    def decode_payload(payload: dict[str, object]) -> object:
+        return SimpleNamespace(
+            variant=SimpleNamespace(value="5T"),
+            moves=int(payload["moves"]),
+        )
+
+    monkeypatch.setattr(
+        record_status,
+        "decode_morpion_state_ref_payload",
+        decode_payload,
+    )
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="node-2-a",
+        nodes=(
+            make_training_node_snapshot(
+                node_id="node-2-a",
+                parent_ids=(),
+                child_ids=(),
+                depth=2,
+                state_ref_payload={"moves": 2},
+                direct_value_scalar=2.0,
+                backed_up_value_scalar=2.0,
+                is_exact=True,
+                is_terminal=True,
+                over_event_label=None,
+                visit_count=3,
+                metadata={"source": "record-status-test"},
+            ),
+            make_training_node_snapshot(
+                node_id="node-2-b",
+                parent_ids=(),
+                child_ids=(),
+                depth=2,
+                state_ref_payload={"moves": 2},
+                direct_value_scalar=2.0,
+                backed_up_value_scalar=2.0,
+                is_exact=True,
+                is_terminal=True,
+                over_event_label=None,
+                visit_count=3,
+                metadata={"source": "record-status-test"},
+            ),
+            make_training_node_snapshot(
+                node_id="node-5",
+                parent_ids=(),
+                child_ids=(),
+                depth=5,
+                state_ref_payload={"moves": 5},
+                direct_value_scalar=5.0,
+                backed_up_value_scalar=5.0,
+                is_exact=True,
+                is_terminal=True,
+                over_event_label=None,
+                visit_count=6,
+                metadata={"source": "record-status-test"},
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    with caplog.at_level(logging.INFO):
+        candidates = extract_certified_record_candidates_from_training_tree_snapshot(
+            snapshot
+        )
+
+    log_text = caplog.text
+    assert len(candidates) == 3
+    assert "certified_candidate_found" not in log_text
+    assert log_text.count("[record] new_best_certified_candidate") == 2
+    assert "total_points=38 node_id=node-2-a candidates_seen=1" in log_text
+    assert "total_points=41 node_id=node-5 candidates_seen=3" in log_text
+    assert "[record] scan_done elapsed=" in log_text
+    assert "num_candidates=3" in log_text
+    assert "best_total_points=41" in log_text
+    assert "best_node_id=node-5" in log_text
+    assert "total_points_buckets={38:2,41:1}" in log_text
 
 
 def test_current_record_score_returns_moves_since_start() -> None:

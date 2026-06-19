@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import gc
 import logging
-import os
-import resource
-import sys
 import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -90,6 +87,7 @@ from .linoo_selection_table import (
     linoo_selection_table_from_report,
     save_linoo_selection_table,
 )
+from .pipeline_memory import current_rss_mb, log_pipeline_memory
 from .search_runner_protocol import MorpionSearchRunner
 from .sharded_training_export import (
     MorpionShardedTrainingExportStats,
@@ -633,23 +631,7 @@ def _rollout_no_legal_but_not_terminal(path_report: object) -> bool:
 
 def _current_rss_mb() -> float | None:
     """Return current process RSS in MB when available."""
-    if sys.platform.startswith("linux"):
-        try:
-            statm = Path("/proc/self/statm").read_text(encoding="utf-8").split()
-            resident_pages = int(statm[1])
-            page_size = os.sysconf("SC_PAGE_SIZE")
-            return resident_pages * page_size / (1024 * 1024)
-        except (OSError, ValueError, IndexError):
-            pass
-    try:
-        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    except (AttributeError, OSError, ValueError):
-        return None
-    if rss <= 0:
-        return None
-    if sys.platform == "darwin":
-        return rss / (1024 * 1024)
-    return rss / 1024
+    return current_rss_mb()
 
 
 def log_morpion_checkpoint_memory_phase(
@@ -1520,6 +1502,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             patch.patch_id,
             len(patch.rows),
         )
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=patch.tree_generation,
+            event="before_patch_apply",
+            rows=len(patch.rows),
+            node_count=_optional_live_tree_node_count(runtime),
+        )
         if blend_alpha >= 1.0:
             updates = tuple(
                 NodeValueUpdate(
@@ -1579,6 +1568,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             len(result.missing_node_ids),
             result.recomputed_count,
             _metric_value(selector_invalidated),
+        )
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=patch.tree_generation,
+            event="after_patch_apply",
+            rows=result.applied_count,
+            missing=len(result.missing_node_ids),
+            recomputed=result.recomputed_count,
+            node_count=_optional_live_tree_node_count(runtime),
         )
         return int(result.applied_count)
 
@@ -2440,6 +2438,14 @@ def _live_tree_node_count(runtime: Any) -> int:
         if isinstance(count, int | float | str):
             return int(count)
     return len(runtime._all_nodes_in_tree_order())
+
+
+def _optional_live_tree_node_count(runtime: Any) -> int | None:
+    """Return live node count when available without affecting caller behavior."""
+    try:
+        return _live_tree_node_count(runtime)
+    except Exception:
+        return None
 
 
 def _safe_int_attr(node: Any, attribute_name: str) -> int | None:

@@ -91,7 +91,6 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorSpec,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
-    UnsupportedMorpionRuntimeReconfigurationError,
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
     save_bootstrap_control,
@@ -1801,11 +1800,11 @@ def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
     }
 
 
-def test_bootstrap_loop_rejects_runtime_branch_limit_widening(
+def test_bootstrap_loop_allows_runtime_branch_limit_widening(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Widening tree_branch_limit should fail loudly instead of silently resetting."""
+    """Widening tree_branch_limit should let an existing tree continue growing."""
     _patch_reported_losses(
         monkeypatch,
         loss_by_evaluator_name={"linear": 0.1, "mlp": 0.2},
@@ -1832,5 +1831,10 @@ def test_bootstrap_loop_rejects_runtime_branch_limit_widening(
         paths.control_path,
     )
 
-    with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
-        run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert runner.current_runtime_config().tree_branch_limit == 256
+    assert second_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 1.0,
+        "tree_branch_limit": 256,
+    }

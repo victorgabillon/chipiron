@@ -28,6 +28,7 @@ from .evaluator_diagnostics import (
 )
 from .history import MorpionEvaluatorMetrics
 from .pipeline_artifacts import MorpionPipelineEvaluatorTrainingResult
+from .pipeline_memory import log_pipeline_memory
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -284,6 +285,12 @@ def train_and_select_evaluators(
     model_bundle_paths: dict[str, str] = {}
     training_started_at = time.perf_counter()
     memory.log("before_training")
+    log_pipeline_memory(
+        stage="training",
+        generation=generation,
+        event="start",
+        rows_path=rows_path,
+    )
     LOGGER.info(
         "[train] start evaluators=%s rows=%s",
         len(resolved_evaluators_config.evaluators),
@@ -301,6 +308,12 @@ def train_and_select_evaluators(
             )
         )
         LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="before_evaluator",
+            evaluator=evaluator_name,
+        )
         evaluator_started_at = time.perf_counter()
         trained_model, metrics = train_morpion_regressor(
             morpion_training_args_from_evaluator_spec(
@@ -371,6 +384,14 @@ def train_and_select_evaluators(
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
         )
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="after_evaluator",
+            evaluator=evaluator_name,
+            final_loss=evaluator_metrics[evaluator_name].final_loss,
+            validation_loss=evaluator_metrics[evaluator_name].validation_loss,
+        )
         persist_evaluator_training_diagnostics(
             paths=paths,
             generation=generation,
@@ -419,6 +440,12 @@ def train_and_select_evaluators(
 
     training_duration_s = time.perf_counter() - training_started_at
     memory.log("after_training")
+    log_pipeline_memory(
+        stage="training",
+        generation=generation,
+        event="done",
+        selected=selected_evaluator_name,
+    )
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
     return BootstrapTrainingResult(
         generation=generation,

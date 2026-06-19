@@ -867,6 +867,8 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert "[pipeline] dataset_export_start generation=1" in messages
     assert "[pipeline] dataset_export_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_manifest_written generation=1" in messages
+    assert "[pipeline-memory] stage=dataset generation=1 event=after_snapshot_load" in messages
+    assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_build" in messages
 
 
 def test_pipeline_sharded_export_and_dataset_stage_round_trip(tmp_path: Path) -> None:

@@ -189,6 +189,10 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
 
 After `bootstrap_config.json` exists, later workers must match it. Any later CLI hyperparameter drift against the persisted bootstrap config is rejected.
 
+`tree_branch_limit` is a growth budget and may be increased or decreased when
+resuming an existing tree. Increasing it allows a run that reached the previous
+branch limit to continue growing.
+
 ### Healthy pipeline signs
 
 After startup you should observe:
