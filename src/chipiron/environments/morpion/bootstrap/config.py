@@ -386,7 +386,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
 
 def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
     """Deserialize one bootstrap config from JSON-friendly data."""
-    from .bootstrap_loop import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorsConfig
 
     if not _is_str_key_mapping(data):
         raise MalformedMorpionBootstrapConfigError.invalid_top_level_mapping()
@@ -409,132 +409,9 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
     try:
         evaluators = MorpionEvaluatorsConfig(
             evaluators={
-                evaluator_name: MorpionEvaluatorSpec(
-                    name=_required_str(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("name"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.name",
-                    ),
-                    model_type=_required_str(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("model_type"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.model_type",
-                    ),
-                    hidden_sizes=_optional_int_tuple(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("hidden_sizes"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.hidden_sizes",
-                    ),
-                    num_epochs=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("num_epochs"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.num_epochs",
-                    ),
-                    batch_size=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("batch_size"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.batch_size",
-                    ),
-                    learning_rate=_coerce_float(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("learning_rate"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.learning_rate",
-                    ),
-                    feature_subset_name=_required_str(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get(
-                            "feature_subset_name",
-                            DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-                        ),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.feature_subset_name",
-                    ),
-                    feature_names=_optional_str_tuple(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("feature_names"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.feature_names",
-                    ),
-                    graph_max_tokens=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_max_tokens", 1536),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_max_tokens",
-                    ),
-                    graph_input_feature_dim=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get(
-                            "graph_input_feature_dim",
-                            MORPION_GRAPH_TOKEN_FEATURE_DIM,
-                        ),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_input_feature_dim",
-                    ),
-                    graph_d_model=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_d_model", 64),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_d_model",
-                    ),
-                    graph_n_head=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_n_head", 4),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_n_head",
-                    ),
-                    graph_n_layer=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_n_layer", 2),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_n_layer",
-                    ),
-                    graph_dim_feedforward=_coerce_int(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_dim_feedforward", 256),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_dim_feedforward",
-                    ),
-                    graph_dropout_ratio=_coerce_float(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_dropout_ratio", 0.0),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_dropout_ratio",
-                    ),
-                    graph_pooling=_required_str(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_pooling", "value_token"),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_pooling",
-                    ),
-                    graph_output_tanh=_required_bool(
-                        _require_section_mapping(
-                            spec_payload,
-                            section_name=f"evaluators.evaluators.{evaluator_name}",
-                        ).get("graph_output_tanh", True),
-                        field_name=f"evaluators.evaluators.{evaluator_name}.graph_output_tanh",
-                    ),
+                evaluator_name: _evaluator_spec_from_config_payload(
+                    evaluator_name=evaluator_name,
+                    spec_payload=spec_payload,
                 )
                 for evaluator_name, spec_payload in evaluator_entries.items()
             }
@@ -1000,6 +877,95 @@ def _search_config_from_payload(value: object) -> MorpionBootstrapSearchConfig:
                 field_name="search.rollout.stop_on_existing_node",
             ),
         )
+    )
+
+
+def _evaluator_spec_from_config_payload(
+    *,
+    evaluator_name: str,
+    spec_payload: object,
+) -> MorpionEvaluatorSpec:
+    """Deserialize one evaluator spec from JSON-friendly data."""
+    from .evaluator_config import MorpionEvaluatorSpec
+
+    section_name = f"evaluators.evaluators.{evaluator_name}"
+    spec_mapping = _require_section_mapping(spec_payload, section_name=section_name)
+
+    return MorpionEvaluatorSpec(
+        name=_required_str(
+            spec_mapping.get("name"),
+            field_name=f"{section_name}.name",
+        ),
+        model_type=_required_str(
+            spec_mapping.get("model_type"),
+            field_name=f"{section_name}.model_type",
+        ),
+        hidden_sizes=_optional_int_tuple(
+            spec_mapping.get("hidden_sizes"),
+            field_name=f"{section_name}.hidden_sizes",
+        ),
+        num_epochs=_coerce_int(
+            spec_mapping.get("num_epochs"),
+            field_name=f"{section_name}.num_epochs",
+        ),
+        batch_size=_coerce_int(
+            spec_mapping.get("batch_size"),
+            field_name=f"{section_name}.batch_size",
+        ),
+        learning_rate=_coerce_float(
+            spec_mapping.get("learning_rate"),
+            field_name=f"{section_name}.learning_rate",
+        ),
+        feature_subset_name=_required_str(
+            spec_mapping.get(
+                "feature_subset_name",
+                DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+            ),
+            field_name=f"{section_name}.feature_subset_name",
+        ),
+        feature_names=_optional_str_tuple(
+            spec_mapping.get("feature_names"),
+            field_name=f"{section_name}.feature_names",
+        ),
+        graph_max_tokens=_coerce_int(
+            spec_mapping.get("graph_max_tokens", 1536),
+            field_name=f"{section_name}.graph_max_tokens",
+        ),
+        graph_input_feature_dim=_coerce_int(
+            spec_mapping.get(
+                "graph_input_feature_dim",
+                MORPION_GRAPH_TOKEN_FEATURE_DIM,
+            ),
+            field_name=f"{section_name}.graph_input_feature_dim",
+        ),
+        graph_d_model=_coerce_int(
+            spec_mapping.get("graph_d_model", 64),
+            field_name=f"{section_name}.graph_d_model",
+        ),
+        graph_n_head=_coerce_int(
+            spec_mapping.get("graph_n_head", 4),
+            field_name=f"{section_name}.graph_n_head",
+        ),
+        graph_n_layer=_coerce_int(
+            spec_mapping.get("graph_n_layer", 2),
+            field_name=f"{section_name}.graph_n_layer",
+        ),
+        graph_dim_feedforward=_coerce_int(
+            spec_mapping.get("graph_dim_feedforward", 256),
+            field_name=f"{section_name}.graph_dim_feedforward",
+        ),
+        graph_dropout_ratio=_coerce_float(
+            spec_mapping.get("graph_dropout_ratio", 0.0),
+            field_name=f"{section_name}.graph_dropout_ratio",
+        ),
+        graph_pooling=_required_str(
+            spec_mapping.get("graph_pooling", "value_token"),
+            field_name=f"{section_name}.graph_pooling",
+        ),
+        graph_output_tanh=_required_bool(
+            spec_mapping.get("graph_output_tanh", True),
+            field_name=f"{section_name}.graph_output_tanh",
+        ),
     )
 
 

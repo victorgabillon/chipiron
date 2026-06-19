@@ -15,7 +15,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.graph_toke
 )
 
 if TYPE_CHECKING:
-    from .bootstrap_loop import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 
 CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_subsets"
 CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = (
@@ -61,7 +61,7 @@ class _CanonicalFamilySpec:
 
 def canonical_morpion_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
     """Return the canonical eight-evaluator Morpion family specs by name."""
-    from .bootstrap_loop import MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorSpec
 
     return {
         spec.name: MorpionEvaluatorSpec(
@@ -85,14 +85,14 @@ def canonical_morpion_evaluator_names() -> tuple[str, ...]:
 
 def canonical_morpion_evaluator_family_config() -> MorpionEvaluatorsConfig:
     """Return the canonical eight-evaluator Morpion bootstrap family config."""
-    from .bootstrap_loop import MorpionEvaluatorsConfig
+    from .evaluator_config import MorpionEvaluatorsConfig
 
     return MorpionEvaluatorsConfig(evaluators=dict(canonical_morpion_evaluator_specs()))
 
 
 def graph_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
     """Return the opt-in small graph-transformer Morpion evaluator spec."""
-    from .bootstrap_loop import MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorSpec
 
     return MorpionEvaluatorSpec(
         name="graph_transformer_small",
@@ -117,7 +117,7 @@ def canonical_linear_mlp_graph_small_morpion_evaluator_family_config() -> (
     MorpionEvaluatorsConfig
 ):
     """Return canonical linear/MLP evaluators plus one small graph evaluator."""
-    from .bootstrap_loop import MorpionEvaluatorsConfig
+    from .evaluator_config import MorpionEvaluatorsConfig
 
     evaluators = dict(canonical_morpion_evaluator_specs())
     graph_spec = graph_transformer_small_morpion_evaluator_spec()
