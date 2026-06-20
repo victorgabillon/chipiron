@@ -1063,6 +1063,55 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_write_stream" in messages
 
 
+def test_dataset_stage_rejects_streamed_rows_count_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dataset stage should not mark done when metadata row count drifts."""
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "persist_certified_leaderboard_candidates",
+        lambda **kwargs: None,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    snapshot_path = paths.tree_snapshot_path_for_generation(1)
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="node-0"),
+        snapshot_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path=paths.relative_to_work_dir(snapshot_path),
+            dataset_status="not_started",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+    original_streaming_rows = pipeline_stages_module._streaming_rows_from_training_snapshot
+
+    def _streaming_rows_with_bad_metadata(**kwargs: object) -> object:
+        streaming_rows = original_streaming_rows(**kwargs)
+        return replace(
+            streaming_rows,
+            metadata={**streaming_rows.metadata, "num_rows": 999},
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_streaming_rows_from_training_snapshot",
+        _streaming_rows_with_bad_metadata,
+    )
+
+    with pytest.raises(RuntimeError, match="metadata count mismatch"):
+        run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    assert manifest.dataset_status == "failed"
+
+
 def test_dataset_stage_ram_guard_defers_before_snapshot_load(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,

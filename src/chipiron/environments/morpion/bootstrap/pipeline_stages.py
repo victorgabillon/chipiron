@@ -183,6 +183,20 @@ def _dataset_stage_requires_done_status_error() -> ValueError:
     return ValueError("manifest.dataset_status == 'done' is required")
 
 
+def _dataset_rows_count_mismatch_error(
+    *,
+    generation: int,
+    expected_rows: int,
+    actual_rows: int,
+) -> RuntimeError:
+    """Build the canonical dataset-stage rows count mismatch error."""
+    return RuntimeError(
+        "Dataset rows metadata count mismatch "
+        f"generation={generation} expected_rows={expected_rows} "
+        f"actual_rows={actual_rows}."
+    )
+
+
 def _raise_missing_tree_snapshot_file_error(
     tree_snapshot_path: Path | None,
 ) -> NoReturn:
@@ -193,6 +207,20 @@ def _raise_missing_tree_snapshot_file_error(
 def _raise_missing_rows_file_error(rows_path: Path | None) -> NoReturn:
     """Raise the canonical training-stage missing rows file error."""
     raise MissingPipelineRowsFileError.from_path(rows_path)
+
+
+def _raise_dataset_rows_count_mismatch_error(
+    *,
+    generation: int,
+    expected_rows: int,
+    actual_rows: int,
+) -> NoReturn:
+    """Raise the canonical dataset-stage rows count mismatch error."""
+    raise _dataset_rows_count_mismatch_error(
+        generation=generation,
+        expected_rows=expected_rows,
+        actual_rows=actual_rows,
+    )
 
 
 def _pipeline_manifest_path(
@@ -1246,6 +1274,17 @@ def run_pipeline_dataset_stage(
                 row_count,
             ),
         )
+        expected_num_rows = streaming_rows.metadata.get("num_rows")
+        if (
+            isinstance(expected_num_rows, int)
+            and not isinstance(expected_num_rows, bool)
+            and expected_num_rows != write_stats.row_count
+        ):
+            _raise_dataset_rows_count_mismatch_error(
+                generation=generation,
+                expected_rows=expected_num_rows,
+                actual_rows=write_stats.row_count,
+            )
         log_pipeline_memory(
             stage="dataset",
             generation=generation,

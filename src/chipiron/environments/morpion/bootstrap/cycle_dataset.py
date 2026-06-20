@@ -183,6 +183,8 @@ def streaming_rows_from_training_snapshot(
         use_backed_up_value=args.use_backed_up_value,
         metadata={"bootstrap_generation": generation},
     )
+    # TODO: compute family-target summary during the write pass once row metadata
+    # can be finalized after streaming, e.g. via a sidecar rows manifest.
     metadata.update(context.summary_for_rows(_adjusted_rows()))
     target_source_counts = metadata.get("target_source_counts", {})
     if not isinstance(target_source_counts, dict):
