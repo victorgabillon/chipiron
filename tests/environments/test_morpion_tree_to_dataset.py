@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -30,6 +30,9 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 from anemone.training_export import (
     TrainingNodeSnapshot,
     TrainingTreeSnapshot,
@@ -43,11 +46,15 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from chipiron.environments.morpion.learning.tree_to_dataset import (
     InvalidMorpionStateRefPayloadError,
     MalformedMorpionSupervisedRowsError,
+    MorpionSupervisedRow,
+    MorpionSupervisedRows,
     decode_morpion_state_ref_payload,
     is_morpion_state_ref_payload,
+    iter_morpion_supervised_rows_from_training_snapshot,
     load_morpion_supervised_rows,
     morpion_supervised_rows_from_dict,
     save_morpion_supervised_rows,
+    save_morpion_supervised_rows_streaming,
     training_node_to_morpion_supervised_row,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
@@ -352,6 +359,41 @@ def test_full_snapshot_extracts_ordered_rows() -> None:
     assert rows.metadata["use_backed_up_value"] is True
 
 
+def test_snapshot_row_iterator_matches_materialized_extraction() -> None:
+    """Streaming row extraction should preserve materialized row semantics."""
+    payload = _make_morpion_payload()
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_training_node(node_id="keep-1", state_ref_payload=payload, depth=2),
+            _make_training_node(
+                node_id="drop-depth",
+                state_ref_payload=payload,
+                depth=1,
+            ),
+            _make_training_node(node_id="keep-2", state_ref_payload=payload, depth=4),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    materialized = training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot,
+        min_depth=2,
+        max_rows=1,
+        use_backed_up_value=False,
+    )
+    streamed_rows = tuple(
+        iter_morpion_supervised_rows_from_training_snapshot(
+            snapshot,
+            min_depth=2,
+            max_rows=1,
+            use_backed_up_value=False,
+        )
+    )
+
+    assert streamed_rows == materialized.rows
+
+
 def test_persistence_round_trip_for_morpion_supervised_rows(
     tmp_path: Path,
 ) -> None:
@@ -369,6 +411,78 @@ def test_persistence_round_trip_for_morpion_supervised_rows(
     restored = load_morpion_supervised_rows(path)
 
     assert restored == rows
+
+
+def test_streaming_persistence_round_trip_for_morpion_supervised_rows(
+    tmp_path: Path,
+) -> None:
+    """JSONL supervised rows should round-trip through the existing loader."""
+    payload = _make_morpion_payload()
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_training_node(node_id="a", state_ref_payload=payload),
+            _make_training_node(node_id="b", state_ref_payload=payload),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    rows = training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot,
+        metadata={"purpose": "stream-test"},
+    )
+    path = tmp_path / "morpion_supervised_rows.jsonl"
+
+    stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=path,
+    )
+    restored = load_morpion_supervised_rows(path)
+
+    assert restored == rows
+    assert stats.row_count == len(rows.rows)
+    assert stats.bytes_written > 0
+    assert stats.path == path
+    assert stats.format_kind == "morpion_supervised_rows_jsonl"
+    assert stats.format_version == 1
+
+
+def test_streaming_persistence_failure_keeps_existing_rows(
+    tmp_path: Path,
+) -> None:
+    """A failed JSONL stream should not replace an existing valid artifact."""
+    payload = _make_morpion_payload()
+    original_row = training_node_to_morpion_supervised_row(
+        _make_training_node(node_id="old", state_ref_payload=payload)
+    )
+    assert original_row is not None
+    original_rows = MorpionSupervisedRows(
+        rows=(original_row,),
+        metadata={"generation": 1},
+    )
+    path = tmp_path / "morpion_supervised_rows.jsonl"
+    save_morpion_supervised_rows_streaming(
+        rows=original_rows.rows,
+        metadata=original_rows.metadata,
+        path=path,
+    )
+
+    def _stream_interrupted_error() -> RuntimeError:
+        return RuntimeError("stream interrupted")
+
+    def _raising_rows() -> Iterable[MorpionSupervisedRow]:
+        yield original_rows.rows[0]
+        raise _stream_interrupted_error()
+
+    with pytest.raises(RuntimeError, match="stream interrupted"):
+        save_morpion_supervised_rows_streaming(
+            rows=_raising_rows(),
+            metadata={"generation": 2},
+            path=path,
+        )
+
+    assert load_morpion_supervised_rows(path) == original_rows
+    assert not path.with_suffix(path.suffix + ".tmp").exists()
 
 
 def test_malformed_row_payload_fails_loudly() -> None:

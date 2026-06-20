@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.learning import (
@@ -16,9 +17,41 @@ from .pv_family_targets import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
     from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetFamilyTargetContext:
+    """Snapshot-derived target maps used to adjust dataset rows one at a time."""
+
+    raw_targets: dict[str, float]
+    selected_child_by_node: dict[str, str | None]
+    family_targets: PvFamilyTargets
+    family_target_policy: PvFamilyTargetPolicy
+    family_prediction_blend: float
+
+    def adjust_row(self, row: MorpionSupervisedRow) -> MorpionSupervisedRow:
+        """Return ``row`` with the configured family target adjustment applied."""
+        return _dataset_row_with_family_target_metadata(
+            row,
+            raw_target=self.raw_targets.get(row.node_id, row.target_value),
+            selected_child_id=self.selected_child_by_node.get(row.node_id),
+            family_targets=self.family_targets,
+        )
+
+    def summary_for_rows(
+        self,
+        rows: Iterable[MorpionSupervisedRow],
+    ) -> dict[str, object]:
+        """Return persisted metadata summary for adjusted rows."""
+        return _dataset_family_target_summary(
+            rows=rows,
+            family_targets=self.family_targets,
+            family_target_policy=self.family_target_policy,
+            family_prediction_blend=self.family_prediction_blend,
+        )
 
 
 def apply_dataset_family_target_policy(
@@ -30,6 +63,28 @@ def apply_dataset_family_target_policy(
     use_backed_up_value: bool = True,
 ) -> MorpionSupervisedRows:
     """Apply PV-family target smoothing to exported bootstrap training rows."""
+    context = build_dataset_family_target_context(
+        snapshot=snapshot,
+        family_target_policy=family_target_policy,
+        family_prediction_blend=family_prediction_blend,
+        use_backed_up_value=use_backed_up_value,
+    )
+    adjusted_rows = tuple(context.adjust_row(row) for row in rows.rows)
+    summary = context.summary_for_rows(adjusted_rows)
+    return MorpionSupervisedRows(
+        rows=adjusted_rows,
+        metadata={**rows.metadata, **summary},
+    )
+
+
+def build_dataset_family_target_context(
+    *,
+    snapshot: TrainingTreeSnapshot,
+    family_target_policy: PvFamilyTargetPolicy,
+    family_prediction_blend: float = 0.25,
+    use_backed_up_value: bool = True,
+) -> DatasetFamilyTargetContext:
+    """Build snapshot-level maps for per-row family target adjustment."""
     if not 0.0 <= family_prediction_blend <= 1.0:
         raise ValueError("dataset_family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
     raw_targets = _snapshot_raw_targets(
@@ -55,24 +110,12 @@ def apply_dataset_family_target_policy(
         family_target_policy=family_target_policy,
         family_prediction_blend=family_prediction_blend,
     )
-    adjusted_rows = tuple(
-        _dataset_row_with_family_target_metadata(
-            row,
-            raw_target=raw_targets.get(row.node_id, row.target_value),
-            selected_child_id=selected_child_by_node.get(row.node_id),
-            family_targets=family_targets,
-        )
-        for row in rows.rows
-    )
-    summary = _dataset_family_target_summary(
-        rows=adjusted_rows,
+    return DatasetFamilyTargetContext(
+        raw_targets=raw_targets,
+        selected_child_by_node=selected_child_by_node,
         family_targets=family_targets,
         family_target_policy=family_target_policy,
         family_prediction_blend=family_prediction_blend,
-    )
-    return MorpionSupervisedRows(
-        rows=adjusted_rows,
-        metadata={**rows.metadata, **summary},
     )
 
 
@@ -229,7 +272,7 @@ def _effective_target_source(
 
 def _dataset_family_target_summary(
     *,
-    rows: tuple[MorpionSupervisedRow, ...],
+    rows: Iterable[MorpionSupervisedRow],
     family_targets: PvFamilyTargets,
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float,
@@ -237,12 +280,17 @@ def _dataset_family_target_summary(
     exact_family_deltas: list[float] = []
     non_exact_family_deltas: list[float] = []
     all_deltas: list[float] = []
+    row_count = 0
+    rows_in_exact_family_count = 0
     exact_family_representatives = {
         family_targets.representative_by_node[node_id]
         for node_id, has_exact in family_targets.family_has_exact_by_node.items()
         if has_exact and node_id in family_targets.representative_by_node
     }
     for row in rows:
+        row_count += 1
+        if bool(row.metadata.get("family_has_exact_or_terminal", False)):
+            rows_in_exact_family_count += 1
         raw_target = _metadata_float(row.metadata.get("raw_target"))
         effective_target = _metadata_float(row.metadata.get("effective_target"))
         if raw_target is None or effective_target is None:
@@ -254,14 +302,7 @@ def _dataset_family_target_summary(
         else:
             non_exact_family_deltas.append(delta)
     fraction_rows_in_exact_family = (
-        None
-        if not rows
-        else sum(
-            1
-            for row in rows
-            if bool(row.metadata.get("family_has_exact_or_terminal", False))
-        )
-        / len(rows)
+        None if row_count == 0 else rows_in_exact_family_count / row_count
     )
     return {
         "dataset_family_target_policy": family_target_policy,
@@ -296,4 +337,8 @@ def _mean(values: list[float]) -> float | None:
     return sum(values) / len(values)
 
 
-__all__ = ["apply_dataset_family_target_policy"]
+__all__ = [
+    "DatasetFamilyTargetContext",
+    "apply_dataset_family_target_policy",
+    "build_dataset_family_target_context",
+]

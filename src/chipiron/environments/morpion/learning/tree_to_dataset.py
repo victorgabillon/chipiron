@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -17,6 +17,10 @@ from atomheart.games.morpion.checkpoints import (
 
 MORPION_SUPERVISED_ROWS_DATASET_KIND = "morpion_supervised_rows"
 MORPION_SUPERVISED_ROWS_DATASET_VERSION = 1
+MORPION_SUPERVISED_ROWS_JSONL_FORMAT_KIND = "morpion_supervised_rows_jsonl"
+MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION = 1
+MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND = "morpion_supervised_rows_metadata"
+MORPION_SUPERVISED_ROW_RECORD_KIND = "morpion_supervised_row"
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
@@ -50,6 +54,17 @@ class MorpionSupervisedRows:
 
     rows: tuple[MorpionSupervisedRow, ...]
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionSupervisedRowsWriteStats:
+    """Stats returned after streaming supervised rows to disk."""
+
+    row_count: int
+    bytes_written: int
+    path: Path
+    format_kind: str
+    format_version: int
 
 
 class InvalidMorpionStateRefPayloadError(TypeError):
@@ -96,6 +111,18 @@ class MalformedMorpionSupervisedRowsError(TypeError):
     def missing_target_value(cls) -> MalformedMorpionSupervisedRowsError:
         """Return the missing-target error."""
         return cls("Each Morpion supervised row must contain a numeric `target_value`.")
+
+    @classmethod
+    def unexpected_jsonl_record_kind(
+        cls,
+        line_number: int,
+        kind: object,
+    ) -> MalformedMorpionSupervisedRowsError:
+        """Return the malformed JSONL record-kind error."""
+        return cls(
+            f"Unexpected Morpion supervised rows JSONL record kind "
+            f"at line {line_number}: {kind!r}."
+        )
 
 
 def is_morpion_state_ref_payload(payload: object) -> bool:
@@ -178,33 +205,19 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     metadata: dict[str, object] | None = None,
 ) -> MorpionSupervisedRows:
     """Extract ordered raw Morpion supervised rows from one training snapshot."""
-    skipped_no_target_count = _count_skipped_no_target_nodes(
-        snapshot,
-        require_exact_or_terminal=require_exact_or_terminal,
-        min_depth=min_depth,
-        min_visit_count=min_visit_count,
-        use_backed_up_value=use_backed_up_value,
-    )
     rows = tuple(
-        row
-        for row in (
-            training_node_to_morpion_supervised_row(
-                node,
-                require_exact_or_terminal=require_exact_or_terminal,
-                min_depth=min_depth,
-                min_visit_count=min_visit_count,
-                use_backed_up_value=use_backed_up_value,
-            )
-            for node in snapshot.nodes
+        iter_morpion_supervised_rows_from_training_snapshot(
+            snapshot,
+            require_exact_or_terminal=require_exact_or_terminal,
+            min_depth=min_depth,
+            min_visit_count=min_visit_count,
+            max_rows=max_rows,
+            use_backed_up_value=use_backed_up_value,
         )
-        if row is not None
     )
-    if max_rows is not None:
-        rows = rows[:max_rows]
-    target_source_counts = _target_source_counts(rows)
     return MorpionSupervisedRows(
         rows=rows,
-        metadata=_build_rows_metadata(
+        metadata=morpion_supervised_rows_metadata_from_training_snapshot(
             snapshot,
             metadata=metadata,
             require_exact_or_terminal=require_exact_or_terminal,
@@ -212,10 +225,67 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             min_visit_count=min_visit_count,
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
-            num_rows=len(rows),
-            skipped_no_target_count=skipped_no_target_count,
-            target_source_counts=target_source_counts,
         ),
+    )
+
+
+def iter_morpion_supervised_rows_from_training_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    require_exact_or_terminal: bool = False,
+    min_depth: int | None = None,
+    min_visit_count: int | None = None,
+    max_rows: int | None = None,
+    use_backed_up_value: bool = True,
+) -> Iterable[MorpionSupervisedRow]:
+    """Yield ordered raw Morpion supervised rows from one training snapshot."""
+    emitted_count = 0
+    for node in snapshot.nodes:
+        row = training_node_to_morpion_supervised_row(
+            node,
+            require_exact_or_terminal=require_exact_or_terminal,
+            min_depth=min_depth,
+            min_visit_count=min_visit_count,
+            use_backed_up_value=use_backed_up_value,
+        )
+        if row is None:
+            continue
+        if max_rows is not None and emitted_count >= max_rows:
+            break
+        emitted_count += 1
+        yield row
+
+
+def morpion_supervised_rows_metadata_from_training_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    require_exact_or_terminal: bool = False,
+    min_depth: int | None = None,
+    min_visit_count: int | None = None,
+    max_rows: int | None = None,
+    use_backed_up_value: bool = True,
+    metadata: dict[str, object] | None = None,
+) -> dict[str, Any]:
+    """Build extraction metadata without materializing supervised rows."""
+    stats = _collect_extraction_stats(
+        snapshot,
+        require_exact_or_terminal=require_exact_or_terminal,
+        min_depth=min_depth,
+        min_visit_count=min_visit_count,
+        max_rows=max_rows,
+        use_backed_up_value=use_backed_up_value,
+    )
+    return _build_rows_metadata(
+        snapshot,
+        metadata=metadata,
+        require_exact_or_terminal=require_exact_or_terminal,
+        min_depth=min_depth,
+        min_visit_count=min_visit_count,
+        max_rows=max_rows,
+        use_backed_up_value=use_backed_up_value,
+        num_rows=stats.num_rows,
+        skipped_no_target_count=stats.skipped_no_target_count,
+        target_source_counts=stats.target_source_counts,
     )
 
 
@@ -284,11 +354,65 @@ def save_morpion_supervised_rows(
     )
 
 
+def save_morpion_supervised_rows_streaming(
+    *,
+    rows: Iterable[MorpionSupervisedRow],
+    metadata: Mapping[str, object],
+    path: str | Path,
+    progress_callback: Callable[[int], None] | None = None,
+    progress_interval: int = 10_000,
+) -> MorpionSupervisedRowsWriteStats:
+    """Stream raw Morpion supervised rows as atomic UTF-8 JSON Lines."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    row_count = 0
+    try:
+        with temporary.open("w", encoding="utf-8") as stream:
+            _write_jsonl_record(
+                stream,
+                {
+                    "kind": MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND,
+                    "format_version": MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION,
+                    "metadata": dict(metadata),
+                },
+            )
+            for row in rows:
+                _write_jsonl_record(
+                    stream,
+                    {
+                        "kind": MORPION_SUPERVISED_ROW_RECORD_KIND,
+                        "row": _row_to_dict(row),
+                    },
+                )
+                row_count += 1
+                if (
+                    progress_callback is not None
+                    and progress_interval > 0
+                    and row_count % progress_interval == 0
+                ):
+                    progress_callback(row_count)
+        temporary.replace(target)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    return MorpionSupervisedRowsWriteStats(
+        row_count=row_count,
+        bytes_written=target.stat().st_size,
+        path=target,
+        format_kind=MORPION_SUPERVISED_ROWS_JSONL_FORMAT_KIND,
+        format_version=MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION,
+    )
+
+
 def load_morpion_supervised_rows(
     path: str | Path,
 ) -> MorpionSupervisedRows:
     """Load raw Morpion supervised rows from ``path``."""
-    loaded = json.loads(Path(path).read_text(encoding="utf-8"))
+    source = Path(path)
+    if source.suffix == ".jsonl":
+        return _load_morpion_supervised_rows_jsonl(source)
+    loaded = json.loads(source.read_text(encoding="utf-8"))
     return morpion_supervised_rows_from_dict(cast("dict[str, object]", loaded))
 
 
@@ -335,30 +459,53 @@ def _choose_target_value_and_source(
     return None
 
 
-def _count_skipped_no_target_nodes(
+@dataclass(frozen=True, slots=True)
+class _ExtractionStats:
+    num_rows: int
+    skipped_no_target_count: int
+    target_source_counts: dict[str, int]
+
+
+def _collect_extraction_stats(
     snapshot: TrainingTreeSnapshot,
     *,
     require_exact_or_terminal: bool,
     min_depth: int | None,
     min_visit_count: int | None,
+    max_rows: int | None,
     use_backed_up_value: bool,
-) -> int:
-    """Return how many otherwise eligible nodes lacked a usable target."""
-    return sum(
-        1
-        for node in snapshot.nodes
-        if node.state_ref_payload is not None
-        and _passes_filters(
+) -> _ExtractionStats:
+    """Return compact extraction stats without building row objects."""
+    skipped_no_target_count = 0
+    num_rows = 0
+    target_source_counts = _empty_target_source_counts()
+    for node in snapshot.nodes:
+        if node.state_ref_payload is None:
+            continue
+        if not _passes_filters(
             node,
             require_exact_or_terminal=require_exact_or_terminal,
             min_depth=min_depth,
             min_visit_count=min_visit_count,
-        )
-        and _choose_target_value_and_source(
+        ):
+            continue
+        target = _choose_target_value_and_source(
             node,
             use_backed_up_value=use_backed_up_value,
         )
-        is None
+        if target is None:
+            skipped_no_target_count += 1
+            continue
+        if max_rows is not None and num_rows >= max_rows:
+            continue
+        _target_value, target_source = target
+        if target_source in target_source_counts:
+            target_source_counts[target_source] += 1
+        num_rows += 1
+    return _ExtractionStats(
+        num_rows=num_rows,
+        skipped_no_target_count=skipped_no_target_count,
+        target_source_counts=target_source_counts,
     )
 
 
@@ -366,16 +513,20 @@ def _target_source_counts(
     rows: tuple[MorpionSupervisedRow, ...],
 ) -> dict[str, int]:
     """Return compact per-source counts for the extracted rows."""
-    counts = {
-        "backed_up_value": 0,
-        "exact_or_terminal_direct_value": 0,
-        "direct_value_frontier_fallback": 0,
-    }
+    counts = _empty_target_source_counts()
     for row in rows:
         source = row.metadata.get("target_source")
         if isinstance(source, str) and source in counts:
             counts[source] += 1
     return counts
+
+
+def _empty_target_source_counts() -> dict[str, int]:
+    return {
+        "backed_up_value": 0,
+        "exact_or_terminal_direct_value": 0,
+        "direct_value_frontier_fallback": 0,
+    }
 
 
 def _load_morpion_state_from_payload(payload: dict[str, Any]) -> AtomMorpionState:
@@ -454,6 +605,34 @@ def _row_to_dict(row: MorpionSupervisedRow) -> dict[str, object]:
         "over_event_label": row.over_event_label,
         "metadata": dict(row.metadata),
     }
+
+
+def _write_jsonl_record(stream: Any, record: Mapping[str, object]) -> None:
+    stream.write(json.dumps(record, separators=(",", ":")) + "\n")
+
+
+def _load_morpion_supervised_rows_jsonl(path: Path) -> MorpionSupervisedRows:
+    metadata: dict[str, Any] = {}
+    rows: list[MorpionSupervisedRow] = []
+    with path.open("r", encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            record = json.loads(stripped)
+            if not isinstance(record, dict):
+                raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
+            kind = record.get("kind")
+            if kind == MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
+                metadata = _metadata_dict(record.get("metadata"))
+                continue
+            if kind != MORPION_SUPERVISED_ROW_RECORD_KIND:
+                raise MalformedMorpionSupervisedRowsError.unexpected_jsonl_record_kind(
+                    line_number,
+                    kind,
+                )
+            rows.append(_row_from_dict(_require_row_mapping(record.get("row"))))
+    return MorpionSupervisedRows(rows=tuple(rows), metadata=metadata)
 
 
 def _require_row_mapping(value: object) -> dict[str, object]:
@@ -542,17 +721,23 @@ def _coerce_int(value: object, *, default: int | None = None) -> int:
 __all__ = [
     "MORPION_SUPERVISED_ROWS_DATASET_KIND",
     "MORPION_SUPERVISED_ROWS_DATASET_VERSION",
+    "MORPION_SUPERVISED_ROWS_JSONL_FORMAT_KIND",
+    "MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION",
     "InvalidMorpionStateRefPayloadError",
     "MalformedMorpionSupervisedRowsError",
     "MorpionSupervisedRow",
     "MorpionSupervisedRows",
+    "MorpionSupervisedRowsWriteStats",
     "decode_morpion_state_ref_payload",
     "is_morpion_state_ref_payload",
+    "iter_morpion_supervised_rows_from_training_snapshot",
     "load_morpion_supervised_rows",
     "load_training_tree_snapshot_as_morpion_supervised_rows",
     "morpion_supervised_rows_from_dict",
+    "morpion_supervised_rows_metadata_from_training_snapshot",
     "morpion_supervised_rows_to_dict",
     "save_morpion_supervised_rows",
+    "save_morpion_supervised_rows_streaming",
     "training_node_to_morpion_supervised_row",
     "training_tree_snapshot_to_morpion_supervised_rows",
 ]

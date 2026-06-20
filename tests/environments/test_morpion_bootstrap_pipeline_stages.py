@@ -103,6 +103,10 @@ from chipiron.environments.morpion.bootstrap import (
     save_pipeline_training_cursor,
     save_reevaluation_patch,
 )
+from chipiron.environments.morpion.bootstrap.cycle_dataset import (
+    extract_rows_from_training_snapshot,
+    iter_rows_from_training_snapshot,
+)
 from chipiron.environments.morpion.bootstrap.cycle_training import (
     BootstrapTrainingResult,
     train_and_select_evaluators,
@@ -314,6 +318,27 @@ def _make_rows_with_count(count: int) -> MorpionSupervisedRows:
         ),
         metadata={"bootstrap_generation": 1, "num_rows": count},
     )
+
+
+def test_dataset_row_iterator_matches_materialized_extraction(tmp_path: Path) -> None:
+    """Dataset-stage streaming rows should match the materialized extractor."""
+    args = _artifact_pipeline_args(tmp_path)
+    snapshot = _make_training_snapshot(target_value=1.25, root_node_id="node-0")
+
+    materialized = extract_rows_from_training_snapshot(
+        args=args,
+        snapshot=snapshot,
+        generation=1,
+    )
+    streamed_rows = tuple(
+        iter_rows_from_training_snapshot(
+            args=args,
+            snapshot=snapshot,
+            generation=1,
+        )
+    )
+
+    assert streamed_rows == materialized.rows
 
 
 def _fake_training_result(
@@ -860,9 +885,9 @@ def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> Non
     manifest_after_training = run_pipeline_training_stage(args, generation=1)
 
     assert manifest_after_dataset.dataset_status == "done"
-    assert manifest_after_dataset.rows_path == "rows/generation_000001.json"
+    assert manifest_after_dataset.rows_path == "rows/generation_000001.jsonl"
     assert manifest_after_dataset.training_status == "not_started"
-    assert paths.rows_path_for_generation(1).is_file()
+    assert paths.rows_jsonl_path_for_generation(1).is_file()
     assert manifest_after_training.training_status == "done"
     assert manifest_after_training.selected_evaluator_name is not None
     assert paths.pipeline_active_model_path.is_file()
@@ -977,6 +1002,16 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
         "persist_certified_leaderboard_candidates",
         _persist_leaderboard,
     )
+
+    def _unexpected_full_save(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "save_morpion_supervised_rows",
+        _unexpected_full_save,
+    )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
     snapshot_path = paths.tree_snapshot_path_for_generation(1)
@@ -1004,13 +1039,16 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     dataset_status = load_pipeline_dataset_status_file(
         paths.pipeline_dataset_status_path_for_generation(1)
     )
+    loaded_rows = load_morpion_supervised_rows(paths.rows_jsonl_path_for_generation(1))
 
-    assert manifest.rows_path == "rows/generation_000001.json"
-    assert paths.rows_path_for_generation(1).is_file()
+    assert manifest.rows_path == "rows/generation_000001.jsonl"
+    assert paths.rows_jsonl_path_for_generation(1).is_file()
     assert manifest.dataset_status == "done"
     assert manifest.training_status == "not_started"
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
     assert manifest.metadata["dataset_rows"] == 1
+    assert manifest.metadata["dataset_rows"] == len(loaded_rows.rows)
+    assert loaded_rows.metadata["bootstrap_generation"] == 1
     assert dataset_status.record_status is not None
     assert dataset_status.record_status.current_best_total_points == 37
     assert dataset_status.frontier_status is not None
@@ -1018,10 +1056,11 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert leaderboard_calls == [(1, 1)]
     assert "[pipeline] dataset_claim_created generation=1" in messages
     assert "[pipeline] dataset_export_start generation=1" in messages
+    assert "[pipeline] dataset_rows_stream_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_export_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_manifest_written generation=1" in messages
     assert "[pipeline-memory] stage=dataset generation=1 event=after_snapshot_load" in messages
-    assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_build" in messages
+    assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_write_stream" in messages
 
 
 def test_dataset_stage_ram_guard_defers_before_snapshot_load(
@@ -1069,6 +1108,7 @@ def test_dataset_stage_ram_guard_defers_before_snapshot_load(
     assert returned_manifest == original_manifest
     assert persisted_manifest.dataset_status == "not_started"
     assert not paths.rows_path_for_generation(1).exists()
+    assert not paths.rows_jsonl_path_for_generation(1).exists()
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
     assert (
         "[ram-guard] stage=dataset generation=1 action=snapshot_load "
@@ -1094,8 +1134,8 @@ def test_pipeline_sharded_export_and_dataset_stage_round_trip(tmp_path: Path) ->
     )
     assert paths.sharded_tree_snapshot_path_for_generation(1).is_file()
     assert manifest_after_dataset.dataset_status == "done"
-    assert manifest_after_dataset.rows_path == "rows/generation_000001.json"
-    assert paths.rows_path_for_generation(1).is_file()
+    assert manifest_after_dataset.rows_path == "rows/generation_000001.jsonl"
+    assert paths.rows_jsonl_path_for_generation(1).is_file()
 
 
 def test_dataset_stage_blocked_by_active_claim(tmp_path: Path) -> None:

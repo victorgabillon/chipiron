@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, cast
 from anemone.training_export import load_training_tree_snapshot
 
 from chipiron.environments.morpion.learning import (
+    iter_morpion_supervised_rows_from_training_snapshot,
+    morpion_supervised_rows_metadata_from_training_snapshot,
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
@@ -20,7 +22,10 @@ from .bootstrap_errors import (
     MissingBootstrapRecordStatusError,
     MissingSavedBootstrapArtifactError,
 )
-from .dataset_family_targets import apply_dataset_family_target_policy
+from .dataset_family_targets import (
+    apply_dataset_family_target_policy,
+    build_dataset_family_target_context,
+)
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -30,9 +35,14 @@ from .record_status import (
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from anemone.training_export import TrainingTreeSnapshot
 
-    from chipiron.environments.morpion.learning import MorpionSupervisedRows
+    from chipiron.environments.morpion.learning import (
+        MorpionSupervisedRow,
+        MorpionSupervisedRows,
+    )
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -70,6 +80,14 @@ class BootstrapDatasetBuildResult:
     num_rows: int
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionSupervisedRowsStream:
+    """Streaming rows plus metadata for one dataset export."""
+
+    rows: Iterable[MorpionSupervisedRow]
+    metadata: dict[str, object]
+
+
 def extract_rows_from_training_snapshot(
     *,
     args: MorpionBootstrapArgs,
@@ -104,6 +122,81 @@ def extract_rows_from_training_snapshot(
         rows.metadata.get("skipped_no_target_count", 0),
     )
     return rows
+
+
+def iter_rows_from_training_snapshot(
+    *,
+    args: MorpionBootstrapArgs,
+    snapshot: TrainingTreeSnapshot,
+    generation: int,
+) -> Iterable[MorpionSupervisedRow]:
+    """Yield post-processed supervised rows from one training snapshot."""
+    del generation
+    context = build_dataset_family_target_context(
+        snapshot=snapshot,
+        family_target_policy=args.dataset_family_target_policy,
+        family_prediction_blend=args.dataset_family_prediction_blend,
+        use_backed_up_value=args.use_backed_up_value,
+    )
+    for row in iter_morpion_supervised_rows_from_training_snapshot(
+        snapshot,
+        require_exact_or_terminal=args.require_exact_or_terminal,
+        min_depth=args.min_depth,
+        min_visit_count=args.min_visit_count,
+        max_rows=args.max_rows,
+        use_backed_up_value=args.use_backed_up_value,
+    ):
+        yield context.adjust_row(row)
+
+
+def streaming_rows_from_training_snapshot(
+    *,
+    args: MorpionBootstrapArgs,
+    snapshot: TrainingTreeSnapshot,
+    generation: int,
+) -> MorpionSupervisedRowsStream:
+    """Return fresh streaming rows plus extraction metadata for a dataset export."""
+    context = build_dataset_family_target_context(
+        snapshot=snapshot,
+        family_target_policy=args.dataset_family_target_policy,
+        family_prediction_blend=args.dataset_family_prediction_blend,
+        use_backed_up_value=args.use_backed_up_value,
+    )
+
+    def _adjusted_rows() -> Iterable[MorpionSupervisedRow]:
+        for row in iter_morpion_supervised_rows_from_training_snapshot(
+            snapshot,
+            require_exact_or_terminal=args.require_exact_or_terminal,
+            min_depth=args.min_depth,
+            min_visit_count=args.min_visit_count,
+            max_rows=args.max_rows,
+            use_backed_up_value=args.use_backed_up_value,
+        ):
+            yield context.adjust_row(row)
+
+    metadata = morpion_supervised_rows_metadata_from_training_snapshot(
+        snapshot,
+        require_exact_or_terminal=args.require_exact_or_terminal,
+        min_depth=args.min_depth,
+        min_visit_count=args.min_visit_count,
+        max_rows=args.max_rows,
+        use_backed_up_value=args.use_backed_up_value,
+        metadata={"bootstrap_generation": generation},
+    )
+    metadata.update(context.summary_for_rows(_adjusted_rows()))
+    target_source_counts = metadata.get("target_source_counts", {})
+    if not isinstance(target_source_counts, dict):
+        target_source_counts = {}
+    LOGGER.info(
+        "[dataset-targets] generation=%s rows=%s backed_up=%s exact_or_terminal_direct=%s direct_frontier_fallback=%s skipped_no_target=%s",
+        generation,
+        metadata.get("num_rows", 0),
+        target_source_counts.get("backed_up_value", 0),
+        target_source_counts.get("exact_or_terminal_direct_value", 0),
+        target_source_counts.get("direct_value_frontier_fallback", 0),
+        metadata.get("skipped_no_target_count", 0),
+    )
+    return MorpionSupervisedRowsStream(rows=_adjusted_rows(), metadata=metadata)
 
 
 def export_training_snapshot_for_generation(
@@ -317,8 +410,11 @@ def build_and_save_dataset_for_generation(
 
 __all__ = [
     "BootstrapDatasetBuildResult",
+    "MorpionSupervisedRowsStream",
     "build_and_save_dataset_for_generation",
     "export_training_snapshot_for_generation",
     "extract_rows_from_training_snapshot",
+    "iter_rows_from_training_snapshot",
     "load_training_snapshot_for_generation",
+    "streaming_rows_from_training_snapshot",
 ]

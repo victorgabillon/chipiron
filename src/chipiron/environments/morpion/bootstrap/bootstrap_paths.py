@@ -100,6 +100,10 @@ class MorpionBootstrapPaths:
         """Return the raw Morpion rows path for one saved generation."""
         return self.rows_dir / f"generation_{generation:06d}.json"
 
+    def rows_jsonl_path_for_generation(self, generation: int) -> Path:
+        """Return the streaming raw Morpion rows path for one saved generation."""
+        return self.rows_dir / f"generation_{generation:06d}.jsonl"
+
     def runtime_checkpoint_path_for_generation(self, generation: int) -> Path:
         """Return the runtime checkpoint path for one saved generation."""
         return checkpoint_path_for_generation(self.runtime_checkpoint_dir, generation)

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, NoReturn
 from chipiron.environments.morpion.learning import (
     load_morpion_supervised_rows,
     save_morpion_supervised_rows,
+    save_morpion_supervised_rows_streaming,
 )
 
 from .bootstrap_errors import MissingSavedBootstrapArtifactError
@@ -33,10 +34,10 @@ from .cycle_dataset import (
     export_training_snapshot_for_generation as _export_training_snapshot_for_generation,
 )
 from .cycle_dataset import (
-    extract_rows_from_training_snapshot as _extract_rows_from_training_snapshot,
+    load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
 )
 from .cycle_dataset import (
-    load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
+    streaming_rows_from_training_snapshot as _streaming_rows_from_training_snapshot,
 )
 from .cycle_metadata import build_bootstrap_event
 from .cycle_metadata import build_event_metadata as _build_event_metadata
@@ -1131,10 +1132,10 @@ def run_pipeline_dataset_stage(
         rows_path = (
             paths.resolve_work_dir_path(manifest.rows_path)
             if manifest.rows_path is not None
-            else paths.rows_path_for_generation(generation)
+            else paths.rows_jsonl_path_for_generation(generation)
         )
         if rows_path is None:
-            rows_path = paths.rows_path_for_generation(generation)
+            rows_path = paths.rows_jsonl_path_for_generation(generation)
         LOGGER.info(
             "[pipeline] dataset_export_start generation=%s tree_export=%s rows_output=%s config={min_depth=%s, min_visit_count=%s, max_rows=%s, target_policy=%s, use_backed_up_value=%s, require_exact_or_terminal=%s}",
             generation,
@@ -1222,40 +1223,50 @@ def run_pipeline_dataset_stage(
         log_pipeline_memory(
             stage="dataset",
             generation=generation,
-            event="before_rows_build",
+            event="before_rows_write_stream",
             node_count=len(snapshot.nodes),
         )
-        rows = _extract_rows_from_training_snapshot(
+        streaming_rows = _streaming_rows_from_training_snapshot(
             args=args,
             snapshot=snapshot,
             generation=generation,
         )
-        log_pipeline_memory(
-            stage="dataset",
-            generation=generation,
-            event="after_rows_build",
-            rows=len(rows.rows),
+        LOGGER.info(
+            "[pipeline] dataset_rows_stream_start generation=%s path=%s",
+            generation,
+            rows_path,
+        )
+        write_stats = save_morpion_supervised_rows_streaming(
+            rows=streaming_rows.rows,
+            metadata=streaming_rows.metadata,
+            path=rows_path,
+            progress_callback=lambda row_count: LOGGER.info(
+                "[pipeline] dataset_rows_stream_progress generation=%s rows=%s",
+                generation,
+                row_count,
+            ),
         )
         log_pipeline_memory(
             stage="dataset",
             generation=generation,
-            event="before_rows_write",
-            rows=len(rows.rows),
-        )
-        save_morpion_supervised_rows(rows, rows_path)
-        log_pipeline_memory(
-            stage="dataset",
-            generation=generation,
-            event="after_rows_write",
-            rows=len(rows.rows),
+            event="after_rows_write_stream",
+            rows=write_stats.row_count,
             rows_path=rows_path,
         )
-        rows_bytes = rows_path.stat().st_size if rows_path.is_file() else 0
+        rows_bytes = write_stats.bytes_written
         export_elapsed_s = time.perf_counter() - export_started_at
+        LOGGER.info(
+            "[pipeline] dataset_rows_stream_done generation=%s rows=%s bytes=%s elapsed=%.3fs path=%s",
+            generation,
+            write_stats.row_count,
+            rows_bytes,
+            export_elapsed_s,
+            rows_path,
+        )
         LOGGER.info(
             "[pipeline] dataset_export_done generation=%s rows=%s output=%s elapsed=%.3fs bytes=%s",
             generation,
-            len(rows.rows),
+            write_stats.row_count,
             rows_path,
             export_elapsed_s,
             rows_bytes,
@@ -1263,7 +1274,7 @@ def run_pipeline_dataset_stage(
         timestamp_utc = _now_timestamp_utc()
         manifest_metadata = dict(manifest.metadata)
         manifest_metadata["dataset_completed_at_utc"] = timestamp_utc
-        manifest_metadata["dataset_rows"] = len(rows.rows)
+        manifest_metadata["dataset_rows"] = write_stats.row_count
         manifest_metadata["dataset_rows_bytes"] = rows_bytes
         manifest = replace(
             manifest,
@@ -1305,18 +1316,18 @@ def run_pipeline_dataset_stage(
             generation,
             _pipeline_manifest_path(paths, generation),
             timestamp_utc,
-            len(rows.rows),
+            write_stats.row_count,
         )
         LOGGER.info(
             "[pipeline] dataset_done generation=%s rows=%s",
             generation,
-            len(rows.rows),
+            write_stats.row_count,
         )
         log_pipeline_memory(
             stage="dataset",
             generation=generation,
             event="done",
-            rows=len(rows.rows),
+            rows=write_stats.row_count,
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
