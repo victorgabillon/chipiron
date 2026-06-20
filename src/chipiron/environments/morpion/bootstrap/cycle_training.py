@@ -325,13 +325,15 @@ def train_and_select_evaluators(
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
         )
-        previous_model = load_previous_evaluator_for_diagnostics(
-            resolve_previous_model_bundle_path(
-                paths=paths,
-                run_state=run_state,
-                evaluator_name=evaluator_name,
+        previous_model = None
+        if not args.skip_evaluator_diagnostics:
+            previous_model = load_previous_evaluator_for_diagnostics(
+                resolve_previous_model_bundle_path(
+                    paths=paths,
+                    run_state=run_state,
+                    evaluator_name=evaluator_name,
+                )
             )
-        )
         LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
         log_pipeline_memory(
             stage="training",
@@ -417,18 +419,25 @@ def train_and_select_evaluators(
             final_loss=evaluator_metrics[evaluator_name].final_loss,
             validation_loss=evaluator_metrics[evaluator_name].validation_loss,
         )
-        persist_evaluator_training_diagnostics(
-            paths=paths,
-            generation=generation,
-            evaluator_name=evaluator_name,
-            rows=rows,
-            created_at=timestamp_utc,
-            spec=spec,
-            model_before=previous_model,
-            model_after=trained_model,
-            training_metrics=metrics,
-        )
-        memory.log("after_diagnostics")
+        if args.skip_evaluator_diagnostics:
+            LOGGER.info(
+                "[diagnostics] skipped generation=%s evaluator=%s reason=skip_evaluator_diagnostics",
+                generation,
+                evaluator_name,
+            )
+        else:
+            persist_evaluator_training_diagnostics(
+                paths=paths,
+                generation=generation,
+                evaluator_name=evaluator_name,
+                rows=rows,
+                created_at=timestamp_utc,
+                spec=spec,
+                model_before=previous_model,
+                model_after=trained_model,
+                training_metrics=metrics,
+            )
+            memory.log("after_diagnostics")
         del previous_model
         del trained_model
         log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")

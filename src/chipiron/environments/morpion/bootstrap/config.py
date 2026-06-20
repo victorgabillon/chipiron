@@ -60,6 +60,7 @@ class MorpionBootstrapRuntimeConfig:
     max_growth_steps_per_cycle: int
     tree_branch_limit: int
     reevaluation_blend_alpha: float = 1.0
+    min_available_ram_mb: int | None = None
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -67,6 +68,13 @@ class MorpionBootstrapRuntimeConfig:
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
             raise InvalidReevaluationBlendAlphaError
+        if self.min_available_ram_mb is not None and (
+            isinstance(self.min_available_ram_mb, bool)
+            or self.min_available_ram_mb < 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.min_available_ram_mb"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -267,6 +275,7 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
+        "min_available_ram_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }
@@ -320,6 +329,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             max_growth_steps_per_cycle=args.max_growth_steps_per_cycle,
             tree_branch_limit=args.tree_branch_limit,
             reevaluation_blend_alpha=args.reevaluation_blend_alpha,
+            min_available_ram_mb=args.min_available_ram_mb,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -355,6 +365,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
             "tree_branch_limit": config.runtime.tree_branch_limit,
             "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
+            "min_available_ram_mb": config.runtime.min_available_ram_mb,
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -458,6 +469,10 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             reevaluation_blend_alpha=_coerce_float(
                 runtime.get("reevaluation_blend_alpha", 1.0),
                 field_name="runtime.reevaluation_blend_alpha",
+            ),
+            min_available_ram_mb=_optional_int(
+                runtime.get("min_available_ram_mb"),
+                field_name="runtime.min_available_ram_mb",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -663,6 +678,8 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "evaluators_config",
         "evaluator_family_preset",
         "training_evaluator_names",
+        "training_max_rows",
+        "skip_evaluator_diagnostics",
     )
 
 
@@ -674,6 +691,7 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "save_after_seconds",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
+        "min_available_ram_mb",
         "rollout_after_opening",
         "rollout_max_extra_steps",
         "rollout_action_selector_kind",
@@ -792,6 +810,7 @@ def _stage_bootstrap_config_field_values(
         "save_after_seconds": config.runtime.save_after_seconds,
         "tree_branch_limit": config.runtime.tree_branch_limit,
         "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
+        "min_available_ram_mb": config.runtime.min_available_ram_mb,
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
         "rollout_action_selector_kind": config.search.rollout.action_selector_kind,

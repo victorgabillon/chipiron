@@ -27,6 +27,16 @@ if TYPE_CHECKING:
     from .pv_family_targets import PvFamilyTargetPolicy
 
 
+def _invalid_training_max_rows_error() -> ValueError:
+    """Return the canonical training-row-limit validation error."""
+    return ValueError("training_max_rows must be a non-negative integer or None.")
+
+
+def _invalid_min_available_ram_mb_error() -> ValueError:
+    """Return the canonical available-RAM guard validation error."""
+    return ValueError("min_available_ram_mb must be a non-negative integer or None.")
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -51,6 +61,7 @@ class MorpionBootstrapArgs:
     memory_diagnostics_referrer_max_objects_per_type: int = 2
     memory_diagnostics_referrer_max_depth: int = 2
     memory_diagnostics_top_n: int = 20
+    min_available_ram_mb: int | None = None
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     reevaluation_blend_alpha: float = 1.0
     batch_size: int = 64
@@ -74,6 +85,8 @@ class MorpionBootstrapArgs:
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None
     training_evaluator_names: tuple[str, ...] | None = None
+    training_max_rows: int | None = None
+    skip_evaluator_diagnostics: bool = False
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
@@ -81,6 +94,15 @@ class MorpionBootstrapArgs:
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
             raise InvalidReevaluationBlendAlphaError
+        if self.training_max_rows is not None and (
+            isinstance(self.training_max_rows, bool) or self.training_max_rows < 0
+        ):
+            raise _invalid_training_max_rows_error()
+        if self.min_available_ram_mb is not None and (
+            isinstance(self.min_available_ram_mb, bool)
+            or self.min_available_ram_mb < 0
+        ):
+            raise _invalid_min_available_ram_mb_error()
 
     def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
         """Resolve the explicit or legacy single-evaluator config."""

@@ -134,6 +134,7 @@ class MorpionBootstrapLauncherArgs:
     verbose_checkpoint_logs: bool = False
     training_export_mode_explicit: bool = False
     rollout_config_explicit: bool = False
+    min_available_ram_mb_explicit: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -329,6 +330,11 @@ def _collect_launcher_startup_status(
             requested_bootstrap_args = replace(
                 requested_bootstrap_args,
                 search=bootstrap_config.search,
+            )
+        if not launcher_args.min_available_ram_mb_explicit:
+            requested_bootstrap_args = replace(
+                requested_bootstrap_args,
+                min_available_ram_mb=bootstrap_config.runtime.min_available_ram_mb,
             )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
         bootstrap_config = _adopt_growth_rollout_config_if_requested(
@@ -791,6 +797,17 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Comma-separated evaluator names to train in the pipeline training stage.",
     )
     parser.add_argument(
+        "--training-max-rows",
+        type=_parse_optional_non_negative_int,
+        default=None,
+        help="Maximum rows to use during pipeline training; default uses all rows.",
+    )
+    parser.add_argument(
+        "--skip-evaluator-diagnostics",
+        action="store_true",
+        help="Skip evaluator diagnostics during pipeline training.",
+    )
+    parser.add_argument(
         "--reevaluation-max-nodes-per-patch",
         type=int,
         default=10_000,
@@ -855,6 +872,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         type=int,
         default=20,
         help="Number of GC/tracemalloc entries to log per memory checkpoint.",
+    )
+    parser.add_argument(
+        "--min-available-ram-mb",
+        type=_parse_optional_non_negative_int,
+        default=None,
+        help=(
+            "Minimum available RAM in MiB required before heavy artifact-pipeline "
+            "loads; none or 0 disables the guard."
+        ),
     )
     parser.add_argument(
         "--tree-branch-limit",
@@ -943,6 +969,11 @@ def launcher_args_from_cli(
         or argument.startswith("--training-export-mode=")
         for argument in argv_list
     )
+    min_available_ram_mb_explicit = any(
+        argument == "--min-available-ram-mb"
+        or argument.startswith("--min-available-ram-mb=")
+        for argument in argv_list
+    )
     rollout_config_explicit = any(
         argument == "--rollout-after-opening"
         or argument == "--rollout-stop-on-existing-node"
@@ -974,6 +1005,8 @@ def launcher_args_from_cli(
         training_evaluator_names=_parse_training_evaluator_names(
             parsed.training_evaluator_names
         ),
+        training_max_rows=parsed.training_max_rows,
+        skip_evaluator_diagnostics=parsed.skip_evaluator_diagnostics,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,
@@ -994,6 +1027,7 @@ def launcher_args_from_cli(
             parsed.memory_diagnostics_referrer_max_depth
         ),
         memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
+        min_available_ram_mb=parsed.min_available_ram_mb,
         tree_branch_limit=parsed.tree_branch_limit,
         reevaluation_blend_alpha=parsed.reevaluation_blend_alpha,
         search=MorpionBootstrapSearchConfig(
@@ -1015,6 +1049,7 @@ def launcher_args_from_cli(
         verbose_checkpoint_logs=parsed.verbose_checkpoint_logs,
         training_export_mode_explicit=training_export_mode_explicit,
         rollout_config_explicit=rollout_config_explicit,
+        min_available_ram_mb_explicit=min_available_ram_mb_explicit,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

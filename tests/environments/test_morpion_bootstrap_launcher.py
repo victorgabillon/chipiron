@@ -426,6 +426,37 @@ def test_launcher_args_parse_training_evaluator_names(tmp_path: Path) -> None:
     )
 
 
+def test_launcher_args_parse_training_debug_controls(tmp_path: Path) -> None:
+    """Launcher CLI should expose fast training-stage debug controls."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--training-max-rows",
+            "10000",
+            "--skip-evaluator-diagnostics",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.training_max_rows == 10_000
+    assert launcher_args.bootstrap_args.skip_evaluator_diagnostics is True
+
+
+def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:
+    """Launcher CLI should expose the artifact-pipeline available-RAM guard."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--min-available-ram-mb",
+            "5000",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.min_available_ram_mb == 5000
+    assert launcher_args.min_available_ram_mb_explicit is True
+
+
 def test_launcher_configures_checkpoint_logger_level() -> None:
     """Launcher logging config should toggle checkpoint-internals verbosity."""
     received_levels: list[int] = []

@@ -105,7 +105,7 @@ from .pipeline_claims import (
     claim_pipeline_stage,
     release_pipeline_stage_claim,
 )
-from .pipeline_memory import log_pipeline_memory
+from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -256,6 +256,14 @@ def _save_training_cursor_started(
     )
     save_pipeline_training_cursor(next_cursor, paths.pipeline_training_cursor_path)
     return next_cursor
+
+
+def _training_rows_subset_path(
+    paths: MorpionBootstrapPaths,
+    generation: int,
+) -> Path:
+    """Return the debug training-row subset path for one generation."""
+    return paths.rows_dir / f"generation_{generation:06d}.training_subset.json"
 
 
 def _save_training_cursor_completed(
@@ -620,6 +628,23 @@ def _run_one_pipeline_growth_cycle_impl(
         force_evaluator=resolved_control.force_evaluator,
     )
     restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
+    if not log_available_ram_guard(
+        stage="growth",
+        generation=run_state.generation,
+        action="checkpoint_load",
+        required_mb=args.min_available_ram_mb,
+    ):
+        LOGGER.info(
+            "[pipeline] growth_skip generation=%s reason=low_available_ram action=checkpoint_load",
+            run_state.generation,
+        )
+        log_pipeline_memory(
+            stage="growth",
+            generation=run_state.generation,
+            event="done",
+            reason="low_available_ram",
+        )
+        return run_state
     runner.load_or_create(
         restore_tree_path,
         resolved_active_model.model_bundle_path,
@@ -854,6 +879,54 @@ def _run_one_pipeline_growth_cycle_impl(
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
+        if not log_available_ram_guard(
+            stage="growth",
+            generation=generation,
+            action="checkpoint_save",
+            required_mb=args.min_available_ram_mb,
+        ):
+            cycle_duration_s = time.perf_counter() - cycle_started_at
+            LOGGER.info(
+                "[pipeline] growth_skip generation=%s reason=low_available_ram action=checkpoint_save",
+                generation,
+            )
+            LOGGER.info(
+                "[save] skipped reason=low_available_ram nodes_added=%s",
+                nodes_added,
+            )
+            LOGGER.info(
+                "[timing] cycle_done growth=%.3fs training=%.3fs total_cycle=%.3fs",
+                growth_duration_s,
+                0.0,
+                cycle_duration_s,
+            )
+            next_run_state = _build_no_save_run_state(
+                run_state=run_state,
+                resolved_active_model=resolved_active_model,
+                resolved_control=resolved_control,
+                effective_runtime_config=effective_runtime_config,
+                cycle_index=cycle_index,
+            )
+            _record_no_save_cycle_event(
+                history_recorder=history_recorder,
+                cycle_index=cycle_index,
+                timestamp_utc=timestamp_utc,
+                tree_status=tree_status,
+                frontier_status=frontier_status,
+                run_state=run_state,
+                next_run_state=next_run_state,
+                resolved_control=resolved_control,
+                effective_runtime_config=effective_runtime_config,
+            )
+            log_pipeline_memory(
+                stage="growth",
+                generation=next_run_state.generation,
+                event="done",
+                node_count=current_tree_size,
+                branch_count=branch_count,
+                reason="low_available_ram",
+            )
+            return next_run_state
         log_pipeline_memory(
             stage="growth",
             generation=generation,
@@ -978,6 +1051,32 @@ def run_pipeline_dataset_stage(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = _load_generation_manifest(paths=paths, generation=generation)
+    guard_tree_snapshot_path = (
+        paths.resolve_work_dir_path(manifest.tree_snapshot_path)
+        if manifest.tree_snapshot_path is not None
+        else None
+    )
+    if (
+        guard_tree_snapshot_path is not None
+        and guard_tree_snapshot_path.is_file()
+        and not log_available_ram_guard(
+            stage="dataset",
+            generation=generation,
+            action="snapshot_load",
+            required_mb=args.min_available_ram_mb,
+        )
+    ):
+        LOGGER.info(
+            "[pipeline] dataset_skip generation=%s reason=low_available_ram action=snapshot_load",
+            generation,
+        )
+        log_pipeline_memory(
+            stage="dataset",
+            generation=generation,
+            event="done",
+            reason="low_available_ram",
+        )
+        return manifest
     claim = claim_pipeline_stage(
         generation=generation,
         stage="dataset",
@@ -1246,6 +1345,32 @@ def run_pipeline_training_stage(
         return manifest
     if manifest.dataset_status != "done":
         raise _dataset_stage_requires_done_status_error()
+    guard_rows_path = (
+        paths.resolve_work_dir_path(manifest.rows_path)
+        if manifest.rows_path is not None
+        else None
+    )
+    if (
+        guard_rows_path is not None
+        and guard_rows_path.is_file()
+        and not log_available_ram_guard(
+            stage="training",
+            generation=generation,
+            action="rows_load",
+            required_mb=args.min_available_ram_mb,
+        )
+    ):
+        LOGGER.info(
+            "[pipeline] training_skip generation=%s reason=low_available_ram action=rows_load",
+            generation,
+        )
+        log_pipeline_memory(
+            stage="training",
+            generation=generation,
+            event="done",
+            reason="low_available_ram",
+        )
+        return manifest
     claim = claim_pipeline_stage(
         generation=generation,
         stage="training",
@@ -1254,7 +1379,6 @@ def run_pipeline_training_stage(
         owner=claim_owner,
         metadata={"entrypoint": "run_pipeline_training_stage"},
     )
-    _save_training_cursor_started(paths=paths, generation=generation)
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
     log_pipeline_memory(
@@ -1269,6 +1393,11 @@ def run_pipeline_training_stage(
         timestamp_utc=timestamp_utc,
     )
     try:
+        resolved_evaluators_config = _restrict_evaluators_config(
+            args.resolved_evaluators_config(),
+            args.training_evaluator_names,
+        )
+        _save_training_cursor_started(paths=paths, generation=generation)
         rows_path = paths.resolve_work_dir_path(_require_manifest_rows_path(manifest))
         if rows_path is None or not rows_path.is_file():
             _raise_missing_rows_file_error(rows_path)
@@ -1285,16 +1414,44 @@ def run_pipeline_training_stage(
             event="after_dataset_load",
             rows=len(rows.rows),
         )
+        original_training_rows = len(rows.rows)
+        training_rows_used = original_training_rows
+        training_rows_path = rows_path
+        manifest_metadata = dict(manifest.metadata)
+        if args.training_max_rows is not None:
+            subset_rows = rows.rows[: args.training_max_rows]
+            rows = replace(
+                rows,
+                rows=subset_rows,
+                metadata={
+                    **rows.metadata,
+                    "training_subset_policy": "first_n",
+                    "training_rows_original": original_training_rows,
+                    "training_rows_used": len(subset_rows),
+                    "training_max_rows": args.training_max_rows,
+                },
+            )
+            training_rows_used = len(rows.rows)
+            training_rows_path = _training_rows_subset_path(paths, generation)
+            save_morpion_supervised_rows(rows, training_rows_path)
+            LOGGER.info(
+                "[train] row_subset original_rows=%s used_rows=%s policy=%s",
+                original_training_rows,
+                training_rows_used,
+                "first_n",
+            )
+            manifest_metadata["training_max_rows"] = args.training_max_rows
+            manifest_metadata["training_rows_used"] = training_rows_used
+            manifest_metadata["training_rows_original"] = original_training_rows
+        if args.skip_evaluator_diagnostics:
+            manifest_metadata["skip_evaluator_diagnostics"] = True
+        manifest = replace(manifest, metadata=manifest_metadata)
         run_state = (
             load_bootstrap_run_state(paths.run_state_path)
             if paths.run_state_path.is_file()
             else initialize_bootstrap_run_state()
         )
         resolved_control = load_bootstrap_control(paths.control_path)
-        resolved_evaluators_config = _restrict_evaluators_config(
-            args.resolved_evaluators_config(),
-            args.training_evaluator_names,
-        )
         memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
         try:
             training_result = _train_and_select_evaluators(
@@ -1302,7 +1459,7 @@ def run_pipeline_training_stage(
                 paths=paths,
                 run_state=run_state,
                 rows=rows,
-                rows_path=rows_path,
+                rows_path=training_rows_path,
                 generation=generation,
                 timestamp_utc=timestamp_utc,
                 resolved_evaluators_config=resolved_evaluators_config,
@@ -1313,7 +1470,6 @@ def run_pipeline_training_stage(
             log_after_cycle_gc(memory)
             memory.close()
         timestamp_utc = _now_timestamp_utc()
-        manifest_metadata = dict(manifest.metadata)
         manifest_metadata["training_evaluator_names"] = list(
             resolved_evaluators_config.evaluators
         )

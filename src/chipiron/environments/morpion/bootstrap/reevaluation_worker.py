@@ -29,7 +29,7 @@ from .pipeline_artifacts import (
     reevaluation_patch_to_dict,
     save_reevaluation_cursor,
 )
-from .pipeline_memory import log_pipeline_memory
+from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
 
 if TYPE_CHECKING:
@@ -442,6 +442,31 @@ def run_morpion_reevaluation_worker_once(
             completed_full_pass_count=None,
         )
     tree_generation, snapshot_path = latest_snapshot
+
+    if not log_available_ram_guard(
+        stage="reevaluation",
+        generation=tree_generation,
+        action="snapshot_load",
+        required_mb=args.min_available_ram_mb,
+    ):
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="done",
+            rows=0,
+            reason="low_available_ram",
+        )
+        return MorpionReevaluationWorkerResult(
+            patch_written=False,
+            reason="low_available_ram",
+            patch_id=None,
+            num_rows=0,
+            evaluator_generation=active_model.generation,
+            evaluator_name=active_model.evaluator_name,
+            start_cursor=None,
+            end_cursor=None,
+            completed_full_pass_count=None,
+        )
 
     log_pipeline_memory(
         stage="reevaluation",

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, cast
@@ -59,6 +59,7 @@ from atomheart.games.morpion.checkpoints import (
     MorpionStateCheckpointCodec,
 )
 
+import chipiron.environments.morpion.bootstrap.pipeline_memory as pipeline_memory_module
 import chipiron.environments.morpion.bootstrap.reevaluation_worker as reevaluation_worker_module
 from chipiron.environments.morpion.bootstrap import (
     MissingMorpionPipelineArtifactError,
@@ -350,6 +351,58 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
     assert cursor.next_node_cursor == "node-c"
     assert cursor.completed_full_pass_count == 0
     assert cursor.last_patch_id == "patch-1"
+
+
+def test_worker_ram_guard_defers_before_snapshot_load(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Low available RAM should produce a clean no-op worker result."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    _write_manifest_with_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("node-a", "node-b")),
+    )
+
+    def _unexpected_snapshot_load(path: str | Path) -> TrainingTreeSnapshot:
+        del path
+        raise AssertionError
+
+    monkeypatch.setattr(pipeline_memory_module, "available_ram_mb", lambda: 1024.0)
+    monkeypatch.setattr(
+        reevaluation_worker_module,
+        "load_training_tree_snapshot",
+        _unexpected_snapshot_load,
+    )
+
+    with caplog.at_level("INFO"):
+        result = run_morpion_reevaluation_worker_once(
+            replace(_artifact_pipeline_args(tmp_path), min_available_ram_mb=5000),
+            use_snapshot_value_fallback=True,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert result == MorpionReevaluationWorkerResult(
+        patch_written=False,
+        reason="low_available_ram",
+        patch_id=None,
+        num_rows=0,
+        evaluator_generation=active_model.generation,
+        evaluator_name=active_model.evaluator_name,
+        start_cursor=None,
+        end_cursor=None,
+        completed_full_pass_count=None,
+    )
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+    assert not paths.pipeline_reevaluation_cursor_path.exists()
+    assert (
+        "[ram-guard] stage=reevaluation generation=7 action=snapshot_load "
+        "available_mb=1024.0 required_mb=5000 decision=skip"
+    ) in messages
 
 
 def test_worker_logs_active_model_and_patch_creation(

@@ -57,7 +57,9 @@ from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
+import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+import chipiron.environments.morpion.bootstrap.pipeline_memory as pipeline_memory_module
 import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 from chipiron.environments.morpion.bootstrap import (
@@ -66,6 +68,7 @@ from chipiron.environments.morpion.bootstrap import (
     IncompatibleStageBootstrapConfigError,
     InvalidMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
+    MorpionBootstrapControl,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionEvaluatorsConfig,
@@ -102,6 +105,14 @@ from chipiron.environments.morpion.bootstrap import (
 )
 from chipiron.environments.morpion.bootstrap.cycle_training import (
     BootstrapTrainingResult,
+    train_and_select_evaluators,
+)
+from chipiron.environments.morpion.bootstrap.memory_diagnostics import (
+    MemoryDiagnostics,
+    MemoryDiagnosticsConfig,
+)
+from chipiron.environments.morpion.bootstrap.run_state import (
+    initialize_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.sharded_training_export import (
     save_morpion_sharded_training_tree_from_live_nodes,
@@ -109,6 +120,7 @@ from chipiron.environments.morpion.bootstrap.sharded_training_export import (
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
+    load_morpion_supervised_rows,
     save_morpion_supervised_rows,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
@@ -288,6 +300,22 @@ def _make_rows() -> MorpionSupervisedRows:
     )
 
 
+def _make_rows_with_count(count: int) -> MorpionSupervisedRows:
+    """Build a deterministic Morpion supervised-rows dataset of a given size."""
+    template = _make_rows().rows[0]
+    return MorpionSupervisedRows(
+        rows=tuple(
+            replace(
+                template,
+                node_id=f"row-{index + 1}",
+                target_value=float(index + 1),
+            )
+            for index in range(count)
+        ),
+        metadata={"bootstrap_generation": 1, "num_rows": count},
+    )
+
+
 def _fake_training_result(
     paths: MorpionBootstrapPaths,
     *,
@@ -420,11 +448,12 @@ def _prepare_training_stage_input(
     paths: MorpionBootstrapPaths,
     *,
     generation: int = 1,
+    rows: MorpionSupervisedRows | None = None,
 ) -> None:
     """Persist the minimum artifacts needed to enter the training stage."""
     paths.ensure_directories()
     rows_path = paths.rows_path_for_generation(generation)
-    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_morpion_supervised_rows(rows if rows is not None else _make_rows(), rows_path)
     save_pipeline_manifest(
         MorpionPipelineGenerationManifest(
             generation=generation,
@@ -955,6 +984,59 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_build" in messages
 
 
+def test_dataset_stage_ram_guard_defers_before_snapshot_load(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Low available RAM should defer dataset extraction without failing it."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    snapshot_path = paths.tree_snapshot_path_for_generation(1)
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="node-0"),
+        snapshot_path,
+    )
+    original_manifest = MorpionPipelineGenerationManifest(
+        generation=1,
+        created_at_utc="2026-04-28T12:00:00Z",
+        tree_snapshot_path=paths.relative_to_work_dir(snapshot_path),
+        dataset_status="not_started",
+        training_status="not_started",
+    )
+    save_pipeline_manifest(original_manifest, paths.pipeline_manifest_path_for_generation(1))
+
+    def _unexpected_snapshot_load(**kwargs: object) -> TrainingTreeSnapshot:
+        del kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(pipeline_memory_module, "available_ram_mb", lambda: 1024.0)
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_load_training_snapshot_for_generation",
+        _unexpected_snapshot_load,
+    )
+
+    with caplog.at_level(logging.INFO):
+        returned_manifest = run_pipeline_dataset_stage(
+            replace(_artifact_pipeline_args(tmp_path), min_available_ram_mb=5000),
+            generation=1,
+        )
+
+    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert returned_manifest == original_manifest
+    assert persisted_manifest.dataset_status == "not_started"
+    assert not paths.rows_path_for_generation(1).exists()
+    assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
+    assert (
+        "[ram-guard] stage=dataset generation=1 action=snapshot_load "
+        "available_mb=1024.0 required_mb=5000 decision=skip"
+    ) in messages
+    assert "dataset_skip generation=1 reason=low_available_ram" in messages
+
+
 def test_pipeline_sharded_export_and_dataset_stage_round_trip(tmp_path: Path) -> None:
     """Artifact-pipeline stages should round-trip through sharded tree exports."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -1100,12 +1182,18 @@ def test_training_stage_default_trains_all_configured_evaluators(
 ) -> None:
     """Without a subset request, training should receive the full evaluator family."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    _prepare_training_stage_input(paths, generation=1)
+    _prepare_training_stage_input(
+        paths,
+        generation=1,
+        rows=_make_rows_with_count(3),
+    )
     args = replace(
         _artifact_pipeline_args(tmp_path),
         evaluators_config=_multi_evaluator_config(),
     )
     trained_names: list[tuple[str, ...]] = []
+    trained_row_counts: list[int] = []
+    training_rows_paths: list[Path] = []
 
     def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
         resolved_config = cast(
@@ -1114,6 +1202,9 @@ def test_training_stage_default_trains_all_configured_evaluators(
         )
         evaluator_names = tuple(resolved_config.evaluators)
         trained_names.append(evaluator_names)
+        trained_rows = cast("MorpionSupervisedRows", kwargs["rows"])
+        trained_row_counts.append(len(trained_rows.rows))
+        training_rows_paths.append(cast("Path", kwargs["rows_path"]))
         return _fake_training_result_for_evaluators(
             paths,
             generation=1,
@@ -1130,8 +1221,12 @@ def test_training_stage_default_trains_all_configured_evaluators(
     manifest = run_pipeline_training_stage(args, generation=1)
 
     assert trained_names == [("linear_5", "mlp_5")]
+    assert trained_row_counts == [3]
+    assert training_rows_paths == [paths.rows_path_for_generation(1)]
     assert set(manifest.model_bundle_paths) == {"linear_5", "mlp_5"}
     assert manifest.metadata["training_evaluator_names"] == ["linear_5", "mlp_5"]
+    assert "training_max_rows" not in manifest.metadata
+    assert "skip_evaluator_diagnostics" not in manifest.metadata
 
 
 def test_training_stage_restricts_to_one_requested_evaluator(
@@ -1220,6 +1315,69 @@ def test_training_stage_restricts_to_requested_evaluator_pair(
     assert manifest.metadata["training_evaluator_names"] == ["mlp_5", "linear_5"]
 
 
+def test_training_stage_debug_controls_limit_rows_and_record_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training debug controls should combine with evaluator subset selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(
+        paths,
+        generation=1,
+        rows=_make_rows_with_count(5),
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+        training_evaluator_names=("linear_5",),
+        training_max_rows=2,
+        skip_evaluator_diagnostics=True,
+    )
+    trained_names: list[tuple[str, ...]] = []
+    trained_row_counts: list[int] = []
+    training_rows_paths: list[Path] = []
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        resolved_config = cast(
+            "MorpionEvaluatorsConfig",
+            kwargs["resolved_evaluators_config"],
+        )
+        evaluator_names = tuple(resolved_config.evaluators)
+        trained_names.append(evaluator_names)
+        trained_rows = cast("MorpionSupervisedRows", kwargs["rows"])
+        trained_row_counts.append(len(trained_rows.rows))
+        training_rows_paths.append(cast("Path", kwargs["rows_path"]))
+        return _fake_training_result_for_evaluators(
+            paths,
+            generation=1,
+            evaluator_names=evaluator_names,
+            selected_evaluator_name="linear_5",
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    manifest = run_pipeline_training_stage(args, generation=1)
+    persisted_subset = load_morpion_supervised_rows(training_rows_paths[0])
+
+    assert trained_names == [("linear_5",)]
+    assert trained_row_counts == [2]
+    assert training_rows_paths == [
+        paths.rows_dir / "generation_000001.training_subset.json"
+    ]
+    assert len(persisted_subset.rows) == 2
+    assert [row.node_id for row in persisted_subset.rows] == ["row-1", "row-2"]
+    assert set(manifest.model_bundle_paths) == {"linear_5"}
+    assert manifest.metadata["training_evaluator_names"] == ["linear_5"]
+    assert manifest.metadata["training_max_rows"] == 2
+    assert manifest.metadata["training_rows_used"] == 2
+    assert manifest.metadata["training_rows_original"] == 5
+    assert manifest.metadata["skip_evaluator_diagnostics"] is True
+
+
 def test_training_stage_unknown_training_evaluator_name_raises_clear_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1250,7 +1408,152 @@ def test_training_stage_unknown_training_evaluator_name_raises_clear_error(
         run_pipeline_training_stage(args, generation=1)
 
     manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
     assert manifest.training_status == "failed"
+    assert cursor.latest_started_generation is None
+    assert cursor.latest_completed_generation is None
+
+
+def test_train_and_select_evaluators_runs_diagnostics_by_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Default training should still persist evaluator diagnostics."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows = _make_rows_with_count(3)
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(rows, rows_path)
+    resolved_config = MorpionEvaluatorsConfig(
+        evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
+    )
+    diagnostics_calls: list[str] = []
+
+    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+        del training_args
+        return object(), {
+            "final_loss": 0.25,
+            "train_loss": 0.25,
+            "validation_loss": None,
+            "num_epochs": 1,
+            "num_samples": len(rows.rows),
+            "batch_size": 1,
+            "learning_rate": 1e-3,
+        }
+
+    def _fake_persist_diagnostics(**kwargs: object) -> None:
+        diagnostics_calls.append(cast("str", kwargs["evaluator_name"]))
+
+    monkeypatch.setattr(
+        cycle_training_module,
+        "train_morpion_regressor",
+        _fake_train_morpion_regressor,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "persist_evaluator_training_diagnostics",
+        _fake_persist_diagnostics,
+    )
+
+    memory = MemoryDiagnostics(MemoryDiagnosticsConfig(enabled=False))
+    try:
+        training_result = train_and_select_evaluators(
+            args=_artifact_pipeline_args(tmp_path),
+            paths=paths,
+            run_state=initialize_bootstrap_run_state(),
+            rows=rows,
+            rows_path=rows_path,
+            generation=1,
+            timestamp_utc="2026-04-28T12:00:00Z",
+            resolved_evaluators_config=resolved_config,
+            resolved_control=MorpionBootstrapControl(),
+            memory=memory,
+        )
+    finally:
+        memory.close()
+
+    assert diagnostics_calls == ["linear_5"]
+    assert training_result.selected_evaluator_name == "linear_5"
+
+
+def test_train_and_select_evaluators_can_skip_diagnostics(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Skip diagnostics should avoid the expensive diagnostics persistence path."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows = _make_rows_with_count(3)
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(rows, rows_path)
+    resolved_config = MorpionEvaluatorsConfig(
+        evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
+    )
+
+    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+        del training_args
+        return object(), {
+            "final_loss": 0.25,
+            "train_loss": 0.25,
+            "validation_loss": None,
+            "num_epochs": 1,
+            "num_samples": len(rows.rows),
+            "batch_size": 1,
+            "learning_rate": 1e-3,
+        }
+
+    def _unexpected_persist_diagnostics(**kwargs: object) -> None:
+        del kwargs
+        raise AssertionError
+
+    def _unexpected_previous_model_load(path: object) -> object:
+        del path
+        raise AssertionError
+
+    monkeypatch.setattr(
+        cycle_training_module,
+        "train_morpion_regressor",
+        _fake_train_morpion_regressor,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "persist_evaluator_training_diagnostics",
+        _unexpected_persist_diagnostics,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "load_previous_evaluator_for_diagnostics",
+        _unexpected_previous_model_load,
+    )
+
+    memory = MemoryDiagnostics(MemoryDiagnosticsConfig(enabled=False))
+    try:
+        with caplog.at_level(logging.INFO):
+            training_result = train_and_select_evaluators(
+                args=replace(
+                    _artifact_pipeline_args(tmp_path),
+                    skip_evaluator_diagnostics=True,
+                ),
+                paths=paths,
+                run_state=initialize_bootstrap_run_state(),
+                rows=rows,
+                rows_path=rows_path,
+                generation=1,
+                timestamp_utc="2026-04-28T12:00:00Z",
+                resolved_evaluators_config=resolved_config,
+                resolved_control=MorpionBootstrapControl(),
+                memory=memory,
+            )
+    finally:
+        memory.close()
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert training_result.selected_evaluator_name == "linear_5"
+    assert (
+        "[diagnostics] skipped generation=1 evaluator=linear_5 "
+        "reason=skip_evaluator_diagnostics"
+    ) in messages
 
 
 def test_training_stage_logs_active_model_update(
@@ -1379,6 +1682,48 @@ def test_training_stage_skips_explicit_stale_generation(
     assert not paths.pipeline_active_model_path.exists()
     assert not paths.pipeline_training_claim_path_for_generation(5).exists()
     assert "training_skip generation=5 reason=stale_generation" in messages
+
+
+def test_training_stage_ram_guard_defers_before_rows_load(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Low available RAM should defer training without marking it failed."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(paths, generation=5)
+    original_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+
+    def _unexpected_rows_load(path: str | Path) -> MorpionSupervisedRows:
+        del path
+        raise AssertionError
+
+    monkeypatch.setattr(pipeline_memory_module, "available_ram_mb", lambda: 1024.0)
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "load_morpion_supervised_rows",
+        _unexpected_rows_load,
+    )
+
+    with caplog.at_level(logging.INFO):
+        returned_manifest = run_pipeline_training_stage(
+            replace(_artifact_pipeline_args(tmp_path), min_available_ram_mb=5000),
+            generation=5,
+        )
+
+    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert returned_manifest == original_manifest
+    assert persisted_manifest.training_status == "not_started"
+    assert not paths.pipeline_active_model_path.exists()
+    assert not paths.pipeline_training_cursor_path.exists()
+    assert not paths.pipeline_training_claim_path_for_generation(5).exists()
+    assert (
+        "[ram-guard] stage=training generation=5 action=rows_load "
+        "available_mb=1024.0 required_mb=5000 decision=skip"
+    ) in messages
+    assert "training_skip generation=5 reason=low_available_ram" in messages
 
 
 def test_training_stage_active_model_commit_cannot_go_backward(

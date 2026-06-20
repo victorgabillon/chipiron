@@ -550,6 +550,7 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.dataset.use_backed_up_value is False
     assert config.runtime.tree_branch_limit == 96
     assert config.runtime.reevaluation_blend_alpha == 1.0
+    assert config.runtime.min_available_ram_mb is None
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
     assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
@@ -644,6 +645,7 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
     assert loaded.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
     assert loaded.training_export_mode == "sharded"
     assert loaded.runtime.reevaluation_blend_alpha == 1.0
+    assert loaded.runtime.min_available_ram_mb is None
 
 
 def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:
@@ -823,6 +825,7 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
     assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
+    assert "min_available_ram_mb" in growth_stage_owned_bootstrap_fields()
     assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()
     assert "training_export_mode" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()
@@ -835,6 +838,7 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
+        "min_available_ram_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     } == GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
@@ -842,6 +846,7 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
         "reevaluation_blend_alpha",
+        "min_available_ram_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
