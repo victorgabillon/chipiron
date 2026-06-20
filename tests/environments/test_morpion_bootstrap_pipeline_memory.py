@@ -94,3 +94,26 @@ def test_ram_guard_logs_run_when_available_ram_is_sufficient(
         "[ram-guard] stage=training generation=4 action=rows_load "
         "available_mb=6000.0 required_mb=5000 decision=run"
     ) in messages
+
+
+def test_ram_guard_allows_when_available_ram_is_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unknown available RAM should not block a guarded action."""
+    monkeypatch.setattr(pipeline_memory_module, "available_ram_mb", lambda: None)
+
+    with caplog.at_level(logging.INFO):
+        should_run = log_available_ram_guard(
+            stage="growth",
+            generation=5,
+            action="tree_growth",
+            required_mb=5000,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert should_run
+    assert (
+        "[ram-guard] stage=growth generation=5 action=tree_growth "
+        "available_mb=None required_mb=5000 decision=run"
+    ) in messages

@@ -809,6 +809,46 @@ def test_pipeline_growth_stage_missing_active_model_bundle_logs_warning(
     )
 
 
+def test_pipeline_growth_ram_guard_defers_before_tree_growth(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Low RAM after restore should defer before patch application and growth."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    available_values = iter((6000.0, 1024.0))
+
+    monkeypatch.setattr(
+        pipeline_memory_module,
+        "available_ram_mb",
+        lambda: next(available_values),
+    )
+
+    with caplog.at_level(logging.INFO):
+        run_state = run_pipeline_growth_stage(
+            replace(_artifact_pipeline_args(tmp_path), min_available_ram_mb=5000),
+            runner,
+            max_cycles=1,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    persisted_state = load_bootstrap_run_state(paths.run_state_path)
+
+    assert run_state.generation == 0
+    assert persisted_state.generation == 0
+    assert runner.load_calls == [(None, None)]
+    assert runner.grow_calls == []
+    assert runner.call_order == []
+    assert runner.checkpoint_calls == []
+    assert not paths.pipeline_manifest_path_for_generation(1).exists()
+    assert (
+        "[ram-guard] stage=growth generation=0 action=tree_growth "
+        "available_mb=1024.0 required_mb=5000 decision=skip"
+    ) in messages
+    assert "growth_skip generation=0 reason=low_available_ram action=tree_growth" in messages
+
+
 def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> None:
     """Staged growth, dataset, and training should hand off purely through artifacts."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)

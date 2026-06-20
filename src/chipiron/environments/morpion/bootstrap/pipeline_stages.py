@@ -660,6 +660,25 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=restored_tree_size,
         branch_count=restored_branch_count,
     )
+    if not log_available_ram_guard(
+        stage="growth",
+        generation=run_state.generation,
+        action="tree_growth",
+        required_mb=args.min_available_ram_mb,
+    ):
+        LOGGER.info(
+            "[pipeline] growth_skip generation=%s reason=low_available_ram action=tree_growth",
+            run_state.generation,
+        )
+        log_pipeline_memory(
+            stage="growth",
+            generation=run_state.generation,
+            event="done",
+            node_count=restored_tree_size,
+            branch_count=restored_branch_count,
+            reason="low_available_ram",
+        )
+        return run_state
     reevaluation_patch_result = apply_pending_reevaluation_patch_to_runner(
         paths=paths,
         runner=runner,
@@ -891,7 +910,7 @@ def _run_one_pipeline_growth_cycle_impl(
                 generation,
             )
             LOGGER.info(
-                "[save] skipped reason=low_available_ram nodes_added=%s",
+                "[save] skipped reason=low_available_ram unsaved_nodes_added=%s",
                 nodes_added,
             )
             LOGGER.info(
