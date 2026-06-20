@@ -68,6 +68,8 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
+    MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
     MorpionPipelineActiveModel,
     MorpionPipelineEvaluatorTrainingResult,
     MorpionPipelineGenerationManifest,
@@ -316,6 +318,67 @@ def _fake_training_result(
     )
 
 
+def _fake_training_result_for_evaluators(
+    paths: MorpionBootstrapPaths,
+    *,
+    generation: int,
+    evaluator_names: tuple[str, ...],
+    selected_evaluator_name: str,
+) -> BootstrapTrainingResult:
+    """Build a mocked training result for a named evaluator subset."""
+    evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
+    model_bundle_paths: dict[str, str] = {}
+    for index, evaluator_name in enumerate(evaluator_names):
+        bundle_path = paths.model_bundle_path_for_generation(
+            generation, evaluator_name
+        )
+        bundle_path.mkdir(parents=True, exist_ok=True)
+        relative_bundle_path = paths.relative_to_work_dir(bundle_path)
+        model_bundle_paths[evaluator_name] = relative_bundle_path
+        evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
+            final_loss=0.25 + index,
+            elapsed_s=0.1,
+            model_bundle_path=relative_bundle_path,
+            num_epochs=1,
+            batch_size=1,
+            learning_rate=1e-3,
+            loss_name="mse",
+        )
+    return BootstrapTrainingResult(
+        generation=generation,
+        evaluator_metrics={},
+        evaluator_results=evaluator_results,
+        model_bundle_paths=model_bundle_paths,
+        selected_evaluator_name=selected_evaluator_name,
+        selection_policy="mock_lowest_loss",
+        training_duration_s=0.1,
+    )
+
+
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one small multi-evaluator config for training-stage tests."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear_5": MorpionEvaluatorSpec(
+                name="linear_5",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp_5": MorpionEvaluatorSpec(
+                name="mlp_5",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
 def _make_reevaluation_patch(*, patch_id: str) -> MorpionReevaluationPatch:
     """Build one minimal reevaluation patch artifact for growth-stage tests."""
     return MorpionReevaluationPatch(
@@ -350,6 +413,27 @@ def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
         batch_size=1,
         num_epochs=1,
         shuffle=False,
+    )
+
+
+def _prepare_training_stage_input(
+    paths: MorpionBootstrapPaths,
+    *,
+    generation: int = 1,
+) -> None:
+    """Persist the minimum artifacts needed to enter the training stage."""
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(generation)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=generation,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(generation),
     )
 
 
@@ -1008,6 +1092,165 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
         == manifest.model_bundle_paths[manifest.selected_evaluator_name]
     )
     assert not paths.pipeline_training_claim_path_for_generation(1).exists()
+
+
+def test_training_stage_default_trains_all_configured_evaluators(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without a subset request, training should receive the full evaluator family."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(paths, generation=1)
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+    )
+    trained_names: list[tuple[str, ...]] = []
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        resolved_config = cast(
+            "MorpionEvaluatorsConfig",
+            kwargs["resolved_evaluators_config"],
+        )
+        evaluator_names = tuple(resolved_config.evaluators)
+        trained_names.append(evaluator_names)
+        return _fake_training_result_for_evaluators(
+            paths,
+            generation=1,
+            evaluator_names=evaluator_names,
+            selected_evaluator_name="linear_5",
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    manifest = run_pipeline_training_stage(args, generation=1)
+
+    assert trained_names == [("linear_5", "mlp_5")]
+    assert set(manifest.model_bundle_paths) == {"linear_5", "mlp_5"}
+    assert manifest.metadata["training_evaluator_names"] == ["linear_5", "mlp_5"]
+
+
+def test_training_stage_restricts_to_one_requested_evaluator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A single requested evaluator should be the only trained and persisted model."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(paths, generation=1)
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+        training_evaluator_names=("linear_5",),
+    )
+    trained_names: list[tuple[str, ...]] = []
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        resolved_config = cast(
+            "MorpionEvaluatorsConfig",
+            kwargs["resolved_evaluators_config"],
+        )
+        evaluator_names = tuple(resolved_config.evaluators)
+        trained_names.append(evaluator_names)
+        return _fake_training_result_for_evaluators(
+            paths,
+            generation=1,
+            evaluator_names=evaluator_names,
+            selected_evaluator_name="linear_5",
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    manifest = run_pipeline_training_stage(args, generation=1)
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+
+    assert trained_names == [("linear_5",)]
+    assert set(manifest.model_bundle_paths) == {"linear_5"}
+    assert manifest.selected_evaluator_name == "linear_5"
+    assert manifest.metadata["training_evaluator_names"] == ["linear_5"]
+    assert active_model.evaluator_name == "linear_5"
+
+
+def test_training_stage_restricts_to_requested_evaluator_pair(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A requested evaluator pair should preserve requested order and selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(paths, generation=1)
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+        training_evaluator_names=("mlp_5", "linear_5"),
+    )
+    trained_names: list[tuple[str, ...]] = []
+
+    def _fake_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        resolved_config = cast(
+            "MorpionEvaluatorsConfig",
+            kwargs["resolved_evaluators_config"],
+        )
+        evaluator_names = tuple(resolved_config.evaluators)
+        trained_names.append(evaluator_names)
+        return _fake_training_result_for_evaluators(
+            paths,
+            generation=1,
+            evaluator_names=evaluator_names,
+            selected_evaluator_name="mlp_5",
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _fake_train_and_select,
+    )
+
+    manifest = run_pipeline_training_stage(args, generation=1)
+
+    assert trained_names == [("mlp_5", "linear_5")]
+    assert set(manifest.model_bundle_paths) == {"linear_5", "mlp_5"}
+    assert manifest.selected_evaluator_name == "mlp_5"
+    assert manifest.metadata["training_evaluator_names"] == ["mlp_5", "linear_5"]
+
+
+def test_training_stage_unknown_training_evaluator_name_raises_clear_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown subset names should fail before evaluator training begins."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_input(paths, generation=1)
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+        training_evaluator_names=("linear_5", "missing"),
+    )
+
+    def _unexpected_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
+        del kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _unexpected_train_and_select,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Unknown requested training evaluator names: missing",
+    ):
+        run_pipeline_training_stage(args, generation=1)
+
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    assert manifest.training_status == "failed"
 
 
 def test_training_stage_logs_active_model_update(

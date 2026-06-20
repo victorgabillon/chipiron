@@ -495,25 +495,53 @@ def persist_certified_leaderboard_candidates(
     leaderboard_path: str | Path | None = None,
 ) -> None:
     """Update the persistent all-time certified leaderboard from one snapshot."""
+    persist_started_at = time.perf_counter()
     candidates = extract_certified_record_candidates_from_training_tree_snapshot(
         snapshot,
         generation=generation,
     )
-    if not candidates:
-        return
     resolved_path = (
         Path.home() / "morpion_runs" / "morpion_leaderboard.jsonl"
         if leaderboard_path is None
         else Path(leaderboard_path)
     )
     entries = _load_leaderboard_entries(resolved_path)
+    existing_entry_count = len(entries)
+    candidate_total_points_buckets: Counter[int] = Counter(
+        candidate.total_points for candidate in candidates
+    )
+    inserted_total_points_buckets: Counter[int] = Counter()
+    inserted_count = 0
+    skipped_duplicate_count = 0
+    skipped_not_top_count = 0
+    LOGGER.info(
+        "[leaderboard] persist_start candidates=%s existing_entries=%s limit=%s candidate_total_points_buckets=%s",
+        len(candidates),
+        existing_entry_count,
+        MORPION_LEADERBOARD_LIMIT_PER_VARIANT,
+        _format_total_points_buckets(candidate_total_points_buckets),
+    )
+    if not candidates:
+        LOGGER.info(
+            "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s candidate_total_points_buckets=%s inserted_total_points_buckets=%s",
+            time.perf_counter() - persist_started_at,
+            0,
+            0,
+            0,
+            0,
+            len(entries),
+            _best_leaderboard_total_points(entries),
+            _format_total_points_buckets(candidate_total_points_buckets),
+            _format_total_points_buckets(inserted_total_points_buckets),
+        )
+        return
 
     for candidate in candidates:
         fingerprint = fingerprint_morpion_state_payload(
             variant=candidate.variant,
             state_ref_payload=candidate.state_ref_payload,
         )
-        LOGGER.info(
+        LOGGER.debug(
             "[leaderboard] candidate variant=%s total_points=%s fingerprint=%s",
             candidate.variant,
             candidate.total_points,
@@ -546,7 +574,8 @@ def persist_certified_leaderboard_candidates(
             if _leaderboard_entry_sort_key(
                 existing_entry
             ) <= _leaderboard_entry_sort_key(new_entry):
-                LOGGER.info(
+                skipped_duplicate_count += 1
+                LOGGER.debug(
                     "[leaderboard] skipped_duplicate fingerprint=%s", fingerprint
                 )
                 continue
@@ -556,10 +585,25 @@ def persist_certified_leaderboard_candidates(
 
         entries = _top_leaderboard_entries(entries)
         if any(entry.state_fingerprint == fingerprint for entry in entries):
-            LOGGER.info("[leaderboard] inserted fingerprint=%s", fingerprint)
+            inserted_count += 1
+            inserted_total_points_buckets[candidate.total_points] += 1
+            LOGGER.debug("[leaderboard] inserted fingerprint=%s", fingerprint)
         else:
-            LOGGER.info("[leaderboard] skipped_not_top_100 fingerprint=%s", fingerprint)
+            skipped_not_top_count += 1
+            LOGGER.debug("[leaderboard] skipped_not_top_100 fingerprint=%s", fingerprint)
     _save_leaderboard_entries(resolved_path, entries)
+    LOGGER.info(
+        "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s candidate_total_points_buckets=%s inserted_total_points_buckets=%s",
+        time.perf_counter() - persist_started_at,
+        len(candidates),
+        inserted_count,
+        skipped_duplicate_count,
+        skipped_not_top_count,
+        len(entries),
+        _best_leaderboard_total_points(entries),
+        _format_total_points_buckets(candidate_total_points_buckets),
+        _format_total_points_buckets(inserted_total_points_buckets),
+    )
 
 
 def fingerprint_morpion_state_payload(
@@ -712,6 +756,15 @@ def _format_total_points_buckets(
         + ",".join(f"{points}:{count}" for points, count in tail)
         + "}"
     )
+
+
+def _best_leaderboard_total_points(
+    entries: list[MorpionLeaderboardEntry],
+) -> int | None:
+    """Return the best total-points value in a persisted leaderboard."""
+    if not entries:
+        return None
+    return max(entry.total_points for entry in entries)
 
 
 def _normalized_record_status(

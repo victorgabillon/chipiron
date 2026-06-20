@@ -662,6 +662,7 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "validation_seed",
         "evaluators_config",
         "evaluator_family_preset",
+        "training_evaluator_names",
     )
 
 

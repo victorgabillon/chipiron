@@ -19,6 +19,7 @@ from .bootstrap_errors import (
     UnknownForcedMorpionEvaluatorError,
 )
 from .bootstrap_memory import log_after_cycle_gc
+from .evaluator_config import MorpionEvaluatorsConfig
 from .evaluator_diagnostics import (
     append_evaluator_training_diagnostics_history,
     build_evaluator_training_diagnostics,
@@ -42,7 +43,7 @@ if TYPE_CHECKING:
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
     from .control import MorpionBootstrapControl
-    from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorSpec
     from .memory_diagnostics import MemoryDiagnostics
     from .run_state import MorpionBootstrapRunState
 
@@ -266,6 +267,30 @@ def select_or_force_active_evaluator_name(
     return select_active_evaluator_name(evaluator_metrics)
 
 
+def restrict_evaluators_config(
+    config: MorpionEvaluatorsConfig,
+    evaluator_names: tuple[str, ...] | None,
+) -> MorpionEvaluatorsConfig:
+    """Return a config restricted to requested evaluator names, if any."""
+    if not evaluator_names:
+        return config
+    missing_names = tuple(
+        evaluator_name
+        for evaluator_name in evaluator_names
+        if evaluator_name not in config.evaluators
+    )
+    if missing_names:
+        raise ValueError(
+            "Unknown requested training evaluator names: " + ", ".join(missing_names)
+        )
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            evaluator_name: config.evaluators[evaluator_name]
+            for evaluator_name in evaluator_names
+        }
+    )
+
+
 def train_and_select_evaluators(
     *,
     args: MorpionBootstrapArgs,
@@ -464,6 +489,7 @@ __all__ = [
     "morpion_training_args_from_evaluator_spec",
     "persist_evaluator_training_diagnostics",
     "resolve_previous_model_bundle_path",
+    "restrict_evaluators_config",
     "select_active_evaluator_name",
     "select_or_force_active_evaluator_name",
     "train_and_select_evaluators",

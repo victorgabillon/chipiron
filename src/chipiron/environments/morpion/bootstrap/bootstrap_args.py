@@ -73,6 +73,7 @@ class MorpionBootstrapArgs:
     )
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None
+    training_evaluator_names: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""

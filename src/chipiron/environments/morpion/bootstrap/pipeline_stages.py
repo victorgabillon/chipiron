@@ -66,6 +66,9 @@ from .cycle_runtime import resolve_tree_status as _resolve_tree_status
 from .cycle_timing import save_trigger_reason as _save_trigger_reason
 from .cycle_timing import should_save_progress
 from .cycle_timing import timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s
+from .cycle_training import (
+    restrict_evaluators_config as _restrict_evaluators_config,
+)
 from .cycle_training import train_and_select_evaluators as _train_and_select_evaluators
 from .cycle_validation import (
     previous_effective_runtime_config as _previous_effective_runtime_config,
@@ -1288,6 +1291,10 @@ def run_pipeline_training_stage(
             else initialize_bootstrap_run_state()
         )
         resolved_control = load_bootstrap_control(paths.control_path)
+        resolved_evaluators_config = _restrict_evaluators_config(
+            args.resolved_evaluators_config(),
+            args.training_evaluator_names,
+        )
         memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
         try:
             training_result = _train_and_select_evaluators(
@@ -1298,7 +1305,7 @@ def run_pipeline_training_stage(
                 rows_path=rows_path,
                 generation=generation,
                 timestamp_utc=timestamp_utc,
-                resolved_evaluators_config=args.resolved_evaluators_config(),
+                resolved_evaluators_config=resolved_evaluators_config,
                 resolved_control=resolved_control,
                 memory=memory,
             )
@@ -1306,11 +1313,16 @@ def run_pipeline_training_stage(
             log_after_cycle_gc(memory)
             memory.close()
         timestamp_utc = _now_timestamp_utc()
+        manifest_metadata = dict(manifest.metadata)
+        manifest_metadata["training_evaluator_names"] = list(
+            resolved_evaluators_config.evaluators
+        )
         manifest = replace(
             manifest,
             model_bundle_paths=training_result.model_bundle_paths,
             selected_evaluator_name=training_result.selected_evaluator_name,
             training_status="done",
+            metadata=manifest_metadata,
         )
         save_pipeline_manifest(manifest, _pipeline_manifest_path(paths, generation))
         save_pipeline_training_status_file(

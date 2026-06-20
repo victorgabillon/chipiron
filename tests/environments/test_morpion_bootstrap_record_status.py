@@ -546,6 +546,7 @@ def test_top_frontier_candidates_have_deterministic_tie_ordering() -> None:
 
 def test_leaderboard_deduplicates_identical_states_by_fingerprint(
     tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Certified leaderboard entries should be deduplicated by state fingerprint."""
     snapshot = TrainingTreeSnapshot(
@@ -562,30 +563,38 @@ def test_leaderboard_deduplicates_identical_states_by_fingerprint(
     )
     leaderboard_path = tmp_path / "leaderboard.jsonl"
 
-    persist_certified_leaderboard_candidates(
-        snapshot=snapshot,
-        run_work_dir=tmp_path,
-        generation=1,
-        cycle_index=0,
-        timestamp_utc="2026-04-14T18:26:38Z",
-        leaderboard_path=leaderboard_path,
-    )
-    persist_certified_leaderboard_candidates(
-        snapshot=snapshot,
-        run_work_dir=tmp_path,
-        generation=2,
-        cycle_index=1,
-        timestamp_utc="2026-04-14T18:26:39Z",
-        leaderboard_path=leaderboard_path,
-    )
+    with caplog.at_level(logging.INFO):
+        persist_certified_leaderboard_candidates(
+            snapshot=snapshot,
+            run_work_dir=tmp_path,
+            generation=1,
+            cycle_index=0,
+            timestamp_utc="2026-04-14T18:26:38Z",
+            leaderboard_path=leaderboard_path,
+        )
+        persist_certified_leaderboard_candidates(
+            snapshot=snapshot,
+            run_work_dir=tmp_path,
+            generation=2,
+            cycle_index=1,
+            timestamp_utc="2026-04-14T18:26:39Z",
+            leaderboard_path=leaderboard_path,
+        )
 
     lines = leaderboard_path.read_text(encoding="utf-8").splitlines()
+    log_text = caplog.text
     assert len(lines) == 1
+    assert "[leaderboard] persist_start candidates=1" in log_text
+    assert "[leaderboard] persist_done elapsed=" in log_text
+    assert "skipped_duplicate=1" in log_text
+    assert "[leaderboard] candidate" not in log_text
+    assert "[leaderboard] skipped_duplicate fingerprint=" not in log_text
 
 
 def test_leaderboard_keeps_only_top_100_per_variant(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Certified leaderboard should keep only the best 100 entries per variant."""
     import chipiron.environments.morpion.bootstrap.record_status as record_status
@@ -638,6 +647,42 @@ def test_leaderboard_keeps_only_top_100_per_variant(
     assert len(loaded) == 100
     assert loaded[0]["total_points"] == 136
     assert loaded[-1]["total_points"] == 37
+
+    caplog.clear()
+    low_unique_snapshot = TrainingTreeSnapshot(
+        root_node_id="node-low-unique",
+        nodes=(
+            make_training_node_snapshot(
+                node_id="node-low-unique",
+                parent_ids=(),
+                child_ids=(),
+                depth=0,
+                state_ref_payload={"moves": 0, "unique": "not-top"},
+                direct_value_scalar=0.0,
+                backed_up_value_scalar=0.0,
+                is_exact=True,
+                is_terminal=True,
+                over_event_label=None,
+                visit_count=1,
+                metadata={"source": "record-status-test"},
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    with caplog.at_level(logging.INFO):
+        persist_certified_leaderboard_candidates(
+            snapshot=low_unique_snapshot,
+            run_work_dir=tmp_path,
+            generation=102,
+            cycle_index=102,
+            timestamp_utc="2026-04-14T18:27:42Z",
+            leaderboard_path=leaderboard_path,
+        )
+
+    log_text = caplog.text
+    assert "skipped_not_top=1" in log_text
+    assert "[leaderboard] candidate" not in log_text
+    assert "[leaderboard] skipped_not_top_100" not in log_text
 
 
 def test_old_run_state_without_frontier_field_still_loads_safely(

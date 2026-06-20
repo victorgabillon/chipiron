@@ -114,6 +114,14 @@ def _parse_optional_non_negative_int(raw: str) -> int | None:
     return value
 
 
+def _parse_training_evaluator_names(raw: str | None) -> tuple[str, ...] | None:
+    """Parse an optional comma-separated evaluator-name subset."""
+    if raw is None:
+        return None
+    names = tuple(name.strip() for name in raw.split(",") if name.strip())
+    return names or None
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapLauncherArgs:
     """Launcher-only options for the canonical Morpion operator entrypoint."""
@@ -777,6 +785,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Generation index required by the dataset and training pipeline stages.",
     )
     parser.add_argument(
+        "--training-evaluator-names",
+        type=str,
+        default=None,
+        help="Comma-separated evaluator names to train in the pipeline training stage.",
+    )
+    parser.add_argument(
         "--reevaluation-max-nodes-per-patch",
         type=int,
         default=10_000,
@@ -957,6 +971,9 @@ def launcher_args_from_cli(
         evaluator_update_policy=parsed.evaluator_update_policy,
         pipeline_mode=parsed.pipeline_mode,
         training_export_mode=parsed.training_export_mode,
+        training_evaluator_names=_parse_training_evaluator_names(
+            parsed.training_evaluator_names
+        ),
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,

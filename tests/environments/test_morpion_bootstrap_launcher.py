@@ -409,6 +409,23 @@ def test_launcher_args_parse_training_export_mode(tmp_path: Path) -> None:
     assert launcher_args.training_export_mode_explicit is True
 
 
+def test_launcher_args_parse_training_evaluator_names(tmp_path: Path) -> None:
+    """Launcher CLI should expose a comma-separated training evaluator subset."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--training-evaluator-names",
+            "linear_5, mlp_5",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.training_evaluator_names == (
+        "linear_5",
+        "mlp_5",
+    )
+
+
 def test_launcher_configures_checkpoint_logger_level() -> None:
     """Launcher logging config should toggle checkpoint-internals verbosity."""
     received_levels: list[int] = []
