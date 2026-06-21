@@ -565,6 +565,20 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
 
     assert args.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
     assert args.training_export_mode == "sharded"
+    assert args.evaluator_diagnostics_max_rows == 60
+
+
+def test_bootstrap_args_validate_evaluator_diagnostics_max_rows(
+    tmp_path: Path,
+) -> None:
+    """Evaluator diagnostics row limits should be non-negative integers or None."""
+    MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=None)
+    MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=0)
+
+    with pytest.raises(ValueError, match="evaluator_diagnostics_max_rows"):
+        MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=-1)
+    with pytest.raises(ValueError, match="evaluator_diagnostics_max_rows"):
+        MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=True)
 
 
 def test_bootstrap_config_from_args_preserves_explicit_training_export_mode(
@@ -822,6 +836,7 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     """Stage ownership helpers should expose deterministic bootstrap field names."""
     assert "min_visit_count" in dataset_stage_owned_bootstrap_fields()
     assert "num_epochs" in training_stage_owned_bootstrap_fields()
+    assert "evaluator_diagnostics_max_rows" in training_stage_owned_bootstrap_fields()
     assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
     assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()

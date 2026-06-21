@@ -62,6 +62,7 @@ import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 import chipiron.environments.morpion.bootstrap.pipeline_memory as pipeline_memory_module
 import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
+import chipiron.environments.morpion.learning.tree_to_dataset as tree_to_dataset_module
 from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     AnemoneMorpionSearchRunner,
@@ -125,6 +126,7 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
     load_morpion_supervised_rows,
+    morpion_supervised_rows_source_from_path,
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
 )
@@ -1384,6 +1386,8 @@ def test_training_stage_default_trains_all_configured_evaluators(
     assert manifest.metadata["training_evaluator_names"] == ["linear_5", "mlp_5"]
     assert "training_max_rows" not in manifest.metadata
     assert "skip_evaluator_diagnostics" not in manifest.metadata
+    assert manifest.metadata["evaluator_diagnostics_max_rows"] == 60
+    assert manifest.metadata["evaluator_diagnostics_sample_policy"] == "first_n"
 
 
 def test_training_stage_restricts_to_one_requested_evaluator(
@@ -1706,6 +1710,247 @@ def test_train_and_select_evaluators_runs_diagnostics_by_default(
 
     assert diagnostics_calls == ["linear_5"]
     assert training_result.selected_evaluator_name == "linear_5"
+
+
+def test_train_and_select_evaluators_bounds_materialized_diagnostics_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Materialized-row diagnostics should use a first-N sample when bounded."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows = _make_rows_with_count(5)
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(rows, rows_path)
+    resolved_config = MorpionEvaluatorsConfig(
+        evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
+    )
+    diagnostics_rows: list[object] = []
+
+    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+        del training_args
+        return object(), {
+            "final_loss": 0.25,
+            "train_loss": 0.25,
+            "validation_loss": None,
+            "num_epochs": 1,
+            "num_samples": len(rows.rows),
+            "batch_size": 1,
+            "learning_rate": 1e-3,
+        }
+
+    def _fake_persist_diagnostics(**kwargs: object) -> None:
+        diagnostics_rows.append(kwargs["rows"])
+
+    monkeypatch.setattr(
+        cycle_training_module,
+        "train_morpion_regressor",
+        _fake_train_morpion_regressor,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "persist_evaluator_training_diagnostics",
+        _fake_persist_diagnostics,
+    )
+
+    memory = MemoryDiagnostics(MemoryDiagnosticsConfig(enabled=False))
+    try:
+        with caplog.at_level(logging.INFO):
+            train_and_select_evaluators(
+                args=replace(
+                    _artifact_pipeline_args(tmp_path),
+                    evaluator_diagnostics_max_rows=2,
+                ),
+                paths=paths,
+                run_state=initialize_bootstrap_run_state(),
+                rows=rows,
+                rows_path=rows_path,
+                generation=1,
+                timestamp_utc="2026-04-28T12:00:00Z",
+                resolved_evaluators_config=resolved_config,
+                resolved_control=MorpionBootstrapControl(),
+                memory=memory,
+            )
+    finally:
+        memory.close()
+
+    diagnostic_rows = cast("Any", diagnostics_rows[0])
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert len(diagnostic_rows.rows) == 2
+    assert diagnostic_rows.metadata["diagnostic_sample_policy"] == "first_n"
+    assert diagnostic_rows.metadata["diagnostic_sample_rows"] == 2
+    assert diagnostic_rows.metadata["diagnostic_sample_max_rows"] == 2
+    assert diagnostic_rows.metadata["diagnostic_source_format"] == "json"
+    assert (
+        "[diagnostics] sampled generation=1 evaluator=linear_5 rows=2 "
+        "max_rows=2 policy=first_n source_format=json"
+    ) in messages
+
+
+def test_train_and_select_evaluators_keeps_full_materialized_diagnostics_when_unbounded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Materialized JSON diagnostics can still use all rows when explicitly unbounded."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows = _make_rows_with_count(5)
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(rows, rows_path)
+    resolved_config = MorpionEvaluatorsConfig(
+        evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
+    )
+    diagnostics_rows: list[object] = []
+
+    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+        del training_args
+        return object(), {
+            "final_loss": 0.25,
+            "train_loss": 0.25,
+            "validation_loss": None,
+            "num_epochs": 1,
+            "num_samples": len(rows.rows),
+            "batch_size": 1,
+            "learning_rate": 1e-3,
+        }
+
+    def _fake_persist_diagnostics(**kwargs: object) -> None:
+        diagnostics_rows.append(kwargs["rows"])
+
+    monkeypatch.setattr(
+        cycle_training_module,
+        "train_morpion_regressor",
+        _fake_train_morpion_regressor,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "persist_evaluator_training_diagnostics",
+        _fake_persist_diagnostics,
+    )
+
+    memory = MemoryDiagnostics(MemoryDiagnosticsConfig(enabled=False))
+    try:
+        train_and_select_evaluators(
+            args=replace(
+                _artifact_pipeline_args(tmp_path),
+                evaluator_diagnostics_max_rows=None,
+            ),
+            paths=paths,
+            run_state=initialize_bootstrap_run_state(),
+            rows=rows,
+            rows_path=rows_path,
+            generation=1,
+            timestamp_utc="2026-04-28T12:00:00Z",
+            resolved_evaluators_config=resolved_config,
+            resolved_control=MorpionBootstrapControl(),
+            memory=memory,
+        )
+    finally:
+        memory.close()
+
+    diagnostic_rows = cast("Any", diagnostics_rows[0])
+    assert len(diagnostic_rows.rows) == 5
+    assert "diagnostic_sample_policy" not in diagnostic_rows.metadata
+
+
+def test_train_and_select_evaluators_streaming_bounds_jsonl_diagnostics_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Streaming JSONL diagnostics should sample rows without materializing the artifact."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows = _make_rows_with_count(5)
+    rows_path = paths.rows_jsonl_path_for_generation(1)
+    save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata={**rows.metadata, "num_rows": len(rows.rows)},
+        path=rows_path,
+    )
+    rows_source = morpion_supervised_rows_source_from_path(rows_path)
+    resolved_config = MorpionEvaluatorsConfig(
+        evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
+    )
+    diagnostics_rows: list[object] = []
+
+    def _unexpected_full_load(path: str | Path) -> MorpionSupervisedRows:
+        del path
+        raise AssertionError
+
+    def _fake_train_morpion_regressor_streaming(
+        training_args: object,
+    ) -> tuple[object, dict[str, object]]:
+        del training_args
+        return object(), {
+            "final_loss": 0.25,
+            "train_loss": 0.25,
+            "validation_loss": None,
+            "num_epochs": 1,
+            "num_samples": len(rows.rows),
+            "batch_size": 1,
+            "learning_rate": 1e-3,
+        }
+
+    def _fake_persist_diagnostics(**kwargs: object) -> None:
+        diagnostics_rows.append(kwargs["rows"])
+
+    monkeypatch.setattr(
+        tree_to_dataset_module,
+        "load_morpion_supervised_rows",
+        _unexpected_full_load,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "load_previous_evaluator_for_diagnostics",
+        lambda path: None,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "train_morpion_regressor_streaming",
+        _fake_train_morpion_regressor_streaming,
+    )
+    monkeypatch.setattr(
+        cycle_training_module,
+        "persist_evaluator_training_diagnostics",
+        _fake_persist_diagnostics,
+    )
+
+    memory = MemoryDiagnostics(MemoryDiagnosticsConfig(enabled=False))
+    try:
+        with caplog.at_level(logging.INFO):
+            cycle_training_module.train_and_select_evaluators_streaming(
+                args=replace(
+                    _artifact_pipeline_args(tmp_path),
+                    evaluator_diagnostics_max_rows=2,
+                ),
+                paths=paths,
+                run_state=initialize_bootstrap_run_state(),
+                rows_path=rows_path,
+                rows_source=rows_source,
+                generation=1,
+                timestamp_utc="2026-04-28T12:00:00Z",
+                resolved_evaluators_config=resolved_config,
+                resolved_control=MorpionBootstrapControl(),
+                memory=memory,
+                max_rows=None,
+                chunk_size=2,
+            )
+    finally:
+        memory.close()
+
+    diagnostic_rows = cast("Any", diagnostics_rows[0])
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert len(diagnostic_rows.rows) == 2
+    assert diagnostic_rows.metadata["diagnostic_sample_policy"] == "first_n"
+    assert diagnostic_rows.metadata["diagnostic_sample_rows"] == 2
+    assert diagnostic_rows.metadata["diagnostic_sample_max_rows"] == 2
+    assert diagnostic_rows.metadata["diagnostic_source_format"] == "jsonl"
+    assert (
+        "[diagnostics] sampled generation=1 evaluator=linear_5 rows=2 "
+        "max_rows=2 policy=first_n source_format=jsonl"
+    ) in messages
 
 
 def test_train_and_select_evaluators_can_skip_diagnostics(

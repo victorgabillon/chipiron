@@ -814,6 +814,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Skip evaluator diagnostics during pipeline training.",
     )
     parser.add_argument(
+        "--evaluator-diagnostics-max-rows",
+        type=_parse_optional_non_negative_int,
+        default=60,
+        help=(
+            "Maximum rows used for evaluator diagnostics. Use 'none' to allow "
+            "full diagnostics where supported."
+        ),
+    )
+    parser.add_argument(
         "--reevaluation-max-nodes-per-patch",
         type=int,
         default=10_000,
@@ -1014,6 +1023,7 @@ def launcher_args_from_cli(
         training_max_rows=parsed.training_max_rows,
         training_row_chunk_size=parsed.training_row_chunk_size,
         skip_evaluator_diagnostics=parsed.skip_evaluator_diagnostics,
+        evaluator_diagnostics_max_rows=parsed.evaluator_diagnostics_max_rows,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,

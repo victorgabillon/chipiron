@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
@@ -54,6 +54,7 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_STREAMING_DIAGNOSTIC_ROWS = 60
+DIAGNOSTIC_SAMPLE_POLICY = "first_n"
 
 
 class InvalidTrainingMetricError(TypeError):
@@ -297,6 +298,82 @@ def restrict_evaluators_config(
     )
 
 
+def diagnostic_rows_from_materialized_rows(
+    rows: MorpionSupervisedRows,
+    *,
+    max_rows: int | None,
+    source_format: str,
+) -> MorpionSupervisedRows:
+    """Return the bounded diagnostics view for materialized supervised rows."""
+    if max_rows is None:
+        return rows
+    sample_rows = rows.rows[:max_rows]
+    return replace(
+        rows,
+        rows=sample_rows,
+        metadata={
+            **rows.metadata,
+            "diagnostic_sample_policy": DIAGNOSTIC_SAMPLE_POLICY,
+            "diagnostic_sample_rows": len(sample_rows),
+            "diagnostic_sample_max_rows": max_rows,
+            "diagnostic_source_format": source_format,
+        },
+    )
+
+
+def diagnostic_rows_from_streaming_rows(
+    *,
+    rows_path: Path,
+    rows_source: MorpionSupervisedRowsSource,
+    max_rows: int | None,
+) -> MorpionSupervisedRows:
+    """Return a bounded diagnostics sample from a streaming rows artifact."""
+    from chipiron.environments.morpion.learning import (
+        MorpionSupervisedRows,
+        iter_morpion_supervised_rows_from_path,
+    )
+
+    effective_max_rows = (
+        DEFAULT_STREAMING_DIAGNOSTIC_ROWS if max_rows is None else max_rows
+    )
+    sample_rows = tuple(
+        iter_morpion_supervised_rows_from_path(
+            rows_path,
+            max_rows=effective_max_rows,
+        )
+    )
+    return MorpionSupervisedRows(
+        rows=sample_rows,
+        metadata={
+            **rows_source.metadata,
+            "diagnostic_sample_policy": DIAGNOSTIC_SAMPLE_POLICY,
+            "diagnostic_sample_rows": len(sample_rows),
+            "diagnostic_sample_max_rows": effective_max_rows,
+            "diagnostic_source_format": rows_source.format_kind,
+        },
+    )
+
+
+def _log_diagnostic_sample(
+    *,
+    generation: int,
+    evaluator_name: str,
+    rows: MorpionSupervisedRows,
+) -> None:
+    if rows.metadata.get("diagnostic_sample_policy") != DIAGNOSTIC_SAMPLE_POLICY:
+        return
+    LOGGER.info(
+        "[diagnostics] sampled generation=%s evaluator=%s rows=%s max_rows=%s "
+        "policy=%s source_format=%s",
+        generation,
+        evaluator_name,
+        rows.metadata.get("diagnostic_sample_rows", len(rows.rows)),
+        rows.metadata.get("diagnostic_sample_max_rows"),
+        rows.metadata.get("diagnostic_sample_policy"),
+        rows.metadata.get("diagnostic_source_format"),
+    )
+
+
 def train_and_select_evaluators(
     *,
     args: MorpionBootstrapArgs,
@@ -327,6 +404,13 @@ def train_and_select_evaluators(
         len(resolved_evaluators_config.evaluators),
         len(rows.rows),
     )
+    diagnostic_rows = None
+    if not args.skip_evaluator_diagnostics:
+        diagnostic_rows = diagnostic_rows_from_materialized_rows(
+            rows,
+            max_rows=args.evaluator_diagnostics_max_rows,
+            source_format="json",
+        )
     for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
@@ -432,11 +516,16 @@ def train_and_select_evaluators(
                 evaluator_name,
             )
         else:
+            _log_diagnostic_sample(
+                generation=generation,
+                evaluator_name=evaluator_name,
+                rows=diagnostic_rows,
+            )
             persist_evaluator_training_diagnostics(
                 paths=paths,
                 generation=generation,
                 evaluator_name=evaluator_name,
-                rows=rows,
+                rows=diagnostic_rows,
                 created_at=timestamp_utc,
                 spec=spec,
                 model_before=previous_model,
@@ -514,11 +603,6 @@ def train_and_select_evaluators_streaming(
     chunk_size: int,
 ) -> BootstrapTrainingResult:
     """Train configured evaluators from JSONL chunks and select the active one."""
-    from chipiron.environments.morpion.learning import (
-        MorpionSupervisedRows,
-        iter_morpion_supervised_rows_from_path,
-    )
-
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
     model_bundle_paths: dict[str, str] = {}
@@ -541,20 +625,10 @@ def train_and_select_evaluators_streaming(
     )
     diagnostic_rows: MorpionSupervisedRows | None = None
     if not args.skip_evaluator_diagnostics:
-        sample_rows = tuple(
-            iter_morpion_supervised_rows_from_path(
-                rows_path,
-                max_rows=DEFAULT_STREAMING_DIAGNOSTIC_ROWS,
-            )
-        )
-        diagnostic_rows = MorpionSupervisedRows(
-            rows=sample_rows,
-            metadata={
-                **rows_source.metadata,
-                "diagnostic_sample_policy": "first_n",
-                "diagnostic_sample_rows": len(sample_rows),
-                "diagnostic_source_format": rows_source.format_kind,
-            },
+        diagnostic_rows = diagnostic_rows_from_streaming_rows(
+            rows_path=rows_path,
+            rows_source=rows_source,
+            max_rows=args.evaluator_diagnostics_max_rows,
         )
     for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
         model_bundle_path = paths.model_bundle_path_for_generation(
@@ -665,11 +739,10 @@ def train_and_select_evaluators_streaming(
                 evaluator_name,
             )
         elif diagnostic_rows is not None:
-            LOGGER.info(
-                "[diagnostics] streaming_sample generation=%s evaluator=%s rows=%s reason=jsonl_streaming",
-                generation,
-                evaluator_name,
-                len(diagnostic_rows.rows),
+            _log_diagnostic_sample(
+                generation=generation,
+                evaluator_name=evaluator_name,
+                rows=diagnostic_rows,
             )
             persist_evaluator_training_diagnostics(
                 paths=paths,
@@ -741,6 +814,8 @@ __all__ = [
     "BootstrapTrainingResult",
     "MorpionStreamingTrainingArgs",
     "MorpionTrainingArgs",
+    "diagnostic_rows_from_materialized_rows",
+    "diagnostic_rows_from_streaming_rows",
     "morpion_training_args_from_evaluator_spec",
     "persist_evaluator_training_diagnostics",
     "resolve_previous_model_bundle_path",

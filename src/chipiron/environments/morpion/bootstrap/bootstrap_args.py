@@ -37,6 +37,13 @@ def _invalid_training_row_chunk_size_error() -> ValueError:
     return ValueError("training_row_chunk_size must be a positive integer.")
 
 
+def _invalid_evaluator_diagnostics_max_rows_error() -> ValueError:
+    """Return the canonical evaluator-diagnostics row-limit validation error."""
+    return ValueError(
+        "evaluator_diagnostics_max_rows must be a non-negative integer or None."
+    )
+
+
 def _invalid_min_available_ram_mb_error() -> ValueError:
     """Return the canonical available-RAM guard validation error."""
     return ValueError("min_available_ram_mb must be a non-negative integer or None.")
@@ -93,6 +100,7 @@ class MorpionBootstrapArgs:
     training_max_rows: int | None = None
     training_row_chunk_size: int = 8192
     skip_evaluator_diagnostics: bool = False
+    evaluator_diagnostics_max_rows: int | None = 60
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
@@ -109,6 +117,11 @@ class MorpionBootstrapArgs:
             or self.training_row_chunk_size <= 0
         ):
             raise _invalid_training_row_chunk_size_error()
+        if self.evaluator_diagnostics_max_rows is not None and (
+            isinstance(self.evaluator_diagnostics_max_rows, bool)
+            or self.evaluator_diagnostics_max_rows < 0
+        ):
+            raise _invalid_evaluator_diagnostics_max_rows_error()
         if self.min_available_ram_mb is not None and (
             isinstance(self.min_available_ram_mb, bool)
             or self.min_available_ram_mb < 0

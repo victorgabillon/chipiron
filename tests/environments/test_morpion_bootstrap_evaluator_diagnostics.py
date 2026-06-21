@@ -145,6 +145,10 @@ def test_diagnostics_json_round_trip_and_latest_loader(tmp_path: Path) -> None:
         mae_after=0.25,
         max_abs_error_before=None,
         max_abs_error_after=0.25,
+        diagnostic_sample_policy="first_n",
+        diagnostic_sample_rows=12,
+        diagnostic_sample_max_rows=60,
+        diagnostic_source_format="jsonl",
     )
     target = diagnostics_path(tmp_path, 48, "mlp_20")
     save_evaluator_training_diagnostics(diagnostics, target)
@@ -173,3 +177,31 @@ def test_worst_examples_are_sorted_by_after_training_abs_error() -> None:
     assert diagnostics.worst_examples[0].abs_error_after == 3.0
     assert diagnostics.mae_after is not None
     assert diagnostics.mae_before is not None
+
+
+def test_diagnostics_record_row_sampling_metadata() -> None:
+    """Diagnostics should persist bounded-sample metadata from the rows bundle."""
+    rows = _rows_bundle((1.0, -3.0, 0.5))
+    rows = MorpionSupervisedRows(
+        rows=rows.rows[:2],
+        metadata={
+            **rows.metadata,
+            "diagnostic_sample_policy": "first_n",
+            "diagnostic_sample_rows": 2,
+            "diagnostic_sample_max_rows": 2,
+            "diagnostic_source_format": "json",
+        },
+    )
+
+    diagnostics = build_evaluator_training_diagnostics(
+        generation=7,
+        evaluator_name="linear",
+        rows=rows,
+        created_at="2026-04-24T09:30:00Z",
+        model_after=_constant_regressor(0.0),
+    )
+
+    assert diagnostics.diagnostic_sample_policy == "first_n"
+    assert diagnostics.diagnostic_sample_rows == 2
+    assert diagnostics.diagnostic_sample_max_rows == 2
+    assert diagnostics.diagnostic_source_format == "json"

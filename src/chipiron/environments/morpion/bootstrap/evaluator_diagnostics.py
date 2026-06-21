@@ -79,6 +79,10 @@ class MorpionEvaluatorTrainingDiagnostics:
     batch_size: int | None = None
     learning_rate: float | None = None
     loss_name: str | None = None
+    diagnostic_sample_policy: str | None = None
+    diagnostic_sample_rows: int | None = None
+    diagnostic_sample_max_rows: int | None = None
+    diagnostic_source_format: str | None = None
 
 
 def diagnostics_root_dir(work_dir: str | Path) -> Path:
@@ -210,6 +214,22 @@ def build_evaluator_training_diagnostics(
         batch_size=_diagnostic_optional_int(training_metrics, "batch_size"),
         learning_rate=_diagnostic_optional_float(training_metrics, "learning_rate"),
         loss_name=_diagnostic_optional_str(training_metrics, "loss_name"),
+        diagnostic_sample_policy=_diagnostic_optional_str(
+            rows.metadata,
+            "diagnostic_sample_policy",
+        ),
+        diagnostic_sample_rows=_diagnostic_optional_int(
+            rows.metadata,
+            "diagnostic_sample_rows",
+        ),
+        diagnostic_sample_max_rows=_diagnostic_optional_int(
+            rows.metadata,
+            "diagnostic_sample_max_rows",
+        ),
+        diagnostic_source_format=_diagnostic_optional_str(
+            rows.metadata,
+            "diagnostic_source_format",
+        ),
     )
 
 
@@ -271,6 +291,12 @@ def load_evaluator_training_diagnostics(
         batch_size=_optional_int(data.get("batch_size")),
         learning_rate=_optional_float(data.get("learning_rate")),
         loss_name=_optional_str(data.get("loss_name")),
+        diagnostic_sample_policy=_optional_str(data.get("diagnostic_sample_policy")),
+        diagnostic_sample_rows=_optional_int(data.get("diagnostic_sample_rows")),
+        diagnostic_sample_max_rows=_optional_int(
+            data.get("diagnostic_sample_max_rows")
+        ),
+        diagnostic_source_format=_optional_str(data.get("diagnostic_source_format")),
     )
 
 

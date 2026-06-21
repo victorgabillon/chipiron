@@ -681,6 +681,7 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "training_max_rows",
         "training_row_chunk_size",
         "skip_evaluator_diagnostics",
+        "evaluator_diagnostics_max_rows",
     )
 
 

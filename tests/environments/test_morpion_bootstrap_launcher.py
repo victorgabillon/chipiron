@@ -436,13 +436,30 @@ def test_launcher_args_parse_training_debug_controls(tmp_path: Path) -> None:
             "10000",
             "--training-row-chunk-size",
             "2048",
+            "--evaluator-diagnostics-max-rows",
+            "25",
             "--skip-evaluator-diagnostics",
         ]
     )
 
     assert launcher_args.bootstrap_args.training_max_rows == 10_000
     assert launcher_args.bootstrap_args.training_row_chunk_size == 2048
+    assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 25
     assert launcher_args.bootstrap_args.skip_evaluator_diagnostics is True
+
+
+def test_launcher_args_default_evaluator_diagnostics_max_rows(
+    tmp_path: Path,
+) -> None:
+    """Evaluator diagnostics should be bounded by default."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 60
 
 
 def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:

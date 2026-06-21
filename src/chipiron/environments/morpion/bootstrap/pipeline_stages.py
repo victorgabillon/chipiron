@@ -1564,6 +1564,11 @@ def run_pipeline_training_stage(
             manifest_metadata["training_max_rows"] = args.training_max_rows
         if args.skip_evaluator_diagnostics:
             manifest_metadata["skip_evaluator_diagnostics"] = True
+        else:
+            manifest_metadata["evaluator_diagnostics_max_rows"] = (
+                args.evaluator_diagnostics_max_rows
+            )
+            manifest_metadata["evaluator_diagnostics_sample_policy"] = "first_n"
         manifest = replace(manifest, metadata=manifest_metadata)
         run_state = (
             load_bootstrap_run_state(paths.run_state_path)
