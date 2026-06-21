@@ -679,6 +679,7 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "evaluator_family_preset",
         "training_evaluator_names",
         "training_max_rows",
+        "training_row_chunk_size",
         "skip_evaluator_diagnostics",
     )
 

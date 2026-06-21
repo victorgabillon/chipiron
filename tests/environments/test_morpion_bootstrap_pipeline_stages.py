@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pytest
 
@@ -126,6 +126,7 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
     load_morpion_supervised_rows,
     save_morpion_supervised_rows,
+    save_morpion_supervised_rows_streaming,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -479,6 +480,33 @@ def _prepare_training_stage_input(
     paths.ensure_directories()
     rows_path = paths.rows_path_for_generation(generation)
     save_morpion_supervised_rows(rows if rows is not None else _make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=generation,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(generation),
+    )
+
+
+def _prepare_training_stage_jsonl_input(
+    paths: MorpionBootstrapPaths,
+    *,
+    generation: int = 1,
+    rows: MorpionSupervisedRows | None = None,
+) -> None:
+    """Persist JSONL row artifacts needed to enter the training stage."""
+    paths.ensure_directories()
+    rows_bundle = rows if rows is not None else _make_rows()
+    rows_path = paths.rows_jsonl_path_for_generation(generation)
+    save_morpion_supervised_rows_streaming(
+        rows=rows_bundle.rows,
+        metadata={**rows_bundle.metadata, "num_rows": len(rows_bundle.rows)},
+        path=rows_path,
+    )
     save_pipeline_manifest(
         MorpionPipelineGenerationManifest(
             generation=generation,
@@ -1504,6 +1532,80 @@ def test_training_stage_debug_controls_limit_rows_and_record_metadata(
     assert manifest.metadata["training_max_rows"] == 2
     assert manifest.metadata["training_rows_used"] == 2
     assert manifest.metadata["training_rows_original"] == 5
+    assert manifest.metadata["skip_evaluator_diagnostics"] is True
+
+
+def test_training_stage_streams_jsonl_rows_without_materialized_load(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """JSONL training should use the streaming path and avoid subset artifacts."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _prepare_training_stage_jsonl_input(
+        paths,
+        generation=1,
+        rows=_make_rows_with_count(5),
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        evaluators_config=_multi_evaluator_config(),
+        training_evaluator_names=("linear_5",),
+        training_max_rows=2,
+        training_row_chunk_size=2,
+        skip_evaluator_diagnostics=True,
+    )
+    streaming_calls: list[tuple[int | None, int, str, int | None]] = []
+
+    def _unexpected_full_load(path: str | Path) -> MorpionSupervisedRows:
+        del path
+        raise AssertionError
+
+    def _unexpected_materialized_train(**kwargs: object) -> BootstrapTrainingResult:
+        del kwargs
+        raise AssertionError
+
+    def _fake_streaming_train(**kwargs: object) -> BootstrapTrainingResult:
+        rows_source = cast("Any", kwargs["rows_source"])
+        streaming_calls.append(
+            (
+                cast("int | None", kwargs["max_rows"]),
+                int(kwargs["chunk_size"]),
+                str(rows_source.format_kind),
+                cast("int | None", rows_source.row_count),
+            )
+        )
+        return _fake_training_result_for_evaluators(
+            paths,
+            generation=1,
+            evaluator_names=("linear_5",),
+            selected_evaluator_name="linear_5",
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "load_morpion_supervised_rows",
+        _unexpected_full_load,
+    )
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        _unexpected_materialized_train,
+    )
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators_streaming",
+        _fake_streaming_train,
+    )
+
+    manifest = run_pipeline_training_stage(args, generation=1)
+
+    assert streaming_calls == [(2, 2, "jsonl", 5)]
+    assert not (paths.rows_dir / "generation_000001.training_subset.json").exists()
+    assert manifest.metadata["training_row_source_format"] == "jsonl"
+    assert manifest.metadata["training_row_chunk_size"] == 2
+    assert manifest.metadata["training_rows_original"] == 5
+    assert manifest.metadata["training_rows_used"] == 2
+    assert manifest.metadata["training_max_rows"] == 2
     assert manifest.metadata["skip_evaluator_diagnostics"] is True
 
 

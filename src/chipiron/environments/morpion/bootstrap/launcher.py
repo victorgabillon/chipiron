@@ -803,6 +803,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Maximum rows to use during pipeline training; default uses all rows.",
     )
     parser.add_argument(
+        "--training-row-chunk-size",
+        type=int,
+        default=8192,
+        help="Rows per chunk for streaming JSONL pipeline training.",
+    )
+    parser.add_argument(
         "--skip-evaluator-diagnostics",
         action="store_true",
         help="Skip evaluator diagnostics during pipeline training.",
@@ -1006,6 +1012,7 @@ def launcher_args_from_cli(
             parsed.training_evaluator_names
         ),
         training_max_rows=parsed.training_max_rows,
+        training_row_chunk_size=parsed.training_row_chunk_size,
         skip_evaluator_diagnostics=parsed.skip_evaluator_diagnostics,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",

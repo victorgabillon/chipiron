@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from anemone.training_export import load_training_tree_snapshot
 from atomheart.games.morpion.checkpoints import (
@@ -67,6 +67,16 @@ class MorpionSupervisedRowsWriteStats:
     format_version: int
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionSupervisedRowsSource:
+    """Format-aware metadata for one supervised rows artifact."""
+
+    path: Path
+    metadata: dict[str, Any]
+    row_count: int | None
+    format_kind: Literal["json", "jsonl"]
+
+
 class InvalidMorpionStateRefPayloadError(TypeError):
     """Raised when a purported Morpion state reference payload is invalid."""
 
@@ -123,6 +133,21 @@ class MalformedMorpionSupervisedRowsError(TypeError):
             f"Unexpected Morpion supervised rows JSONL record kind "
             f"at line {line_number}: {kind!r}."
         )
+
+    @classmethod
+    def missing_jsonl_metadata_record(cls) -> MalformedMorpionSupervisedRowsError:
+        """Return the missing JSONL metadata-record error."""
+        return cls("Morpion supervised rows JSONL is missing its metadata record.")
+
+    @classmethod
+    def invalid_chunk_size(cls) -> MalformedMorpionSupervisedRowsError:
+        """Return the invalid streaming chunk-size error."""
+        return cls("Morpion supervised row chunk_size must be a positive integer.")
+
+    @classmethod
+    def invalid_max_rows(cls) -> MalformedMorpionSupervisedRowsError:
+        """Return the invalid streaming row-limit error."""
+        return cls("Morpion supervised max_rows must be a non-negative integer or None.")
 
 
 def is_morpion_state_ref_payload(payload: object) -> bool:
@@ -405,6 +430,114 @@ def save_morpion_supervised_rows_streaming(
     )
 
 
+def load_morpion_supervised_rows_metadata(path: str | Path) -> dict[str, Any]:
+    """Load only metadata from a supervised rows artifact when possible."""
+    source = Path(path)
+    if source.suffix != ".jsonl":
+        return load_morpion_supervised_rows(source).metadata
+    with source.open("r", encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            record = json.loads(stripped)
+            if not isinstance(record, dict):
+                raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
+            kind = record.get("kind")
+            if kind != MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
+                raise MalformedMorpionSupervisedRowsError.unexpected_jsonl_record_kind(
+                    line_number,
+                    kind,
+                )
+            return _metadata_dict(record.get("metadata"))
+    raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
+
+
+def iter_morpion_supervised_rows_from_path(
+    path: str | Path,
+    *,
+    max_rows: int | None = None,
+) -> Iterator[MorpionSupervisedRow]:
+    """Yield rows from old JSON or new JSONL artifacts."""
+    _validate_optional_max_rows(max_rows)
+    source = Path(path)
+    emitted = 0
+    if source.suffix != ".jsonl":
+        for row in load_morpion_supervised_rows(source).rows:
+            if max_rows is not None and emitted >= max_rows:
+                break
+            emitted += 1
+            yield row
+        return
+    saw_metadata = False
+    with source.open("r", encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            record = json.loads(stripped)
+            if not isinstance(record, dict):
+                raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
+            kind = record.get("kind")
+            if kind == MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
+                saw_metadata = True
+                continue
+            if not saw_metadata:
+                raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
+            if kind != MORPION_SUPERVISED_ROW_RECORD_KIND:
+                raise MalformedMorpionSupervisedRowsError.unexpected_jsonl_record_kind(
+                    line_number,
+                    kind,
+                )
+            if max_rows is not None and emitted >= max_rows:
+                break
+            emitted += 1
+            yield _row_from_dict(_require_row_mapping(record.get("row")))
+    if not saw_metadata:
+        raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
+
+
+def iter_morpion_supervised_row_chunks_from_path(
+    path: str | Path,
+    *,
+    chunk_size: int,
+    max_rows: int | None = None,
+) -> Iterator[tuple[MorpionSupervisedRow, ...]]:
+    """Yield non-empty chunks of rows from one supervised rows artifact."""
+    if isinstance(chunk_size, bool) or chunk_size <= 0:
+        raise MalformedMorpionSupervisedRowsError.invalid_chunk_size()
+    chunk: list[MorpionSupervisedRow] = []
+    for row in iter_morpion_supervised_rows_from_path(path, max_rows=max_rows):
+        chunk.append(row)
+        if len(chunk) >= chunk_size:
+            yield tuple(chunk)
+            chunk.clear()
+    if chunk:
+        yield tuple(chunk)
+
+
+def morpion_supervised_rows_source_from_path(
+    path: str | Path,
+) -> MorpionSupervisedRowsSource:
+    """Return format-aware metadata for one supervised rows artifact."""
+    source = Path(path)
+    metadata = load_morpion_supervised_rows_metadata(source)
+    if source.suffix == ".jsonl":
+        return MorpionSupervisedRowsSource(
+            path=source,
+            metadata=metadata,
+            row_count=_metadata_optional_int(metadata.get("num_rows")),
+            format_kind="jsonl",
+        )
+    rows = load_morpion_supervised_rows(source)
+    return MorpionSupervisedRowsSource(
+        path=source,
+        metadata=rows.metadata,
+        row_count=len(rows.rows),
+        format_kind="json",
+    )
+
+
 def load_morpion_supervised_rows(
     path: str | Path,
 ) -> MorpionSupervisedRows:
@@ -612,26 +745,8 @@ def _write_jsonl_record(stream: Any, record: Mapping[str, object]) -> None:
 
 
 def _load_morpion_supervised_rows_jsonl(path: Path) -> MorpionSupervisedRows:
-    metadata: dict[str, Any] = {}
-    rows: list[MorpionSupervisedRow] = []
-    with path.open("r", encoding="utf-8") as stream:
-        for line_number, line in enumerate(stream, start=1):
-            stripped = line.strip()
-            if not stripped:
-                continue
-            record = json.loads(stripped)
-            if not isinstance(record, dict):
-                raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
-            kind = record.get("kind")
-            if kind == MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
-                metadata = _metadata_dict(record.get("metadata"))
-                continue
-            if kind != MORPION_SUPERVISED_ROW_RECORD_KIND:
-                raise MalformedMorpionSupervisedRowsError.unexpected_jsonl_record_kind(
-                    line_number,
-                    kind,
-                )
-            rows.append(_row_from_dict(_require_row_mapping(record.get("row"))))
+    metadata = load_morpion_supervised_rows_metadata(path)
+    rows = list(iter_morpion_supervised_rows_from_path(path))
     return MorpionSupervisedRows(rows=tuple(rows), metadata=metadata)
 
 
@@ -705,6 +820,28 @@ def _metadata_dict(value: object) -> dict[str, Any]:
     return dict(cast("dict[str, Any]", value))
 
 
+def _metadata_optional_int(value: object) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _validate_optional_max_rows(max_rows: int | None) -> None:
+    if max_rows is None:
+        return
+    if isinstance(max_rows, bool) or max_rows < 0:
+        raise MalformedMorpionSupervisedRowsError.invalid_max_rows()
+
+
 def _coerce_int(value: object, *, default: int | None = None) -> int:
     """Return ``value`` as ``int`` for supported scalar payloads."""
     if isinstance(value, bool):
@@ -727,14 +864,19 @@ __all__ = [
     "MalformedMorpionSupervisedRowsError",
     "MorpionSupervisedRow",
     "MorpionSupervisedRows",
+    "MorpionSupervisedRowsSource",
     "MorpionSupervisedRowsWriteStats",
     "decode_morpion_state_ref_payload",
     "is_morpion_state_ref_payload",
+    "iter_morpion_supervised_row_chunks_from_path",
+    "iter_morpion_supervised_rows_from_path",
     "iter_morpion_supervised_rows_from_training_snapshot",
     "load_morpion_supervised_rows",
+    "load_morpion_supervised_rows_metadata",
     "load_training_tree_snapshot_as_morpion_supervised_rows",
     "morpion_supervised_rows_from_dict",
     "morpion_supervised_rows_metadata_from_training_snapshot",
+    "morpion_supervised_rows_source_from_path",
     "morpion_supervised_rows_to_dict",
     "save_morpion_supervised_rows",
     "save_morpion_supervised_rows_streaming",

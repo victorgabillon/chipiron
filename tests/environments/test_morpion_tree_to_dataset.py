@@ -50,9 +50,13 @@ from chipiron.environments.morpion.learning.tree_to_dataset import (
     MorpionSupervisedRows,
     decode_morpion_state_ref_payload,
     is_morpion_state_ref_payload,
+    iter_morpion_supervised_row_chunks_from_path,
+    iter_morpion_supervised_rows_from_path,
     iter_morpion_supervised_rows_from_training_snapshot,
     load_morpion_supervised_rows,
+    load_morpion_supervised_rows_metadata,
     morpion_supervised_rows_from_dict,
+    morpion_supervised_rows_source_from_path,
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
     training_node_to_morpion_supervised_row,
@@ -445,6 +449,104 @@ def test_streaming_persistence_round_trip_for_morpion_supervised_rows(
     assert stats.path == path
     assert stats.format_kind == "morpion_supervised_rows_jsonl"
     assert stats.format_version == 1
+
+
+def test_metadata_load_works_for_json_and_jsonl(tmp_path: Path) -> None:
+    """Metadata helpers should support old JSON and new JSONL row artifacts."""
+    payload = _make_morpion_payload()
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(_make_training_node(state_ref_payload=payload),),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    rows = training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot,
+        metadata={"purpose": "metadata-test"},
+    )
+    json_path = tmp_path / "rows.json"
+    jsonl_path = tmp_path / "rows.jsonl"
+
+    save_morpion_supervised_rows(rows, json_path)
+    save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=jsonl_path,
+    )
+
+    assert load_morpion_supervised_rows_metadata(json_path)["purpose"] == "metadata-test"
+    assert load_morpion_supervised_rows_metadata(jsonl_path)["purpose"] == "metadata-test"
+    assert morpion_supervised_rows_source_from_path(json_path).format_kind == "json"
+    jsonl_source = morpion_supervised_rows_source_from_path(jsonl_path)
+    assert jsonl_source.format_kind == "jsonl"
+    assert jsonl_source.row_count == len(rows.rows)
+
+
+def test_jsonl_metadata_load_does_not_parse_row_lines(tmp_path: Path) -> None:
+    """JSONL metadata loading should stop before row payloads."""
+    path = tmp_path / "rows.jsonl"
+    path.write_text(
+        '{"kind":"morpion_supervised_rows_metadata","format_version":1,"metadata":{"num_rows":1}}\n'
+        '{"kind":"morpion_supervised_row","row":{"node_id":1}}\n',
+        encoding="utf-8",
+    )
+
+    assert load_morpion_supervised_rows_metadata(path) == {"num_rows": 1}
+
+
+def test_jsonl_row_iterators_support_limits_and_chunks(tmp_path: Path) -> None:
+    """JSONL row iteration should preserve order and support row limits/chunks."""
+    payload = _make_morpion_payload()
+    rows = MorpionSupervisedRows(
+        rows=tuple(
+            row
+            for row in (
+                training_node_to_morpion_supervised_row(
+                    _make_training_node(
+                        node_id=f"row-{index}",
+                        state_ref_payload=payload,
+                    )
+                )
+                for index in range(3)
+            )
+            if row is not None
+        ),
+        metadata={"num_rows": 3},
+    )
+    path = tmp_path / "rows.jsonl"
+    save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=path,
+    )
+
+    assert [row.node_id for row in iter_morpion_supervised_rows_from_path(path)] == [
+        "row-0",
+        "row-1",
+        "row-2",
+    ]
+    assert [
+        row.node_id
+        for row in iter_morpion_supervised_rows_from_path(path, max_rows=1)
+    ] == ["row-0"]
+    chunks = list(iter_morpion_supervised_row_chunks_from_path(path, chunk_size=2))
+    assert [len(chunk) for chunk in chunks] == [2, 1]
+
+
+def test_jsonl_row_chunk_validation_and_malformed_kind(tmp_path: Path) -> None:
+    """Streaming row helpers should fail loudly for invalid controls and records."""
+    path = tmp_path / "rows.jsonl"
+    path.write_text(
+        '{"kind":"morpion_supervised_rows_metadata","format_version":1,"metadata":{}}\n'
+        '{"kind":"surprise","row":{}}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(MalformedMorpionSupervisedRowsError):
+        list(iter_morpion_supervised_row_chunks_from_path(path, chunk_size=0))
+    with pytest.raises(MalformedMorpionSupervisedRowsError):
+        list(iter_morpion_supervised_rows_from_path(path, max_rows=-1))
+    with pytest.raises(MalformedMorpionSupervisedRowsError):
+        list(iter_morpion_supervised_rows_from_path(path))
 
 
 def test_streaming_persistence_failure_keeps_existing_rows(

@@ -434,11 +434,14 @@ def test_launcher_args_parse_training_debug_controls(tmp_path: Path) -> None:
             str(tmp_path),
             "--training-max-rows",
             "10000",
+            "--training-row-chunk-size",
+            "2048",
             "--skip-evaluator-diagnostics",
         ]
     )
 
     assert launcher_args.bootstrap_args.training_max_rows == 10_000
+    assert launcher_args.bootstrap_args.training_row_chunk_size == 2048
     assert launcher_args.bootstrap_args.skip_evaluator_diagnostics is True
 
 

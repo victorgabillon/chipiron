@@ -56,3 +56,17 @@ def test_growth_cluster_supervisors_stop_on_exhausted_budget() -> None:
         assert "growth_budget_already_exhausted" in script_text
         assert "not restarting" in script_text
         assert "break" in script_text
+
+
+def test_gnome_cluster_exposes_streaming_training_chunk_size_env() -> None:
+    """The GNOME cluster launcher should expose the JSONL training chunk knob."""
+    script_text = (
+        _REPO_ROOT / "scripts" / "launch_morpion_gnome_cluster.sh"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        'MORPION_TRAINING_ROW_CHUNK_SIZE="${MORPION_TRAINING_ROW_CHUNK_SIZE:-8192}"'
+        in script_text
+    )
+    assert "--training-row-chunk-size $MORPION_TRAINING_ROW_CHUNK_SIZE" in script_text
+    assert "row_chunk_size=$MORPION_TRAINING_ROW_CHUNK_SIZE" in script_text

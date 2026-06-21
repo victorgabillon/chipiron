@@ -8,7 +8,9 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
 from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRowsSource,
     load_morpion_supervised_rows,
+    morpion_supervised_rows_source_from_path,
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
 )
@@ -71,6 +73,9 @@ from .cycle_training import (
     restrict_evaluators_config as _restrict_evaluators_config,
 )
 from .cycle_training import train_and_select_evaluators as _train_and_select_evaluators
+from .cycle_training import (
+    train_and_select_evaluators_streaming as _train_and_select_evaluators_streaming,
+)
 from .cycle_validation import (
     previous_effective_runtime_config as _previous_effective_runtime_config,
 )
@@ -1476,33 +1481,74 @@ def run_pipeline_training_stage(
             event="before_dataset_load",
             rows_path=rows_path,
         )
-        rows = load_morpion_supervised_rows(rows_path)
-        log_pipeline_memory(
-            stage="training",
-            generation=generation,
-            event="after_dataset_load",
-            rows=len(rows.rows),
+        rows = None
+        if rows_path.suffix == ".jsonl":
+            rows_source = morpion_supervised_rows_source_from_path(rows_path)
+        else:
+            rows = load_morpion_supervised_rows(rows_path)
+            rows_source = MorpionSupervisedRowsSource(
+                path=rows_path,
+                metadata=dict(rows.metadata),
+                row_count=len(rows.rows),
+                format_kind="json",
+            )
+        original_training_rows = rows_source.row_count
+        training_rows_used = (
+            None
+            if original_training_rows is None
+            else (
+                min(original_training_rows, args.training_max_rows)
+                if args.training_max_rows is not None
+                else original_training_rows
+            )
         )
-        original_training_rows = len(rows.rows)
-        training_rows_used = original_training_rows
         training_rows_path = rows_path
         manifest_metadata = dict(manifest.metadata)
-        if args.training_max_rows is not None:
-            subset_rows = rows.rows[: args.training_max_rows]
-            rows = replace(
-                rows,
-                rows=subset_rows,
-                metadata={
-                    **rows.metadata,
-                    "training_subset_policy": "first_n",
-                    "training_rows_original": original_training_rows,
-                    "training_rows_used": len(subset_rows),
-                    "training_max_rows": args.training_max_rows,
-                },
+        manifest_metadata["training_row_source_format"] = rows_source.format_kind
+        if original_training_rows is not None:
+            manifest_metadata["training_rows_original"] = original_training_rows
+        if training_rows_used is not None:
+            manifest_metadata["training_rows_used"] = training_rows_used
+        if rows_source.format_kind == "jsonl":
+            manifest_metadata["training_row_chunk_size"] = args.training_row_chunk_size
+        if rows_source.format_kind == "json":
+            log_pipeline_memory(
+                stage="training",
+                generation=generation,
+                event="after_dataset_load",
+                rows=len(rows.rows),
             )
-            training_rows_used = len(rows.rows)
-            training_rows_path = _training_rows_subset_path(paths, generation)
-            save_morpion_supervised_rows(rows, training_rows_path)
+            original_training_rows = len(rows.rows)
+            training_rows_used = original_training_rows
+            if args.training_max_rows is not None:
+                subset_rows = rows.rows[: args.training_max_rows]
+                rows = replace(
+                    rows,
+                    rows=subset_rows,
+                    metadata={
+                        **rows.metadata,
+                        "training_subset_policy": "first_n",
+                        "training_rows_original": original_training_rows,
+                        "training_rows_used": len(subset_rows),
+                        "training_max_rows": args.training_max_rows,
+                    },
+                )
+                training_rows_used = len(rows.rows)
+                training_rows_path = _training_rows_subset_path(paths, generation)
+                save_morpion_supervised_rows(rows, training_rows_path)
+                manifest_metadata["training_rows_used"] = training_rows_used
+                manifest_metadata["training_rows_original"] = original_training_rows
+            manifest_metadata["training_row_source_format"] = "json"
+        else:
+            log_pipeline_memory(
+                stage="training",
+                generation=generation,
+                event="after_dataset_source",
+                rows=training_rows_used,
+                row_count=original_training_rows,
+                row_format=rows_source.format_kind,
+            )
+        if args.training_max_rows is not None:
             LOGGER.info(
                 "[train] row_subset original_rows=%s used_rows=%s policy=%s",
                 original_training_rows,
@@ -1510,8 +1556,6 @@ def run_pipeline_training_stage(
                 "first_n",
             )
             manifest_metadata["training_max_rows"] = args.training_max_rows
-            manifest_metadata["training_rows_used"] = training_rows_used
-            manifest_metadata["training_rows_original"] = original_training_rows
         if args.skip_evaluator_diagnostics:
             manifest_metadata["skip_evaluator_diagnostics"] = True
         manifest = replace(manifest, metadata=manifest_metadata)
@@ -1523,18 +1567,36 @@ def run_pipeline_training_stage(
         resolved_control = load_bootstrap_control(paths.control_path)
         memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
         try:
-            training_result = _train_and_select_evaluators(
-                args=args,
-                paths=paths,
-                run_state=run_state,
-                rows=rows,
-                rows_path=training_rows_path,
-                generation=generation,
-                timestamp_utc=timestamp_utc,
-                resolved_evaluators_config=resolved_evaluators_config,
-                resolved_control=resolved_control,
-                memory=memory,
-            )
+            if rows_source.format_kind == "jsonl":
+                training_result = _train_and_select_evaluators_streaming(
+                    args=args,
+                    paths=paths,
+                    run_state=run_state,
+                    rows_path=training_rows_path,
+                    rows_source=rows_source,
+                    generation=generation,
+                    timestamp_utc=timestamp_utc,
+                    resolved_evaluators_config=resolved_evaluators_config,
+                    resolved_control=resolved_control,
+                    memory=memory,
+                    max_rows=args.training_max_rows,
+                    chunk_size=args.training_row_chunk_size,
+                )
+            else:
+                if rows is None:
+                    raise AssertionError
+                training_result = _train_and_select_evaluators(
+                    args=args,
+                    paths=paths,
+                    run_state=run_state,
+                    rows=rows,
+                    rows_path=training_rows_path,
+                    generation=generation,
+                    timestamp_utc=timestamp_utc,
+                    resolved_evaluators_config=resolved_evaluators_config,
+                    resolved_control=resolved_control,
+                    memory=memory,
+                )
         finally:
             log_after_cycle_gc(memory)
             memory.close()
