@@ -563,6 +563,11 @@ def _is_streaming_validation_index(
 
 
 def _streaming_split_policy(validation_fraction: float) -> str:
+    return morpion_streaming_split_policy(validation_fraction)
+
+
+def morpion_streaming_split_policy(validation_fraction: float) -> str:
+    """Return the manifest/model metadata name for the streaming validation split."""
     if validation_fraction <= 0.0:
         return "none"
     return f"index_modulo_{max(2, round(1.0 / validation_fraction))}"
@@ -664,6 +669,7 @@ def _resolve_hidden_sizes(args: MorpionTrainingArgs) -> tuple[int, ...] | None:
 __all__ = [
     "MorpionStreamingTrainingArgs",
     "MorpionTrainingArgs",
+    "morpion_streaming_split_policy",
     "train_morpion_regressor",
     "train_morpion_regressor_streaming",
 ]

@@ -521,8 +521,8 @@ def morpion_supervised_rows_source_from_path(
 ) -> MorpionSupervisedRowsSource:
     """Return format-aware metadata for one supervised rows artifact."""
     source = Path(path)
-    metadata = load_morpion_supervised_rows_metadata(source)
     if source.suffix == ".jsonl":
+        metadata = load_morpion_supervised_rows_metadata(source)
         return MorpionSupervisedRowsSource(
             path=source,
             metadata=metadata,

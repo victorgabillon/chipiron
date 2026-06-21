@@ -1603,6 +1603,7 @@ def test_training_stage_streams_jsonl_rows_without_materialized_load(
     assert not (paths.rows_dir / "generation_000001.training_subset.json").exists()
     assert manifest.metadata["training_row_source_format"] == "jsonl"
     assert manifest.metadata["training_row_chunk_size"] == 2
+    assert manifest.metadata["training_split_policy"] == "index_modulo_5"
     assert manifest.metadata["training_rows_original"] == 5
     assert manifest.metadata["training_rows_used"] == 2
     assert manifest.metadata["training_max_rows"] == 2

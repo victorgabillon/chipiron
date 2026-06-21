@@ -14,6 +14,9 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+    morpion_streaming_split_policy,
+)
 
 from .bootstrap_errors import MissingSavedBootstrapArtifactError
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
@@ -1511,6 +1514,9 @@ def run_pipeline_training_stage(
             manifest_metadata["training_rows_used"] = training_rows_used
         if rows_source.format_kind == "jsonl":
             manifest_metadata["training_row_chunk_size"] = args.training_row_chunk_size
+            manifest_metadata["training_split_policy"] = morpion_streaming_split_policy(
+                args.validation_fraction
+            )
         if rows_source.format_kind == "json":
             log_pipeline_memory(
                 stage="training",

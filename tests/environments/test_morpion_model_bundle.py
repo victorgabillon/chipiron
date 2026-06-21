@@ -54,7 +54,9 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.learning import (
+    load_morpion_supervised_rows,
     save_morpion_supervised_rows,
+    save_morpion_supervised_rows_streaming,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
 from chipiron.environments.morpion.players.evaluators.datasets import (
@@ -78,8 +80,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     save_morpion_model_bundle,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+    MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
     train_morpion_regressor,
+    train_morpion_regressor_streaming,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -361,6 +365,48 @@ def test_training_metrics_use_full_validation_mean_not_last_minibatch(
     assert metrics["final_loss"] == metrics["validation_loss"]
     assert metrics["loss_name"] == "mse"
     assert "validation_mae" in metrics
+
+
+def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
+    """Streaming JSONL training should run end-to-end on a tiny real dataset."""
+    json_rows_path = _build_rows_file(
+        tmp_path,
+        target_values=(-1.0, -0.5, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25),
+    )
+    rows = load_morpion_supervised_rows(json_rows_path)
+    jsonl_rows_path = tmp_path / "morpion_supervised_rows.jsonl"
+    write_stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=jsonl_rows_path,
+    )
+    output_dir = tmp_path / "streaming_trained_bundle"
+
+    _model, metrics = train_morpion_regressor_streaming(
+        MorpionStreamingTrainingArgs(
+            training_args=MorpionTrainingArgs(
+                dataset_file=jsonl_rows_path,
+                output_dir=output_dir,
+                batch_size=2,
+                num_epochs=1,
+                learning_rate=1e-3,
+                shuffle=False,
+                validation_fraction=0.25,
+            ),
+            row_chunk_size=3,
+        )
+    )
+
+    assert write_stats.row_count == 8
+    assert output_dir.is_dir()
+    assert (output_dir / MORPION_MODEL_WEIGHTS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MODEL_ARGS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MANIFEST_FILE_NAME).is_file()
+    assert metrics["num_samples"] == 8.0
+    assert metrics["num_train_samples"] > 0.0
+    assert metrics["num_validation_samples"] > 0.0
+    assert metrics["split_policy"] == "index_modulo_4"
+    assert metrics["final_loss"] is not None
 
 
 def test_training_metrics_small_dataset_does_not_require_validation(
