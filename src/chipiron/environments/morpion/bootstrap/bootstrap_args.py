@@ -44,6 +44,18 @@ def _invalid_evaluator_diagnostics_max_rows_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_top_n_error() -> ValueError:
+    """Return the canonical growth memory profile top-N validation error."""
+    return ValueError("growth_memory_profile_top_n must be a positive integer.")
+
+
+def _invalid_growth_memory_profile_sample_nodes_error() -> ValueError:
+    """Return the canonical growth memory profile sample-size validation error."""
+    return ValueError(
+        "growth_memory_profile_sample_nodes must be a non-negative integer."
+    )
+
+
 def _invalid_min_available_ram_mb_error() -> ValueError:
     """Return the canonical available-RAM guard validation error."""
     return ValueError("min_available_ram_mb must be a non-negative integer or None.")
@@ -101,6 +113,9 @@ class MorpionBootstrapArgs:
     training_row_chunk_size: int = 8192
     skip_evaluator_diagnostics: bool = False
     evaluator_diagnostics_max_rows: int | None = 60
+    growth_memory_profile: bool = False
+    growth_memory_profile_top_n: int = 20
+    growth_memory_profile_sample_nodes: int = 2000
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
@@ -122,6 +137,16 @@ class MorpionBootstrapArgs:
             or self.evaluator_diagnostics_max_rows < 0
         ):
             raise _invalid_evaluator_diagnostics_max_rows_error()
+        if (
+            isinstance(self.growth_memory_profile_top_n, bool)
+            or self.growth_memory_profile_top_n <= 0
+        ):
+            raise _invalid_growth_memory_profile_top_n_error()
+        if (
+            isinstance(self.growth_memory_profile_sample_nodes, bool)
+            or self.growth_memory_profile_sample_nodes < 0
+        ):
+            raise _invalid_growth_memory_profile_sample_nodes_error()
         if self.min_available_ram_mb is not None and (
             isinstance(self.min_available_ram_mb, bool)
             or self.min_available_ram_mb < 0

@@ -823,6 +823,23 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--growth-memory-profile",
+        action="store_true",
+        help="Log opt-in shallow memory attribution for growth runtimes.",
+    )
+    parser.add_argument(
+        "--growth-memory-profile-top-n",
+        type=int,
+        default=20,
+        help="Number of GC type and runner attribute entries in growth profiles.",
+    )
+    parser.add_argument(
+        "--growth-memory-profile-sample-nodes",
+        type=int,
+        default=2000,
+        help="Maximum live tree nodes to sample for growth memory profiles.",
+    )
+    parser.add_argument(
         "--reevaluation-max-nodes-per-patch",
         type=int,
         default=10_000,
@@ -1024,6 +1041,9 @@ def launcher_args_from_cli(
         training_row_chunk_size=parsed.training_row_chunk_size,
         skip_evaluator_diagnostics=parsed.skip_evaluator_diagnostics,
         evaluator_diagnostics_max_rows=parsed.evaluator_diagnostics_max_rows,
+        growth_memory_profile=parsed.growth_memory_profile,
+        growth_memory_profile_top_n=parsed.growth_memory_profile_top_n,
+        growth_memory_profile_sample_nodes=parsed.growth_memory_profile_sample_nodes,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,

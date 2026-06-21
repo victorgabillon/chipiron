@@ -91,6 +91,9 @@ from .cycle_validation import validate_pipeline_mode as _validate_pipeline_mode
 from .cycle_validation import (
     validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
 )
+from .growth_memory_profile import (
+    log_growth_runtime_memory_profile as _log_growth_runtime_memory_profile,
+)
 from .history import MorpionBootstrapHistoryRecorder
 from .memory_diagnostics import MemoryDiagnostics
 from .pipeline_artifacts import (
@@ -114,7 +117,12 @@ from .pipeline_claims import (
     claim_pipeline_stage,
     release_pipeline_stage_claim,
 )
-from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
+from .pipeline_memory import (
+    current_rss_mb,
+    format_metric,
+    log_available_ram_guard,
+    log_pipeline_memory,
+)
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -697,6 +705,14 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=restored_tree_size,
         branch_count=restored_branch_count,
     )
+    _log_growth_profile_if_enabled(
+        args=args,
+        runner=runner,
+        generation=run_state.generation,
+        event="after_checkpoint_load",
+        node_count=restored_tree_size,
+        branch_count=restored_branch_count,
+    )
     if not log_available_ram_guard(
         stage="growth",
         generation=run_state.generation,
@@ -732,6 +748,14 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=tree_size_before_growth,
         branch_count=branch_count_before_growth,
     )
+    _log_growth_profile_if_enabled(
+        args=args,
+        runner=runner,
+        generation=run_state.generation,
+        event="before_growth",
+        node_count=tree_size_before_growth,
+        branch_count=branch_count_before_growth,
+    )
     _configure_linoo_selection_artifact_for_growth(
         runner=runner,
         paths=paths,
@@ -758,6 +782,14 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=current_tree_size,
         branch_count=branch_count,
         nodes_added=nodes_added,
+    )
+    _log_growth_profile_if_enabled(
+        args=args,
+        runner=runner,
+        generation=run_state.generation,
+        event="after_growth",
+        node_count=current_tree_size,
+        branch_count=branch_count,
     )
     tree_status = _resolve_tree_status(runner, current_tree_size=current_tree_size)
     frontier_status = resolve_frontier_status_for_cycle(
@@ -990,12 +1022,57 @@ def _run_one_pipeline_growth_cycle_impl(
             node_count=current_tree_size,
             branch_count=branch_count,
         )
+        _log_growth_profile_if_enabled(
+            args=args,
+            runner=runner,
+            generation=generation,
+            event="before_checkpoint_save",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
+        checkpoint_save_started_at = time.perf_counter()
+        checkpoint_save_rss_before_mb = (
+            current_rss_mb() if args.growth_memory_profile else None
+        )
         save_checkpoint(runtime_checkpoint_path)
         if not runtime_checkpoint_path.is_file():
             raise MissingSavedBootstrapArtifactError(
                 action="runner.save_checkpoint()",
                 artifact_path=runtime_checkpoint_path,
             )
+        checkpoint_save_elapsed_s = time.perf_counter() - checkpoint_save_started_at
+        if args.growth_memory_profile:
+            checkpoint_save_rss_after_mb = current_rss_mb()
+            checkpoint_bytes = runtime_checkpoint_path.stat().st_size
+            LOGGER.info(
+                "[growth-profile] event=checkpoint_save_done generation=%s "
+                "rss_before_mb=%s rss_after_mb=%s rss_delta_mb=%s "
+                "checkpoint_bytes=%s checkpoint_bytes_per_node=%s save_elapsed=%.3fs",
+                generation,
+                format_metric(checkpoint_save_rss_before_mb),
+                format_metric(checkpoint_save_rss_after_mb),
+                format_metric(
+                    None
+                    if checkpoint_save_rss_before_mb is None
+                    or checkpoint_save_rss_after_mb is None
+                    else checkpoint_save_rss_after_mb - checkpoint_save_rss_before_mb
+                ),
+                checkpoint_bytes,
+                format_metric(
+                    None
+                    if current_tree_size <= 0
+                    else checkpoint_bytes / current_tree_size
+                ),
+                checkpoint_save_elapsed_s,
+            )
+        _log_growth_profile_if_enabled(
+            args=args,
+            runner=runner,
+            generation=generation,
+            event="after_checkpoint_save",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+        )
         relative_runtime_checkpoint_path = paths.relative_to_work_dir(
             runtime_checkpoint_path
         )
@@ -1092,6 +1169,29 @@ def _run_one_pipeline_growth_cycle_impl(
         branch_count=branch_count,
     )
     return next_run_state
+
+
+def _log_growth_profile_if_enabled(
+    *,
+    args: MorpionBootstrapArgs,
+    runner: MorpionSearchRunner,
+    generation: int,
+    event: str,
+    node_count: int | None,
+    branch_count: int | None,
+) -> None:
+    """Log opt-in shallow growth runtime memory attribution."""
+    if not args.growth_memory_profile:
+        return
+    _log_growth_runtime_memory_profile(
+        runner=runner,
+        generation=generation,
+        event=event,
+        node_count=node_count,
+        branch_count=branch_count,
+        sample_nodes=args.growth_memory_profile_sample_nodes,
+        top_n=args.growth_memory_profile_top_n,
+    )
 
 
 def run_pipeline_dataset_stage(

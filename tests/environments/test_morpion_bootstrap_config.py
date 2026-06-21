@@ -566,6 +566,9 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
     assert args.training_export_mode == "sharded"
     assert args.evaluator_diagnostics_max_rows == 60
+    assert args.growth_memory_profile is False
+    assert args.growth_memory_profile_top_n == 20
+    assert args.growth_memory_profile_sample_nodes == 2000
 
 
 def test_bootstrap_args_validate_evaluator_diagnostics_max_rows(
@@ -579,6 +582,29 @@ def test_bootstrap_args_validate_evaluator_diagnostics_max_rows(
         MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=-1)
     with pytest.raises(ValueError, match="evaluator_diagnostics_max_rows"):
         MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=True)
+
+
+def test_bootstrap_args_validate_growth_memory_profile_controls(
+    tmp_path: Path,
+) -> None:
+    """Growth profile bounds should stay explicit and cheap."""
+    MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=1)
+    MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_sample_nodes=0)
+
+    with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
+        MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=0)
+    with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
+        MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=True)
+    with pytest.raises(ValueError, match="growth_memory_profile_sample_nodes"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_sample_nodes=-1,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_sample_nodes"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_sample_nodes=True,
+        )
 
 
 def test_bootstrap_config_from_args_preserves_explicit_training_export_mode(
@@ -841,6 +867,9 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
     assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
     assert "min_available_ram_mb" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_top_n" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_sample_nodes" in growth_stage_owned_bootstrap_fields()
     assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()
     assert "training_export_mode" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()

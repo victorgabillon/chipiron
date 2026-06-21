@@ -136,6 +136,7 @@ from tests.environments.morpion_training_snapshot_helpers import (
 
 if TYPE_CHECKING:
     from _pytest.capture import CaptureFixture
+    from _pytest.logging import LogCaptureFixture
 
 
 class FakeMorpionSearchRunner:
@@ -655,6 +656,43 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
     assert not paths.rows_path_for_generation(1).exists()
     assert not paths.pipeline_active_model_path.exists()
     assert not paths.model_generation_dir_for_generation(1).exists()
+
+
+def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Growth stage should emit opt-in memory profile checkpoints."""
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        branch_counts=(8,),
+    )
+    runner.nodes = [
+        {
+            "metadata": {"index": 1},
+            "state_ref_payload": {"state": [1, 2]},
+            "children": [2, 3],
+        }
+    ]
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_memory_profile=True,
+        growth_memory_profile_top_n=3,
+        growth_memory_profile_sample_nodes=1,
+    )
+
+    caplog.set_level(logging.INFO)
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    text = caplog.text
+    assert "[growth-profile] event=after_checkpoint_load" in text
+    assert "[growth-profile] event=before_growth" in text
+    assert "[growth-profile] event=after_growth" in text
+    assert "[growth-profile] event=before_checkpoint_save" in text
+    assert "[growth-profile] event=checkpoint_save_done" in text
+    assert "[growth-profile] event=after_checkpoint_save" in text
+    assert "node_sample" in text
 
 
 def test_pipeline_growth_stage_skips_no_op_checkpoint_when_limit_already_reached(

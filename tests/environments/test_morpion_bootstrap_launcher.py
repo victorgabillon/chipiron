@@ -462,6 +462,39 @@ def test_launcher_args_default_evaluator_diagnostics_max_rows(
     assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 60
 
 
+def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
+    """Launcher CLI should expose opt-in growth memory profiling controls."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--growth-memory-profile",
+            "--growth-memory-profile-top-n",
+            "7",
+            "--growth-memory-profile-sample-nodes",
+            "123",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.growth_memory_profile is True
+    assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 7
+    assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 123
+
+
+def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
+    """Growth memory profiling should be disabled by default."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.growth_memory_profile is False
+    assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 20
+    assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 2000
+
+
 def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:
     """Launcher CLI should expose the artifact-pipeline available-RAM guard."""
     launcher_args = launcher_module.launcher_args_from_cli(
