@@ -495,6 +495,26 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 2000
 
 
+def test_launcher_args_parse_candidate_checkpoint_load_headroom(
+    tmp_path: Path,
+) -> None:
+    """Launcher CLI should expose candidate checkpoint load forecast controls."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--candidate-checkpoint-load-headroom-factor",
+            "42",
+            "--candidate-checkpoint-load-min-headroom-mb",
+            "1234",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.candidate_checkpoint_load_headroom_factor == 42
+    assert launcher_args.bootstrap_args.candidate_checkpoint_load_min_headroom_mb == 1234
+    assert launcher_args.candidate_checkpoint_load_headroom_explicit is True
+
+
 def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:
     """Launcher CLI should expose the artifact-pipeline available-RAM guard."""
     launcher_args = launcher_module.launcher_args_from_cli(
@@ -1131,9 +1151,15 @@ def test_growth_resume_keeps_persisted_tree_branch_limit_without_cli_override(
     )
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
 
     assert startup_status.resolved_bootstrap_args.tree_branch_limit == 1_200_000
     assert startup_status.bootstrap_config.runtime.tree_branch_limit == 1_200_000
+    assert "tree_branch_limit: 1200000" in summary
+    assert "tree_branch_limit: 128" not in summary
 
 
 def test_growth_resume_allows_explicit_tree_branch_limit_override(
@@ -1164,8 +1190,13 @@ def test_growth_resume_allows_explicit_tree_branch_limit_override(
     )
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
 
     assert startup_status.resolved_bootstrap_args.tree_branch_limit == 128
+    assert "tree_branch_limit: 128 (baseline 1200000" in summary
 
 
 def test_launcher_constructs_real_runner_in_normal_path(

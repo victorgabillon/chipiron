@@ -136,6 +136,7 @@ class MorpionBootstrapLauncherArgs:
     rollout_config_explicit: bool = False
     min_available_ram_mb_explicit: bool = False
     tree_branch_limit_explicit: bool = False
+    candidate_checkpoint_load_headroom_explicit: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -342,6 +343,16 @@ def _collect_launcher_startup_status(
                 requested_bootstrap_args,
                 tree_branch_limit=bootstrap_config.runtime.tree_branch_limit,
             )
+        if not launcher_args.candidate_checkpoint_load_headroom_explicit:
+            requested_bootstrap_args = replace(
+                requested_bootstrap_args,
+                candidate_checkpoint_load_headroom_factor=(
+                    bootstrap_config.runtime.candidate_checkpoint_load_headroom_factor
+                ),
+                candidate_checkpoint_load_min_headroom_mb=(
+                    bootstrap_config.runtime.candidate_checkpoint_load_min_headroom_mb
+                ),
+            )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
         bootstrap_config = _adopt_growth_rollout_config_if_requested(
             persisted_config=bootstrap_config,
@@ -545,6 +556,11 @@ def _render_launcher_startup_summary(
     control_fragment = (
         "none" if control_tree_branch_limit is None else str(control_tree_branch_limit)
     )
+    resolved_tree_branch_limit = (
+        startup_status.resolved_bootstrap_args.tree_branch_limit
+        if control_tree_branch_limit is None
+        else effective_runtime_config.tree_branch_limit
+    )
     latest_runtime_checkpoint_path = _latest_runtime_checkpoint_path(startup_status)
     latest_training_artifact_path = _latest_training_artifact_path(startup_status)
     return "\n".join(
@@ -575,7 +591,7 @@ def _render_launcher_startup_summary(
             f"configured evaluators: {evaluators}",
             f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
             "tree_branch_limit: "
-            f"{effective_runtime_config.tree_branch_limit} "
+            f"{resolved_tree_branch_limit} "
             f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
             "rollout: "
             f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
@@ -846,6 +862,21 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Maximum live tree nodes to sample for growth memory profiles.",
     )
     parser.add_argument(
+        "--candidate-checkpoint-load-headroom-factor",
+        type=float,
+        default=60.0,
+        help=(
+            "Multiplier applied to compressed candidate-checkpoint size when "
+            "forecasting pre-load RAM headroom."
+        ),
+    )
+    parser.add_argument(
+        "--candidate-checkpoint-load-min-headroom-mb",
+        type=int,
+        default=512,
+        help="Minimum estimated RAM headroom for candidate checkpoint load.",
+    )
+    parser.add_argument(
         "--reevaluation-max-nodes-per-patch",
         type=int,
         default=10_000,
@@ -1017,6 +1048,17 @@ def launcher_args_from_cli(
         or argument.startswith("--tree-branch-limit=")
         for argument in argv_list
     )
+    candidate_checkpoint_load_headroom_explicit = any(
+        argument == "--candidate-checkpoint-load-headroom-factor"
+        or argument == "--candidate-checkpoint-load-min-headroom-mb"
+        or argument.startswith(
+            (
+                "--candidate-checkpoint-load-headroom-factor=",
+                "--candidate-checkpoint-load-min-headroom-mb=",
+            )
+        )
+        for argument in argv_list
+    )
     rollout_config_explicit = any(
         argument == "--rollout-after-opening"
         or argument == "--rollout-stop-on-existing-node"
@@ -1055,6 +1097,12 @@ def launcher_args_from_cli(
         growth_memory_profile=parsed.growth_memory_profile,
         growth_memory_profile_top_n=parsed.growth_memory_profile_top_n,
         growth_memory_profile_sample_nodes=parsed.growth_memory_profile_sample_nodes,
+        candidate_checkpoint_load_headroom_factor=(
+            parsed.candidate_checkpoint_load_headroom_factor
+        ),
+        candidate_checkpoint_load_min_headroom_mb=(
+            parsed.candidate_checkpoint_load_min_headroom_mb
+        ),
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,
@@ -1099,6 +1147,9 @@ def launcher_args_from_cli(
         rollout_config_explicit=rollout_config_explicit,
         min_available_ram_mb_explicit=min_available_ram_mb_explicit,
         tree_branch_limit_explicit=tree_branch_limit_explicit,
+        candidate_checkpoint_load_headroom_explicit=(
+            candidate_checkpoint_load_headroom_explicit
+        ),
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

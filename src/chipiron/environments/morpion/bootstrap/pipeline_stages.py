@@ -123,6 +123,7 @@ from .pipeline_memory import (
     current_rss_mb,
     format_metric,
     log_available_ram_guard,
+    log_candidate_checkpoint_load_memory_forecast,
     log_pipeline_memory,
 )
 from .record_status import (
@@ -679,26 +680,22 @@ def _run_one_pipeline_growth_cycle_impl(
             paths=paths,
             run_state=run_state,
             before_candidate_checkpoint_load=lambda _source, _path: (
-                _log_before_candidate_checkpoint_load(
+                _should_load_candidate_checkpoint(
                     args=args,
                     generation=run_state.generation,
+                    source=_source,
                     candidate_path=_path,
-                )
-                and log_available_ram_guard(
-                    stage="growth",
-                    generation=run_state.generation,
-                    action="candidate_checkpoint_load",
-                    required_mb=args.min_available_ram_mb,
                 )
             ),
             after_candidate_checkpoint_load=_log_candidate_checkpoint_load_profile
             if args.growth_memory_profile
             else None,
         )
-    except CandidateCheckpointLoadDeferredError:
+    except CandidateCheckpointLoadDeferredError as exc:
         LOGGER.info(
-            "[pipeline] growth_skip generation=%s reason=low_available_ram action=candidate_checkpoint_load",
+            "[pipeline] growth_skip generation=%s reason=low_available_ram action=%s",
             run_state.generation,
+            exc.action,
         )
         log_pipeline_memory(
             stage="growth",
@@ -1249,6 +1246,42 @@ def _log_before_candidate_checkpoint_load(
             str(candidate_path),
         )
     return True
+
+
+def _should_load_candidate_checkpoint(
+    *,
+    args: MorpionBootstrapArgs,
+    generation: int,
+    source: str,
+    candidate_path: Path,
+) -> bool:
+    """Return whether candidate checkpoint validation may load the payload."""
+    _log_before_candidate_checkpoint_load(
+        args=args,
+        generation=generation,
+        candidate_path=candidate_path,
+    )
+    forecast = log_candidate_checkpoint_load_memory_forecast(
+        stage="growth",
+        generation=generation,
+        action="candidate_checkpoint_load",
+        checkpoint_path=candidate_path,
+        min_available_ram_mb=args.min_available_ram_mb,
+        headroom_factor=args.candidate_checkpoint_load_headroom_factor,
+        min_headroom_mb=args.candidate_checkpoint_load_min_headroom_mb,
+    )
+    if forecast.decision == "skip":
+        raise CandidateCheckpointLoadDeferredError(
+            source=source,
+            artifact_path=candidate_path,
+            action="candidate_checkpoint_load_forecast",
+        )
+    return log_available_ram_guard(
+        stage="growth",
+        generation=generation,
+        action="candidate_checkpoint_load",
+        required_mb=args.min_available_ram_mb,
+    )
 
 
 def _log_candidate_checkpoint_load_profile(

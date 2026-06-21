@@ -100,6 +100,7 @@ class CandidateCheckpointLoadDeferredError(Exception):
 
     source: str
     artifact_path: Path
+    action: str = "candidate_checkpoint_load"
 
 
 def prune_saved_generation_artifacts(paths: MorpionBootstrapPaths) -> None:

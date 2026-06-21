@@ -551,6 +551,8 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.runtime.tree_branch_limit == 96
     assert config.runtime.reevaluation_blend_alpha == 1.0
     assert config.runtime.min_available_ram_mb is None
+    assert config.runtime.candidate_checkpoint_load_headroom_factor == 60.0
+    assert config.runtime.candidate_checkpoint_load_min_headroom_mb == 512
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
     assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
@@ -569,6 +571,8 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile is False
     assert args.growth_memory_profile_top_n == 20
     assert args.growth_memory_profile_sample_nodes == 2000
+    assert args.candidate_checkpoint_load_headroom_factor == 60.0
+    assert args.candidate_checkpoint_load_min_headroom_mb == 512
 
 
 def test_bootstrap_args_validate_evaluator_diagnostics_max_rows(
@@ -604,6 +608,38 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
         MorpionBootstrapArgs(
             work_dir=tmp_path,
             growth_memory_profile_sample_nodes=True,
+        )
+
+
+def test_bootstrap_args_validate_candidate_checkpoint_load_headroom(
+    tmp_path: Path,
+) -> None:
+    """Candidate checkpoint load forecast controls should be non-negative."""
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        candidate_checkpoint_load_headroom_factor=0.0,
+        candidate_checkpoint_load_min_headroom_mb=0,
+    )
+
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_headroom_factor"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_headroom_factor=-1.0,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_headroom_factor"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_headroom_factor=True,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_min_headroom_mb"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_min_headroom_mb=-1,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_min_headroom_mb"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_min_headroom_mb=True,
         )
 
 
@@ -686,6 +722,8 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
     assert loaded.training_export_mode == "sharded"
     assert loaded.runtime.reevaluation_blend_alpha == 1.0
     assert loaded.runtime.min_available_ram_mb is None
+    assert loaded.runtime.candidate_checkpoint_load_headroom_factor == 60.0
+    assert loaded.runtime.candidate_checkpoint_load_min_headroom_mb == 512
 
 
 def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:
@@ -867,6 +905,14 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
     assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
     assert "min_available_ram_mb" in growth_stage_owned_bootstrap_fields()
+    assert (
+        "candidate_checkpoint_load_headroom_factor"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "candidate_checkpoint_load_min_headroom_mb"
+        in growth_stage_owned_bootstrap_fields()
+    )
     assert "growth_memory_profile" in growth_stage_owned_bootstrap_fields()
     assert "growth_memory_profile_top_n" in growth_stage_owned_bootstrap_fields()
     assert "growth_memory_profile_sample_nodes" in growth_stage_owned_bootstrap_fields()
@@ -883,6 +929,8 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     } == GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
@@ -891,6 +939,8 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS

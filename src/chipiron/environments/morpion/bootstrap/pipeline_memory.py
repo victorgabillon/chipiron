@@ -6,9 +6,26 @@ import logging
 import os
 import resource
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateCheckpointLoadMemoryForecast:
+    """Forecast whether candidate checkpoint load has enough RAM headroom."""
+
+    checkpoint_bytes: int | None
+    checkpoint_mb: float | None
+    headroom_factor: float
+    min_headroom_mb: int
+    estimated_load_mb: float
+    required_post_load_available_mb: int | None
+    required_pre_load_available_mb: float | None
+    available_mb: float | None
+    decision: Literal["run", "skip"]
 
 
 def _available_ram_mb_from_meminfo_text(text: str) -> float | None:
@@ -76,6 +93,91 @@ def format_metric(value: object | None) -> object | None:
     if isinstance(value, float):
         return round(value, 3)
     return value
+
+
+def candidate_checkpoint_load_memory_forecast(
+    *,
+    checkpoint_path: Path,
+    available_mb: float | None,
+    min_available_ram_mb: int | None,
+    headroom_factor: float,
+    min_headroom_mb: int,
+) -> CandidateCheckpointLoadMemoryForecast:
+    """Forecast candidate-checkpoint load RAM from compressed artifact size."""
+    try:
+        checkpoint_bytes = checkpoint_path.stat().st_size
+    except OSError:
+        checkpoint_bytes = None
+    checkpoint_mb = (
+        None if checkpoint_bytes is None else checkpoint_bytes / (1024 * 1024)
+    )
+    if checkpoint_mb is None:
+        estimated_load_mb = float(min_headroom_mb)
+    else:
+        estimated_load_mb = max(checkpoint_mb * headroom_factor, min_headroom_mb)
+
+    if min_available_ram_mb is None or min_available_ram_mb <= 0:
+        required_pre_load_available_mb = None
+        decision: Literal["run", "skip"] = "run"
+    else:
+        required_pre_load_available_mb = min_available_ram_mb + estimated_load_mb
+        decision = (
+            "run"
+            if available_mb is None or available_mb >= required_pre_load_available_mb
+            else "skip"
+        )
+
+    return CandidateCheckpointLoadMemoryForecast(
+        checkpoint_bytes=checkpoint_bytes,
+        checkpoint_mb=checkpoint_mb,
+        headroom_factor=headroom_factor,
+        min_headroom_mb=min_headroom_mb,
+        estimated_load_mb=estimated_load_mb,
+        required_post_load_available_mb=min_available_ram_mb,
+        required_pre_load_available_mb=required_pre_load_available_mb,
+        available_mb=available_mb,
+        decision=decision,
+    )
+
+
+def log_candidate_checkpoint_load_memory_forecast(
+    *,
+    stage: str,
+    generation: int | None,
+    action: str,
+    checkpoint_path: Path,
+    min_available_ram_mb: int | None,
+    headroom_factor: float,
+    min_headroom_mb: int,
+) -> CandidateCheckpointLoadMemoryForecast:
+    """Log and return one candidate checkpoint load memory forecast."""
+    forecast = candidate_checkpoint_load_memory_forecast(
+        checkpoint_path=checkpoint_path,
+        available_mb=available_ram_mb(),
+        min_available_ram_mb=min_available_ram_mb,
+        headroom_factor=headroom_factor,
+        min_headroom_mb=min_headroom_mb,
+    )
+    LOGGER.info(
+        "[checkpoint-forecast] stage=%s generation=%s action=%s "
+        "checkpoint_bytes=%s checkpoint_mb=%s headroom_factor=%s "
+        "estimated_load_mb=%s min_headroom_mb=%s "
+        "required_post_load_available_mb=%s required_pre_load_available_mb=%s "
+        "available_mb=%s decision=%s",
+        stage,
+        format_metric(generation),
+        action,
+        forecast.checkpoint_bytes,
+        format_metric(forecast.checkpoint_mb),
+        format_metric(forecast.headroom_factor),
+        format_metric(forecast.estimated_load_mb),
+        forecast.min_headroom_mb,
+        forecast.required_post_load_available_mb,
+        format_metric(forecast.required_pre_load_available_mb),
+        format_metric(forecast.available_mb),
+        forecast.decision,
+    )
+    return forecast
 
 
 def _ram_guard_enabled(required_mb: int | None) -> bool:
@@ -146,10 +248,13 @@ def log_pipeline_memory(
 
 
 __all__ = [
+    "CandidateCheckpointLoadMemoryForecast",
     "available_ram_mb",
+    "candidate_checkpoint_load_memory_forecast",
     "current_rss_mb",
     "format_metric",
     "has_min_available_ram",
     "log_available_ram_guard",
+    "log_candidate_checkpoint_load_memory_forecast",
     "log_pipeline_memory",
 ]

@@ -61,6 +61,8 @@ class MorpionBootstrapRuntimeConfig:
     tree_branch_limit: int
     reevaluation_blend_alpha: float = 1.0
     min_available_ram_mb: int | None = None
+    candidate_checkpoint_load_headroom_factor: float = 60.0
+    candidate_checkpoint_load_min_headroom_mb: int = 512
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -74,6 +76,20 @@ class MorpionBootstrapRuntimeConfig:
         ):
             raise MalformedMorpionBootstrapConfigError.invalid_int(
                 "runtime.min_available_ram_mb"
+            )
+        if (
+            isinstance(self.candidate_checkpoint_load_headroom_factor, bool)
+            or self.candidate_checkpoint_load_headroom_factor < 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_float(
+                "runtime.candidate_checkpoint_load_headroom_factor"
+            )
+        if (
+            isinstance(self.candidate_checkpoint_load_min_headroom_mb, bool)
+            or self.candidate_checkpoint_load_min_headroom_mb < 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.candidate_checkpoint_load_min_headroom_mb"
             )
 
 
@@ -276,6 +292,8 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }
@@ -330,6 +348,12 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             tree_branch_limit=args.tree_branch_limit,
             reevaluation_blend_alpha=args.reevaluation_blend_alpha,
             min_available_ram_mb=args.min_available_ram_mb,
+            candidate_checkpoint_load_headroom_factor=(
+                args.candidate_checkpoint_load_headroom_factor
+            ),
+            candidate_checkpoint_load_min_headroom_mb=(
+                args.candidate_checkpoint_load_min_headroom_mb
+            ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -366,6 +390,12 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "tree_branch_limit": config.runtime.tree_branch_limit,
             "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
             "min_available_ram_mb": config.runtime.min_available_ram_mb,
+            "candidate_checkpoint_load_headroom_factor": (
+                config.runtime.candidate_checkpoint_load_headroom_factor
+            ),
+            "candidate_checkpoint_load_min_headroom_mb": (
+                config.runtime.candidate_checkpoint_load_min_headroom_mb
+            ),
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -473,6 +503,14 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             min_available_ram_mb=_optional_int(
                 runtime.get("min_available_ram_mb"),
                 field_name="runtime.min_available_ram_mb",
+            ),
+            candidate_checkpoint_load_headroom_factor=_coerce_float(
+                runtime.get("candidate_checkpoint_load_headroom_factor", 60.0),
+                field_name="runtime.candidate_checkpoint_load_headroom_factor",
+            ),
+            candidate_checkpoint_load_min_headroom_mb=_coerce_int(
+                runtime.get("candidate_checkpoint_load_min_headroom_mb", 512),
+                field_name="runtime.candidate_checkpoint_load_min_headroom_mb",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -694,6 +732,8 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
         "growth_memory_profile",
         "growth_memory_profile_top_n",
         "growth_memory_profile_sample_nodes",
@@ -816,6 +856,12 @@ def _stage_bootstrap_config_field_values(
         "tree_branch_limit": config.runtime.tree_branch_limit,
         "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
         "min_available_ram_mb": config.runtime.min_available_ram_mb,
+        "candidate_checkpoint_load_headroom_factor": (
+            config.runtime.candidate_checkpoint_load_headroom_factor
+        ),
+        "candidate_checkpoint_load_min_headroom_mb": (
+            config.runtime.candidate_checkpoint_load_min_headroom_mb
+        ),
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
         "rollout_action_selector_kind": config.search.rollout.action_selector_kind,

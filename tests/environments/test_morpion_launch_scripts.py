@@ -116,3 +116,35 @@ def test_gnome_cluster_exposes_growth_memory_profile_env() -> None:
         "memory_profile_sample_nodes=$MORPION_GROWTH_MEMORY_PROFILE_SAMPLE_NODES"
         in script_text
     )
+
+
+def test_gnome_cluster_exposes_candidate_checkpoint_load_headroom_env() -> None:
+    """The GNOME cluster launcher should expose checkpoint load forecast knobs."""
+    script_text = (
+        _REPO_ROOT / "scripts" / "launch_morpion_gnome_cluster.sh"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        'MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR="${MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR:-60}"'
+        in script_text
+    )
+    assert (
+        'MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB="${MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB:-512}"'
+        in script_text
+    )
+    assert (
+        "--candidate-checkpoint-load-headroom-factor "
+        "$MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR"
+    ) in script_text
+    assert (
+        "--candidate-checkpoint-load-min-headroom-mb "
+        "$MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB"
+    ) in script_text
+    assert (
+        "candidate_checkpoint_load_headroom_factor="
+        "$MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR"
+    ) in script_text
+    assert (
+        "candidate_checkpoint_load_min_headroom_mb="
+        "$MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB"
+    ) in script_text
