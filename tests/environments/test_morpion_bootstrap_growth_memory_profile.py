@@ -47,6 +47,35 @@ class FakeNode:
         self.is_exact = index % 3 == 0
 
 
+class FakeAttrChild:
+    """Nested object with a regular __dict__ for one-level profiling."""
+
+    def __init__(self, index: int) -> None:
+        self.score = float(index)
+        self.tag = f"child-{index}"
+
+
+class RaisingDictAttr:
+    """Object whose __dict__ access raises to keep profiling failure-proof."""
+
+    def __getattribute__(self, name: str):
+        if name == "__dict__":
+            raise RuntimeError("broken __dict__")
+        return super().__getattribute__(name)
+
+
+class FakeNodeWithNestedAttrs:
+    """Node-like object whose direct attrs should get one-level anatomy logs."""
+
+    def __init__(self, index: int, *, broken_attr: bool = False) -> None:
+        self.tree_node = FakeAttrChild(index)
+        self.tree_evaluation = (
+            RaisingDictAttr() if broken_attr else FakeAttrChild(index + 100)
+        )
+        self.is_terminal = False
+        self.is_exact = False
+
+
 class FakeRunner:
     """Runner-like object exposing nodes through a simple attribute."""
 
@@ -73,6 +102,16 @@ class FakeRunnerWithPrivateRuntime:
         self._runtime = SimpleNamespace(
             node_store=SimpleNamespace(nodes=[FakeNode(index) for index in range(3)])
         )
+
+
+class FakeRunnerWithNestedAttrs:
+    """Runner-like object exposing nodes with nested anatomy attributes."""
+
+    def __init__(self, *, broken_attr: bool = False) -> None:
+        self.nodes = [
+            FakeNodeWithNestedAttrs(index, broken_attr=broken_attr)
+            for index in range(3)
+        ]
 
 
 class RunnerWithoutNodes:
@@ -155,6 +194,53 @@ def test_growth_runtime_memory_profile_uses_private_runtime_fallback(
     text = caplog.text
     assert "node_sample source=_runtime.node_store.nodes" in text
     assert "sample_size=3" in text
+
+
+def test_growth_runtime_memory_profile_logs_node_attr_sample(
+    caplog: LogCaptureFixture,
+) -> None:
+    """One-level direct node attributes should get bounded anatomy logs."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_runtime_memory_profile(
+        runner=FakeRunnerWithNestedAttrs(),
+        generation=11,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        sample_nodes=3,
+        top_n=5,
+    )
+
+    text = caplog.text
+    assert "node_attr_sample source=nodes attr=tree_node" in text
+    assert "node_attr_sample source=nodes attr=tree_evaluation" in text
+    assert "avg_shallow_bytes=" in text
+    assert "avg_dict_shallow_bytes=" in text
+    assert "avg_dict_len=" in text
+    assert "top_types=" in text
+    assert "top_child_attrs=" in text
+
+
+def test_growth_runtime_memory_profile_tolerates_broken_attr_getters(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Profiler instrumentation should not crash when nested attr access breaks."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_runtime_memory_profile(
+        runner=FakeRunnerWithNestedAttrs(broken_attr=True),
+        generation=12,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        sample_nodes=3,
+        top_n=5,
+    )
+
+    text = caplog.text
+    assert "[growth-profile] event=after_checkpoint_load node_sample" in text
+    assert "node_attr_sample source=nodes attr=tree_evaluation" in text
 
 
 def test_growth_runtime_memory_profile_handles_missing_nodes(

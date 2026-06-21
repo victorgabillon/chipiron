@@ -186,10 +186,28 @@ def _shallow_size(value: object | None) -> int:
         return 0
 
 
+def _safe_getattr(
+    value: object,
+    attr_name: str,
+    default: object | None = None,
+) -> object | None:
+    try:
+        return getattr(value, attr_name)
+    except Exception:
+        return default
+
+
+def _safe_vars(value: object) -> Mapping[object, object] | None:
+    raw_dict = _safe_getattr(value, "__dict__")
+    if isinstance(raw_dict, Mapping):
+        return raw_dict
+    return None
+
+
 def _get_field(node: object, field_name: str) -> object | None:
     if isinstance(node, Mapping):
         return node.get(field_name)
-    return getattr(node, field_name, None)
+    return _safe_getattr(node, field_name)
 
 
 def _truthy_fraction(count: int, sample_size: int) -> float | None:
@@ -204,25 +222,39 @@ def _avg(total: int | float, sample_size: int) -> float | None:
     return total / sample_size
 
 
-def _node_sample_summary(
+def _sample_nodes_from_runner(
     runner: object,
     *,
     sample_nodes: int,
-) -> tuple[dict[str, object] | None, str]:
+) -> tuple[list[object] | None, str]:
     if sample_nodes <= 0:
-        return {
-            "source": "disabled",
-            "sample_size": 0,
-            "avg_node_shallow_bytes": None,
-            "avg_node_dict_shallow_bytes": None,
-            "avg_dict_len": None,
-            "top_node_attrs": [],
-        }, "disabled"
-
+        return [], "disabled"
     iterator, source = _node_iterator_from_runner(runner)
     if iterator is None:
         return None, source
-    sample = list(islice(iterator, sample_nodes))
+    try:
+        return list(islice(iterator, sample_nodes)), source
+    except Exception:
+        return None, source
+
+
+def _top_node_attr_names(sample: list[object]) -> list[str]:
+    attr_name_counts: Counter[str] = Counter()
+    for node in sample:
+        node_dict = _safe_vars(node)
+        if node_dict is None:
+            continue
+        attr_name_counts.update(
+            str(attr_name) for attr_name in node_dict.keys() if attr_name is not None
+        )
+    return [attr_name for attr_name, _count in attr_name_counts.most_common(10)]
+
+
+def _node_sample_summary_from_sample(
+    sample: list[object],
+    *,
+    source: str,
+) -> dict[str, object]:
     sample_size = len(sample)
     totals = {
         "node": 0,
@@ -237,12 +269,12 @@ def _node_sample_summary(
 
     for node in sample:
         totals["node"] += _shallow_size(node)
-        node_dict = getattr(node, "__dict__", None)
+        node_dict = _safe_vars(node)
         totals["node_dict"] += _shallow_size(node_dict)
         node_dict_len = _safe_len(node_dict)
         if node_dict_len is not None:
             totals["dict_len"] += node_dict_len
-        if isinstance(node_dict, Mapping):
+        if node_dict is not None:
             attr_name_counts.update(
                 str(attr_name) for attr_name in node_dict.keys() if attr_name is not None
             )
@@ -282,7 +314,98 @@ def _node_sample_summary(
     summary["avg_state_payload_shallow_bytes"] = summary[
         "avg_state_ref_payload_shallow_bytes"
     ]
-    return summary, source
+    return summary
+
+
+def _node_attr_sample_summaries(
+    sample: list[object],
+    *,
+    top_attr_names: list[str],
+) -> list[dict[str, object]]:
+    sample_size = len(sample)
+    summaries: list[dict[str, object]] = []
+    for attr_name in top_attr_names[:10]:
+        try:
+            shallow_total = 0
+            attr_dict_total = 0
+            attr_dict_len_total = 0
+            attr_dict_seen = 0
+            type_counts: Counter[str] = Counter()
+            child_attr_counts: Counter[str] = Counter()
+
+            for node in sample:
+                node_dict = _safe_vars(node)
+                attr_value = None if node_dict is None else node_dict.get(attr_name)
+                shallow_total += _shallow_size(attr_value)
+                if attr_value is None:
+                    continue
+
+                type_counts[_qualified_type_name(attr_value)] += 1
+                attr_dict = _safe_vars(attr_value)
+                if attr_dict is None:
+                    continue
+                attr_dict_total += _shallow_size(attr_dict)
+                attr_dict_len = _safe_len(attr_dict)
+                if attr_dict_len is not None:
+                    attr_dict_len_total += attr_dict_len
+                    attr_dict_seen += 1
+                child_attr_counts.update(
+                    str(child_attr_name)
+                    for child_attr_name in attr_dict.keys()
+                    if child_attr_name is not None
+                )
+
+            summaries.append(
+                {
+                    "attr": attr_name,
+                    "sample_size": sample_size,
+                    "top_types": _format_pairs(type_counts.most_common(5)),
+                    "avg_shallow_bytes": format_metric(
+                        _avg(shallow_total, sample_size)
+                    ),
+                    "avg_dict_shallow_bytes": format_metric(
+                        _avg(attr_dict_total, attr_dict_seen)
+                        if attr_dict_seen > 0
+                        else None
+                    ),
+                    "avg_dict_len": format_metric(
+                        _avg(attr_dict_len_total, attr_dict_seen)
+                        if attr_dict_seen > 0
+                        else None
+                    ),
+                    "top_child_attrs": _format_pairs(child_attr_counts.most_common(10)),
+                }
+            )
+        except Exception as exc:
+            summaries.append(
+                {
+                    "attr": attr_name,
+                    "sample_size": sample_size,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+    return summaries
+
+
+def _node_sample_summary(
+    runner: object,
+    *,
+    sample_nodes: int,
+) -> tuple[dict[str, object] | None, str]:
+    if sample_nodes <= 0:
+        return {
+            "source": "disabled",
+            "sample_size": 0,
+            "avg_node_shallow_bytes": None,
+            "avg_node_dict_shallow_bytes": None,
+            "avg_dict_len": None,
+            "top_node_attrs": [],
+        }, "disabled"
+
+    sample, source = _sample_nodes_from_runner(runner, sample_nodes=sample_nodes)
+    if sample is None:
+        return None, source
+    return _node_sample_summary_from_sample(sample, source=source), source
 
 
 def _branch_sample_summary(
@@ -400,15 +523,47 @@ def log_growth_runtime_memory_profile(
     )
     LOGGER.info("[growth-profile] event=%s node_sample %s", event, sample_text)
 
-    branch_summary, _reason = _branch_sample_summary(
-        runner,
-        sample_branches=sample_nodes,
-    )
-    if branch_summary is not None:
-        branch_text = " ".join(
-            f"{name}={value}" for name, value in branch_summary.items()
+    try:
+        sample, source = _sample_nodes_from_runner(runner, sample_nodes=sample_nodes)
+        if sample is not None:
+            for attr_summary in _node_attr_sample_summaries(
+                sample,
+                top_attr_names=_top_node_attr_names(sample),
+            ):
+                attr_text = " ".join(
+                    f"{name}={value}" for name, value in attr_summary.items()
+                )
+                LOGGER.info(
+                    "[growth-profile] event=%s node_attr_sample source=%s %s",
+                    event,
+                    source,
+                    attr_text,
+                )
+    except Exception as exc:
+        LOGGER.info(
+            "[growth-profile] event=%s node_attr_sample unavailable reason=%s: %s",
+            event,
+            type(exc).__name__,
+            exc,
         )
-        LOGGER.info("[growth-profile] event=%s branch_sample %s", event, branch_text)
+
+    try:
+        branch_summary, _reason = _branch_sample_summary(
+            runner,
+            sample_branches=sample_nodes,
+        )
+        if branch_summary is not None:
+            branch_text = " ".join(
+                f"{name}={value}" for name, value in branch_summary.items()
+            )
+            LOGGER.info("[growth-profile] event=%s branch_sample %s", event, branch_text)
+    except Exception as exc:
+        LOGGER.info(
+            "[growth-profile] event=%s branch_sample unavailable reason=%s: %s",
+            event,
+            type(exc).__name__,
+            exc,
+        )
 
 
 __all__ = ["log_growth_runtime_memory_profile"]
