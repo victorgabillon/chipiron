@@ -13,6 +13,32 @@ from .pipeline_memory import current_rss_mb, format_metric
 
 LOGGER = logging.getLogger(__name__)
 
+_PROJECT_TYPE_FILTERS = (
+    "anemone.",
+    "chipiron.",
+    "valanga.",
+    "atomheart.",
+    "coral.",
+)
+
+_NODE_SAMPLE_FIELDS = (
+    "metadata",
+    "state_ref_payload",
+    "state_handle",
+    "children",
+    "parents",
+    "successors",
+    "branches",
+    "evaluation",
+    "node_evaluation",
+    "max_evaluation",
+    "selector_state",
+    "linoo_state",
+    "pv_state",
+    "decision_ordering_state",
+    "branch_frontier_state",
+)
+
 
 def _qualified_type_name(value: object) -> str:
     value_type = type(value)
@@ -49,8 +75,19 @@ def _runner_attribute_sizes(runner: object, *, top_n: int) -> list[tuple[str, in
     return sorted(pairs, key=lambda item: item[1], reverse=True)[:top_n]
 
 
-def _top_gc_type_counts(*, top_n: int) -> list[tuple[str, int]]:
-    counts = Counter(_qualified_type_name(obj) for obj in gc.get_objects())
+def _top_gc_type_counts(
+    *,
+    top_n: int,
+    project_only: bool = False,
+) -> list[tuple[str, int]]:
+    counts: Counter[str] = Counter()
+    for obj in gc.get_objects():
+        type_name = _qualified_type_name(obj)
+        if project_only and not any(
+            token in type_name.lower() for token in _PROJECT_TYPE_FILTERS
+        ):
+            continue
+        counts[type_name] += 1
     return counts.most_common(top_n)
 
 
@@ -66,7 +103,14 @@ def _iter_from_candidate(candidate: object) -> Iterator[object] | None:
 
 
 def _node_iterator_from_runner(runner: object) -> tuple[Iterator[object] | None, str]:
-    for method_name in ("iter_nodes", "live_nodes", "nodes"):
+    for method_name in (
+        "profile_iter_nodes",
+        "iter_profile_nodes",
+        "_profile_iter_nodes",
+        "iter_nodes",
+        "live_nodes",
+        "nodes",
+    ):
         method = getattr(runner, method_name, None)
         if not callable(method):
             continue
@@ -85,6 +129,17 @@ def _node_iterator_from_runner(runner: object) -> tuple[Iterator[object] | None,
         ("runtime", "nodes"),
         ("runtime", "tree", "nodes"),
         ("runtime", "search_tree", "nodes"),
+        ("_runtime", "nodes"),
+        ("_runtime", "tree", "nodes"),
+        ("_runtime", "search_tree", "nodes"),
+        ("_runtime", "graph", "nodes"),
+        ("_runtime", "node_store"),
+        ("_runtime", "node_store", "nodes"),
+        ("_runtime", "_nodes"),
+        ("_runtime", "_tree", "nodes"),
+        ("_runtime", "_search_tree", "nodes"),
+        ("_runtime", "_node_store"),
+        ("_runtime", "_node_store", "nodes"),
     ):
         value: object = runner
         found = True
@@ -99,6 +154,27 @@ def _node_iterator_from_runner(runner: object) -> tuple[Iterator[object] | None,
         if iterator is not None:
             return iterator, ".".join(attr_path)
     return None, "no_node_iterator"
+
+
+def _branch_iterator_from_runner(runner: object) -> tuple[Iterator[object] | None, str]:
+    for method_name in (
+        "profile_iter_branches",
+        "iter_profile_branches",
+        "_profile_iter_branches",
+        "iter_branches",
+        "live_branches",
+        "branches",
+    ):
+        method = getattr(runner, method_name, None)
+        if not callable(method):
+            continue
+        try:
+            iterator = _iter_from_candidate(method())
+        except Exception:
+            continue
+        if iterator is not None:
+            return iterator, method_name
+    return None, "no_branch_iterator"
 
 
 def _shallow_size(value: object | None) -> int:
@@ -135,14 +211,12 @@ def _node_sample_summary(
 ) -> tuple[dict[str, object] | None, str]:
     if sample_nodes <= 0:
         return {
+            "source": "disabled",
             "sample_size": 0,
             "avg_node_shallow_bytes": None,
             "avg_node_dict_shallow_bytes": None,
-            "avg_metadata_shallow_bytes": None,
-            "avg_state_payload_shallow_bytes": None,
-            "avg_children_shallow_bytes": None,
-            "avg_children_len": None,
-            "state_payload_fraction": None,
+            "avg_dict_len": None,
+            "top_node_attrs": [],
         }, "disabled"
 
     iterator, source = _node_iterator_from_runner(runner)
@@ -153,87 +227,92 @@ def _node_sample_summary(
     totals = {
         "node": 0,
         "node_dict": 0,
-        "metadata": 0,
-        "state_payload": 0,
-        "children": 0,
-        "children_len": 0,
-        "parents": 0,
-        "legal_actions": 0,
-        "value": 0,
+        "dict_len": 0,
     }
     state_payload_count = 0
     terminal_count = 0
     exact_count = 0
-    metadata_len_total = 0
-    metadata_len_seen = 0
+    attr_name_counts: Counter[str] = Counter()
+    field_totals: dict[str, int] = {field_name: 0 for field_name in _NODE_SAMPLE_FIELDS}
 
     for node in sample:
         totals["node"] += _shallow_size(node)
         node_dict = getattr(node, "__dict__", None)
         totals["node_dict"] += _shallow_size(node_dict)
+        node_dict_len = _safe_len(node_dict)
+        if node_dict_len is not None:
+            totals["dict_len"] += node_dict_len
+        if isinstance(node_dict, Mapping):
+            attr_name_counts.update(
+                str(attr_name) for attr_name in node_dict.keys() if attr_name is not None
+            )
 
-        metadata = _get_field(node, "metadata")
-        totals["metadata"] += _shallow_size(metadata)
-        metadata_len = _safe_len(metadata)
-        if metadata_len is not None:
-            metadata_len_seen += 1
-            metadata_len_total += metadata_len
-
-        state_payload = _get_field(node, "state_ref_payload")
-        totals["state_payload"] += _shallow_size(state_payload)
+        state_payload = None
+        for field_name in _NODE_SAMPLE_FIELDS:
+            value = _get_field(node, field_name)
+            field_totals[field_name] += _shallow_size(value)
+            if field_name == "state_ref_payload":
+                state_payload = value
         if state_payload is not None:
             state_payload_count += 1
-
-        children = _get_field(node, "children")
-        totals["children"] += _shallow_size(children)
-        children_len = _safe_len(children)
-        if children_len is not None:
-            totals["children_len"] += children_len
-
-        totals["parents"] += _shallow_size(_get_field(node, "parents"))
-        totals["legal_actions"] += _shallow_size(_get_field(node, "legal_actions"))
-        value = _get_field(node, "value")
-        if value is None:
-            value = _get_field(node, "evaluation")
-        totals["value"] += _shallow_size(value)
 
         if bool(_get_field(node, "terminal")) or bool(_get_field(node, "is_terminal")):
             terminal_count += 1
         if bool(_get_field(node, "exact")) or bool(_get_field(node, "is_exact")):
             exact_count += 1
 
-    return {
+    summary: dict[str, object] = {
         "source": source,
         "sample_size": sample_size,
         "avg_node_shallow_bytes": format_metric(_avg(totals["node"], sample_size)),
         "avg_node_dict_shallow_bytes": format_metric(
             _avg(totals["node_dict"], sample_size)
         ),
-        "avg_metadata_shallow_bytes": format_metric(
-            _avg(totals["metadata"], sample_size)
-        ),
-        "avg_metadata_len": format_metric(
-            _avg(metadata_len_total, metadata_len_seen)
-            if metadata_len_seen > 0
-            else None
-        ),
-        "avg_state_payload_shallow_bytes": format_metric(
-            _avg(totals["state_payload"], sample_size)
-        ),
-        "avg_children_shallow_bytes": format_metric(
-            _avg(totals["children"], sample_size)
-        ),
-        "avg_children_len": format_metric(_avg(totals["children_len"], sample_size)),
-        "avg_parents_shallow_bytes": format_metric(_avg(totals["parents"], sample_size)),
-        "avg_legal_actions_shallow_bytes": format_metric(
-            _avg(totals["legal_actions"], sample_size)
-        ),
-        "avg_value_shallow_bytes": format_metric(_avg(totals["value"], sample_size)),
+        "avg_dict_len": format_metric(_avg(totals["dict_len"], sample_size)),
         "state_payload_fraction": format_metric(
             _truthy_fraction(state_payload_count, sample_size)
         ),
         "terminal_fraction": format_metric(_truthy_fraction(terminal_count, sample_size)),
         "exact_fraction": format_metric(_truthy_fraction(exact_count, sample_size)),
+        "top_node_attrs": _format_pairs(attr_name_counts.most_common(10)),
+    }
+    for field_name in _NODE_SAMPLE_FIELDS:
+        avg_key = f"avg_{field_name}_shallow_bytes"
+        summary[avg_key] = format_metric(_avg(field_totals[field_name], sample_size))
+    summary["avg_state_payload_shallow_bytes"] = summary[
+        "avg_state_ref_payload_shallow_bytes"
+    ]
+    return summary, source
+
+
+def _branch_sample_summary(
+    runner: object,
+    *,
+    sample_branches: int,
+) -> tuple[dict[str, object] | None, str]:
+    if sample_branches <= 0:
+        return None, "disabled"
+    iterator, source = _branch_iterator_from_runner(runner)
+    if iterator is None:
+        return None, source
+    sample = list(islice(iterator, sample_branches))
+    sample_size = len(sample)
+    if sample_size == 0:
+        return None, source
+    branch_total = 0
+    branch_dict_total = 0
+    for branch in sample:
+        branch_total += _shallow_size(branch)
+        branch_dict_total += _shallow_size(getattr(branch, "__dict__", None))
+    return {
+        "source": source,
+        "sample_size": sample_size,
+        "avg_branch_key_shallow_bytes": format_metric(
+            _avg(branch_total, sample_size)
+        ),
+        "avg_branch_dict_shallow_bytes": format_metric(
+            _avg(branch_dict_total, sample_size)
+        ),
     }, source
 
 
@@ -292,6 +371,11 @@ def log_growth_runtime_memory_profile(
         event,
         _format_pairs(_top_gc_type_counts(top_n=top_n)),
     )
+    LOGGER.info(
+        "[growth-profile] event=%s top_project_gc_types=%s",
+        event,
+        _format_pairs(_top_gc_type_counts(top_n=top_n, project_only=True)),
+    )
 
     runner_attrs = _runner_attribute_sizes(runner, top_n=top_n)
     if runner_attrs:
@@ -315,6 +399,16 @@ def log_growth_runtime_memory_profile(
         f"{name}={value}" for name, value in sample_summary.items()
     )
     LOGGER.info("[growth-profile] event=%s node_sample %s", event, sample_text)
+
+    branch_summary, _reason = _branch_sample_summary(
+        runner,
+        sample_branches=sample_nodes,
+    )
+    if branch_summary is not None:
+        branch_text = " ".join(
+            f"{name}={value}" for name, value in branch_summary.items()
+        )
+        LOGGER.info("[growth-profile] event=%s branch_sample %s", event, branch_text)
 
 
 __all__ = ["log_growth_runtime_memory_profile"]

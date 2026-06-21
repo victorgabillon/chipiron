@@ -1468,6 +1468,73 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         return _live_tree_node_count(runtime)
 
+    def iter_profile_nodes(self) -> Iterator[object]:
+        """Yield live search nodes for memory profiling only."""
+        runtime = self._runtime
+        if runtime is None:
+            return iter(())
+        all_nodes_in_tree_order = getattr(runtime, "_all_nodes_in_tree_order", None)
+        if callable(all_nodes_in_tree_order):
+            try:
+                return iter(all_nodes_in_tree_order())
+            except Exception:
+                return iter(())
+
+        for attr_path in (
+            ("node_store",),
+            ("node_store", "nodes"),
+            ("tree", "nodes"),
+            ("search_tree", "nodes"),
+            ("graph", "nodes"),
+            ("_node_store",),
+            ("_node_store", "nodes"),
+            ("_tree", "nodes"),
+            ("_search_tree", "nodes"),
+            ("_nodes",),
+        ):
+            value: object = runtime
+            found = True
+            for attr_name in attr_path:
+                if not hasattr(value, attr_name):
+                    found = False
+                    break
+                value = getattr(value, attr_name)
+            if not found:
+                continue
+            if isinstance(value, Mapping):
+                return iter(value.values())
+            if isinstance(value, Iterable) and not isinstance(
+                value, str | bytes | bytearray
+            ):
+                return iter(value)
+        return iter(())
+
+    def iter_profile_branches(self) -> Iterator[object]:
+        """Yield live branch or ordering objects for memory profiling only."""
+        for node in self.iter_profile_nodes():
+            branch_from_parent = getattr(node, "branch_from_parent", None)
+            if branch_from_parent is not None:
+                yield branch_from_parent
+
+            for attr_name in (
+                "branches",
+                "branches_children",
+                "successors",
+                "children",
+                "moves_children",
+                "parent_nodes",
+            ):
+                container = getattr(node, attr_name, None)
+                if isinstance(container, Mapping):
+                    for branch in container.keys():
+                        yield branch
+                    continue
+                if isinstance(container, Iterable) and not isinstance(
+                    container, str | bytes | bytearray
+                ):
+                    for branch in container:
+                        yield branch
+
     def current_tree_branch_count(self) -> int | None:
         """Return the live tree branch count when Anemone exposes it."""
         runtime = self._require_runtime()
