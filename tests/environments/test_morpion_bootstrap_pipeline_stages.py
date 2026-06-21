@@ -695,6 +695,98 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     assert "node_sample" in text
 
 
+def test_pipeline_growth_stage_guards_candidate_checkpoint_load_before_validation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Low RAM should defer before candidate checkpoint payload validation loads."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    checkpoint_path = paths.runtime_checkpoint_path_for_generation(1)
+    checkpoint_path.write_text("not loaded by this test\n", encoding="utf-8")
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=7,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=5,
+            last_save_unix_s=0.0,
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(
+                checkpoint_path
+            ),
+        ),
+        paths.run_state_path,
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        min_available_ram_mb=5_000,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    monkeypatch.setattr(pipeline_memory_module, "available_ram_mb", lambda: 100.0)
+
+    caplog.set_level(logging.INFO)
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert run_state.generation == 1
+    assert runner.load_calls == []
+    assert "[checkpoint] candidate_validate_start" not in caplog.text
+    assert "action=candidate_checkpoint_load" in caplog.text
+    assert "decision=skip" in caplog.text
+    assert (
+        "[pipeline] growth_skip generation=1 reason=low_available_ram "
+        "action=candidate_checkpoint_load"
+    ) in caplog.text
+
+
+def test_pipeline_growth_stage_profiles_candidate_checkpoint_load(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Growth profiling should include candidate checkpoint load RSS deltas."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    checkpoint_path = paths.runtime_checkpoint_path_for_generation(1)
+    checkpoint_runner = AnemoneMorpionSearchRunner()
+    checkpoint_runner.load_or_create(None, None)
+    checkpoint_runner.grow(1)
+    checkpoint_runner.save_checkpoint(checkpoint_path)
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=7,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=5,
+            last_save_unix_s=0.0,
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(
+                checkpoint_path
+            ),
+        ),
+        paths.run_state_path,
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_memory_profile=True,
+        growth_memory_profile_top_n=3,
+        growth_memory_profile_sample_nodes=1,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(6,), target_values=(1.0,))
+
+    caplog.set_level(logging.INFO)
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert "[growth-profile] event=before_candidate_checkpoint_load" in caplog.text
+    assert "[growth-profile] event=candidate_checkpoint_load_done" in caplog.text
+    assert "checkpoint_bytes=" in caplog.text
+    assert "load_elapsed=" in caplog.text
+
+
 def test_pipeline_growth_stage_skips_no_op_checkpoint_when_limit_already_reached(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,

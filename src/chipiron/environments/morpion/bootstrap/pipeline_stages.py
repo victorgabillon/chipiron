@@ -56,6 +56,8 @@ from .cycle_pipeline_manifest import (
 from .cycle_runtime import (
     GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
     GROWTH_STATUS_METADATA_KEY,
+    CandidateCheckpointLoadDeferredError,
+    CandidateCheckpointLoadProfile,
     ResolvedActiveMorpionModelBundle,
 )
 from .cycle_runtime import (
@@ -672,7 +674,39 @@ def _run_one_pipeline_growth_cycle_impl(
         paths=paths,
         force_evaluator=resolved_control.force_evaluator,
     )
-    restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
+    try:
+        restore_tree_path = _resolve_runtime_restore_path(
+            paths=paths,
+            run_state=run_state,
+            before_candidate_checkpoint_load=lambda _source, _path: (
+                _log_before_candidate_checkpoint_load(
+                    args=args,
+                    generation=run_state.generation,
+                    candidate_path=_path,
+                )
+                and log_available_ram_guard(
+                    stage="growth",
+                    generation=run_state.generation,
+                    action="candidate_checkpoint_load",
+                    required_mb=args.min_available_ram_mb,
+                )
+            ),
+            after_candidate_checkpoint_load=_log_candidate_checkpoint_load_profile
+            if args.growth_memory_profile
+            else None,
+        )
+    except CandidateCheckpointLoadDeferredError:
+        LOGGER.info(
+            "[pipeline] growth_skip generation=%s reason=low_available_ram action=candidate_checkpoint_load",
+            run_state.generation,
+        )
+        log_pipeline_memory(
+            stage="growth",
+            generation=run_state.generation,
+            event="done",
+            reason="low_available_ram",
+        )
+        return run_state
     if not log_available_ram_guard(
         stage="growth",
         generation=run_state.generation,
@@ -1191,6 +1225,61 @@ def _log_growth_profile_if_enabled(
         branch_count=branch_count,
         sample_nodes=args.growth_memory_profile_sample_nodes,
         top_n=args.growth_memory_profile_top_n,
+    )
+
+
+def _log_before_candidate_checkpoint_load(
+    *,
+    args: MorpionBootstrapArgs,
+    generation: int,
+    candidate_path: Path,
+) -> bool:
+    """Log an opt-in profile marker before candidate checkpoint validation load."""
+    if args.growth_memory_profile:
+        try:
+            checkpoint_bytes = candidate_path.stat().st_size
+        except OSError:
+            checkpoint_bytes = None
+        LOGGER.info(
+            "[growth-profile] event=before_candidate_checkpoint_load "
+            "generation=%s rss_mb=%s checkpoint_bytes=%s path=%s",
+            generation,
+            format_metric(current_rss_mb()),
+            checkpoint_bytes,
+            str(candidate_path),
+        )
+    return True
+
+
+def _log_candidate_checkpoint_load_profile(
+    profile: CandidateCheckpointLoadProfile,
+) -> None:
+    """Log the RSS delta observed while validating one candidate checkpoint."""
+    rss_delta_mb = None
+    if profile.rss_before_mb is not None and profile.rss_after_mb is not None:
+        rss_delta_mb = profile.rss_after_mb - profile.rss_before_mb
+    checkpoint_bytes_per_node = None
+    if (
+        profile.checkpoint_bytes is not None
+        and profile.node_count is not None
+        and profile.node_count > 0
+    ):
+        checkpoint_bytes_per_node = profile.checkpoint_bytes / profile.node_count
+    LOGGER.info(
+        "[growth-profile] event=candidate_checkpoint_load_done generation=%s "
+        "source=%s rss_before_mb=%s rss_after_mb=%s rss_delta_mb=%s "
+        "checkpoint_bytes=%s nodes=%s checkpoint_bytes_per_node=%s "
+        "load_elapsed=%.3fs path=%s",
+        profile.generation,
+        profile.source,
+        format_metric(profile.rss_before_mb),
+        format_metric(profile.rss_after_mb),
+        format_metric(rss_delta_mb),
+        profile.checkpoint_bytes,
+        profile.node_count,
+        format_metric(checkpoint_bytes_per_node),
+        profile.elapsed_s,
+        str(profile.path),
     )
 
 

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
+import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -21,6 +22,7 @@ from .bootstrap_paths import (
 )
 from .cycle_metadata import RUNTIME_CHECKPOINT_METADATA_KEY, next_metadata
 from .history import MorpionBootstrapTreeStatus
+from .pipeline_memory import current_rss_mb
 from .run_state import MorpionBootstrapRunState
 
 if TYPE_CHECKING:
@@ -76,6 +78,28 @@ class ResolvedActiveMorpionModelBundle:
 
     active_evaluator_name: str | None
     model_bundle_path: Path | None
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateCheckpointLoadProfile:
+    """Best-effort metrics for candidate checkpoint validation loads."""
+
+    source: str
+    path: Path
+    generation: int
+    checkpoint_bytes: int | None
+    node_count: int | None
+    rss_before_mb: float | None
+    rss_after_mb: float | None
+    elapsed_s: float
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateCheckpointLoadDeferredError(Exception):
+    """Raised when checkpoint candidate loading is intentionally deferred."""
+
+    source: str
+    artifact_path: Path
 
 
 def prune_saved_generation_artifacts(paths: MorpionBootstrapPaths) -> None:
@@ -337,6 +361,10 @@ def resolve_runtime_restore_path(
     *,
     paths: MorpionBootstrapPaths,
     run_state: MorpionBootstrapRunState,
+    before_candidate_checkpoint_load: Callable[[str, Path], bool] | None = None,
+    after_candidate_checkpoint_load: (
+        Callable[[CandidateCheckpointLoadProfile], None] | None
+    ) = None,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
     from .anemone_runner import (
@@ -385,6 +413,13 @@ def resolve_runtime_restore_path(
         seen_paths.add(candidate_path)
         if not candidate_path.is_file():
             continue
+        if before_candidate_checkpoint_load is not None and not (
+            before_candidate_checkpoint_load(source, candidate_path)
+        ):
+            raise CandidateCheckpointLoadDeferredError(
+                source=source,
+                artifact_path=candidate_path,
+            )
         LOGGER.info(
             "[checkpoint] candidate_validate_start source=%s path=%s",
             source,
@@ -395,6 +430,12 @@ def resolve_runtime_restore_path(
             path=candidate_path,
             generation=run_state.generation,
         )
+        candidate_load_rss_before_mb = current_rss_mb()
+        candidate_load_started_at = time.perf_counter()
+        try:
+            checkpoint_bytes = candidate_path.stat().st_size
+        except OSError:
+            checkpoint_bytes = None
         try:
             payload = load_morpion_search_checkpoint_payload(candidate_path)
         except InvalidMorpionSearchCheckpointError as exc:
@@ -411,6 +452,8 @@ def resolve_runtime_restore_path(
                     reason=str(exc),
                 )
             continue
+        candidate_load_elapsed_s = time.perf_counter() - candidate_load_started_at
+        candidate_load_rss_after_mb = current_rss_mb()
         LOGGER.info(
             "[checkpoint] candidate_validate_done source=%s path=%s",
             source,
@@ -422,6 +465,19 @@ def resolve_runtime_restore_path(
             nodes=len(payload.tree.nodes),
             generation=run_state.generation,
         )
+        if after_candidate_checkpoint_load is not None:
+            after_candidate_checkpoint_load(
+                CandidateCheckpointLoadProfile(
+                    source=source,
+                    path=candidate_path,
+                    generation=run_state.generation,
+                    checkpoint_bytes=checkpoint_bytes,
+                    node_count=len(payload.tree.nodes),
+                    rss_before_mb=candidate_load_rss_before_mb,
+                    rss_after_mb=candidate_load_rss_after_mb,
+                    elapsed_s=candidate_load_elapsed_s,
+                )
+            )
         cache_morpion_search_checkpoint_payload_for_restore(candidate_path, payload)
         return candidate_path
 
@@ -436,6 +492,8 @@ __all__ = [
     "GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS",
     "GROWTH_STATUS_METADATA_KEY",
     "NO_GROWTH_LIMIT_REACHED_CHECKPOINT_SKIP_REASON",
+    "CandidateCheckpointLoadDeferredError",
+    "CandidateCheckpointLoadProfile",
     "ResolvedActiveMorpionModelBundle",
     "build_growth_budget_exhausted_run_state",
     "build_no_save_run_state",

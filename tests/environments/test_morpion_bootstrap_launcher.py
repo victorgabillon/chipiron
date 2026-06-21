@@ -1105,6 +1105,69 @@ def test_growth_adopted_rollout_config_reaches_runner_args(
     assert created_runner_args[0].search_args.opening_expansion.kind.value == "rollout"
 
 
+def test_growth_resume_keeps_persisted_tree_branch_limit_without_cli_override(
+    tmp_path: Path,
+) -> None:
+    """Resume startup should not let the CLI default lower a persisted limit."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            tree_branch_limit=1_200_000,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.resolved_bootstrap_args.tree_branch_limit == 1_200_000
+    assert startup_status.bootstrap_config.runtime.tree_branch_limit == 1_200_000
+
+
+def test_growth_resume_allows_explicit_tree_branch_limit_override(
+    tmp_path: Path,
+) -> None:
+    """Explicit growth CLI tree-branch-limit overrides should still be honored."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            tree_branch_limit=1_200_000,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--tree-branch-limit",
+            "128",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.resolved_bootstrap_args.tree_branch_limit == 128
+
+
 def test_launcher_constructs_real_runner_in_normal_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

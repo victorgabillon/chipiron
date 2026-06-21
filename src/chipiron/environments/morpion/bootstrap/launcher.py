@@ -135,6 +135,7 @@ class MorpionBootstrapLauncherArgs:
     training_export_mode_explicit: bool = False
     rollout_config_explicit: bool = False
     min_available_ram_mb_explicit: bool = False
+    tree_branch_limit_explicit: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -335,6 +336,11 @@ def _collect_launcher_startup_status(
             requested_bootstrap_args = replace(
                 requested_bootstrap_args,
                 min_available_ram_mb=bootstrap_config.runtime.min_available_ram_mb,
+            )
+        if not launcher_args.tree_branch_limit_explicit:
+            requested_bootstrap_args = replace(
+                requested_bootstrap_args,
+                tree_branch_limit=bootstrap_config.runtime.tree_branch_limit,
             )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
         bootstrap_config = _adopt_growth_rollout_config_if_requested(
@@ -1006,6 +1012,11 @@ def launcher_args_from_cli(
         or argument.startswith("--min-available-ram-mb=")
         for argument in argv_list
     )
+    tree_branch_limit_explicit = any(
+        argument == "--tree-branch-limit"
+        or argument.startswith("--tree-branch-limit=")
+        for argument in argv_list
+    )
     rollout_config_explicit = any(
         argument == "--rollout-after-opening"
         or argument == "--rollout-stop-on-existing-node"
@@ -1087,6 +1098,7 @@ def launcher_args_from_cli(
         training_export_mode_explicit=training_export_mode_explicit,
         rollout_config_explicit=rollout_config_explicit,
         min_available_ram_mb_explicit=min_available_ram_mb_explicit,
+        tree_branch_limit_explicit=tree_branch_limit_explicit,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,
