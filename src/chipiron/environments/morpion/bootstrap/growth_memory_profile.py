@@ -204,6 +204,29 @@ def _safe_vars(value: object) -> Mapping[object, object] | None:
     return None
 
 
+def _slot_names(type_or_obj: object) -> tuple[str, ...]:
+    value_type = type_or_obj if isinstance(type_or_obj, type) else type(type_or_obj)
+    seen: set[str] = set()
+    ordered_names: list[str] = []
+    for base_type in value_type.__mro__:
+        raw_slots = getattr(base_type, "__slots__", ())
+        if isinstance(raw_slots, str):
+            candidate_names = (raw_slots,)
+        else:
+            try:
+                candidate_names = tuple(raw_slots)
+            except TypeError:
+                candidate_names = ()
+        for slot_name in candidate_names:
+            if not isinstance(slot_name, str):
+                continue
+            if slot_name in {"__weakref__", "__dict__"} or slot_name in seen:
+                continue
+            seen.add(slot_name)
+            ordered_names.append(slot_name)
+    return tuple(ordered_names)
+
+
 def _get_field(node: object, field_name: str) -> object | None:
     if isinstance(node, Mapping):
         return node.get(field_name)
@@ -330,8 +353,11 @@ def _node_attr_sample_summaries(
             attr_dict_total = 0
             attr_dict_len_total = 0
             attr_dict_seen = 0
+            slots_count_total = 0
             type_counts: Counter[str] = Counter()
             child_attr_counts: Counter[str] = Counter()
+            slot_name_counts: Counter[str] = Counter()
+            slot_value_type_counts: Counter[str] = Counter()
 
             for node in sample:
                 node_dict = _safe_vars(node)
@@ -341,6 +367,14 @@ def _node_attr_sample_summaries(
                     continue
 
                 type_counts[_qualified_type_name(attr_value)] += 1
+                slot_names = _slot_names(attr_value)
+                slots_count_total += len(slot_names)
+                slot_name_counts.update(slot_names)
+                for slot_name in slot_names:
+                    slot_value = _safe_getattr(attr_value, slot_name)
+                    if slot_value is None:
+                        continue
+                    slot_value_type_counts[_qualified_type_name(slot_value)] += 1
                 attr_dict = _safe_vars(attr_value)
                 if attr_dict is None:
                     continue
@@ -373,9 +407,71 @@ def _node_attr_sample_summaries(
                         if attr_dict_seen > 0
                         else None
                     ),
+                    "avg_slots_count": format_metric(
+                        _avg(slots_count_total, sample_size)
+                    ),
+                    "top_slot_names": _format_pairs(slot_name_counts.most_common(10)),
+                    "top_slot_value_types": _format_pairs(
+                        slot_value_type_counts.most_common(10)
+                    ),
                     "top_child_attrs": _format_pairs(child_attr_counts.most_common(10)),
                 }
             )
+        except Exception as exc:
+            summaries.append(
+                {
+                    "attr": attr_name,
+                    "sample_size": sample_size,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+    return summaries
+
+
+def _node_attr_slot_sample_summaries(
+    sample: list[object],
+    *,
+    top_attr_names: list[str],
+) -> list[dict[str, object]]:
+    sample_size = len(sample)
+    summaries: list[dict[str, object]] = []
+    for attr_name in top_attr_names[:10]:
+        try:
+            slot_names = Counter[str]()
+            for node in sample:
+                node_dict = _safe_vars(node)
+                attr_value = None if node_dict is None else node_dict.get(attr_name)
+                if attr_value is None:
+                    continue
+                slot_names.update(_slot_names(attr_value))
+
+            for slot_name, _count in slot_names.most_common(10):
+                shallow_total = 0
+                slot_value_type_counts: Counter[str] = Counter()
+                for node in sample:
+                    node_dict = _safe_vars(node)
+                    attr_value = None if node_dict is None else node_dict.get(attr_name)
+                    if attr_value is None:
+                        continue
+                    slot_value = _safe_getattr(attr_value, slot_name)
+                    shallow_total += _shallow_size(slot_value)
+                    if slot_value is None:
+                        continue
+                    slot_value_type_counts[_qualified_type_name(slot_value)] += 1
+
+                summaries.append(
+                    {
+                        "attr": attr_name,
+                        "slot": slot_name,
+                        "sample_size": sample_size,
+                        "top_types": _format_pairs(
+                            slot_value_type_counts.most_common(5)
+                        ),
+                        "avg_shallow_bytes": format_metric(
+                            _avg(shallow_total, sample_size)
+                        ),
+                    }
+                )
         except Exception as exc:
             summaries.append(
                 {
@@ -526,9 +622,10 @@ def log_growth_runtime_memory_profile(
     try:
         sample, source = _sample_nodes_from_runner(runner, sample_nodes=sample_nodes)
         if sample is not None:
+            top_attr_names = _top_node_attr_names(sample)
             for attr_summary in _node_attr_sample_summaries(
                 sample,
-                top_attr_names=_top_node_attr_names(sample),
+                top_attr_names=top_attr_names,
             ):
                 attr_text = " ".join(
                     f"{name}={value}" for name, value in attr_summary.items()
@@ -538,6 +635,19 @@ def log_growth_runtime_memory_profile(
                     event,
                     source,
                     attr_text,
+                )
+            for slot_summary in _node_attr_slot_sample_summaries(
+                sample,
+                top_attr_names=top_attr_names,
+            ):
+                slot_text = " ".join(
+                    f"{name}={value}" for name, value in slot_summary.items()
+                )
+                LOGGER.info(
+                    "[growth-profile] event=%s node_attr_slot_sample source=%s %s",
+                    event,
+                    source,
+                    slot_text,
                 )
     except Exception as exc:
         LOGGER.info(

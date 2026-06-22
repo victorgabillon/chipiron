@@ -64,6 +64,31 @@ class RaisingDictAttr:
         return super().__getattribute__(name)
 
 
+class FakeSlottedAttr:
+    """Slotted nested object for slots-aware anatomy profiling."""
+
+    __slots__ = ("a", "b")
+
+    def __init__(self, index: int) -> None:
+        self.a = index
+        self.b = FakeAttrChild(index)
+
+
+class RaisingSlotAttr:
+    """Slotted object whose slot getter raises for failure-proof profiling."""
+
+    __slots__ = ("a", "b")
+
+    def __init__(self, index: int) -> None:
+        self.a = index
+        self.b = index + 1
+
+    def __getattribute__(self, name: str):
+        if name == "b":
+            raise RuntimeError("broken slot getter")
+        return super().__getattribute__(name)
+
+
 class FakeNodeWithNestedAttrs:
     """Node-like object whose direct attrs should get one-level anatomy logs."""
 
@@ -71,6 +96,20 @@ class FakeNodeWithNestedAttrs:
         self.tree_node = FakeAttrChild(index)
         self.tree_evaluation = (
             RaisingDictAttr() if broken_attr else FakeAttrChild(index + 100)
+        )
+        self.is_terminal = False
+        self.is_exact = False
+
+
+class FakeNodeWithSlottedAttrs:
+    """Node-like object whose direct attrs point to slotted objects."""
+
+    def __init__(self, index: int, *, broken_slot: bool = False) -> None:
+        self.tree_node = FakeSlottedAttr(index)
+        self.tree_evaluation = (
+            RaisingSlotAttr(index + 100)
+            if broken_slot
+            else FakeSlottedAttr(index + 100)
         )
         self.is_terminal = False
         self.is_exact = False
@@ -110,6 +149,16 @@ class FakeRunnerWithNestedAttrs:
     def __init__(self, *, broken_attr: bool = False) -> None:
         self.nodes = [
             FakeNodeWithNestedAttrs(index, broken_attr=broken_attr)
+            for index in range(3)
+        ]
+
+
+class FakeRunnerWithSlottedAttrs:
+    """Runner-like object exposing nodes with slotted nested attrs."""
+
+    def __init__(self, *, broken_slot: bool = False) -> None:
+        self.nodes = [
+            FakeNodeWithSlottedAttrs(index, broken_slot=broken_slot)
             for index in range(3)
         ]
 
@@ -241,6 +290,52 @@ def test_growth_runtime_memory_profile_tolerates_broken_attr_getters(
     text = caplog.text
     assert "[growth-profile] event=after_checkpoint_load node_sample" in text
     assert "node_attr_sample source=nodes attr=tree_evaluation" in text
+
+
+def test_growth_runtime_memory_profile_logs_node_attr_slot_sample(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Slotted nested attrs should get bounded slot anatomy logs."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_runtime_memory_profile(
+        runner=FakeRunnerWithSlottedAttrs(),
+        generation=13,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        sample_nodes=3,
+        top_n=5,
+    )
+
+    text = caplog.text
+    assert "node_attr_sample source=nodes attr=tree_node" in text
+    assert "avg_slots_count=" in text
+    assert "top_slot_names=" in text
+    assert "top_slot_value_types=" in text
+    assert "node_attr_slot_sample source=nodes attr=tree_node slot=a" in text
+    assert "node_attr_slot_sample source=nodes attr=tree_node slot=b" in text
+
+
+def test_growth_runtime_memory_profile_tolerates_broken_slot_getters(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Slot getter failures should be logged without crashing profiling."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_runtime_memory_profile(
+        runner=FakeRunnerWithSlottedAttrs(broken_slot=True),
+        generation=14,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        sample_nodes=3,
+        top_n=5,
+    )
+
+    text = caplog.text
+    assert "[growth-profile] event=after_checkpoint_load node_sample" in text
+    assert "node_attr_slot_sample source=nodes attr=tree_evaluation slot=b" in text
 
 
 def test_growth_runtime_memory_profile_handles_missing_nodes(
