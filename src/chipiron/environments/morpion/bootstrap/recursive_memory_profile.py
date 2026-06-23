@@ -646,6 +646,36 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
     }
 
 
+def _handle_resolver(handle: object) -> object | None:
+    """Return a checkpoint resolver from known handle layouts."""
+    for attr_name in (
+        "resolver",
+        "_resolver",
+        "state_resolver",
+        "_state_resolver",
+        "checkpoint_state_resolver",
+        "_checkpoint_state_resolver",
+    ):
+        value = _raw_getattr(handle, attr_name)
+        if value is not None:
+            return value
+    return None
+
+
+def _resolver_payloads(resolver: object) -> Mapping[object, object] | None:
+    """Return checkpoint payload storage from known resolver layouts."""
+    for attr_name in (
+        "state_payloads_by_node_id",
+        "_state_payloads_by_node_id",
+        "payloads_by_node_id",
+        "_payloads_by_node_id",
+    ):
+        value = _raw_getattr(resolver, attr_name)
+        if isinstance(value, Mapping):
+            return value
+    return None
+
+
 def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
     """Return checkpoint payload/resolver diagnostics without resolving states."""
     handle_type_counts = Counter[str]()
@@ -674,12 +704,12 @@ def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
                 state_value, seen=resolved_recursive_seen
             )
 
-        resolver = _raw_getattr(handle, "resolver")
+        resolver = _handle_resolver(handle)
         if resolver is None:
             continue
         resolver_ids.add(id(resolver))
         node_id = _raw_getattr(handle, "node_id")
-        payloads = _raw_getattr(resolver, "state_payloads_by_node_id")
+        payloads = _resolver_payloads(resolver)
         if isinstance(node_id, int) and isinstance(payloads, Mapping):
             payload = payloads.get(node_id)
             if payload is not None and id(payload) not in payload_ids:
@@ -797,7 +827,7 @@ def _exclusive_components(context: RecursiveProfileContext) -> tuple[ProfileRoot
             ("tree_node_parent_links", parent_links),
             ("tree_node_child_links", child_links),
             ("tree_node_unopened_links", unopened_links),
-            ("state_handles_and_checkpoint_payloads", state_handles),
+            ("state_handles", state_handles),
             ("node_eval_shells", node_evaluations),
             ("node_eval_values", eval_values),
             ("node_eval_runtime_states", eval_runtime_states),
