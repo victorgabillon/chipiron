@@ -654,6 +654,33 @@ def test_checkpoint_state_histograms_with_materialized_state_handles() -> None:
     assert histograms["materialized_state_recursive_bytes"] > 0
 
 
+def test_checkpoint_state_histograms_caps_payload_traversal(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Checkpoint histograms should stop payload sizing once the cap is reached."""
+    caplog.set_level(logging.INFO)
+    payload_store = SimpleNamespace(
+        payloads={
+            1: FakeAnchorCheckpointStatePayload({"board": [1, 2, 3]}),
+            2: FakeDeltaCheckpointStatePayload({"move": 4}),
+        }
+    )
+
+    histograms = checkpoint_state_histograms(
+        [],
+        [payload_store],
+        max_objects=1,
+    )
+
+    assert histograms["capped"] is True
+    assert histograms["payloads_seen"] == 1
+    assert histograms["anchors_seen"] == 1
+    assert histograms["deltas_seen"] == 0
+    assert histograms["payload_recursive_visited_objects"] == 1
+    assert "checkpoint_state_histograms handles_seen=0 payloads_seen=1" in caplog.text
+    assert "capped=True" in caplog.text
+
+
 def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -683,6 +710,27 @@ def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     assert "anchor_count=1" in text
     assert "delta_count=1" in text
     assert "mb=" in text
+
+
+def test_growth_recursive_memory_profile_logs_total_when_checkpoint_histogram_capped(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Capped checkpoint histograms should not suppress the final total log."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithCheckpointPayloadStore(),
+        generation=32,
+        event="after_checkpoint_load",
+        node_count=0,
+        branch_count=None,
+        max_objects=1,
+    )
+
+    text = caplog.text
+    assert "histogram=checkpoint_state" in text
+    assert "capped=True" in text
+    assert "total_recursive_reachable_mb=" in text
 
 
 def test_growth_recursive_memory_profile_logs_components(

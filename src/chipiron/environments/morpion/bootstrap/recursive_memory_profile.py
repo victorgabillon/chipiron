@@ -863,6 +863,8 @@ def _resolver_payloads(resolver: object) -> Mapping[object, object] | None:
 def checkpoint_state_histograms(
     nodes: Iterable[object],
     checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
+    *,
+    max_objects: int | None = None,
 ) -> dict[str, object]:
     """Return checkpoint payload/resolver diagnostics without resolving states."""
     handle_type_counts = Counter[str]()
@@ -874,38 +876,77 @@ def checkpoint_state_histograms(
     materialized_state_count = 0
     payload_recursive_seen: set[int] = set()
     payload_recursive_bytes = 0
+    payload_stats = DeepSizeStats(max_objects=max_objects)
     resolved_recursive_seen: set[int] = set()
     resolved_recursive_bytes = 0
+    resolved_stats = DeepSizeStats(max_objects=max_objects)
     payload_store_count = 0
+    handles_seen = 0
+    payloads_seen = 0
+    anchors_seen = 0
+    deltas_seen = 0
+    materialized_states_seen = 0
+
+    def add_payload(payload: object) -> None:
+        nonlocal anchor_count
+        nonlocal anchors_seen
+        nonlocal delta_count
+        nonlocal deltas_seen
+        nonlocal payload_recursive_bytes
+        nonlocal payloads_seen
+
+        if id(payload) in payload_ids:
+            return
+        payload_kind = _checkpoint_payload_kind(payload)
+        if payload_kind is None:
+            return
+        payload_ids.add(id(payload))
+        payloads_seen += 1
+        if payload_kind == "anchor":
+            anchor_count += 1
+            anchors_seen += 1
+        else:
+            delta_count += 1
+            deltas_seen += 1
+        if not payload_stats.capped:
+            payload_recursive_bytes += deep_size(
+                payload,
+                seen=payload_recursive_seen,
+                stats=payload_stats,
+            )
+
+    def add_materialized_state(state: object) -> None:
+        nonlocal materialized_state_count
+        nonlocal materialized_states_seen
+        nonlocal resolved_recursive_bytes
+
+        materialized_state_count += 1
+        materialized_states_seen += 1
+        resolved_state_ids.add(id(state))
+        if not resolved_stats.capped:
+            resolved_recursive_bytes += deep_size(
+                state,
+                seen=resolved_recursive_seen,
+                stats=resolved_stats,
+            )
 
     for payload_store in checkpoint_payload_stores:
         payload_store_count += 1
         for payload in payload_store.payloads.values():
-            if id(payload) in payload_ids:
-                continue
-            payload_kind = _checkpoint_payload_kind(payload)
-            if payload_kind is None:
-                continue
-            payload_ids.add(id(payload))
-            if payload_kind == "anchor":
-                anchor_count += 1
-            else:
-                delta_count += 1
-            payload_recursive_bytes += deep_size(payload, seen=payload_recursive_seen)
+            if payload_stats.capped:
+                break
+            add_payload(payload)
 
     for node in nodes:
         handle = _tree_node_slot(node, "state_handle_")
         if handle is None:
             continue
+        handles_seen += 1
         handle_type_counts[_qualified_type_name(handle)] += 1
 
         state_value = _raw_getattr(handle, "state_")
         if state_value is not None:
-            materialized_state_count += 1
-            resolved_state_ids.add(id(state_value))
-            resolved_recursive_bytes += deep_size(
-                state_value, seen=resolved_recursive_seen
-            )
+            add_materialized_state(state_value)
 
         resolver = _handle_resolver(handle)
         if resolver is None:
@@ -913,30 +954,33 @@ def checkpoint_state_histograms(
         resolver_ids.add(id(resolver))
         node_id = _raw_getattr(handle, "node_id")
         payloads = _resolver_payloads(resolver)
-        if isinstance(node_id, int) and isinstance(payloads, Mapping):
+        if (
+            not payload_stats.capped
+            and isinstance(node_id, int)
+            and isinstance(payloads, Mapping)
+        ):
             payload = payloads.get(node_id)
-            if payload is not None and id(payload) not in payload_ids:
-                payload_kind = _checkpoint_payload_kind(payload)
-                if payload_kind is None:
-                    continue
-                payload_ids.add(id(payload))
-                if payload_kind == "anchor":
-                    anchor_count += 1
-                else:
-                    delta_count += 1
-                payload_recursive_bytes += deep_size(
-                    payload, seen=payload_recursive_seen
-                )
+            if payload is not None:
+                add_payload(payload)
         resolved_states = _raw_getattr(resolver, "_resolved_states")
         if isinstance(resolved_states, Mapping):
             for state in resolved_states.values():
                 if id(state) in resolved_state_ids:
                     continue
-                resolved_state_ids.add(id(state))
-                materialized_state_count += 1
-                resolved_recursive_bytes += deep_size(
-                    state, seen=resolved_recursive_seen
-                )
+                add_materialized_state(state)
+
+    capped = payload_stats.capped or resolved_stats.capped
+    LOGGER.info(
+        "[growth-recursive-profile] checkpoint_state_histograms "
+        "handles_seen=%s payloads_seen=%s anchors_seen=%s deltas_seen=%s "
+        "materialized_states_seen=%s capped=%s",
+        handles_seen,
+        payloads_seen,
+        anchors_seen,
+        deltas_seen,
+        materialized_states_seen,
+        capped,
+    )
 
     return {
         "handle_types": dict(handle_type_counts),
@@ -947,6 +991,14 @@ def checkpoint_state_histograms(
         "payload_recursive_bytes": payload_recursive_bytes,
         "materialized_state_count": materialized_state_count,
         "materialized_state_recursive_bytes": resolved_recursive_bytes,
+        "handles_seen": handles_seen,
+        "payloads_seen": payloads_seen,
+        "anchors_seen": anchors_seen,
+        "deltas_seen": deltas_seen,
+        "materialized_states_seen": materialized_states_seen,
+        "payload_recursive_visited_objects": payload_stats.visited_objects,
+        "materialized_state_recursive_visited_objects": resolved_stats.visited_objects,
+        "capped": capped,
     }
 
 
@@ -1174,6 +1226,7 @@ def log_growth_recursive_memory_profile(
         checkpoint_state_histograms(
             context.nodes,
             context.checkpoint_payload_stores,
+            max_objects=max_objects,
         ),
     )
     _log_checkpoint_payload_stores(
