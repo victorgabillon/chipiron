@@ -285,6 +285,16 @@ class FakeLinooSelector:
         self._node_state_by_id = states
 
 
+class FakeComposedSelector:
+    """Composed selector wrapper that hides the concrete Linoo selector."""
+
+    __slots__ = ("base", "metadata")
+
+    def __init__(self, selector: FakeLinooSelector) -> None:
+        self.base = [{"selector": selector}]
+        self.metadata = {"name": "composed"}
+
+
 def test_growth_runtime_memory_profile_logs_node_sample(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -572,6 +582,25 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
     histograms = linoo_state_histograms(selector)
 
     assert histograms["present"] is True
+    assert histograms["selector_type"].endswith("FakeLinooSelector")
+    assert histograms["node_state_count"] == 2
+    assert histograms["default_count"] == 1
+    assert histograms["non_default_count"] == 1
+
+
+def test_linoo_state_histograms_finds_nested_selector() -> None:
+    """Linoo histograms should traverse composed selector wrappers."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(object(), status="opened"),
+            2: FakeLinooNodeState(object(), status="frontier"),
+        }
+    )
+
+    histograms = linoo_state_histograms(FakeComposedSelector(selector))
+
+    assert histograms["present"] is True
+    assert histograms["selector_type"].endswith("FakeLinooSelector")
     assert histograms["node_state_count"] == 2
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1

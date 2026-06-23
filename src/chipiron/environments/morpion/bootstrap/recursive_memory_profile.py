@@ -335,6 +335,50 @@ def _iter_from_candidate(candidate: object) -> Iterator[object] | None:
         return None
 
 
+def _iter_linoo_selector_search_children(value: object) -> Iterator[object]:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            yield key
+            yield item
+        return
+    if isinstance(value, _CONTAINER_TYPES):
+        yield from value
+        return
+
+    raw_dict = _safe_object_dict(value)
+    if raw_dict is not None:
+        yield from raw_dict.values()
+    for slot_name in slot_names(value):
+        slot_value = _raw_getattr(value, slot_name)
+        if slot_value is not None:
+            yield slot_value
+
+
+def _find_linoo_selector_root(root: object | None) -> object | None:
+    """Find the concrete nested Linoo selector without materializing properties."""
+    if root is None:
+        return None
+
+    seen: set[int] = set()
+    stack: list[object] = [root]
+    while stack:
+        value = stack.pop()
+        value_id = id(value)
+        if value_id in seen:
+            continue
+        seen.add(value_id)
+
+        if isinstance(value, _ATOMIC_TYPES) or _should_skip_deep(value):
+            continue
+
+        node_state_by_id = _raw_getattr(value, "_node_state_by_id")
+        if isinstance(node_state_by_id, Mapping):
+            return value
+
+        stack.extend(_iter_linoo_selector_search_children(value))
+    return None
+
+
 def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
     for method_name in (
         "profile_iter_nodes",
@@ -380,10 +424,16 @@ def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
 
 def build_recursive_profile_context(runner: object) -> RecursiveProfileContext:
     """Resolve profile roots once, without forcing lazy runtime properties."""
+    runtime = _first_attr_path(runner, _RUNTIME_ATTR_PATHS)
+    selector_root = _first_attr_path(runner, _SELECTOR_ATTR_PATHS)
+    linoo_selector = _find_linoo_selector_root(selector_root)
+    if linoo_selector is None and runtime is not None:
+        linoo_selector = _find_linoo_selector_root(runtime)
+
     return RecursiveProfileContext(
         runner=runner,
-        runtime=_first_attr_path(runner, _RUNTIME_ATTR_PATHS),
-        selector=_first_attr_path(runner, _SELECTOR_ATTR_PATHS),
+        runtime=runtime,
+        selector=linoo_selector or selector_root,
         checkpoint_roots=_all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS),
         evaluator_roots=_all_attr_paths(runner, _EVALUATOR_ATTR_PATHS),
         nodes=_profile_nodes_from_runner(runner),
@@ -595,12 +645,17 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
     """Return sparse Linoo state-table diagnostics when a Linoo selector is present."""
     if selector is None:
         return {"present": False}
-    node_state_by_id = _raw_getattr(selector, "_node_state_by_id")
-    if not isinstance(node_state_by_id, Mapping):
+    linoo_selector = _find_linoo_selector_root(selector)
+    if linoo_selector is None:
+        node_state_by_id = _raw_getattr(selector, "_node_state_by_id")
         return {
             "present": True,
+            "selector_type": _qualified_type_name(selector),
             "node_state_table_type": _qualified_type_name(node_state_by_id),
         }
+
+    node_state_by_id = _raw_getattr(linoo_selector, "_node_state_by_id")
+    assert isinstance(node_state_by_id, Mapping)
 
     default_count = 0
     non_default_count = 0
@@ -635,6 +690,7 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
 
     return {
         "present": True,
+        "selector_type": _qualified_type_name(linoo_selector),
         "node_state_count": len(node_state_by_id),
         "default_count": default_count,
         "non_default_count": non_default_count,
@@ -951,6 +1007,7 @@ def log_growth_recursive_memory_profile(
 
 __all__ = [
     "DeepSizeStats",
+    "_find_linoo_selector_root",
     "build_recursive_profile_context",
     "checkpoint_state_histograms",
     "deep_size",
