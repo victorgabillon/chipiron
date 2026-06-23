@@ -87,6 +87,7 @@ _NODE_EVALUATION_MISC_SLOTS = (
     "objective",
 )
 
+_DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP = 50_000
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
 _DELTA_PAYLOAD_TYPE_SUFFIX = "DeltaCheckpointStatePayload"
 
@@ -865,6 +866,7 @@ def checkpoint_state_histograms(
     checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
     *,
     max_objects: int | None = None,
+    checkpoint_max_handles: int | None = None,
 ) -> dict[str, object]:
     """Return checkpoint payload/resolver diagnostics without resolving states."""
     handle_type_counts = Counter[str]()
@@ -886,6 +888,12 @@ def checkpoint_state_histograms(
     anchors_seen = 0
     deltas_seen = 0
     materialized_states_seen = 0
+    max_handles = _checkpoint_handle_scan_cap(
+        nodes,
+        max_objects=max_objects,
+        checkpoint_max_handles=checkpoint_max_handles,
+    )
+    handle_scan_capped = False
 
     def add_payload(payload: object) -> None:
         nonlocal anchor_count
@@ -931,6 +939,8 @@ def checkpoint_state_histograms(
             )
 
     for payload_store in checkpoint_payload_stores:
+        if payload_stats.capped:
+            break
         payload_store_count += 1
         for payload in payload_store.payloads.values():
             if payload_stats.capped:
@@ -938,6 +948,9 @@ def checkpoint_state_histograms(
             add_payload(payload)
 
     for node in nodes:
+        if max_handles is not None and handles_seen >= max_handles:
+            handle_scan_capped = True
+            break
         handle = _tree_node_slot(node, "state_handle_")
         if handle is None:
             continue
@@ -965,16 +978,19 @@ def checkpoint_state_histograms(
         resolved_states = _raw_getattr(resolver, "_resolved_states")
         if isinstance(resolved_states, Mapping):
             for state in resolved_states.values():
+                if payload_stats.capped or resolved_stats.capped:
+                    break
                 if id(state) in resolved_state_ids:
                     continue
                 add_materialized_state(state)
 
-    capped = payload_stats.capped or resolved_stats.capped
+    capped = payload_stats.capped or resolved_stats.capped or handle_scan_capped
     LOGGER.info(
         "[growth-recursive-profile] checkpoint_state_histograms "
-        "handles_seen=%s payloads_seen=%s anchors_seen=%s deltas_seen=%s "
-        "materialized_states_seen=%s capped=%s",
+        "handles_seen=%s handles_scanned_cap_reached=%s payloads_seen=%s "
+        "anchors_seen=%s deltas_seen=%s materialized_states_seen=%s capped=%s",
         handles_seen,
+        handle_scan_capped,
         payloads_seen,
         anchors_seen,
         deltas_seen,
@@ -996,10 +1012,29 @@ def checkpoint_state_histograms(
         "anchors_seen": anchors_seen,
         "deltas_seen": deltas_seen,
         "materialized_states_seen": materialized_states_seen,
+        "max_handles": max_handles,
+        "handle_scan_capped": handle_scan_capped,
+        "handles_scanned_cap_reached": handle_scan_capped,
         "payload_recursive_visited_objects": payload_stats.visited_objects,
         "materialized_state_recursive_visited_objects": resolved_stats.visited_objects,
         "capped": capped,
     }
+
+
+def _checkpoint_handle_scan_cap(
+    nodes: Iterable[object],
+    *,
+    max_objects: int | None,
+    checkpoint_max_handles: int | None,
+) -> int | None:
+    """Return the maximum checkpoint handles to inspect for one diagnostic pass."""
+    if checkpoint_max_handles is not None:
+        return max(0, checkpoint_max_handles)
+    if max_objects is None:
+        return None
+    if isinstance(nodes, Sized):
+        return min(len(nodes), _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP)
+    return _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP
 
 
 def _log_histogram(event: str, name: str, payload: Mapping[str, object]) -> None:

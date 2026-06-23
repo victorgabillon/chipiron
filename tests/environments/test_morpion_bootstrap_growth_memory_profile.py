@@ -264,6 +264,15 @@ class FakeAlgorithmNode:
         self._state_representation = None
 
 
+class RaisingCheckpointHandle:
+    """Handle that proves checkpoint histogram scanning stopped before access."""
+
+    def __getattribute__(self, name: str):
+        if name in {"state_", "node_id", "resolver"}:
+            raise AssertionError("checkpoint histogram scanned past the handle cap")
+        return super().__getattribute__(name)
+
+
 class FakeLinooNodeState:
     """Small sparse Linoo state for histogram tests."""
 
@@ -677,7 +686,42 @@ def test_checkpoint_state_histograms_caps_payload_traversal(
     assert histograms["anchors_seen"] == 1
     assert histograms["deltas_seen"] == 0
     assert histograms["payload_recursive_visited_objects"] == 1
-    assert "checkpoint_state_histograms handles_seen=0 payloads_seen=1" in caplog.text
+    assert "checkpoint_state_histograms handles_seen=0" in caplog.text
+    assert "payloads_seen=1" in caplog.text
+    assert "capped=True" in caplog.text
+
+
+def test_checkpoint_state_histograms_caps_handle_scan(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Checkpoint histograms should stop scanning handles at the scan cap."""
+    caplog.set_level(logging.INFO)
+    safe_nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=SimpleNamespace(state_={"index": index})),
+            FakeNodeEvaluation(),
+        )
+        for index in range(3)
+    ]
+    dangerous_nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=RaisingCheckpointHandle()),
+            FakeNodeEvaluation(),
+        )
+        for _ in range(5)
+    ]
+
+    histograms = checkpoint_state_histograms(
+        [*safe_nodes, *dangerous_nodes],
+        max_objects=3_000_000,
+        checkpoint_max_handles=3,
+    )
+
+    assert histograms["handles_seen"] == 3
+    assert histograms["handle_scan_capped"] is True
+    assert histograms["handles_scanned_cap_reached"] is True
+    assert histograms["capped"] is True
+    assert "handles_scanned_cap_reached=True" in caplog.text
     assert "capped=True" in caplog.text
 
 
