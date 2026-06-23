@@ -103,6 +103,17 @@ class DeepSizeStats:
 
 
 @dataclass(frozen=True, slots=True)
+class CheckpointPayloadStore:
+    """Concrete mapping that owns checkpoint state payload objects."""
+
+    owner_type: str
+    attr_name: str
+    payloads: Mapping[object, object]
+    anchor_count: int
+    delta_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class RecursiveProfileContext:
     """Resolved roots used by one recursive growth-memory profile pass."""
 
@@ -110,6 +121,7 @@ class RecursiveProfileContext:
     runtime: object | None
     selector: object | None
     checkpoint_roots: tuple[object, ...]
+    checkpoint_payload_stores: tuple[CheckpointPayloadStore, ...]
     evaluator_roots: tuple[object, ...]
     nodes: tuple[object, ...]
 
@@ -379,6 +391,108 @@ def _find_linoo_selector_root(root: object | None) -> object | None:
     return None
 
 
+def _checkpoint_payload_kind(value: object) -> str | None:
+    payload_type = _qualified_type_name(value)
+    if payload_type.endswith(_ANCHOR_PAYLOAD_TYPE_SUFFIX):
+        return "anchor"
+    if payload_type.endswith(_DELTA_PAYLOAD_TYPE_SUFFIX):
+        return "delta"
+    return None
+
+
+def _checkpoint_payload_counts(payloads: Mapping[object, object]) -> tuple[int, int]:
+    anchor_count = 0
+    delta_count = 0
+    for payload in payloads.values():
+        payload_kind = _checkpoint_payload_kind(payload)
+        if payload_kind == "anchor":
+            anchor_count += 1
+        elif payload_kind == "delta":
+            delta_count += 1
+    return anchor_count, delta_count
+
+
+def _iter_named_raw_attribute_values(value: object) -> Iterator[tuple[str, object]]:
+    raw_dict = _safe_object_dict(value)
+    if raw_dict is not None:
+        for attr_name, attr_value in raw_dict.items():
+            if isinstance(attr_name, str):
+                yield attr_name, attr_value
+    for slot_name in slot_names(value):
+        slot_value = _raw_getattr(value, slot_name)
+        if slot_value is not None:
+            yield slot_name, slot_value
+
+
+def _find_checkpoint_payload_stores(
+    roots: Iterable[object | None],
+) -> tuple[CheckpointPayloadStore, ...]:
+    """Find checkpoint payload-owner mappings without consulting properties."""
+    stores: list[CheckpointPayloadStore] = []
+    seen: set[int] = set()
+    checked_mapping_ids: set[int] = set()
+    payload_mapping_ids: set[int] = set()
+    stack = [root for root in roots if root is not None]
+
+    while stack:
+        value = stack.pop()
+        value_id = id(value)
+        if value_id in seen:
+            continue
+        seen.add(value_id)
+
+        if isinstance(value, _ATOMIC_TYPES) or _should_skip_deep(value):
+            continue
+
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                stack.append(key)
+                stack.append(item)
+            continue
+
+        if isinstance(value, _CONTAINER_TYPES):
+            stack.extend(value)
+            continue
+
+        for attr_name, attr_value in _iter_named_raw_attribute_values(value):
+            if isinstance(attr_value, Mapping):
+                mapping_id = id(attr_value)
+                if mapping_id not in checked_mapping_ids:
+                    checked_mapping_ids.add(mapping_id)
+                    anchor_count, delta_count = _checkpoint_payload_counts(attr_value)
+                    if anchor_count or delta_count:
+                        payload_mapping_ids.add(mapping_id)
+                        stores.append(
+                            CheckpointPayloadStore(
+                                owner_type=_qualified_type_name(value),
+                                attr_name=attr_name,
+                                payloads=attr_value,
+                                anchor_count=anchor_count,
+                                delta_count=delta_count,
+                            )
+                        )
+                        continue
+                elif mapping_id in payload_mapping_ids:
+                    continue
+            stack.append(attr_value)
+
+    return tuple(stores)
+
+
+def _unique_roots(roots: Iterable[object | None]) -> tuple[object, ...]:
+    unique: list[object] = []
+    seen_ids: set[int] = set()
+    for root in roots:
+        if root is None:
+            continue
+        root_id = id(root)
+        if root_id in seen_ids:
+            continue
+        seen_ids.add(root_id)
+        unique.append(root)
+    return tuple(unique)
+
+
 def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
     for method_name in (
         "profile_iter_nodes",
@@ -429,14 +543,28 @@ def build_recursive_profile_context(runner: object) -> RecursiveProfileContext:
     linoo_selector = _find_linoo_selector_root(selector_root)
     if linoo_selector is None and runtime is not None:
         linoo_selector = _find_linoo_selector_root(runtime)
+    nodes = _profile_nodes_from_runner(runner)
+    checkpoint_roots = _all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS)
+    state_handles = tuple(
+        handle
+        for node in nodes
+        if (handle := _tree_node_slot(node, "state_handle_")) is not None
+    )
+    checkpoint_payload_stores = _find_checkpoint_payload_stores(
+        (runner, runtime, *checkpoint_roots, *state_handles)
+    )
+    checkpoint_roots_with_payloads = _unique_roots(
+        (*checkpoint_roots, *(store.payloads for store in checkpoint_payload_stores))
+    )
 
     return RecursiveProfileContext(
         runner=runner,
         runtime=runtime,
         selector=linoo_selector or selector_root,
-        checkpoint_roots=_all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS),
+        checkpoint_roots=checkpoint_roots_with_payloads,
+        checkpoint_payload_stores=checkpoint_payload_stores,
         evaluator_roots=_all_attr_paths(runner, _EVALUATOR_ATTR_PATHS),
-        nodes=_profile_nodes_from_runner(runner),
+        nodes=nodes,
     )
 
 
@@ -732,7 +860,10 @@ def _resolver_payloads(resolver: object) -> Mapping[object, object] | None:
     return None
 
 
-def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
+def checkpoint_state_histograms(
+    nodes: Iterable[object],
+    checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
+) -> dict[str, object]:
     """Return checkpoint payload/resolver diagnostics without resolving states."""
     handle_type_counts = Counter[str]()
     resolver_ids: set[int] = set()
@@ -745,6 +876,22 @@ def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
     payload_recursive_bytes = 0
     resolved_recursive_seen: set[int] = set()
     resolved_recursive_bytes = 0
+    payload_store_count = 0
+
+    for payload_store in checkpoint_payload_stores:
+        payload_store_count += 1
+        for payload in payload_store.payloads.values():
+            if id(payload) in payload_ids:
+                continue
+            payload_kind = _checkpoint_payload_kind(payload)
+            if payload_kind is None:
+                continue
+            payload_ids.add(id(payload))
+            if payload_kind == "anchor":
+                anchor_count += 1
+            else:
+                delta_count += 1
+            payload_recursive_bytes += deep_size(payload, seen=payload_recursive_seen)
 
     for node in nodes:
         handle = _tree_node_slot(node, "state_handle_")
@@ -769,11 +916,13 @@ def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
         if isinstance(node_id, int) and isinstance(payloads, Mapping):
             payload = payloads.get(node_id)
             if payload is not None and id(payload) not in payload_ids:
+                payload_kind = _checkpoint_payload_kind(payload)
+                if payload_kind is None:
+                    continue
                 payload_ids.add(id(payload))
-                payload_type = _qualified_type_name(payload)
-                if payload_type.endswith(_ANCHOR_PAYLOAD_TYPE_SUFFIX):
+                if payload_kind == "anchor":
                     anchor_count += 1
-                elif payload_type.endswith(_DELTA_PAYLOAD_TYPE_SUFFIX):
+                else:
                     delta_count += 1
                 payload_recursive_bytes += deep_size(
                     payload, seen=payload_recursive_seen
@@ -792,6 +941,7 @@ def checkpoint_state_histograms(nodes: Iterable[object]) -> dict[str, object]:
     return {
         "handle_types": dict(handle_type_counts),
         "resolver_count": len(resolver_ids),
+        "payload_store_count": payload_store_count,
         "anchor_payload_count": anchor_count,
         "delta_payload_count": delta_count,
         "payload_recursive_bytes": payload_recursive_bytes,
@@ -947,6 +1097,35 @@ def _log_exclusive_components(
     return total_bytes
 
 
+def _log_checkpoint_payload_stores(
+    *,
+    event: str,
+    checkpoint_payload_stores: Iterable[CheckpointPayloadStore],
+    max_objects: int | None,
+) -> None:
+    for index, payload_store in enumerate(checkpoint_payload_stores, start=1):
+        stats = DeepSizeStats(max_objects=max_objects)
+        byte_count = deep_size(payload_store.payloads, seen=set(), stats=stats)
+        LOGGER.info(
+            "[growth-recursive-profile] event=%s checkpoint_payload_store index=%s "
+            "owner_type=%s attr_name=%s mapping_type=%s mapping_length=%s "
+            "anchor_count=%s delta_count=%s bytes=%s mb=%s visited_objects=%s "
+            "capped=%s",
+            event,
+            index,
+            payload_store.owner_type,
+            payload_store.attr_name,
+            _qualified_type_name(payload_store.payloads),
+            len(payload_store.payloads),
+            payload_store.anchor_count,
+            payload_store.delta_count,
+            byte_count,
+            format_metric(_mb(byte_count)),
+            stats.visited_objects,
+            stats.capped,
+        )
+
+
 def log_growth_recursive_memory_profile(
     *,
     runner: object,
@@ -990,7 +1169,17 @@ def log_growth_recursive_memory_profile(
     )
     _log_histogram(event, "linoo", linoo_state_histograms(context.selector))
     _log_histogram(
-        event, "checkpoint_state", checkpoint_state_histograms(context.nodes)
+        event,
+        "checkpoint_state",
+        checkpoint_state_histograms(
+            context.nodes,
+            context.checkpoint_payload_stores,
+        ),
+    )
+    _log_checkpoint_payload_stores(
+        event=event,
+        checkpoint_payload_stores=context.checkpoint_payload_stores,
+        max_objects=max_objects,
     )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)

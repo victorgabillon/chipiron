@@ -295,6 +295,43 @@ class FakeComposedSelector:
         self.metadata = {"name": "composed"}
 
 
+class FakeAnchorCheckpointStatePayload:
+    """Fake anchor payload with the real suffix used by diagnostics."""
+
+    def __init__(self, state: object) -> None:
+        self.state = state
+
+
+class FakeDeltaCheckpointStatePayload:
+    """Fake delta payload with the real suffix used by diagnostics."""
+
+    def __init__(self, delta: object) -> None:
+        self.delta = delta
+
+
+class FakeCheckpointPayloadOwner:
+    """Object with a raw mapping attribute that owns checkpoint payloads."""
+
+    __slots__ = ("_payloads_by_node_id",)
+
+    def __init__(self) -> None:
+        self._payloads_by_node_id = {
+            1: FakeAnchorCheckpointStatePayload({"board": [1, 2, 3]}),
+            2: FakeDeltaCheckpointStatePayload({"move": 4}),
+            3: object(),
+        }
+
+
+class FakeRunnerWithCheckpointPayloadStore:
+    """Runner whose checkpoint payloads sit under a nested runtime codec."""
+
+    def __init__(self) -> None:
+        self._runtime = SimpleNamespace(
+            state_codec=SimpleNamespace(owner=FakeCheckpointPayloadOwner())
+        )
+        self.nodes = []
+
+
 def test_growth_runtime_memory_profile_logs_node_sample(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -615,6 +652,37 @@ def test_checkpoint_state_histograms_with_materialized_state_handles() -> None:
 
     assert histograms["materialized_state_count"] == 1
     assert histograms["materialized_state_recursive_bytes"] > 0
+
+
+def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Recursive profile should find nested checkpoint payload-owner mappings."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithCheckpointPayloadStore(),
+        generation=31,
+        event="after_checkpoint_load",
+        node_count=0,
+        branch_count=None,
+        max_objects=None,
+    )
+
+    text = caplog.text
+    assert "mode=standalone component=checkpoint_state_roots" in text
+    assert "histogram=checkpoint_state" in text
+    assert "payload_store_count=1" in text
+    assert "anchor_payload_count=1" in text
+    assert "delta_payload_count=1" in text
+    assert "checkpoint_payload_store index=1" in text
+    assert "owner_type=" in text
+    assert "FakeCheckpointPayloadOwner" in text
+    assert "attr_name=_payloads_by_node_id" in text
+    assert "mapping_length=3" in text
+    assert "anchor_count=1" in text
+    assert "delta_count=1" in text
+    assert "mb=" in text
 
 
 def test_growth_recursive_memory_profile_logs_components(
