@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import gc
 import logging
 import math
 import sys
@@ -32,6 +33,7 @@ from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
 from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     checkpoint_state_histograms,
     deep_size,
+    frozenset_ownership_histogram,
     linoo_state_histograms,
     log_growth_recursive_memory_profile,
     node_evaluation_runtime_histograms,
@@ -209,6 +211,31 @@ class RecursivePropertyObject:
     @property
     def dangerous(self) -> int:
         raise AssertionError("recursive profiler called a property")
+
+
+class MorpionState:
+    """Synthetic atomheart-like state used by frozenset ownership tests."""
+
+    def __init__(
+        self,
+        *,
+        points: frozenset[object],
+        used_unit_segments: frozenset[object],
+        played_moves: frozenset[object],
+    ) -> None:
+        self.points = points
+        self.used_unit_segments = used_unit_segments
+        self.played_moves = played_moves
+
+
+MorpionState.__module__ = "atomheart.games.morpion.state"
+
+
+class FakeCheckpointPayload:
+    """Synthetic checkpoint payload owner used by referrer type tests."""
+
+    def __init__(self, state_ref: object) -> None:
+        self.state_ref = state_ref
 
 
 class FakeTreeNode:
@@ -632,6 +659,10 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
     assert histograms["node_state_count"] == 2
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1
+    assert histograms["node_state_table_shallow_bytes"] > 0
+    assert histograms["container_shallow_bytes"] >= (
+        histograms["node_state_table_shallow_bytes"]
+    )
 
 
 def test_linoo_state_histograms_finds_nested_selector() -> None:
@@ -650,6 +681,7 @@ def test_linoo_state_histograms_finds_nested_selector() -> None:
     assert histograms["node_state_count"] == 2
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1
+    assert histograms["node_state_table_shallow_bytes"] > 0
 
 
 def test_checkpoint_state_histograms_with_materialized_state_handles() -> None:
@@ -725,6 +757,88 @@ def test_checkpoint_state_histograms_caps_handle_scan(
     assert "capped=True" in caplog.text
 
 
+def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
+    monkeypatch,
+) -> None:
+    """Frozenset ownership histogram should bucket sizes and attribute state fields."""
+    points = frozenset()
+    used_unit_segments = frozenset({1})
+    played_moves = frozenset({2, 3, 4})
+    same_value_different_identity = frozenset([2, 3, 4])
+    state = MorpionState(
+        points=points,
+        used_unit_segments=used_unit_segments,
+        played_moves=played_moves,
+    )
+    checkpoint_payload = FakeCheckpointPayload(played_moves)
+    dict_owner = {"used_unit_segments": used_unit_segments}
+    referrers_by_id = {
+        id(points): [state],
+        id(used_unit_segments): [state, dict_owner],
+        id(played_moves): [state, checkpoint_payload],
+        id(same_value_different_identity): [state],
+    }
+
+    monkeypatch.setattr(
+        gc,
+        "get_referrers",
+        lambda value: list(referrers_by_id.get(id(value), [])),
+    )
+
+    histogram = frozenset_ownership_histogram(
+        objects=[points, used_unit_segments, played_moves, same_value_different_identity],
+        sample_cap=10,
+        top_n=10,
+    )
+
+    assert histogram["total_count"] == 4
+    assert histogram["total_shallow_bytes"] == sum(
+        sys.getsizeof(value)
+        for value in (
+            points,
+            used_unit_segments,
+            played_moves,
+            same_value_different_identity,
+        )
+    )
+    assert dict(histogram["len_buckets"]) == {"0": 1, "1": 1, "2-4": 2}
+    assert dict(histogram["morpion_state_field_refs"]) == {
+        "points": 1,
+        "used_unit_segments": 1,
+        "played_moves": 1,
+    }
+    assert dict(histogram["top_referrer_types"])[
+        "atomheart.games.morpion.state.MorpionState"
+    ] == 4
+    assert dict(histogram["top_referrer_types"])["dict"] == 1
+    assert dict(histogram["top_referrer_types"])[
+        f"{FakeCheckpointPayload.__module__}.{FakeCheckpointPayload.__qualname__}"
+    ] == 1
+
+
+def test_frozenset_ownership_histogram_respects_sample_cap(monkeypatch) -> None:
+    """Frozenset ownership histogram should bound referrer scans to the sample cap."""
+    scanned_ids: list[int] = []
+    frozensets = [frozenset({index}) for index in range(4)]
+
+    def fake_get_referrers(value: object) -> list[object]:
+        scanned_ids.append(id(value))
+        return []
+
+    monkeypatch.setattr(gc, "get_referrers", fake_get_referrers)
+
+    histogram = frozenset_ownership_histogram(
+        objects=frozensets,
+        sample_cap=2,
+        top_n=5,
+    )
+
+    assert histogram["total_count"] == 4
+    assert histogram["sample_count"] == 2
+    assert len(scanned_ids) == 2
+    assert scanned_ids == [id(frozensets[0]), id(frozensets[1])]
+
+
 def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -775,6 +889,9 @@ def test_growth_recursive_memory_profile_logs_total_when_checkpoint_histogram_ca
     assert "histogram=checkpoint_state" in text
     assert "capped=True" in text
     assert "total_recursive_reachable_mb=" in text
+    assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
+    assert "capped_components=[" in text
+    assert "max_objects=1" in text
 
 
 def test_growth_recursive_memory_profile_logs_components(
@@ -801,5 +918,10 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "histogram=tree_topology" in text
     assert "histogram=node_evaluation_runtime" in text
     assert "histogram=linoo" in text
+    assert "histogram=gc_shallow_sizes" in text
+    assert "histogram=frozenset_ownership" in text
+    assert "top_by_bytes=" in text
     assert "histogram=checkpoint_state" in text
     assert "rss_minus_reachable_mb=" in text
+    assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
+    assert "largest_components=" in text

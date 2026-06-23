@@ -63,6 +63,13 @@ def _invalid_growth_memory_profile_recursive_max_objects_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_recursive_events_error() -> ValueError:
+    """Return the canonical recursive memory-profile event-filter error."""
+    return ValueError(
+        "growth_memory_profile_recursive_events must contain at least one event name."
+    )
+
+
 def _invalid_candidate_checkpoint_load_headroom_factor_error() -> ValueError:
     """Return the canonical candidate-checkpoint load headroom factor error."""
     return ValueError(
@@ -139,6 +146,8 @@ class MorpionBootstrapArgs:
     growth_memory_profile_sample_nodes: int = 2000
     growth_memory_profile_recursive: bool = False
     growth_memory_profile_recursive_max_objects: int | None = None
+    growth_memory_profile_recursive_events: tuple[str, ...] = ("after_checkpoint_load",)
+    growth_memory_profile_recursive_complete_map: bool = False
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
 
@@ -177,6 +186,16 @@ class MorpionBootstrapArgs:
             or self.growth_memory_profile_recursive_max_objects <= 0
         ):
             raise _invalid_growth_memory_profile_recursive_max_objects_error()
+        if (
+            not self.growth_memory_profile_recursive_events
+            or any(
+                not isinstance(event, str) or not event
+                for event in self.growth_memory_profile_recursive_events
+            )
+        ):
+            raise _invalid_growth_memory_profile_recursive_events_error()
+        if not isinstance(self.growth_memory_profile_recursive_complete_map, bool):
+            raise _invalid_growth_memory_profile_recursive_events_error()
         if (
             isinstance(self.candidate_checkpoint_load_headroom_factor, bool)
             or self.candidate_checkpoint_load_headroom_factor < 0

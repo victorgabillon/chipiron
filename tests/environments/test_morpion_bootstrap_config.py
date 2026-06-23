@@ -575,6 +575,8 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile_sample_nodes == 2000
     assert args.growth_memory_profile_recursive is False
     assert args.growth_memory_profile_recursive_max_objects is None
+    assert args.growth_memory_profile_recursive_events == ("after_checkpoint_load",)
+    assert args.growth_memory_profile_recursive_complete_map is False
     assert args.candidate_checkpoint_load_headroom_factor == 60.0
     assert args.candidate_checkpoint_load_min_headroom_mb == 512
 
@@ -601,6 +603,10 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
     MorpionBootstrapArgs(
         work_dir=tmp_path,
         growth_memory_profile_recursive_max_objects=1,
+    )
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_events=("after_checkpoint_load",),
     )
 
     with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
@@ -629,6 +635,11 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
         MorpionBootstrapArgs(
             work_dir=tmp_path,
             growth_memory_profile_recursive_max_objects=True,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_recursive_events"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_events=(),
         )
 
 

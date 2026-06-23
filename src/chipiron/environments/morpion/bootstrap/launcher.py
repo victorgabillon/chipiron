@@ -101,6 +101,11 @@ def _rollout_max_extra_steps_parse_error() -> argparse.ArgumentTypeError:
     return argparse.ArgumentTypeError("expected 'none' or a non-negative integer")
 
 
+def _recursive_profile_events_parse_error() -> argparse.ArgumentTypeError:
+    """Return the stable recursive-profile event-filter parse error."""
+    return argparse.ArgumentTypeError("expected at least one event name")
+
+
 def _parse_optional_non_negative_int(raw: str) -> int | None:
     """Parse a non-negative integer or an explicit unbounded sentinel."""
     if raw.lower() in {"none", "null", "unbounded"}:
@@ -120,6 +125,14 @@ def _parse_optional_positive_int(raw: str) -> int | None:
     if value is not None and value <= 0:
         raise _rollout_max_extra_steps_parse_error()
     return value
+
+
+def _parse_recursive_profile_events(raw: str) -> tuple[str, ...]:
+    """Parse a comma-separated recursive-profile event allowlist."""
+    events = tuple(event.strip() for event in raw.split(",") if event.strip())
+    if not events:
+        raise _recursive_profile_events_parse_error()
+    return events
 
 
 def _parse_training_evaluator_names(raw: str | None) -> tuple[str, ...] | None:
@@ -881,6 +894,23 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Optional object-visit cap for recursive growth memory profiles.",
     )
     parser.add_argument(
+        "--growth-memory-profile-recursive-events",
+        type=_parse_recursive_profile_events,
+        default=("after_checkpoint_load",),
+        help=(
+            "Comma-separated growth events for recursive profiles. Defaults to "
+            "after_checkpoint_load."
+        ),
+    )
+    parser.add_argument(
+        "--growth-memory-profile-recursive-complete-map",
+        action="store_true",
+        help=(
+            "Allow uncapped recursive complete-map profiles when the recursive "
+            "max object cap is 'none'."
+        ),
+    )
+    parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
         type=float,
         default=60.0,
@@ -1118,6 +1148,12 @@ def launcher_args_from_cli(
         growth_memory_profile_recursive=parsed.growth_memory_profile_recursive,
         growth_memory_profile_recursive_max_objects=(
             parsed.growth_memory_profile_recursive_max_objects
+        ),
+        growth_memory_profile_recursive_events=(
+            parsed.growth_memory_profile_recursive_events
+        ),
+        growth_memory_profile_recursive_complete_map=(
+            parsed.growth_memory_profile_recursive_complete_map
         ),
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor

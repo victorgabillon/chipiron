@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import gc
 import logging
 import sys
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import (
     BuiltinFunctionType,
     BuiltinMethodType,
     CodeType,
+    FrameType,
     FunctionType,
     MethodType,
     ModuleType,
@@ -88,8 +90,32 @@ _NODE_EVALUATION_MISC_SLOTS = (
 )
 
 _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP = 50_000
+_DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS = 3_000_000
+_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP = 5_000
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
 _DELTA_PAYLOAD_TYPE_SUFFIX = "DeltaCheckpointStatePayload"
+_PROJECT_TYPE_PREFIXES = ("anemone.", "chipiron.", "atomheart.", "valanga.")
+_FROZENSET_MORPION_STATE_FIELDS = (
+    "points",
+    "used_unit_segments",
+    "played_moves",
+)
+_TRACKED_SHALLOW_TYPE_SUFFIXES = (
+    "list",
+    "dict",
+    "tuple",
+    "set",
+    "frozenset",
+    "BranchOrderingKey",
+    "Value",
+    "AlgorithmNode",
+    "TreeNode",
+    "NodeMaxEvaluation",
+    "CheckpointBackedStateHandle",
+    "_LinooNodeState",
+    "AnchorCheckpointStatePayload",
+    "DeltaCheckpointStatePayload",
+)
 
 type ProfileRoot = tuple[str, object]
 
@@ -115,6 +141,16 @@ class CheckpointPayloadStore:
 
 
 @dataclass(frozen=True, slots=True)
+class ComponentProfileRecord:
+    """One logged recursive component measurement."""
+
+    component: str
+    bytes: int
+    visited_objects: int
+    capped: bool
+
+
+@dataclass(frozen=True, slots=True)
 class RecursiveProfileContext:
     """Resolved roots used by one recursive growth-memory profile pass."""
 
@@ -125,6 +161,16 @@ class RecursiveProfileContext:
     checkpoint_payload_stores: tuple[CheckpointPayloadStore, ...]
     evaluator_roots: tuple[object, ...]
     nodes: tuple[object, ...]
+
+
+@dataclass(slots=True)
+class _FrozensetOwnershipAccumulator:
+    """Mutable counters for one shallow frozenset ownership scan."""
+
+    total_count: int = 0
+    total_shallow_bytes: int = 0
+    len_bucket_counts: Counter[str] = field(default_factory=Counter)
+    sampled_frozensets: list[frozenset[object]] = field(default_factory=list)
 
 
 def _qualified_type_name(value: object) -> str:
@@ -145,6 +191,48 @@ def _size_or_zero(value: object) -> int:
         return sys.getsizeof(value)
     except TypeError:
         return 0
+
+
+def _frozenset_len_bucket(length: int) -> str:
+    if length == 0:
+        return "0"
+    if length == 1:
+        return "1"
+    if length <= 4:
+        return "2-4"
+    if length <= 9:
+        return "5-9"
+    if length <= 24:
+        return "10-24"
+    if length <= 49:
+        return "25-49"
+    if length <= 99:
+        return "50-99"
+    if length <= 199:
+        return "100-199"
+    return "200+"
+
+
+def _format_name_float_pairs(items: Iterable[tuple[str, float]]) -> str:
+    return "[" + ",".join(f"{name}:{format_metric(value)}" for name, value in items) + "]"
+
+
+def _format_name_int_pairs(items: Iterable[tuple[str, int]]) -> str:
+    return "[" + ",".join(f"{name}:{value}" for name, value in items) + "]"
+
+
+def _ordered_counter_items(
+    counts: Mapping[str, int],
+    *,
+    order: Iterable[str] | None = None,
+) -> list[tuple[str, int]]:
+    if order is not None:
+        ordered_items = [
+            (name, counts[name]) for name in order if counts.get(name, 0) > 0
+        ]
+        if ordered_items:
+            return ordered_items
+    return sorted(counts.items(), key=lambda item: (item[0],))
 
 
 def _should_skip_deep(value: object) -> bool:
@@ -214,6 +302,134 @@ def _safe_object_dict(value: object) -> Mapping[object, object] | None:
     if isinstance(raw_dict, Mapping):
         return raw_dict
     return None
+
+
+def _observe_frozenset(
+    accumulator: _FrozensetOwnershipAccumulator,
+    value: frozenset[object],
+    *,
+    sample_cap: int,
+) -> None:
+    accumulator.total_count += 1
+    accumulator.total_shallow_bytes += _size_or_zero(value)
+    accumulator.len_bucket_counts[_frozenset_len_bucket(len(value))] += 1
+    if len(accumulator.sampled_frozensets) < sample_cap:
+        accumulator.sampled_frozensets.append(value)
+
+
+def _is_morpion_state_type_name(type_name: str) -> bool:
+    return type_name == "MorpionState" or type_name.endswith(".MorpionState")
+
+
+def _morpion_state_field_ref(
+    referrer: object,
+    target: frozenset[object],
+) -> str | None:
+    owner_dict = _safe_object_dict(referrer)
+    if owner_dict is not None:
+        for field_name in _FROZENSET_MORPION_STATE_FIELDS:
+            if owner_dict.get(field_name) is target:
+                return field_name
+    for slot_name in slot_names(referrer):
+        if slot_name not in _FROZENSET_MORPION_STATE_FIELDS:
+            continue
+        if _raw_getattr(referrer, slot_name) is target:
+            return slot_name
+    return None
+
+
+def _finalize_frozenset_ownership_histogram(
+    accumulator: _FrozensetOwnershipAccumulator,
+    *,
+    ignored_referrer_ids: set[int],
+    sample_cap: int,
+    top_n: int,
+) -> dict[str, object]:
+    referrer_type_counts = Counter[str]()
+    morpion_state_field_refs = Counter[str]()
+
+    base_ignored_referrer_ids = set(ignored_referrer_ids)
+    base_ignored_referrer_ids.update(
+        {
+            id(accumulator),
+            id(accumulator.len_bucket_counts),
+            id(accumulator.sampled_frozensets),
+            id(base_ignored_referrer_ids),
+        }
+    )
+
+    for frozen_set in accumulator.sampled_frozensets:
+        iteration_ignored_referrer_ids = set(base_ignored_referrer_ids)
+        iteration_ignored_referrer_ids.add(id(locals()))
+        for referrer in gc.get_referrers(frozen_set):
+            if id(referrer) in iteration_ignored_referrer_ids:
+                continue
+            if isinstance(referrer, FrameType):
+                continue
+            referrer_type_name = _qualified_type_name(referrer)
+            referrer_type_counts[referrer_type_name] += 1
+            if not _is_morpion_state_type_name(referrer_type_name):
+                continue
+            field_name = _morpion_state_field_ref(referrer, frozen_set)
+            if field_name is not None:
+                morpion_state_field_refs[field_name] += 1
+
+    return {
+        "total_count": accumulator.total_count,
+        "total_shallow_bytes": accumulator.total_shallow_bytes,
+        "len_buckets": _ordered_counter_items(
+            accumulator.len_bucket_counts,
+            order=(
+                "0",
+                "1",
+                "2-4",
+                "5-9",
+                "10-24",
+                "25-49",
+                "50-99",
+                "100-199",
+                "200+",
+            ),
+        ),
+        "sample_count": len(accumulator.sampled_frozensets),
+        "sample_cap": sample_cap,
+        "top_referrer_types": referrer_type_counts.most_common(top_n),
+        "morpion_state_field_refs": _ordered_counter_items(
+            morpion_state_field_refs,
+            order=_FROZENSET_MORPION_STATE_FIELDS,
+        ),
+    }
+
+
+def frozenset_ownership_histogram(
+    *,
+    objects: Iterable[object] | None = None,
+    sample_cap: int = _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
+    top_n: int = 20,
+    ignored_referrer_ids: Iterable[int] = (),
+) -> dict[str, object]:
+    """Return a bounded ownership sketch for tracked frozensets."""
+    gc_objects = gc.get_objects() if objects is None else objects
+    accumulator = _FrozensetOwnershipAccumulator()
+    effective_sample_cap = max(0, sample_cap)
+
+    for value in gc_objects:
+        if isinstance(value, frozenset):
+            _observe_frozenset(
+                accumulator,
+                cast("frozenset[object]", value),
+                sample_cap=effective_sample_cap,
+            )
+
+    effective_ignored_referrer_ids = set(ignored_referrer_ids)
+    if objects is None:
+        effective_ignored_referrer_ids.add(id(gc_objects))
+    return _finalize_frozenset_ownership_histogram(
+        accumulator,
+        ignored_referrer_ids=effective_ignored_referrer_ids,
+        sample_cap=effective_sample_cap,
+        top_n=top_n,
+    )
 
 
 def slot_names(type_or_obj: object) -> tuple[str, ...]:
@@ -770,6 +986,131 @@ def node_evaluation_runtime_histograms(nodes: Iterable[object]) -> dict[str, obj
     }
 
 
+def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
+    """Return one cheap process-wide shallow memory summary from GC objects."""
+    type_counts = Counter[str]()
+    type_bytes = Counter[str]()
+    project_type_counts = Counter[str]()
+    project_type_bytes = Counter[str]()
+    tracked_counts = Counter[str]()
+    tracked_bytes = Counter[str]()
+    frozenset_ownership = _FrozensetOwnershipAccumulator()
+
+    object_count = 0
+    total_shallow_bytes = 0
+    gc_objects = gc.get_objects()
+    for value in gc_objects:
+        object_count += 1
+        byte_count = _size_or_zero(value)
+        total_shallow_bytes += byte_count
+        type_name = _qualified_type_name(value)
+        type_counts[type_name] += 1
+        type_bytes[type_name] += byte_count
+        if isinstance(value, frozenset):
+            _observe_frozenset(
+                frozenset_ownership,
+                cast("frozenset[object]", value),
+                sample_cap=_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
+            )
+        if type_name.startswith(_PROJECT_TYPE_PREFIXES):
+            project_type_counts[type_name] += 1
+            project_type_bytes[type_name] += byte_count
+        for suffix in _TRACKED_SHALLOW_TYPE_SUFFIXES:
+            if type_name == suffix or type_name.endswith(f".{suffix}"):
+                tracked_counts[suffix] += 1
+                tracked_bytes[suffix] += byte_count
+                break
+
+    top_by_bytes = type_bytes.most_common(top_n)
+    top_by_count = type_counts.most_common(top_n)
+    top_project_by_bytes = project_type_bytes.most_common(top_n)
+    top_project_by_count = project_type_counts.most_common(top_n)
+    tracked_by_bytes = [
+        (suffix, tracked_bytes[suffix])
+        for suffix in _TRACKED_SHALLOW_TYPE_SUFFIXES
+        if tracked_counts[suffix] or tracked_bytes[suffix]
+    ]
+    tracked_by_count = [
+        (suffix, tracked_counts[suffix])
+        for suffix in _TRACKED_SHALLOW_TYPE_SUFFIXES
+        if tracked_counts[suffix] or tracked_bytes[suffix]
+    ]
+    frozenset_ownership_summary = _finalize_frozenset_ownership_histogram(
+        frozenset_ownership,
+        ignored_referrer_ids={id(gc_objects)},
+        sample_cap=_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
+        top_n=top_n,
+    )
+
+    return {
+        "object_count": object_count,
+        "total_shallow_bytes": total_shallow_bytes,
+        "top_by_bytes": top_by_bytes,
+        "top_by_count": top_by_count,
+        "top_project_by_bytes": top_project_by_bytes,
+        "top_project_by_count": top_project_by_count,
+        "tracked_by_bytes": tracked_by_bytes,
+        "tracked_by_count": tracked_by_count,
+        "frozenset_ownership": frozenset_ownership_summary,
+    }
+
+
+def _log_gc_shallow_size_summary(*, event: str, top_n: int) -> None:
+    summary = gc_shallow_size_summary(top_n=top_n)
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s histogram=gc_shallow_sizes "
+        "object_count=%s total_shallow_bytes=%s total_shallow_mb=%s "
+        "top_by_bytes=%s top_by_count=%s top_project_by_bytes=%s "
+        "top_project_by_count=%s tracked_by_bytes=%s tracked_by_count=%s",
+        event,
+        summary["object_count"],
+        summary["total_shallow_bytes"],
+        format_metric(_mb(cast("int", summary["total_shallow_bytes"]))),
+        _format_name_int_pairs(cast("list[tuple[str, int]]", summary["top_by_bytes"])),
+        _format_name_int_pairs(cast("list[tuple[str, int]]", summary["top_by_count"])),
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", summary["top_project_by_bytes"])
+        ),
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", summary["top_project_by_count"])
+        ),
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", summary["tracked_by_bytes"])
+        ),
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", summary["tracked_by_count"])
+        ),
+    )
+    frozenset_ownership = cast(
+        "dict[str, object]",
+        summary["frozenset_ownership"],
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s histogram=frozenset_ownership "
+        "total_count=%s total_shallow_bytes=%s total_shallow_mb=%s "
+        "len_buckets=%s sample_count=%s sample_cap=%s top_referrer_types=%s "
+        "morpion_state_field_refs=%s",
+        event,
+        frozenset_ownership["total_count"],
+        frozenset_ownership["total_shallow_bytes"],
+        format_metric(_mb(cast("int", frozenset_ownership["total_shallow_bytes"]))),
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", frozenset_ownership["len_buckets"])
+        ),
+        frozenset_ownership["sample_count"],
+        frozenset_ownership["sample_cap"],
+        _format_name_int_pairs(
+            cast("list[tuple[str, int]]", frozenset_ownership["top_referrer_types"])
+        ),
+        _format_name_int_pairs(
+            cast(
+                "list[tuple[str, int]]",
+                frozenset_ownership["morpion_state_field_refs"],
+            )
+        ),
+    )
+
+
 def linoo_state_histograms(selector: object | None) -> dict[str, object]:
     """Return sparse Linoo state-table diagnostics when a Linoo selector is present."""
     if selector is None:
@@ -790,7 +1131,8 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
     non_default_count = 0
     state_type_counts = Counter[str]()
     slot_value_type_counts = Counter[str]()
-    container_shallow_total = 0
+    node_state_table_shallow_bytes = _size_or_zero(node_state_by_id)
+    container_shallow_total = node_state_table_shallow_bytes
     container_recursive_seen: set[int] = set()
     container_recursive_total = 0
 
@@ -826,6 +1168,7 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
         "node_state_table_type": _qualified_type_name(node_state_by_id),
         "state_types": dict(state_type_counts),
         "slot_value_types": dict(slot_value_type_counts),
+        "node_state_table_shallow_bytes": node_state_table_shallow_bytes,
         "container_shallow_bytes": container_shallow_total,
         "container_recursive_bytes": container_recursive_total,
     }
@@ -1058,10 +1401,19 @@ def _log_standalone_components(
     event: str,
     context: RecursiveProfileContext,
     max_objects: int | None,
-) -> None:
+) -> list[ComponentProfileRecord]:
+    records: list[ComponentProfileRecord] = []
     for component, root in _component_roots(context):
         stats = DeepSizeStats(max_objects=max_objects)
         byte_count = deep_size(root, seen=set(), stats=stats)
+        records.append(
+            ComponentProfileRecord(
+                component=f"standalone:{component}",
+                bytes=byte_count,
+                visited_objects=stats.visited_objects,
+                capped=stats.capped,
+            )
+        )
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=standalone component=%s "
             "bytes=%s mb=%s visited_objects=%s capped=%s",
@@ -1072,6 +1424,7 @@ def _log_standalone_components(
             stats.visited_objects,
             stats.capped,
         )
+    return records
 
 
 def _exclusive_components(context: RecursiveProfileContext) -> tuple[ProfileRoot, ...]:
@@ -1147,9 +1500,10 @@ def _log_exclusive_components(
     event: str,
     context: RecursiveProfileContext,
     max_objects: int | None,
-) -> int:
+) -> tuple[int, list[ComponentProfileRecord]]:
     seen: set[int] = set()
     total_bytes = 0
+    records: list[ComponentProfileRecord] = []
     shell_components = {
         "runner_shell",
         "algorithm_node_shells",
@@ -1168,6 +1522,14 @@ def _log_exclusive_components(
             visited_objects = stats.visited_objects
             capped = stats.capped
         total_bytes += byte_count
+        records.append(
+            ComponentProfileRecord(
+                component=f"exclusive:{component}",
+                bytes=byte_count,
+                visited_objects=visited_objects,
+                capped=capped,
+            )
+        )
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=exclusive order=%s "
             "component=%s bytes=%s mb=%s cumulative_mb=%s visited_objects=%s "
@@ -1181,7 +1543,7 @@ def _log_exclusive_components(
             visited_objects,
             capped,
         )
-    return total_bytes
+    return total_bytes, records
 
 
 def _log_checkpoint_payload_stores(
@@ -1189,15 +1551,24 @@ def _log_checkpoint_payload_stores(
     event: str,
     checkpoint_payload_stores: Iterable[CheckpointPayloadStore],
     max_objects: int | None,
-) -> None:
+) -> list[ComponentProfileRecord]:
+    records: list[ComponentProfileRecord] = []
     for index, payload_store in enumerate(checkpoint_payload_stores, start=1):
         stats = DeepSizeStats(max_objects=max_objects)
         byte_count = deep_size(payload_store.payloads, seen=set(), stats=stats)
+        records.append(
+            ComponentProfileRecord(
+                component=f"checkpoint_payload_store:{index}",
+                bytes=byte_count,
+                visited_objects=stats.visited_objects,
+                capped=stats.capped,
+            )
+        )
         LOGGER.info(
             "[growth-recursive-profile] event=%s checkpoint_payload_store index=%s "
             "owner_type=%s attr_name=%s mapping_type=%s mapping_length=%s "
             "anchor_count=%s delta_count=%s bytes=%s mb=%s visited_objects=%s "
-            "capped=%s",
+            "capped=%s fully_traversed=%s",
             event,
             index,
             payload_store.owner_type,
@@ -1210,7 +1581,80 @@ def _log_checkpoint_payload_stores(
             format_metric(_mb(byte_count)),
             stats.visited_objects,
             stats.capped,
+            not stats.capped,
         )
+    return records
+
+
+def _effective_recursive_max_objects(
+    *,
+    max_objects: int | None,
+    complete_map: bool,
+) -> int | None:
+    """Return the recursive object cap after applying the uncapped-run guard."""
+    if max_objects is not None:
+        return max_objects
+    if complete_map:
+        LOGGER.warning(
+            "[growth-recursive-profile] uncapped recursive complete-map mode is "
+            "enabled; this may be slow and memory-intensive."
+        )
+        return None
+    LOGGER.warning(
+        "[growth-recursive-profile] recursive max_objects=None requested without "
+        "complete-map opt-in; using max_objects=%s.",
+        _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS,
+    )
+    return _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS
+
+
+def _component_names(records: Iterable[ComponentProfileRecord], *, capped: bool) -> str:
+    return "[" + ",".join(record.component for record in records if record.capped is capped) + "]"
+
+
+def _largest_components(records: Iterable[ComponentProfileRecord], *, limit: int) -> str:
+    largest = sorted(records, key=lambda record: record.bytes, reverse=True)[:limit]
+    return _format_name_float_pairs(
+        (record.component, _mb(record.bytes)) for record in largest
+    )
+
+
+def _log_recursive_profile_summary(
+    *,
+    event: str,
+    rss_mb: float | None,
+    total_recursive_reachable_mb: float,
+    residual_mb: float | None,
+    max_objects: int | None,
+    component_records: list[ComponentProfileRecord],
+    largest_component_records: list[ComponentProfileRecord],
+    checkpoint_histogram: Mapping[str, object],
+    checkpoint_payload_store_records: list[ComponentProfileRecord],
+) -> None:
+    checkpoint_handle_scan_capped = bool(
+        checkpoint_histogram.get("handle_scan_capped")
+        or checkpoint_histogram.get("handles_scanned_cap_reached")
+    )
+    checkpoint_payload_store_capped = any(
+        record.capped for record in checkpoint_payload_store_records
+    )
+    LOGGER.info(
+        "[growth-recursive-profile-summary] event=%s rss_mb=%s "
+        "total_recursive_reachable_mb=%s rss_minus_reachable_mb=%s "
+        "capped_components=%s uncapped_components=%s max_objects=%s "
+        "checkpoint_handle_scan_capped=%s checkpoint_payload_store_capped=%s "
+        "largest_components=%s",
+        event,
+        format_metric(rss_mb),
+        format_metric(total_recursive_reachable_mb),
+        format_metric(residual_mb),
+        _component_names(component_records, capped=True),
+        _component_names(component_records, capped=False),
+        max_objects,
+        checkpoint_handle_scan_capped,
+        checkpoint_payload_store_capped,
+        _largest_components(largest_component_records, limit=8),
+    )
 
 
 def log_growth_recursive_memory_profile(
@@ -1221,8 +1665,14 @@ def log_growth_recursive_memory_profile(
     node_count: int | None,
     branch_count: int | None,
     max_objects: int | None = None,
+    top_n: int = 20,
+    complete_map: bool = False,
 ) -> None:
     """Log recursive standalone and exclusive memory attribution diagnostics."""
+    effective_max_objects = _effective_recursive_max_objects(
+        max_objects=max_objects,
+        complete_map=complete_map,
+    )
     context = build_recursive_profile_context(runner)
     rss_mb = current_rss_mb()
     LOGGER.info(
@@ -1234,18 +1684,18 @@ def log_growth_recursive_memory_profile(
         node_count,
         branch_count,
         len(context.nodes),
-        max_objects,
+        effective_max_objects,
     )
 
-    _log_standalone_components(
+    standalone_records = _log_standalone_components(
         event=event,
         context=context,
-        max_objects=max_objects,
+        max_objects=effective_max_objects,
     )
-    exclusive_total_bytes = _log_exclusive_components(
+    exclusive_total_bytes, exclusive_records = _log_exclusive_components(
         event=event,
         context=context,
-        max_objects=max_objects,
+        max_objects=effective_max_objects,
     )
 
     _log_histogram(event, "tree_topology", tree_topology_histograms(context.nodes))
@@ -1255,19 +1705,21 @@ def log_growth_recursive_memory_profile(
         node_evaluation_runtime_histograms(context.nodes),
     )
     _log_histogram(event, "linoo", linoo_state_histograms(context.selector))
+    _log_gc_shallow_size_summary(event=event, top_n=top_n)
+    checkpoint_histogram = checkpoint_state_histograms(
+        context.nodes,
+        context.checkpoint_payload_stores,
+        max_objects=effective_max_objects,
+    )
     _log_histogram(
         event,
         "checkpoint_state",
-        checkpoint_state_histograms(
-            context.nodes,
-            context.checkpoint_payload_stores,
-            max_objects=max_objects,
-        ),
+        checkpoint_histogram,
     )
-    _log_checkpoint_payload_stores(
+    checkpoint_payload_store_records = _log_checkpoint_payload_stores(
         event=event,
         checkpoint_payload_stores=context.checkpoint_payload_stores,
-        max_objects=max_objects,
+        max_objects=effective_max_objects,
     )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)
@@ -1280,6 +1732,21 @@ def log_growth_recursive_memory_profile(
         format_metric(rss_mb),
         format_metric(residual_mb),
     )
+    _log_recursive_profile_summary(
+        event=event,
+        rss_mb=rss_mb,
+        total_recursive_reachable_mb=total_recursive_reachable_mb,
+        residual_mb=residual_mb,
+        max_objects=effective_max_objects,
+        component_records=[
+            *standalone_records,
+            *exclusive_records,
+            *checkpoint_payload_store_records,
+        ],
+        largest_component_records=exclusive_records,
+        checkpoint_histogram=checkpoint_histogram,
+        checkpoint_payload_store_records=checkpoint_payload_store_records,
+    )
 
 
 __all__ = [
@@ -1288,6 +1755,7 @@ __all__ = [
     "build_recursive_profile_context",
     "checkpoint_state_histograms",
     "deep_size",
+    "frozenset_ownership_histogram",
     "linoo_state_histograms",
     "log_growth_recursive_memory_profile",
     "node_evaluation_runtime_histograms",

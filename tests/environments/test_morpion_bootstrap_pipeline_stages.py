@@ -696,8 +696,39 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     assert "[growth-profile] event=after_checkpoint_save" in text
     assert "node_sample" in text
     assert "[growth-recursive-profile] event=after_checkpoint_load" in text
+    assert "[growth-recursive-profile] event=before_growth" not in text
     assert "mode=standalone component=all_profile_nodes" in text
     assert "histogram=tree_topology" in text
+
+
+def test_pipeline_growth_stage_recursive_memory_profile_event_filter(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Growth stage should allow explicitly profiling before-growth recursively."""
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        branch_counts=(8,),
+    )
+    runner.nodes = [{"metadata": {"index": 1}}]
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_memory_profile=True,
+        growth_memory_profile_recursive=True,
+        growth_memory_profile_recursive_max_objects=500,
+        growth_memory_profile_recursive_events=(
+            "after_checkpoint_load",
+            "before_growth",
+        ),
+    )
+
+    caplog.set_level(logging.INFO)
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    text = caplog.text
+    assert "[growth-recursive-profile] event=after_checkpoint_load" in text
+    assert "[growth-recursive-profile] event=before_growth" in text
 
 
 def test_pipeline_growth_stage_guards_candidate_checkpoint_load_before_validation(

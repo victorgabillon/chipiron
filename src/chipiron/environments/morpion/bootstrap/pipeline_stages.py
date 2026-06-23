@@ -1229,7 +1229,10 @@ def _log_growth_profile_if_enabled(
         sample_nodes=args.growth_memory_profile_sample_nodes,
         top_n=args.growth_memory_profile_top_n,
     )
-    if args.growth_memory_profile_recursive:
+    if (
+        args.growth_memory_profile_recursive
+        and event in args.growth_memory_profile_recursive_events
+    ):
         _log_growth_recursive_memory_profile(
             runner=runner,
             generation=generation,
@@ -1237,6 +1240,8 @@ def _log_growth_profile_if_enabled(
             node_count=node_count,
             branch_count=branch_count,
             max_objects=args.growth_memory_profile_recursive_max_objects,
+            top_n=args.growth_memory_profile_top_n,
+            complete_map=args.growth_memory_profile_recursive_complete_map,
         )
 
 
