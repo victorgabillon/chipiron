@@ -5,12 +5,13 @@ from __future__ import annotations
 import gc
 import logging
 import time
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from random import Random
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, Protocol, cast
-from collections.abc import Iterable, Iterator, Mapping
+
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     CheckpointNodeStatePayload,
@@ -95,8 +96,6 @@ from .sharded_training_export import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from .pipeline_artifacts import (
         MorpionReevaluationPatch,
         MorpionReevaluationPatchRow,
@@ -1509,12 +1508,36 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 return iter(value)
         return iter(())
 
+    def profile_runtime_root(self) -> object | None:
+        """Return the live Anemone runtime for recursive memory diagnostics."""
+        return self._runtime
+
+    def profile_selector(self) -> object | None:
+        """Return the live selector root for memory diagnostics, if available."""
+        runtime = self._runtime
+        if runtime is None:
+            return None
+        return getattr(runtime, "node_selector", None)
+
+    def profile_state_codec(self) -> object:
+        """Return the checkpoint codec root used by lazy restored state handles."""
+        return self._state_codec
+
     def iter_profile_branches(self) -> Iterator[object]:
         """Yield live branch or ordering objects for memory profiling only."""
         for node in self.iter_profile_nodes():
             branch_from_parent = getattr(node, "branch_from_parent", None)
             if branch_from_parent is not None:
                 yield branch_from_parent
+
+            iter_child_links = getattr(node, "iter_child_links", None)
+            if callable(iter_child_links):
+                try:
+                    for branch, _child in iter_child_links():
+                        yield branch
+                    continue
+                except Exception:
+                    pass
 
             for attr_name in (
                 "branches",
@@ -1526,8 +1549,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             ):
                 container = getattr(node, attr_name, None)
                 if isinstance(container, Mapping):
-                    for branch in container.keys():
-                        yield branch
+                    yield from container
                     continue
                 if isinstance(container, Iterable) and not isinstance(
                     container, str | bytes | bytearray

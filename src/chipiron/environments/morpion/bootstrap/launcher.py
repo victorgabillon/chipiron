@@ -114,6 +114,14 @@ def _parse_optional_non_negative_int(raw: str) -> int | None:
     return value
 
 
+def _parse_optional_positive_int(raw: str) -> int | None:
+    """Parse a positive integer or an explicit unbounded sentinel."""
+    value = _parse_optional_non_negative_int(raw)
+    if value is not None and value <= 0:
+        raise _rollout_max_extra_steps_parse_error()
+    return value
+
+
 def _parse_training_evaluator_names(raw: str | None) -> tuple[str, ...] | None:
     """Parse an optional comma-separated evaluator-name subset."""
     if raw is None:
@@ -862,6 +870,17 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Maximum live tree nodes to sample for growth memory profiles.",
     )
     parser.add_argument(
+        "--growth-memory-profile-recursive",
+        action="store_true",
+        help="Log opt-in recursive owned-memory attribution for growth runtimes.",
+    )
+    parser.add_argument(
+        "--growth-memory-profile-recursive-max-objects",
+        type=_parse_optional_positive_int,
+        default=None,
+        help="Optional object-visit cap for recursive growth memory profiles.",
+    )
+    parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
         type=float,
         default=60.0,
@@ -1044,8 +1063,7 @@ def launcher_args_from_cli(
         for argument in argv_list
     )
     tree_branch_limit_explicit = any(
-        argument == "--tree-branch-limit"
-        or argument.startswith("--tree-branch-limit=")
+        argument == "--tree-branch-limit" or argument.startswith("--tree-branch-limit=")
         for argument in argv_list
     )
     candidate_checkpoint_load_headroom_explicit = any(
@@ -1097,6 +1115,10 @@ def launcher_args_from_cli(
         growth_memory_profile=parsed.growth_memory_profile,
         growth_memory_profile_top_n=parsed.growth_memory_profile_top_n,
         growth_memory_profile_sample_nodes=parsed.growth_memory_profile_sample_nodes,
+        growth_memory_profile_recursive=parsed.growth_memory_profile_recursive,
+        growth_memory_profile_recursive_max_objects=(
+            parsed.growth_memory_profile_recursive_max_objects
+        ),
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor
         ),

@@ -473,12 +473,19 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
             "7",
             "--growth-memory-profile-sample-nodes",
             "123",
+            "--growth-memory-profile-recursive",
+            "--growth-memory-profile-recursive-max-objects",
+            "456",
         ]
     )
 
     assert launcher_args.bootstrap_args.growth_memory_profile is True
     assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 7
     assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 123
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive is True
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects == 456
+    )
 
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
@@ -493,6 +500,10 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_memory_profile is False
     assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 20
     assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 2000
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive is False
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects is None
+    )
 
 
 def test_launcher_args_parse_candidate_checkpoint_load_headroom(
@@ -511,7 +522,9 @@ def test_launcher_args_parse_candidate_checkpoint_load_headroom(
     )
 
     assert launcher_args.bootstrap_args.candidate_checkpoint_load_headroom_factor == 42
-    assert launcher_args.bootstrap_args.candidate_checkpoint_load_min_headroom_mb == 1234
+    assert (
+        launcher_args.bootstrap_args.candidate_checkpoint_load_min_headroom_mb == 1234
+    )
     assert launcher_args.candidate_checkpoint_load_headroom_explicit is True
 
 
@@ -885,7 +898,10 @@ def test_growth_stage_adopts_rollout_enabled_on_existing_config(
 
     assert startup_status.bootstrap_config.search.rollout.enabled is True
     assert startup_status.resolved_bootstrap_args.search.rollout.enabled is True
-    assert load_bootstrap_config(paths.bootstrap_config_path).search.rollout.enabled is True
+    assert (
+        load_bootstrap_config(paths.bootstrap_config_path).search.rollout.enabled
+        is True
+    )
 
 
 def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(

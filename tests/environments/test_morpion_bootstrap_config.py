@@ -343,7 +343,9 @@ def test_growth_worker_allows_runtime_save_after_tree_growth_factor_drift(
     )
 
 
-def test_default_rollout_config_keeps_rollout_disabled_with_traversing_selector() -> None:
+def test_default_rollout_config_keeps_rollout_disabled_with_traversing_selector() -> (
+    None
+):
     """Rollout should be disabled unless a launcher explicitly enables it."""
     rollout = MorpionBootstrapRolloutConfig()
 
@@ -571,6 +573,8 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile is False
     assert args.growth_memory_profile_top_n == 20
     assert args.growth_memory_profile_sample_nodes == 2000
+    assert args.growth_memory_profile_recursive is False
+    assert args.growth_memory_profile_recursive_max_objects is None
     assert args.candidate_checkpoint_load_headroom_factor == 60.0
     assert args.candidate_checkpoint_load_min_headroom_mb == 512
 
@@ -594,6 +598,10 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
     """Growth profile bounds should stay explicit and cheap."""
     MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=1)
     MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_sample_nodes=0)
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_max_objects=1,
+    )
 
     with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
         MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=0)
@@ -608,6 +616,19 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
         MorpionBootstrapArgs(
             work_dir=tmp_path,
             growth_memory_profile_sample_nodes=True,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_max_objects",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_objects=0,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_recursive_max_objects"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_objects=True,
         )
 
 
@@ -916,6 +937,11 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "growth_memory_profile" in growth_stage_owned_bootstrap_fields()
     assert "growth_memory_profile_top_n" in growth_stage_owned_bootstrap_fields()
     assert "growth_memory_profile_sample_nodes" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_recursive" in growth_stage_owned_bootstrap_fields()
+    assert (
+        "growth_memory_profile_recursive_max_objects"
+        in growth_stage_owned_bootstrap_fields()
+    )
     assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()
     assert "training_export_mode" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()

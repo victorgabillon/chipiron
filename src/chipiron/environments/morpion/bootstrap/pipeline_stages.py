@@ -134,6 +134,9 @@ from .record_status import (
     resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
+from .recursive_memory_profile import (
+    log_growth_recursive_memory_profile as _log_growth_recursive_memory_profile,
+)
 from .reevaluation_patch_consumer import apply_pending_reevaluation_patch_to_runner
 from .run_state import (
     MorpionBootstrapRunState,
@@ -846,11 +849,14 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_seconds=args.save_after_seconds,
     )
 
-    if _no_growth_and_limit_reached(
-        nodes_added=nodes_added,
-        branch_count=branch_count,
-        tree_branch_limit=effective_runtime_config.tree_branch_limit,
-    ) and not reevaluation_patch_result.patch_applied:
+    if (
+        _no_growth_and_limit_reached(
+            nodes_added=nodes_added,
+            branch_count=branch_count,
+            tree_branch_limit=effective_runtime_config.tree_branch_limit,
+        )
+        and not reevaluation_patch_result.patch_applied
+    ):
         assert branch_count is not None
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info(
@@ -1223,6 +1229,15 @@ def _log_growth_profile_if_enabled(
         sample_nodes=args.growth_memory_profile_sample_nodes,
         top_n=args.growth_memory_profile_top_n,
     )
+    if args.growth_memory_profile_recursive:
+        _log_growth_recursive_memory_profile(
+            runner=runner,
+            generation=generation,
+            event=event,
+            node_count=node_count,
+            branch_count=branch_count,
+            max_objects=args.growth_memory_profile_recursive_max_objects,
+        )
 
 
 def _log_before_candidate_checkpoint_load(

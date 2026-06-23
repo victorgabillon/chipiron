@@ -56,6 +56,13 @@ def _invalid_growth_memory_profile_sample_nodes_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_recursive_max_objects_error() -> ValueError:
+    """Return the canonical recursive memory-profile object-cap error."""
+    return ValueError(
+        "growth_memory_profile_recursive_max_objects must be a positive integer or None."
+    )
+
+
 def _invalid_candidate_checkpoint_load_headroom_factor_error() -> ValueError:
     """Return the canonical candidate-checkpoint load headroom factor error."""
     return ValueError(
@@ -130,6 +137,8 @@ class MorpionBootstrapArgs:
     growth_memory_profile: bool = False
     growth_memory_profile_top_n: int = 20
     growth_memory_profile_sample_nodes: int = 2000
+    growth_memory_profile_recursive: bool = False
+    growth_memory_profile_recursive_max_objects: int | None = None
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
 
@@ -163,6 +172,11 @@ class MorpionBootstrapArgs:
             or self.growth_memory_profile_sample_nodes < 0
         ):
             raise _invalid_growth_memory_profile_sample_nodes_error()
+        if self.growth_memory_profile_recursive_max_objects is not None and (
+            isinstance(self.growth_memory_profile_recursive_max_objects, bool)
+            or self.growth_memory_profile_recursive_max_objects <= 0
+        ):
+            raise _invalid_growth_memory_profile_recursive_max_objects_error()
         if (
             isinstance(self.candidate_checkpoint_load_headroom_factor, bool)
             or self.candidate_checkpoint_load_headroom_factor < 0
@@ -174,8 +188,7 @@ class MorpionBootstrapArgs:
         ):
             raise _invalid_candidate_checkpoint_load_min_headroom_mb_error()
         if self.min_available_ram_mb is not None and (
-            isinstance(self.min_available_ram_mb, bool)
-            or self.min_available_ram_mb < 0
+            isinstance(self.min_available_ram_mb, bool) or self.min_available_ram_mb < 0
         ):
             raise _invalid_min_available_ram_mb_error()
 

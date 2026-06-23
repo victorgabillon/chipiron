@@ -71,8 +71,7 @@ class MorpionBootstrapRuntimeConfig:
         ):
             raise InvalidReevaluationBlendAlphaError
         if self.min_available_ram_mb is not None and (
-            isinstance(self.min_available_ram_mb, bool)
-            or self.min_available_ram_mb < 0
+            isinstance(self.min_available_ram_mb, bool) or self.min_available_ram_mb < 0
         ):
             raise MalformedMorpionBootstrapConfigError.invalid_int(
                 "runtime.min_available_ram_mb"
@@ -737,6 +736,8 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "growth_memory_profile",
         "growth_memory_profile_top_n",
         "growth_memory_profile_sample_nodes",
+        "growth_memory_profile_recursive",
+        "growth_memory_profile_recursive_max_objects",
         "rollout_after_opening",
         "rollout_max_extra_steps",
         "rollout_action_selector_kind",

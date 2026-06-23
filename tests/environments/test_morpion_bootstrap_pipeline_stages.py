@@ -680,6 +680,8 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
         growth_memory_profile=True,
         growth_memory_profile_top_n=3,
         growth_memory_profile_sample_nodes=1,
+        growth_memory_profile_recursive=True,
+        growth_memory_profile_recursive_max_objects=500,
     )
 
     caplog.set_level(logging.INFO)
@@ -693,6 +695,9 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     assert "[growth-profile] event=checkpoint_save_done" in text
     assert "[growth-profile] event=after_checkpoint_save" in text
     assert "node_sample" in text
+    assert "[growth-recursive-profile] event=after_checkpoint_load" in text
+    assert "mode=standalone component=all_profile_nodes" in text
+    assert "histogram=tree_topology" in text
 
 
 def test_pipeline_growth_stage_guards_candidate_checkpoint_load_before_validation(
