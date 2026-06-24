@@ -175,6 +175,8 @@ class DeepSizeStats:
 class CheckpointPayloadStore:
     """Concrete mapping that owns checkpoint state payload objects."""
 
+    resolver_type: str
+    resolver_id: int
     owner_type: str
     attr_name: str
     payloads: Mapping[object, object]
@@ -192,6 +194,19 @@ class ComponentProfileRecord:
     capped: bool
     max_depth_reached_count: int = 0
     recursion_error_count: int = 0
+
+
+@dataclass(slots=True)
+class _CheckpointResolverHandleStats:
+    """Checkpoint-handle diagnostics grouped by resolver identity."""
+
+    resolver_type: str
+    checkpoint_handle_count: int = 0
+    materialized_handle_count: int = 0
+    unmaterialized_handle_count: int = 0
+    referenced_payload_keys_by_mapping_id: dict[int, set[object]] = field(
+        default_factory=dict
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1001,6 +1016,7 @@ def _append_checkpoint_payload_store_if_payload_mapping(
     stores: list[CheckpointPayloadStore],
     checked_mapping_ids: set[int],
     payload_mapping_ids: set[int],
+    resolver: object,
     owner: object,
     attr_name: str,
     mapping: Mapping[object, object],
@@ -1015,6 +1031,8 @@ def _append_checkpoint_payload_store_if_payload_mapping(
     payload_mapping_ids.add(mapping_id)
     stores.append(
         CheckpointPayloadStore(
+            resolver_type=_qualified_type_name(resolver),
+            resolver_id=id(resolver),
             owner_type=_qualified_type_name(owner),
             attr_name=attr_name,
             payloads=mapping,
@@ -1040,6 +1058,7 @@ def _append_checkpoint_payload_stores_from_shallow_candidate(
                 stores=stores,
                 checked_mapping_ids=checked_mapping_ids,
                 payload_mapping_ids=payload_mapping_ids,
+                resolver=candidate,
                 owner=candidate,
                 attr_name=attr_name,
                 mapping=mapping,
@@ -1054,6 +1073,7 @@ def _append_checkpoint_payload_stores_from_shallow_candidate(
                 stores=stores,
                 checked_mapping_ids=checked_mapping_ids,
                 payload_mapping_ids=payload_mapping_ids,
+                resolver=candidate,
                 owner=owner,
                 attr_name=f"owner.{attr_name}",
                 mapping=mapping,
@@ -2044,18 +2064,71 @@ def _handle_resolver(handle: object) -> object | None:
     return None
 
 
+def _handle_node_id(handle: object) -> object | None:
+    """Return the raw checkpoint node id from known handle layouts."""
+    for attr_name in ("node_id", "_node_id"):
+        value = _raw_getattr(handle, attr_name)
+        if value is not None:
+            return value
+    return None
+
+
+def _is_checkpoint_backed_state_handle(handle: object) -> bool:
+    """Return whether one raw handle looks like an Anemone checkpoint handle."""
+    return type(handle).__qualname__.endswith("CheckpointBackedStateHandle")
+
+
 def _resolver_payloads(resolver: object) -> Mapping[object, object] | None:
     """Return checkpoint payload storage from known resolver layouts."""
+    _, mapping = _resolver_payload_mapping_details(resolver)
+    if isinstance(mapping, Mapping):
+        return mapping
+    return None
+
+
+def _resolver_payload_mapping_details(
+    resolver: object,
+) -> tuple[str | None, Mapping[object, object] | None]:
+    """Return payload mapping details from likely raw resolver/owner attrs."""
+    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
+        value = _raw_getattr(resolver, attr_name)
+        if isinstance(value, Mapping):
+            return attr_name, value
+    owner = _raw_getattr(resolver, "owner")
+    if owner is None:
+        return None, None
+    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
+        value = _raw_getattr(owner, attr_name)
+        if isinstance(value, Mapping):
+            return f"owner.{attr_name}", value
+    return None, None
+
+
+def _resolver_resolved_states(resolver: object) -> Mapping[object, object] | None:
+    """Return materialized-state storage from likely raw resolver attrs."""
     for attr_name in (
-        "state_payloads_by_node_id",
-        "_state_payloads_by_node_id",
-        "payloads_by_node_id",
-        "_payloads_by_node_id",
+        "_resolved_states",
+        "resolved_states",
+        "_state_by_node_id",
+        "state_by_node_id",
     ):
         value = _raw_getattr(resolver, attr_name)
         if isinstance(value, Mapping):
             return value
     return None
+
+
+def _handle_has_materialized_state(handle: object, resolver: object | None) -> bool:
+    """Return whether one raw checkpoint handle already points to materialized state."""
+    for attr_name in ("state_", "_state", "_materialized_state"):
+        present, value = _raw_getattr_present(handle, attr_name)
+        if present and value is not None:
+            return True
+    node_id = _handle_node_id(handle)
+    if resolver is None or not isinstance(node_id, int):
+        return False
+    resolved_states = _resolver_resolved_states(resolver)
+    return isinstance(resolved_states, Mapping) and node_id in resolved_states
 
 
 def checkpoint_state_histograms(
@@ -2165,7 +2238,7 @@ def checkpoint_state_histograms(
         if resolver is None:
             continue
         resolver_ids.add(id(resolver))
-        node_id = _raw_getattr(handle, "node_id")
+        node_id = _handle_node_id(handle)
         payloads = _resolver_payloads(resolver)
         if (
             not payload_stats.capped
@@ -2175,7 +2248,7 @@ def checkpoint_state_histograms(
             payload = payloads.get(node_id)
             if payload is not None:
                 add_payload(payload)
-        resolved_states = _raw_getattr(resolver, "_resolved_states")
+        resolved_states = _resolver_resolved_states(resolver)
         if isinstance(resolved_states, Mapping):
             for state in resolved_states.values():
                 if payload_stats.capped or resolved_stats.capped:
@@ -2219,6 +2292,148 @@ def checkpoint_state_histograms(
         "materialized_state_recursive_visited_objects": resolved_stats.visited_objects,
         "capped": capped,
     }
+
+
+def checkpoint_payload_lifetime_histograms(
+    nodes: Iterable[object],
+    checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
+    *,
+    checkpoint_payload_store_records: Iterable[ComponentProfileRecord] = (),
+    checkpoint_max_handles: int | None = None,
+) -> tuple[dict[str, object], ...]:
+    """Return per-resolver checkpoint payload lifetime diagnostics without get()."""
+    payload_stores = tuple(checkpoint_payload_stores)
+    payload_store_records = tuple(checkpoint_payload_store_records)
+    handle_stats_by_resolver_id: dict[int, _CheckpointResolverHandleStats] = {}
+    checkpoint_handle_count = 0
+    handles_without_resolver_count = 0
+    resolver_ids_seen_by_handles: set[int] = set()
+    max_handles = _checkpoint_handle_scan_cap(
+        nodes,
+        max_objects=0,
+        checkpoint_max_handles=checkpoint_max_handles,
+    )
+    handles_seen = 0
+    handle_scan_capped = False
+
+    for node in nodes:
+        if max_handles is not None and handles_seen >= max_handles:
+            handle_scan_capped = True
+            break
+        handle = _tree_node_slot(node, "state_handle_")
+        if handle is None:
+            continue
+        handles_seen += 1
+        if not _is_checkpoint_backed_state_handle(handle):
+            continue
+        checkpoint_handle_count += 1
+        resolver = _handle_resolver(handle)
+        if resolver is None:
+            handles_without_resolver_count += 1
+            continue
+        resolver_id = id(resolver)
+        resolver_ids_seen_by_handles.add(resolver_id)
+        stats = handle_stats_by_resolver_id.setdefault(
+            resolver_id,
+            _CheckpointResolverHandleStats(
+                resolver_type=_qualified_type_name(resolver),
+            ),
+        )
+        stats.checkpoint_handle_count += 1
+        if _handle_has_materialized_state(handle, resolver):
+            stats.materialized_handle_count += 1
+        else:
+            stats.unmaterialized_handle_count += 1
+        node_id = _handle_node_id(handle)
+        payloads = _resolver_payloads(resolver)
+        if isinstance(node_id, int) and isinstance(payloads, Mapping) and node_id in payloads:
+            stats.referenced_payload_keys_by_mapping_id.setdefault(id(payloads), set()).add(
+                node_id
+            )
+
+    all_handles_share_one_resolver = (
+        checkpoint_handle_count > 0
+        and handles_without_resolver_count == 0
+        and len(resolver_ids_seen_by_handles) == 1
+    )
+    records_by_index = {
+        index: record for index, record in enumerate(payload_store_records, start=1)
+    }
+    histograms: list[dict[str, object]] = []
+    seen_store_resolver_ids: set[int] = set()
+
+    for index, payload_store in enumerate(payload_stores, start=1):
+        seen_store_resolver_ids.add(payload_store.resolver_id)
+        resolver_stats = handle_stats_by_resolver_id.get(payload_store.resolver_id)
+        record = records_by_index.get(index)
+        referenced_payload_entries_count = 0
+        if resolver_stats is not None:
+            referenced_payload_entries_count = len(
+                resolver_stats.referenced_payload_keys_by_mapping_id.get(
+                    id(payload_store.payloads),
+                    set(),
+                )
+            )
+        histograms.append(
+            {
+                "resolver_type": payload_store.resolver_type,
+                "resolver_object_id": payload_store.resolver_id,
+                "payload_mapping_attr_name": payload_store.attr_name,
+                "payload_mapping_type": _qualified_type_name(payload_store.payloads),
+                "payload_mapping_length": len(payload_store.payloads),
+                "anchor_count": payload_store.anchor_count,
+                "delta_count": payload_store.delta_count,
+                "payload_mapping_recursive_bytes": (
+                    0 if record is None else record.bytes
+                ),
+                "payload_mapping_shallow_bytes": _size_or_zero(payload_store.payloads),
+                "checkpoint_backed_state_handle_count": (
+                    0 if resolver_stats is None else resolver_stats.checkpoint_handle_count
+                ),
+                "materialized_handle_count": (
+                    0 if resolver_stats is None else resolver_stats.materialized_handle_count
+                ),
+                "unmaterialized_handle_count": (
+                    0 if resolver_stats is None else resolver_stats.unmaterialized_handle_count
+                ),
+                "payload_entries_still_referenced_count": referenced_payload_entries_count,
+                "all_handles_share_one_resolver": all_handles_share_one_resolver,
+                "handle_scan_capped": handle_scan_capped,
+            }
+        )
+
+    for resolver_id, resolver_stats in handle_stats_by_resolver_id.items():
+        if resolver_id in seen_store_resolver_ids:
+            continue
+        histograms.append(
+            {
+                "resolver_type": resolver_stats.resolver_type,
+                "resolver_object_id": resolver_id,
+                "payload_mapping_attr_name": None,
+                "payload_mapping_type": None,
+                "payload_mapping_length": 0,
+                "anchor_count": 0,
+                "delta_count": 0,
+                "payload_mapping_recursive_bytes": 0,
+                "payload_mapping_shallow_bytes": 0,
+                "checkpoint_backed_state_handle_count": resolver_stats.checkpoint_handle_count,
+                "materialized_handle_count": resolver_stats.materialized_handle_count,
+                "unmaterialized_handle_count": resolver_stats.unmaterialized_handle_count,
+                "payload_entries_still_referenced_count": 0,
+                "all_handles_share_one_resolver": all_handles_share_one_resolver,
+                "handle_scan_capped": handle_scan_capped,
+            }
+        )
+
+    if histograms:
+        return tuple(histograms)
+    return (
+        {
+            "present": False,
+            "all_handles_share_one_resolver": False,
+            "handle_scan_capped": handle_scan_capped,
+        },
+    )
 
 
 def _checkpoint_handle_scan_cap(
@@ -2719,6 +2934,16 @@ def log_growth_recursive_memory_profile(
         max_depth=effective_max_depth,
         complete_map=complete_map,
     )
+    for payload in checkpoint_payload_lifetime_histograms(
+        context.nodes,
+        context.checkpoint_payload_stores,
+        checkpoint_payload_store_records=checkpoint_payload_store_records,
+    ):
+        _log_histogram(
+            event,
+            "checkpoint_payload_lifetime",
+            payload,
+        )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)
     residual_mb = None if rss_mb is None else rss_mb - total_recursive_reachable_mb
@@ -2753,6 +2978,7 @@ __all__ = [
     "DeepSizeStats",
     "_find_linoo_selector_root",
     "build_recursive_profile_context",
+    "checkpoint_payload_lifetime_histograms",
     "checkpoint_state_histograms",
     "deep_size",
     "frozenset_ownership_histogram",

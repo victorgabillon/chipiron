@@ -33,6 +33,7 @@ from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
 )
 from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     build_recursive_profile_context,
+    checkpoint_payload_lifetime_histograms,
     checkpoint_state_histograms,
     deep_size,
     frozenset_ownership_histogram,
@@ -441,6 +442,50 @@ class FakeCheckpointPayloadOwner:
             2: FakeDeltaCheckpointStatePayload({"move": 4}),
             3: object(),
         }
+
+
+class FakeCheckpointStateResolver:
+    """Resolver-like object with checkpoint payloads and resolved-state cache."""
+
+    __slots__ = ("_resolved_states", "owner", "state_payloads_by_node_id")
+
+    def __init__(self) -> None:
+        self.owner = FakeCheckpointPayloadOwner()
+        self.state_payloads_by_node_id = self.owner._payloads_by_node_id
+        self._resolved_states = {1: {"board": [9, 9, 9]}}
+
+
+class FakeCheckpointBackedStateHandle:
+    """Checkpoint-handle-shaped object whose get() must never be called."""
+
+    def __init__(self, resolver: object, node_id: int) -> None:
+        self.resolver = resolver
+        self.node_id = node_id
+
+    def get(self) -> object:
+        raise AssertionError("checkpoint lifetime diagnostics must not materialize")
+
+
+class FakeRunnerWithCheckpointBackedHandles:
+    """Runner exposing one shared checkpoint resolver and lazy handles."""
+
+    def __init__(self) -> None:
+        resolver = FakeCheckpointStateResolver()
+        self.profile_checkpoint_state_resolver = resolver
+        self.nodes = [
+            FakeAlgorithmNode(
+                FakeTreeNode(
+                    state_handle=FakeCheckpointBackedStateHandle(resolver, 1)
+                ),
+                FakeNodeEvaluation(),
+            ),
+            FakeAlgorithmNode(
+                FakeTreeNode(
+                    state_handle=FakeCheckpointBackedStateHandle(resolver, 2)
+                ),
+                FakeNodeEvaluation(),
+            ),
+        ]
 
 
 class FakeRunnerWithCheckpointPayloadStore:
@@ -1077,6 +1122,96 @@ def test_checkpoint_state_histograms_caps_handle_scan(
     assert "capped=True" in caplog.text
 
 
+def test_checkpoint_payload_lifetime_histograms_detect_shared_resolver() -> None:
+    """Lifetime histograms should join one payload store with shared-handle counts."""
+    runner = FakeRunnerWithCheckpointBackedHandles()
+    context = build_recursive_profile_context(
+        runner,
+        event="after_checkpoint_load",
+        branch_count=0,
+        node_cap=10,
+    )
+    payload_store_records = recursive_memory_profile_module._log_checkpoint_payload_stores(
+        event="after_checkpoint_load",
+        checkpoint_payload_stores=context.checkpoint_payload_stores,
+        max_objects=None,
+        max_depth=64,
+        complete_map=False,
+    )
+
+    histograms = checkpoint_payload_lifetime_histograms(
+        context.nodes,
+        context.checkpoint_payload_stores,
+        checkpoint_payload_store_records=payload_store_records,
+    )
+
+    assert len(histograms) == 1
+    histogram = histograms[0]
+    assert histogram["resolver_type"].endswith("FakeCheckpointStateResolver")
+    assert histogram["payload_mapping_attr_name"] == "state_payloads_by_node_id"
+    assert histogram["payload_mapping_length"] == 3
+    assert histogram["anchor_count"] == 1
+    assert histogram["delta_count"] == 1
+    assert histogram["checkpoint_backed_state_handle_count"] == 2
+    assert histogram["materialized_handle_count"] == 1
+    assert histogram["unmaterialized_handle_count"] == 1
+    assert histogram["payload_entries_still_referenced_count"] == 2
+    assert histogram["all_handles_share_one_resolver"] is True
+    assert histogram["payload_mapping_recursive_bytes"] > 0
+    assert histogram["payload_mapping_shallow_bytes"] > 0
+
+
+def test_checkpoint_payload_lifetime_histograms_do_not_materialize_states() -> None:
+    """Lifetime histograms must not call handle.get() while counting lazy handles."""
+    resolver = FakeCheckpointStateResolver()
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 2)),
+            FakeNodeEvaluation(),
+        )
+    ]
+    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+        resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        resolver_id=id(resolver),
+        owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        attr_name="state_payloads_by_node_id",
+        payloads=resolver.state_payloads_by_node_id,
+        anchor_count=1,
+        delta_count=1,
+    )
+
+    histograms = checkpoint_payload_lifetime_histograms(
+        nodes,
+        [payload_store],
+    )
+
+    assert histograms[0]["checkpoint_backed_state_handle_count"] == 1
+    assert histograms[0]["materialized_handle_count"] == 0
+    assert histograms[0]["unmaterialized_handle_count"] == 1
+
+
+def test_checkpoint_payload_lifetime_histograms_tolerate_missing_attrs() -> None:
+    """Lifetime histograms should not crash when resolver payload attrs are absent."""
+    resolver = SimpleNamespace()
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 7)),
+            FakeNodeEvaluation(),
+        )
+    ]
+
+    histograms = checkpoint_payload_lifetime_histograms(nodes, [])
+
+    assert len(histograms) == 1
+    histogram = histograms[0]
+    assert histogram["payload_mapping_attr_name"] is None
+    assert histogram["payload_mapping_type"] is None
+    assert histogram["payload_mapping_length"] == 0
+    assert histogram["checkpoint_backed_state_handle_count"] == 1
+    assert histogram["materialized_handle_count"] == 0
+    assert histogram["unmaterialized_handle_count"] == 1
+
+
 def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
     monkeypatch,
 ) -> None:
@@ -1280,6 +1415,7 @@ def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     text = caplog.text
     assert "mode=standalone component=checkpoint_state_roots" in text
     assert "histogram=checkpoint_state" in text
+    assert "histogram=checkpoint_payload_lifetime" in text
     assert "payload_store_count=1" in text
     assert "anchor_payload_count=1" in text
     assert "delta_payload_count=1" in text
