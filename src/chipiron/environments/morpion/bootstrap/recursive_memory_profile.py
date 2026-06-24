@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import gc
-from itertools import chain
 import logging
 import sys
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from dataclasses import dataclass, field
+from itertools import chain
 from types import (
     BuiltinFunctionType,
     BuiltinMethodType,
