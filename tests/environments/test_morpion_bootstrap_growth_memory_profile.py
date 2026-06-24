@@ -34,6 +34,7 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     checkpoint_state_histograms,
     deep_size,
     frozenset_ownership_histogram,
+    gc_shallow_size_summary,
     linoo_state_histograms,
     log_growth_recursive_memory_profile,
     node_evaluation_runtime_histograms,
@@ -142,6 +143,19 @@ class FakeRunnerWithProfileIterator:
 
     def __init__(self) -> None:
         self._nodes = [FakeNode(index) for index in range(4)]
+
+    def iter_profile_nodes(self):
+        return iter(self._nodes)
+
+
+class FakeRunnerWithCheckpointStoreAndProfileIterator:
+    """Runner exposing profile nodes and checkpoint payload stores."""
+
+    def __init__(self) -> None:
+        self._nodes = [FakeNode(index) for index in range(4)]
+        self.profile_checkpoint_state_resolver = SimpleNamespace(
+            owner=FakeCheckpointPayloadOwner()
+        )
 
     def iter_profile_nodes(self):
         return iter(self._nodes)
@@ -878,6 +892,70 @@ def test_frozenset_ownership_histogram_respects_sample_cap(monkeypatch) -> None:
     assert scanned_ids == [id(frozensets[0]), id(frozensets[1])]
 
 
+def test_gc_shallow_size_summary_skips_reverse_referrer_scan(monkeypatch) -> None:
+    """Default shallow summary should not call gc.get_referrers."""
+
+    def fail_get_referrers(*_args: object) -> list[object]:
+        raise AssertionError("gc.get_referrers should not be used by default")
+
+    monkeypatch.setattr(gc, "get_referrers", fail_get_referrers)
+
+    summary = gc_shallow_size_summary(top_n=5)
+
+    frozenset_ownership = summary["frozenset_ownership"]
+    assert isinstance(summary["object_count"], int)
+    assert summary["object_count"] >= 0
+    assert isinstance(frozenset_ownership, dict)
+    assert "total_count" in frozenset_ownership
+    assert "morpion_state_field_refs" in frozenset_ownership
+
+
+def test_gc_shallow_size_summary_attributes_fake_morpion_state_fields(monkeypatch) -> None:
+    """Default shallow summary should attribute MorpionState frozenset fields directly."""
+    points = frozenset()
+    used_unit_segments = frozenset({1})
+    played_moves = frozenset({2, 3, 4})
+    state = MorpionState(
+        points=points,
+        used_unit_segments=used_unit_segments,
+        played_moves=played_moves,
+    )
+    unrelated = FakeCheckpointPayload(played_moves)
+    gc_objects = [points, used_unit_segments, played_moves, state, unrelated]
+
+    monkeypatch.setattr(gc, "get_objects", lambda: gc_objects)
+    monkeypatch.setattr(
+        gc,
+        "get_referrers",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("gc.get_referrers should not be used by default")
+        ),
+    )
+
+    summary = gc_shallow_size_summary(top_n=5)
+
+    frozenset_ownership = summary["frozenset_ownership"]
+    assert frozenset_ownership["total_count"] == 3
+    assert frozenset_ownership["total_shallow_bytes"] == sum(
+        sys.getsizeof(value) for value in (points, used_unit_segments, played_moves)
+    )
+    assert dict(frozenset_ownership["len_buckets"]) == {"0": 1, "1": 1, "2-4": 1}
+    assert frozenset_ownership["morpion_state_count"] == 1
+    assert dict(frozenset_ownership["morpion_state_field_refs"]) == {
+        "points": 1,
+        "used_unit_segments": 1,
+        "played_moves": 1,
+    }
+    assert frozenset_ownership["morpion_state_field_shallow_bytes"] == sum(
+        sys.getsizeof(value) for value in (points, used_unit_segments, played_moves)
+    )
+    assert dict(frozenset_ownership["morpion_state_field_len_buckets"]) == {
+        "0": 1,
+        "1": 1,
+        "2-4": 1,
+    }
+
+
 def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -957,10 +1035,43 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "histogram=tree_topology" in text
     assert "histogram=node_evaluation_runtime" in text
     assert "histogram=linoo" in text
+    assert "gc_shallow_size_summary_start" in text
+    assert "gc_shallow_size_summary_done" in text
     assert "histogram=gc_shallow_sizes" in text
     assert "histogram=frozenset_ownership" in text
+    assert "morpion_state_count=" in text
+    assert "morpion_state_field_shallow_mb=" in text
     assert "top_by_bytes=" in text
     assert "histogram=checkpoint_state" in text
     assert "rss_minus_reachable_mb=" in text
     assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
     assert "largest_components=" in text
+
+
+def test_growth_recursive_memory_profile_logs_context_build_progress(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Recursive profile should emit context-build progress logs and honor node cap."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithCheckpointStoreAndProfileIterator(),
+        generation=22,
+        event="after_checkpoint_load",
+        node_count=4,
+        branch_count=8,
+        max_objects=1,
+        context_node_cap=2,
+    )
+
+    text = caplog.text
+    assert "context_build_start" in text
+    assert "context_build_runtime_found" in text
+    assert "context_build_nodes_start" in text
+    assert "context_build_nodes_done node_count=2" in text
+    assert "context_build_branches_start" in text
+    assert "context_build_branches_done branch_count=8" in text
+    assert "context_build_checkpoint_stores_start" in text
+    assert "context_build_checkpoint_stores_done count=1" in text
+    assert "context_build_done total_elapsed_s=" in text
+    assert "profile_node_count=2 checkpoint_payload_stores=1" in text

@@ -476,6 +476,8 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
             "--growth-memory-profile-recursive",
             "--growth-memory-profile-recursive-max-objects",
             "456",
+            "--growth-memory-profile-recursive-context-node-cap",
+            "321",
             "--growth-memory-profile-recursive-events",
             "after_checkpoint_load,before_growth",
             "--growth-memory-profile-recursive-complete-map",
@@ -488,6 +490,10 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive is True
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects == 456
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
+        == 321
     )
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive_events == (
         "after_checkpoint_load",
@@ -511,6 +517,10 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive is False
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects is None
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
+        is None
     )
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive_events == (
         "after_checkpoint_load",

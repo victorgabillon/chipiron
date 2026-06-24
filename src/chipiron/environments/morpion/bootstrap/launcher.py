@@ -894,6 +894,14 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Optional object-visit cap for recursive growth memory profiles.",
     )
     parser.add_argument(
+        "--growth-memory-profile-recursive-context-node-cap",
+        type=_parse_optional_positive_int,
+        default=None,
+        help=(
+            "Optional profile-node cap for recursive context building diagnostics."
+        ),
+    )
+    parser.add_argument(
         "--growth-memory-profile-recursive-events",
         type=_parse_recursive_profile_events,
         default=("after_checkpoint_load",),
@@ -1148,6 +1156,9 @@ def launcher_args_from_cli(
         growth_memory_profile_recursive=parsed.growth_memory_profile_recursive,
         growth_memory_profile_recursive_max_objects=(
             parsed.growth_memory_profile_recursive_max_objects
+        ),
+        growth_memory_profile_recursive_context_node_cap=(
+            parsed.growth_memory_profile_recursive_context_node_cap
         ),
         growth_memory_profile_recursive_events=(
             parsed.growth_memory_profile_recursive_events

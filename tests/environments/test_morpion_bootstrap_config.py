@@ -575,6 +575,7 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile_sample_nodes == 2000
     assert args.growth_memory_profile_recursive is False
     assert args.growth_memory_profile_recursive_max_objects is None
+    assert args.growth_memory_profile_recursive_context_node_cap is None
     assert args.growth_memory_profile_recursive_events == ("after_checkpoint_load",)
     assert args.growth_memory_profile_recursive_complete_map is False
     assert args.candidate_checkpoint_load_headroom_factor == 60.0
@@ -603,6 +604,10 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
     MorpionBootstrapArgs(
         work_dir=tmp_path,
         growth_memory_profile_recursive_max_objects=1,
+    )
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_context_node_cap=1,
     )
     MorpionBootstrapArgs(
         work_dir=tmp_path,
@@ -635,6 +640,22 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
         MorpionBootstrapArgs(
             work_dir=tmp_path,
             growth_memory_profile_recursive_max_objects=True,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_context_node_cap",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_context_node_cap=0,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_context_node_cap",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_context_node_cap=True,
         )
     with pytest.raises(ValueError, match="growth_memory_profile_recursive_events"):
         MorpionBootstrapArgs(
@@ -959,6 +980,10 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "growth_memory_profile_recursive" in growth_stage_owned_bootstrap_fields()
     assert (
         "growth_memory_profile_recursive_max_objects"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "growth_memory_profile_recursive_context_node_cap"
         in growth_stage_owned_bootstrap_fields()
     )
     assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()

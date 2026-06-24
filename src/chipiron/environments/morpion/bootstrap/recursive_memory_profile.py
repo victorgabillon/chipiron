@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import gc
+from itertools import chain
 import logging
 import sys
+import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from dataclasses import dataclass, field
@@ -174,6 +176,16 @@ class _FrozensetOwnershipAccumulator:
     sampled_frozensets: list[frozenset[object]] = field(default_factory=list)
 
 
+@dataclass(slots=True)
+class _MorpionStateFrozensetAccumulator:
+    """Mutable counters for direct MorpionState frozenset field scans."""
+
+    morpion_state_count: int = 0
+    field_ref_counts: Counter[str] = field(default_factory=Counter)
+    field_len_bucket_counts: Counter[str] = field(default_factory=Counter)
+    total_field_shallow_bytes: int = 0
+
+
 def _qualified_type_name(value: object) -> str:
     value_type = type(value)
     module = value_type.__module__
@@ -316,6 +328,20 @@ def _observe_frozenset(
     accumulator.len_bucket_counts[_frozenset_len_bucket(len(value))] += 1
     if len(accumulator.sampled_frozensets) < sample_cap:
         accumulator.sampled_frozensets.append(value)
+
+
+def _observe_morpion_state_frozenset_fields(
+    accumulator: _MorpionStateFrozensetAccumulator,
+    state: object,
+) -> None:
+    accumulator.morpion_state_count += 1
+    for field_name in _FROZENSET_MORPION_STATE_FIELDS:
+        field_value = _raw_getattr(state, field_name)
+        if not isinstance(field_value, frozenset):
+            continue
+        accumulator.field_ref_counts[field_name] += 1
+        accumulator.field_len_bucket_counts[_frozenset_len_bucket(len(field_value))] += 1
+        accumulator.total_field_shallow_bytes += _size_or_zero(field_value)
 
 
 def _is_morpion_state_type_name(type_name: str) -> bool:
@@ -494,6 +520,52 @@ def frozenset_ownership_histogram(
         top_n=top_n,
         owner_referrer_scan_cap=max(0, owner_referrer_scan_cap),
     )
+
+
+def _direct_frozenset_ownership_summary(
+    frozenset_ownership: _FrozensetOwnershipAccumulator,
+    morpion_state_fields: _MorpionStateFrozensetAccumulator,
+) -> dict[str, object]:
+    return {
+        "total_count": frozenset_ownership.total_count,
+        "total_shallow_bytes": frozenset_ownership.total_shallow_bytes,
+        "len_buckets": _ordered_counter_items(
+            frozenset_ownership.len_bucket_counts,
+            order=(
+                "0",
+                "1",
+                "2-4",
+                "5-9",
+                "10-24",
+                "25-49",
+                "50-99",
+                "100-199",
+                "200+",
+            ),
+        ),
+        "morpion_state_count": morpion_state_fields.morpion_state_count,
+        "morpion_state_field_refs": _ordered_counter_items(
+            morpion_state_fields.field_ref_counts,
+            order=_FROZENSET_MORPION_STATE_FIELDS,
+        ),
+        "morpion_state_field_shallow_bytes": (
+            morpion_state_fields.total_field_shallow_bytes
+        ),
+        "morpion_state_field_len_buckets": _ordered_counter_items(
+            morpion_state_fields.field_len_bucket_counts,
+            order=(
+                "0",
+                "1",
+                "2-4",
+                "5-9",
+                "10-24",
+                "25-49",
+                "50-99",
+                "100-199",
+                "200+",
+            ),
+        ),
+    }
 
 
 def slot_names(type_or_obj: object) -> tuple[str, ...]:
@@ -775,6 +847,14 @@ def _unique_roots(roots: Iterable[object | None]) -> tuple[object, ...]:
 
 
 def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
+    return _profile_nodes_from_runner_capped(runner, node_cap=None)
+
+
+def _profile_nodes_from_runner_capped(
+    runner: object,
+    *,
+    node_cap: int | None,
+) -> tuple[object, ...]:
     for method_name in (
         "profile_iter_nodes",
         "iter_profile_nodes",
@@ -791,7 +871,7 @@ def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
         except Exception:
             continue
         if iterator is not None:
-            return tuple(iterator)
+            return _materialize_profile_nodes(iterator, node_cap=node_cap)
 
     for attr_path in (
         ("node_store",),
@@ -813,29 +893,118 @@ def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
             continue
         iterator = _iter_from_candidate(value)
         if iterator is not None:
-            return tuple(iterator)
+            return _materialize_profile_nodes(iterator, node_cap=node_cap)
     return ()
 
 
-def build_recursive_profile_context(runner: object) -> RecursiveProfileContext:
+def _materialize_profile_nodes(
+    values: Iterable[object],
+    *,
+    node_cap: int | None,
+) -> tuple[object, ...]:
+    if node_cap is None:
+        return tuple(values)
+    materialized: list[object] = []
+    for value in values:
+        materialized.append(value)
+        if len(materialized) >= node_cap:
+            break
+    return tuple(materialized)
+
+
+def _count_profile_branches(nodes: Iterable[object]) -> int:
+    branch_count = 0
+    for node in nodes:
+        branch_count += sum(
+            1 for _ in _iter_child_branch_refs(_tree_node_slot(node, "branches_children_"))
+        )
+        branch_count += sum(
+            1 for _ in _iter_parent_branch_refs(_tree_node_slot(node, "parent_nodes_"))
+        )
+    return branch_count
+
+
+def build_recursive_profile_context(
+    runner: object,
+    *,
+    event: str = "unknown",
+    branch_count: int | None = None,
+    node_cap: int | None = None,
+) -> RecursiveProfileContext:
     """Resolve profile roots once, without forcing lazy runtime properties."""
+    start_time = time.perf_counter()
+    LOGGER.info("[growth-recursive-profile] event=%s context_build_start", event)
     runtime = _first_attr_path(runner, _RUNTIME_ATTR_PATHS)
     selector_root = _first_attr_path(runner, _SELECTOR_ATTR_PATHS)
     linoo_selector = _find_linoo_selector_root(selector_root)
     if linoo_selector is None and runtime is not None:
         linoo_selector = _find_linoo_selector_root(runtime)
-    nodes = _profile_nodes_from_runner(runner)
-    checkpoint_roots = _all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS)
-    state_handles = tuple(
-        handle
-        for node in nodes
-        if (handle := _tree_node_slot(node, "state_handle_")) is not None
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_runtime_found "
+        "runtime_found=%s selector_found=%s",
+        event,
+        runtime is not None,
+        (linoo_selector or selector_root) is not None,
     )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_nodes_start node_cap=%s",
+        event,
+        node_cap,
+    )
+    nodes_start = time.perf_counter()
+    nodes = _profile_nodes_from_runner_capped(runner, node_cap=node_cap)
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_nodes_done "
+        "node_count=%s elapsed_s=%s",
+        event,
+        len(nodes),
+        format_metric(time.perf_counter() - nodes_start),
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_branches_start",
+        event,
+    )
+    branches_start = time.perf_counter()
+    resolved_branch_count = (
+        branch_count if branch_count is not None else _count_profile_branches(nodes)
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_branches_done "
+        "branch_count=%s elapsed_s=%s",
+        event,
+        resolved_branch_count,
+        format_metric(time.perf_counter() - branches_start),
+    )
+    checkpoint_roots = _all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS)
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_start",
+        event,
+    )
+    checkpoint_stores_start = time.perf_counter()
     checkpoint_payload_stores = _find_checkpoint_payload_stores(
-        (runner, runtime, *checkpoint_roots, *state_handles)
+        chain(
+            (runner, runtime),
+            checkpoint_roots,
+            (
+                _tree_node_slot(node, "state_handle_")
+                for node in nodes
+            ),
+        )
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_done "
+        "count=%s elapsed_s=%s",
+        event,
+        len(checkpoint_payload_stores),
+        format_metric(time.perf_counter() - checkpoint_stores_start),
     )
     checkpoint_roots_with_payloads = _unique_roots(
         (*checkpoint_roots, *(store.payloads for store in checkpoint_payload_stores))
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_done total_elapsed_s=%s",
+        event,
+        format_metric(time.perf_counter() - start_time),
     )
 
     return RecursiveProfileContext(
@@ -1059,6 +1228,7 @@ def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
     tracked_counts = Counter[str]()
     tracked_bytes = Counter[str]()
     frozenset_ownership = _FrozensetOwnershipAccumulator()
+    morpion_state_fields = _MorpionStateFrozensetAccumulator()
 
     object_count = 0
     total_shallow_bytes = 0
@@ -1076,6 +1246,8 @@ def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
                 cast("frozenset[object]", value),
                 sample_cap=_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
             )
+        if _is_morpion_state_type_name(type_name):
+            _observe_morpion_state_frozenset_fields(morpion_state_fields, value)
         if type_name.startswith(_PROJECT_TYPE_PREFIXES):
             project_type_counts[type_name] += 1
             project_type_bytes[type_name] += byte_count
@@ -1099,12 +1271,9 @@ def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
         for suffix in _TRACKED_SHALLOW_TYPE_SUFFIXES
         if tracked_counts[suffix] or tracked_bytes[suffix]
     ]
-    frozenset_ownership_summary = _finalize_frozenset_ownership_histogram(
+    frozenset_ownership_summary = _direct_frozenset_ownership_summary(
         frozenset_ownership,
-        ignored_referrer_ids={id(gc_objects)},
-        sample_cap=_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
-        top_n=top_n,
-        owner_referrer_scan_cap=_DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP,
+        morpion_state_fields,
     )
 
     return {
@@ -1121,7 +1290,19 @@ def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
 
 
 def _log_gc_shallow_size_summary(*, event: str, top_n: int) -> None:
+    start_time = time.perf_counter()
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s gc_shallow_size_summary_start",
+        event,
+    )
     summary = gc_shallow_size_summary(top_n=top_n)
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s gc_shallow_size_summary_done "
+        "elapsed_s=%s object_count=%s",
+        event,
+        format_metric(time.perf_counter() - start_time),
+        summary["object_count"],
+    )
     LOGGER.info(
         "[growth-recursive-profile] event=%s histogram=gc_shallow_sizes "
         "object_count=%s total_shallow_bytes=%s total_shallow_mb=%s "
@@ -1152,25 +1333,30 @@ def _log_gc_shallow_size_summary(*, event: str, top_n: int) -> None:
     )
     LOGGER.info(
         "[growth-recursive-profile] event=%s histogram=frozenset_ownership "
-        "total_count=%s total_shallow_bytes=%s total_shallow_mb=%s "
-        "len_buckets=%s sample_count=%s sample_cap=%s top_referrer_types=%s "
-        "morpion_state_field_refs=%s",
+        "total_count=%s total_shallow_mb=%s len_buckets=%s "
+        "morpion_state_count=%s morpion_state_field_refs=%s "
+        "morpion_state_field_shallow_mb=%s "
+        "morpion_state_field_len_buckets=%s",
         event,
         frozenset_ownership["total_count"],
-        frozenset_ownership["total_shallow_bytes"],
         format_metric(_mb(cast("int", frozenset_ownership["total_shallow_bytes"]))),
         _format_name_int_pairs(
             cast("list[tuple[str, int]]", frozenset_ownership["len_buckets"])
         ),
-        frozenset_ownership["sample_count"],
-        frozenset_ownership["sample_cap"],
-        _format_name_int_pairs(
-            cast("list[tuple[str, int]]", frozenset_ownership["top_referrer_types"])
-        ),
+        frozenset_ownership["morpion_state_count"],
         _format_name_int_pairs(
             cast(
                 "list[tuple[str, int]]",
                 frozenset_ownership["morpion_state_field_refs"],
+            )
+        ),
+        format_metric(
+            _mb(cast("int", frozenset_ownership["morpion_state_field_shallow_bytes"]))
+        ),
+        _format_name_int_pairs(
+            cast(
+                "list[tuple[str, int]]",
+                frozenset_ownership["morpion_state_field_len_buckets"],
             )
         ),
     )
@@ -1732,13 +1918,35 @@ def log_growth_recursive_memory_profile(
     max_objects: int | None = None,
     top_n: int = 20,
     complete_map: bool = False,
+    context_node_cap: int | None = None,
 ) -> None:
     """Log recursive standalone and exclusive memory attribution diagnostics."""
+    LOGGER.info(
+        "[growth-recursive-profile-enter] event=%s generation=%s "
+        "max_objects_arg=%s complete_map=%s context_node_cap=%s",
+        event,
+        generation,
+        max_objects,
+        complete_map,
+        context_node_cap,
+    )
     effective_max_objects = _effective_recursive_max_objects(
         max_objects=max_objects,
         complete_map=complete_map,
     )
-    context = build_recursive_profile_context(runner)
+    context = build_recursive_profile_context(
+        runner,
+        event=event,
+        branch_count=branch_count,
+        node_cap=context_node_cap,
+    )
+    LOGGER.info(
+        "[growth-recursive-profile-context-built] event=%s "
+        "profile_node_count=%s checkpoint_payload_stores=%s",
+        event,
+        len(context.nodes),
+        len(context.checkpoint_payload_stores),
+    )
     rss_mb = current_rss_mb()
     LOGGER.info(
         "[growth-recursive-profile] event=%s generation=%s rss_mb=%s "

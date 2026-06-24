@@ -63,6 +63,13 @@ def _invalid_growth_memory_profile_recursive_max_objects_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_recursive_context_node_cap_error() -> ValueError:
+    """Return the canonical recursive context node-cap error."""
+    return ValueError(
+        "growth_memory_profile_recursive_context_node_cap must be a positive integer or None."
+    )
+
+
 def _invalid_growth_memory_profile_recursive_events_error() -> ValueError:
     """Return the canonical recursive memory-profile event-filter error."""
     return ValueError(
@@ -153,6 +160,7 @@ class MorpionBootstrapArgs:
     growth_memory_profile_sample_nodes: int = 2000
     growth_memory_profile_recursive: bool = False
     growth_memory_profile_recursive_max_objects: int | None = None
+    growth_memory_profile_recursive_context_node_cap: int | None = None
     growth_memory_profile_recursive_events: tuple[str, ...] = ("after_checkpoint_load",)
     growth_memory_profile_recursive_complete_map: bool = False
     candidate_checkpoint_load_headroom_factor: float = 60.0
@@ -193,6 +201,11 @@ class MorpionBootstrapArgs:
             or self.growth_memory_profile_recursive_max_objects <= 0
         ):
             raise _invalid_growth_memory_profile_recursive_max_objects_error()
+        if self.growth_memory_profile_recursive_context_node_cap is not None and (
+            isinstance(self.growth_memory_profile_recursive_context_node_cap, bool)
+            or self.growth_memory_profile_recursive_context_node_cap <= 0
+        ):
+            raise _invalid_growth_memory_profile_recursive_context_node_cap_error()
         if (
             not self.growth_memory_profile_recursive_events
             or any(
