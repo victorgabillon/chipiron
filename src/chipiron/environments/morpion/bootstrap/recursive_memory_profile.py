@@ -92,6 +92,7 @@ _NODE_EVALUATION_MISC_SLOTS = (
 _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP = 50_000
 _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS = 3_000_000
 _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP = 5_000
+_DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP = 16
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
 _DELTA_PAYLOAD_TYPE_SUFFIX = "DeltaCheckpointStatePayload"
 _PROJECT_TYPE_PREFIXES = ("anemone.", "chipiron.", "atomheart.", "valanga.")
@@ -338,12 +339,68 @@ def _morpion_state_field_ref(
     return None
 
 
+def _is_skippable_owner_referrer(value: object) -> bool:
+    return isinstance(value, FrameType) or _should_skip_deep(value)
+
+
+def _morpion_state_field_ref_via_owner_dict(
+    referrer: Mapping[object, object],
+    target: frozenset[object],
+    *,
+    ignored_referrer_ids: set[int],
+    owner_referrer_scan_cap: int,
+) -> tuple[int, str] | None:
+    owners_scanned = 0
+    for owner in gc.get_referrers(referrer):
+        if id(owner) in ignored_referrer_ids:
+            continue
+        if _is_skippable_owner_referrer(owner):
+            continue
+        owners_scanned += 1
+        if owners_scanned > owner_referrer_scan_cap:
+            break
+        owner_type_name = _qualified_type_name(owner)
+        if not _is_morpion_state_type_name(owner_type_name):
+            continue
+        owner_dict = _safe_object_dict(owner)
+        if owner_dict is not referrer:
+            continue
+        field_name = _morpion_state_field_ref(owner, target)
+        if field_name is not None:
+            return (id(owner), field_name)
+    return None
+
+
+def _morpion_state_owner_field_ref(
+    referrer: object,
+    target: frozenset[object],
+    *,
+    ignored_referrer_ids: set[int],
+    owner_referrer_scan_cap: int,
+) -> tuple[int, str] | None:
+    referrer_type_name = _qualified_type_name(referrer)
+    if _is_morpion_state_type_name(referrer_type_name):
+        field_name = _morpion_state_field_ref(referrer, target)
+        if field_name is not None:
+            return (id(referrer), field_name)
+        return None
+    if isinstance(referrer, dict):
+        return _morpion_state_field_ref_via_owner_dict(
+            referrer,
+            target,
+            ignored_referrer_ids=ignored_referrer_ids,
+            owner_referrer_scan_cap=owner_referrer_scan_cap,
+        )
+    return None
+
+
 def _finalize_frozenset_ownership_histogram(
     accumulator: _FrozensetOwnershipAccumulator,
     *,
     ignored_referrer_ids: set[int],
     sample_cap: int,
     top_n: int,
+    owner_referrer_scan_cap: int,
 ) -> dict[str, object]:
     referrer_type_counts = Counter[str]()
     morpion_state_field_refs = Counter[str]()
@@ -360,19 +417,24 @@ def _finalize_frozenset_ownership_histogram(
 
     for frozen_set in accumulator.sampled_frozensets:
         iteration_ignored_referrer_ids = set(base_ignored_referrer_ids)
-        iteration_ignored_referrer_ids.add(id(locals()))
+        seen_owner_field_refs: set[tuple[int, str]] = set()
         for referrer in gc.get_referrers(frozen_set):
             if id(referrer) in iteration_ignored_referrer_ids:
                 continue
-            if isinstance(referrer, FrameType):
+            if _is_skippable_owner_referrer(referrer):
                 continue
             referrer_type_name = _qualified_type_name(referrer)
             referrer_type_counts[referrer_type_name] += 1
-            if not _is_morpion_state_type_name(referrer_type_name):
+            owner_field_ref = _morpion_state_owner_field_ref(
+                referrer,
+                frozen_set,
+                ignored_referrer_ids=iteration_ignored_referrer_ids,
+                owner_referrer_scan_cap=owner_referrer_scan_cap,
+            )
+            if owner_field_ref is None or owner_field_ref in seen_owner_field_refs:
                 continue
-            field_name = _morpion_state_field_ref(referrer, frozen_set)
-            if field_name is not None:
-                morpion_state_field_refs[field_name] += 1
+            seen_owner_field_refs.add(owner_field_ref)
+            morpion_state_field_refs[owner_field_ref[1]] += 1
 
     return {
         "total_count": accumulator.total_count,
@@ -406,6 +468,7 @@ def frozenset_ownership_histogram(
     objects: Iterable[object] | None = None,
     sample_cap: int = _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
     top_n: int = 20,
+    owner_referrer_scan_cap: int = _DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP,
     ignored_referrer_ids: Iterable[int] = (),
 ) -> dict[str, object]:
     """Return a bounded ownership sketch for tracked frozensets."""
@@ -429,6 +492,7 @@ def frozenset_ownership_histogram(
         ignored_referrer_ids=effective_ignored_referrer_ids,
         sample_cap=effective_sample_cap,
         top_n=top_n,
+        owner_referrer_scan_cap=max(0, owner_referrer_scan_cap),
     )
 
 
@@ -1040,6 +1104,7 @@ def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
         ignored_referrer_ids={id(gc_objects)},
         sample_cap=_DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP,
         top_n=top_n,
+        owner_referrer_scan_cap=_DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP,
     )
 
     return {

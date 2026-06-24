@@ -70,6 +70,13 @@ def _invalid_growth_memory_profile_recursive_events_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_recursive_complete_map_error() -> ValueError:
+    """Return the canonical recursive memory-profile complete-map error."""
+    return ValueError(
+        "growth_memory_profile_recursive_complete_map must be a bool."
+    )
+
+
 def _invalid_candidate_checkpoint_load_headroom_factor_error() -> ValueError:
     """Return the canonical candidate-checkpoint load headroom factor error."""
     return ValueError(
@@ -195,7 +202,7 @@ class MorpionBootstrapArgs:
         ):
             raise _invalid_growth_memory_profile_recursive_events_error()
         if not isinstance(self.growth_memory_profile_recursive_complete_map, bool):
-            raise _invalid_growth_memory_profile_recursive_events_error()
+            raise _invalid_growth_memory_profile_recursive_complete_map_error()
         if (
             isinstance(self.candidate_checkpoint_load_headroom_factor, bool)
             or self.candidate_checkpoint_load_headroom_factor < 0

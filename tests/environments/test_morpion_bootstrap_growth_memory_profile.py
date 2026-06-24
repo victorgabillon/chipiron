@@ -816,6 +816,45 @@ def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
     ] == 1
 
 
+def test_frozenset_ownership_histogram_attributes_morpion_state_dict_owners(
+    monkeypatch,
+) -> None:
+    """Frozenset ownership should resolve MorpionState __dict__ referrers."""
+    points = frozenset({1, 2})
+    used_unit_segments = frozenset({3, 4, 5})
+    played_moves = frozenset({6})
+    state = MorpionState(
+        points=points,
+        used_unit_segments=used_unit_segments,
+        played_moves=played_moves,
+    )
+    referrers_by_id = {
+        id(points): [state.__dict__],
+        id(used_unit_segments): [state.__dict__],
+        id(played_moves): [state.__dict__],
+        id(state.__dict__): [state],
+    }
+
+    monkeypatch.setattr(
+        gc,
+        "get_referrers",
+        lambda value: list(referrers_by_id.get(id(value), [])),
+    )
+
+    histogram = frozenset_ownership_histogram(
+        objects=[points, used_unit_segments, played_moves],
+        sample_cap=10,
+        top_n=10,
+    )
+
+    assert dict(histogram["morpion_state_field_refs"]) == {
+        "points": 1,
+        "used_unit_segments": 1,
+        "played_moves": 1,
+    }
+    assert dict(histogram["top_referrer_types"])["dict"] == 3
+
+
 def test_frozenset_ownership_histogram_respects_sample_cap(monkeypatch) -> None:
     """Frozenset ownership histogram should bound referrer scans to the sample cap."""
     scanned_ids: list[int] = []

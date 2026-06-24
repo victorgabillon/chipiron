@@ -641,6 +641,14 @@ def test_bootstrap_args_validate_growth_memory_profile_controls(
             work_dir=tmp_path,
             growth_memory_profile_recursive_events=(),
         )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_complete_map",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_complete_map=1,
+        )
 
 
 def test_bootstrap_args_validate_candidate_checkpoint_load_headroom(
