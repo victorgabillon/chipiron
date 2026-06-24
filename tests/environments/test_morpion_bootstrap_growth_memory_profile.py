@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import gc
+import importlib
 import logging
 import math
 import sys
@@ -31,6 +32,7 @@ from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
     log_growth_runtime_memory_profile,
 )
 from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
+    build_recursive_profile_context,
     checkpoint_state_histograms,
     deep_size,
     frozenset_ownership_histogram,
@@ -40,6 +42,10 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     node_evaluation_runtime_histograms,
     slot_names,
     tree_topology_histograms,
+)
+
+recursive_memory_profile_module = importlib.import_module(
+    "chipiron.environments.morpion.bootstrap.recursive_memory_profile"
 )
 
 if TYPE_CHECKING:
@@ -161,6 +167,58 @@ class FakeRunnerWithCheckpointStoreAndProfileIterator:
         return iter(self._nodes)
 
 
+class FakeRunnerWithDirectCheckpointStoreAndDangerousHandles:
+    """Runner with a direct checkpoint store and handles that must not be scanned."""
+
+    def __init__(self, *, node_count: int = 4) -> None:
+        self._runtime = SimpleNamespace(
+            state_codec=SimpleNamespace(owner=FakeCheckpointPayloadOwner())
+        )
+        self._nodes = [
+            FakeAlgorithmNode(
+                FakeTreeNode(state_handle=RaisingCheckpointHandle()),
+                FakeNodeEvaluation(),
+            )
+            for _ in range(node_count)
+        ]
+
+    def iter_profile_nodes(self):
+        return iter(self._nodes)
+
+
+class FakeRunnerWithFallbackCheckpointHandles:
+    """Runner with no direct store, forcing capped handle fallback discovery."""
+
+    def __init__(self, *, node_count: int) -> None:
+        self._nodes = [
+            FakeAlgorithmNode(
+                FakeTreeNode(state_handle=RaisingCheckpointHandle()),
+                FakeNodeEvaluation(),
+            )
+            for _ in range(node_count)
+        ]
+
+    def iter_profile_nodes(self):
+        return iter(self._nodes)
+
+
+class FakeResolverWithPayloads:
+    """Resolver-like object exposing payloads through explicit known paths."""
+
+    def __init__(self) -> None:
+        self.owner = FakeCheckpointPayloadOwner()
+
+
+class RecursivelyDangerousRuntime:
+    """Runtime-like object that must not be generically traversed."""
+
+    def __init__(self, resolver: object | None = None) -> None:
+        self.checkpoint_state_resolver = resolver
+
+    def __iter__(self):
+        raise AssertionError("runtime should not be recursively iterated")
+
+
 class FakeRunnerWithPrivateRuntime:
     """Runner-like object exposing nodes only under a private runtime path."""
 
@@ -225,6 +283,13 @@ class RecursivePropertyObject:
     @property
     def dangerous(self) -> int:
         raise AssertionError("recursive profiler called a property")
+
+
+class RecursionDictObject:
+    """Object used to simulate recursion failures during attribute traversal."""
+
+    def __init__(self) -> None:
+        self.child = 1
 
 
 class MorpionState:
@@ -621,6 +686,49 @@ def test_deep_size_skips_modules_functions_and_types() -> None:
     assert type_size == sys.getsizeof(RecursiveSlotObject)
 
 
+def test_deep_size_caps_on_default_max_depth() -> None:
+    """Recursive sizing should stop descending once the default depth cap is hit."""
+    root = RecursiveDictObject(None)
+    current = root
+    for _ in range(80):
+        child = RecursiveDictObject(None)
+        current.child = child
+        current = child
+
+    stats = recursive_memory_profile_module.DeepSizeStats()
+    size = deep_size(root, seen=set(), stats=stats)
+
+    assert size > 0
+    assert stats.max_depth_reached_count > 0
+    assert stats.capped is True
+
+
+def test_deep_size_catches_recursion_error_from_attribute_iteration(
+    monkeypatch,
+) -> None:
+    """Recursive sizing should convert attribute-iteration recursion failures to stats."""
+    root = RecursionDictObject()
+    original_iter = recursive_memory_profile_module._iter_object_attribute_values
+
+    def raising_iter(value: object):
+        if value is root:
+            raise RecursionError("boom")
+        yield from original_iter(value)
+
+    monkeypatch.setattr(
+        recursive_memory_profile_module,
+        "_iter_object_attribute_values",
+        raising_iter,
+    )
+
+    stats = recursive_memory_profile_module.DeepSizeStats()
+    size = deep_size(root, seen=set(), stats=stats)
+
+    assert size == sys.getsizeof(root)
+    assert stats.recursion_error_count == 1
+    assert stats.capped is True
+
+
 def test_tree_topology_histograms_with_fake_nodes() -> None:
     """Topology histograms should use raw storage and count links."""
     parent = object()
@@ -980,7 +1088,7 @@ def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     assert "checkpoint_payload_store index=1" in text
     assert "owner_type=" in text
     assert "FakeCheckpointPayloadOwner" in text
-    assert "attr_name=_payloads_by_node_id" in text
+    assert "attr_name=owner._payloads_by_node_id" in text
     assert "mapping_length=3" in text
     assert "anchor_count=1" in text
     assert "delta_count=1" in text
@@ -1072,6 +1180,154 @@ def test_growth_recursive_memory_profile_logs_context_build_progress(
     assert "context_build_branches_start" in text
     assert "context_build_branches_done branch_count=8" in text
     assert "context_build_checkpoint_stores_start" in text
+    assert "context_build_checkpoint_stores_known_paths_start" in text
+    assert "context_build_checkpoint_stores_known_paths_done count=1" in text
     assert "context_build_checkpoint_stores_done count=1" in text
+    assert "context_build_checkpoint_stores_handle_fallback_start" not in text
     assert "context_build_done total_elapsed_s=" in text
     assert "profile_node_count=2 checkpoint_payload_stores=1" in text
+
+
+def test_known_path_checkpoint_store_discovery_finds_direct_resolver() -> None:
+    """Known-path discovery should find direct resolver payload stores cheaply."""
+    stores = recursive_memory_profile_module._find_checkpoint_payload_stores_from_known_paths_only(
+        runner=SimpleNamespace(
+            profile_checkpoint_state_resolver=FakeResolverWithPayloads()
+        ),
+        runtime=None,
+    )
+
+    assert len(stores) == 1
+    assert stores[0].attr_name == "owner._payloads_by_node_id"
+
+
+def test_build_recursive_profile_context_direct_checkpoint_store_skips_handles(
+    monkeypatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Direct checkpoint store discovery should avoid scanning node handles."""
+    monkeypatch.setattr(
+        recursive_memory_profile_module,
+        "_find_checkpoint_payload_stores",
+        lambda _roots: (_ for _ in ()).throw(
+            AssertionError("generic checkpoint store discovery must not run")
+        ),
+    )
+    caplog.set_level(logging.INFO)
+
+    context = build_recursive_profile_context(
+        FakeRunnerWithDirectCheckpointStoreAndDangerousHandles(),
+        event="after_checkpoint_load",
+        branch_count=0,
+        node_cap=4,
+    )
+
+    text = caplog.text
+    assert len(context.checkpoint_payload_stores) == 1
+    assert "context_build_checkpoint_stores_known_paths_done count=1" in text
+    assert "context_build_checkpoint_stores_handle_fallback_start" not in text
+
+
+def test_build_recursive_profile_context_caps_handle_fallback_scan(
+    monkeypatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Fallback checkpoint store discovery should inspect only a capped handle set."""
+    runner = FakeRunnerWithFallbackCheckpointHandles(node_count=1_500)
+    scanned_handle_ids: list[int] = []
+    original_handle_resolver = recursive_memory_profile_module._handle_resolver
+
+    def fake_handle_resolver(handle: object) -> object | None:
+        scanned_handle_ids.append(id(handle))
+        return original_handle_resolver(handle)
+
+    monkeypatch.setattr(
+        recursive_memory_profile_module,
+        "_handle_resolver",
+        fake_handle_resolver,
+    )
+    caplog.set_level(logging.INFO)
+
+    context = build_recursive_profile_context(
+        runner,
+        event="after_checkpoint_load",
+        branch_count=0,
+        node_cap=50_000,
+    )
+
+    text = caplog.text
+    assert len(context.checkpoint_payload_stores) == 0
+    assert (
+        len(scanned_handle_ids)
+        == recursive_memory_profile_module._DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP
+    )
+    assert "context_build_checkpoint_stores_known_paths_done count=0" in text
+    assert "context_build_checkpoint_stores_handle_fallback_start handle_cap=100" in text
+    assert "context_build_checkpoint_stores_handle_fallback_done count=0" in text
+
+
+def test_build_recursive_profile_context_known_paths_do_not_walk_runtime(
+    monkeypatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Context building should complete without recursively walking runner/runtime."""
+    runner = FakeRunnerWithProfileIterator()
+    runner._runtime = RecursivelyDangerousRuntime(FakeResolverWithPayloads())
+    monkeypatch.setattr(
+        recursive_memory_profile_module,
+        "_find_checkpoint_payload_stores",
+        lambda _roots: (_ for _ in ()).throw(
+            AssertionError("generic checkpoint store discovery must not run")
+        ),
+    )
+    caplog.set_level(logging.INFO)
+
+    context = build_recursive_profile_context(
+        runner,
+        event="after_checkpoint_load",
+        branch_count=0,
+        node_cap=4,
+    )
+
+    text = caplog.text
+    assert len(context.checkpoint_payload_stores) == 1
+    assert "context_build_checkpoint_stores_known_paths_done count=1" in text
+    assert "context_build_checkpoint_stores_done count=1" in text
+
+
+def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
+    monkeypatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Recursive profile should log capped components instead of crashing on recursion."""
+    runner = FakeRunnerWithProfileIterator()
+    sentinel_runtime = RecursionDictObject()
+    runner._runtime = sentinel_runtime
+    original_iter = recursive_memory_profile_module._iter_object_attribute_values
+
+    def raising_iter(value: object):
+        if value is sentinel_runtime:
+            raise RecursionError("runtime recursion")
+        yield from original_iter(value)
+
+    monkeypatch.setattr(
+        recursive_memory_profile_module,
+        "_iter_object_attribute_values",
+        raising_iter,
+    )
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=runner,
+        generation=23,
+        event="after_checkpoint_load",
+        node_count=4,
+        branch_count=4,
+        max_objects=1,
+    )
+
+    text = caplog.text
+    assert "component=remaining_runtime" in text
+    assert "recursion_error_count=" in text
+    assert "capped=True" in text
+    assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text

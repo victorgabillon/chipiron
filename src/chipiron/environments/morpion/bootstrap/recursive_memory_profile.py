@@ -92,7 +92,9 @@ _NODE_EVALUATION_MISC_SLOTS = (
 )
 
 _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP = 50_000
+_DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP = 100
 _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS = 3_000_000
+_DEFAULT_DEEP_SIZE_MAX_DEPTH = 64
 _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP = 5_000
 _DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP = 16
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
@@ -119,6 +121,27 @@ _TRACKED_SHALLOW_TYPE_SUFFIXES = (
     "AnchorCheckpointStatePayload",
     "DeltaCheckpointStatePayload",
 )
+_KNOWN_CHECKPOINT_STORE_ATTR_NAMES = (
+    "state_payloads_by_node_id",
+    "payloads",
+    "_state_payloads_by_node_id",
+    "_payloads",
+    "payloads_by_node_id",
+    "_payloads_by_node_id",
+)
+_KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
+    dict.fromkeys(
+        (
+            *_CHECKPOINT_ROOT_ATTR_PATHS,
+            ("checkpoint_state_resolver",),
+            ("_checkpoint_state_resolver",),
+            ("_runtime", "checkpoint_state_resolver"),
+            ("_runtime", "_checkpoint_state_resolver"),
+            ("runtime", "checkpoint_state_resolver"),
+            ("runtime", "_checkpoint_state_resolver"),
+        )
+    )
+)
 
 type ProfileRoot = tuple[str, object]
 
@@ -130,6 +153,8 @@ class DeepSizeStats:
     visited_objects: int = 0
     max_objects: int | None = None
     capped: bool = False
+    max_depth_reached_count: int = 0
+    recursion_error_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +176,8 @@ class ComponentProfileRecord:
     bytes: int
     visited_objects: int
     capped: bool
+    max_depth_reached_count: int = 0
+    recursion_error_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -607,7 +634,7 @@ def deep_size(
     obj: object,
     *,
     seen: set[int],
-    max_depth: int | None = None,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
     max_objects: int | None = None,
     stats: DeepSizeStats | None = None,
 ) -> int:
@@ -622,7 +649,14 @@ def deep_size(
         active_stats = DeepSizeStats(max_objects=max_objects)
     elif max_objects is not None:
         active_stats.max_objects = max_objects
+    if max_depth is None:
+        max_depth = _DEFAULT_DEEP_SIZE_MAX_DEPTH
     return _deep_size(obj, seen=seen, max_depth=max_depth, depth=0, stats=active_stats)
+
+
+def _mark_recursion_error(stats: DeepSizeStats) -> None:
+    stats.recursion_error_count += 1
+    stats.capped = True
 
 
 def _deep_size(
@@ -647,45 +681,65 @@ def _deep_size(
     if isinstance(obj, _ATOMIC_TYPES) or _should_skip_deep(obj):
         return size
     if max_depth is not None and depth >= max_depth:
+        stats.max_depth_reached_count += 1
+        stats.capped = True
         return size
 
     if isinstance(obj, Mapping):
-        for key, value in obj.items():
-            size += _deep_size(
-                key,
-                seen=seen,
-                max_depth=max_depth,
-                depth=depth + 1,
-                stats=stats,
-            )
-            size += _deep_size(
-                value,
-                seen=seen,
-                max_depth=max_depth,
-                depth=depth + 1,
-                stats=stats,
-            )
+        try:
+            for key, value in obj.items():
+                try:
+                    size += _deep_size(
+                        key,
+                        seen=seen,
+                        max_depth=max_depth,
+                        depth=depth + 1,
+                        stats=stats,
+                    )
+                    size += _deep_size(
+                        value,
+                        seen=seen,
+                        max_depth=max_depth,
+                        depth=depth + 1,
+                        stats=stats,
+                    )
+                except RecursionError:
+                    _mark_recursion_error(stats)
+        except RecursionError:
+            _mark_recursion_error(stats)
         return size
 
     if isinstance(obj, _CONTAINER_TYPES):
-        for item in obj:
-            size += _deep_size(
-                item,
-                seen=seen,
-                max_depth=max_depth,
-                depth=depth + 1,
-                stats=stats,
-            )
+        try:
+            for item in obj:
+                try:
+                    size += _deep_size(
+                        item,
+                        seen=seen,
+                        max_depth=max_depth,
+                        depth=depth + 1,
+                        stats=stats,
+                    )
+                except RecursionError:
+                    _mark_recursion_error(stats)
+        except RecursionError:
+            _mark_recursion_error(stats)
         return size
 
-    for attr_value in _iter_object_attribute_values(obj):
-        size += _deep_size(
-            attr_value,
-            seen=seen,
-            max_depth=max_depth,
-            depth=depth + 1,
-            stats=stats,
-        )
+    try:
+        for attr_value in _iter_object_attribute_values(obj):
+            try:
+                size += _deep_size(
+                    attr_value,
+                    seen=seen,
+                    max_depth=max_depth,
+                    depth=depth + 1,
+                    stats=stats,
+                )
+            except RecursionError:
+                _mark_recursion_error(stats)
+    except RecursionError:
+        _mark_recursion_error(stats)
     return size
 
 
@@ -832,6 +886,131 @@ def _find_checkpoint_payload_stores(
     return tuple(stores)
 
 
+def _append_checkpoint_payload_store_if_payload_mapping(
+    *,
+    stores: list[CheckpointPayloadStore],
+    checked_mapping_ids: set[int],
+    payload_mapping_ids: set[int],
+    owner: object,
+    attr_name: str,
+    mapping: Mapping[object, object],
+) -> None:
+    mapping_id = id(mapping)
+    if mapping_id in checked_mapping_ids:
+        return
+    checked_mapping_ids.add(mapping_id)
+    anchor_count, delta_count = _checkpoint_payload_counts(mapping)
+    if not (anchor_count or delta_count):
+        return
+    payload_mapping_ids.add(mapping_id)
+    stores.append(
+        CheckpointPayloadStore(
+            owner_type=_qualified_type_name(owner),
+            attr_name=attr_name,
+            payloads=mapping,
+            anchor_count=anchor_count,
+            delta_count=delta_count,
+        )
+    )
+
+
+def _append_checkpoint_payload_stores_from_shallow_candidate(
+    candidate: object | None,
+    *,
+    stores: list[CheckpointPayloadStore],
+    checked_mapping_ids: set[int],
+    payload_mapping_ids: set[int],
+) -> None:
+    if candidate is None:
+        return
+    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
+        mapping = _raw_getattr(candidate, attr_name)
+        if isinstance(mapping, Mapping):
+            _append_checkpoint_payload_store_if_payload_mapping(
+                stores=stores,
+                checked_mapping_ids=checked_mapping_ids,
+                payload_mapping_ids=payload_mapping_ids,
+                owner=candidate,
+                attr_name=attr_name,
+                mapping=mapping,
+            )
+    owner = _raw_getattr(candidate, "owner")
+    if owner is None:
+        return
+    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
+        mapping = _raw_getattr(owner, attr_name)
+        if isinstance(mapping, Mapping):
+            _append_checkpoint_payload_store_if_payload_mapping(
+                stores=stores,
+                checked_mapping_ids=checked_mapping_ids,
+                payload_mapping_ids=payload_mapping_ids,
+                owner=owner,
+                attr_name=f"owner.{attr_name}",
+                mapping=mapping,
+            )
+
+
+def _find_checkpoint_payload_stores_from_known_paths_only(
+    *,
+    runner: object,
+    runtime: object | None,
+) -> tuple[CheckpointPayloadStore, ...]:
+    stores: list[CheckpointPayloadStore] = []
+    checked_mapping_ids: set[int] = set()
+    payload_mapping_ids: set[int] = set()
+    seen_candidate_ids: set[int] = set()
+
+    def add_candidate(candidate: object | None) -> None:
+        if candidate is None:
+            return
+        candidate_id = id(candidate)
+        if candidate_id in seen_candidate_ids:
+            return
+        seen_candidate_ids.add(candidate_id)
+        _append_checkpoint_payload_stores_from_shallow_candidate(
+            candidate,
+            stores=stores,
+            checked_mapping_ids=checked_mapping_ids,
+            payload_mapping_ids=payload_mapping_ids,
+        )
+
+    for attr_path in _KNOWN_CHECKPOINT_CANDIDATE_PATHS:
+        add_candidate(_raw_attr_path(runner, attr_path))
+    if runtime is not None:
+        add_candidate(runtime)
+        for attr_path in _CHECKPOINT_ROOT_ATTR_PATHS:
+            add_candidate(_raw_attr_path(runtime, attr_path))
+    return tuple(stores)
+
+
+def _find_checkpoint_payload_stores_from_handle_fallback(
+    nodes: Sequence[object],
+    *,
+    handle_cap: int,
+) -> tuple[CheckpointPayloadStore, ...]:
+    stores: list[CheckpointPayloadStore] = []
+    checked_mapping_ids: set[int] = set()
+    payload_mapping_ids: set[int] = set()
+    for node in nodes[:handle_cap]:
+        handle = _tree_node_slot(node, "state_handle_")
+        if handle is None:
+            continue
+        _append_checkpoint_payload_stores_from_shallow_candidate(
+            handle,
+            stores=stores,
+            checked_mapping_ids=checked_mapping_ids,
+            payload_mapping_ids=payload_mapping_ids,
+        )
+        resolver = _handle_resolver(handle)
+        _append_checkpoint_payload_stores_from_shallow_candidate(
+            resolver,
+            stores=stores,
+            checked_mapping_ids=checked_mapping_ids,
+            payload_mapping_ids=payload_mapping_ids,
+        )
+    return tuple(stores)
+
+
 def _unique_roots(roots: Iterable[object | None]) -> tuple[object, ...]:
     unique: list[object] = []
     seen_ids: set[int] = set()
@@ -924,6 +1103,16 @@ def _count_profile_branches(nodes: Iterable[object]) -> int:
     return branch_count
 
 
+def _checkpoint_store_handle_discovery_cap(
+    *,
+    node_cap: int | None,
+    handle_cap: int = _DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP,
+) -> int:
+    if node_cap is None:
+        return handle_cap
+    return min(node_cap, handle_cap)
+
+
 def build_recursive_profile_context(
     runner: object,
     *,
@@ -981,16 +1170,42 @@ def build_recursive_profile_context(
         event,
     )
     checkpoint_stores_start = time.perf_counter()
-    checkpoint_payload_stores = _find_checkpoint_payload_stores(
-        chain(
-            (runner, runtime),
-            checkpoint_roots,
-            (
-                _tree_node_slot(node, "state_handle_")
-                for node in nodes
-            ),
-        )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_known_paths_start",
+        event,
     )
+    known_paths_checkpoint_stores_start = time.perf_counter()
+    checkpoint_payload_stores = _find_checkpoint_payload_stores_from_known_paths_only(
+        runner=runner,
+        runtime=runtime,
+    )
+    LOGGER.info(
+        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_known_paths_done "
+        "count=%s elapsed_s=%s",
+        event,
+        len(checkpoint_payload_stores),
+        format_metric(time.perf_counter() - known_paths_checkpoint_stores_start),
+    )
+    if not checkpoint_payload_stores:
+        handle_cap = _checkpoint_store_handle_discovery_cap(node_cap=node_cap)
+        LOGGER.info(
+            "[growth-recursive-profile] event=%s "
+            "context_build_checkpoint_stores_handle_fallback_start handle_cap=%s",
+            event,
+            handle_cap,
+        )
+        fallback_checkpoint_stores_start = time.perf_counter()
+        checkpoint_payload_stores = _find_checkpoint_payload_stores_from_handle_fallback(
+            nodes,
+            handle_cap=handle_cap,
+        )
+        LOGGER.info(
+            "[growth-recursive-profile] event=%s "
+            "context_build_checkpoint_stores_handle_fallback_done count=%s elapsed_s=%s",
+            event,
+            len(checkpoint_payload_stores),
+            format_metric(time.perf_counter() - fallback_checkpoint_stores_start),
+        )
     LOGGER.info(
         "[growth-recursive-profile] event=%s context_build_checkpoint_stores_done "
         "count=%s elapsed_s=%s",
@@ -1663,17 +1878,22 @@ def _log_standalone_components(
                 bytes=byte_count,
                 visited_objects=stats.visited_objects,
                 capped=stats.capped,
+                max_depth_reached_count=stats.max_depth_reached_count,
+                recursion_error_count=stats.recursion_error_count,
             )
         )
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=standalone component=%s "
-            "bytes=%s mb=%s visited_objects=%s capped=%s",
+            "bytes=%s mb=%s visited_objects=%s capped=%s "
+            "max_depth_reached_count=%s recursion_error_count=%s",
             event,
             component,
             byte_count,
             format_metric(_mb(byte_count)),
             stats.visited_objects,
             stats.capped,
+            stats.max_depth_reached_count,
+            stats.recursion_error_count,
         )
     return records
 
@@ -1767,11 +1987,15 @@ def _log_exclusive_components(
             byte_count = _exclusive_shell_size(roots, seen=seen)
             visited_objects = len(seen)
             capped = False
+            max_depth_reached_count = 0
+            recursion_error_count = 0
         else:
             stats = DeepSizeStats(max_objects=max_objects)
             byte_count = _exclusive_deep_size(roots, seen=seen, stats=stats)
             visited_objects = stats.visited_objects
             capped = stats.capped
+            max_depth_reached_count = stats.max_depth_reached_count
+            recursion_error_count = stats.recursion_error_count
         total_bytes += byte_count
         records.append(
             ComponentProfileRecord(
@@ -1779,12 +2003,14 @@ def _log_exclusive_components(
                 bytes=byte_count,
                 visited_objects=visited_objects,
                 capped=capped,
+                max_depth_reached_count=max_depth_reached_count,
+                recursion_error_count=recursion_error_count,
             )
         )
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=exclusive order=%s "
             "component=%s bytes=%s mb=%s cumulative_mb=%s visited_objects=%s "
-            "capped=%s",
+            "capped=%s max_depth_reached_count=%s recursion_error_count=%s",
             event,
             order,
             component,
@@ -1793,6 +2019,8 @@ def _log_exclusive_components(
             format_metric(_mb(total_bytes)),
             visited_objects,
             capped,
+            max_depth_reached_count,
+            recursion_error_count,
         )
     return total_bytes, records
 
@@ -1813,13 +2041,16 @@ def _log_checkpoint_payload_stores(
                 bytes=byte_count,
                 visited_objects=stats.visited_objects,
                 capped=stats.capped,
+                max_depth_reached_count=stats.max_depth_reached_count,
+                recursion_error_count=stats.recursion_error_count,
             )
         )
         LOGGER.info(
             "[growth-recursive-profile] event=%s checkpoint_payload_store index=%s "
             "owner_type=%s attr_name=%s mapping_type=%s mapping_length=%s "
             "anchor_count=%s delta_count=%s bytes=%s mb=%s visited_objects=%s "
-            "capped=%s fully_traversed=%s",
+            "capped=%s fully_traversed=%s max_depth_reached_count=%s "
+            "recursion_error_count=%s",
             event,
             index,
             payload_store.owner_type,
@@ -1833,6 +2064,8 @@ def _log_checkpoint_payload_stores(
             stats.visited_objects,
             stats.capped,
             not stats.capped,
+            stats.max_depth_reached_count,
+            stats.recursion_error_count,
         )
     return records
 
