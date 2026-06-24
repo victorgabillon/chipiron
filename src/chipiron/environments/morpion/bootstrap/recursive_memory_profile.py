@@ -9,6 +9,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from dataclasses import dataclass, field
+from enum import Enum
 from itertools import chain
 from types import (
     BuiltinFunctionType,
@@ -95,6 +96,7 @@ _DEFAULT_CHECKPOINT_HANDLE_SCAN_CAP = 50_000
 _DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP = 100
 _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS = 3_000_000
 _DEFAULT_DEEP_SIZE_MAX_DEPTH = 64
+_DEFAULT_LINOO_NODE_STATE_SAMPLE_CAP = 5_000
 _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP = 5_000
 _DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP = 16
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
@@ -128,6 +130,18 @@ _KNOWN_CHECKPOINT_STORE_ATTR_NAMES = (
     "_payloads",
     "payloads_by_node_id",
     "_payloads_by_node_id",
+)
+_LINOO_NODE_STATE_TABLE_ATTR_NAME = "_node_state_by_id"
+_LINOO_SLOT_VALUE_KIND_ORDER = (
+    "AlgorithmNode",
+    "int",
+    "str",
+    "enum",
+    "tuple",
+    "list",
+    "dict",
+    "set",
+    "None",
 )
 _KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
     dict.fromkeys(
@@ -288,6 +302,15 @@ def _raw_getattr(value: object, attr_name: str) -> object | None:
     return result
 
 
+def _raw_getattr_present(value: object, attr_name: str) -> tuple[bool, object | None]:
+    """Return whether a concrete attribute exists plus its raw value."""
+    try:
+        result: object = object.__getattribute__(value, attr_name)
+    except Exception:
+        return False, None
+    return True, result
+
+
 def _safe_call_no_args(value: object) -> object | None:
     if not callable(value):
         return value
@@ -342,6 +365,73 @@ def _safe_object_dict(value: object) -> Mapping[object, object] | None:
     if isinstance(raw_dict, Mapping):
         return raw_dict
     return None
+
+
+def _iter_direct_field_entries(value: object) -> Iterator[tuple[str, object]]:
+    """Yield raw direct fields from __dict__ entries and declared slots."""
+    seen_names: set[str] = set()
+    raw_dict = _safe_object_dict(value)
+    if raw_dict is not None:
+        for field_name, field_value in raw_dict.items():
+            if not isinstance(field_name, str) or field_name in seen_names:
+                continue
+            seen_names.add(field_name)
+            yield field_name, field_value
+    for slot_name in slot_names(value):
+        if slot_name in seen_names:
+            continue
+        present, slot_value = _raw_getattr_present(value, slot_name)
+        if not present:
+            continue
+        seen_names.add(slot_name)
+        yield slot_name, slot_value
+
+
+def _measure_standalone_reachable(
+    value: object,
+    *,
+    max_depth: int | None,
+    max_objects: int | None,
+) -> tuple[int, DeepSizeStats]:
+    stats = DeepSizeStats(max_objects=max_objects)
+    byte_count = deep_size(value, seen=set(), max_depth=max_depth, stats=stats)
+    return byte_count, stats
+
+
+def _resolve_linoo_selector(
+    selector: object | None,
+) -> tuple[object | None, Mapping[object, object] | None]:
+    if selector is None:
+        return None, None
+    linoo_selector = _find_linoo_selector_root(selector)
+    if linoo_selector is None:
+        return None, None
+    node_state_by_id = _raw_getattr(linoo_selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME)
+    if not isinstance(node_state_by_id, Mapping):
+        return linoo_selector, None
+    return linoo_selector, node_state_by_id
+
+
+def _linoo_slot_value_kind(value: object) -> str:
+    if value is None:
+        return "None"
+    if _qualified_type_name(value).endswith("AlgorithmNode"):
+        return "AlgorithmNode"
+    if isinstance(value, Enum):
+        return "enum"
+    if isinstance(value, str):
+        return "str"
+    if isinstance(value, int) and not isinstance(value, bool):
+        return "int"
+    if isinstance(value, tuple):
+        return "tuple"
+    if isinstance(value, list):
+        return "list"
+    if isinstance(value, Mapping):
+        return "dict"
+    if isinstance(value, set | frozenset):
+        return "set"
+    return _qualified_type_name(value)
 
 
 def _observe_frozenset(
@@ -649,8 +739,6 @@ def deep_size(
         active_stats = DeepSizeStats(max_objects=max_objects)
     elif max_objects is not None:
         active_stats.max_objects = max_objects
-    if max_depth is None:
-        max_depth = _DEFAULT_DEEP_SIZE_MAX_DEPTH
     return _deep_size(obj, seen=seen, max_depth=max_depth, depth=0, stats=active_stats)
 
 
@@ -659,12 +747,13 @@ def _mark_recursion_error(stats: DeepSizeStats) -> None:
     stats.capped = True
 
 
-def _deep_size(
+def _try_push_deep_size_object(
     obj: object,
     *,
     seen: set[int],
     max_depth: int | None,
     depth: int,
+    stack: list[tuple[object, int]],
     stats: DeepSizeStats,
 ) -> int:
     obj_id = id(obj)
@@ -685,62 +774,83 @@ def _deep_size(
         stats.capped = True
         return size
 
-    if isinstance(obj, Mapping):
-        try:
-            for key, value in obj.items():
-                try:
-                    size += _deep_size(
+    stack.append((obj, depth))
+    return size
+
+
+def _deep_size(
+    obj: object,
+    *,
+    seen: set[int],
+    max_depth: int | None,
+    depth: int,
+    stats: DeepSizeStats,
+) -> int:
+    total_size = _try_push_deep_size_object(
+        obj,
+        seen=seen,
+        max_depth=max_depth,
+        depth=depth,
+        stack=(stack := []),
+        stats=stats,
+    )
+
+    while stack:
+        current, current_depth = stack.pop()
+        next_depth = current_depth + 1
+
+        if isinstance(current, Mapping):
+            try:
+                for key, value in current.items():
+                    total_size += _try_push_deep_size_object(
                         key,
                         seen=seen,
                         max_depth=max_depth,
-                        depth=depth + 1,
+                        depth=next_depth,
+                        stack=stack,
                         stats=stats,
                     )
-                    size += _deep_size(
+                    total_size += _try_push_deep_size_object(
                         value,
                         seen=seen,
                         max_depth=max_depth,
-                        depth=depth + 1,
+                        depth=next_depth,
+                        stack=stack,
                         stats=stats,
                     )
-                except RecursionError:
-                    _mark_recursion_error(stats)
-        except RecursionError:
-            _mark_recursion_error(stats)
-        return size
+            except RecursionError:
+                _mark_recursion_error(stats)
+            continue
 
-    if isinstance(obj, _CONTAINER_TYPES):
-        try:
-            for item in obj:
-                try:
-                    size += _deep_size(
+        if isinstance(current, _CONTAINER_TYPES):
+            try:
+                for item in current:
+                    total_size += _try_push_deep_size_object(
                         item,
                         seen=seen,
                         max_depth=max_depth,
-                        depth=depth + 1,
+                        depth=next_depth,
+                        stack=stack,
                         stats=stats,
                     )
-                except RecursionError:
-                    _mark_recursion_error(stats)
-        except RecursionError:
-            _mark_recursion_error(stats)
-        return size
+            except RecursionError:
+                _mark_recursion_error(stats)
+            continue
 
-    try:
-        for attr_value in _iter_object_attribute_values(obj):
-            try:
-                size += _deep_size(
+        try:
+            for attr_value in _iter_object_attribute_values(current):
+                total_size += _try_push_deep_size_object(
                     attr_value,
                     seen=seen,
                     max_depth=max_depth,
-                    depth=depth + 1,
+                    depth=next_depth,
+                    stack=stack,
                     stats=stats,
                 )
-            except RecursionError:
-                _mark_recursion_error(stats)
-    except RecursionError:
-        _mark_recursion_error(stats)
-    return size
+        except RecursionError:
+            _mark_recursion_error(stats)
+
+    return total_size
 
 
 def _iter_from_candidate(candidate: object) -> Iterator[object] | None:
@@ -1281,13 +1391,14 @@ def _exclusive_deep_size(
     roots: Iterable[object | None],
     *,
     seen: set[int],
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
     stats: DeepSizeStats,
 ) -> int:
     total = 0
     for root in roots:
         if root is None:
             continue
-        total += deep_size(root, seen=seen, stats=stats)
+        total += deep_size(root, seen=seen, max_depth=max_depth, stats=stats)
     return total
 
 
@@ -1577,20 +1688,22 @@ def _log_gc_shallow_size_summary(*, event: str, top_n: int) -> None:
     )
 
 
-def linoo_state_histograms(selector: object | None) -> dict[str, object]:
+def linoo_state_histograms(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+) -> dict[str, object]:
     """Return sparse Linoo state-table diagnostics when a Linoo selector is present."""
     if selector is None:
         return {"present": False}
-    linoo_selector = _find_linoo_selector_root(selector)
+    linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
     if linoo_selector is None:
-        node_state_by_id = _raw_getattr(selector, "_node_state_by_id")
+        node_state_by_id = _raw_getattr(selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME)
         return {
             "present": True,
             "selector_type": _qualified_type_name(selector),
             "node_state_table_type": _qualified_type_name(node_state_by_id),
         }
-
-    node_state_by_id = _raw_getattr(linoo_selector, "_node_state_by_id")
     assert isinstance(node_state_by_id, Mapping)
 
     default_count = 0
@@ -1623,6 +1736,7 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
                 container_recursive_total += deep_size(
                     slot_value,
                     seen=container_recursive_seen,
+                    max_depth=max_depth,
                 )
 
     return {
@@ -1637,6 +1751,280 @@ def linoo_state_histograms(selector: object | None) -> dict[str, object]:
         "node_state_table_shallow_bytes": node_state_table_shallow_bytes,
         "container_shallow_bytes": container_shallow_total,
         "container_recursive_bytes": container_recursive_total,
+    }
+
+
+def linoo_deep_breakdown_histograms(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> tuple[dict[str, object], ...]:
+    """Return standalone reachable-size diagnostics for direct Linoo fields."""
+    linoo_selector, _node_state_by_id = _resolve_linoo_selector(selector)
+    if linoo_selector is None:
+        return ({"present": False},)
+
+    breakdowns: list[dict[str, object]] = []
+    for field_name, field_value in _iter_direct_field_entries(linoo_selector):
+        recursive_reachable_bytes, stats = _measure_standalone_reachable(
+            field_value,
+            max_depth=max_depth,
+            max_objects=max_objects,
+        )
+        breakdowns.append(
+            {
+                "present": True,
+                "selector_type": _qualified_type_name(linoo_selector),
+                "field_name": field_name,
+                "value_type": _qualified_type_name(field_value),
+                "shallow_bytes": _size_or_zero(field_value),
+                "recursive_reachable_bytes": recursive_reachable_bytes,
+                "visited_objects": stats.visited_objects,
+                "capped": stats.capped,
+                "max_depth_reached_count": stats.max_depth_reached_count,
+                "recursion_error_count": stats.recursion_error_count,
+            }
+        )
+    if not breakdowns:
+        return (
+            {
+                "present": True,
+                "selector_type": _qualified_type_name(linoo_selector),
+                "field_count": 0,
+            },
+        )
+    return tuple(breakdowns)
+
+
+def linoo_node_state_table_histogram(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> dict[str, object]:
+    """Return recursive and shallow diagnostics for the Linoo node-state table."""
+    linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
+    if linoo_selector is None or node_state_by_id is None:
+        return {"present": False}
+
+    key_type_counts = Counter[str]()
+    value_type_counts = Counter[str]()
+    node_states_shallow_bytes = 0
+    node_state_count = 0
+    for key, value in node_state_by_id.items():
+        key_type_counts[_qualified_type_name(key)] += 1
+        value_type_counts[_qualified_type_name(value)] += 1
+        node_states_shallow_bytes += _size_or_zero(value)
+        node_state_count += 1
+
+    table_recursive_reachable_bytes, table_stats = _measure_standalone_reachable(
+        node_state_by_id,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    key_stats = DeepSizeStats(max_objects=max_objects)
+    keys_recursive_reachable_bytes = _exclusive_deep_size(
+        node_state_by_id.keys(),
+        seen=set(),
+        max_depth=max_depth,
+        stats=key_stats,
+    )
+    value_stats = DeepSizeStats(max_objects=max_objects)
+    values_recursive_reachable_bytes = _exclusive_deep_size(
+        node_state_by_id.values(),
+        seen=set(),
+        max_depth=max_depth,
+        stats=value_stats,
+    )
+    node_state_stats = DeepSizeStats(max_objects=max_objects)
+    node_states_recursive_reachable_bytes = _exclusive_deep_size(
+        node_state_by_id.values(),
+        seen=set(),
+        max_depth=max_depth,
+        stats=node_state_stats,
+    )
+
+    return {
+        "present": True,
+        "selector_type": _qualified_type_name(linoo_selector),
+        "table_attr_name": _LINOO_NODE_STATE_TABLE_ATTR_NAME,
+        "table_type": _qualified_type_name(node_state_by_id),
+        "table_length": len(node_state_by_id),
+        "table_shallow_bytes": _size_or_zero(node_state_by_id),
+        "key_type_counts": dict(_ordered_counter_items(key_type_counts)),
+        "value_type_counts": dict(_ordered_counter_items(value_type_counts)),
+        "table_recursive_reachable_bytes": table_recursive_reachable_bytes,
+        "table_recursive_reachable_visited_objects": table_stats.visited_objects,
+        "table_recursive_reachable_capped": table_stats.capped,
+        "table_recursive_reachable_max_depth_reached_count": (
+            table_stats.max_depth_reached_count
+        ),
+        "table_recursive_reachable_recursion_error_count": (
+            table_stats.recursion_error_count
+        ),
+        "keys_recursive_reachable_bytes": keys_recursive_reachable_bytes,
+        "keys_recursive_reachable_visited_objects": key_stats.visited_objects,
+        "keys_recursive_reachable_capped": key_stats.capped,
+        "keys_recursive_reachable_max_depth_reached_count": (
+            key_stats.max_depth_reached_count
+        ),
+        "keys_recursive_reachable_recursion_error_count": (
+            key_stats.recursion_error_count
+        ),
+        "values_recursive_reachable_bytes": values_recursive_reachable_bytes,
+        "values_recursive_reachable_visited_objects": value_stats.visited_objects,
+        "values_recursive_reachable_capped": value_stats.capped,
+        "values_recursive_reachable_max_depth_reached_count": (
+            value_stats.max_depth_reached_count
+        ),
+        "values_recursive_reachable_recursion_error_count": (
+            value_stats.recursion_error_count
+        ),
+        "node_state_count": node_state_count,
+        "node_states_shallow_bytes": node_states_shallow_bytes,
+        "node_states_recursive_reachable_bytes": (
+            node_states_recursive_reachable_bytes
+        ),
+        "node_states_recursive_reachable_visited_objects": (
+            node_state_stats.visited_objects
+        ),
+        "node_states_recursive_reachable_capped": node_state_stats.capped,
+        "node_states_recursive_reachable_max_depth_reached_count": (
+            node_state_stats.max_depth_reached_count
+        ),
+        "node_states_recursive_reachable_recursion_error_count": (
+            node_state_stats.recursion_error_count
+        ),
+    }
+
+
+def linoo_node_state_slots_histogram(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+    sample_cap: int = _DEFAULT_LINOO_NODE_STATE_SAMPLE_CAP,
+) -> dict[str, object]:
+    """Return sampled slot-level diagnostics for Linoo node states."""
+    linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
+    if linoo_selector is None or node_state_by_id is None:
+        return {"present": False}
+
+    sampled_states: list[object] = []
+    for state in node_state_by_id.values():
+        if len(sampled_states) >= sample_cap:
+            break
+        sampled_states.append(state)
+
+    if not sampled_states:
+        return {
+            "present": True,
+            "selector_type": _qualified_type_name(linoo_selector),
+            "sampled_state_count": 0,
+            "sample_cap": sample_cap,
+        }
+
+    slot_names_seen: list[str] = []
+    slot_names_set: set[str] = set()
+    slot_value_type_counts = Counter[str]()
+    slot_value_kind_counts = Counter[str]()
+    slot_observation_counts = Counter[str]()
+    slot_shallow_bytes = Counter[str]()
+    slot_values_by_name: dict[str, list[object]] = {}
+
+    for state in sampled_states:
+        for slot_name in slot_names(state):
+            if slot_name not in slot_names_set:
+                slot_names_set.add(slot_name)
+                slot_names_seen.append(slot_name)
+            present, slot_value = _raw_getattr_present(state, slot_name)
+            if not present:
+                continue
+            slot_value_type_counts[_qualified_type_name(slot_value)] += 1
+            slot_value_kind_counts[_linoo_slot_value_kind(slot_value)] += 1
+            slot_observation_counts[slot_name] += 1
+            slot_shallow_bytes[slot_name] += _size_or_zero(slot_value)
+            slot_values_by_name.setdefault(slot_name, []).append(slot_value)
+
+    slot_recursive_reachable_bytes: dict[str, int] = {}
+    slot_recursive_reachable_capped: dict[str, bool] = {}
+    slot_recursive_reachable_max_depth_reached_count: dict[str, int] = {}
+    slot_recursive_reachable_recursion_error_count: dict[str, int] = {}
+    for slot_name in slot_names_seen:
+        values = slot_values_by_name.get(slot_name, [])
+        stats = DeepSizeStats(max_objects=max_objects)
+        slot_recursive_reachable_bytes[slot_name] = _exclusive_deep_size(
+            values,
+            seen=set(),
+            max_depth=max_depth,
+            stats=stats,
+        )
+        slot_recursive_reachable_capped[slot_name] = stats.capped
+        slot_recursive_reachable_max_depth_reached_count[slot_name] = (
+            stats.max_depth_reached_count
+        )
+        slot_recursive_reachable_recursion_error_count[slot_name] = (
+            stats.recursion_error_count
+        )
+
+    sampled_states_recursive_stats = DeepSizeStats(max_objects=max_objects)
+    sampled_states_recursive_reachable_bytes = _exclusive_deep_size(
+        sampled_states,
+        seen=set(),
+        max_depth=max_depth,
+        stats=sampled_states_recursive_stats,
+    )
+
+    return {
+        "present": True,
+        "selector_type": _qualified_type_name(linoo_selector),
+        "sample_cap": sample_cap,
+        "sampled_state_count": len(sampled_states),
+        "slot_names": tuple(slot_names_seen),
+        "slot_value_type_counts": dict(_ordered_counter_items(slot_value_type_counts)),
+        "slot_value_kind_counts": dict(
+            _ordered_counter_items(slot_value_kind_counts, order=_LINOO_SLOT_VALUE_KIND_ORDER)
+        ),
+        "slot_observation_counts": dict(
+            _ordered_counter_items(slot_observation_counts, order=slot_names_seen)
+        ),
+        "slot_average_shallow_bytes": {
+            slot_name: format_metric(
+                slot_shallow_bytes[slot_name] / slot_observation_counts[slot_name]
+            )
+            for slot_name in slot_names_seen
+            if slot_observation_counts[slot_name] > 0
+        },
+        "slot_recursive_reachable_bytes": {
+            slot_name: slot_recursive_reachable_bytes[slot_name]
+            for slot_name in slot_names_seen
+        },
+        "slot_recursive_reachable_capped": {
+            slot_name: slot_recursive_reachable_capped[slot_name]
+            for slot_name in slot_names_seen
+        },
+        "slot_recursive_reachable_max_depth_reached_count": {
+            slot_name: slot_recursive_reachable_max_depth_reached_count[slot_name]
+            for slot_name in slot_names_seen
+        },
+        "slot_recursive_reachable_recursion_error_count": {
+            slot_name: slot_recursive_reachable_recursion_error_count[slot_name]
+            for slot_name in slot_names_seen
+        },
+        "sampled_states_recursive_reachable_bytes": (
+            sampled_states_recursive_reachable_bytes
+        ),
+        "sampled_states_recursive_reachable_capped": sampled_states_recursive_stats.capped,
+        "sampled_states_recursive_reachable_max_depth_reached_count": (
+            sampled_states_recursive_stats.max_depth_reached_count
+        ),
+        "sampled_states_recursive_reachable_recursion_error_count": (
+            sampled_states_recursive_stats.recursion_error_count
+        ),
+        "average_recursive_reachable_bytes_per_state": format_metric(
+            sampled_states_recursive_reachable_bytes / len(sampled_states)
+        ),
     }
 
 
@@ -1675,6 +2063,7 @@ def checkpoint_state_histograms(
     checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
     *,
     max_objects: int | None = None,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
     checkpoint_max_handles: int | None = None,
 ) -> dict[str, object]:
     """Return checkpoint payload/resolver diagnostics without resolving states."""
@@ -1729,6 +2118,7 @@ def checkpoint_state_histograms(
             payload_recursive_bytes += deep_size(
                 payload,
                 seen=payload_recursive_seen,
+                max_depth=max_depth,
                 stats=payload_stats,
             )
 
@@ -1744,6 +2134,7 @@ def checkpoint_state_histograms(
             resolved_recursive_bytes += deep_size(
                 state,
                 seen=resolved_recursive_seen,
+                max_depth=max_depth,
                 stats=resolved_stats,
             )
 
@@ -1867,11 +2258,13 @@ def _log_standalone_components(
     event: str,
     context: RecursiveProfileContext,
     max_objects: int | None,
+    max_depth: int | None,
+    complete_map: bool,
 ) -> list[ComponentProfileRecord]:
     records: list[ComponentProfileRecord] = []
     for component, root in _component_roots(context):
         stats = DeepSizeStats(max_objects=max_objects)
-        byte_count = deep_size(root, seen=set(), stats=stats)
+        byte_count = deep_size(root, seen=set(), max_depth=max_depth, stats=stats)
         records.append(
             ComponentProfileRecord(
                 component=f"standalone:{component}",
@@ -1884,13 +2277,15 @@ def _log_standalone_components(
         )
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=standalone component=%s "
-            "bytes=%s mb=%s visited_objects=%s capped=%s "
+            "bytes=%s mb=%s visited_objects=%s max_depth=%s complete_map=%s capped=%s "
             "max_depth_reached_count=%s recursion_error_count=%s",
             event,
             component,
             byte_count,
             format_metric(_mb(byte_count)),
             stats.visited_objects,
+            max_depth,
+            complete_map,
             stats.capped,
             stats.max_depth_reached_count,
             stats.recursion_error_count,
@@ -1971,6 +2366,8 @@ def _log_exclusive_components(
     event: str,
     context: RecursiveProfileContext,
     max_objects: int | None,
+    max_depth: int | None,
+    complete_map: bool,
 ) -> tuple[int, list[ComponentProfileRecord]]:
     seen: set[int] = set()
     total_bytes = 0
@@ -1991,7 +2388,12 @@ def _log_exclusive_components(
             recursion_error_count = 0
         else:
             stats = DeepSizeStats(max_objects=max_objects)
-            byte_count = _exclusive_deep_size(roots, seen=seen, stats=stats)
+            byte_count = _exclusive_deep_size(
+                roots,
+                seen=seen,
+                max_depth=max_depth,
+                stats=stats,
+            )
             visited_objects = stats.visited_objects
             capped = stats.capped
             max_depth_reached_count = stats.max_depth_reached_count
@@ -2010,7 +2412,8 @@ def _log_exclusive_components(
         LOGGER.info(
             "[growth-recursive-profile] event=%s mode=exclusive order=%s "
             "component=%s bytes=%s mb=%s cumulative_mb=%s visited_objects=%s "
-            "capped=%s max_depth_reached_count=%s recursion_error_count=%s",
+            "max_depth=%s complete_map=%s capped=%s max_depth_reached_count=%s "
+            "recursion_error_count=%s",
             event,
             order,
             component,
@@ -2018,6 +2421,8 @@ def _log_exclusive_components(
             format_metric(_mb(byte_count)),
             format_metric(_mb(total_bytes)),
             visited_objects,
+            max_depth,
+            complete_map,
             capped,
             max_depth_reached_count,
             recursion_error_count,
@@ -2030,11 +2435,18 @@ def _log_checkpoint_payload_stores(
     event: str,
     checkpoint_payload_stores: Iterable[CheckpointPayloadStore],
     max_objects: int | None,
+    max_depth: int | None,
+    complete_map: bool,
 ) -> list[ComponentProfileRecord]:
     records: list[ComponentProfileRecord] = []
     for index, payload_store in enumerate(checkpoint_payload_stores, start=1):
         stats = DeepSizeStats(max_objects=max_objects)
-        byte_count = deep_size(payload_store.payloads, seen=set(), stats=stats)
+        byte_count = deep_size(
+            payload_store.payloads,
+            seen=set(),
+            max_depth=max_depth,
+            stats=stats,
+        )
         records.append(
             ComponentProfileRecord(
                 component=f"checkpoint_payload_store:{index}",
@@ -2049,7 +2461,8 @@ def _log_checkpoint_payload_stores(
             "[growth-recursive-profile] event=%s checkpoint_payload_store index=%s "
             "owner_type=%s attr_name=%s mapping_type=%s mapping_length=%s "
             "anchor_count=%s delta_count=%s bytes=%s mb=%s visited_objects=%s "
-            "capped=%s fully_traversed=%s max_depth_reached_count=%s "
+            "max_depth=%s complete_map=%s capped=%s fully_traversed=%s "
+            "max_depth_reached_count=%s "
             "recursion_error_count=%s",
             event,
             index,
@@ -2062,6 +2475,8 @@ def _log_checkpoint_payload_stores(
             byte_count,
             format_metric(_mb(byte_count)),
             stats.visited_objects,
+            max_depth,
+            complete_map,
             stats.capped,
             not stats.capped,
             stats.max_depth_reached_count,
@@ -2092,6 +2507,30 @@ def _effective_recursive_max_objects(
     return _DEFAULT_RECURSIVE_PROFILE_MAX_OBJECTS
 
 
+def _effective_recursive_max_depth(
+    *,
+    max_depth: int | None,
+    complete_map: bool,
+    max_depth_explicit: bool,
+) -> int | None:
+    """Return the recursive depth cap after applying mode-specific defaults."""
+    if max_depth is not None:
+        return max_depth
+    if max_depth_explicit:
+        LOGGER.warning(
+            "[growth-recursive-profile] uncapped recursive max_depth=None was "
+            "explicitly requested."
+        )
+        return None
+    if complete_map:
+        LOGGER.warning(
+            "[growth-recursive-profile] recursive complete-map mode defaults to "
+            "max_depth=None; this may be slow and memory-intensive."
+        )
+        return None
+    return _DEFAULT_DEEP_SIZE_MAX_DEPTH
+
+
 def _component_names(records: Iterable[ComponentProfileRecord], *, capped: bool) -> str:
     return "[" + ",".join(record.component for record in records if record.capped is capped) + "]"
 
@@ -2110,6 +2549,8 @@ def _log_recursive_profile_summary(
     total_recursive_reachable_mb: float,
     residual_mb: float | None,
     max_objects: int | None,
+    max_depth: int | None,
+    complete_map: bool,
     component_records: list[ComponentProfileRecord],
     largest_component_records: list[ComponentProfileRecord],
     checkpoint_histogram: Mapping[str, object],
@@ -2125,7 +2566,8 @@ def _log_recursive_profile_summary(
     LOGGER.info(
         "[growth-recursive-profile-summary] event=%s rss_mb=%s "
         "total_recursive_reachable_mb=%s rss_minus_reachable_mb=%s "
-        "capped_components=%s uncapped_components=%s max_objects=%s "
+        "capped_components=%s uncapped_components=%s max_objects=%s max_depth=%s "
+        "complete_map=%s "
         "checkpoint_handle_scan_capped=%s checkpoint_payload_store_capped=%s "
         "largest_components=%s",
         event,
@@ -2135,6 +2577,8 @@ def _log_recursive_profile_summary(
         _component_names(component_records, capped=True),
         _component_names(component_records, capped=False),
         max_objects,
+        max_depth,
+        complete_map,
         checkpoint_handle_scan_capped,
         checkpoint_payload_store_capped,
         _largest_components(largest_component_records, limit=8),
@@ -2149,23 +2593,33 @@ def log_growth_recursive_memory_profile(
     node_count: int | None,
     branch_count: int | None,
     max_objects: int | None = None,
+    max_depth: int | None = None,
     top_n: int = 20,
     complete_map: bool = False,
+    max_depth_explicit: bool = False,
     context_node_cap: int | None = None,
 ) -> None:
     """Log recursive standalone and exclusive memory attribution diagnostics."""
     LOGGER.info(
         "[growth-recursive-profile-enter] event=%s generation=%s "
-        "max_objects_arg=%s complete_map=%s context_node_cap=%s",
+        "max_objects_arg=%s max_depth_arg=%s max_depth_explicit=%s "
+        "complete_map=%s context_node_cap=%s",
         event,
         generation,
         max_objects,
+        max_depth,
+        max_depth_explicit,
         complete_map,
         context_node_cap,
     )
     effective_max_objects = _effective_recursive_max_objects(
         max_objects=max_objects,
         complete_map=complete_map,
+    )
+    effective_max_depth = _effective_recursive_max_depth(
+        max_depth=max_depth,
+        complete_map=complete_map,
+        max_depth_explicit=max_depth_explicit,
     )
     context = build_recursive_profile_context(
         runner,
@@ -2183,7 +2637,8 @@ def log_growth_recursive_memory_profile(
     rss_mb = current_rss_mb()
     LOGGER.info(
         "[growth-recursive-profile] event=%s generation=%s rss_mb=%s "
-        "node_count=%s branch_count=%s profile_node_count=%s max_objects=%s",
+        "node_count=%s branch_count=%s profile_node_count=%s max_objects=%s "
+        "max_depth=%s complete_map=%s",
         event,
         generation,
         format_metric(rss_mb),
@@ -2191,17 +2646,23 @@ def log_growth_recursive_memory_profile(
         branch_count,
         len(context.nodes),
         effective_max_objects,
+        effective_max_depth,
+        complete_map,
     )
 
     standalone_records = _log_standalone_components(
         event=event,
         context=context,
         max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
+        complete_map=complete_map,
     )
     exclusive_total_bytes, exclusive_records = _log_exclusive_components(
         event=event,
         context=context,
         max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
+        complete_map=complete_map,
     )
 
     _log_histogram(event, "tree_topology", tree_topology_histograms(context.nodes))
@@ -2210,12 +2671,41 @@ def log_growth_recursive_memory_profile(
         "node_evaluation_runtime",
         node_evaluation_runtime_histograms(context.nodes),
     )
-    _log_histogram(event, "linoo", linoo_state_histograms(context.selector))
+    _log_histogram(
+        event,
+        "linoo",
+        linoo_state_histograms(context.selector, max_depth=effective_max_depth),
+    )
+    for payload in linoo_deep_breakdown_histograms(
+        context.selector,
+        max_depth=effective_max_depth,
+        max_objects=effective_max_objects,
+    ):
+        _log_histogram(event, "linoo_deep_breakdown", payload)
+    _log_histogram(
+        event,
+        "linoo_node_state_table",
+        linoo_node_state_table_histogram(
+            context.selector,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
+    _log_histogram(
+        event,
+        "linoo_node_state_slots",
+        linoo_node_state_slots_histogram(
+            context.selector,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
     _log_gc_shallow_size_summary(event=event, top_n=top_n)
     checkpoint_histogram = checkpoint_state_histograms(
         context.nodes,
         context.checkpoint_payload_stores,
         max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
     )
     _log_histogram(
         event,
@@ -2226,6 +2716,8 @@ def log_growth_recursive_memory_profile(
         event=event,
         checkpoint_payload_stores=context.checkpoint_payload_stores,
         max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
+        complete_map=complete_map,
     )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)
@@ -2244,6 +2736,8 @@ def log_growth_recursive_memory_profile(
         total_recursive_reachable_mb=total_recursive_reachable_mb,
         residual_mb=residual_mb,
         max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
+        complete_map=complete_map,
         component_records=[
             *standalone_records,
             *exclusive_records,

@@ -127,6 +127,24 @@ def _parse_optional_positive_int(raw: str) -> int | None:
     return value
 
 
+def _recursive_profile_max_depth_parse_error() -> argparse.ArgumentTypeError:
+    """Return the stable recursive-profile depth-cap parse error."""
+    return argparse.ArgumentTypeError("expected 'none' or a non-negative integer")
+
+
+def _parse_optional_recursive_profile_max_depth(raw: str) -> int | None:
+    """Parse a non-negative recursive-profile depth cap or explicit none."""
+    if raw.lower() in {"none", "null", "unbounded"}:
+        return None
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise _recursive_profile_max_depth_parse_error() from exc
+    if value < 0:
+        raise _recursive_profile_max_depth_parse_error()
+    return value
+
+
 def _parse_recursive_profile_events(raw: str) -> tuple[str, ...]:
     """Parse a comma-separated recursive-profile event allowlist."""
     events = tuple(event.strip() for event in raw.split(",") if event.strip())
@@ -894,6 +912,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Optional object-visit cap for recursive growth memory profiles.",
     )
     parser.add_argument(
+        "--growth-memory-profile-recursive-max-depth",
+        type=_parse_optional_recursive_profile_max_depth,
+        default=None,
+        help=(
+            "Optional recursive traversal depth cap for growth memory profiles. "
+            "Use 'none' to disable the depth cap."
+        ),
+    )
+    parser.add_argument(
         "--growth-memory-profile-recursive-context-node-cap",
         type=_parse_optional_positive_int,
         default=None,
@@ -1115,6 +1142,11 @@ def launcher_args_from_cli(
         )
         for argument in argv_list
     )
+    recursive_max_depth_explicit = any(
+        argument == "--growth-memory-profile-recursive-max-depth"
+        or argument.startswith("--growth-memory-profile-recursive-max-depth=")
+        for argument in argv_list
+    )
     rollout_config_explicit = any(
         argument == "--rollout-after-opening"
         or argument == "--rollout-stop-on-existing-node"
@@ -1156,6 +1188,12 @@ def launcher_args_from_cli(
         growth_memory_profile_recursive=parsed.growth_memory_profile_recursive,
         growth_memory_profile_recursive_max_objects=(
             parsed.growth_memory_profile_recursive_max_objects
+        ),
+        growth_memory_profile_recursive_max_depth=(
+            parsed.growth_memory_profile_recursive_max_depth
+        ),
+        growth_memory_profile_recursive_max_depth_explicit=(
+            recursive_max_depth_explicit
         ),
         growth_memory_profile_recursive_context_node_cap=(
             parsed.growth_memory_profile_recursive_context_node_cap

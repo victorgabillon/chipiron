@@ -1231,11 +1231,12 @@ def _log_growth_profile_if_enabled(
     )
     LOGGER.info(
         "[growth-recursive-profile-debug] event=%s enabled=%s events=%s "
-        "max_objects=%s complete_map=%s",
+        "max_objects=%s max_depth=%s complete_map=%s",
         event,
         args.growth_memory_profile_recursive,
         args.growth_memory_profile_recursive_events,
         args.growth_memory_profile_recursive_max_objects,
+        args.growth_memory_profile_recursive_max_depth,
         args.growth_memory_profile_recursive_complete_map,
     )
     if (
@@ -1249,8 +1250,12 @@ def _log_growth_profile_if_enabled(
             node_count=node_count,
             branch_count=branch_count,
             max_objects=args.growth_memory_profile_recursive_max_objects,
+            max_depth=args.growth_memory_profile_recursive_max_depth,
             top_n=args.growth_memory_profile_top_n,
             complete_map=args.growth_memory_profile_recursive_complete_map,
+            max_depth_explicit=(
+                args.growth_memory_profile_recursive_max_depth_explicit
+            ),
             context_node_cap=(
                 args.growth_memory_profile_recursive_context_node_cap
             ),

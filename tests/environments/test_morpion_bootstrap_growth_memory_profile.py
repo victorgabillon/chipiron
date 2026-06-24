@@ -37,6 +37,9 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     deep_size,
     frozenset_ownership_histogram,
     gc_shallow_size_summary,
+    linoo_deep_breakdown_histograms,
+    linoo_node_state_slots_histogram,
+    linoo_node_state_table_histogram,
     linoo_state_histograms,
     log_growth_recursive_memory_profile,
     node_evaluation_runtime_histograms,
@@ -398,6 +401,9 @@ class FakeLinooSelector:
 
     def __init__(self, states: dict[int, FakeLinooNodeState]) -> None:
         self._node_state_by_id = states
+        self.labels = {key: state.status for key, state in states.items()}
+        self.active_status = "opened"
+        self.extra_metadata = [len(states), "selector"]
 
 
 class FakeComposedSelector:
@@ -703,6 +709,94 @@ def test_deep_size_caps_on_default_max_depth() -> None:
     assert stats.capped is True
 
 
+def test_deep_size_honors_explicit_none_max_depth() -> None:
+    """Explicit max_depth=None should disable depth-based capping."""
+    root = RecursiveDictObject(None)
+    current = root
+    for _ in range(80):
+        child = RecursiveDictObject(None)
+        current.child = child
+        current = child
+
+    stats = recursive_memory_profile_module.DeepSizeStats()
+    size = deep_size(root, seen=set(), max_depth=None, stats=stats)
+
+    assert size > 0
+    assert stats.max_depth_reached_count == 0
+    assert stats.capped is False
+
+
+def test_deep_size_handles_deeper_than_python_recursion_limit_iteratively() -> None:
+    """Uncapped traversal should finish past Python's recursion limit."""
+    root = RecursiveDictObject(None)
+    current = root
+    for _ in range(sys.getrecursionlimit() + 100):
+        child = RecursiveDictObject(None)
+        current.child = child
+        current = child
+
+    stats = recursive_memory_profile_module.DeepSizeStats()
+    size = deep_size(root, seen=set(), max_depth=None, stats=stats)
+
+    assert size > 0
+    assert stats.capped is False
+    assert stats.max_depth_reached_count == 0
+    assert stats.recursion_error_count == 0
+
+
+def test_deep_size_honors_explicit_max_depth() -> None:
+    """Explicit max_depth should cap iterative traversal by queued depth."""
+    root = RecursiveDictObject(None)
+    current = root
+    for _ in range(10):
+        child = RecursiveDictObject(None)
+        current.child = child
+        current = child
+
+    stats = recursive_memory_profile_module.DeepSizeStats()
+    size = deep_size(root, seen=set(), max_depth=3, stats=stats)
+
+    assert size > 0
+    assert stats.capped is True
+    assert stats.max_depth_reached_count > 0
+
+
+def test_deep_size_honors_max_objects_cap() -> None:
+    """Iterative traversal should preserve the object-visit cap."""
+    root = [RecursiveDictObject(index) for index in range(10)]
+    stats = recursive_memory_profile_module.DeepSizeStats(max_objects=3)
+
+    size = deep_size(root, seen=set(), max_objects=3, stats=stats)
+
+    assert size > 0
+    assert stats.capped is True
+    assert stats.visited_objects == 3
+
+
+def test_exclusive_deep_size_respects_shared_seen_across_roots() -> None:
+    """Exclusive deep sizing should count shared nested objects only once."""
+    shared = RecursiveDictObject([1, 2, 3])
+    roots = (
+        RecursiveDictObject(shared),
+        RecursiveDictObject(shared),
+    )
+
+    exclusive_size = recursive_memory_profile_module._exclusive_deep_size(
+        roots,
+        seen=set(),
+        max_depth=None,
+        stats=recursive_memory_profile_module.DeepSizeStats(),
+    )
+    seen: set[int] = set()
+    combined_size = deep_size(roots[0], seen=seen, max_depth=None) + deep_size(
+        roots[1],
+        seen=seen,
+        max_depth=None,
+    )
+
+    assert exclusive_size == combined_size
+
+
 def test_deep_size_catches_recursion_error_from_attribute_iteration(
     monkeypatch,
 ) -> None:
@@ -804,6 +898,110 @@ def test_linoo_state_histograms_finds_nested_selector() -> None:
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1
     assert histograms["node_state_table_shallow_bytes"] > 0
+
+
+def test_linoo_deep_breakdown_histograms_report_direct_fields() -> None:
+    """Linoo deep breakdown should report direct selector fields safely."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(object(), status="opened"),
+            2: FakeLinooNodeState(object(), status="frontier"),
+        }
+    )
+
+    histograms = linoo_deep_breakdown_histograms(selector, max_depth=None)
+
+    field_names = {histogram["field_name"] for histogram in histograms}
+    assert "_node_state_by_id" in field_names
+    assert "labels" in field_names
+    assert "active_status" in field_names
+    table_histogram = next(
+        histogram
+        for histogram in histograms
+        if histogram["field_name"] == "_node_state_by_id"
+    )
+    assert table_histogram["recursive_reachable_bytes"] > 0
+    assert table_histogram["recursion_error_count"] == 0
+
+
+def test_linoo_node_state_table_histogram_detects_table() -> None:
+    """Linoo table breakdown should expose table and state totals."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(object(), status="opened"),
+            2: FakeLinooNodeState(object(), status="frontier"),
+        }
+    )
+
+    histogram = linoo_node_state_table_histogram(selector, max_depth=None)
+
+    assert histogram["present"] is True
+    assert histogram["table_attr_name"] == "_node_state_by_id"
+    assert histogram["table_length"] == 2
+    assert histogram["table_recursive_reachable_bytes"] > 0
+    assert histogram["node_state_count"] == 2
+    assert histogram["node_states_shallow_bytes"] > 0
+    assert histogram["node_states_recursive_reachable_bytes"] > 0
+
+
+def test_linoo_node_state_slots_histogram_samples_slots() -> None:
+    """Linoo slot breakdown should sample state slots and classify values."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(
+                FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
+                status="opened",
+            ),
+            2: FakeLinooNodeState(
+                FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
+                status="frontier",
+            ),
+        }
+    )
+
+    histogram = linoo_node_state_slots_histogram(selector, max_depth=None)
+
+    assert histogram["present"] is True
+    assert set(histogram["slot_names"]) == {"depth", "node", "status"}
+    assert histogram["sampled_state_count"] == 2
+    assert histogram["slot_value_kind_counts"]["AlgorithmNode"] == 2
+    assert histogram["slot_value_kind_counts"]["int"] == 2
+    assert histogram["slot_value_kind_counts"]["str"] == 2
+    assert histogram["slot_recursive_reachable_bytes"]["node"] > 0
+
+
+def test_linoo_breakdowns_do_not_crash_when_selector_missing() -> None:
+    """Linoo breakdown helpers should stay safe when no selector is present."""
+    assert linoo_deep_breakdown_histograms(None) == ({"present": False},)
+    assert linoo_node_state_table_histogram(None) == {"present": False}
+    assert linoo_node_state_slots_histogram(None) == {"present": False}
+
+
+def test_linoo_breakdowns_do_not_crash_for_non_linoo_selector() -> None:
+    """Linoo breakdown helpers should stay safe for unrelated selectors."""
+    selector = SimpleNamespace(other={"value": 1})
+
+    assert linoo_deep_breakdown_histograms(selector) == ({"present": False},)
+    assert linoo_node_state_table_histogram(selector) == {"present": False}
+    assert linoo_node_state_slots_histogram(selector) == {"present": False}
+
+
+def test_linoo_breakdowns_respect_depth_and_object_caps() -> None:
+    """Linoo breakdown helpers should honor recursive depth and object caps."""
+    nested = RecursiveDictObject(RecursiveDictObject(RecursiveDictObject(None)))
+    selector = FakeLinooSelector({1: FakeLinooNodeState(nested, status="opened")})
+
+    deep_histograms = linoo_deep_breakdown_histograms(selector, max_depth=0)
+    table_histogram = linoo_node_state_table_histogram(selector, max_objects=1)
+
+    node_state_field = next(
+        histogram
+        for histogram in deep_histograms
+        if histogram["field_name"] == "_node_state_by_id"
+    )
+    assert node_state_field["capped"] is True
+    assert node_state_field["max_depth_reached_count"] > 0
+    assert table_histogram["table_recursive_reachable_capped"] is True
 
 
 def test_checkpoint_state_histograms_with_materialized_state_handles() -> None:
@@ -1138,11 +1336,15 @@ def test_growth_recursive_memory_profile_logs_components(
     assert (
         "[growth-recursive-profile] event=after_checkpoint_load generation=21" in text
     )
+    assert "max_depth=64 complete_map=False" in text
     assert "mode=standalone component=all_profile_nodes" in text
     assert "mode=exclusive order=" in text
     assert "histogram=tree_topology" in text
     assert "histogram=node_evaluation_runtime" in text
     assert "histogram=linoo" in text
+    assert "histogram=linoo_deep_breakdown" in text
+    assert "histogram=linoo_node_state_table" in text
+    assert "histogram=linoo_node_state_slots" in text
     assert "gc_shallow_size_summary_start" in text
     assert "gc_shallow_size_summary_done" in text
     assert "histogram=gc_shallow_sizes" in text
@@ -1331,3 +1533,67 @@ def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
     assert "recursion_error_count=" in text
     assert "capped=True" in text
     assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
+
+
+def test_growth_recursive_memory_profile_complete_map_defaults_to_no_depth_cap(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Complete-map mode should default recursive depth traversal to uncapped."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithNestedAttrs(),
+        generation=24,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        max_objects=1,
+        complete_map=True,
+    )
+
+    text = caplog.text
+    assert "max_depth=None complete_map=True" in text
+    assert "recursion_error_count=0" in text
+
+
+def test_growth_recursive_memory_profile_honors_explicit_max_depth(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Explicit recursive max_depth values should override complete-map defaults."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithNestedAttrs(),
+        generation=25,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        max_objects=1,
+        max_depth=256,
+        complete_map=True,
+        max_depth_explicit=True,
+    )
+
+    text = caplog.text
+    assert "max_depth=256 complete_map=True" in text
+
+
+def test_growth_recursive_memory_profile_honors_explicit_none_max_depth(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Explicit max_depth=None should stay uncapped outside complete-map mode."""
+    caplog.set_level(logging.INFO)
+
+    log_growth_recursive_memory_profile(
+        runner=FakeRunnerWithNestedAttrs(),
+        generation=26,
+        event="after_checkpoint_load",
+        node_count=3,
+        branch_count=None,
+        max_objects=1,
+        max_depth=None,
+        max_depth_explicit=True,
+    )
+
+    text = caplog.text
+    assert "max_depth=None complete_map=False" in text

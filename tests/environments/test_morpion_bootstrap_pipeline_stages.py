@@ -682,6 +682,8 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
         growth_memory_profile_sample_nodes=1,
         growth_memory_profile_recursive=True,
         growth_memory_profile_recursive_max_objects=500,
+        growth_memory_profile_recursive_max_depth=256,
+        growth_memory_profile_recursive_max_depth_explicit=True,
     )
 
     caplog.set_level(logging.INFO)
@@ -696,6 +698,7 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     assert "[growth-profile] event=after_checkpoint_save" in text
     assert "node_sample" in text
     assert "[growth-recursive-profile] event=after_checkpoint_load" in text
+    assert "max_depth=256 complete_map=False" in text
     assert "[growth-recursive-profile] event=before_growth" not in text
     assert "mode=standalone component=all_profile_nodes" in text
     assert "histogram=tree_topology" in text

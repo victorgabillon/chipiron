@@ -476,6 +476,8 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
             "--growth-memory-profile-recursive",
             "--growth-memory-profile-recursive-max-objects",
             "456",
+            "--growth-memory-profile-recursive-max-depth",
+            "256",
             "--growth-memory-profile-recursive-context-node-cap",
             "321",
             "--growth-memory-profile-recursive-events",
@@ -490,6 +492,11 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive is True
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects == 456
+    )
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth == 256
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is True
     )
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
@@ -518,6 +525,11 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects is None
     )
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is False
+    )
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
         is None
@@ -529,6 +541,45 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
         launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map
         is False
     )
+
+
+def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(
+    tmp_path: Path,
+) -> None:
+    """Launcher CLI should preserve an explicit uncapped recursive max depth."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--growth-memory-profile-recursive-max-depth",
+            "none",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is True
+    )
+
+
+def test_launcher_args_reject_invalid_growth_memory_profile_recursive_max_depth(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Launcher CLI should fail clearly for invalid recursive max depth values."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli(
+            [
+                "--work-dir",
+                str(tmp_path),
+                "--growth-memory-profile-recursive-max-depth",
+                "invalid",
+            ]
+        )
+
+    captured = capsys.readouterr()
+    assert "expected 'none' or a non-negative integer" in captured.err
 
 
 def test_launcher_args_parse_candidate_checkpoint_load_headroom(

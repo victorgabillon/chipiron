@@ -738,6 +738,8 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "growth_memory_profile_sample_nodes",
         "growth_memory_profile_recursive",
         "growth_memory_profile_recursive_max_objects",
+        "growth_memory_profile_recursive_max_depth",
+        "growth_memory_profile_recursive_max_depth_explicit",
         "growth_memory_profile_recursive_context_node_cap",
         "growth_memory_profile_recursive_events",
         "growth_memory_profile_recursive_complete_map",
