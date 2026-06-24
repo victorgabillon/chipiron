@@ -47,6 +47,7 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     slot_names,
     tree_topology_histograms,
 )
+from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
 recursive_memory_profile_module = importlib.import_module(
     "chipiron.environments.morpion.bootstrap.recursive_memory_profile"
@@ -453,6 +454,21 @@ class FakeCheckpointStateResolver:
         self.owner = FakeCheckpointPayloadOwner()
         self.state_payloads_by_node_id = self.owner._payloads_by_node_id
         self._resolved_states = {1: {"board": [9, 9, 9]}}
+
+
+class FakeDenseCheckpointStateResolver:
+    """Resolver-like object exposing a dense mapping-compatible payload store."""
+
+    __slots__ = ("_resolved_states", "state_payloads_by_node_id")
+
+    def __init__(self) -> None:
+        self.state_payloads_by_node_id = DenseCheckpointPayloadStore(
+            [
+                FakeAnchorCheckpointStatePayload({"board": [1, 2, 3]}),
+                FakeDeltaCheckpointStatePayload({"move": 4}),
+            ]
+        )
+        self._resolved_states = {}
 
 
 class FakeCheckpointBackedStateHandle:
@@ -1210,6 +1226,37 @@ def test_checkpoint_payload_lifetime_histograms_tolerate_missing_attrs() -> None
     assert histogram["checkpoint_backed_state_handle_count"] == 1
     assert histogram["materialized_handle_count"] == 0
     assert histogram["unmaterialized_handle_count"] == 1
+
+
+def test_checkpoint_payload_lifetime_histograms_support_dense_store() -> None:
+    """Checkpoint lifetime diagnostics should accept dense mapping-compatible stores."""
+    resolver = FakeDenseCheckpointStateResolver()
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 0)),
+            FakeNodeEvaluation(),
+        ),
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 1)),
+            FakeNodeEvaluation(),
+        ),
+    ]
+    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+        resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        resolver_id=id(resolver),
+        owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        attr_name="state_payloads_by_node_id",
+        payloads=resolver.state_payloads_by_node_id,
+        anchor_count=1,
+        delta_count=1,
+    )
+
+    histograms = checkpoint_payload_lifetime_histograms(nodes, [payload_store])
+
+    assert histograms[0]["payload_mapping_length"] == 2
+    assert histograms[0]["checkpoint_backed_state_handle_count"] == 2
+    assert histograms[0]["materialized_handle_count"] == 0
+    assert histograms[0]["unmaterialized_handle_count"] == 2
 
 
 def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(

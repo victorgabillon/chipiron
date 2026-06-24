@@ -2310,7 +2310,7 @@ def checkpoint_payload_lifetime_histograms(
     resolver_ids_seen_by_handles: set[int] = set()
     max_handles = _checkpoint_handle_scan_cap(
         nodes,
-        max_objects=0,
+        max_objects=None,
         checkpoint_max_handles=checkpoint_max_handles,
     )
     handles_seen = 0
