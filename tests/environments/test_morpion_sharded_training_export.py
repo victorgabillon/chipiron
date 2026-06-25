@@ -11,6 +11,7 @@ from types import ModuleType
 from typing import cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+from anemone.checkpoints import checkpoint_payload_to_jsonable
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
@@ -53,14 +54,32 @@ from tests.environments.morpion_training_snapshot_helpers import (
 )
 
 
-def _payload_after_n_moves(move_count: int) -> dict[str, object]:
+def _payload_after_n_moves(move_count: int) -> object:
     """Build one real Morpion payload after ``move_count`` legal moves."""
     dynamics = MorpionDynamics()
     state = morpion_initial_state()
     for action in dynamics.all_legal_actions(state)[:move_count]:
         state = dynamics.step(state, action).next_state
     codec = MorpionStateCheckpointCodec()
-    return cast("dict[str, object]", codec.dump_state_ref(state))
+    return codec.dump_state_ref(state)
+
+
+def _compact_payload_after_n_moves(
+    move_count: int,
+) -> tuple[str, tuple[tuple[int, int], ...]]:
+    """Build one tuple-shaped Morpion checkpoint payload."""
+    payload = _payload_after_n_moves(move_count)
+    return cast("tuple[str, tuple[tuple[int, int], ...]]", payload)
+
+
+def _mapping_payload_after_n_moves(move_count: int) -> dict[str, object]:
+    """Build one mapping-shaped payload for dataset-oriented assertions."""
+    compact_payload = _compact_payload_after_n_moves(move_count)
+    state = MorpionStateCheckpointCodec().load_state_ref(compact_payload)
+    return {
+        "variant": state.variant.value,
+        "played_moves": [list(move) for move in compact_payload[1]],
+    }
 
 
 @dataclass(slots=True)
@@ -69,7 +88,7 @@ class _LiveNode:
 
     id: str
     depth: int
-    state_payload: dict[str, object]
+    state_payload: object
     direct_value: float | None
     backed_up_value: float | None
     is_terminal: bool
@@ -83,7 +102,7 @@ class _LiveNode:
     state_access_count: int = 0
 
     @property
-    def state(self) -> dict[str, object]:
+    def state(self) -> object:
         """Return the stored payload or fail when old-node access regresses."""
         if not self.allow_state_access:
             raise _state_access_regression_error(self.id)
@@ -110,7 +129,7 @@ def _expected_snapshot(
                 parent_ids=node.parent_ids,
                 child_ids=node.child_ids,
                 depth=node.depth,
-                state_ref_payload=dict(node.state_payload),
+                state_ref_payload=checkpoint_payload_to_jsonable(node.state_payload),
                 direct_value_scalar=node.direct_value,
                 backed_up_value_scalar=node.backed_up_value,
                 is_terminal=node.is_terminal,
@@ -131,7 +150,7 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     root_node = _LiveNode(
         id="root",
         depth=0,
-        state_payload=_payload_after_n_moves(0),
+        state_payload=_mapping_payload_after_n_moves(0),
         direct_value=0.25,
         backed_up_value=0.5,
         is_terminal=False,
@@ -143,7 +162,7 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     leaf_node = _LiveNode(
         id="leaf",
         depth=1,
-        state_payload=_payload_after_n_moves(1),
+        state_payload=_mapping_payload_after_n_moves(1),
         direct_value=0.75,
         backed_up_value=1.0,
         is_terminal=True,
@@ -160,7 +179,7 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
             root_node_id="root",
             output_dir=output_dir,
             generation=1,
-            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            state_ref_dumper=lambda state: state,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
         )
@@ -204,7 +223,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
         _LiveNode(
             id="a",
             depth=0,
-            state_payload=_payload_after_n_moves(0),
+            state_payload=_mapping_payload_after_n_moves(0),
             direct_value=0.1,
             backed_up_value=0.2,
             is_terminal=False,
@@ -216,7 +235,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
         _LiveNode(
             id="b",
             depth=1,
-            state_payload=_payload_after_n_moves(1),
+            state_payload=_mapping_payload_after_n_moves(1),
             direct_value=0.9,
             backed_up_value=1.1,
             is_terminal=True,
@@ -232,7 +251,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
             root_node_id="a",
             output_dir=output_dir,
             generation=1,
-            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            state_ref_dumper=lambda state: state,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
         )
@@ -241,7 +260,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
     old_a = _LiveNode(
         id="a",
         depth=0,
-        state_payload=_payload_after_n_moves(0),
+        state_payload=_mapping_payload_after_n_moves(0),
         direct_value=0.3,
         backed_up_value=0.4,
         is_terminal=False,
@@ -254,7 +273,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
     new_c = _LiveNode(
         id="c",
         depth=1,
-        state_payload=_payload_after_n_moves(2),
+        state_payload=_mapping_payload_after_n_moves(2),
         direct_value=0.5,
         backed_up_value=0.6,
         is_terminal=False,
@@ -266,7 +285,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
     old_b = _LiveNode(
         id="b",
         depth=1,
-        state_payload=_payload_after_n_moves(1),
+        state_payload=_mapping_payload_after_n_moves(1),
         direct_value=1.2,
         backed_up_value=1.4,
         is_terminal=True,
@@ -284,7 +303,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
             root_node_id="a",
             output_dir=output_dir,
             generation=2,
-            state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+            state_ref_dumper=lambda state: state,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
         )
@@ -331,3 +350,85 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
         "backed_up_value",
         "backed_up_value",
     )
+
+
+def test_sharded_export_serializes_compact_tuple_payloads(tmp_path: Path) -> None:
+    """Tuple-shaped checkpoint payloads should export without dict assumptions."""
+    output_dir = tmp_path / "tree_exports_sharded"
+    compact_payload = _compact_payload_after_n_moves(2)
+    nodes = (
+        _LiveNode(
+            id="root",
+            depth=0,
+            state_payload=compact_payload,
+            direct_value=0.2,
+            backed_up_value=0.4,
+            is_terminal=False,
+            is_exact=False,
+            visit_count=3,
+            metadata={"source": "compact"},
+        ),
+    )
+
+    generation_manifest_path, stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=nodes,
+            root_node_id="root",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: state,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
+    )
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
+    node_shard_payload = json.loads(
+        (output_dir / "node_shards" / "generation_000001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert stats.new_node_count == 1
+    assert node_shard_payload["nodes"][0]["state_ref_payload"] == [
+        compact_payload[0],
+        [list(move) for move in compact_payload[1]],
+    ]
+    assert loaded_snapshot.nodes[0].state_ref_payload == [
+        compact_payload[0],
+        [list(move) for move in compact_payload[1]],
+    ]
+
+
+def test_sharded_export_preserves_dict_payloads(tmp_path: Path) -> None:
+    """Legacy dict payloads should still round-trip through sharded export."""
+    output_dir = tmp_path / "tree_exports_sharded"
+    payload = {"variant": "5T", "played_moves": [[0, 1], [1, 2]]}
+    nodes = (
+        _LiveNode(
+            id="root",
+            depth=0,
+            state_payload=payload,
+            direct_value=0.2,
+            backed_up_value=0.4,
+            is_terminal=False,
+            is_exact=False,
+            visit_count=3,
+        ),
+    )
+
+    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=nodes,
+        root_node_id="root",
+        output_dir=output_dir,
+        generation=1,
+        state_ref_dumper=lambda state: state,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
+
+    assert loaded_snapshot.nodes[0].state_ref_payload == payload

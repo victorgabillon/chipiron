@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from anemone.training_export.builders import build_training_node_snapshot
 from anemone.training_export.model import (
@@ -88,7 +89,7 @@ class MorpionShardedTrainingNodeRecord:
     parent_ids: tuple[str, ...]
     depth: int
     creation_generation: int
-    state_ref_payload: dict[str, object] | None
+    state_ref_payload: object | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,7 +186,7 @@ def save_morpion_sharded_training_tree_from_live_nodes(
                 creation_generation=generation,
                 state_ref_payload=None
                 if full_snapshot.state_ref_payload is None
-                else dict(cast("dict[str, object]", full_snapshot.state_ref_payload)),
+                else checkpoint_payload_to_jsonable(full_snapshot.state_ref_payload),
             )
         )
         node_index[full_snapshot.node_id] = generation
@@ -338,7 +339,7 @@ def _merge_node_record_and_update(
         depth=record.depth,
         state_ref_payload=None
         if record.state_ref_payload is None
-        else dict(record.state_ref_payload),
+        else checkpoint_payload_to_jsonable(record.state_ref_payload),
         direct_value_scalar=update.direct_value_scalar,
         tree_value_scalar=tree_value_scalar,
         effective_value_scalar=effective_value_scalar,
@@ -393,7 +394,7 @@ def _node_record_to_dict(record: MorpionShardedTrainingNodeRecord) -> dict[str, 
         "creation_generation": record.creation_generation,
         "state_ref_payload": None
         if record.state_ref_payload is None
-        else dict(record.state_ref_payload),
+        else checkpoint_payload_to_jsonable(record.state_ref_payload),
     }
 
 
@@ -430,7 +431,7 @@ def _node_record_from_dict(value: object) -> MorpionShardedTrainingNodeRecord:
         ),
         state_ref_payload=None
         if raw_state_ref_payload is None
-        else dict(cast("dict[str, object]", raw_state_ref_payload)),
+        else checkpoint_payload_to_jsonable(raw_state_ref_payload),
     )
 
 
