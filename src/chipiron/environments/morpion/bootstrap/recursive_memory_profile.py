@@ -519,6 +519,16 @@ def _object_reaches_type_suffix(
     return False
 
 
+def _tree_reachability_flags(root: object) -> dict[str, bool]:
+    return {
+        "reaches_algorithm_node": _object_reaches_type_suffix(
+            root,
+            ("AlgorithmNode",),
+        ),
+        "reaches_tree_node": _object_reaches_type_suffix(root, ("TreeNode",)),
+    }
+
+
 def _observe_frozenset(
     accumulator: _FrozensetOwnershipAccumulator,
     value: frozenset[object],
@@ -2066,6 +2076,7 @@ def linoo_state_histograms(
         "node_state_table_shallow_bytes": node_state_table_shallow_bytes,
         "container_shallow_bytes": container_shallow_total,
         "container_recursive_bytes": container_recursive_total,
+        **_tree_reachability_flags(node_state_by_id),
     }
 
 
@@ -2163,6 +2174,7 @@ def linoo_candidate_heap_histogram(
             "present": True,
             "selector_type": _qualified_type_name(linoo_selector),
             "candidate_heap_table_type": _qualified_type_name(candidates_by_depth),
+            **_tree_reachability_flags(candidates_by_depth),
         }
 
     heap_type_counts = Counter[str]()
@@ -2225,6 +2237,7 @@ def linoo_candidate_heap_histogram(
         "candidate_entry_value_types": dict(
             _ordered_counter_items(entry_value_type_counts)
         ),
+        **_tree_reachability_flags(candidates_by_depth),
     }
 
 
@@ -2327,6 +2340,7 @@ def linoo_node_state_table_histogram(
         "node_states_recursive_reachable_recursion_error_count": (
             node_state_stats.recursion_error_count
         ),
+        **_tree_reachability_flags(node_state_by_id),
     }
 
 

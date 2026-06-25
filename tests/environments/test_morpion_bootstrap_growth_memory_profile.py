@@ -1022,6 +1022,8 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
     assert histograms["container_shallow_bytes"] >= (
         histograms["node_state_table_shallow_bytes"]
     )
+    assert histograms["reaches_algorithm_node"] is False
+    assert histograms["reaches_tree_node"] is False
 
 
 def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
@@ -1041,6 +1043,31 @@ def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
     assert histogram["candidate_stale_entry_count"] == 2
     assert histogram["candidate_entry_shapes"] == {"tuple[3]": 3}
     assert histogram["candidate_heaps_recursive_reachable_bytes"] > 0
+    assert histogram["reaches_algorithm_node"] is False
+    assert histogram["reaches_tree_node"] is False
+
+
+def test_linoo_diagnostics_report_tree_reachability_when_present() -> None:
+    """Linoo reachability flags should expose accidental tree references."""
+    tree_node = FakeTreeNode()
+    algorithm_node = FakeAlgorithmNode(tree_node, FakeNodeEvaluation())
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(algorithm_node, status="opened"),
+        }
+    )
+    selector._candidates_by_depth = {1: [(0.1, algorithm_node, 1)]}
+
+    state_histogram = linoo_state_histograms(selector)
+    table_histogram = linoo_node_state_table_histogram(selector, max_depth=None)
+    candidate_histogram = linoo_candidate_heap_histogram(selector, max_depth=None)
+
+    assert state_histogram["reaches_algorithm_node"] is True
+    assert state_histogram["reaches_tree_node"] is True
+    assert table_histogram["reaches_algorithm_node"] is True
+    assert table_histogram["reaches_tree_node"] is True
+    assert candidate_histogram["reaches_algorithm_node"] is True
+    assert candidate_histogram["reaches_tree_node"] is True
 
 
 def test_linoo_state_histograms_finds_nested_selector() -> None:
@@ -1060,6 +1087,8 @@ def test_linoo_state_histograms_finds_nested_selector() -> None:
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1
     assert histograms["node_state_table_shallow_bytes"] > 0
+    assert histograms["reaches_algorithm_node"] is False
+    assert histograms["reaches_tree_node"] is False
 
 
 def test_linoo_deep_breakdown_histograms_report_direct_fields() -> None:
@@ -1104,6 +1133,8 @@ def test_linoo_node_state_table_histogram_detects_table() -> None:
     assert histogram["node_state_count"] == 2
     assert histogram["node_states_shallow_bytes"] > 0
     assert histogram["node_states_recursive_reachable_bytes"] > 0
+    assert histogram["reaches_algorithm_node"] is False
+    assert histogram["reaches_tree_node"] is False
 
 
 def test_linoo_node_state_slots_histogram_samples_slots() -> None:
