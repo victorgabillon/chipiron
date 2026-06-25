@@ -99,6 +99,8 @@ _DEFAULT_DEEP_SIZE_MAX_DEPTH = 64
 _DEFAULT_LINOO_NODE_STATE_SAMPLE_CAP = 5_000
 _DEFAULT_FROZENSET_OWNERSHIP_SAMPLE_CAP = 5_000
 _DEFAULT_FROZENSET_OWNER_REFERRER_SCAN_CAP = 16
+_DEFAULT_PAYLOAD_SHAPE_TOP_N = 8
+_DEFAULT_PAYLOAD_SHAPE_SAMPLE_ITEMS = 4
 _ANCHOR_PAYLOAD_TYPE_SUFFIX = "AnchorCheckpointStatePayload"
 _DELTA_PAYLOAD_TYPE_SUFFIX = "DeltaCheckpointStatePayload"
 _PROJECT_TYPE_PREFIXES = ("anemone.", "chipiron.", "atomheart.", "valanga.")
@@ -2436,6 +2438,223 @@ def checkpoint_payload_lifetime_histograms(
     )
 
 
+def _small_payload_sample(
+    value: object,
+    *,
+    depth: int = 0,
+    max_depth: int = 2,
+    max_items: int = _DEFAULT_PAYLOAD_SHAPE_SAMPLE_ITEMS,
+) -> object:
+    """Return a short, repr-safe structural sample for one payload field."""
+    if depth >= max_depth:
+        return _qualified_type_name(value)
+    if value is None or isinstance(value, bool | int | float):
+        return value
+    if isinstance(value, str):
+        return value[:80] + ("..." if len(value) > 80 else "")
+    if isinstance(value, Mapping):
+        sampled_items: dict[object, object] = {}
+        for index, (key, item) in enumerate(value.items()):
+            if index >= max_items:
+                sampled_items["..."] = f"+{len(value) - max_items} more"
+                break
+            sampled_items[key] = _small_payload_sample(
+                item,
+                depth=depth + 1,
+                max_depth=max_depth,
+                max_items=max_items,
+            )
+        return sampled_items
+    if isinstance(value, list | tuple):
+        sampled_items = [
+            _small_payload_sample(
+                item,
+                depth=depth + 1,
+                max_depth=max_depth,
+                max_items=max_items,
+            )
+            for item in value[:max_items]
+        ]
+        if len(value) > max_items:
+            sampled_items.append(f"... +{len(value) - max_items} more")
+        return tuple(sampled_items) if isinstance(value, tuple) else sampled_items
+    if isinstance(value, set | frozenset):
+        sampled_items = [
+            _small_payload_sample(
+                item,
+                depth=depth + 1,
+                max_depth=max_depth,
+                max_items=max_items,
+            )
+            for item in list(value)[:max_items]
+        ]
+        if len(value) > max_items:
+            sampled_items.append(f"... +{len(value) - max_items} more")
+        return sampled_items
+    return _qualified_type_name(value)
+
+
+def _payload_shape_type_counts(
+    values: Iterable[object | None],
+    *,
+    top_n: int = _DEFAULT_PAYLOAD_SHAPE_TOP_N,
+) -> tuple[tuple[str, int], ...]:
+    """Return a bounded type census across roots and immediate nested contents."""
+    counts = Counter[str]()
+    for value in values:
+        if value is None:
+            continue
+        counts[_qualified_type_name(value)] += 1
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                counts[_qualified_type_name(key)] += 1
+                counts[_qualified_type_name(item)] += 1
+        elif isinstance(value, list | tuple):
+            for item in value[:_DEFAULT_PAYLOAD_SHAPE_SAMPLE_ITEMS]:
+                counts[_qualified_type_name(item)] += 1
+    return tuple(counts.most_common(top_n))
+
+
+def _payload_shape_dict_key_counts(
+    values: Iterable[object | None],
+    *,
+    top_n: int = _DEFAULT_PAYLOAD_SHAPE_TOP_N,
+) -> tuple[tuple[str, int], ...]:
+    """Return the most common immediate dict keys across one payload field."""
+    counts = Counter[str]()
+    for value in values:
+        if not isinstance(value, Mapping):
+            continue
+        for key in value.keys():
+            counts[key if isinstance(key, str) else repr(key)] += 1
+    return tuple(counts.most_common(top_n))
+
+
+def _payload_shape_memory_stats(
+    roots: Iterable[object | None],
+    *,
+    max_depth: int | None,
+    max_objects: int | None,
+) -> dict[str, object]:
+    """Return shallow and recursive memory stats for one payload-field group."""
+    normalized_roots = tuple(root for root in roots if root is not None)
+    recursive_stats = DeepSizeStats(max_objects=max_objects)
+    recursive_bytes = _exclusive_deep_size(
+        normalized_roots,
+        seen=set(),
+        max_depth=max_depth,
+        stats=recursive_stats,
+    )
+    shallow_bytes = _exclusive_shell_size(normalized_roots, seen=set())
+    return {
+        "count": len(normalized_roots),
+        "shallow_bytes": shallow_bytes,
+        "recursive_bytes": recursive_bytes,
+        "recursive_visited_objects": recursive_stats.visited_objects,
+        "recursive_capped": recursive_stats.capped,
+    }
+
+
+def checkpoint_payload_shape_histograms(
+    checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
+    *,
+    max_objects: int | None = None,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+) -> tuple[dict[str, object], ...]:
+    """Return read-only payload field shape diagnostics for checkpoint stores."""
+    histograms: list[dict[str, object]] = []
+    for payload_store in checkpoint_payload_stores:
+        payloads = tuple(payload_store.payloads.values())
+        anchor_payloads = [
+            payload for payload in payloads if _checkpoint_payload_kind(payload) == "anchor"
+        ]
+        delta_payloads = [
+            payload for payload in payloads if _checkpoint_payload_kind(payload) == "delta"
+        ]
+        anchor_refs = [_raw_getattr(payload, "anchor_ref") for payload in anchor_payloads]
+        delta_refs = [_raw_getattr(payload, "delta_ref") for payload in delta_payloads]
+        state_summaries = [_raw_getattr(payload, "state_summary") for payload in payloads]
+        state_parent_branches = [
+            _raw_getattr(payload, "state_parent_branch") for payload in delta_payloads
+        ]
+        state_parent_node_ids = [
+            _raw_getattr(payload, "state_parent_node_id") for payload in delta_payloads
+        ]
+        payload_type_counts = Counter[str](_qualified_type_name(payload) for payload in payloads)
+
+        histograms.append(
+            {
+                "resolver_type": payload_store.resolver_type,
+                "resolver_object_id": payload_store.resolver_id,
+                "payload_store_type": _qualified_type_name(payload_store.payloads),
+                "payload_store_length": len(payload_store.payloads),
+                "total_payload_count": len(payloads),
+                "anchor_payload_count": len(anchor_payloads),
+                "delta_payload_count": len(delta_payloads),
+                "payload_type_counts": dict(_ordered_counter_items(payload_type_counts)),
+                "anchor_payload_objects": _payload_shape_memory_stats(
+                    anchor_payloads,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "delta_payload_objects": _payload_shape_memory_stats(
+                    delta_payloads,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "anchor_ref": _payload_shape_memory_stats(
+                    anchor_refs,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "delta_ref": _payload_shape_memory_stats(
+                    delta_refs,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "state_summary": _payload_shape_memory_stats(
+                    state_summaries,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "state_parent_branch": _payload_shape_memory_stats(
+                    state_parent_branches,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "state_parent_node_id": _payload_shape_memory_stats(
+                    state_parent_node_ids,
+                    max_depth=max_depth,
+                    max_objects=max_objects,
+                ),
+                "anchor_ref_top_python_types": _payload_shape_type_counts(anchor_refs),
+                "delta_ref_top_python_types": _payload_shape_type_counts(delta_refs),
+                "state_summary_top_python_types": _payload_shape_type_counts(
+                    state_summaries
+                ),
+                "state_parent_branch_top_python_types": _payload_shape_type_counts(
+                    state_parent_branches
+                ),
+                "anchor_ref_common_dict_keys": _payload_shape_dict_key_counts(anchor_refs),
+                "delta_ref_common_dict_keys": _payload_shape_dict_key_counts(delta_refs),
+                "state_summary_common_dict_keys": _payload_shape_dict_key_counts(
+                    state_summaries
+                ),
+                "state_parent_branch_common_dict_keys": _payload_shape_dict_key_counts(
+                    state_parent_branches
+                ),
+                "anchor_ref_sample": _small_payload_sample(anchor_refs[0]) if anchor_refs else None,
+                "delta_ref_sample": _small_payload_sample(delta_refs[0]) if delta_refs else None,
+                "state_summary_sample": (
+                    _small_payload_sample(state_summaries[0]) if state_summaries else None
+                ),
+            }
+        )
+    if histograms:
+        return tuple(histograms)
+    return ({"present": False},)
+
+
 def _checkpoint_handle_scan_cap(
     nodes: Iterable[object],
     *,
@@ -2944,6 +3163,16 @@ def log_growth_recursive_memory_profile(
             "checkpoint_payload_lifetime",
             payload,
         )
+    for payload in checkpoint_payload_shape_histograms(
+        context.checkpoint_payload_stores,
+        max_objects=effective_max_objects,
+        max_depth=effective_max_depth,
+    ):
+        _log_histogram(
+            event,
+            "checkpoint_payload_shape",
+            payload,
+        )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)
     residual_mb = None if rss_mb is None else rss_mb - total_recursive_reachable_mb
@@ -2979,6 +3208,7 @@ __all__ = [
     "_find_linoo_selector_root",
     "build_recursive_profile_context",
     "checkpoint_payload_lifetime_histograms",
+    "checkpoint_payload_shape_histograms",
     "checkpoint_state_histograms",
     "deep_size",
     "frozenset_ownership_histogram",

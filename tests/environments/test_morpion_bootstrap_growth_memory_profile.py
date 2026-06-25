@@ -34,6 +34,7 @@ from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
 from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     build_recursive_profile_context,
     checkpoint_payload_lifetime_histograms,
+    checkpoint_payload_shape_histograms,
     checkpoint_state_histograms,
     deep_size,
     frozenset_ownership_histogram,
@@ -47,6 +48,7 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     slot_names,
     tree_topology_histograms,
 )
+from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
 from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
 recursive_memory_profile_module = importlib.import_module(
@@ -1257,6 +1259,99 @@ def test_checkpoint_payload_lifetime_histograms_support_dense_store() -> None:
     assert histograms[0]["checkpoint_backed_state_handle_count"] == 2
     assert histograms[0]["materialized_handle_count"] == 0
     assert histograms[0]["unmaterialized_handle_count"] == 2
+
+
+def test_checkpoint_payload_shape_histogram_counts_fields_and_keys() -> None:
+    """Payload shape histogram should count anchors/deltas and expose dict keys."""
+    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+        resolver_type="fake.Resolver",
+        resolver_id=1,
+        owner_type="fake.Resolver",
+        attr_name="state_payloads_by_node_id",
+        payloads=DenseCheckpointPayloadStore(
+            [
+                AnchorCheckpointStatePayload(
+                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                    state_summary={"is_terminal": False, "tag": 1},
+                ),
+                DeltaCheckpointStatePayload(
+                    state_parent_node_id=0,
+                    state_parent_branch=3,
+                    delta_ref={"move": [0, 0, 4, 0]},
+                    state_summary={"is_terminal": False, "tag": 2},
+                ),
+            ]
+        ),
+        anchor_count=1,
+        delta_count=1,
+    )
+
+    histograms = checkpoint_payload_shape_histograms([payload_store])
+
+    assert len(histograms) == 1
+    histogram = histograms[0]
+    assert histogram["total_payload_count"] == 2
+    assert histogram["anchor_payload_count"] == 1
+    assert histogram["delta_payload_count"] == 1
+    assert histogram["anchor_payload_objects"]["recursive_bytes"] > 0
+    assert histogram["delta_payload_objects"]["recursive_bytes"] > 0
+    assert histogram["anchor_ref"]["recursive_bytes"] > 0
+    assert histogram["delta_ref"]["recursive_bytes"] > 0
+    assert histogram["state_summary"]["recursive_bytes"] > 0
+    assert histogram["state_parent_branch"]["recursive_bytes"] > 0
+    assert histogram["state_parent_node_id"]["recursive_bytes"] > 0
+    assert ("variant", 1) in histogram["anchor_ref_common_dict_keys"]
+    assert ("played_moves", 1) in histogram["anchor_ref_common_dict_keys"]
+    assert ("move", 1) in histogram["delta_ref_common_dict_keys"]
+    assert ("is_terminal", 2) in histogram["state_summary_common_dict_keys"]
+    assert histogram["anchor_ref_sample"] is not None
+    assert histogram["delta_ref_sample"] is not None
+    assert histogram["state_summary_sample"] is not None
+
+
+def test_checkpoint_payload_shape_histogram_supports_dense_store_without_materializing() -> (
+    None
+):
+    """Payload shape histogram should work on dense stores without calling get()."""
+    resolver = SimpleNamespace(
+        state_payloads_by_node_id=DenseCheckpointPayloadStore(
+            [
+                AnchorCheckpointStatePayload(
+                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                    state_summary={"is_terminal": False, "tag": 1},
+                ),
+                DeltaCheckpointStatePayload(
+                    state_parent_node_id=0,
+                    state_parent_branch=3,
+                    delta_ref={"move": [0, 0, 4, 0]},
+                    state_summary={"is_terminal": False, "tag": 2},
+                ),
+            ]
+        )
+    )
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 0)),
+            FakeNodeEvaluation(),
+        )
+    ]
+    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+        resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        resolver_id=id(resolver),
+        owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
+        attr_name="state_payloads_by_node_id",
+        payloads=resolver.state_payloads_by_node_id,
+        anchor_count=1,
+        delta_count=1,
+    )
+
+    shape_histograms = checkpoint_payload_shape_histograms([payload_store])
+    lifetime_histograms = checkpoint_payload_lifetime_histograms(nodes, [payload_store])
+
+    assert shape_histograms[0]["payload_store_length"] == 2
+    assert shape_histograms[0]["delta_ref_sample"] is not None
+    assert lifetime_histograms[0]["materialized_handle_count"] == 0
+    assert lifetime_histograms[0]["unmaterialized_handle_count"] == 1
 
 
 def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
