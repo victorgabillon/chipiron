@@ -893,6 +893,17 @@ class _ChipironMorpionStateCheckpointCodec:
         )
         return result
 
+    def dump_state_parent_branch_for_checkpoint(
+        self,
+        branch_from_parent: object | None,
+    ) -> object | None:
+        """Bridge optional compact state-parent branch payload serialization."""
+        inner_hook = getattr(self.inner, "dump_state_parent_branch_for_checkpoint", None)
+        if callable(inner_hook):
+            return inner_hook(None)
+        del branch_from_parent
+        return None
+
     def checkpoint_profile_snapshot(self) -> dict[str, object]:
         """Return aggregate checkpoint profiling from the inner codec or fallback."""
         inner_snapshot = getattr(self.inner, "checkpoint_profile_snapshot", None)
