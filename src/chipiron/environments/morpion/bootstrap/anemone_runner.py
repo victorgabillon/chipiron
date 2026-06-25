@@ -17,6 +17,7 @@ from anemone.checkpoints import (
     CheckpointNodeStatePayload,
     DeltaCheckpointStatePayload,
     LinooSelectorCheckpointPayload,
+    RestoreMemoryPhaseLogger,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
     load_checkpoint_json_payload,
@@ -654,6 +655,155 @@ def log_morpion_checkpoint_memory_phase(
     LOGGER.info("[memory] %s", " ".join(parts))
 
 
+@dataclass(slots=True)
+class _RestoreMemoryLogger:
+    """Opt-in checkpoint restore RSS and object-size phase logger."""
+
+    checkpoint_path: Path
+    compressed_checkpoint_bytes: int | None
+    recursive_enabled: bool = False
+    recursive_max_objects: int | None = None
+    recursive_max_depth: int | None = None
+    started_at: float = field(default_factory=time.perf_counter)
+
+    def callback(self, phase: str, metadata: Mapping[str, object]) -> None:
+        """Receive one Anemone restore phase callback."""
+        self.log(phase, **metadata)
+
+    def log(
+        self,
+        phase: str,
+        *,
+        raw_payload: object | None = None,
+        typed_payload: SearchRuntimeCheckpointPayload | None = None,
+        raw_checkpoint_referenced: bool | None = None,
+        typed_checkpoint_referenced: bool | None = None,
+        **metadata: object,
+    ) -> None:
+        """Emit one structured restore-memory phase line."""
+        node_count = _restore_metadata_value(metadata, "node_count", "nodes")
+        if node_count is None:
+            node_count = _raw_checkpoint_node_count(raw_payload)
+        if node_count is None and typed_payload is not None:
+            node_count = len(typed_payload.tree.nodes)
+
+        branch_count = _restore_metadata_value(metadata, "branch_count", "branches")
+        if branch_count is None and typed_payload is not None:
+            branch_count = getattr(typed_payload.tree, "branch_count", None)
+
+        parts = [
+            f"phase={phase}",
+            f"rss_mb={_metric_value(_current_rss_mb())}",
+            f"elapsed_s={_metric_value(time.perf_counter() - self.started_at)}",
+            f"path={self.checkpoint_path}",
+            f"compressed_checkpoint_bytes={_metric_value(self.compressed_checkpoint_bytes)}",
+            f"node_count={_metric_value(node_count)}",
+            f"branch_count={_metric_value(branch_count)}",
+            f"raw_checkpoint_referenced={_metric_value(raw_checkpoint_referenced)}",
+            f"typed_checkpoint_referenced={_metric_value(typed_checkpoint_referenced)}",
+        ]
+        gc_counts = gc.get_count()
+        parts.extend(
+            [
+                f"gc_count0={gc_counts[0]}",
+                f"gc_count1={gc_counts[1]}",
+                f"gc_count2={gc_counts[2]}",
+            ]
+        )
+        raw_recursive_mb = self._recursive_size_mb(raw_payload)
+        if raw_recursive_mb is not None:
+            parts.append(f"raw_decoded_recursive_mb={_metric_value(raw_recursive_mb)}")
+        typed_recursive_mb = self._recursive_size_mb(typed_payload)
+        if typed_recursive_mb is not None:
+            parts.append(
+                f"typed_checkpoint_payload_recursive_mb={_metric_value(typed_recursive_mb)}"
+            )
+        for key, value in metadata.items():
+            if key in {
+                "node_count",
+                "nodes",
+                "branch_count",
+                "branches",
+            }:
+                continue
+            parts.append(f"{key}={_metric_value(value)}")
+        LOGGER.info("[restore-memory] %s", " ".join(parts))
+
+    def _recursive_size_mb(self, value: object | None) -> float | None:
+        if not self.recursive_enabled or value is None:
+            return None
+        from .recursive_memory_profile import DeepSizeStats, deep_size
+
+        stats = DeepSizeStats(max_objects=self.recursive_max_objects)
+        byte_count = deep_size(
+            value,
+            seen=set(),
+            max_depth=self.recursive_max_depth,
+            stats=stats,
+        )
+        return byte_count / (1024 * 1024)
+
+
+def _restore_metadata_value(
+    metadata: Mapping[str, object],
+    *keys: str,
+) -> object | None:
+    for key in keys:
+        value = metadata.get(key)
+        if value is not None:
+            return value
+    return None
+
+
+def _raw_checkpoint_node_count(raw_payload: object | None) -> int | None:
+    if not isinstance(raw_payload, Mapping):
+        return None
+    raw_tree = raw_payload.get("tree")
+    if not isinstance(raw_tree, Mapping):
+        return None
+    raw_nodes = raw_tree.get("nodes")
+    if not isinstance(raw_nodes, list):
+        return None
+    return len(raw_nodes)
+
+
+def _restore_memory_logger_for_path(
+    args: AnemoneMorpionSearchRunnerArgs,
+    checkpoint_path: Path,
+) -> _RestoreMemoryLogger | None:
+    return restore_memory_logger_for_checkpoint_path(
+        checkpoint_path,
+        enabled=args.restore_memory_profile,
+        recursive_enabled=args.restore_memory_profile_recursive,
+        recursive_max_objects=args.restore_memory_profile_recursive_max_objects,
+        recursive_max_depth=args.restore_memory_profile_recursive_max_depth,
+    )
+
+
+def restore_memory_logger_for_checkpoint_path(
+    checkpoint_path: Path,
+    *,
+    enabled: bool,
+    recursive_enabled: bool = False,
+    recursive_max_objects: int | None = None,
+    recursive_max_depth: int | None = None,
+) -> _RestoreMemoryLogger | None:
+    """Build the opt-in checkpoint restore-memory logger for a path."""
+    if not enabled:
+        return None
+    try:
+        checkpoint_bytes = checkpoint_path.stat().st_size
+    except OSError:
+        checkpoint_bytes = None
+    return _RestoreMemoryLogger(
+        checkpoint_path=checkpoint_path,
+        compressed_checkpoint_bytes=checkpoint_bytes,
+        recursive_enabled=recursive_enabled,
+        recursive_max_objects=recursive_max_objects,
+        recursive_max_depth=recursive_max_depth,
+    )
+
+
 def _checkpoint_node_counts(
     payload: SearchRuntimeCheckpointPayload,
 ) -> tuple[int, int, int]:
@@ -1003,6 +1153,10 @@ class AnemoneMorpionSearchRunnerArgs:
     search_args: SearchArgs = field(default_factory=_default_search_args)
     random_seed: int = 0
     reevaluation_scope: str = "leaves"
+    restore_memory_profile: bool = False
+    restore_memory_profile_recursive: bool = False
+    restore_memory_profile_recursive_max_objects: int | None = None
+    restore_memory_profile_recursive_max_depth: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1731,16 +1885,37 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "before_runtime_restore",
             path=tree_snapshot_path,
         )
+        restore_memory_logger = _restore_memory_logger_for_path(
+            self._args,
+            tree_snapshot_path,
+        )
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "before_checkpoint_file_load",
+                raw_checkpoint_referenced=False,
+                typed_checkpoint_referenced=False,
+            )
         cached_payload = _pop_cached_morpion_search_checkpoint_payload_for_restore(
             tree_snapshot_path
         )
         cache_state = "hit" if cached_payload is not None else "miss"
         if cached_payload is None:
-            payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
+            payload = load_morpion_search_checkpoint_payload(
+                tree_snapshot_path,
+                restore_memory_logger=restore_memory_logger,
+            )
             bytes_loaded = tree_snapshot_path.stat().st_size
         else:
             payload, bytes_loaded = cached_payload
             del cached_payload
+            if restore_memory_logger is not None:
+                restore_memory_logger.log(
+                    "after_typed_checkpoint_payload_build",
+                    typed_payload=payload,
+                    raw_checkpoint_referenced=False,
+                    typed_checkpoint_referenced=True,
+                    cache="hit",
+                )
             LOGGER.info(
                 "[checkpoint] candidate_reuse_for_restore path=%s",
                 str(tree_snapshot_path),
@@ -1798,6 +1973,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     random_generator=self._random_generator,
                     state_representation_factory=None,
                     node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+                    restore_memory_phase_logger=(
+                        None
+                        if restore_memory_logger is None
+                        else cast(
+                            "RestoreMemoryPhaseLogger",
+                            restore_memory_logger.callback,
+                        )
+                    ),
                 ),
             )
             runtime_elapsed_s = time.perf_counter() - runtime_started_at
@@ -1809,8 +1992,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         finally:
             del payload
+            if restore_memory_logger is not None:
+                restore_memory_logger.log(
+                    "after_drop_raw_checkpoint_payload_if_applicable",
+                    raw_checkpoint_referenced=False,
+                    typed_checkpoint_referenced=False,
+                )
             gc.collect()
             rss_after_release_mb = _current_rss_mb()
+            if restore_memory_logger is not None:
+                restore_memory_logger.log(
+                    "after_gc",
+                    raw_checkpoint_referenced=False,
+                    typed_checkpoint_referenced=False,
+                )
             log_morpion_checkpoint_memory_phase(
                 "after_restore_payload_release",
                 path=tree_snapshot_path,
@@ -2030,6 +2225,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
 def load_morpion_search_checkpoint_payload(
     path: str | Path,
+    *,
+    restore_memory_logger: _RestoreMemoryLogger | None = None,
 ) -> SearchRuntimeCheckpointPayload:
     """Load a persisted search checkpoint payload and validate shape."""
     resolved_path = Path(path)
@@ -2043,6 +2240,22 @@ def load_morpion_search_checkpoint_payload(
     started_at = time.perf_counter()
     try:
         raw_payload, read_stats = load_checkpoint_json_payload(resolved_path)
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "after_checkpoint_file_read_or_stream_open",
+                raw_payload=raw_payload,
+                raw_checkpoint_referenced=True,
+                typed_checkpoint_referenced=False,
+                file_format=read_stats.file_format,
+            )
+            restore_memory_logger.log(
+                "after_raw_json_decode",
+                raw_payload=raw_payload,
+                raw_checkpoint_referenced=True,
+                typed_checkpoint_referenced=False,
+                file_format=read_stats.file_format,
+                json_load_s=read_stats.json_load_s,
+            )
         LOGGER.info(
             "[checkpoint] json_load_done path=%s format=%s elapsed=%.3fs bytes=%s",
             str(resolved_path),
@@ -2071,6 +2284,14 @@ def load_morpion_search_checkpoint_payload(
             data=normalized_payload,
             config=Config(cast=[tuple], check_types=False),
         )
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "after_typed_checkpoint_payload_build",
+                raw_payload=raw_payload,
+                typed_payload=payload,
+                raw_checkpoint_referenced=True,
+                typed_checkpoint_referenced=True,
+            )
         payload_decode_elapsed_s = time.perf_counter() - payload_decode_started_at
         LOGGER.info(
             "[checkpoint] payload_decode_done path=%s elapsed=%.3fs",
@@ -2105,6 +2326,13 @@ def load_morpion_search_checkpoint_payload(
         )
         del raw_payload
         del normalized_payload
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "after_drop_raw_checkpoint_payload_if_applicable",
+                typed_payload=payload,
+                raw_checkpoint_referenced=False,
+                typed_checkpoint_referenced=True,
+            )
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
@@ -2570,4 +2798,5 @@ __all__ = [
     "load_morpion_evaluator_from_model_bundle",
     "load_morpion_search_checkpoint_payload",
     "log_morpion_checkpoint_memory_phase",
+    "restore_memory_logger_for_checkpoint_path",
 ]

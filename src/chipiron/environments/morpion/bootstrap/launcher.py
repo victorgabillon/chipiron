@@ -548,7 +548,19 @@ def _build_launcher_runner(
         AnemoneMorpionSearchRunnerArgs(
             search_args=_default_search_args(
                 rollout=startup_status.bootstrap_config.search.rollout
-            )
+            ),
+            restore_memory_profile=(
+                startup_status.resolved_bootstrap_args.growth_memory_profile
+            ),
+            restore_memory_profile_recursive=(
+                startup_status.resolved_bootstrap_args.growth_memory_profile_recursive
+            ),
+            restore_memory_profile_recursive_max_objects=(
+                startup_status.resolved_bootstrap_args.growth_memory_profile_recursive_max_objects
+            ),
+            restore_memory_profile_recursive_max_depth=(
+                startup_status.resolved_bootstrap_args.growth_memory_profile_recursive_max_depth
+            ),
         ),
         effective_runtime_config,
     )

@@ -146,7 +146,10 @@ from .run_state import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
+
+    from anemone.checkpoints import SearchRuntimeCheckpointPayload
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .search_runner_protocol import MorpionSearchRunner
@@ -693,6 +696,11 @@ def _run_one_pipeline_growth_cycle_impl(
             after_candidate_checkpoint_load=_log_candidate_checkpoint_load_profile
             if args.growth_memory_profile
             else None,
+            candidate_checkpoint_payload_loader=(
+                _candidate_checkpoint_payload_loader(args)
+                if args.growth_memory_profile
+                else None
+            ),
         )
     except CandidateCheckpointLoadDeferredError as exc:
         LOGGER.info(
@@ -1319,6 +1327,38 @@ def _should_load_candidate_checkpoint(
         action="candidate_checkpoint_load",
         required_mb=args.min_available_ram_mb,
     )
+
+
+def _candidate_checkpoint_payload_loader(
+    args: MorpionBootstrapArgs,
+) -> Callable[[Path], SearchRuntimeCheckpointPayload]:
+    """Build the optional instrumented candidate-checkpoint loader."""
+    from .anemone_runner import (
+        load_morpion_search_checkpoint_payload,
+        restore_memory_logger_for_checkpoint_path,
+    )
+
+    def load(path: Path) -> SearchRuntimeCheckpointPayload:
+        restore_memory_logger = restore_memory_logger_for_checkpoint_path(
+            path,
+            enabled=True,
+            recursive_enabled=args.growth_memory_profile_recursive,
+            recursive_max_objects=args.growth_memory_profile_recursive_max_objects,
+            recursive_max_depth=args.growth_memory_profile_recursive_max_depth,
+        )
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "before_checkpoint_file_load",
+                raw_checkpoint_referenced=False,
+                typed_checkpoint_referenced=False,
+                cache="candidate_validation",
+            )
+        return load_morpion_search_checkpoint_payload(
+            path,
+            restore_memory_logger=restore_memory_logger,
+        )
+
+    return load
 
 
 def _log_candidate_checkpoint_load_profile(

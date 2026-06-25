@@ -105,6 +105,31 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
 )
 
 
+def test_restore_memory_logger_emits_structured_phase(caplog: pytest.LogCaptureFixture) -> None:
+    """Restore-memory logger should emit stable grep-friendly phase fields."""
+    logger = anemone_runner_module._RestoreMemoryLogger(
+        checkpoint_path=Path("checkpoint.json.zst"),
+        compressed_checkpoint_bytes=123,
+    )
+
+    with caplog.at_level(logging.INFO, logger=anemone_runner_module.LOGGER.name):
+        logger.log(
+            "after_raw_json_decode",
+            raw_payload={"tree": {"nodes": [object(), object()]}},
+            raw_checkpoint_referenced=True,
+            typed_checkpoint_referenced=False,
+        )
+
+    text = caplog.text
+    assert "[restore-memory]" in text
+    assert "phase=after_raw_json_decode" in text
+    assert "compressed_checkpoint_bytes=123" in text
+    assert "node_count=2" in text
+    assert "raw_checkpoint_referenced=True" in text
+    assert "typed_checkpoint_referenced=False" in text
+    assert "gc_count0=" in text
+
+
 def _make_model_bundle(output_dir: Path) -> Path:
     """Create one minimal valid Morpion bundle for evaluator-loading tests."""
     model_args = MorpionRegressorArgs(model_kind="linear")

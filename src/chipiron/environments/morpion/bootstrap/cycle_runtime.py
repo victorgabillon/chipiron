@@ -28,6 +28,8 @@ from .run_state import MorpionBootstrapRunState
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from anemone.checkpoints import SearchRuntimeCheckpointPayload
+
     from .control import (
         MorpionBootstrapControl,
         MorpionBootstrapEffectiveRuntimeConfig,
@@ -366,6 +368,9 @@ def resolve_runtime_restore_path(
     after_candidate_checkpoint_load: (
         Callable[[CandidateCheckpointLoadProfile], None] | None
     ) = None,
+    candidate_checkpoint_payload_loader: (
+        Callable[[Path], SearchRuntimeCheckpointPayload] | None
+    ) = None,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
     from .anemone_runner import (
@@ -438,7 +443,12 @@ def resolve_runtime_restore_path(
         except OSError:
             checkpoint_bytes = None
         try:
-            payload = load_morpion_search_checkpoint_payload(candidate_path)
+            payload_loader = (
+                load_morpion_search_checkpoint_payload
+                if candidate_checkpoint_payload_loader is None
+                else candidate_checkpoint_payload_loader
+            )
+            payload = payload_loader(candidate_path)
         except InvalidMorpionSearchCheckpointError as exc:
             LOGGER.info(
                 "[checkpoint] candidate_validate_invalid source=%s path=%s reason=%s",
