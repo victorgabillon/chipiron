@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -67,29 +67,26 @@ from tests.environments.morpion_training_snapshot_helpers import (
 )
 
 
-def _make_morpion_payload() -> dict[str, object]:
+def _make_morpion_payload() -> object:
     """Build one real Morpion checkpoint payload from a one-step state."""
     dynamics = MorpionDynamics()
     start_state = morpion_initial_state()
     first_action = dynamics.all_legal_actions(start_state)[0]
     next_state = dynamics.step(start_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
-    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+    return codec.dump_state_ref(next_state)
 
 
-def _make_morpion_delta_payload() -> dict[str, object]:
+def _make_morpion_delta_payload() -> object:
     """Build one real Morpion checkpoint-style delta payload."""
     dynamics = MorpionDynamics()
     parent_state = morpion_initial_state()
     first_action = dynamics.all_legal_actions(parent_state)[0]
     child_state = dynamics.step(parent_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
-    return cast(
-        "dict[str, object]",
-        codec.dump_delta_from_parent(
-            parent_state=parent_state,
-            child_state=child_state,
-        ),
+    return codec.dump_delta_from_parent(
+        parent_state=parent_state,
+        child_state=child_state,
     )
 
 
@@ -137,10 +134,11 @@ def test_current_morpion_state_ref_shape_is_anchor_payload() -> None:
     """Current exported Morpion state refs are full anchor payloads, not deltas."""
     payload = _make_morpion_payload()
 
-    assert set(payload) == {"played_moves", "variant"}
-    assert isinstance(payload["variant"], str)
-    assert isinstance(payload["played_moves"], list)
-    assert len(cast("list[object]", payload["played_moves"])) >= 1
+    assert isinstance(payload, tuple)
+    assert payload[0] in (0, 1)
+    assert isinstance(payload[1], tuple)
+    assert all(isinstance(move_code, int) for move_code in payload[1])
+    assert payload[1]
 
 
 def test_checkpoint_delta_payload_round_trips_snapshot_but_row_extraction_rejects_it(
@@ -314,7 +312,7 @@ def test_snapshot_metadata_records_target_sources_and_skipped_no_target() -> Non
 def test_invalid_payload_raises_clearly() -> None:
     """Malformed Morpion payloads should raise instead of being silently kept."""
     node = _make_training_node(
-        state_ref_payload={"variant": "5T", "played_moves": "not-a-sequence"}
+        state_ref_payload=[0, "not-a-sequence"]
     )
 
     with pytest.raises(InvalidMorpionStateRefPayloadError):
@@ -324,7 +322,7 @@ def test_invalid_payload_raises_clearly() -> None:
 def test_filtered_out_node_skips_payload_validation() -> None:
     """Filter rejection should return ``None`` before malformed payload validation."""
     node = _make_training_node(
-        state_ref_payload={"variant": "5T", "played_moves": "not-a-sequence"},
+        state_ref_payload=[0, "not-a-sequence"],
         depth=1,
     )
 

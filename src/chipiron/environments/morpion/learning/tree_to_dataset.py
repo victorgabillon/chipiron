@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import load_training_tree_snapshot
 from atomheart.games.morpion.checkpoints import (
     MorpionCheckpointError,
@@ -37,7 +38,7 @@ class MorpionSupervisedRow:
     """One raw Morpion training row derived from one exported search node."""
 
     node_id: str
-    state_ref_payload: dict[str, Any]
+    state_ref_payload: object
     target_value: float
     is_terminal: bool
     is_exact: bool
@@ -159,9 +160,7 @@ def is_morpion_state_ref_payload(payload: object) -> bool:
     return True
 
 
-def decode_morpion_state_ref_payload(
-    payload: Mapping[str, object],
-) -> AtomMorpionState:
+def decode_morpion_state_ref_payload(payload: object) -> AtomMorpionState:
     """Decode one validated Morpion checkpoint payload into an atomheart state."""
     normalized_payload = _validate_and_normalize_state_ref_payload(payload)
     return _decode_validated_payload(normalized_payload)
@@ -549,14 +548,13 @@ def load_morpion_supervised_rows(
     return morpion_supervised_rows_from_dict(cast("dict[str, object]", loaded))
 
 
-def _validate_and_normalize_state_ref_payload(payload: object) -> dict[str, Any]:
+def _validate_and_normalize_state_ref_payload(payload: object) -> object:
     """Return a normalized Morpion checkpoint payload after codec validation."""
-    normalized_payload = _payload_mapping(payload)
-    _decode_validated_payload(normalized_payload)
-    return normalized_payload
+    _decode_validated_payload(payload)
+    return checkpoint_payload_to_jsonable(payload)
 
 
-def _decode_validated_payload(payload: dict[str, Any]) -> AtomMorpionState:
+def _decode_validated_payload(payload: object) -> AtomMorpionState:
     """Decode one normalized checkpoint payload or raise a Morpion payload error."""
     return _load_morpion_state_from_payload(payload)
 
@@ -662,7 +660,7 @@ def _empty_target_source_counts() -> dict[str, int]:
     }
 
 
-def _load_morpion_state_from_payload(payload: dict[str, Any]) -> AtomMorpionState:
+def _load_morpion_state_from_payload(payload: object) -> AtomMorpionState:
     """Load one Morpion state from an already normalized checkpoint payload."""
     try:
         return MorpionStateCheckpointCodec().load_state_ref(payload)
@@ -728,7 +726,7 @@ def _row_to_dict(row: MorpionSupervisedRow) -> dict[str, object]:
     """Serialize one Morpion supervised row to JSON-friendly data."""
     return {
         "node_id": row.node_id,
-        "state_ref_payload": dict(row.state_ref_payload),
+        "state_ref_payload": checkpoint_payload_to_jsonable(row.state_ref_payload),
         "target_value": row.target_value,
         "is_terminal": row.is_terminal,
         "is_exact": row.is_exact,
