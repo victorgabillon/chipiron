@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from .pv_family_targets import PvFamilyTargetPolicy
+
+type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -77,6 +79,13 @@ def _invalid_growth_memory_profile_recursive_max_depth_error() -> ValueError:
     )
 
 
+def _invalid_growth_memory_profile_recursive_max_depth_explicit_error() -> TypeError:
+    """Return the canonical recursive max-depth explicit flag error."""
+    return TypeError(
+        "growth_memory_profile_recursive_max_depth_explicit must be a bool."
+    )
+
+
 def _invalid_growth_memory_profile_recursive_events_error() -> ValueError:
     """Return the canonical recursive memory-profile event-filter error."""
     return ValueError(
@@ -108,6 +117,11 @@ def _invalid_candidate_checkpoint_load_min_headroom_mb_error() -> ValueError:
 def _invalid_min_available_ram_mb_error() -> ValueError:
     """Return the canonical available-RAM guard validation error."""
     return ValueError("min_available_ram_mb must be a non-negative integer or None.")
+
+
+def _invalid_runtime_checkpoint_format_error() -> ValueError:
+    """Return the canonical runtime checkpoint format validation error."""
+    return ValueError("runtime_checkpoint_format must be 'json-zst' or 'sharded'.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +188,7 @@ class MorpionBootstrapArgs:
     growth_memory_profile_recursive_complete_map: bool = False
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
+    runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
@@ -216,9 +231,7 @@ class MorpionBootstrapArgs:
         ):
             raise _invalid_growth_memory_profile_recursive_max_depth_error()
         if not isinstance(self.growth_memory_profile_recursive_max_depth_explicit, bool):
-            raise ValueError(
-                "growth_memory_profile_recursive_max_depth_explicit must be a bool."
-            )
+            raise _invalid_growth_memory_profile_recursive_max_depth_explicit_error()
         if self.growth_memory_profile_recursive_context_node_cap is not None and (
             isinstance(self.growth_memory_profile_recursive_context_node_cap, bool)
             or self.growth_memory_profile_recursive_context_node_cap <= 0
@@ -244,6 +257,8 @@ class MorpionBootstrapArgs:
             or self.candidate_checkpoint_load_min_headroom_mb < 0
         ):
             raise _invalid_candidate_checkpoint_load_min_headroom_mb_error()
+        if self.runtime_checkpoint_format not in {"json-zst", "sharded"}:
+            raise _invalid_runtime_checkpoint_format_error()
         if self.min_available_ram_mb is not None and (
             isinstance(self.min_available_ram_mb, bool) or self.min_available_ram_mb < 0
         ):

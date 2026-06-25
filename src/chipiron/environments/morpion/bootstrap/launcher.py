@@ -11,8 +11,6 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
-from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_name
-
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
@@ -525,6 +523,7 @@ def _bootstrap_args_with_persisted_config(
         evaluator_update_policy=persisted_config.evaluator_update_policy,
         pipeline_mode=persisted_config.pipeline_mode,
         training_export_mode=persisted_config.training_export_mode,
+        runtime_checkpoint_format=persisted_config.runtime.runtime_checkpoint_format,
         search=persisted_config.search,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
@@ -560,6 +559,9 @@ def _build_launcher_runner(
             ),
             restore_memory_profile_recursive_max_depth=(
                 startup_status.resolved_bootstrap_args.growth_memory_profile_recursive_max_depth
+            ),
+            runtime_checkpoint_format=(
+                startup_status.resolved_bootstrap_args.runtime_checkpoint_format
             ),
         ),
         effective_runtime_config,
@@ -633,8 +635,8 @@ def _render_launcher_startup_summary(
             ),
             (
                 "runtime checkpoint format: "
-                f"{checkpoint_cli_name(DEFAULT_CHECKPOINT_FILE_FORMAT)} "
-                "(default; legacy .json checkpoints still load)"
+                f"{startup_status.resolved_bootstrap_args.runtime_checkpoint_format} "
+                f"({_render_runtime_checkpoint_format_note(startup_status.resolved_bootstrap_args.runtime_checkpoint_format)})"
             ),
             f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
             f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
@@ -674,6 +676,13 @@ def _render_training_export_mode_note(training_export_mode: str) -> str:
     if training_export_mode == "both":
         return "compatibility/debug"
     return "legacy compatibility/debug"
+
+
+def _render_runtime_checkpoint_format_note(runtime_checkpoint_format: str) -> str:
+    """Return one short operator-facing note for the runtime checkpoint format."""
+    if runtime_checkpoint_format == "sharded":
+        return "experimental opt-in"
+    return "default; legacy .json checkpoints still load"
 
 
 def _latest_runtime_checkpoint_path(
@@ -837,6 +846,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
             "Training export artifact format. 'sharded' is the normal/default mode. "
             "'flat' preserves the legacy single-file compatibility export, and 'both' "
             "writes sharded artifacts alongside a flat compatibility/debug export."
+        ),
+    )
+    parser.add_argument(
+        "--runtime-checkpoint-format",
+        choices=["json-zst", "sharded"],
+        default="json-zst",
+        help=(
+            "Runtime checkpoint format. 'json-zst' is the default monolithic path; "
+            "'sharded' enables the experimental generic Anemone sharded runtime checkpoint."
         ),
     )
     parser.add_argument(
@@ -1187,6 +1205,7 @@ def launcher_args_from_cli(
         evaluator_update_policy=parsed.evaluator_update_policy,
         pipeline_mode=parsed.pipeline_mode,
         training_export_mode=parsed.training_export_mode,
+        runtime_checkpoint_format=parsed.runtime_checkpoint_format,
         training_evaluator_names=_parse_training_evaluator_names(
             parsed.training_evaluator_names
         ),

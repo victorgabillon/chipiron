@@ -19,6 +19,7 @@ from .bootstrap_paths import (
     DEFAULT_KEEP_LATEST_TREE_EXPORTS,
     MorpionBootstrapPaths,
     prune_generation_files,
+    runtime_checkpoint_artifact_exists,
 )
 from .cycle_metadata import RUNTIME_CHECKPOINT_METADATA_KEY, next_metadata
 from .history import MorpionBootstrapTreeStatus
@@ -403,6 +404,14 @@ def resolve_runtime_restore_path(
                 paths.runtime_checkpoint_path_for_generation(run_state.generation),
             )
         )
+        candidates.append(
+            (
+                "canonical sharded search_checkpoints path for latest generation",
+                paths.sharded_runtime_checkpoint_path_for_generation(
+                    run_state.generation
+                ),
+            )
+        )
     if not run_state.latest_model_bundle_paths:
         candidates.append(
             (
@@ -417,8 +426,15 @@ def resolve_runtime_restore_path(
         if candidate_path is None or candidate_path in seen_paths:
             continue
         seen_paths.add(candidate_path)
-        if not candidate_path.is_file():
+        if not runtime_checkpoint_artifact_exists(candidate_path):
             continue
+        if candidate_path.is_dir():
+            LOGGER.info(
+                "[checkpoint] candidate_validate_skipped source=%s path=%s reason=sharded_runtime_checkpoint",
+                source,
+                str(candidate_path),
+            )
+            return candidate_path
         if before_candidate_checkpoint_load is not None and not (
             before_candidate_checkpoint_load(source, candidate_path)
         ):

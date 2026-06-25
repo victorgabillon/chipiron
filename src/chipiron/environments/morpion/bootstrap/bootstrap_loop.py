@@ -21,7 +21,7 @@ from .bootstrap_errors import (
     UnsupportedMorpionRuntimeReconfigurationError,
 )
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
-from .bootstrap_paths import MorpionBootstrapPaths
+from .bootstrap_paths import MorpionBootstrapPaths, runtime_checkpoint_artifact_exists
 from .config import (
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
@@ -454,13 +454,16 @@ def _run_one_bootstrap_cycle_impl(
         "[save] decision_done triggered=true reason=%s",
         save_reason or "unknown",
     )
-    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
+    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation_with_format(
+        generation,
+        args.runtime_checkpoint_format,
+    )
 
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
         save_checkpoint(runtime_checkpoint_path)
-        if not runtime_checkpoint_path.is_file():
+        if not runtime_checkpoint_artifact_exists(runtime_checkpoint_path):
             raise MissingSavedBootstrapArtifactError(
                 action="runner.save_checkpoint()",
                 artifact_path=runtime_checkpoint_path,

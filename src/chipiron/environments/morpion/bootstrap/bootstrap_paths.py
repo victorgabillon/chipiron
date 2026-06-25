@@ -108,6 +108,20 @@ class MorpionBootstrapPaths:
         """Return the runtime checkpoint path for one saved generation."""
         return checkpoint_path_for_generation(self.runtime_checkpoint_dir, generation)
 
+    def sharded_runtime_checkpoint_path_for_generation(self, generation: int) -> Path:
+        """Return the sharded runtime checkpoint directory for one generation."""
+        return self.runtime_checkpoint_dir / f"generation_{generation:06d}.sharded"
+
+    def runtime_checkpoint_path_for_generation_with_format(
+        self,
+        generation: int,
+        checkpoint_format: str,
+    ) -> Path:
+        """Return the runtime checkpoint artifact path for the selected format."""
+        if checkpoint_format == "sharded":
+            return self.sharded_runtime_checkpoint_path_for_generation(generation)
+        return self.runtime_checkpoint_path_for_generation(generation)
+
     def model_generation_dir_for_generation(self, generation: int) -> Path:
         """Return the model root directory for one saved generation."""
         return self.model_dir / f"generation_{generation:06d}"
@@ -201,7 +215,18 @@ class MorpionBootstrapPaths:
 
 def _generation_file_sort_key(path: Path) -> int | None:
     """Return the parsed generation index across supported checkpoint suffixes."""
+    if path.is_dir() and path.name.endswith(".sharded"):
+        stem = path.name.removesuffix(".sharded")
+        return parse_generation_checkpoint_name(f"{stem}.json")
     return parse_generation_checkpoint_name(path)
+
+
+def runtime_checkpoint_artifact_exists(path: str | Path) -> bool:
+    """Return whether a monolithic file or sharded checkpoint directory exists."""
+    resolved_path = Path(path)
+    return resolved_path.is_file() or (
+        resolved_path.is_dir() and (resolved_path / "manifest.json").is_file()
+    )
 
 
 def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
@@ -211,7 +236,9 @@ def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
 
     generation_to_paths: dict[int, list[Path]] = {}
     for path in directory.iterdir():
-        if not path.is_file():
+        if not path.is_file() and not (
+            path.is_dir() and (path / "manifest.json").is_file()
+        ):
             continue
         generation = _generation_file_sort_key(path)
         if generation is None:
@@ -224,7 +251,12 @@ def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
         if generation in kept_generations:
             continue
         for path in paths:
-            path.unlink()
+            if path.is_dir():
+                import shutil
+
+                shutil.rmtree(path)
+            else:
+                path.unlink()
             deleted_count += 1
             LOGGER.info("[retention] deleted path=%s", str(path))
     LOGGER.info(
@@ -239,4 +271,5 @@ __all__ = [
     "DEFAULT_KEEP_LATEST_TREE_EXPORTS",
     "MorpionBootstrapPaths",
     "prune_generation_files",
+    "runtime_checkpoint_artifact_exists",
 ]

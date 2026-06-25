@@ -47,6 +47,10 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+_bootstrap_module = sys.modules.get("chipiron.environments.morpion.bootstrap")
+if _bootstrap_module is not None and not hasattr(_bootstrap_module, "__file__"):
+    del sys.modules["chipiron.environments.morpion.bootstrap"]
+
 from anemone.checkpoints import (
     DEFAULT_CHECKPOINT_FILE_FORMAT,
     AlgorithmNodeCheckpointPayload,
@@ -55,6 +59,7 @@ from anemone.checkpoints import (
     SearchRuntimeCheckpointPayload,
     TreeCheckpointPayload,
     checkpoint_file_suffix,
+    read_sharded_checkpoint_manifest,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -94,6 +99,9 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
     save_bootstrap_control,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    RUNTIME_CHECKPOINT_METADATA_KEY,
 )
 from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     resolve_runtime_restore_path,
@@ -919,6 +927,61 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
     )
 
 
+def test_default_runtime_checkpoint_format_writes_monolithic_checkpoint(
+    tmp_path: Path,
+) -> None:
+    """Default runner checkpoints should remain monolithic file artifacts."""
+    checkpoint_path = tmp_path / "generation_000001.json.zst"
+    runner = AnemoneMorpionSearchRunner()
+    runner.load_or_create(None, None)
+    runner.grow(2)
+
+    runner.save_checkpoint(checkpoint_path)
+
+    assert AnemoneMorpionSearchRunnerArgs().runtime_checkpoint_format == "json-zst"
+    assert checkpoint_path.is_file()
+
+
+def test_sharded_runtime_checkpoint_writes_manifest_directory(tmp_path: Path) -> None:
+    """The opt-in sharded format should write a manifest-backed directory."""
+    checkpoint_path = tmp_path / "generation_000001.sharded"
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(runtime_checkpoint_format="sharded")
+    )
+    runner.load_or_create(None, None)
+    runner.grow(2)
+
+    runner.save_checkpoint(checkpoint_path)
+
+    manifest = read_sharded_checkpoint_manifest(checkpoint_path / "manifest.json")
+    assert checkpoint_path.is_dir()
+    assert manifest.total_node_count == runner.current_tree_size()
+
+
+def test_sharded_runtime_checkpoint_restores_and_continues_growth(
+    tmp_path: Path,
+) -> None:
+    """The opt-in sharded checkpoint should restore through incremental Anemone load."""
+    checkpoint_path = tmp_path / "generation_000001.sharded"
+    first_runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(runtime_checkpoint_format="sharded")
+    )
+    first_runner.load_or_create(None, None)
+    first_runner.grow(3)
+    size_before_save = first_runner.current_tree_size()
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(runtime_checkpoint_format="sharded")
+    )
+    second_runner.load_or_create(checkpoint_path, None)
+    restored_size = second_runner.current_tree_size()
+    second_runner.grow(2)
+
+    assert restored_size == size_before_save
+    assert second_runner.current_tree_size() >= restored_size
+
+
 def test_checkpoint_restore_does_not_retain_full_payload_graph(tmp_path: Path) -> None:
     """Runtime restore should not keep the decoded checkpoint DTO graph alive."""
     checkpoint_path = tmp_path / "tree_checkpoint.json"
@@ -940,6 +1003,35 @@ def test_checkpoint_restore_does_not_retain_full_payload_graph(tmp_path: Path) -
     assert search_count == 0
     assert tree_count == 0
     assert algo_count == 0
+
+
+def test_resolve_runtime_restore_path_recognizes_sharded_checkpoint_directory(
+    tmp_path: Path,
+) -> None:
+    """Resume path resolution should accept manifest-backed sharded directories."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    checkpoint_path = paths.sharded_runtime_checkpoint_path_for_generation(1)
+    checkpoint_path.mkdir(parents=True)
+    (checkpoint_path / "manifest.json").write_text("{}", encoding="utf-8")
+    run_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths={"default": "models/generation_000001/default"},
+        active_evaluator_name="default",
+        tree_size_at_last_save=1,
+        last_save_unix_s=1.0,
+        latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
+        metadata={
+            RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(
+                checkpoint_path
+            )
+        },
+    )
+
+    assert resolve_runtime_restore_path(paths=paths, run_state=run_state) == checkpoint_path
 
 
 def test_checkpoint_metrics_logs_for_save_load_and_restore(

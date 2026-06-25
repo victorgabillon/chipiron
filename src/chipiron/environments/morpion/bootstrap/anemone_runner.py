@@ -22,7 +22,10 @@ from anemone.checkpoints import (
     build_search_checkpoint_payload,
     load_checkpoint_json_payload,
     load_search_from_checkpoint_payload,
+    load_search_from_sharded_checkpoint,
+    read_sharded_checkpoint_manifest,
     write_checkpoint_json_payload,
+    write_sharded_search_checkpoint,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -146,6 +149,7 @@ class CheckpointIoMetrics:
     anchor_count: int | None = None
     delta_count: int | None = None
     cache: str | None = None
+    runtime_checkpoint_format: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -791,10 +795,7 @@ def restore_memory_logger_for_checkpoint_path(
     """Build the opt-in checkpoint restore-memory logger for a path."""
     if not enabled:
         return None
-    try:
-        checkpoint_bytes = checkpoint_path.stat().st_size
-    except OSError:
-        checkpoint_bytes = None
+    checkpoint_bytes = _checkpoint_artifact_bytes(checkpoint_path)
     return _RestoreMemoryLogger(
         checkpoint_path=checkpoint_path,
         compressed_checkpoint_bytes=checkpoint_bytes,
@@ -802,6 +803,31 @@ def restore_memory_logger_for_checkpoint_path(
         recursive_max_objects=recursive_max_objects,
         recursive_max_depth=recursive_max_depth,
     )
+
+
+def _is_sharded_runtime_checkpoint_path(path: str | Path) -> bool:
+    """Return whether a path points to a sharded runtime checkpoint directory."""
+    resolved_path = Path(path)
+    return resolved_path.is_dir() and (resolved_path / "manifest.json").is_file()
+
+
+def _checkpoint_artifact_bytes(path: str | Path) -> int | None:
+    """Return compressed bytes for a file or best-effort shard bytes for a directory."""
+    resolved_path = Path(path)
+    try:
+        if resolved_path.is_file():
+            return resolved_path.stat().st_size
+        if _is_sharded_runtime_checkpoint_path(resolved_path):
+            manifest = read_sharded_checkpoint_manifest(resolved_path / "manifest.json")
+            shard_bytes = sum(
+                shard.compressed_bytes or 0
+                for shard in manifest.shards
+                if shard.compressed_bytes is not None
+            )
+            return (resolved_path / "manifest.json").stat().st_size + shard_bytes
+    except OSError:
+        return None
+    return None
 
 
 def _checkpoint_node_counts(
@@ -847,6 +873,8 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
         parts.append(f"encoder={metrics.encoder}")
     if metrics.cache is not None:
         parts.append(f"cache={metrics.cache}")
+    if metrics.runtime_checkpoint_format is not None:
+        parts.append(f"runtime_checkpoint_format={metrics.runtime_checkpoint_format}")
     parts.extend(
         [
             f"payload_build_s={_metric_value(metrics.payload_build_s)}",
@@ -1157,6 +1185,7 @@ class AnemoneMorpionSearchRunnerArgs:
     restore_memory_profile_recursive: bool = False
     restore_memory_profile_recursive_max_objects: int | None = None
     restore_memory_profile_recursive_max_depth: int | None = None
+    runtime_checkpoint_format: str = "json-zst"
 
 
 @dataclass(frozen=True, slots=True)
@@ -1895,6 +1924,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 raw_checkpoint_referenced=False,
                 typed_checkpoint_referenced=False,
             )
+        if _is_sharded_runtime_checkpoint_path(tree_snapshot_path):
+            return self._load_runtime_from_sharded_checkpoint(
+                tree_snapshot_path,
+                search_args=search_args,
+                started_at=started_at,
+                restore_memory_logger=restore_memory_logger,
+            )
         cached_payload = _pop_cached_morpion_search_checkpoint_payload_for_restore(
             tree_snapshot_path
         )
@@ -2042,6 +2078,88 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         return runtime
 
+    def _load_runtime_from_sharded_checkpoint(
+        self,
+        tree_snapshot_path: Path,
+        *,
+        search_args: SearchArgs,
+        started_at: float,
+        restore_memory_logger: _RestoreMemoryLogger | None,
+    ) -> object:
+        """Restore one live runtime from an opt-in sharded checkpoint directory."""
+        manifest = read_sharded_checkpoint_manifest(tree_snapshot_path / "manifest.json")
+        node_count = manifest.total_node_count
+        branch_count = manifest.total_branch_count
+        rss_before_mb = _current_rss_mb()
+        runtime_started_at = time.perf_counter()
+        runtime = cast(
+            "object",
+            load_search_from_sharded_checkpoint(
+                tree_snapshot_path,
+                state_codec=self._state_codec,
+                dynamics=self._dynamics,
+                args=search_args,
+                state_type=MorpionState,
+                master_state_value_evaluator=self._build_master_evaluator(None),
+                random_generator=self._random_generator,
+                state_representation_factory=None,
+                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+                restore_memory_phase_logger=(
+                    None
+                    if restore_memory_logger is None
+                    else cast("RestoreMemoryPhaseLogger", restore_memory_logger.callback)
+                ),
+            ),
+        )
+        runtime_elapsed_s = time.perf_counter() - runtime_started_at
+        log_morpion_checkpoint_memory_phase(
+            "after_runtime_rebuild",
+            path=tree_snapshot_path,
+            nodes=node_count,
+        )
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "after_drop_raw_checkpoint_payload_if_applicable",
+                raw_checkpoint_referenced=False,
+                typed_checkpoint_referenced=False,
+            )
+        gc.collect()
+        rss_after_release_mb = _current_rss_mb()
+        if restore_memory_logger is not None:
+            restore_memory_logger.log(
+                "after_gc",
+                raw_checkpoint_referenced=False,
+                typed_checkpoint_referenced=False,
+                node_count=node_count,
+                branch_count=branch_count,
+            )
+        log_morpion_checkpoint_memory_phase(
+            "after_restore_payload_release",
+            path=tree_snapshot_path,
+            nodes=node_count,
+        )
+        elapsed_s = time.perf_counter() - started_at
+        _log_checkpoint_metrics(
+            "runtime_restore",
+            CheckpointIoMetrics(
+                path=str(tree_snapshot_path),
+                bytes=_checkpoint_artifact_bytes(tree_snapshot_path),
+                runtime_rebuild_s=runtime_elapsed_s,
+                total_s=elapsed_s,
+                rss_before_mb=rss_before_mb,
+                rss_after_mb=rss_after_release_mb,
+                node_count=node_count,
+                cache="skipped_sharded",
+                runtime_checkpoint_format="sharded",
+            ),
+        )
+        LOGGER.info(
+            "[checkpoint] load_done path=%s elapsed=%.3fs format=sharded",
+            str(tree_snapshot_path),
+            elapsed_s,
+        )
+        return runtime
+
     def _build_master_evaluator(
         self,
         model_bundle_path: Path | None,
@@ -2153,64 +2271,91 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             nodes=node_count,
             generation=_generation_from_checkpoint_path(output),
         )
-        write_stats = write_checkpoint_json_payload(payload, output)
+        if self._args.runtime_checkpoint_format == "sharded":
+            manifest = write_sharded_search_checkpoint(payload, output)
+            checkpoint_bytes = _checkpoint_artifact_bytes(output)
+            write_stats = None
+        else:
+            write_stats = write_checkpoint_json_payload(payload, output)
+            checkpoint_bytes = write_stats.compressed_bytes
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_write",
             path=output,
             nodes=node_count,
             generation=_generation_from_checkpoint_path(output),
         )
-        if write_stats.jsonable_s is None:
+        if write_stats is None:
             LOGGER.info(
-                "[checkpoint] payload_jsonable_skipped path=%s encoder=%s",
-                str(write_stats.output_path),
-                write_stats.encoder,
+                "[checkpoint] sharded_checkpoint_write_done path=%s shards=%s nodes=%s branches=%s bytes=%s",
+                str(output),
+                len(manifest.shards),
+                manifest.total_node_count,
+                _metric_value(manifest.total_branch_count),
+                _metric_value(checkpoint_bytes),
             )
         else:
+            if write_stats.jsonable_s is None:
+                LOGGER.info(
+                    "[checkpoint] payload_jsonable_skipped path=%s encoder=%s",
+                    str(write_stats.output_path),
+                    write_stats.encoder,
+                )
+            else:
+                LOGGER.info(
+                    "[checkpoint] payload_jsonable_done path=%s elapsed=%.3fs",
+                    str(write_stats.output_path),
+                    write_stats.jsonable_s,
+                )
             LOGGER.info(
-                "[checkpoint] payload_jsonable_done path=%s elapsed=%.3fs",
+                "[checkpoint] checkpoint_write_done path=%s format=%s encoder=%s json_encode_s=%.3fs compress_s=%s write_s=%.3fs bytes=%s uncompressed_bytes=%s compression_ratio=%s",
                 str(write_stats.output_path),
-                write_stats.jsonable_s,
+                write_stats.file_format,
+                write_stats.encoder,
+                write_stats.json_encode_s,
+                _metric_value(write_stats.compress_s),
+                write_stats.write_s,
+                write_stats.compressed_bytes,
+                write_stats.uncompressed_bytes,
+                _metric_value(write_stats.compression_ratio),
             )
-        LOGGER.info(
-            "[checkpoint] checkpoint_write_done path=%s format=%s encoder=%s json_encode_s=%.3fs compress_s=%s write_s=%.3fs bytes=%s uncompressed_bytes=%s compression_ratio=%s",
-            str(write_stats.output_path),
-            write_stats.file_format,
-            write_stats.encoder,
-            write_stats.json_encode_s,
-            _metric_value(write_stats.compress_s),
-            write_stats.write_s,
-            write_stats.compressed_bytes,
-            write_stats.uncompressed_bytes,
-            _metric_value(write_stats.compression_ratio),
-        )
         elapsed_s = time.perf_counter() - save_started_at
         rss_after_mb = _current_rss_mb()
         _log_checkpoint_metrics(
             "save",
             CheckpointIoMetrics(
-                path=str(write_stats.output_path),
-                bytes=write_stats.compressed_bytes,
-                file_format=write_stats.file_format,
-                encoder=write_stats.encoder,
+                path=str(output if write_stats is None else write_stats.output_path),
+                bytes=checkpoint_bytes,
+                file_format=(
+                    "sharded"
+                    if write_stats is None
+                    else str(write_stats.file_format)
+                ),
+                encoder=None if write_stats is None else write_stats.encoder,
                 payload_build_s=payload_elapsed_s,
-                jsonable_s=write_stats.jsonable_s,
-                json_encode_s=write_stats.json_encode_s,
-                compress_s=write_stats.compress_s,
-                write_s=write_stats.write_s,
+                jsonable_s=None if write_stats is None else write_stats.jsonable_s,
+                json_encode_s=None
+                if write_stats is None
+                else write_stats.json_encode_s,
+                compress_s=None if write_stats is None else write_stats.compress_s,
+                write_s=None if write_stats is None else write_stats.write_s,
                 total_s=elapsed_s,
-                uncompressed_bytes=write_stats.uncompressed_bytes,
-                compression_ratio=write_stats.compression_ratio,
+                uncompressed_bytes=None
+                if write_stats is None
+                else write_stats.uncompressed_bytes,
+                compression_ratio=None
+                if write_stats is None
+                else write_stats.compression_ratio,
                 rss_before_mb=rss_before_mb,
                 rss_after_mb=rss_after_mb,
                 node_count=node_count,
                 anchor_count=anchor_count,
                 delta_count=delta_count,
+                runtime_checkpoint_format=self._args.runtime_checkpoint_format,
             ),
         )
         LOGGER.info(
             "[checkpoint] save_done path=%s elapsed=%.3fs",
-            str(write_stats.output_path),
+            str(output if write_stats is None else write_stats.output_path),
             elapsed_s,
         )
         del payload

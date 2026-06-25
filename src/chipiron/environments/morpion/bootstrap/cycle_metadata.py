@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_name
-
 from .config import BOOTSTRAP_CONFIG_HASH_METADATA_KEY
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
@@ -143,9 +141,7 @@ def pipeline_metadata(
         "pipeline_mode": args.pipeline_mode,
         "evaluator_update_policy": args.evaluator_update_policy,
         "training_export_mode": args.training_export_mode,
-        "runtime_checkpoint_format": checkpoint_cli_name(
-            DEFAULT_CHECKPOINT_FILE_FORMAT
-        ),
+        "runtime_checkpoint_format": args.runtime_checkpoint_format,
     }
     if training_skipped_reason is not None:
         metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason

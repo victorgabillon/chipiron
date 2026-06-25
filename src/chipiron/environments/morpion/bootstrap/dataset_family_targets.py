@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -231,7 +232,7 @@ def _dataset_row_with_family_target_metadata(
     )
     return MorpionSupervisedRow(
         node_id=row.node_id,
-        state_ref_payload=dict(row.state_ref_payload),
+        state_ref_payload=copy.deepcopy(row.state_ref_payload),
         target_value=effective_target,
         is_terminal=row.is_terminal,
         is_exact=row.is_exact,

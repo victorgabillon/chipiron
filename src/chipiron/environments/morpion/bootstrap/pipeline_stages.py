@@ -20,7 +20,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
 
 from .bootstrap_errors import MissingSavedBootstrapArtifactError
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
-from .bootstrap_paths import MorpionBootstrapPaths
+from .bootstrap_paths import MorpionBootstrapPaths, runtime_checkpoint_artifact_exists
 from .config import (
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
@@ -232,6 +232,18 @@ def _raise_missing_tree_snapshot_file_error(
 def _raise_missing_rows_file_error(rows_path: Path | None) -> NoReturn:
     """Raise the canonical training-stage missing rows file error."""
     raise MissingPipelineRowsFileError.from_path(rows_path)
+
+
+def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
+    """Return best-effort byte size for file or sharded directory checkpoint."""
+    try:
+        if path.is_file():
+            return path.stat().st_size
+        if path.is_dir():
+            return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+    except OSError:
+        return None
+    return None
 
 
 def _raise_dataset_rows_count_mismatch_error(
@@ -1008,7 +1020,10 @@ def _run_one_pipeline_growth_cycle_impl(
     LOGGER.info(
         "[save] decision_done triggered=true reason=%s", save_reason or "unknown"
     )
-    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
+    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation_with_format(
+        generation,
+        args.runtime_checkpoint_format,
+    )
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
@@ -1080,7 +1095,7 @@ def _run_one_pipeline_growth_cycle_impl(
             current_rss_mb() if args.growth_memory_profile else None
         )
         save_checkpoint(runtime_checkpoint_path)
-        if not runtime_checkpoint_path.is_file():
+        if not runtime_checkpoint_artifact_exists(runtime_checkpoint_path):
             raise MissingSavedBootstrapArtifactError(
                 action="runner.save_checkpoint()",
                 artifact_path=runtime_checkpoint_path,
@@ -1088,7 +1103,9 @@ def _run_one_pipeline_growth_cycle_impl(
         checkpoint_save_elapsed_s = time.perf_counter() - checkpoint_save_started_at
         if args.growth_memory_profile:
             checkpoint_save_rss_after_mb = current_rss_mb()
-            checkpoint_bytes = runtime_checkpoint_path.stat().st_size
+            checkpoint_bytes = _runtime_checkpoint_artifact_bytes(
+                runtime_checkpoint_path
+            )
             LOGGER.info(
                 "[growth-profile] event=checkpoint_save_done generation=%s "
                 "rss_before_mb=%s rss_after_mb=%s rss_delta_mb=%s "
@@ -1105,7 +1122,7 @@ def _run_one_pipeline_growth_cycle_impl(
                 checkpoint_bytes,
                 format_metric(
                     None
-                    if current_tree_size <= 0
+                    if current_tree_size <= 0 or checkpoint_bytes is None
                     else checkpoint_bytes / current_tree_size
                 ),
                 checkpoint_save_elapsed_s,

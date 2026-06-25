@@ -26,7 +26,7 @@ from .record_status import (
 )
 
 if TYPE_CHECKING:
-    from .bootstrap_args import MorpionBootstrapArgs
+    from .bootstrap_args import MorpionBootstrapArgs, MorpionRuntimeCheckpointFormat
     from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
     from .pipeline_config import (
         MorpionEvaluatorUpdatePolicy,
@@ -63,6 +63,7 @@ class MorpionBootstrapRuntimeConfig:
     min_available_ram_mb: int | None = None
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
+    runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -89,6 +90,10 @@ class MorpionBootstrapRuntimeConfig:
         ):
             raise MalformedMorpionBootstrapConfigError.invalid_int(
                 "runtime.candidate_checkpoint_load_min_headroom_mb"
+            )
+        if self.runtime_checkpoint_format not in {"json-zst", "sharded"}:
+            raise MalformedMorpionBootstrapConfigError.invalid_required_str(
+                "runtime.runtime_checkpoint_format"
             )
 
 
@@ -353,6 +358,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             candidate_checkpoint_load_min_headroom_mb=(
                 args.candidate_checkpoint_load_min_headroom_mb
             ),
+            runtime_checkpoint_format=args.runtime_checkpoint_format,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -395,6 +401,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "candidate_checkpoint_load_min_headroom_mb": (
                 config.runtime.candidate_checkpoint_load_min_headroom_mb
             ),
+            "runtime_checkpoint_format": config.runtime.runtime_checkpoint_format,
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -510,6 +517,13 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             candidate_checkpoint_load_min_headroom_mb=_coerce_int(
                 runtime.get("candidate_checkpoint_load_min_headroom_mb", 512),
                 field_name="runtime.candidate_checkpoint_load_min_headroom_mb",
+            ),
+            runtime_checkpoint_format=cast(
+                "MorpionRuntimeCheckpointFormat",
+                _required_str(
+                    runtime.get("runtime_checkpoint_format", "json-zst"),
+                    field_name="runtime.runtime_checkpoint_format",
+                ),
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
