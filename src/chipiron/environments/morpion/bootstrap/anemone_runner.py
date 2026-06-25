@@ -2239,23 +2239,29 @@ def load_morpion_search_checkpoint_payload(
     )
     started_at = time.perf_counter()
     try:
-        raw_payload, read_stats = load_checkpoint_json_payload(resolved_path)
-        if restore_memory_logger is not None:
+        raw_payload: object | None = None
+
+        def log_read_phase(phase: str, metadata: Mapping[str, object]) -> None:
+            if restore_memory_logger is None:
+                return
+            phase_raw_payload = metadata.get("raw_payload")
+            log_metadata = {
+                key: value for key, value in metadata.items() if key != "raw_payload"
+            }
             restore_memory_logger.log(
-                "after_checkpoint_file_read_or_stream_open",
-                raw_payload=raw_payload,
-                raw_checkpoint_referenced=True,
+                phase,
+                raw_payload=(
+                    phase_raw_payload if phase == "after_raw_json_decode" else None
+                ),
+                raw_checkpoint_referenced=phase == "after_raw_json_decode",
                 typed_checkpoint_referenced=False,
-                file_format=read_stats.file_format,
+                **log_metadata,
             )
-            restore_memory_logger.log(
-                "after_raw_json_decode",
-                raw_payload=raw_payload,
-                raw_checkpoint_referenced=True,
-                typed_checkpoint_referenced=False,
-                file_format=read_stats.file_format,
-                json_load_s=read_stats.json_load_s,
-            )
+
+        raw_payload, read_stats = load_checkpoint_json_payload(
+            resolved_path,
+            read_phase_logger=log_read_phase if restore_memory_logger else None,
+        )
         LOGGER.info(
             "[checkpoint] json_load_done path=%s format=%s elapsed=%.3fs bytes=%s",
             str(resolved_path),
