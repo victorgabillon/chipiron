@@ -28,6 +28,12 @@ if "chipiron.environments.morpion.bootstrap" not in sys.modules:
     _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
     sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
+from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
+)
+from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
+
 from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
     log_growth_runtime_memory_profile,
 )
@@ -39,17 +45,18 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     deep_size,
     frozenset_ownership_histogram,
     gc_shallow_size_summary,
+    linoo_candidate_heap_histogram,
     linoo_deep_breakdown_histograms,
     linoo_node_state_slots_histogram,
     linoo_node_state_table_histogram,
     linoo_state_histograms,
     log_growth_recursive_memory_profile,
+    node_evaluation_runtime_detail_histograms,
     node_evaluation_runtime_histograms,
+    parent_link_storage_histogram,
     slot_names,
     tree_topology_histograms,
 )
-from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
-from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
 recursive_memory_profile_module = importlib.import_module(
     "chipiron.environments.morpion.bootstrap.recursive_memory_profile"
@@ -347,6 +354,16 @@ class FakeTreeNode:
         self.state_handle_ = state_handle
 
 
+class FakeSingleParentLink:
+    """Minimal stand-in for Anemone's compact single-parent storage."""
+
+    __slots__ = ("branch_keys", "parent_node")
+
+    def __init__(self, parent_node: object, branch_keys: set[object]) -> None:
+        self.parent_node = parent_node
+        self.branch_keys = branch_keys
+
+
 class FakeNodeEvaluation:
     """Small NodeMaxEvaluation-shaped object for recursive histograms."""
 
@@ -405,6 +422,11 @@ class FakeLinooSelector:
 
     def __init__(self, states: dict[int, FakeLinooNodeState]) -> None:
         self._node_state_by_id = states
+        self._candidates_by_depth = {
+            1: [(0.1, 1, 1), (0.2, 2, 1), (0.3, 3, 1)]
+        }
+        self._candidate_versions_by_node_id = {1: 1, 2: 2, 3: 1}
+        self._candidate_heap_present_by_node_id = {1: True, 2: True, 3: False}
         self.labels = {key: state.status for key, state in states.items()}
         self.active_status = "opened"
         self.extra_metadata = [len(states), "selector"]
@@ -895,7 +917,7 @@ def test_tree_topology_histograms_with_fake_nodes() -> None:
             FakeNodeEvaluation(),
         ),
         FakeAlgorithmNode(
-            FakeTreeNode(parent_nodes={parent: {"b", "c"}}),
+            FakeTreeNode(parent_nodes=FakeSingleParentLink(parent, {"b", "c"})),
             FakeNodeEvaluation(runtime_state=object()),
         ),
     ]
@@ -909,6 +931,33 @@ def test_tree_topology_histograms_with_fake_nodes() -> None:
     assert "NoneType" in histograms["branches_children_types"]
 
 
+def test_parent_link_storage_histogram_with_fake_nodes() -> None:
+    """Parent-link breakdown should separate zero, single, and multi-parent nodes."""
+    parent_a = object()
+    parent_b = object()
+    nodes = [
+        FakeAlgorithmNode(FakeTreeNode(parent_nodes={}), FakeNodeEvaluation()),
+        FakeAlgorithmNode(
+            FakeTreeNode(parent_nodes=FakeSingleParentLink(parent_a, {"a"})),
+            FakeNodeEvaluation(),
+        ),
+        FakeAlgorithmNode(
+            FakeTreeNode(parent_nodes={parent_a: {"b"}, parent_b: {"c"}}),
+            FakeNodeEvaluation(),
+        ),
+    ]
+
+    histogram = parent_link_storage_histogram(nodes, max_depth=None)
+
+    assert histogram["node_count"] == 3
+    assert histogram["zero_parent_node_count"] == 1
+    assert histogram["one_parent_node_count"] == 1
+    assert histogram["multi_parent_node_count"] == 1
+    assert histogram["parent_branch_ref_count"] == 3
+    assert histogram["single_parent_recursive_bytes"] > 0
+    assert histogram["multi_parent_recursive_bytes"] > 0
+
+
 def test_node_evaluation_runtime_histograms_with_fake_nodes() -> None:
     """Node-evaluation histograms should count materialized runtime slots."""
     nodes = [
@@ -920,6 +969,37 @@ def test_node_evaluation_runtime_histograms_with_fake_nodes() -> None:
 
     assert histograms["runtime_state_counts"]["decision_ordering__non_none"] == 1
     assert histograms["runtime_state_counts"]["direct_value_non_none"] == 2
+
+
+def test_node_evaluation_runtime_detail_histograms_with_fake_nodes() -> None:
+    """Runtime-state detail histograms should report fields and recursive sizes."""
+    runtime_state = SimpleNamespace(
+        branch_ordering_keys={"a": (1.0, 0, 7)},
+        empty_list=[],
+    )
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(),
+            FakeNodeEvaluation(runtime_state=runtime_state),
+        ),
+        FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
+    ]
+
+    histograms = node_evaluation_runtime_detail_histograms(nodes, max_depth=None)
+    decision_histogram = next(
+        histogram
+        for histogram in histograms
+        if histogram["runtime_state_label"] == "DecisionOrderingState"
+    )
+
+    assert decision_histogram["node_count"] == 2
+    assert decision_histogram["state_count"] == 1
+    assert decision_histogram["recursive_reachable_bytes"] > 0
+    assert decision_histogram["non_empty_state_count"] == 1
+    assert any(
+        key.startswith("branch_ordering_keys:")
+        for key in decision_histogram["field_type_counts"]
+    )
 
 
 def test_linoo_state_histograms_with_fake_selector() -> None:
@@ -942,6 +1022,25 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
     assert histograms["container_shallow_bytes"] >= (
         histograms["node_state_table_shallow_bytes"]
     )
+
+
+def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
+    """Linoo candidate diagnostics should expose heap shape and stale entries."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(object(), status="opened"),
+            2: FakeLinooNodeState(object(), status="frontier"),
+        }
+    )
+
+    histogram = linoo_candidate_heap_histogram(selector, max_depth=None)
+
+    assert histogram["present"] is True
+    assert histogram["candidate_depth_count"] == 1
+    assert histogram["candidate_entry_count"] == 3
+    assert histogram["candidate_stale_entry_count"] == 2
+    assert histogram["candidate_entry_shapes"] == {"tuple[3]": 3}
+    assert histogram["candidate_heaps_recursive_reachable_bytes"] > 0
 
 
 def test_linoo_state_histograms_finds_nested_selector() -> None:
@@ -1618,11 +1717,14 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "mode=standalone component=all_profile_nodes" in text
     assert "mode=exclusive order=" in text
     assert "histogram=tree_topology" in text
+    assert "histogram=tree_parent_links" in text
     assert "histogram=node_evaluation_runtime" in text
+    assert "histogram=node_evaluation_runtime_detail" in text
     assert "histogram=linoo" in text
     assert "histogram=linoo_deep_breakdown" in text
     assert "histogram=linoo_node_state_table" in text
     assert "histogram=linoo_node_state_slots" in text
+    assert "histogram=linoo_candidate_heaps" in text
     assert "gc_shallow_size_summary_start" in text
     assert "gc_shallow_size_summary_done" in text
     assert "histogram=gc_shallow_sizes" in text

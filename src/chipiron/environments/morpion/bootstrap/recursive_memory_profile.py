@@ -7,10 +7,9 @@ import logging
 import sys
 import time
 from collections import Counter
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, Sized
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import chain
 from types import (
     BuiltinFunctionType,
     BuiltinMethodType,
@@ -136,6 +135,7 @@ _KNOWN_CHECKPOINT_STORE_ATTR_NAMES = (
 _LINOO_NODE_STATE_TABLE_ATTR_NAME = "_node_state_by_id"
 _LINOO_SLOT_VALUE_KIND_ORDER = (
     "AlgorithmNode",
+    "TreeNode",
     "int",
     "str",
     "enum",
@@ -145,6 +145,12 @@ _LINOO_SLOT_VALUE_KIND_ORDER = (
     "set",
     "None",
 )
+_RUNTIME_STATE_SLOT_LABELS: dict[str, str] = {
+    "decision_ordering_": "DecisionOrderingState",
+    "pv_state_": "PrincipalVariationState",
+    "branch_frontier_": "BranchFrontierState",
+    "backup_runtime_": "Top2ExactnessPvRuntime",
+}
 _KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
     dict.fromkeys(
         (
@@ -306,6 +312,29 @@ def _ordered_counter_items(
     return sorted(counts.items(), key=lambda item: (item[0],))
 
 
+def _len_or_none(value: object) -> int | None:
+    try:
+        return len(value) if isinstance(value, Sized) else None
+    except (TypeError, RuntimeError):
+        return None
+
+
+def _small_len_bucket(length: int) -> str:
+    if length == 0:
+        return "0"
+    if length == 1:
+        return "1"
+    if length <= 4:
+        return "2-4"
+    if length <= 9:
+        return "5-9"
+    if length <= 24:
+        return "10-24"
+    if length <= 99:
+        return "25-99"
+    return "100+"
+
+
 def _should_skip_deep(value: object) -> bool:
     return isinstance(value, _SKIP_DEEP_TYPES)
 
@@ -432,8 +461,11 @@ def _resolve_linoo_selector(
 def _linoo_slot_value_kind(value: object) -> str:
     if value is None:
         return "None"
-    if _qualified_type_name(value).endswith("AlgorithmNode"):
+    type_name = _qualified_type_name(value)
+    if type_name.endswith("AlgorithmNode"):
         return "AlgorithmNode"
+    if type_name.endswith("TreeNode"):
+        return "TreeNode"
     if isinstance(value, Enum):
         return "enum"
     if isinstance(value, str):
@@ -448,7 +480,43 @@ def _linoo_slot_value_kind(value: object) -> str:
         return "dict"
     if isinstance(value, set | frozenset):
         return "set"
-    return _qualified_type_name(value)
+    return type_name
+
+
+def _object_reaches_type_suffix(
+    root: object,
+    suffixes: tuple[str, ...],
+    *,
+    max_objects: int | None = 50_000,
+) -> bool:
+    """Return whether ``root`` reaches an object whose type name has a suffix."""
+    seen: set[int] = set()
+    stack: list[object] = [root]
+    visited = 0
+    while stack:
+        value = stack.pop()
+        value_id = id(value)
+        if value_id in seen:
+            continue
+        seen.add(value_id)
+        visited += 1
+        if max_objects is not None and visited > max_objects:
+            return False
+        type_name = _qualified_type_name(value)
+        if any(type_name.endswith(suffix) for suffix in suffixes):
+            return True
+        if isinstance(value, _ATOMIC_TYPES) or _should_skip_deep(value):
+            continue
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                stack.append(key)
+                stack.append(item)
+            continue
+        if isinstance(value, _CONTAINER_TYPES):
+            stack.extend(value)
+            continue
+        stack.extend(_iter_object_attribute_values(value))
+    return False
 
 
 def _observe_frozenset(
@@ -1434,6 +1502,17 @@ def _exclusive_shell_size(roots: Iterable[object | None], *, seen: set[int]) -> 
 
 
 def _iter_parent_branch_refs(parent_nodes: object | None) -> Iterator[object]:
+    single_parent_branch_keys = _raw_getattr(parent_nodes, "branch_keys")
+    if single_parent_branch_keys is not None:
+        if isinstance(single_parent_branch_keys, Iterable) and not isinstance(
+            single_parent_branch_keys,
+            str | bytes | bytearray,
+        ):
+            yield from single_parent_branch_keys
+        else:
+            yield single_parent_branch_keys
+        return
+
     if not isinstance(parent_nodes, Mapping):
         return
     for branch_set in parent_nodes.values():
@@ -1508,18 +1587,9 @@ def tree_topology_histograms(nodes: Iterable[object]) -> dict[str, object]:
         child_count = _child_link_count_from_storage(branches_children)
         child_link_count_hist[str(child_count)] += 1
 
-        parent_count = len(parent_nodes) if isinstance(parent_nodes, Mapping) else 0
+        parent_count = _parent_storage_parent_count(parent_nodes)
         parent_count_hist[str(parent_count)] += 1
-        total_parent_refs = 0
-        if isinstance(parent_nodes, Mapping):
-            for branch_set in parent_nodes.values():
-                if isinstance(branch_set, Iterable) and not isinstance(
-                    branch_set,
-                    str | bytes | bytearray,
-                ):
-                    total_parent_refs += sum(1 for _item in branch_set)
-                else:
-                    total_parent_refs += 1
+        total_parent_refs = _parent_storage_branch_ref_count(parent_nodes)
         total_parent_branch_refs_hist[str(total_parent_refs)] += 1
 
     return {
@@ -1530,6 +1600,104 @@ def tree_topology_histograms(nodes: Iterable[object]) -> dict[str, object]:
         "parent_nodes_types": dict(parent_nodes_type_hist),
         "non_opened_branches_types": dict(non_opened_branches_type_hist),
     }
+
+
+def parent_link_storage_histogram(
+    nodes: Iterable[object],
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> dict[str, object]:
+    """Return focused diagnostics for raw parent-link storage."""
+    node_count = 0
+    zero_parent_nodes = 0
+    one_parent_nodes = 0
+    multi_parent_nodes = 0
+    single_parent_storages: list[object] = []
+    multi_parent_storages: list[object] = []
+    parent_storage_type_counts = Counter[str]()
+    parent_branch_ref_count = 0
+    parent_storage_shallow_bytes = 0
+
+    for node in nodes:
+        node_count += 1
+        tree_node = _node_tree_node(node) or node
+        parent_nodes = _raw_getattr(tree_node, "parent_nodes_")
+        parent_storage_type_counts[_qualified_type_name(parent_nodes)] += 1
+        parent_storage_shallow_bytes += _size_or_zero(parent_nodes)
+
+        parent_count = _parent_storage_parent_count(parent_nodes)
+        if parent_count == 0:
+            zero_parent_nodes += 1
+        elif parent_count == 1:
+            one_parent_nodes += 1
+            single_parent_storages.append(parent_nodes)
+        else:
+            multi_parent_nodes += 1
+            multi_parent_storages.append(parent_nodes)
+
+        parent_branch_ref_count += _parent_storage_branch_ref_count(parent_nodes)
+
+    single_stats = DeepSizeStats(max_objects=max_objects)
+    single_parent_recursive_bytes = _exclusive_deep_size(
+        single_parent_storages,
+        seen=set(),
+        max_depth=max_depth,
+        stats=single_stats,
+    )
+    multi_stats = DeepSizeStats(max_objects=max_objects)
+    multi_parent_recursive_bytes = _exclusive_deep_size(
+        multi_parent_storages,
+        seen=set(),
+        max_depth=max_depth,
+        stats=multi_stats,
+    )
+    total_parent_recursive_bytes = (
+        single_parent_recursive_bytes + multi_parent_recursive_bytes
+    )
+
+    return {
+        "node_count": node_count,
+        "zero_parent_node_count": zero_parent_nodes,
+        "one_parent_node_count": one_parent_nodes,
+        "multi_parent_node_count": multi_parent_nodes,
+        "parent_branch_ref_count": parent_branch_ref_count,
+        "parent_storage_types": dict(_ordered_counter_items(parent_storage_type_counts)),
+        "parent_storage_shallow_bytes": parent_storage_shallow_bytes,
+        "single_parent_recursive_bytes": single_parent_recursive_bytes,
+        "single_parent_recursive_capped": single_stats.capped,
+        "multi_parent_recursive_bytes": multi_parent_recursive_bytes,
+        "multi_parent_recursive_capped": multi_stats.capped,
+        "average_parent_link_recursive_bytes_per_node": format_metric(
+            total_parent_recursive_bytes / node_count if node_count else None
+        ),
+    }
+
+
+def _parent_storage_parent_count(parent_nodes: object | None) -> int:
+    if parent_nodes is None:
+        return 0
+    if _raw_getattr(parent_nodes, "parent_node") is not None:
+        return 1
+    if isinstance(parent_nodes, Mapping):
+        return len(parent_nodes)
+    return 0
+
+
+def _branch_ref_count(branch_refs: object | None) -> int:
+    if branch_refs is None:
+        return 0
+    branch_ref_len = _len_or_none(branch_refs)
+    return 1 if branch_ref_len is None else branch_ref_len
+
+
+def _parent_storage_branch_ref_count(parent_nodes: object | None) -> int:
+    branch_keys = _raw_getattr(parent_nodes, "branch_keys")
+    if branch_keys is not None:
+        return _branch_ref_count(branch_keys)
+    if not isinstance(parent_nodes, Mapping):
+        return 0
+    return sum(_branch_ref_count(branch_set) for branch_set in parent_nodes.values())
 
 
 def _child_link_count_from_storage(branches_children: object | None) -> int:
@@ -1565,6 +1733,131 @@ def node_evaluation_runtime_histograms(nodes: Iterable[object]) -> dict[str, obj
         "node_evaluation_types": dict(eval_type_counts),
         "runtime_state_counts": dict(counts),
     }
+
+
+def node_evaluation_runtime_detail_histograms(
+    nodes: Iterable[object],
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> tuple[dict[str, object], ...]:
+    """Return runtime-state size and field diagnostics grouped by state class."""
+    node_count = 0
+    states_by_label: dict[str, list[object]] = {}
+
+    for node in nodes:
+        node_count += 1
+        node_eval = _node_tree_evaluation(node)
+        if node_eval is None:
+            continue
+        for slot_name in _NODE_EVALUATION_RUNTIME_SLOTS:
+            runtime_state = _raw_getattr(node_eval, slot_name)
+            if runtime_state is None:
+                continue
+            label = _RUNTIME_STATE_SLOT_LABELS.get(
+                slot_name,
+                type(runtime_state).__qualname__,
+            )
+            states_by_label.setdefault(label, []).append(runtime_state)
+
+    if not states_by_label:
+        return ({"present": False, "node_count": node_count},)
+
+    histograms: list[dict[str, object]] = []
+    for label, states in sorted(states_by_label.items()):
+        state_type_counts = Counter[str]()
+        empty_count = 0
+        non_empty_count = 0
+        field_type_counts = Counter[str]()
+        field_len_buckets = Counter[str]()
+        field_shallow_bytes = Counter[str]()
+        top_child_type_counts = Counter[str]()
+
+        for state in states:
+            state_type_counts[_qualified_type_name(state)] += 1
+            state_is_empty = True
+            for field_name, field_value in _iter_direct_field_entries(state):
+                field_type_counts[
+                    f"{field_name}:{_qualified_type_name(field_value)}"
+                ] += 1
+                field_shallow_bytes[field_name] += _size_or_zero(field_value)
+                field_len = _len_or_none(field_value)
+                if field_len is not None:
+                    field_len_buckets[f"{field_name}:{_small_len_bucket(field_len)}"] += 1
+                    if field_len > 0:
+                        state_is_empty = False
+                elif field_value not in (None, False, 0):
+                    state_is_empty = False
+
+                if isinstance(field_value, Mapping):
+                    top_child_type_counts.update(
+                        _qualified_type_name(item) for item in field_value.values()
+                    )
+                elif isinstance(field_value, _CONTAINER_TYPES):
+                    top_child_type_counts.update(
+                        _qualified_type_name(item) for item in field_value
+                    )
+                elif field_value is not None:
+                    top_child_type_counts[_qualified_type_name(field_value)] += 1
+
+            if state_is_empty:
+                empty_count += 1
+            else:
+                non_empty_count += 1
+
+        states_stats = DeepSizeStats(max_objects=max_objects)
+        recursive_bytes = _exclusive_deep_size(
+            states,
+            seen=set(),
+            max_depth=max_depth,
+            stats=states_stats,
+        )
+        field_recursive_bytes: dict[str, int] = {}
+        for field_name in sorted(
+            {name for state in states for name, _value in _iter_direct_field_entries(state)}
+        ):
+            field_values = [
+                field_value
+                for state in states
+                for name, field_value in _iter_direct_field_entries(state)
+                if name == field_name
+            ]
+            field_stats = DeepSizeStats(max_objects=max_objects)
+            field_recursive_bytes[field_name] = _exclusive_deep_size(
+                field_values,
+                seen=set(),
+                max_depth=max_depth,
+                stats=field_stats,
+            )
+
+        histograms.append(
+            {
+                "present": True,
+                "runtime_state_label": label,
+                "node_count": node_count,
+                "state_count": len(states),
+                "state_types": dict(_ordered_counter_items(state_type_counts)),
+                "recursive_reachable_bytes": recursive_bytes,
+                "recursive_reachable_capped": states_stats.capped,
+                "average_recursive_bytes_per_state": format_metric(
+                    recursive_bytes / len(states)
+                ),
+                "average_recursive_bytes_per_node": format_metric(
+                    recursive_bytes / node_count if node_count else None
+                ),
+                "empty_state_count": empty_count,
+                "non_empty_state_count": non_empty_count,
+                "field_type_counts": dict(_ordered_counter_items(field_type_counts)),
+                "field_len_buckets": dict(_ordered_counter_items(field_len_buckets)),
+                "field_shallow_bytes": dict(_ordered_counter_items(field_shallow_bytes)),
+                "field_recursive_bytes": field_recursive_bytes,
+                "top_child_object_types": dict(
+                    top_child_type_counts.most_common(10)
+                ),
+            }
+        )
+
+    return tuple(histograms)
 
 
 def gc_shallow_size_summary(*, top_n: int) -> dict[str, object]:
@@ -1817,6 +2110,122 @@ def linoo_deep_breakdown_histograms(
             },
         )
     return tuple(breakdowns)
+
+
+def _iter_linoo_heap_entries(candidates_by_depth: object) -> Iterator[object]:
+    if not isinstance(candidates_by_depth, Mapping):
+        return
+    for heap in candidates_by_depth.values():
+        if isinstance(heap, Iterable) and not isinstance(heap, str | bytes | bytearray):
+            yield from heap
+
+
+def _linoo_candidate_stale_count(
+    linoo_selector: object,
+    candidates_by_depth: object,
+) -> int | None:
+    versions = _raw_getattr(linoo_selector, "_candidate_versions_by_node_id")
+    present = _raw_getattr(linoo_selector, "_candidate_heap_present_by_node_id")
+    if not isinstance(versions, Mapping) or not isinstance(present, Mapping):
+        return None
+
+    stale_count = 0
+    for entry in _iter_linoo_heap_entries(candidates_by_depth):
+        if not isinstance(entry, tuple) or len(entry) < 3:
+            continue
+        raw_node_id = entry[1]
+        raw_version = entry[2]
+        if not isinstance(raw_node_id, int) or not isinstance(raw_version, int):
+            continue
+        if not bool(present.get(raw_node_id, False)):
+            stale_count += 1
+            continue
+        current_version = versions.get(raw_node_id)
+        if isinstance(current_version, int) and current_version != raw_version:
+            stale_count += 1
+    return stale_count
+
+
+def linoo_candidate_heap_histogram(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> dict[str, object]:
+    """Return focused diagnostics for Linoo candidate heap storage."""
+    linoo_selector, _node_state_by_id = _resolve_linoo_selector(selector)
+    if linoo_selector is None:
+        return {"present": False}
+
+    candidates_by_depth = _raw_getattr(linoo_selector, "_candidates_by_depth")
+    if not isinstance(candidates_by_depth, Mapping):
+        return {
+            "present": True,
+            "selector_type": _qualified_type_name(linoo_selector),
+            "candidate_heap_table_type": _qualified_type_name(candidates_by_depth),
+        }
+
+    heap_type_counts = Counter[str]()
+    entry_type_counts = Counter[str]()
+    entry_shape_counts = Counter[str]()
+    entry_value_type_counts = Counter[str]()
+    heap_count = 0
+    candidate_entry_count = 0
+    heap_shallow_bytes = _size_or_zero(candidates_by_depth)
+
+    for heap in candidates_by_depth.values():
+        heap_count += 1
+        heap_type_counts[_qualified_type_name(heap)] += 1
+        heap_shallow_bytes += _size_or_zero(heap)
+        if not isinstance(heap, Iterable) or isinstance(heap, str | bytes | bytearray):
+            continue
+        for entry in heap:
+            candidate_entry_count += 1
+            entry_type_counts[_qualified_type_name(entry)] += 1
+            if isinstance(entry, tuple):
+                entry_shape_counts[f"tuple[{len(entry)}]"] += 1
+                for item in entry:
+                    entry_value_type_counts[_qualified_type_name(item)] += 1
+            else:
+                entry_shape_counts[_qualified_type_name(entry)] += 1
+
+    recursive_bytes, stats = _measure_standalone_reachable(
+        candidates_by_depth,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    stale_count = _linoo_candidate_stale_count(linoo_selector, candidates_by_depth)
+
+    return {
+        "present": True,
+        "selector_type": _qualified_type_name(linoo_selector),
+        "candidate_depth_count": len(candidates_by_depth),
+        "candidate_heap_count": heap_count,
+        "candidate_entry_count": candidate_entry_count,
+        "candidate_stale_entry_count": stale_count,
+        "candidate_stale_fraction": (
+            None
+            if stale_count is None or candidate_entry_count == 0
+            else format_metric(stale_count / candidate_entry_count)
+        ),
+        "candidate_heap_table_shallow_bytes": _size_or_zero(candidates_by_depth),
+        "candidate_heaps_shallow_bytes": heap_shallow_bytes,
+        "candidate_heaps_recursive_reachable_bytes": recursive_bytes,
+        "candidate_heaps_recursive_reachable_visited_objects": stats.visited_objects,
+        "candidate_heaps_recursive_reachable_capped": stats.capped,
+        "candidate_heaps_recursive_reachable_max_depth_reached_count": (
+            stats.max_depth_reached_count
+        ),
+        "candidate_heaps_recursive_reachable_recursion_error_count": (
+            stats.recursion_error_count
+        ),
+        "candidate_heap_types": dict(_ordered_counter_items(heap_type_counts)),
+        "candidate_entry_types": dict(_ordered_counter_items(entry_type_counts)),
+        "candidate_entry_shapes": dict(_ordered_counter_items(entry_shape_counts)),
+        "candidate_entry_value_types": dict(
+            _ordered_counter_items(entry_value_type_counts)
+        ),
+    }
 
 
 def linoo_node_state_table_histogram(
@@ -2525,7 +2934,7 @@ def _payload_shape_dict_key_counts(
     for value in values:
         if not isinstance(value, Mapping):
             continue
-        for key in value.keys():
+        for key in value:
             counts[key if isinstance(key, str) else repr(key)] += 1
     return tuple(counts.most_common(top_n))
 
@@ -3102,9 +3511,24 @@ def log_growth_recursive_memory_profile(
     _log_histogram(event, "tree_topology", tree_topology_histograms(context.nodes))
     _log_histogram(
         event,
+        "tree_parent_links",
+        parent_link_storage_histogram(
+            context.nodes,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
+    _log_histogram(
+        event,
         "node_evaluation_runtime",
         node_evaluation_runtime_histograms(context.nodes),
     )
+    for payload in node_evaluation_runtime_detail_histograms(
+        context.nodes,
+        max_depth=effective_max_depth,
+        max_objects=effective_max_objects,
+    ):
+        _log_histogram(event, "node_evaluation_runtime_detail", payload)
     _log_histogram(
         event,
         "linoo",
@@ -3129,6 +3553,15 @@ def log_growth_recursive_memory_profile(
         event,
         "linoo_node_state_slots",
         linoo_node_state_slots_histogram(
+            context.selector,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
+    _log_histogram(
+        event,
+        "linoo_candidate_heaps",
+        linoo_candidate_heap_histogram(
             context.selector,
             max_depth=effective_max_depth,
             max_objects=effective_max_objects,
@@ -3212,9 +3645,12 @@ __all__ = [
     "checkpoint_state_histograms",
     "deep_size",
     "frozenset_ownership_histogram",
+    "linoo_candidate_heap_histogram",
     "linoo_state_histograms",
     "log_growth_recursive_memory_profile",
+    "node_evaluation_runtime_detail_histograms",
     "node_evaluation_runtime_histograms",
+    "parent_link_storage_histogram",
     "slot_names",
     "tree_topology_histograms",
 ]
