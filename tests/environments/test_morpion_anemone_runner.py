@@ -600,6 +600,7 @@ def test_runner_state_codec_exposes_incremental_checkpoint_protocol() -> None:
     assert hasattr(state_codec, "load_anchor_ref")
     assert hasattr(state_codec, "load_child_from_delta")
     assert hasattr(state_codec, "dump_state_summary")
+    assert hasattr(state_codec, "dump_state_parent_branch_for_checkpoint")
     assert not hasattr(state_codec, "begin_restore_session")
     assert not hasattr(state_codec, "finish_restore_session")
 

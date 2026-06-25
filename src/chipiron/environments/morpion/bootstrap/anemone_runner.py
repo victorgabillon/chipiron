@@ -897,11 +897,16 @@ class _ChipironMorpionStateCheckpointCodec:
         self,
         branch_from_parent: object | None,
     ) -> object | None:
-        """Bridge optional compact state-parent branch payload serialization."""
+        """Bridge optional compact state-parent branch payload serialization.
+
+        This wrapper must preserve the hook contract and forward the actual
+        branch argument. Morpion's Atomheart codec may still choose to ignore it
+        and return ``None`` because its compact delta payload already stores the
+        canonical move needed for reconstruction.
+        """
         inner_hook = getattr(self.inner, "dump_state_parent_branch_for_checkpoint", None)
         if callable(inner_hook):
-            return inner_hook(None)
-        del branch_from_parent
+            return inner_hook(branch_from_parent)
         return None
 
     def checkpoint_profile_snapshot(self) -> dict[str, object]:
