@@ -1724,6 +1724,138 @@ def _child_link_count_from_storage(branches_children: object | None) -> int:
     return 1
 
 
+def child_link_storage_detail_histogram(
+    nodes: Iterable[object],
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+    branch_key_sample_cap: int = 5_000,
+) -> dict[str, object]:
+    """Return focused diagnostics for raw child-link storage."""
+    node_count = 0
+    nodes_with_no_children = 0
+    nodes_with_children = 0
+    total_child_edges = 0
+    child_container_type_counts = Counter[str]()
+    branch_key_type_counts = Counter[str]()
+    child_node_ref_count = 0
+    child_link_containers: list[object] = []
+    sampled_branch_keys: list[object] = []
+    sampled_branch_key_ids: set[int] = set()
+    child_branch_key_ids: set[int] = set()
+    parent_branch_key_ids: set[int] = set()
+
+    for node in nodes:
+        node_count += 1
+        tree_node = _node_tree_node(node) or node
+        branches_children = _raw_getattr(tree_node, "branches_children_")
+        parent_nodes = _raw_getattr(tree_node, "parent_nodes_")
+        child_container_type_counts[_qualified_type_name(branches_children)] += 1
+        if branches_children is not None:
+            child_link_containers.append(branches_children)
+
+        child_count = _child_link_count_from_storage(branches_children)
+        total_child_edges += child_count
+        if child_count == 0:
+            nodes_with_no_children += 1
+        else:
+            nodes_with_children += 1
+
+        for branch_key in _iter_child_branch_refs(branches_children):
+            child_branch_key_ids.add(id(branch_key))
+            branch_key_type_counts[_qualified_type_name(branch_key)] += 1
+            if (
+                len(sampled_branch_keys) < branch_key_sample_cap
+                and id(branch_key) not in sampled_branch_key_ids
+            ):
+                sampled_branch_key_ids.add(id(branch_key))
+                sampled_branch_keys.append(branch_key)
+
+        if isinstance(branches_children, Mapping):
+            child_node_ref_count += len(branches_children)
+        else:
+            child_ref = _raw_getattr(branches_children, "child_node")
+            if child_ref is None:
+                child_ref = _raw_getattr(branches_children, "child")
+            if child_ref is not None:
+                child_node_ref_count += 1
+
+        for branch_key in _iter_parent_branch_refs(parent_nodes):
+            parent_branch_key_ids.add(id(branch_key))
+
+    container_stats = DeepSizeStats(max_objects=max_objects)
+    child_link_container_recursive_bytes = _exclusive_deep_size(
+        child_link_containers,
+        seen=set(),
+        max_depth=max_depth,
+        stats=container_stats,
+    )
+    branch_key_stats = DeepSizeStats(max_objects=max_objects)
+    branch_key_sample_recursive_bytes = _exclusive_deep_size(
+        sampled_branch_keys,
+        seen=set(),
+        max_depth=max_depth,
+        stats=branch_key_stats,
+    )
+    branch_key_sample_shallow_bytes = _exclusive_shell_size(
+        sampled_branch_keys,
+        seen=set(),
+    )
+    duplicate_branch_key_ref_count = len(child_branch_key_ids & parent_branch_key_ids)
+
+    return {
+        "node_count_scanned": node_count,
+        "nodes_with_no_children": nodes_with_no_children,
+        "nodes_with_children": nodes_with_children,
+        "total_child_edges": total_child_edges,
+        "average_children_per_non_empty_node": (
+            None
+            if nodes_with_children == 0
+            else format_metric(total_child_edges / nodes_with_children)
+        ),
+        "child_container_type_counts": dict(
+            _ordered_counter_items(child_container_type_counts)
+        ),
+        "child_link_container_recursive_bytes": child_link_container_recursive_bytes,
+        "child_link_container_recursive_visited_objects": (
+            container_stats.visited_objects
+        ),
+        "child_link_container_recursive_capped": container_stats.capped,
+        "child_link_container_recursive_max_depth_reached_count": (
+            container_stats.max_depth_reached_count
+        ),
+        "child_link_container_recursive_recursion_error_count": (
+            container_stats.recursion_error_count
+        ),
+        "branch_key_sample_count": len(sampled_branch_keys),
+        "branch_key_sample_cap": branch_key_sample_cap,
+        "branch_key_sample_shallow_bytes": branch_key_sample_shallow_bytes,
+        "branch_key_sample_recursive_bytes": branch_key_sample_recursive_bytes,
+        "branch_key_sample_recursive_visited_objects": branch_key_stats.visited_objects,
+        "branch_key_sample_recursive_capped": branch_key_stats.capped,
+        "child_node_reference_count": child_node_ref_count,
+        "top_branch_key_python_types": dict(
+            _ordered_counter_items(branch_key_type_counts)
+        ),
+        "stores_tuple_branch_keys": any(
+            type_name == "tuple" for type_name in branch_key_type_counts
+        ),
+        "stores_list_branch_keys": any(
+            type_name == "list" for type_name in branch_key_type_counts
+        ),
+        "stores_int_branch_keys": any(
+            type_name == "int" for type_name in branch_key_type_counts
+        ),
+        "stores_dict_branch_keys": any(
+            type_name == "dict" for type_name in branch_key_type_counts
+        ),
+        "duplicate_branch_key_refs_with_parent_links": duplicate_branch_key_ref_count,
+        "duplicate_storage_with_parent_links_detectable": (
+            duplicate_branch_key_ref_count > 0
+        ),
+    }
+
+
 def node_evaluation_runtime_histograms(nodes: Iterable[object]) -> dict[str, object]:
     """Return materialized NodeMaxEvaluation runtime-state counters."""
     counts = Counter[str]()
@@ -2238,6 +2370,108 @@ def linoo_candidate_heap_histogram(
             _ordered_counter_items(entry_value_type_counts)
         ),
         **_tree_reachability_flags(candidates_by_depth),
+    }
+
+
+def linoo_selector_detail_histogram(
+    selector: object | None,
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> dict[str, object]:
+    """Return compact C3a diagnostics for the largest Linoo live structures."""
+    linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
+    if linoo_selector is None:
+        return {"present": False}
+
+    selector_recursive_bytes, selector_stats = _measure_standalone_reachable(
+        linoo_selector,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    node_state_table = (
+        node_state_by_id if node_state_by_id is not None else {}
+    )
+    table_recursive_bytes, table_stats = _measure_standalone_reachable(
+        node_state_table,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    node_state_object_shallow_total = 0
+    status_breakdown = Counter[str]()
+    for state in node_state_table.values():
+        node_state_object_shallow_total += _size_or_zero(state)
+        status = _raw_getattr(state, "status")
+        status_breakdown[str(status)] += 1
+
+    candidates_by_depth = _raw_getattr(linoo_selector, "_candidates_by_depth")
+    candidate_heap = linoo_candidate_heap_histogram(
+        linoo_selector,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    depth_stats_by_depth = _raw_getattr(linoo_selector, "_depth_stats_by_depth")
+    depth_stats_recursive_bytes, depth_stats_recursive = _measure_standalone_reachable(
+        depth_stats_by_depth,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    frontier_ids_by_depth = _raw_getattr(linoo_selector, "_frontier_node_ids_by_depth")
+    frontier_recursive_bytes, frontier_stats = _measure_standalone_reachable(
+        frontier_ids_by_depth,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+
+    return {
+        "present": True,
+        "selector_type": _qualified_type_name(linoo_selector),
+        "total_selector_recursive_bytes": selector_recursive_bytes,
+        "total_selector_recursive_visited_objects": selector_stats.visited_objects,
+        "total_selector_recursive_capped": selector_stats.capped,
+        "node_state_table_attr_name": _LINOO_NODE_STATE_TABLE_ATTR_NAME,
+        "node_state_table_type": _qualified_type_name(node_state_table),
+        "node_state_table_shallow_bytes": _size_or_zero(node_state_table),
+        "node_state_table_recursive_bytes": table_recursive_bytes,
+        "node_state_table_recursive_visited_objects": table_stats.visited_objects,
+        "node_state_table_recursive_capped": table_stats.capped,
+        "node_state_count": len(node_state_table),
+        "node_state_object_shallow_total_bytes": node_state_object_shallow_total,
+        "status_representation_breakdown": dict(
+            _ordered_counter_items(status_breakdown)
+        ),
+        "candidates_by_depth_type": _qualified_type_name(candidates_by_depth),
+        "candidate_heap_count": candidate_heap.get("candidate_heap_count"),
+        "total_candidate_entries": candidate_heap.get("candidate_entry_count"),
+        "stale_candidate_entries": candidate_heap.get("candidate_stale_entry_count"),
+        "candidate_tuple_shape_type_breakdown": candidate_heap.get(
+            "candidate_entry_shapes"
+        ),
+        "candidate_entry_types": candidate_heap.get("candidate_entry_types"),
+        "candidate_entry_value_types": candidate_heap.get(
+            "candidate_entry_value_types"
+        ),
+        "candidates_by_depth_recursive_bytes": candidate_heap.get(
+            "candidate_heaps_recursive_reachable_bytes"
+        ),
+        "depth_stats_type": _qualified_type_name(depth_stats_by_depth),
+        "depth_stats_count": (
+            len(depth_stats_by_depth)
+            if isinstance(depth_stats_by_depth, Sized)
+            else None
+        ),
+        "depth_stats_shallow_bytes": _size_or_zero(depth_stats_by_depth),
+        "depth_stats_recursive_bytes": depth_stats_recursive_bytes,
+        "depth_stats_recursive_visited_objects": depth_stats_recursive.visited_objects,
+        "depth_stats_recursive_capped": depth_stats_recursive.capped,
+        "frontier_ids_by_depth_type": _qualified_type_name(frontier_ids_by_depth),
+        "frontier_ids_by_depth_shallow_bytes": _size_or_zero(frontier_ids_by_depth),
+        "frontier_ids_by_depth_recursive_bytes": frontier_recursive_bytes,
+        "frontier_ids_by_depth_recursive_visited_objects": (
+            frontier_stats.visited_objects
+        ),
+        "frontier_ids_by_depth_recursive_capped": frontier_stats.capped,
+        **_tree_reachability_flags(linoo_selector),
     }
 
 
@@ -3078,6 +3312,133 @@ def checkpoint_payload_shape_histograms(
     return ({"present": False},)
 
 
+def checkpoint_state_roots_detail_histogram(
+    checkpoint_payload_stores: Iterable[CheckpointPayloadStore] = (),
+    *,
+    max_objects: int | None = None,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+) -> dict[str, object]:
+    """Return compact payload-store diagnostics for checkpoint state roots."""
+    stores = tuple(checkpoint_payload_stores)
+    if not stores:
+        return {"present": False}
+
+    store_type_counts = Counter[str]()
+    payload_type_counts = Counter[str]()
+    payload_store_roots: list[object] = []
+    anchor_payloads: list[object] = []
+    delta_payloads: list[object] = []
+    anchor_refs: list[object] = []
+    delta_refs: list[object] = []
+    state_summaries: list[object] = []
+    state_parent_node_ids: list[object] = []
+    payload_count = 0
+
+    for payload_store in stores:
+        store = payload_store.payloads
+        payload_store_roots.append(store)
+        store_type_counts[_qualified_type_name(store)] += 1
+        for payload in store.values():
+            payload_count += 1
+            payload_type_counts[_qualified_type_name(payload)] += 1
+            payload_kind = _checkpoint_payload_kind(payload)
+            state_summary = _raw_getattr(payload, "state_summary")
+            if state_summary is not None:
+                state_summaries.append(state_summary)
+            if payload_kind == "anchor":
+                anchor_payloads.append(payload)
+                anchor_ref = _raw_getattr(payload, "anchor_ref")
+                if anchor_ref is not None:
+                    anchor_refs.append(anchor_ref)
+            elif payload_kind == "delta":
+                delta_payloads.append(payload)
+                delta_ref = _raw_getattr(payload, "delta_ref")
+                if delta_ref is not None:
+                    delta_refs.append(delta_ref)
+                state_parent_node_id = _raw_getattr(payload, "state_parent_node_id")
+                if state_parent_node_id is not None:
+                    state_parent_node_ids.append(state_parent_node_id)
+
+    store_stats = DeepSizeStats(max_objects=max_objects)
+    payload_store_total_bytes = _exclusive_deep_size(
+        payload_store_roots,
+        seen=set(),
+        max_depth=max_depth,
+        stats=store_stats,
+    )
+    anchor_payload_stats = _payload_shape_memory_stats(
+        anchor_payloads,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    delta_payload_stats = _payload_shape_memory_stats(
+        delta_payloads,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    anchor_ref_stats = _payload_shape_memory_stats(
+        anchor_refs,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    delta_ref_stats = _payload_shape_memory_stats(
+        delta_refs,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    state_summary_stats = _payload_shape_memory_stats(
+        state_summaries,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+    state_parent_node_id_stats = _payload_shape_memory_stats(
+        state_parent_node_ids,
+        max_depth=max_depth,
+        max_objects=max_objects,
+    )
+
+    return {
+        "present": True,
+        "payload_store_total_bytes": payload_store_total_bytes,
+        "payload_store_total_visited_objects": store_stats.visited_objects,
+        "payload_store_total_capped": store_stats.capped,
+        "anchor_payload_bytes": anchor_payload_stats["recursive_bytes"],
+        "delta_payload_bytes": delta_payload_stats["recursive_bytes"],
+        "anchor_ref_bytes": anchor_ref_stats["recursive_bytes"],
+        "delta_ref_bytes": delta_ref_stats["recursive_bytes"],
+        "state_summary_bytes": state_summary_stats["recursive_bytes"],
+        "state_parent_node_id_bytes": state_parent_node_id_stats["recursive_bytes"],
+        "payload_store_type_counts": dict(_ordered_counter_items(store_type_counts)),
+        "payload_store_kind_counts": {
+            "Dense": sum(
+                count
+                for type_name, count in store_type_counts.items()
+                if "Dense" in type_name
+            ),
+            "Dict": sum(
+                count
+                for type_name, count in store_type_counts.items()
+                if type_name == "dict" or type_name.endswith(".dict")
+            ),
+            "Other": sum(
+                count
+                for type_name, count in store_type_counts.items()
+                if "Dense" not in type_name
+                and type_name != "dict"
+                and not type_name.endswith(".dict")
+            ),
+        },
+        "payload_store_count": len(stores),
+        "payload_count": payload_count,
+        "anchor_payload_count": len(anchor_payloads),
+        "delta_payload_count": len(delta_payloads),
+        "top_python_types": dict(_ordered_counter_items(payload_type_counts)),
+        "anchor_ref_top_python_types": _payload_shape_type_counts(anchor_refs),
+        "delta_ref_top_python_types": _payload_shape_type_counts(delta_refs),
+        "state_summary_top_python_types": _payload_shape_type_counts(state_summaries),
+    }
+
+
 def _checkpoint_handle_scan_cap(
     nodes: Iterable[object],
     *,
@@ -3534,6 +3895,15 @@ def log_growth_recursive_memory_profile(
     )
     _log_histogram(
         event,
+        "tree_node_child_links_detail",
+        child_link_storage_detail_histogram(
+            context.nodes,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
+    _log_histogram(
+        event,
         "node_evaluation_runtime",
         node_evaluation_runtime_histograms(context.nodes),
     )
@@ -3581,6 +3951,15 @@ def log_growth_recursive_memory_profile(
             max_objects=effective_max_objects,
         ),
     )
+    _log_histogram(
+        event,
+        "linoo_selector_detail",
+        linoo_selector_detail_histogram(
+            context.selector,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
     _log_gc_shallow_size_summary(event=event, top_n=top_n)
     checkpoint_histogram = checkpoint_state_histograms(
         context.nodes,
@@ -3620,6 +3999,15 @@ def log_growth_recursive_memory_profile(
             "checkpoint_payload_shape",
             payload,
         )
+    _log_histogram(
+        event,
+        "checkpoint_state_roots_detail",
+        checkpoint_state_roots_detail_histogram(
+            context.checkpoint_payload_stores,
+            max_objects=effective_max_objects,
+            max_depth=effective_max_depth,
+        ),
+    )
 
     total_recursive_reachable_mb = _mb(exclusive_total_bytes)
     residual_mb = None if rss_mb is None else rss_mb - total_recursive_reachable_mb
@@ -3654,13 +4042,16 @@ __all__ = [
     "DeepSizeStats",
     "_find_linoo_selector_root",
     "build_recursive_profile_context",
+    "checkpoint_state_roots_detail_histogram",
     "checkpoint_payload_lifetime_histograms",
     "checkpoint_payload_shape_histograms",
     "checkpoint_state_histograms",
+    "child_link_storage_detail_histogram",
     "deep_size",
     "frozenset_ownership_histogram",
     "linoo_candidate_heap_histogram",
     "linoo_state_histograms",
+    "linoo_selector_detail_histogram",
     "log_growth_recursive_memory_profile",
     "node_evaluation_runtime_detail_histograms",
     "node_evaluation_runtime_histograms",

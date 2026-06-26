@@ -41,7 +41,9 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     build_recursive_profile_context,
     checkpoint_payload_lifetime_histograms,
     checkpoint_payload_shape_histograms,
+    checkpoint_state_roots_detail_histogram,
     checkpoint_state_histograms,
+    child_link_storage_detail_histogram,
     deep_size,
     frozenset_ownership_histogram,
     gc_shallow_size_summary,
@@ -49,6 +51,7 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     linoo_deep_breakdown_histograms,
     linoo_node_state_slots_histogram,
     linoo_node_state_table_histogram,
+    linoo_selector_detail_histogram,
     linoo_state_histograms,
     log_growth_recursive_memory_profile,
     node_evaluation_runtime_detail_histograms,
@@ -958,6 +961,44 @@ def test_parent_link_storage_histogram_with_fake_nodes() -> None:
     assert histogram["multi_parent_recursive_bytes"] > 0
 
 
+def test_child_link_storage_detail_histogram_counts_edges() -> None:
+    """Child-link detail diagnostics should count edges and branch-key storage."""
+    shared_branch = ("row", 1)
+    child_a = object()
+    child_b = object()
+    parent = object()
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(
+                branches_children={shared_branch: child_a, 7: child_b},
+                parent_nodes={},
+            ),
+            FakeNodeEvaluation(),
+        ),
+        FakeAlgorithmNode(
+            FakeTreeNode(
+                branches_children={},
+                parent_nodes=FakeSingleParentLink(parent, {shared_branch}),
+            ),
+            FakeNodeEvaluation(),
+        ),
+    ]
+
+    histogram = child_link_storage_detail_histogram(nodes, max_depth=None)
+
+    assert histogram["node_count_scanned"] == 2
+    assert histogram["nodes_with_children"] == 1
+    assert histogram["nodes_with_no_children"] == 1
+    assert histogram["total_child_edges"] == 2
+    assert histogram["child_node_reference_count"] == 2
+    assert histogram["stores_tuple_branch_keys"] is True
+    assert histogram["stores_int_branch_keys"] is True
+    assert histogram["duplicate_storage_with_parent_links_detectable"] is True
+    assert histogram["duplicate_branch_key_refs_with_parent_links"] == 1
+    assert histogram["child_link_container_recursive_bytes"] > 0
+    assert histogram["branch_key_sample_recursive_bytes"] > 0
+
+
 def test_node_evaluation_runtime_histograms_with_fake_nodes() -> None:
     """Node-evaluation histograms should count materialized runtime slots."""
     nodes = [
@@ -1043,6 +1084,36 @@ def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
     assert histogram["candidate_stale_entry_count"] == 2
     assert histogram["candidate_entry_shapes"] == {"tuple[3]": 3}
     assert histogram["candidate_heaps_recursive_reachable_bytes"] > 0
+    assert histogram["reaches_algorithm_node"] is False
+    assert histogram["reaches_tree_node"] is False
+
+
+def test_linoo_selector_detail_histogram_reports_state_and_candidate_counts() -> None:
+    """Linoo detail diagnostics should summarize states, heaps, and reachability."""
+    selector = FakeLinooSelector(
+        {
+            1: FakeLinooNodeState(object(), status="opened"),
+            2: FakeLinooNodeState(object(), status="frontier"),
+        }
+    )
+    selector._depth_stats_by_depth = {1: SimpleNamespace(total_nodes=2)}
+    selector._frontier_node_ids_by_depth = {1: {2}}
+
+    histogram = linoo_selector_detail_histogram(selector, max_depth=None)
+
+    assert histogram["present"] is True
+    assert histogram["node_state_count"] == 2
+    assert histogram["status_representation_breakdown"] == {
+        "opened": 1,
+        "frontier": 1,
+    }
+    assert histogram["candidate_heap_count"] == 1
+    assert histogram["total_candidate_entries"] == 3
+    assert histogram["stale_candidate_entries"] == 2
+    assert histogram["candidate_tuple_shape_type_breakdown"] == {"tuple[3]": 3}
+    assert histogram["depth_stats_count"] == 1
+    assert histogram["total_selector_recursive_bytes"] > 0
+    assert histogram["node_state_table_recursive_bytes"] > 0
     assert histogram["reaches_algorithm_node"] is False
     assert histogram["reaches_tree_node"] is False
 
@@ -1484,6 +1555,51 @@ def test_checkpoint_payload_shape_histogram_supports_dense_store_without_materia
     assert lifetime_histograms[0]["unmaterialized_handle_count"] == 1
 
 
+def test_checkpoint_state_roots_detail_histogram_supports_dense_store() -> None:
+    """Checkpoint roots detail should summarize dense payload stores compactly."""
+    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+        resolver_type="fake.Resolver",
+        resolver_id=1,
+        owner_type="fake.Resolver",
+        attr_name="state_payloads_by_node_id",
+        payloads=DenseCheckpointPayloadStore(
+            [
+                AnchorCheckpointStatePayload(
+                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                    state_summary={"is_terminal": False, "tag": 1},
+                ),
+                DeltaCheckpointStatePayload(
+                    state_parent_node_id=0,
+                    state_parent_branch=3,
+                    delta_ref={"move": [0, 0, 4, 0]},
+                    state_summary={"is_terminal": False, "tag": 2},
+                ),
+            ]
+        ),
+        anchor_count=1,
+        delta_count=1,
+    )
+
+    histogram = checkpoint_state_roots_detail_histogram(
+        [payload_store],
+        max_depth=None,
+    )
+
+    assert histogram["present"] is True
+    assert histogram["payload_store_count"] == 1
+    assert histogram["payload_count"] == 2
+    assert histogram["anchor_payload_count"] == 1
+    assert histogram["delta_payload_count"] == 1
+    assert histogram["payload_store_kind_counts"]["Dense"] == 1
+    assert histogram["payload_store_total_bytes"] > 0
+    assert histogram["anchor_payload_bytes"] > 0
+    assert histogram["delta_payload_bytes"] > 0
+    assert histogram["anchor_ref_bytes"] > 0
+    assert histogram["delta_ref_bytes"] > 0
+    assert histogram["state_summary_bytes"] > 0
+    assert histogram["state_parent_node_id_bytes"] > 0
+
+
 def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
     monkeypatch,
 ) -> None:
@@ -1749,6 +1865,7 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "mode=exclusive order=" in text
     assert "histogram=tree_topology" in text
     assert "histogram=tree_parent_links" in text
+    assert "histogram=tree_node_child_links_detail" in text
     assert "histogram=node_evaluation_runtime" in text
     assert "histogram=node_evaluation_runtime_detail" in text
     assert "histogram=linoo" in text
@@ -1756,6 +1873,7 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "histogram=linoo_node_state_table" in text
     assert "histogram=linoo_node_state_slots" in text
     assert "histogram=linoo_candidate_heaps" in text
+    assert "histogram=linoo_selector_detail" in text
     assert "gc_shallow_size_summary_start" in text
     assert "gc_shallow_size_summary_done" in text
     assert "histogram=gc_shallow_sizes" in text
@@ -1764,6 +1882,7 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "morpion_state_field_shallow_mb=" in text
     assert "top_by_bytes=" in text
     assert "histogram=checkpoint_state" in text
+    assert "histogram=checkpoint_state_roots_detail" in text
     assert "rss_minus_reachable_mb=" in text
     assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
     assert "largest_components=" in text
