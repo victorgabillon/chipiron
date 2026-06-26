@@ -2272,7 +2272,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             generation=_generation_from_checkpoint_path(output),
         )
         if self._args.runtime_checkpoint_format == "sharded":
-            manifest = write_sharded_search_checkpoint(payload, output)
+            manifest = write_sharded_search_checkpoint(
+                payload,
+                output,
+                layout="split",
+            )
             checkpoint_bytes = _checkpoint_artifact_bytes(output)
             write_stats = None
         else:
