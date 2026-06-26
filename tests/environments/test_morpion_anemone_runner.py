@@ -867,10 +867,13 @@ def test_growth_state_eviction_policy_none_keeps_materialized_handles() -> None:
     assert runner.profile_state_eviction_runtime()["eviction_attempt_count"] == 0
 
 
-def test_growth_state_eviction_expanded_evicts_selected_node_only() -> None:
-    """Expanded policy should compact the selected node while leaving children hot."""
+def test_growth_state_eviction_cold_expanded_keeps_just_selected_node_hot() -> None:
+    """Cold-expanded policy should not compact the just-selected propagation path."""
     runner = AnemoneMorpionSearchRunner(
-        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+        AnemoneMorpionSearchRunnerArgs(
+            growth_state_eviction_policy="cold_expanded",
+            growth_state_eviction_scan_interval_steps=1,
+        )
     )
 
     runner.load_or_create(None, None)
@@ -882,19 +885,57 @@ def test_growth_state_eviction_expanded_evicts_selected_node_only() -> None:
     root_node = next(node for node in nodes if node.id == 0)
     child_nodes = tuple(node for node in nodes if node.id != 0)
 
-    assert isinstance(root_node.state_handle, CheckpointBackedStateHandle)
+    assert isinstance(root_node.state_handle, MaterializedStateHandle)
     assert root_node.state.tag == root_tag_before
     metrics = runner.profile_state_eviction_runtime()
     assert child_nodes
     assert all(
         isinstance(node.state_handle, MaterializedStateHandle) for node in child_nodes
     )
-    assert metrics["state_eviction_policy"] == "expanded"
-    assert metrics["eviction_success_count"] == 1
-    assert metrics["evicted_materialized_state_count"] == 1
-    assert metrics["anchor_payload_count"] == 1
-    assert metrics["compact_payload_count"] == 1
-    assert metrics["rematerialization_count"] == 1
+    assert metrics["state_eviction_policy"] == "cold_expanded"
+    assert metrics["eviction_success_count"] == 0
+    assert metrics["evicted_materialized_state_count"] == 0
+    assert metrics["eviction_skipped_count_by_reason"]["recently_selected"] == 1
+
+
+def test_growth_state_eviction_cold_expanded_evicts_cold_node_and_caches() -> None:
+    """Cold-expanded eviction should use a bounded decoded-state cache."""
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(
+            growth_state_eviction_policy="cold_expanded",
+            growth_state_eviction_recent_window=1,
+            growth_state_eviction_scan_interval_steps=1,
+            growth_state_eviction_scan_node_limit=10,
+            growth_state_rematerialization_cache_size=2,
+        )
+    )
+
+    runner.load_or_create(None, None)
+    runner.grow(3)
+
+    checkpoint_backed_nodes = tuple(
+        node
+        for node in runner.iter_profile_nodes()
+        if isinstance(node.state_handle, CheckpointBackedStateHandle)
+    )
+    assert checkpoint_backed_nodes
+
+    evicted_node = checkpoint_backed_nodes[0]
+    first_tag = evicted_node.state.tag
+    second_tag = evicted_node.state.tag
+    metrics = runner.profile_state_eviction_runtime()
+
+    assert first_tag == second_tag
+    assert metrics["state_eviction_policy"] == "cold_expanded"
+    assert metrics["eviction_success_count"] >= 1
+    assert metrics["anchor_payload_count"] >= 1
+    assert metrics["compact_payload_count"] >= 1
+    assert metrics["rematerialization_cache_miss"] >= 1
+    assert metrics["rematerialization_cache_hit"] >= 1
+    assert metrics["current_cache_size"] <= 2
+    assert metrics["eviction_total_s"] >= 0.0
+    assert metrics["eviction_payload_build_s"] >= 0.0
+    assert metrics["rematerialization_total_s"] >= 0.0
 
 
 def test_growth_state_eviction_checkpoint_roundtrip_continues(
@@ -905,16 +946,21 @@ def test_growth_state_eviction_checkpoint_roundtrip_continues(
         f"generation_1{checkpoint_file_suffix(DEFAULT_CHECKPOINT_FILE_FORMAT)}"
     )
     runner = AnemoneMorpionSearchRunner(
-        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+        AnemoneMorpionSearchRunnerArgs(
+            growth_state_eviction_policy="cold_expanded",
+            growth_state_eviction_recent_window=1,
+            growth_state_eviction_scan_interval_steps=1,
+            growth_state_eviction_scan_node_limit=10,
+        )
     )
 
     runner.load_or_create(None, None)
-    runner.grow(1)
+    runner.grow(3)
     size_before_save = runner.current_tree_size()
     runner.save_checkpoint(checkpoint_path)
 
     restored_runner = AnemoneMorpionSearchRunner(
-        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="cold_expanded")
     )
     restored_runner.load_or_create(checkpoint_path, None)
     restored_runner.grow(1)

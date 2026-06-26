@@ -485,7 +485,15 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
             "--growth-memory-profile-recursive-complete-map",
             "--diagnostic-stop-after-growth",
             "--growth-state-eviction-policy",
-            "expanded",
+            "cold_expanded",
+            "--growth-state-eviction-recent-window",
+            "7",
+            "--growth-state-rematerialization-cache-size",
+            "11",
+            "--growth-state-eviction-scan-interval-steps",
+            "13",
+            "--growth-state-eviction-scan-node-limit",
+            "17",
         ]
     )
 
@@ -511,7 +519,11 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     )
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map is True
     assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is True
-    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "expanded"
+    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "cold_expanded"
+    assert launcher_args.bootstrap_args.growth_state_eviction_recent_window == 7
+    assert launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 11
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 13
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 17
 
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
@@ -548,6 +560,14 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     )
     assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is False
     assert launcher_args.bootstrap_args.growth_state_eviction_policy == "none"
+    assert launcher_args.bootstrap_args.growth_state_eviction_recent_window == 1000
+    assert (
+        launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 10000
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
+    )
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 5000
 
 
 def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(

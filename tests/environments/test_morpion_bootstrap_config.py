@@ -419,14 +419,29 @@ def test_bootstrap_config_persists_growth_state_eviction_policy(
     tmp_path: Path,
 ) -> None:
     """Persisted runtime config should include the growth state-eviction policy."""
-    args = replace(_make_args(tmp_path), growth_state_eviction_policy="expanded")
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="cold_expanded",
+        growth_state_eviction_recent_window=7,
+        growth_state_rematerialization_cache_size=11,
+        growth_state_eviction_scan_interval_steps=13,
+        growth_state_eviction_scan_node_limit=17,
+    )
     config = bootstrap_config_from_args(args)
 
     payload = bootstrap_config_to_dict(config)
     loaded = bootstrap_config_from_dict(payload)
 
-    assert payload["runtime"]["growth_state_eviction_policy"] == "expanded"
-    assert loaded.runtime.growth_state_eviction_policy == "expanded"
+    assert payload["runtime"]["growth_state_eviction_policy"] == "cold_expanded"
+    assert payload["runtime"]["growth_state_eviction_recent_window"] == 7
+    assert payload["runtime"]["growth_state_rematerialization_cache_size"] == 11
+    assert payload["runtime"]["growth_state_eviction_scan_interval_steps"] == 13
+    assert payload["runtime"]["growth_state_eviction_scan_node_limit"] == 17
+    assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
+    assert loaded.runtime.growth_state_eviction_recent_window == 7
+    assert loaded.runtime.growth_state_rematerialization_cache_size == 11
+    assert loaded.runtime.growth_state_eviction_scan_interval_steps == 13
+    assert loaded.runtime.growth_state_eviction_scan_node_limit == 17
 
 
 def test_bootstrap_config_without_search_section_is_rejected() -> None:

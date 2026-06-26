@@ -527,6 +527,18 @@ def _bootstrap_args_with_persisted_config(
         growth_state_eviction_policy=(
             persisted_config.runtime.growth_state_eviction_policy
         ),
+        growth_state_eviction_recent_window=(
+            persisted_config.runtime.growth_state_eviction_recent_window
+        ),
+        growth_state_rematerialization_cache_size=(
+            persisted_config.runtime.growth_state_rematerialization_cache_size
+        ),
+        growth_state_eviction_scan_interval_steps=(
+            persisted_config.runtime.growth_state_eviction_scan_interval_steps
+        ),
+        growth_state_eviction_scan_node_limit=(
+            persisted_config.runtime.growth_state_eviction_scan_node_limit
+        ),
         search=persisted_config.search,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
@@ -568,6 +580,18 @@ def _build_launcher_runner(
             ),
             growth_state_eviction_policy=(
                 startup_status.resolved_bootstrap_args.growth_state_eviction_policy
+            ),
+            growth_state_eviction_recent_window=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_recent_window
+            ),
+            growth_state_rematerialization_cache_size=(
+                startup_status.resolved_bootstrap_args.growth_state_rematerialization_cache_size
+            ),
+            growth_state_eviction_scan_interval_steps=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_scan_interval_steps
+            ),
+            growth_state_eviction_scan_node_limit=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit
             ),
         ),
         effective_runtime_config,
@@ -647,6 +671,20 @@ def _render_launcher_startup_summary(
             (
                 "growth state eviction policy: "
                 f"{startup_status.resolved_bootstrap_args.growth_state_eviction_policy}"
+            ),
+            (
+                "growth state eviction recent window: "
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_recent_window}"
+            ),
+            (
+                "growth state rematerialization cache size: "
+                f"{startup_status.resolved_bootstrap_args.growth_state_rematerialization_cache_size}"
+            ),
+            (
+                "growth state eviction scan: interval="
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_interval_steps} "
+                "node_limit="
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit}"
             ),
             f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
             f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
@@ -995,13 +1033,42 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--growth-state-eviction-policy",
-        choices=("none", "expanded"),
+        choices=("none", "cold_expanded"),
         default="none",
         help=(
-            "Experimental opt-in growth-time state eviction policy. 'expanded' "
-            "evicts expanded selected-node states to compact in-RAM checkpoint "
-            "payloads."
+            "Experimental opt-in growth-time state eviction policy. "
+            "'cold_expanded' batch-evicts expanded materialized states that were "
+            "not selected recently."
         ),
+    )
+    parser.add_argument(
+        "--growth-state-eviction-recent-window",
+        type=int,
+        default=1000,
+        help=(
+            "Number of recent selected nodes protected from experimental "
+            "growth-time state eviction."
+        ),
+    )
+    parser.add_argument(
+        "--growth-state-rematerialization-cache-size",
+        type=int,
+        default=10000,
+        help=(
+            "Maximum decoded states retained by the live compact-state resolver."
+        ),
+    )
+    parser.add_argument(
+        "--growth-state-eviction-scan-interval-steps",
+        type=int,
+        default=100,
+        help="Growth steps between bounded cold-state eviction scans.",
+    )
+    parser.add_argument(
+        "--growth-state-eviction-scan-node-limit",
+        type=int,
+        default=5000,
+        help="Maximum nodes inspected during one cold-state eviction scan.",
     )
     parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
@@ -1265,6 +1332,18 @@ def launcher_args_from_cli(
         ),
         diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
         growth_state_eviction_policy=parsed.growth_state_eviction_policy,
+        growth_state_eviction_recent_window=(
+            parsed.growth_state_eviction_recent_window
+        ),
+        growth_state_rematerialization_cache_size=(
+            parsed.growth_state_rematerialization_cache_size
+        ),
+        growth_state_eviction_scan_interval_steps=(
+            parsed.growth_state_eviction_scan_interval_steps
+        ),
+        growth_state_eviction_scan_node_limit=(
+            parsed.growth_state_eviction_scan_node_limit
+        ),
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor
         ),

@@ -1170,7 +1170,7 @@ def test_state_eviction_runtime_histogram_reads_runner_profile() -> None:
     """Eviction runtime histogram should report runner-exposed counters."""
     runner = SimpleNamespace(
         profile_state_eviction_runtime=lambda: {
-            "state_eviction_policy": "expanded",
+            "state_eviction_policy": "cold_expanded",
             "eviction_attempt_count": 3,
             "eviction_success_count": 2,
         }
@@ -1180,7 +1180,7 @@ def test_state_eviction_runtime_histogram_reads_runner_profile() -> None:
 
     assert histogram == {
         "present": True,
-        "state_eviction_policy": "expanded",
+        "state_eviction_policy": "cold_expanded",
         "eviction_attempt_count": 3,
         "eviction_success_count": 2,
     }

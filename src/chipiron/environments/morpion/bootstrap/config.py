@@ -69,6 +69,10 @@ class MorpionBootstrapRuntimeConfig:
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
     growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
+    growth_state_eviction_recent_window: int = 1000
+    growth_state_rematerialization_cache_size: int = 10000
+    growth_state_eviction_scan_interval_steps: int = 100
+    growth_state_eviction_scan_node_limit: int = 5000
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -100,9 +104,41 @@ class MorpionBootstrapRuntimeConfig:
             raise MalformedMorpionBootstrapConfigError.invalid_required_str(
                 "runtime.runtime_checkpoint_format"
             )
-        if self.growth_state_eviction_policy not in {"none", "expanded"}:
+        if self.growth_state_eviction_policy not in {
+            "none",
+            "cold_expanded",
+            "expanded",
+        }:
             raise MalformedMorpionBootstrapConfigError.invalid_required_str(
                 "runtime.growth_state_eviction_policy"
+            )
+        if (
+            isinstance(self.growth_state_eviction_recent_window, bool)
+            or self.growth_state_eviction_recent_window < 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_state_eviction_recent_window"
+            )
+        if (
+            isinstance(self.growth_state_rematerialization_cache_size, bool)
+            or self.growth_state_rematerialization_cache_size < 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_state_rematerialization_cache_size"
+            )
+        if (
+            isinstance(self.growth_state_eviction_scan_interval_steps, bool)
+            or self.growth_state_eviction_scan_interval_steps <= 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_state_eviction_scan_interval_steps"
+            )
+        if (
+            isinstance(self.growth_state_eviction_scan_node_limit, bool)
+            or self.growth_state_eviction_scan_node_limit <= 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_state_eviction_scan_node_limit"
             )
 
 
@@ -369,6 +405,18 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             ),
             runtime_checkpoint_format=args.runtime_checkpoint_format,
             growth_state_eviction_policy=args.growth_state_eviction_policy,
+            growth_state_eviction_recent_window=(
+                args.growth_state_eviction_recent_window
+            ),
+            growth_state_rematerialization_cache_size=(
+                args.growth_state_rematerialization_cache_size
+            ),
+            growth_state_eviction_scan_interval_steps=(
+                args.growth_state_eviction_scan_interval_steps
+            ),
+            growth_state_eviction_scan_node_limit=(
+                args.growth_state_eviction_scan_node_limit
+            ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -414,6 +462,18 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "runtime_checkpoint_format": config.runtime.runtime_checkpoint_format,
             "growth_state_eviction_policy": (
                 config.runtime.growth_state_eviction_policy
+            ),
+            "growth_state_eviction_recent_window": (
+                config.runtime.growth_state_eviction_recent_window
+            ),
+            "growth_state_rematerialization_cache_size": (
+                config.runtime.growth_state_rematerialization_cache_size
+            ),
+            "growth_state_eviction_scan_interval_steps": (
+                config.runtime.growth_state_eviction_scan_interval_steps
+            ),
+            "growth_state_eviction_scan_node_limit": (
+                config.runtime.growth_state_eviction_scan_node_limit
             ),
         },
         "dataset": {
@@ -544,6 +604,22 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                     runtime.get("growth_state_eviction_policy", "none"),
                     field_name="runtime.growth_state_eviction_policy",
                 ),
+            ),
+            growth_state_eviction_recent_window=_coerce_int(
+                runtime.get("growth_state_eviction_recent_window", 1000),
+                field_name="runtime.growth_state_eviction_recent_window",
+            ),
+            growth_state_rematerialization_cache_size=_coerce_int(
+                runtime.get("growth_state_rematerialization_cache_size", 10000),
+                field_name="runtime.growth_state_rematerialization_cache_size",
+            ),
+            growth_state_eviction_scan_interval_steps=_coerce_int(
+                runtime.get("growth_state_eviction_scan_interval_steps", 100),
+                field_name="runtime.growth_state_eviction_scan_interval_steps",
+            ),
+            growth_state_eviction_scan_node_limit=_coerce_int(
+                runtime.get("growth_state_eviction_scan_node_limit", 5000),
+                field_name="runtime.growth_state_eviction_scan_node_limit",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -903,6 +979,18 @@ def _stage_bootstrap_config_field_values(
             config.runtime.candidate_checkpoint_load_min_headroom_mb
         ),
         "growth_state_eviction_policy": config.runtime.growth_state_eviction_policy,
+        "growth_state_eviction_recent_window": (
+            config.runtime.growth_state_eviction_recent_window
+        ),
+        "growth_state_rematerialization_cache_size": (
+            config.runtime.growth_state_rematerialization_cache_size
+        ),
+        "growth_state_eviction_scan_interval_steps": (
+            config.runtime.growth_state_eviction_scan_interval_steps
+        ),
+        "growth_state_eviction_scan_node_limit": (
+            config.runtime.growth_state_eviction_scan_node_limit
+        ),
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
         "rollout_action_selector_kind": config.search.rollout.action_selector_kind,

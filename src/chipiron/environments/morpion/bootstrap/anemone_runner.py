@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import logging
 import time
+from collections import OrderedDict, deque
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -1188,6 +1189,10 @@ class AnemoneMorpionSearchRunnerArgs:
     restore_memory_profile_recursive_max_depth: int | None = None
     runtime_checkpoint_format: str = "json-zst"
     growth_state_eviction_policy: str = "none"
+    growth_state_eviction_recent_window: int = 1000
+    growth_state_rematerialization_cache_size: int = 10000
+    growth_state_eviction_scan_interval_steps: int = 100
+    growth_state_eviction_scan_node_limit: int = 5000
 
 
 @dataclass(slots=True)
@@ -1204,7 +1209,14 @@ class MorpionGrowthStateEvictionMetrics:
     rematerialization_count: int = 0
     rematerialization_cache_hit: int = 0
     rematerialization_cache_miss: int = 0
+    current_cache_size: int = 0
+    cache_evictions: int = 0
     total_reconstruction_depth: int = 0
+    eviction_scan_count: int = 0
+    eviction_nodes_scanned_count: int = 0
+    eviction_total_s: float = 0.0
+    eviction_payload_build_s: float = 0.0
+    rematerialization_total_s: float = 0.0
     eviction_skipped_count_by_reason: dict[str, int] = field(default_factory=dict)
 
     def skip(self, reason: str) -> None:
@@ -1236,7 +1248,14 @@ class MorpionGrowthStateEvictionMetrics:
             "rematerialization_count": self.rematerialization_count,
             "rematerialization_cache_hit": self.rematerialization_cache_hit,
             "rematerialization_cache_miss": self.rematerialization_cache_miss,
+            "current_cache_size": self.current_cache_size,
+            "cache_evictions": self.cache_evictions,
             "average_reconstruction_depth": average_reconstruction_depth,
+            "eviction_scan_count": self.eviction_scan_count,
+            "eviction_nodes_scanned_count": self.eviction_nodes_scanned_count,
+            "eviction_total_s": self.eviction_total_s,
+            "eviction_payload_build_s": self.eviction_payload_build_s,
+            "rematerialization_total_s": self.rematerialization_total_s,
         }
 
 
@@ -1244,8 +1263,9 @@ class MorpionGrowthStateEvictionMetrics:
 class _LiveCompactStateResolver:
     """In-RAM compact state resolver for experimental growth eviction.
 
-    Unlike checkpoint restore resolvers, this live resolver intentionally avoids a
-    decoded-state cache so rematerialized states are not retained indefinitely.
+    The decoded-state cache is deliberately bounded: cold evictions should avoid
+    retaining every state, but repeated propagation/export touches must not rebuild
+    large anchor payloads over and over.
     """
 
     state_codec: object
@@ -1255,12 +1275,33 @@ class _LiveCompactStateResolver:
     metrics: MorpionGrowthStateEvictionMetrics = field(
         default_factory=MorpionGrowthStateEvictionMetrics
     )
+    cache_size: int = 10000
+    _decoded_state_cache: OrderedDict[int, MorpionState] = field(
+        default_factory=OrderedDict
+    )
 
     def resolve(self, node_id: int) -> MorpionState:
         """Resolve one compact payload into a concrete Morpion state."""
+        started_at = perf_counter()
         self.metrics.rematerialization_count += 1
+        cached_state = self._decoded_state_cache.get(node_id)
+        if cached_state is not None:
+            self.metrics.rematerialization_cache_hit += 1
+            self._decoded_state_cache.move_to_end(node_id)
+            self.metrics.current_cache_size = len(self._decoded_state_cache)
+            self.metrics.rematerialization_total_s += perf_counter() - started_at
+            return cached_state
         self.metrics.rematerialization_cache_miss += 1
-        self.metrics.total_reconstruction_depth += 1
+        try:
+            state = self._resolve_uncached(node_id, depth=1)
+        finally:
+            self.metrics.rematerialization_total_s += perf_counter() - started_at
+        self._cache_state(node_id, state)
+        return state
+
+    def _resolve_uncached(self, node_id: int, *, depth: int) -> MorpionState:
+        """Resolve one payload without checking the top-level decoded cache."""
+        self.metrics.total_reconstruction_depth += depth
         payload = self.state_payloads_by_node_id[node_id]
         if isinstance(payload, AnchorCheckpointStatePayload):
             return cast("Any", self.state_codec).load_anchor_ref(payload.anchor_ref)
@@ -1272,6 +1313,18 @@ class _LiveCompactStateResolver:
                 branch_from_parent=None,
             )
         raise KeyError(node_id)
+
+    def _cache_state(self, node_id: int, state: MorpionState) -> None:
+        """Store one decoded state in the bounded LRU cache."""
+        if self.cache_size <= 0:
+            self.metrics.current_cache_size = 0
+            return
+        self._decoded_state_cache[node_id] = state
+        self._decoded_state_cache.move_to_end(node_id)
+        while len(self._decoded_state_cache) > self.cache_size:
+            self._decoded_state_cache.popitem(last=False)
+            self.metrics.cache_evictions += 1
+        self.metrics.current_cache_size = len(self._decoded_state_cache)
 
     def summary(self, node_id: int) -> object | None:
         """Return optional state summary metadata for ``node_id``."""
@@ -1362,12 +1415,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._args.search_args
         )
         self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
-            state_eviction_policy=self._args.growth_state_eviction_policy
+            state_eviction_policy=_effective_growth_state_eviction_policy(
+                self._args.growth_state_eviction_policy
+            )
         )
         self._live_compact_state_resolver = _LiveCompactStateResolver(
             state_codec=self._state_codec,
             metrics=self._state_eviction_metrics,
+            cache_size=self._args.growth_state_rematerialization_cache_size,
         )
+        self._growth_eviction_recent_node_ids: deque[int] = deque()
+        self._growth_eviction_recent_node_id_set: set[int] = set()
+        self._growth_eviction_selected_step_by_node_id: dict[int, int] = {}
         self._linoo_selection_table_artifact_path: Path | None = None
         self._linoo_selection_table_cycle_index: int | None = None
         self._linoo_selection_table_generation: int | None = None
@@ -1472,10 +1531,16 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         initial_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
-            "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s",
+            "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s state_eviction_recent_window=%s state_rematerialization_cache_size=%s state_eviction_scan_interval_steps=%s state_eviction_scan_node_limit=%s",
             max_growth_steps,
             initial_tree_size,
-            self._args.growth_state_eviction_policy,
+            _effective_growth_state_eviction_policy(
+                self._args.growth_state_eviction_policy
+            ),
+            self._args.growth_state_eviction_recent_window,
+            self._args.growth_state_rematerialization_cache_size,
+            self._args.growth_state_eviction_scan_interval_steps,
+            self._args.growth_state_eviction_scan_node_limit,
         )
         self._clear_linoo_selection_table_artifact()
         steps_executed = 0
@@ -1505,9 +1570,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 reported_branch_count = getattr(step_report, "branch_count", None)
                 if isinstance(reported_branch_count, int):
                     branch_count = reported_branch_count
-            self._maybe_evict_selected_expanded_node(
-                runtime=runtime,
+            self._record_growth_selected_node(
                 selected_node_id=selected_node_id,
+                step=steps_executed,
+            )
+            self._maybe_evict_cold_expanded_nodes(
+                runtime=runtime,
+                step=steps_executed,
             )
             if not isinstance(selected_depth, int):
                 node_selector = getattr(runtime, "node_selector", None)
@@ -1625,40 +1694,103 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def _reset_growth_state_eviction_runtime(self) -> None:
         """Reset live compact payload storage for the next loaded runtime."""
         self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
-            state_eviction_policy=self._args.growth_state_eviction_policy
+            state_eviction_policy=_effective_growth_state_eviction_policy(
+                self._args.growth_state_eviction_policy
+            )
         )
         self._live_compact_state_resolver = _LiveCompactStateResolver(
             state_codec=self._state_codec,
             metrics=self._state_eviction_metrics,
+            cache_size=self._args.growth_state_rematerialization_cache_size,
         )
+        self._growth_eviction_recent_node_ids = deque()
+        self._growth_eviction_recent_node_id_set = set()
+        self._growth_eviction_selected_step_by_node_id = {}
 
-    def _maybe_evict_selected_expanded_node(
+    def _record_growth_selected_node(
+        self,
+        *,
+        selected_node_id: object,
+        step: int,
+    ) -> None:
+        """Track recently selected nodes so propagation-hot states stay materialized."""
+        if not isinstance(selected_node_id, int):
+            return
+        self._growth_eviction_selected_step_by_node_id[selected_node_id] = step
+        recent_window = self._args.growth_state_eviction_recent_window
+        if recent_window <= 0:
+            return
+        self._growth_eviction_recent_node_ids.append(selected_node_id)
+        self._growth_eviction_recent_node_id_set.add(selected_node_id)
+        while len(self._growth_eviction_recent_node_ids) > recent_window:
+            expired_node_id = self._growth_eviction_recent_node_ids.popleft()
+            if expired_node_id not in self._growth_eviction_recent_node_ids:
+                self._growth_eviction_recent_node_id_set.discard(expired_node_id)
+
+    def _maybe_evict_cold_expanded_nodes(
         self,
         *,
         runtime: object,
-        selected_node_id: object,
+        step: int,
     ) -> None:
-        """Apply the conservative expanded-node state eviction policy."""
-        if self._args.growth_state_eviction_policy == "none":
+        """Batch-evict cold expanded materialized states, never the hot selection."""
+        policy = _effective_growth_state_eviction_policy(
+            self._args.growth_state_eviction_policy
+        )
+        if policy == "none":
             return
-        self._state_eviction_metrics.eviction_attempt_count += 1
-        if self._args.growth_state_eviction_policy != "expanded":
+        if policy != "cold_expanded":
             self._state_eviction_metrics.skip("unsupported_policy")
             return
-        if not isinstance(selected_node_id, int):
-            self._state_eviction_metrics.skip("missing_selected_node_id")
+        interval = self._args.growth_state_eviction_scan_interval_steps
+        if interval <= 0:
+            self._state_eviction_metrics.skip("scan_interval_disabled")
             return
-        selected_node = _selected_node_from_latest_expansions(
-            runtime,
-            selected_node_id=selected_node_id,
-        )
-        if selected_node is None:
-            self._state_eviction_metrics.skip("selected_node_not_found")
+        if step % interval != 0:
             return
-        if not bool(getattr(selected_node, "all_branches_generated", False)):
-            self._state_eviction_metrics.skip("selected_node_not_fully_expanded")
+        scan_limit = self._args.growth_state_eviction_scan_node_limit
+        if scan_limit <= 0:
+            self._state_eviction_metrics.skip("scan_node_limit_disabled")
             return
-        raw_handle = getattr(selected_node, "state_handle", None)
+        started_at = perf_counter()
+        self._state_eviction_metrics.eviction_scan_count += 1
+        nodes_scanned = 0
+        try:
+            for node in self._iter_growth_eviction_scan_nodes(runtime):
+                if nodes_scanned >= scan_limit:
+                    break
+                nodes_scanned += 1
+                self._maybe_evict_one_cold_expanded_node(node)
+        finally:
+            self._state_eviction_metrics.eviction_nodes_scanned_count += nodes_scanned
+            self._state_eviction_metrics.eviction_total_s += perf_counter() - started_at
+
+    def _iter_growth_eviction_scan_nodes(self, runtime: object) -> Iterator[object]:
+        """Yield candidate nodes for one bounded eviction scan."""
+        all_nodes_in_tree_order = getattr(runtime, "_all_nodes_in_tree_order", None)
+        if callable(all_nodes_in_tree_order):
+            try:
+                yield from all_nodes_in_tree_order()
+                return
+            except Exception:
+                self._state_eviction_metrics.skip("scan_nodes_failed")
+                return
+        yield from self.iter_profile_nodes()
+
+    def _maybe_evict_one_cold_expanded_node(self, node: object) -> None:
+        """Evict one eligible cold expanded materialized node."""
+        self._state_eviction_metrics.eviction_attempt_count += 1
+        node_id = getattr(node, "id", None)
+        if not isinstance(node_id, int):
+            self._state_eviction_metrics.skip("missing_node_id")
+            return
+        if node_id in self._growth_eviction_recent_node_id_set:
+            self._state_eviction_metrics.skip("recently_selected")
+            return
+        if not bool(getattr(node, "all_branches_generated", False)):
+            self._state_eviction_metrics.skip("not_fully_expanded")
+            return
+        raw_handle = getattr(node, "state_handle", None)
         if isinstance(raw_handle, CheckpointBackedStateHandle):
             self._state_eviction_metrics.skip("already_checkpoint_backed")
             return
@@ -1666,26 +1798,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._state_eviction_metrics.skip("not_materialized_handle")
             return
         state = raw_handle.state_
+        payload_started_at = perf_counter()
         try:
             state_summary = self._state_codec.dump_state_summary(state)
             anchor_ref = self._state_codec.dump_anchor_ref(state)
         except Exception:  # pylint: disable=broad-exception-caught
             self._state_eviction_metrics.skip("payload_build_failed")
             return
+        finally:
+            self._state_eviction_metrics.eviction_payload_build_s += (
+                perf_counter() - payload_started_at
+            )
         payload = AnchorCheckpointStatePayload(
             anchor_ref=anchor_ref,
             state_summary=state_summary,
         )
-        tree_node = getattr(selected_node, "tree_node", None)
+        tree_node = getattr(node, "tree_node", None)
         if tree_node is None:
             self._state_eviction_metrics.skip("missing_tree_node")
             return
-        self._live_compact_state_resolver.state_payloads_by_node_id[
-            selected_node_id
-        ] = payload
+        self._live_compact_state_resolver.state_payloads_by_node_id[node_id] = payload
         tree_node.state_handle_ = CheckpointBackedStateHandle(
             resolver=cast("Any", self._live_compact_state_resolver),
-            node_id=selected_node_id,
+            node_id=node_id,
         )
         self._state_eviction_metrics.eviction_success_count += 1
         self._state_eviction_metrics.evicted_materialized_state_count += 1
@@ -1905,7 +2040,30 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def profile_state_eviction_runtime(self) -> Mapping[str, object]:
         """Return experimental state-eviction counters for memory diagnostics."""
-        return self._state_eviction_metrics.snapshot()
+        snapshot = self._state_eviction_metrics.snapshot()
+        snapshot.update(
+            {
+                "state_eviction_recent_window": (
+                    self._args.growth_state_eviction_recent_window
+                ),
+                "state_rematerialization_cache_size": (
+                    self._args.growth_state_rematerialization_cache_size
+                ),
+                "state_eviction_scan_interval_steps": (
+                    self._args.growth_state_eviction_scan_interval_steps
+                ),
+                "state_eviction_scan_node_limit": (
+                    self._args.growth_state_eviction_scan_node_limit
+                ),
+                "recent_selected_count": len(
+                    self._growth_eviction_recent_node_id_set
+                ),
+                "selected_step_tracked_count": len(
+                    self._growth_eviction_selected_step_by_node_id
+                ),
+            }
+        )
+        return snapshot
 
     def iter_profile_branches(self) -> Iterator[object]:
         """Yield live branch or ordering objects for memory profiling only."""
@@ -2850,6 +3008,13 @@ def _count_expanded_nodes(runtime: Any) -> int:
         for node in runtime._all_nodes_in_tree_order()
         if bool(getattr(node, "all_branches_generated", False))
     )
+
+
+def _effective_growth_state_eviction_policy(policy: str) -> str:
+    """Return the runtime semantics for a configured eviction policy."""
+    if policy == "expanded":
+        return "cold_expanded"
+    return policy
 
 
 def _selected_node_from_latest_expansions(

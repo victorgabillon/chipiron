@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .pv_family_targets import PvFamilyTargetPolicy
 
 type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
-type MorpionGrowthStateEvictionPolicy = Literal["none", "expanded"]
+type MorpionGrowthStateEvictionPolicy = Literal["none", "cold_expanded", "expanded"]
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -132,7 +132,37 @@ def _invalid_diagnostic_stop_after_growth_error() -> TypeError:
 
 def _invalid_growth_state_eviction_policy_error() -> ValueError:
     """Return the canonical growth state-eviction policy validation error."""
-    return ValueError("growth_state_eviction_policy must be 'none' or 'expanded'.")
+    return ValueError(
+        "growth_state_eviction_policy must be 'none' or 'cold_expanded'."
+    )
+
+
+def _invalid_growth_state_eviction_recent_window_error() -> ValueError:
+    """Return the canonical growth state-eviction recent-window error."""
+    return ValueError(
+        "growth_state_eviction_recent_window must be a non-negative integer."
+    )
+
+
+def _invalid_growth_state_rematerialization_cache_size_error() -> ValueError:
+    """Return the canonical rematerialization cache-size error."""
+    return ValueError(
+        "growth_state_rematerialization_cache_size must be a non-negative integer."
+    )
+
+
+def _invalid_growth_state_eviction_scan_interval_steps_error() -> ValueError:
+    """Return the canonical growth state-eviction scan interval error."""
+    return ValueError(
+        "growth_state_eviction_scan_interval_steps must be a positive integer."
+    )
+
+
+def _invalid_growth_state_eviction_scan_node_limit_error() -> ValueError:
+    """Return the canonical growth state-eviction scan node-limit error."""
+    return ValueError(
+        "growth_state_eviction_scan_node_limit must be a positive integer."
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,13 +232,41 @@ class MorpionBootstrapArgs:
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
     diagnostic_stop_after_growth: bool = False
     growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
+    growth_state_eviction_recent_window: int = 1000
+    growth_state_rematerialization_cache_size: int = 10000
+    growth_state_eviction_scan_interval_steps: int = 100
+    growth_state_eviction_scan_node_limit: int = 5000
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
         if not isinstance(self.diagnostic_stop_after_growth, bool):
             raise _invalid_diagnostic_stop_after_growth_error()
-        if self.growth_state_eviction_policy not in {"none", "expanded"}:
+        if self.growth_state_eviction_policy not in {
+            "none",
+            "cold_expanded",
+            "expanded",
+        }:
             raise _invalid_growth_state_eviction_policy_error()
+        if (
+            isinstance(self.growth_state_eviction_recent_window, bool)
+            or self.growth_state_eviction_recent_window < 0
+        ):
+            raise _invalid_growth_state_eviction_recent_window_error()
+        if (
+            isinstance(self.growth_state_rematerialization_cache_size, bool)
+            or self.growth_state_rematerialization_cache_size < 0
+        ):
+            raise _invalid_growth_state_rematerialization_cache_size_error()
+        if (
+            isinstance(self.growth_state_eviction_scan_interval_steps, bool)
+            or self.growth_state_eviction_scan_interval_steps <= 0
+        ):
+            raise _invalid_growth_state_eviction_scan_interval_steps_error()
+        if (
+            isinstance(self.growth_state_eviction_scan_node_limit, bool)
+            or self.growth_state_eviction_scan_node_limit <= 0
+        ):
+            raise _invalid_growth_state_eviction_scan_node_limit_error()
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):
