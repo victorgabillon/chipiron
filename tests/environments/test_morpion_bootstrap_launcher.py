@@ -517,7 +517,10 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
         "after_checkpoint_load",
         "before_growth",
     )
-    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map is True
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map
+        is True
+    )
     assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is True
     assert launcher_args.bootstrap_args.growth_state_eviction_policy == "cold_expanded"
     assert launcher_args.bootstrap_args.growth_state_eviction_recent_window == 7
@@ -542,7 +545,9 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects is None
     )
-    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    )
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
         is False
@@ -564,10 +569,24 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert (
         launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 10000
     )
-    assert (
-        launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
-    )
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 5000
+
+
+def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """CLI should expose the C4d frontier-cold state eviction policy."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--growth-state-eviction-policy",
+            "frontier_cold",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "frontier_cold"
 
 
 def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(
@@ -583,7 +602,9 @@ def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(
         ]
     )
 
-    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    )
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
         is True

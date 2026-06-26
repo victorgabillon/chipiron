@@ -107,10 +107,17 @@ class MorpionBootstrapRuntimeConfig:
         if self.growth_state_eviction_policy not in {
             "none",
             "cold_expanded",
+            "frontier_cold",
             "expanded",
         }:
             raise MalformedMorpionBootstrapConfigError.invalid_required_str(
                 "runtime.growth_state_eviction_policy"
+            )
+        if self.growth_state_eviction_policy == "expanded":
+            object.__setattr__(
+                self,
+                "growth_state_eviction_policy",
+                "cold_expanded",
             )
         if (
             isinstance(self.growth_state_eviction_recent_window, bool)

@@ -1002,9 +1002,7 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         "--growth-memory-profile-recursive-context-node-cap",
         type=_parse_optional_positive_int,
         default=None,
-        help=(
-            "Optional profile-node cap for recursive context building diagnostics."
-        ),
+        help=("Optional profile-node cap for recursive context building diagnostics."),
     )
     parser.add_argument(
         "--growth-memory-profile-recursive-events",
@@ -1033,12 +1031,13 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--growth-state-eviction-policy",
-        choices=("none", "cold_expanded"),
+        choices=("none", "cold_expanded", "frontier_cold"),
         default="none",
         help=(
             "Experimental opt-in growth-time state eviction policy. "
             "'cold_expanded' batch-evicts expanded materialized states that were "
-            "not selected recently."
+            "not selected recently; 'frontier_cold' also evicts cold frontier "
+            "materialized states."
         ),
     )
     parser.add_argument(
@@ -1054,9 +1053,7 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         "--growth-state-rematerialization-cache-size",
         type=int,
         default=10000,
-        help=(
-            "Maximum decoded states retained by the live compact-state resolver."
-        ),
+        help=("Maximum decoded states retained by the live compact-state resolver."),
     )
     parser.add_argument(
         "--growth-state-eviction-scan-interval-steps",

@@ -444,6 +444,48 @@ def test_bootstrap_config_persists_growth_state_eviction_policy(
     assert loaded.runtime.growth_state_eviction_scan_node_limit == 17
 
 
+def test_bootstrap_config_accepts_frontier_cold_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Persisted runtime config should accept the C4d frontier-cold policy."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="frontier_cold",
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "frontier_cold"
+    assert loaded.runtime.growth_state_eviction_policy == "frontier_cold"
+
+
+def test_bootstrap_config_normalizes_legacy_expanded_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Legacy expanded policy spelling should persist as cold_expanded."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="expanded",
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(
+        {
+            **payload,
+            "runtime": {
+                **payload["runtime"],
+                "growth_state_eviction_policy": "expanded",
+            },
+        }
+    )
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "cold_expanded"
+    assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
+
+
 def test_bootstrap_config_without_search_section_is_rejected() -> None:
     """Persisted configs must use the explicit search rollout schema."""
     payload = bootstrap_config_to_dict(_make_config())

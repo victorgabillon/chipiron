@@ -27,7 +27,9 @@ if TYPE_CHECKING:
     from .pv_family_targets import PvFamilyTargetPolicy
 
 type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
-type MorpionGrowthStateEvictionPolicy = Literal["none", "cold_expanded", "expanded"]
+type MorpionGrowthStateEvictionPolicy = Literal[
+    "none", "cold_expanded", "frontier_cold", "expanded"
+]
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -96,9 +98,7 @@ def _invalid_growth_memory_profile_recursive_events_error() -> ValueError:
 
 def _invalid_growth_memory_profile_recursive_complete_map_error() -> ValueError:
     """Return the canonical recursive memory-profile complete-map error."""
-    return ValueError(
-        "growth_memory_profile_recursive_complete_map must be a bool."
-    )
+    return ValueError("growth_memory_profile_recursive_complete_map must be a bool.")
 
 
 def _invalid_candidate_checkpoint_load_headroom_factor_error() -> ValueError:
@@ -133,8 +133,18 @@ def _invalid_diagnostic_stop_after_growth_error() -> TypeError:
 def _invalid_growth_state_eviction_policy_error() -> ValueError:
     """Return the canonical growth state-eviction policy validation error."""
     return ValueError(
-        "growth_state_eviction_policy must be 'none' or 'cold_expanded'."
+        "growth_state_eviction_policy must be 'none', 'cold_expanded', "
+        "or 'frontier_cold'."
     )
+
+
+def _normalize_growth_state_eviction_policy(
+    policy: MorpionGrowthStateEvictionPolicy,
+) -> MorpionGrowthStateEvictionPolicy:
+    """Normalize legacy state-eviction policy spelling."""
+    if policy == "expanded":
+        return "cold_expanded"
+    return policy
 
 
 def _invalid_growth_state_eviction_recent_window_error() -> ValueError:
@@ -244,9 +254,15 @@ class MorpionBootstrapArgs:
         if self.growth_state_eviction_policy not in {
             "none",
             "cold_expanded",
+            "frontier_cold",
             "expanded",
         }:
             raise _invalid_growth_state_eviction_policy_error()
+        object.__setattr__(
+            self,
+            "growth_state_eviction_policy",
+            _normalize_growth_state_eviction_policy(self.growth_state_eviction_policy),
+        )
         if (
             isinstance(self.growth_state_eviction_recent_window, bool)
             or self.growth_state_eviction_recent_window < 0
@@ -305,19 +321,18 @@ class MorpionBootstrapArgs:
             or self.growth_memory_profile_recursive_max_depth < 0
         ):
             raise _invalid_growth_memory_profile_recursive_max_depth_error()
-        if not isinstance(self.growth_memory_profile_recursive_max_depth_explicit, bool):
+        if not isinstance(
+            self.growth_memory_profile_recursive_max_depth_explicit, bool
+        ):
             raise _invalid_growth_memory_profile_recursive_max_depth_explicit_error()
         if self.growth_memory_profile_recursive_context_node_cap is not None and (
             isinstance(self.growth_memory_profile_recursive_context_node_cap, bool)
             or self.growth_memory_profile_recursive_context_node_cap <= 0
         ):
             raise _invalid_growth_memory_profile_recursive_context_node_cap_error()
-        if (
-            not self.growth_memory_profile_recursive_events
-            or any(
-                not isinstance(event, str) or not event
-                for event in self.growth_memory_profile_recursive_events
-            )
+        if not self.growth_memory_profile_recursive_events or any(
+            not isinstance(event, str) or not event
+            for event in self.growth_memory_profile_recursive_events
         ):
             raise _invalid_growth_memory_profile_recursive_events_error()
         if not isinstance(self.growth_memory_profile_recursive_complete_map, bool):

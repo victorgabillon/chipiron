@@ -114,7 +114,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
 )
 
 
-def test_restore_memory_logger_emits_structured_phase(caplog: pytest.LogCaptureFixture) -> None:
+def test_restore_memory_logger_emits_structured_phase(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Restore-memory logger should emit stable grep-friendly phase fields."""
     logger = anemone_runner_module._RestoreMemoryLogger(
         checkpoint_path=Path("checkpoint.json.zst"),
@@ -938,6 +940,36 @@ def test_growth_state_eviction_cold_expanded_evicts_cold_node_and_caches() -> No
     assert metrics["rematerialization_total_s"] >= 0.0
 
 
+def test_growth_state_eviction_frontier_cold_evicts_frontier_nodes() -> None:
+    """Frontier-cold eviction should compact cold frontier materialized states."""
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(
+            growth_state_eviction_policy="frontier_cold",
+            growth_state_eviction_recent_window=0,
+            growth_state_eviction_scan_interval_steps=1,
+            growth_state_eviction_scan_node_limit=10,
+        )
+    )
+
+    runner.load_or_create(None, None)
+    runner.grow(1)
+
+    cold_frontier_nodes = tuple(
+        node
+        for node in runner.iter_profile_nodes()
+        if node.id != 0 and not bool(getattr(node, "all_branches_generated", False))
+    )
+
+    assert cold_frontier_nodes
+    assert any(
+        isinstance(node.state_handle, CheckpointBackedStateHandle)
+        for node in cold_frontier_nodes
+    )
+    metrics = runner.profile_state_eviction_runtime()
+    assert metrics["state_eviction_policy"] == "frontier_cold"
+    assert metrics["eviction_success_count"] >= 1
+
+
 def test_growth_state_eviction_checkpoint_roundtrip_continues(
     tmp_path: Path,
 ) -> None:
@@ -1139,13 +1171,14 @@ def test_resolve_runtime_restore_path_recognizes_sharded_checkpoint_directory(
         last_save_unix_s=1.0,
         latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
         metadata={
-            RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(
-                checkpoint_path
-            )
+            RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(checkpoint_path)
         },
     )
 
-    assert resolve_runtime_restore_path(paths=paths, run_state=run_state) == checkpoint_path
+    assert (
+        resolve_runtime_restore_path(paths=paths, run_state=run_state)
+        == checkpoint_path
+    )
 
 
 def test_checkpoint_metrics_logs_for_save_load_and_restore(
