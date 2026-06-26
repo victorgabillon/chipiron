@@ -58,6 +58,9 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     node_evaluation_runtime_histograms,
     parent_link_storage_histogram,
     slot_names,
+    state_eviction_runtime_histogram,
+    state_handle_materialization_detail_histogram,
+    state_retention_by_node_status_histogram,
     tree_topology_histograms,
 )
 
@@ -338,23 +341,30 @@ class FakeTreeNode:
     """Small TreeNode-shaped object for recursive profile histograms."""
 
     __slots__ = (
+        "all_branches_generated",
         "branches_children_",
         "non_opened_branches_",
         "parent_nodes_",
         "state_handle_",
+        "tree_depth_",
     )
 
     def __init__(
         self,
         *,
         branches_children: object | None = None,
+        non_opened_branches: object | None = None,
         parent_nodes: object | None = None,
         state_handle: object | None = None,
+        tree_depth: int = 0,
+        all_branches_generated: bool = False,
     ) -> None:
+        self.all_branches_generated = all_branches_generated
         self.branches_children_ = branches_children
-        self.non_opened_branches_ = None
+        self.non_opened_branches_ = non_opened_branches
         self.parent_nodes_ = parent_nodes if parent_nodes is not None else {}
         self.state_handle_ = state_handle
+        self.tree_depth_ = tree_depth
 
 
 class FakeSingleParentLink:
@@ -372,6 +382,8 @@ class FakeNodeEvaluation:
 
     __slots__ = (
         "_backed_up_value",
+        "_has_exact_value",
+        "_is_terminal",
         "backup_runtime_",
         "branch_frontier_",
         "decision_ordering_",
@@ -379,22 +391,50 @@ class FakeNodeEvaluation:
         "pv_state_",
     )
 
-    def __init__(self, *, runtime_state: object | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        runtime_state: object | None = None,
+        exact: bool = False,
+        terminal: bool = False,
+    ) -> None:
         self.direct_value = 1.0
         self._backed_up_value = None
+        self._has_exact_value = exact
+        self._is_terminal = terminal
         self.decision_ordering_ = runtime_state
         self.pv_state_ = None
         self.branch_frontier_ = None
         self.backup_runtime_ = None
 
+    def has_exact_value(self) -> bool:
+        return self._has_exact_value
+
+    def is_terminal(self) -> bool:
+        return self._is_terminal
+
 
 class FakeAlgorithmNode:
     """Small AlgorithmNode-shaped object for recursive profile tests."""
 
-    def __init__(self, tree_node: FakeTreeNode, node_eval: FakeNodeEvaluation) -> None:
+    def __init__(
+        self,
+        tree_node: FakeTreeNode,
+        node_eval: FakeNodeEvaluation,
+        *,
+        node_id: int = 0,
+    ) -> None:
+        self.id = node_id
         self.tree_node = tree_node
         self.tree_evaluation = node_eval
         self._state_representation = None
+
+
+class FakeMaterializedStateHandle:
+    """Materialized-state-handle-shaped object for diagnostics."""
+
+    def __init__(self, state: object) -> None:
+        self.state_ = state
 
 
 class RaisingCheckpointHandle:
@@ -997,6 +1037,153 @@ def test_child_link_storage_detail_histogram_counts_edges() -> None:
     assert histogram["duplicate_branch_key_refs_with_parent_links"] == 1
     assert histogram["child_link_container_recursive_bytes"] > 0
     assert histogram["branch_key_sample_recursive_bytes"] > 0
+
+
+def test_state_handle_materialization_detail_counts_handles_and_states() -> None:
+    """State-handle diagnostics should count materialized and checkpoint handles."""
+    materialized_state = MorpionState(
+        points=frozenset({("p", 1)}),
+        used_unit_segments=frozenset({("u", 2)}),
+        played_moves=frozenset({("m", 3)}),
+    )
+    resolver = FakeCheckpointStateResolver()
+    nodes = [
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeMaterializedStateHandle(materialized_state)),
+            FakeNodeEvaluation(),
+        ),
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 1)),
+            FakeNodeEvaluation(),
+        ),
+        FakeAlgorithmNode(
+            FakeTreeNode(state_handle=object()),
+            FakeNodeEvaluation(),
+        ),
+    ]
+
+    histogram = state_handle_materialization_detail_histogram(
+        nodes,
+        max_depth=None,
+    )
+
+    assert histogram["node_count_scanned"] == 3
+    assert (
+        histogram["handle_storage_kind_counts"]["MaterializedStateHandle"] == 1
+    )
+    assert (
+        histogram["handle_storage_kind_counts"]["CheckpointBackedStateHandle"] == 1
+    )
+    assert histogram["handle_storage_kind_counts"]["other"] == 1
+    assert histogram["materialized_state_count"] == 1
+    assert histogram["unique_materialized_state_count"] == 1
+    assert histogram["checkpoint_backed_state_count"] == 1
+    assert histogram["materialized_morpion_state_count"] == 1
+    assert (
+        histogram["state_type_counts"][
+            "atomheart.games.morpion.state.MorpionState"
+        ]
+        == 1
+    )
+    assert histogram["materialized_states_recursive_bytes"] > 0
+    assert histogram["materialized_state_frozenset_field_counts"] == {
+        "played_moves": 1,
+        "points": 1,
+        "used_unit_segments": 1,
+    }
+    assert histogram["materialized_state_frozenset_field_shallow_bytes"]["points"] > 0
+
+
+def test_state_retention_by_node_status_counts_internal_and_frontier() -> None:
+    """Retention diagnostics should group materialized states by node status."""
+    internal_state = MorpionState(
+        points=frozenset({"internal"}),
+        used_unit_segments=frozenset(),
+        played_moves=frozenset(),
+    )
+    frontier_state = MorpionState(
+        points=frozenset({"frontier"}),
+        used_unit_segments=frozenset(),
+        played_moves=frozenset(),
+    )
+    terminal_state = MorpionState(
+        points=frozenset({"terminal"}),
+        used_unit_segments=frozenset(),
+        played_moves=frozenset(),
+    )
+    internal_node = FakeAlgorithmNode(
+        FakeTreeNode(
+            branches_children={"a": object()},
+            non_opened_branches=set(),
+            state_handle=FakeMaterializedStateHandle(internal_state),
+            tree_depth=1,
+            all_branches_generated=True,
+        ),
+        FakeNodeEvaluation(exact=True),
+        node_id=1,
+    )
+    frontier_node = FakeAlgorithmNode(
+        FakeTreeNode(
+            non_opened_branches={"b"},
+            state_handle=FakeMaterializedStateHandle(frontier_state),
+            tree_depth=2,
+        ),
+        FakeNodeEvaluation(),
+        node_id=2,
+    )
+    terminal_node = FakeAlgorithmNode(
+        FakeTreeNode(
+            non_opened_branches=set(),
+            state_handle=FakeMaterializedStateHandle(terminal_state),
+            tree_depth=3,
+            all_branches_generated=True,
+        ),
+        FakeNodeEvaluation(terminal=True),
+        node_id=3,
+    )
+    selector = FakeLinooSelector(
+        {
+            2: FakeLinooNodeState(frontier_node, status="frontier"),
+            3: FakeLinooNodeState(terminal_node, status="opened"),
+        }
+    )
+
+    histogram = state_retention_by_node_status_histogram(
+        [internal_node, frontier_node, terminal_node],
+        selector=selector,
+    )
+
+    assert histogram["node_count_scanned"] == 3
+    assert histogram["materialized_state_count"] == 3
+    assert histogram["materialized_states_on_opened_internal_nodes"] == 1
+    assert histogram["materialized_states_on_frontier_nodes"] == 1
+    assert histogram["materialized_states_on_terminal_nodes"] == 1
+    assert histogram["materialized_states_on_exact_nodes"] == 1
+    assert histogram["materialized_states_on_all_branches_generated_nodes"] == 2
+    assert histogram["materialized_states_on_no_unopened_branch_nodes"] == 2
+    assert histogram["candidate_cold_evictable_materialized_state_count"] == 2
+    assert histogram["materialized_depth_counts"] == {"1": 1, "2": 1, "3": 1}
+    assert histogram["selector_status_counts"]["frontier"] == 1
+
+
+def test_state_eviction_runtime_histogram_reads_runner_profile() -> None:
+    """Eviction runtime histogram should report runner-exposed counters."""
+    runner = SimpleNamespace(
+        profile_state_eviction_runtime=lambda: {
+            "state_eviction_policy": "expanded",
+            "eviction_attempt_count": 3,
+            "eviction_success_count": 2,
+        }
+    )
+
+    histogram = state_eviction_runtime_histogram(runner)
+
+    assert histogram == {
+        "present": True,
+        "state_eviction_policy": "expanded",
+        "eviction_attempt_count": 3,
+        "eviction_success_count": 2,
+    }
 
 
 def test_node_evaluation_runtime_histograms_with_fake_nodes() -> None:
@@ -1866,6 +2053,9 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "histogram=tree_topology" in text
     assert "histogram=tree_parent_links" in text
     assert "histogram=tree_node_child_links_detail" in text
+    assert "histogram=state_handle_materialization_detail" in text
+    assert "histogram=state_retention_by_node_status" in text
+    assert "histogram=state_eviction_runtime" in text
     assert "histogram=node_evaluation_runtime" in text
     assert "histogram=node_evaluation_runtime_detail" in text
     assert "histogram=linoo" in text

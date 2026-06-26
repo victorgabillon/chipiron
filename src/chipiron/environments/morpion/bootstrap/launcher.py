@@ -524,6 +524,9 @@ def _bootstrap_args_with_persisted_config(
         pipeline_mode=persisted_config.pipeline_mode,
         training_export_mode=persisted_config.training_export_mode,
         runtime_checkpoint_format=persisted_config.runtime.runtime_checkpoint_format,
+        growth_state_eviction_policy=(
+            persisted_config.runtime.growth_state_eviction_policy
+        ),
         search=persisted_config.search,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
@@ -562,6 +565,9 @@ def _build_launcher_runner(
             ),
             runtime_checkpoint_format=(
                 startup_status.resolved_bootstrap_args.runtime_checkpoint_format
+            ),
+            growth_state_eviction_policy=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_policy
             ),
         ),
         effective_runtime_config,
@@ -637,6 +643,10 @@ def _render_launcher_startup_summary(
                 "runtime checkpoint format: "
                 f"{startup_status.resolved_bootstrap_args.runtime_checkpoint_format} "
                 f"({_render_runtime_checkpoint_format_note(startup_status.resolved_bootstrap_args.runtime_checkpoint_format)})"
+            ),
+            (
+                "growth state eviction policy: "
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_policy}"
             ),
             f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
             f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
@@ -984,6 +994,16 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--growth-state-eviction-policy",
+        choices=("none", "expanded"),
+        default="none",
+        help=(
+            "Experimental opt-in growth-time state eviction policy. 'expanded' "
+            "evicts expanded selected-node states to compact in-RAM checkpoint "
+            "payloads."
+        ),
+    )
+    parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
         type=float,
         default=60.0,
@@ -1244,6 +1264,7 @@ def launcher_args_from_cli(
             parsed.growth_memory_profile_recursive_complete_map
         ),
         diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
+        growth_state_eviction_policy=parsed.growth_state_eviction_policy,
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor
         ),

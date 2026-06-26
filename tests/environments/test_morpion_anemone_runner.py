@@ -71,6 +71,7 @@ from anemone.node_selector.linoo import LinooArgs
 from anemone.node_selector.node_selector_types import NodeSelectorType
 from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
+from anemone.nodes.state_handles import MaterializedStateHandle
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import load_training_tree_snapshot
@@ -852,6 +853,73 @@ def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
     runner.grow(2)
 
     assert runner.current_tree_size() >= 1
+
+
+def test_growth_state_eviction_policy_none_keeps_materialized_handles() -> None:
+    """Default growth should keep the historical materialized state handles."""
+    runner = AnemoneMorpionSearchRunner()
+
+    runner.load_or_create(None, None)
+    runner.grow(1)
+
+    root_node = next(node for node in runner.iter_profile_nodes() if node.id == 0)
+    assert isinstance(root_node.state_handle, MaterializedStateHandle)
+    assert runner.profile_state_eviction_runtime()["eviction_attempt_count"] == 0
+
+
+def test_growth_state_eviction_expanded_evicts_selected_node_only() -> None:
+    """Expanded policy should compact the selected node while leaving children hot."""
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+    )
+
+    runner.load_or_create(None, None)
+    root_before = next(node for node in runner.iter_profile_nodes() if node.id == 0)
+    root_tag_before = root_before.state.tag
+    runner.grow(1)
+
+    nodes = tuple(runner.iter_profile_nodes())
+    root_node = next(node for node in nodes if node.id == 0)
+    child_nodes = tuple(node for node in nodes if node.id != 0)
+
+    assert isinstance(root_node.state_handle, CheckpointBackedStateHandle)
+    assert root_node.state.tag == root_tag_before
+    metrics = runner.profile_state_eviction_runtime()
+    assert child_nodes
+    assert all(
+        isinstance(node.state_handle, MaterializedStateHandle) for node in child_nodes
+    )
+    assert metrics["state_eviction_policy"] == "expanded"
+    assert metrics["eviction_success_count"] == 1
+    assert metrics["evicted_materialized_state_count"] == 1
+    assert metrics["anchor_payload_count"] == 1
+    assert metrics["compact_payload_count"] == 1
+    assert metrics["rematerialization_count"] == 1
+
+
+def test_growth_state_eviction_checkpoint_roundtrip_continues(
+    tmp_path: Path,
+) -> None:
+    """Eviction-enabled runtime checkpoints should restore and keep growing."""
+    checkpoint_path = tmp_path / (
+        f"generation_1{checkpoint_file_suffix(DEFAULT_CHECKPOINT_FILE_FORMAT)}"
+    )
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+    )
+
+    runner.load_or_create(None, None)
+    runner.grow(1)
+    size_before_save = runner.current_tree_size()
+    runner.save_checkpoint(checkpoint_path)
+
+    restored_runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(growth_state_eviction_policy="expanded")
+    )
+    restored_runner.load_or_create(checkpoint_path, None)
+    restored_runner.grow(1)
+
+    assert restored_runner.current_tree_size() >= size_before_save
 
 
 def test_load_or_create_logs_selector_family(caplog: pytest.LogCaptureFixture) -> None:

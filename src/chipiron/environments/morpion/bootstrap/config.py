@@ -26,7 +26,11 @@ from .record_status import (
 )
 
 if TYPE_CHECKING:
-    from .bootstrap_args import MorpionBootstrapArgs, MorpionRuntimeCheckpointFormat
+    from .bootstrap_args import (
+        MorpionBootstrapArgs,
+        MorpionGrowthStateEvictionPolicy,
+        MorpionRuntimeCheckpointFormat,
+    )
     from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
     from .pipeline_config import (
         MorpionEvaluatorUpdatePolicy,
@@ -64,6 +68,7 @@ class MorpionBootstrapRuntimeConfig:
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
+    growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -94,6 +99,10 @@ class MorpionBootstrapRuntimeConfig:
         if self.runtime_checkpoint_format not in {"json-zst", "sharded"}:
             raise MalformedMorpionBootstrapConfigError.invalid_required_str(
                 "runtime.runtime_checkpoint_format"
+            )
+        if self.growth_state_eviction_policy not in {"none", "expanded"}:
+            raise MalformedMorpionBootstrapConfigError.invalid_required_str(
+                "runtime.growth_state_eviction_policy"
             )
 
 
@@ -359,6 +368,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
                 args.candidate_checkpoint_load_min_headroom_mb
             ),
             runtime_checkpoint_format=args.runtime_checkpoint_format,
+            growth_state_eviction_policy=args.growth_state_eviction_policy,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -402,6 +412,9 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
                 config.runtime.candidate_checkpoint_load_min_headroom_mb
             ),
             "runtime_checkpoint_format": config.runtime.runtime_checkpoint_format,
+            "growth_state_eviction_policy": (
+                config.runtime.growth_state_eviction_policy
+            ),
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -523,6 +536,13 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                 _required_str(
                     runtime.get("runtime_checkpoint_format", "json-zst"),
                     field_name="runtime.runtime_checkpoint_format",
+                ),
+            ),
+            growth_state_eviction_policy=cast(
+                "MorpionGrowthStateEvictionPolicy",
+                _required_str(
+                    runtime.get("growth_state_eviction_policy", "none"),
+                    field_name="runtime.growth_state_eviction_policy",
                 ),
             ),
         ),
@@ -882,6 +902,7 @@ def _stage_bootstrap_config_field_values(
         "candidate_checkpoint_load_min_headroom_mb": (
             config.runtime.candidate_checkpoint_load_min_headroom_mb
         ),
+        "growth_state_eviction_policy": config.runtime.growth_state_eviction_policy,
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
         "rollout_action_selector_kind": config.search.rollout.action_selector_kind,

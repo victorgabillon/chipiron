@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from .pv_family_targets import PvFamilyTargetPolicy
 
 type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
+type MorpionGrowthStateEvictionPolicy = Literal["none", "expanded"]
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -79,9 +80,9 @@ def _invalid_growth_memory_profile_recursive_max_depth_error() -> ValueError:
     )
 
 
-def _invalid_growth_memory_profile_recursive_max_depth_explicit_error() -> TypeError:
+def _invalid_growth_memory_profile_recursive_max_depth_explicit_error() -> ValueError:
     """Return the canonical recursive max-depth explicit flag error."""
-    return TypeError(
+    return ValueError(
         "growth_memory_profile_recursive_max_depth_explicit must be a bool."
     )
 
@@ -127,6 +128,11 @@ def _invalid_runtime_checkpoint_format_error() -> ValueError:
 def _invalid_diagnostic_stop_after_growth_error() -> TypeError:
     """Return the canonical diagnostic stop flag validation error."""
     return TypeError("diagnostic_stop_after_growth must be a bool.")
+
+
+def _invalid_growth_state_eviction_policy_error() -> ValueError:
+    """Return the canonical growth state-eviction policy validation error."""
+    return ValueError("growth_state_eviction_policy must be 'none' or 'expanded'.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,11 +201,14 @@ class MorpionBootstrapArgs:
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
     diagnostic_stop_after_growth: bool = False
+    growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
         if not isinstance(self.diagnostic_stop_after_growth, bool):
             raise _invalid_diagnostic_stop_after_growth_error()
+        if self.growth_state_eviction_policy not in {"none", "expanded"}:
+            raise _invalid_growth_state_eviction_policy_error()
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):

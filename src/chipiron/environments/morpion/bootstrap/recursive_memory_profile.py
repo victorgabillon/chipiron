@@ -63,6 +63,7 @@ _CHECKPOINT_ROOT_ATTR_PATHS: tuple[tuple[str, ...], ...] = (
     ("state_codec",),
     ("_checkpoint_state_resolver",),
     ("checkpoint_state_resolver",),
+    ("_live_compact_state_resolver",),
 )
 _EVALUATOR_ATTR_PATHS: tuple[tuple[str, ...], ...] = (
     ("profile_evaluator_bundle",),
@@ -1472,6 +1473,86 @@ def _node_eval_slot(node: object, slot_name: str) -> object | None:
     return _raw_getattr(node_eval, slot_name)
 
 
+def _node_state_handle(node: object) -> object | None:
+    handle = _tree_node_slot(node, "state_handle_")
+    if handle is not None:
+        return handle
+    tree_node = _node_tree_node(node) or node
+    return _raw_getattr(tree_node, "state_handle_") or _raw_getattr(
+        tree_node,
+        "state_handle",
+    )
+
+
+def _state_from_materialized_handle(handle: object | None) -> object | None:
+    if handle is None:
+        return None
+    return _raw_getattr(handle, "state_")
+
+
+def _state_handle_storage_kind(handle: object | None) -> str:
+    type_name = _qualified_type_name(handle)
+    if type_name.endswith("MaterializedStateHandle"):
+        return "MaterializedStateHandle"
+    if type_name.endswith("CheckpointBackedStateHandle"):
+        return "CheckpointBackedStateHandle"
+    if handle is None:
+        return "None"
+    return "other"
+
+
+def _node_id_or_none(node: object) -> int | None:
+    for attr_name in ("id", "id_"):
+        value = _raw_getattr(node, attr_name)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+    tree_node = _node_tree_node(node)
+    if tree_node is not None:
+        return _node_id_or_none(tree_node)
+    return None
+
+
+def _node_depth_or_none(node: object) -> int | None:
+    tree_node = _node_tree_node(node) or node
+    for attr_name in ("tree_depth_", "tree_depth", "depth"):
+        value = _raw_getattr(tree_node, attr_name)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+    return None
+
+
+def _safe_bool_method(value: object | None, method_name: str) -> bool | None:
+    if value is None:
+        return None
+    method = _raw_getattr(value, method_name)
+    if not callable(method):
+        return None
+    try:
+        return bool(cast("Callable[[], object]", method)())
+    except Exception:
+        return None
+
+
+def _node_eval_bool(node: object, method_name: str) -> bool | None:
+    return _safe_bool_method(_node_tree_evaluation(node), method_name)
+
+
+def _selector_node_status_from_table(
+    node_state_by_id: Mapping[object, object] | None,
+    node: object,
+) -> str | None:
+    if node_state_by_id is None:
+        return None
+    node_id = _node_id_or_none(node)
+    if node_id is None:
+        return None
+    state = node_state_by_id.get(node_id)
+    if state is None:
+        return "opened"
+    status = _raw_getattr(state, "status")
+    return status if isinstance(status, str) else str(status)
+
+
 def _shallow_object_and_dict_size(value: object, *, seen: set[int]) -> int:
     total = 0
     value_id = id(value)
@@ -1854,6 +1935,245 @@ def child_link_storage_detail_histogram(
             duplicate_branch_key_ref_count > 0
         ),
     }
+
+
+def state_handle_materialization_detail_histogram(
+    nodes: Iterable[object],
+    *,
+    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
+    max_objects: int | None = None,
+) -> dict[str, object]:
+    """Return materialized-state pressure diagnostics without resolving handles."""
+    node_count = 0
+    handle_type_counts = Counter[str]()
+    handle_storage_kind_counts = Counter[str]()
+    state_type_counts = Counter[str]()
+    field_type_counts = Counter[str]()
+    field_shallow_bytes = Counter[str]()
+    frozenset_field_counts = Counter[str]()
+    frozenset_field_shallow_bytes = Counter[str]()
+    materialized_states: list[object] = []
+    materialized_state_ids: set[int] = set()
+    materialized_state_count = 0
+    checkpoint_backed_state_count = 0
+    materialized_morpion_state_count = 0
+
+    for node in nodes:
+        node_count += 1
+        handle = _node_state_handle(node)
+        handle_type = _qualified_type_name(handle)
+        handle_kind = _state_handle_storage_kind(handle)
+        handle_type_counts[handle_type] += 1
+        handle_storage_kind_counts[handle_kind] += 1
+        if handle_kind == "CheckpointBackedStateHandle":
+            checkpoint_backed_state_count += 1
+
+        state = _state_from_materialized_handle(handle)
+        if state is None:
+            continue
+        materialized_state_count += 1
+        state_type = _qualified_type_name(state)
+        state_type_counts[state_type] += 1
+        if _is_morpion_state_type_name(state_type):
+            materialized_morpion_state_count += 1
+        if id(state) not in materialized_state_ids:
+            materialized_state_ids.add(id(state))
+            materialized_states.append(state)
+        for field_name, field_value in _iter_direct_field_entries(state):
+            field_type_counts[f"{field_name}:{_qualified_type_name(field_value)}"] += 1
+            field_shallow_bytes[field_name] += _size_or_zero(field_value)
+            if isinstance(field_value, frozenset):
+                frozenset_field_counts[field_name] += 1
+                frozenset_field_shallow_bytes[field_name] += _size_or_zero(
+                    field_value
+                )
+
+    states_stats = DeepSizeStats(max_objects=max_objects)
+    materialized_states_recursive_bytes = _exclusive_deep_size(
+        materialized_states,
+        seen=set(),
+        max_depth=max_depth,
+        stats=states_stats,
+    )
+
+    return {
+        "node_count_scanned": node_count,
+        "handle_type_counts": dict(_ordered_counter_items(handle_type_counts)),
+        "handle_storage_kind_counts": dict(
+            _ordered_counter_items(
+                handle_storage_kind_counts,
+                order=(
+                    "MaterializedStateHandle",
+                    "CheckpointBackedStateHandle",
+                    "other",
+                    "None",
+                ),
+            )
+        ),
+        "materialized_state_count": materialized_state_count,
+        "unique_materialized_state_count": len(materialized_states),
+        "checkpoint_backed_state_count": checkpoint_backed_state_count,
+        "state_type_counts": dict(_ordered_counter_items(state_type_counts)),
+        "materialized_morpion_state_count": materialized_morpion_state_count,
+        "materialized_states_recursive_bytes": materialized_states_recursive_bytes,
+        "materialized_states_recursive_visited_objects": states_stats.visited_objects,
+        "materialized_states_recursive_capped": states_stats.capped,
+        "materialized_states_recursive_max_depth_reached_count": (
+            states_stats.max_depth_reached_count
+        ),
+        "materialized_states_recursive_recursion_error_count": (
+            states_stats.recursion_error_count
+        ),
+        "top_materialized_state_field_types": dict(
+            _ordered_counter_items(field_type_counts)
+        ),
+        "materialized_state_field_shallow_bytes": dict(
+            _ordered_counter_items(field_shallow_bytes)
+        ),
+        "materialized_state_frozenset_field_counts": dict(
+            _ordered_counter_items(frozenset_field_counts)
+        ),
+        "materialized_state_frozenset_field_shallow_bytes": dict(
+            _ordered_counter_items(frozenset_field_shallow_bytes)
+        ),
+    }
+
+
+def state_retention_by_node_status_histogram(
+    nodes: Iterable[object],
+    *,
+    selector: object | None = None,
+) -> dict[str, object]:
+    """Return materialized-state retention grouped by cheap node status flags."""
+    node_count = 0
+    materialized_state_count = 0
+    materialized_on_internal_nodes = 0
+    materialized_on_frontier_nodes = 0
+    materialized_on_terminal_nodes = 0
+    materialized_on_exact_nodes = 0
+    materialized_on_all_branches_generated_nodes = 0
+    materialized_on_no_unopened_branch_nodes = 0
+    candidate_cold_evictable_materialized_state_count = 0
+    depth_counts = Counter[str]()
+    materialized_depth_counts = Counter[str]()
+    selector_status_counts = Counter[str]()
+    materialized_selector_status_counts = Counter[str]()
+    _linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
+    del _linoo_selector
+
+    for node in nodes:
+        node_count += 1
+        tree_node = _node_tree_node(node) or node
+        depth = _node_depth_or_none(node)
+        depth_bucket = "unknown" if depth is None else str(depth)
+        depth_counts[depth_bucket] += 1
+
+        handle = _node_state_handle(node)
+        has_materialized_state = _state_from_materialized_handle(handle) is not None
+        if has_materialized_state:
+            materialized_state_count += 1
+            materialized_depth_counts[depth_bucket] += 1
+
+        child_count = _child_link_count_from_storage(
+            _raw_getattr(tree_node, "branches_children_")
+        )
+        has_children = child_count > 0
+        unopened_branch_count = _branch_ref_count(
+            _raw_getattr(tree_node, "non_opened_branches_")
+        )
+        has_no_unopened_branches = unopened_branch_count == 0
+        all_branches_generated = bool(
+            _raw_getattr(tree_node, "all_branches_generated")
+        )
+        terminal = _node_eval_bool(node, "is_terminal")
+        exact = _node_eval_bool(node, "has_exact_value")
+        selector_status = _selector_node_status_from_table(node_state_by_id, node)
+        selector_status_key = selector_status or "unknown"
+        selector_status_counts[selector_status_key] += 1
+        is_frontier = selector_status == "frontier"
+        is_openable_without_selector = (
+            selector_status is None
+            and not all_branches_generated
+            and not has_no_unopened_branches
+        )
+        is_openable = is_frontier or is_openable_without_selector
+
+        if not has_materialized_state:
+            continue
+
+        materialized_selector_status_counts[selector_status_key] += 1
+        if has_children:
+            materialized_on_internal_nodes += 1
+        if is_frontier:
+            materialized_on_frontier_nodes += 1
+        if terminal is True:
+            materialized_on_terminal_nodes += 1
+        if exact is True:
+            materialized_on_exact_nodes += 1
+        if all_branches_generated:
+            materialized_on_all_branches_generated_nodes += 1
+        if has_no_unopened_branches:
+            materialized_on_no_unopened_branch_nodes += 1
+
+        retained_finished_or_internal = (
+            has_children
+            or terminal is True
+            or exact is True
+            or all_branches_generated
+            or has_no_unopened_branches
+        )
+        if retained_finished_or_internal and not is_openable:
+            candidate_cold_evictable_materialized_state_count += 1
+
+    return {
+        "node_count_scanned": node_count,
+        "materialized_state_count": materialized_state_count,
+        "materialized_states_on_opened_internal_nodes": (
+            materialized_on_internal_nodes
+        ),
+        "materialized_states_on_frontier_nodes": materialized_on_frontier_nodes,
+        "materialized_states_on_terminal_nodes": materialized_on_terminal_nodes,
+        "materialized_states_on_exact_nodes": materialized_on_exact_nodes,
+        "materialized_states_on_all_branches_generated_nodes": (
+            materialized_on_all_branches_generated_nodes
+        ),
+        "materialized_states_on_no_unopened_branch_nodes": (
+            materialized_on_no_unopened_branch_nodes
+        ),
+        "candidate_cold_evictable_materialized_state_count": (
+            candidate_cold_evictable_materialized_state_count
+        ),
+        "depth_counts": dict(_ordered_counter_items(depth_counts)),
+        "materialized_depth_counts": dict(
+            _ordered_counter_items(materialized_depth_counts)
+        ),
+        "selector_status_counts": dict(_ordered_counter_items(selector_status_counts)),
+        "materialized_selector_status_counts": dict(
+            _ordered_counter_items(materialized_selector_status_counts)
+        ),
+    }
+
+
+def state_eviction_runtime_histogram(runner: object) -> dict[str, object]:
+    """Return opt-in growth state-eviction counters when exposed by the runner."""
+    profile = _raw_getattr(runner, "profile_state_eviction_runtime")
+    if callable(profile):
+        try:
+            payload = cast("Callable[[], object]", profile)()
+        except Exception:
+            payload = None
+        if isinstance(payload, Mapping):
+            return {"present": True, **dict(payload)}
+    metrics = _raw_getattr(runner, "_state_eviction_metrics")
+    snapshot = _raw_getattr(metrics, "snapshot")
+    if callable(snapshot):
+        try:
+            payload = cast("Callable[[], object]", snapshot)()
+        except Exception:
+            payload = None
+        if isinstance(payload, Mapping):
+            return {"present": True, **dict(payload)}
+    return {"present": False}
 
 
 def node_evaluation_runtime_histograms(nodes: Iterable[object]) -> dict[str, object]:
@@ -3904,6 +4224,28 @@ def log_growth_recursive_memory_profile(
     )
     _log_histogram(
         event,
+        "state_handle_materialization_detail",
+        state_handle_materialization_detail_histogram(
+            context.nodes,
+            max_depth=effective_max_depth,
+            max_objects=effective_max_objects,
+        ),
+    )
+    _log_histogram(
+        event,
+        "state_retention_by_node_status",
+        state_retention_by_node_status_histogram(
+            context.nodes,
+            selector=context.selector,
+        ),
+    )
+    _log_histogram(
+        event,
+        "state_eviction_runtime",
+        state_eviction_runtime_histogram(context.runner),
+    )
+    _log_histogram(
+        event,
         "node_evaluation_runtime",
         node_evaluation_runtime_histograms(context.nodes),
     )
@@ -4057,5 +4399,8 @@ __all__ = [
     "node_evaluation_runtime_histograms",
     "parent_link_storage_histogram",
     "slot_names",
+    "state_eviction_runtime_histogram",
+    "state_handle_materialization_detail_histogram",
+    "state_retention_by_node_status_histogram",
     "tree_topology_histograms",
 ]

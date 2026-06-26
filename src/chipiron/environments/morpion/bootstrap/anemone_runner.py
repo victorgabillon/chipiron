@@ -37,6 +37,7 @@ from anemone.factory import (
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
+from anemone.nodes.state_handles import MaterializedStateHandle
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
 from anemone.node_selector.linoo import LinooArgs
 from anemone.node_selector.node_selector_types import NodeSelectorType
@@ -1186,6 +1187,95 @@ class AnemoneMorpionSearchRunnerArgs:
     restore_memory_profile_recursive_max_objects: int | None = None
     restore_memory_profile_recursive_max_depth: int | None = None
     runtime_checkpoint_format: str = "json-zst"
+    growth_state_eviction_policy: str = "none"
+
+
+@dataclass(slots=True)
+class MorpionGrowthStateEvictionMetrics:
+    """Counters for experimental growth-time state eviction."""
+
+    state_eviction_policy: str = "none"
+    eviction_attempt_count: int = 0
+    eviction_success_count: int = 0
+    evicted_materialized_state_count: int = 0
+    compact_payload_count: int = 0
+    anchor_payload_count: int = 0
+    delta_payload_count: int = 0
+    rematerialization_count: int = 0
+    rematerialization_cache_hit: int = 0
+    rematerialization_cache_miss: int = 0
+    total_reconstruction_depth: int = 0
+    eviction_skipped_count_by_reason: dict[str, int] = field(default_factory=dict)
+
+    def skip(self, reason: str) -> None:
+        """Record one skipped eviction attempt."""
+        self.eviction_skipped_count_by_reason[reason] = (
+            self.eviction_skipped_count_by_reason.get(reason, 0) + 1
+        )
+
+    def snapshot(self) -> dict[str, object]:
+        """Return a grep-friendly diagnostics payload."""
+        average_reconstruction_depth = (
+            0.0
+            if self.rematerialization_count <= 0
+            else self.total_reconstruction_depth / self.rematerialization_count
+        )
+        skipped_count = sum(self.eviction_skipped_count_by_reason.values())
+        return {
+            "state_eviction_policy": self.state_eviction_policy,
+            "eviction_attempt_count": self.eviction_attempt_count,
+            "eviction_success_count": self.eviction_success_count,
+            "eviction_skipped_count": skipped_count,
+            "eviction_skipped_count_by_reason": dict(
+                sorted(self.eviction_skipped_count_by_reason.items())
+            ),
+            "evicted_materialized_state_count": self.evicted_materialized_state_count,
+            "compact_payload_count": self.compact_payload_count,
+            "anchor_payload_count": self.anchor_payload_count,
+            "delta_payload_count": self.delta_payload_count,
+            "rematerialization_count": self.rematerialization_count,
+            "rematerialization_cache_hit": self.rematerialization_cache_hit,
+            "rematerialization_cache_miss": self.rematerialization_cache_miss,
+            "average_reconstruction_depth": average_reconstruction_depth,
+        }
+
+
+@dataclass(slots=True)
+class _LiveCompactStateResolver:
+    """In-RAM compact state resolver for experimental growth eviction.
+
+    Unlike checkpoint restore resolvers, this live resolver intentionally avoids a
+    decoded-state cache so rematerialized states are not retained indefinitely.
+    """
+
+    state_codec: object
+    state_payloads_by_node_id: dict[int, CheckpointNodeStatePayload] = field(
+        default_factory=dict
+    )
+    metrics: MorpionGrowthStateEvictionMetrics = field(
+        default_factory=MorpionGrowthStateEvictionMetrics
+    )
+
+    def resolve(self, node_id: int) -> MorpionState:
+        """Resolve one compact payload into a concrete Morpion state."""
+        self.metrics.rematerialization_count += 1
+        self.metrics.rematerialization_cache_miss += 1
+        self.metrics.total_reconstruction_depth += 1
+        payload = self.state_payloads_by_node_id[node_id]
+        if isinstance(payload, AnchorCheckpointStatePayload):
+            return cast("Any", self.state_codec).load_anchor_ref(payload.anchor_ref)
+        if isinstance(payload, DeltaCheckpointStatePayload):
+            parent_state = self.resolve(payload.state_parent_node_id)
+            return cast("Any", self.state_codec).load_child_from_delta(
+                parent_state=parent_state,
+                delta_ref=payload.delta_ref,
+                branch_from_parent=None,
+            )
+        raise KeyError(node_id)
+
+    def summary(self, node_id: int) -> object | None:
+        """Return optional state summary metadata for ``node_id``."""
+        return self.state_payloads_by_node_id[node_id].state_summary
 
 
 @dataclass(frozen=True, slots=True)
@@ -1271,6 +1361,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._last_applied_runtime_config = _runtime_config_from_search_args(
             self._args.search_args
         )
+        self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
+            state_eviction_policy=self._args.growth_state_eviction_policy
+        )
+        self._live_compact_state_resolver = _LiveCompactStateResolver(
+            state_codec=self._state_codec,
+            metrics=self._state_eviction_metrics,
+        )
         self._linoo_selection_table_artifact_path: Path | None = None
         self._linoo_selection_table_cycle_index: int | None = None
         self._linoo_selection_table_generation: int | None = None
@@ -1313,6 +1410,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
+        self._reset_growth_state_eviction_runtime()
         LOGGER.info(
             "[search] selector=%s opening_type=%s opening_expansion=%s",
             _selector_family_name(self._args.search_args),
@@ -1374,9 +1472,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         initial_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
-            "[growth] start max_steps=%s initial_tree_size=%s",
+            "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s",
             max_growth_steps,
             initial_tree_size,
+            self._args.growth_state_eviction_policy,
         )
         self._clear_linoo_selection_table_artifact()
         steps_executed = 0
@@ -1406,6 +1505,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 reported_branch_count = getattr(step_report, "branch_count", None)
                 if isinstance(reported_branch_count, int):
                     branch_count = reported_branch_count
+            self._maybe_evict_selected_expanded_node(
+                runtime=runtime,
+                selected_node_id=selected_node_id,
+            )
             if not isinstance(selected_depth, int):
                 node_selector = getattr(runtime, "node_selector", None)
                 uniform_selector = getattr(node_selector, "base", node_selector)
@@ -1517,6 +1620,84 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             final_tree_size,
             stop_reason,
         )
+        LOGGER.info("[state-eviction] %s", self._format_state_eviction_metrics())
+
+    def _reset_growth_state_eviction_runtime(self) -> None:
+        """Reset live compact payload storage for the next loaded runtime."""
+        self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
+            state_eviction_policy=self._args.growth_state_eviction_policy
+        )
+        self._live_compact_state_resolver = _LiveCompactStateResolver(
+            state_codec=self._state_codec,
+            metrics=self._state_eviction_metrics,
+        )
+
+    def _maybe_evict_selected_expanded_node(
+        self,
+        *,
+        runtime: object,
+        selected_node_id: object,
+    ) -> None:
+        """Apply the conservative expanded-node state eviction policy."""
+        if self._args.growth_state_eviction_policy == "none":
+            return
+        self._state_eviction_metrics.eviction_attempt_count += 1
+        if self._args.growth_state_eviction_policy != "expanded":
+            self._state_eviction_metrics.skip("unsupported_policy")
+            return
+        if not isinstance(selected_node_id, int):
+            self._state_eviction_metrics.skip("missing_selected_node_id")
+            return
+        selected_node = _selected_node_from_latest_expansions(
+            runtime,
+            selected_node_id=selected_node_id,
+        )
+        if selected_node is None:
+            self._state_eviction_metrics.skip("selected_node_not_found")
+            return
+        if not bool(getattr(selected_node, "all_branches_generated", False)):
+            self._state_eviction_metrics.skip("selected_node_not_fully_expanded")
+            return
+        raw_handle = getattr(selected_node, "state_handle", None)
+        if isinstance(raw_handle, CheckpointBackedStateHandle):
+            self._state_eviction_metrics.skip("already_checkpoint_backed")
+            return
+        if not isinstance(raw_handle, MaterializedStateHandle):
+            self._state_eviction_metrics.skip("not_materialized_handle")
+            return
+        state = raw_handle.state_
+        try:
+            state_summary = self._state_codec.dump_state_summary(state)
+            anchor_ref = self._state_codec.dump_anchor_ref(state)
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._state_eviction_metrics.skip("payload_build_failed")
+            return
+        payload = AnchorCheckpointStatePayload(
+            anchor_ref=anchor_ref,
+            state_summary=state_summary,
+        )
+        tree_node = getattr(selected_node, "tree_node", None)
+        if tree_node is None:
+            self._state_eviction_metrics.skip("missing_tree_node")
+            return
+        self._live_compact_state_resolver.state_payloads_by_node_id[
+            selected_node_id
+        ] = payload
+        tree_node.state_handle_ = CheckpointBackedStateHandle(
+            resolver=cast("Any", self._live_compact_state_resolver),
+            node_id=selected_node_id,
+        )
+        self._state_eviction_metrics.eviction_success_count += 1
+        self._state_eviction_metrics.evicted_materialized_state_count += 1
+        self._state_eviction_metrics.compact_payload_count = len(
+            self._live_compact_state_resolver.state_payloads_by_node_id
+        )
+        self._state_eviction_metrics.anchor_payload_count += 1
+
+    def _format_state_eviction_metrics(self) -> str:
+        """Format state eviction metrics as stable key=value log fields."""
+        snapshot = self._state_eviction_metrics.snapshot()
+        return " ".join(f"{key}={value!r}" for key, value in snapshot.items())
 
     def _log_and_persist_linoo_selection_table(
         self,
@@ -1721,6 +1902,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def profile_state_codec(self) -> object:
         """Return the checkpoint codec root used by lazy restored state handles."""
         return self._state_codec
+
+    def profile_state_eviction_runtime(self) -> Mapping[str, object]:
+        """Return experimental state-eviction counters for memory diagnostics."""
+        return self._state_eviction_metrics.snapshot()
 
     def iter_profile_branches(self) -> Iterator[object]:
         """Yield live branch or ordering objects for memory profiling only."""
@@ -2665,6 +2850,29 @@ def _count_expanded_nodes(runtime: Any) -> int:
         for node in runtime._all_nodes_in_tree_order()
         if bool(getattr(node, "all_branches_generated", False))
     )
+
+
+def _selected_node_from_latest_expansions(
+    runtime: object,
+    *,
+    selected_node_id: int,
+) -> object | None:
+    """Return the selected parent node from the latest expansion wave."""
+    latest_tree_expansions = getattr(runtime, "latest_tree_expansions", None)
+    if latest_tree_expansions is None:
+        return None
+    for bucket_name in (
+        "expansions_with_node_creation",
+        "expansions_without_node_creation",
+    ):
+        expansions = getattr(latest_tree_expansions, bucket_name, None)
+        if not isinstance(expansions, Iterable):
+            continue
+        for expansion in expansions:
+            parent_node = getattr(expansion, "parent_node", None)
+            if getattr(parent_node, "id", None) == selected_node_id:
+                return parent_node
+    return None
 
 
 def _runtime_depth_counts(runtime: Any) -> dict[int, int]:

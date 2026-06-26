@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from anemone.checkpoints import checkpoint_payload_to_jsonable
+
 from chipiron.environments.morpion.learning import (
     InvalidMorpionStateRefPayloadError,
     decode_morpion_state_ref_payload,
@@ -69,7 +71,7 @@ class MorpionCertifiedRecordCandidate:
     initial_point_count: int
     moves_since_start: int
     total_points: int
-    state_ref_payload: dict[str, object]
+    state_ref_payload: object
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,7 +105,7 @@ class MorpionLeaderboardEntry:
     is_exact: bool
     source: str
     state_fingerprint: str
-    state_ref_payload: dict[str, object]
+    state_ref_payload: object
     run_work_dir: str
     generation: int
     cycle_index: int
@@ -563,7 +565,9 @@ def persist_certified_leaderboard_candidates(
             is_exact=True,
             source="certified_terminal_leaf",
             state_fingerprint=fingerprint,
-            state_ref_payload=dict(candidate.state_ref_payload),
+            state_ref_payload=checkpoint_payload_to_jsonable(
+                candidate.state_ref_payload
+            ),
             run_work_dir=str(Path(run_work_dir)),
             generation=generation,
             cycle_index=cycle_index,
@@ -609,13 +613,13 @@ def persist_certified_leaderboard_candidates(
 def fingerprint_morpion_state_payload(
     *,
     variant: str,
-    state_ref_payload: dict[str, object],
+    state_ref_payload: object,
 ) -> str:
     """Return a deterministic sha256 fingerprint for one Morpion state payload."""
     canonical_payload = json.dumps(
         {
             "variant": variant,
-            "state_ref_payload": state_ref_payload,
+            "state_ref_payload": checkpoint_payload_to_jsonable(state_ref_payload),
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -627,11 +631,11 @@ def _decoded_payload_and_moves(
     *,
     node: TrainingNodeSnapshot,
     variant: str,
-) -> tuple[dict[str, object], int]:
+) -> tuple[object, int]:
     """Return normalized payload and move count for one valid Morpion snapshot node."""
     if node.state_ref_payload is None:
         raise InvalidMorpionStateRefPayloadError.payload_must_be_mapping()
-    normalized_payload = dict(node.state_ref_payload)
+    normalized_payload = checkpoint_payload_to_jsonable(node.state_ref_payload)
     decoded_state = decode_morpion_state_ref_payload(normalized_payload)
     if decoded_state.variant.value != variant:
         raise InvalidMorpionStateRefPayloadError.payload_not_decodable()
@@ -836,7 +840,7 @@ def _load_leaderboard_entries(path: Path) -> list[MorpionLeaderboardEntry]:
                 is_exact=bool(payload["is_exact"]),
                 source=str(payload["source"]),
                 state_fingerprint=str(payload["state_fingerprint"]),
-                state_ref_payload=dict(payload["state_ref_payload"]),
+                state_ref_payload=payload["state_ref_payload"],
                 run_work_dir=str(payload["run_work_dir"]),
                 generation=int(payload["generation"]),
                 cycle_index=int(payload["cycle_index"]),
@@ -871,7 +875,7 @@ def _leaderboard_entry_to_dict(entry: MorpionLeaderboardEntry) -> dict[str, obje
         "is_exact": entry.is_exact,
         "source": entry.source,
         "state_fingerprint": entry.state_fingerprint,
-        "state_ref_payload": dict(entry.state_ref_payload),
+        "state_ref_payload": checkpoint_payload_to_jsonable(entry.state_ref_payload),
         "run_work_dir": entry.run_work_dir,
         "generation": entry.generation,
         "cycle_index": entry.cycle_index,

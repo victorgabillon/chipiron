@@ -415,6 +415,20 @@ def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> Non
     assert loaded.search.rollout == config.search.rollout
 
 
+def test_bootstrap_config_persists_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Persisted runtime config should include the growth state-eviction policy."""
+    args = replace(_make_args(tmp_path), growth_state_eviction_policy="expanded")
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "expanded"
+    assert loaded.runtime.growth_state_eviction_policy == "expanded"
+
+
 def test_bootstrap_config_without_search_section_is_rejected() -> None:
     """Persisted configs must use the explicit search rollout schema."""
     payload = bootstrap_config_to_dict(_make_config())
