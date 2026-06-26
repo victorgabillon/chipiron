@@ -580,6 +580,7 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile_recursive_context_node_cap is None
     assert args.growth_memory_profile_recursive_events == ("after_checkpoint_load",)
     assert args.growth_memory_profile_recursive_complete_map is False
+    assert args.diagnostic_stop_after_growth is False
     assert args.candidate_checkpoint_load_headroom_factor == 60.0
     assert args.candidate_checkpoint_load_min_headroom_mb == 512
 

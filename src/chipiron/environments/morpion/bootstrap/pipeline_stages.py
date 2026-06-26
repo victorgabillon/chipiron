@@ -601,6 +601,15 @@ def run_pipeline_growth_stage(
                 run_state.generation,
             )
             break
+        if run_state.metadata.get(GROWTH_STATUS_METADATA_KEY) == (
+            "diagnostic_stop_after_growth"
+        ):
+            LOGGER.info(
+                "[pipeline] growth_stop reason=diagnostic_stop_after_growth cycle=%s generation=%s",
+                run_state.cycle_index,
+                run_state.generation,
+            )
+            break
     LOGGER.info(
         "[pipeline] growth_done generation=%s cycle=%s",
         run_state.generation,
@@ -868,6 +877,62 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+
+    if args.diagnostic_stop_after_growth:
+        cycle_duration_s = time.perf_counter() - cycle_started_at
+        LOGGER.info(
+            "[save] skipped reason=diagnostic_stop_after_growth unsaved_nodes_added=%s",
+            nodes_added,
+        )
+        LOGGER.info(
+            "[pipeline] growth_stop reason=diagnostic_stop_after_growth cycle=%s generation=%s",
+            cycle_index,
+            run_state.generation,
+        )
+        LOGGER.info(
+            "[timing] cycle_done growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            growth_duration_s,
+            0.0,
+            cycle_duration_s,
+        )
+        next_run_state = _build_no_save_run_state(
+            run_state=run_state,
+            resolved_active_model=resolved_active_model,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+            cycle_index=cycle_index,
+        )
+        metadata = dict(next_run_state.metadata)
+        metadata["growth_status"] = "diagnostic_stop_after_growth"
+        metadata["checkpoint_skipped_reason"] = "diagnostic_stop_after_growth"
+        metadata["checkpoint_skipped"] = True
+        next_run_state = replace(next_run_state, metadata=metadata)
+        _record_no_save_cycle_event(
+            history_recorder=history_recorder,
+            cycle_index=cycle_index,
+            timestamp_utc=timestamp_utc,
+            tree_status=tree_status,
+            frontier_status=frontier_status,
+            run_state=run_state,
+            next_run_state=next_run_state,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+        )
+        LOGGER.info(
+            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=diagnostic_stop_after_growth",
+            cycle_index,
+            next_run_state.generation,
+            cycle_duration_s,
+        )
+        log_pipeline_memory(
+            stage="growth",
+            generation=next_run_state.generation,
+            event="done",
+            node_count=current_tree_size,
+            branch_count=branch_count,
+            reason="diagnostic_stop_after_growth",
+        )
+        return next_run_state
 
     if (
         _no_growth_and_limit_reached(

@@ -976,6 +976,14 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--diagnostic-stop-after-growth",
+        action="store_true",
+        help=(
+            "Diagnostic growth-stage mode: run tree growth and after-growth "
+            "profiling, then skip checkpoint/tree/export artifacts."
+        ),
+    )
+    parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
         type=float,
         default=60.0,
@@ -1235,6 +1243,7 @@ def launcher_args_from_cli(
         growth_memory_profile_recursive_complete_map=(
             parsed.growth_memory_profile_recursive_complete_map
         ),
+        diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor
         ),

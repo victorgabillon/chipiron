@@ -483,6 +483,7 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
             "--growth-memory-profile-recursive-events",
             "after_checkpoint_load,before_growth",
             "--growth-memory-profile-recursive-complete-map",
+            "--diagnostic-stop-after-growth",
         ]
     )
 
@@ -507,6 +508,7 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
         "before_growth",
     )
     assert launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map is True
+    assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is True
 
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
@@ -541,6 +543,7 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
         launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map
         is False
     )
+    assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is False
 
 
 def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(

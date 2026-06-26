@@ -124,6 +124,11 @@ def _invalid_runtime_checkpoint_format_error() -> ValueError:
     return ValueError("runtime_checkpoint_format must be 'json-zst' or 'sharded'.")
 
 
+def _invalid_diagnostic_stop_after_growth_error() -> TypeError:
+    """Return the canonical diagnostic stop flag validation error."""
+    return TypeError("diagnostic_stop_after_growth must be a bool.")
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -189,9 +194,12 @@ class MorpionBootstrapArgs:
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
+    diagnostic_stop_after_growth: bool = False
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
+        if not isinstance(self.diagnostic_stop_after_growth, bool):
+            raise _invalid_diagnostic_stop_after_growth_error()
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):

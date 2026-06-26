@@ -653,9 +653,77 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
     assert manifest.training_status == "not_started"
     assert manifest.model_bundle_paths == {}
     assert manifest.selected_evaluator_name is None
+    assert runner.grow_calls == [5]
+    assert runner.checkpoint_calls == [
+        str(paths.runtime_checkpoint_path_for_generation(1))
+    ]
+    assert paths.runtime_checkpoint_path_for_generation(1).is_file()
+    assert paths.tree_snapshot_path_for_generation(1).is_file()
     assert not paths.rows_path_for_generation(1).exists()
     assert not paths.pipeline_active_model_path.exists()
     assert not paths.model_generation_dir_for_generation(1).exists()
+
+
+def test_pipeline_growth_stage_diagnostic_stop_after_growth_skips_artifacts(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Diagnostic stop should grow once and exit before save/export artifacts."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        diagnostic_stop_after_growth=True,
+    )
+
+    caplog.set_level(logging.INFO)
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert runner.load_calls == [(None, None)]
+    assert runner.grow_calls == [5]
+    assert runner.checkpoint_calls == []
+    assert run_state.generation == 0
+    assert run_state.cycle_index == 0
+    assert run_state.metadata["growth_status"] == "diagnostic_stop_after_growth"
+    assert run_state.metadata["checkpoint_skipped_reason"] == (
+        "diagnostic_stop_after_growth"
+    )
+    assert run_state.metadata["checkpoint_skipped"] is True
+    assert not paths.runtime_checkpoint_path_for_generation(1).exists()
+    assert not paths.tree_snapshot_path_for_generation(1).exists()
+    assert not paths.pipeline_manifest_path_for_generation(1).exists()
+    assert "reason=diagnostic_stop_after_growth" in caplog.text
+
+
+def test_pipeline_growth_stage_diagnostic_stop_keeps_after_growth_profiles(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Diagnostic stop should still emit after-growth memory profile hooks."""
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        branch_counts=(8,),
+    )
+    runner.nodes = [{"metadata": {"index": 1}}]
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        diagnostic_stop_after_growth=True,
+        growth_memory_profile=True,
+        growth_memory_profile_recursive=True,
+        growth_memory_profile_recursive_max_objects=500,
+        growth_memory_profile_recursive_events=("after_growth",),
+    )
+
+    caplog.set_level(logging.INFO)
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    text = caplog.text
+    assert "[growth-profile] event=after_growth" in text
+    assert "[growth-recursive-profile] event=after_growth" in text
+    assert "[growth-profile] event=before_checkpoint_save" not in text
+    assert "checkpoint_save_done" not in text
+    assert "reason=diagnostic_stop_after_growth" in text
 
 
 def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
