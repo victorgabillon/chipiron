@@ -41,8 +41,8 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
     build_recursive_profile_context,
     checkpoint_payload_lifetime_histograms,
     checkpoint_payload_shape_histograms,
-    checkpoint_state_roots_detail_histogram,
     checkpoint_state_histograms,
+    checkpoint_state_roots_detail_histogram,
     child_link_storage_detail_histogram,
     deep_size,
     frozenset_ownership_histogram,
@@ -465,9 +465,7 @@ class FakeLinooSelector:
 
     def __init__(self, states: dict[int, FakeLinooNodeState]) -> None:
         self._node_state_by_id = states
-        self._candidates_by_depth = {
-            1: [(0.1, 1, 1), (0.2, 2, 1), (0.3, 3, 1)]
-        }
+        self._candidates_by_depth = {1: [(0.1, 1, 1), (0.2, 2, 1), (0.3, 3, 1)]}
         self._candidate_versions_by_node_id = {1: 1, 2: 2, 3: 1}
         self._candidate_heap_present_by_node_id = {1: True, 2: True, 3: False}
         self.labels = {key: state.status for key, state in states.items()}
@@ -557,15 +555,11 @@ class FakeRunnerWithCheckpointBackedHandles:
         self.profile_checkpoint_state_resolver = resolver
         self.nodes = [
             FakeAlgorithmNode(
-                FakeTreeNode(
-                    state_handle=FakeCheckpointBackedStateHandle(resolver, 1)
-                ),
+                FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 1)),
                 FakeNodeEvaluation(),
             ),
             FakeAlgorithmNode(
-                FakeTreeNode(
-                    state_handle=FakeCheckpointBackedStateHandle(resolver, 2)
-                ),
+                FakeTreeNode(state_handle=FakeCheckpointBackedStateHandle(resolver, 2)),
                 FakeNodeEvaluation(),
             ),
         ]
@@ -1068,21 +1062,15 @@ def test_state_handle_materialization_detail_counts_handles_and_states() -> None
     )
 
     assert histogram["node_count_scanned"] == 3
-    assert (
-        histogram["handle_storage_kind_counts"]["MaterializedStateHandle"] == 1
-    )
-    assert (
-        histogram["handle_storage_kind_counts"]["CheckpointBackedStateHandle"] == 1
-    )
+    assert histogram["handle_storage_kind_counts"]["MaterializedStateHandle"] == 1
+    assert histogram["handle_storage_kind_counts"]["CheckpointBackedStateHandle"] == 1
     assert histogram["handle_storage_kind_counts"]["other"] == 1
     assert histogram["materialized_state_count"] == 1
     assert histogram["unique_materialized_state_count"] == 1
     assert histogram["checkpoint_backed_state_count"] == 1
     assert histogram["materialized_morpion_state_count"] == 1
     assert (
-        histogram["state_type_counts"][
-            "atomheart.games.morpion.state.MorpionState"
-        ]
+        histogram["state_type_counts"]["atomheart.games.morpion.state.MorpionState"]
         == 1
     )
     assert histogram["materialized_states_recursive_bytes"] > 0
@@ -1173,6 +1161,10 @@ def test_state_eviction_runtime_histogram_reads_runner_profile() -> None:
             "state_eviction_policy": "cold_expanded",
             "eviction_attempt_count": 3,
             "eviction_success_count": 2,
+            "rematerialization_count_by_phase": {"select": 1},
+            "rematerialization_cache_hit_by_phase": {"select": 1},
+            "rematerialization_cache_miss_by_phase": {},
+            "rematerialization_total_s_by_phase": {"select": 0.001},
         }
     )
 
@@ -1183,6 +1175,10 @@ def test_state_eviction_runtime_histogram_reads_runner_profile() -> None:
         "state_eviction_policy": "cold_expanded",
         "eviction_attempt_count": 3,
         "eviction_success_count": 2,
+        "rematerialization_count_by_phase": {"select": 1},
+        "rematerialization_cache_hit_by_phase": {"select": 1},
+        "rematerialization_cache_miss_by_phase": {},
+        "rematerialization_total_s_by_phase": {"select": 0.001},
     }
 
 
@@ -1247,8 +1243,9 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
     assert histograms["default_count"] == 1
     assert histograms["non_default_count"] == 1
     assert histograms["node_state_table_shallow_bytes"] > 0
-    assert histograms["container_shallow_bytes"] >= (
-        histograms["node_state_table_shallow_bytes"]
+    assert (
+        histograms["container_shallow_bytes"]
+        >= (histograms["node_state_table_shallow_bytes"])
     )
     assert histograms["reaches_algorithm_node"] is False
     assert histograms["reaches_tree_node"] is False
@@ -1537,12 +1534,14 @@ def test_checkpoint_payload_lifetime_histograms_detect_shared_resolver() -> None
         branch_count=0,
         node_cap=10,
     )
-    payload_store_records = recursive_memory_profile_module._log_checkpoint_payload_stores(
-        event="after_checkpoint_load",
-        checkpoint_payload_stores=context.checkpoint_payload_stores,
-        max_objects=None,
-        max_depth=64,
-        complete_map=False,
+    payload_store_records = (
+        recursive_memory_profile_module._log_checkpoint_payload_stores(
+            event="after_checkpoint_load",
+            checkpoint_payload_stores=context.checkpoint_payload_stores,
+            max_objects=None,
+            max_depth=64,
+            complete_map=False,
+        )
     )
 
     histograms = checkpoint_payload_lifetime_histograms(
@@ -1816,7 +1815,12 @@ def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
     )
 
     histogram = frozenset_ownership_histogram(
-        objects=[points, used_unit_segments, played_moves, same_value_different_identity],
+        objects=[
+            points,
+            used_unit_segments,
+            played_moves,
+            same_value_different_identity,
+        ],
         sample_cap=10,
         top_n=10,
     )
@@ -1837,13 +1841,19 @@ def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
         "used_unit_segments": 1,
         "played_moves": 1,
     }
-    assert dict(histogram["top_referrer_types"])[
-        "atomheart.games.morpion.state.MorpionState"
-    ] == 4
+    assert (
+        dict(histogram["top_referrer_types"])[
+            "atomheart.games.morpion.state.MorpionState"
+        ]
+        == 4
+    )
     assert dict(histogram["top_referrer_types"])["dict"] == 1
-    assert dict(histogram["top_referrer_types"])[
-        f"{FakeCheckpointPayload.__module__}.{FakeCheckpointPayload.__qualname__}"
-    ] == 1
+    assert (
+        dict(histogram["top_referrer_types"])[
+            f"{FakeCheckpointPayload.__module__}.{FakeCheckpointPayload.__qualname__}"
+        ]
+        == 1
+    )
 
 
 def test_frozenset_ownership_histogram_attributes_morpion_state_dict_owners(
@@ -1926,7 +1936,9 @@ def test_gc_shallow_size_summary_skips_reverse_referrer_scan(monkeypatch) -> Non
     assert "morpion_state_field_refs" in frozenset_ownership
 
 
-def test_gc_shallow_size_summary_attributes_fake_morpion_state_fields(monkeypatch) -> None:
+def test_gc_shallow_size_summary_attributes_fake_morpion_state_fields(
+    monkeypatch,
+) -> None:
     """Default shallow summary should attribute MorpionState frozenset fields directly."""
     points = frozenset()
     used_unit_segments = frozenset({1})
@@ -2184,7 +2196,9 @@ def test_build_recursive_profile_context_caps_handle_fallback_scan(
         == recursive_memory_profile_module._DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP
     )
     assert "context_build_checkpoint_stores_known_paths_done count=0" in text
-    assert "context_build_checkpoint_stores_handle_fallback_start handle_cap=100" in text
+    assert (
+        "context_build_checkpoint_stores_handle_fallback_start handle_cap=100" in text
+    )
     assert "context_build_checkpoint_stores_handle_fallback_done count=0" in text
 
 

@@ -940,6 +940,40 @@ def test_growth_state_eviction_cold_expanded_evicts_cold_node_and_caches() -> No
     assert metrics["rematerialization_total_s"] >= 0.0
 
 
+def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
+    """Compact resolver diagnostics should attribute hits and misses by phase."""
+
+    class _FakeStateCodec:
+        def load_anchor_ref(self, anchor_ref: object) -> object:
+            return {"anchor_ref": anchor_ref}
+
+    metrics = anemone_runner_module.MorpionGrowthStateEvictionMetrics()
+    resolver = anemone_runner_module._LiveCompactStateResolver(
+        state_codec=_FakeStateCodec(),
+        metrics=metrics,
+        cache_size=2,
+    )
+    resolver.state_payloads_by_node_id[7] = AnchorCheckpointStatePayload(
+        anchor_ref={"node": 7},
+        state_summary=None,
+    )
+
+    with resolver.phase("select"):
+        first_state = resolver.resolve(7)
+    with resolver.phase("expand"):
+        second_state = resolver.resolve(7)
+
+    assert first_state == second_state
+    snapshot = metrics.snapshot()
+    assert snapshot["rematerialization_count_by_phase"] == {
+        "expand": 1,
+        "select": 1,
+    }
+    assert snapshot["rematerialization_cache_miss_by_phase"] == {"select": 1}
+    assert snapshot["rematerialization_cache_hit_by_phase"] == {"expand": 1}
+    assert snapshot["top_rematerialized_node_ids"] == (7,)
+
+
 def test_growth_state_eviction_frontier_cold_evicts_frontier_nodes() -> None:
     """Frontier-cold eviction should compact cold frontier materialized states."""
     runner = AnemoneMorpionSearchRunner(
@@ -968,6 +1002,23 @@ def test_growth_state_eviction_frontier_cold_evicts_frontier_nodes() -> None:
     metrics = runner.profile_state_eviction_runtime()
     assert metrics["state_eviction_policy"] == "frontier_cold"
     assert metrics["eviction_success_count"] >= 1
+
+
+def test_growth_reports_linoo_heap_detail_counters() -> None:
+    """Linoo selection reports should expose cheap heap attribution counters."""
+    runner = AnemoneMorpionSearchRunner()
+
+    runner.load_or_create(None, None)
+    runner.grow(1)
+
+    runtime = runner._require_runtime()
+    selector_report = runtime.node_selector.latest_selection_report
+    assert selector_report is not None
+    assert selector_report.heap_update_candidate_count is not None
+    assert selector_report.heap_update_candidate_count >= 0
+    assert selector_report.heap_update_push_count is not None
+    assert selector_report.heap_update_pop_count is not None
+    assert selector_report.heap_update_signature_check_count is not None
 
 
 def test_growth_state_eviction_checkpoint_roundtrip_continues(

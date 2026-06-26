@@ -7,6 +7,7 @@ import logging
 import time
 from collections import OrderedDict, deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from random import Random
@@ -409,6 +410,37 @@ def _selector_growth_diagnostic_fields(
             selector_report,
             "frontier_nodes_scanned",
             None,
+        ),
+    }
+
+
+def _selector_heap_detail_fields(selector_report: object | None) -> dict[str, object]:
+    """Return optional Linoo heap detail counters for growth-step logs."""
+    return {
+        "candidate_count": getattr(
+            selector_report, "heap_update_candidate_count", None
+        ),
+        "push_count": getattr(selector_report, "heap_update_push_count", None),
+        "pop_count": getattr(selector_report, "heap_update_pop_count", None),
+        "stale_skip_count": getattr(
+            selector_report, "heap_update_stale_skip_count", None
+        ),
+        "signature_check_count": getattr(
+            selector_report, "heap_update_signature_check_count", None
+        ),
+        "signature_recompute_count": getattr(
+            selector_report, "heap_update_signature_recompute_count", None
+        ),
+        "version_mismatch_count": getattr(
+            selector_report, "heap_update_version_mismatch_count", None
+        ),
+        "total_heap_entries": getattr(
+            selector_report, "heap_update_total_heap_entries", None
+        ),
+        "max_heap_size": getattr(selector_report, "heap_update_max_heap_size", None),
+        "depth_count": getattr(selector_report, "heap_update_depth_count", None),
+        "frontier_node_count_seen": getattr(
+            selector_report, "heap_update_frontier_node_count_seen", None
         ),
     }
 
@@ -1211,6 +1243,11 @@ class MorpionGrowthStateEvictionMetrics:
     rematerialization_count: int = 0
     rematerialization_cache_hit: int = 0
     rematerialization_cache_miss: int = 0
+    rematerialization_count_by_phase: dict[str, int] = field(default_factory=dict)
+    rematerialization_cache_hit_by_phase: dict[str, int] = field(default_factory=dict)
+    rematerialization_cache_miss_by_phase: dict[str, int] = field(default_factory=dict)
+    rematerialization_total_s_by_phase: dict[str, float] = field(default_factory=dict)
+    rematerialization_count_by_node_id: dict[int, int] = field(default_factory=dict)
     current_cache_size: int = 0
     cache_evictions: int = 0
     total_reconstruction_depth: int = 0
@@ -1226,6 +1263,33 @@ class MorpionGrowthStateEvictionMetrics:
         self.eviction_skipped_count_by_reason[reason] = (
             self.eviction_skipped_count_by_reason.get(reason, 0) + 1
         )
+
+    def record_rematerialization(
+        self,
+        *,
+        node_id: int,
+        phase: str,
+        cache_hit: bool,
+        elapsed_s: float,
+    ) -> None:
+        """Record one compact-state resolution under its diagnostic phase."""
+        self.rematerialization_count_by_phase[phase] = (
+            self.rematerialization_count_by_phase.get(phase, 0) + 1
+        )
+        self.rematerialization_total_s_by_phase[phase] = (
+            self.rematerialization_total_s_by_phase.get(phase, 0.0) + elapsed_s
+        )
+        self.rematerialization_count_by_node_id[node_id] = (
+            self.rematerialization_count_by_node_id.get(node_id, 0) + 1
+        )
+        if cache_hit:
+            self.rematerialization_cache_hit_by_phase[phase] = (
+                self.rematerialization_cache_hit_by_phase.get(phase, 0) + 1
+            )
+        else:
+            self.rematerialization_cache_miss_by_phase[phase] = (
+                self.rematerialization_cache_miss_by_phase.get(phase, 0) + 1
+            )
 
     def snapshot(self) -> dict[str, object]:
         """Return a grep-friendly diagnostics payload."""
@@ -1250,6 +1314,25 @@ class MorpionGrowthStateEvictionMetrics:
             "rematerialization_count": self.rematerialization_count,
             "rematerialization_cache_hit": self.rematerialization_cache_hit,
             "rematerialization_cache_miss": self.rematerialization_cache_miss,
+            "rematerialization_count_by_phase": dict(
+                sorted(self.rematerialization_count_by_phase.items())
+            ),
+            "rematerialization_cache_hit_by_phase": dict(
+                sorted(self.rematerialization_cache_hit_by_phase.items())
+            ),
+            "rematerialization_cache_miss_by_phase": dict(
+                sorted(self.rematerialization_cache_miss_by_phase.items())
+            ),
+            "rematerialization_total_s_by_phase": dict(
+                sorted(self.rematerialization_total_s_by_phase.items())
+            ),
+            "top_rematerialized_node_ids": tuple(
+                node_id
+                for node_id, _count in sorted(
+                    self.rematerialization_count_by_node_id.items(),
+                    key=lambda item: (-item[1], item[0]),
+                )[:10]
+            ),
             "current_cache_size": self.current_cache_size,
             "cache_evictions": self.cache_evictions,
             "average_reconstruction_depth": average_reconstruction_depth,
@@ -1278,26 +1361,52 @@ class _LiveCompactStateResolver:
         default_factory=MorpionGrowthStateEvictionMetrics
     )
     cache_size: int = 10000
+    current_phase: str = "unknown"
     _decoded_state_cache: OrderedDict[int, MorpionState] = field(
         default_factory=OrderedDict
     )
 
+    @contextmanager
+    def phase(self, phase: str) -> Iterator[None]:
+        """Temporarily attribute rematerializations to ``phase``."""
+        previous_phase = self.current_phase
+        self.current_phase = phase
+        try:
+            yield
+        finally:
+            self.current_phase = previous_phase
+
     def resolve(self, node_id: int) -> MorpionState:
         """Resolve one compact payload into a concrete Morpion state."""
         started_at = perf_counter()
+        phase = self.current_phase
         self.metrics.rematerialization_count += 1
         cached_state = self._decoded_state_cache.get(node_id)
         if cached_state is not None:
             self.metrics.rematerialization_cache_hit += 1
             self._decoded_state_cache.move_to_end(node_id)
             self.metrics.current_cache_size = len(self._decoded_state_cache)
-            self.metrics.rematerialization_total_s += perf_counter() - started_at
+            elapsed_s = perf_counter() - started_at
+            self.metrics.rematerialization_total_s += elapsed_s
+            self.metrics.record_rematerialization(
+                node_id=node_id,
+                phase=phase,
+                cache_hit=True,
+                elapsed_s=elapsed_s,
+            )
             return cached_state
         self.metrics.rematerialization_cache_miss += 1
         try:
             state = self._resolve_uncached(node_id, depth=1)
         finally:
-            self.metrics.rematerialization_total_s += perf_counter() - started_at
+            elapsed_s = perf_counter() - started_at
+            self.metrics.rematerialization_total_s += elapsed_s
+            self.metrics.record_rematerialization(
+                node_id=node_id,
+                phase=phase,
+                cache_hit=False,
+                elapsed_s=elapsed_s,
+            )
         self._cache_state(node_id, state)
         return state
 
@@ -1491,6 +1600,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 search_args=self._args.search_args,
             )
             _apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
+            self._install_state_rematerialization_phase_hooks(self._runtime)
             elapsed_s = time.perf_counter() - started_at
             LOGGER.info("[runtime] create_done elapsed=%.3fs", elapsed_s)
             if resolved_bundle_path is not None:
@@ -1517,6 +1627,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         elapsed_s = time.perf_counter() - started_at
         self._runtime = runtime
         _apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
+        self._install_state_rematerialization_phase_hooks(runtime)
         LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
         self._current_evaluator_bundle_path = None
         if resolved_bundle_path is not None:
@@ -1667,6 +1778,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(selector_diagnostics["selector_total_nodes_scanned"]),
                 _metric_value(selector_diagnostics["selector_frontier_nodes_scanned"]),
             )
+            selector_heap_details = _selector_heap_detail_fields(selector_report)
+            rematerialization_count_by_phase = (
+                self._state_eviction_metrics.rematerialization_count_by_phase
+            )
+            LOGGER.info(
+                "[selector-heap-detail] step=%s candidate_count=%s push_count=%s pop_count=%s stale_skip_count=%s signature_check_count=%s signature_recompute_count=%s version_mismatch_count=%s total_heap_entries=%s max_heap_size=%s depth_count=%s frontier_node_count_seen=%s select_rematerialization_count=%s",
+                steps_executed,
+                _metric_value(selector_heap_details["candidate_count"]),
+                _metric_value(selector_heap_details["push_count"]),
+                _metric_value(selector_heap_details["pop_count"]),
+                _metric_value(selector_heap_details["stale_skip_count"]),
+                _metric_value(selector_heap_details["signature_check_count"]),
+                _metric_value(selector_heap_details["signature_recompute_count"]),
+                _metric_value(selector_heap_details["version_mismatch_count"]),
+                _metric_value(selector_heap_details["total_heap_entries"]),
+                _metric_value(selector_heap_details["max_heap_size"]),
+                _metric_value(selector_heap_details["depth_count"]),
+                _metric_value(selector_heap_details["frontier_node_count_seen"]),
+                rematerialization_count_by_phase.get("select", 0),
+            )
             if step_report is not None:
                 self._log_and_persist_linoo_selection_table(
                     step_report=step_report,
@@ -1710,6 +1841,39 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._growth_eviction_recent_node_id_set = set()
         self._growth_eviction_selected_step_by_node_id = {}
         self._growth_eviction_scan_cursor = 0
+
+    @contextmanager
+    def _state_rematerialization_phase(self, phase: str) -> Iterator[None]:
+        """Attribute compact-state resolver activity to a diagnostic phase."""
+        with self._live_compact_state_resolver.phase(phase):
+            yield
+
+    def _install_state_rematerialization_phase_hooks(self, runtime: object) -> None:
+        """Wrap runtime step subphases to attribute resolver work by phase."""
+        if bool(getattr(runtime, "_chipiron_rematerialization_phase_hooks", False)):
+            return
+        phase_by_method_name = {
+            "_select_node_for_expansion": "select",
+            "_expand_opening_instructions": "expand",
+            "_evaluate_expansions": "evaluate",
+            "_propagate_iteration_updates": "propagate",
+        }
+        for method_name, phase in phase_by_method_name.items():
+            original_method = getattr(runtime, method_name, None)
+            if not callable(original_method):
+                continue
+
+            def _phase_wrapped_method(
+                *args: object,
+                _original_method: object = original_method,
+                _phase: str = phase,
+                **kwargs: object,
+            ) -> object:
+                with self._state_rematerialization_phase(_phase):
+                    return cast("Any", _original_method)(*args, **kwargs)
+
+            setattr(runtime, method_name, _phase_wrapped_method)
+        cast("Any", runtime)._chipiron_rematerialization_phase_hooks = True
 
     def _record_growth_selected_node(
         self,
@@ -1852,8 +2016,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         state = raw_handle.state_
         payload_started_at = perf_counter()
         try:
-            state_summary = self._state_codec.dump_state_summary(state)
-            anchor_ref = self._state_codec.dump_anchor_ref(state)
+            with self._state_rematerialization_phase("eviction_payload_build"):
+                state_summary = self._state_codec.dump_state_summary(state)
+                anchor_ref = self._state_codec.dump_anchor_ref(state)
         except Exception:  # pylint: disable=broad-exception-caught
             self._state_eviction_metrics.skip("payload_build_failed")
             return
@@ -2110,6 +2275,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     self._growth_eviction_selected_step_by_node_id
                 ),
                 "state_eviction_scan_cursor": self._growth_eviction_scan_cursor,
+                "state_resolver_current_phase": (
+                    self._live_compact_state_resolver.current_phase
+                ),
             }
         )
         return snapshot
@@ -2633,10 +2801,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             path=output,
             generation=_generation_from_checkpoint_path(output),
         )
-        payload = build_search_checkpoint_payload(
-            runtime,
-            state_codec=self._state_codec,
-        )
+        with self._state_rematerialization_phase("checkpoint"):
+            payload = build_search_checkpoint_payload(
+                runtime,
+                state_codec=self._state_codec,
+            )
         checkpoint_selector_state_fields = _checkpoint_selector_state_fields(
             payload,
             prefix="checkpoint",
