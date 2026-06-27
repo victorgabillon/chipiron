@@ -960,18 +960,47 @@ def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
 
     with resolver.phase("select"):
         first_state = resolver.resolve(7)
-    with resolver.phase("expand"):
+    with resolver.phase("select.heap_update.signature"):
         second_state = resolver.resolve(7)
 
     assert first_state == second_state
     snapshot = metrics.snapshot()
     assert snapshot["rematerialization_count_by_phase"] == {
-        "expand": 1,
         "select": 1,
+        "select.heap_update.signature": 1,
     }
     assert snapshot["rematerialization_cache_miss_by_phase"] == {"select": 1}
-    assert snapshot["rematerialization_cache_hit_by_phase"] == {"expand": 1}
+    assert snapshot["rematerialization_cache_hit_by_phase"] == {
+        "select.heap_update.signature": 1
+    }
+    assert snapshot["select_rematerialization_count_by_subphase"] == {
+        "select": 1,
+        "select.heap_update.signature": 1,
+    }
     assert snapshot["top_rematerialized_node_ids"] == (7,)
+
+
+def test_phase_delta_filters_changed_select_subphases() -> None:
+    """Per-step phase deltas should include only changed select counters."""
+    delta = anemone_runner_module._phase_delta(
+        {
+            "select.total": 2,
+            "select.heap_update.push": 3,
+            "propagate": 10,
+        },
+        {
+            "select.total": 2,
+            "select.heap_update.push": 7,
+            "select.report": 1,
+            "propagate": 999,
+        },
+        prefix="select",
+    )
+
+    assert delta == {
+        "select.heap_update.push": 4,
+        "select.report": 1,
+    }
 
 
 def test_growth_state_eviction_frontier_cold_evicts_frontier_nodes() -> None:

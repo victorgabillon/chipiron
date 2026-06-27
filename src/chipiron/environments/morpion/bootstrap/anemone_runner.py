@@ -445,6 +445,26 @@ def _selector_heap_detail_fields(selector_report: object | None) -> dict[str, ob
     }
 
 
+def _phase_delta(
+    before: Mapping[str, int] | Mapping[str, float],
+    after: Mapping[str, int] | Mapping[str, float],
+    *,
+    prefix: str,
+) -> dict[str, int] | dict[str, float]:
+    """Return changed phase counters for phases matching ``prefix``."""
+    delta: dict[str, int] | dict[str, float] = {}
+    phase_names = {
+        phase
+        for phase in set(before) | set(after)
+        if phase == prefix or phase.startswith(f"{prefix}.")
+    }
+    for phase in sorted(phase_names):
+        phase_delta = after.get(phase, 0) - before.get(phase, 0)
+        if phase_delta:
+            delta[phase] = phase_delta
+    return delta
+
+
 def _checkpoint_selector_state_fields(
     payload: object,
     *,
@@ -1299,6 +1319,21 @@ class MorpionGrowthStateEvictionMetrics:
             else self.total_reconstruction_depth / self.rematerialization_count
         )
         skipped_count = sum(self.eviction_skipped_count_by_reason.values())
+        select_rematerialization_count_by_subphase = _phase_delta(
+            {},
+            self.rematerialization_count_by_phase,
+            prefix="select",
+        )
+        select_rematerialization_cache_miss_by_subphase = _phase_delta(
+            {},
+            self.rematerialization_cache_miss_by_phase,
+            prefix="select",
+        )
+        select_rematerialization_total_s_by_subphase = _phase_delta(
+            {},
+            self.rematerialization_total_s_by_phase,
+            prefix="select",
+        )
         return {
             "state_eviction_policy": self.state_eviction_policy,
             "eviction_attempt_count": self.eviction_attempt_count,
@@ -1325,6 +1360,15 @@ class MorpionGrowthStateEvictionMetrics:
             ),
             "rematerialization_total_s_by_phase": dict(
                 sorted(self.rematerialization_total_s_by_phase.items())
+            ),
+            "select_rematerialization_count_by_subphase": (
+                select_rematerialization_count_by_subphase
+            ),
+            "select_rematerialization_cache_miss_by_subphase": (
+                select_rematerialization_cache_miss_by_subphase
+            ),
+            "select_rematerialization_total_s_by_subphase": (
+                select_rematerialization_total_s_by_subphase
             ),
             "top_rematerialized_node_ids": tuple(
                 node_id
@@ -1666,6 +1710,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             if not _runtime_can_step(runtime):
                 stop_reason = _runtime_stop_reason(runtime)
                 break
+            rematerialization_count_by_phase_before = dict(
+                self._state_eviction_metrics.rematerialization_count_by_phase
+            )
+            rematerialization_cache_miss_by_phase_before = dict(
+                self._state_eviction_metrics.rematerialization_cache_miss_by_phase
+            )
+            rematerialization_total_s_by_phase_before = dict(
+                self._state_eviction_metrics.rematerialization_total_s_by_phase
+            )
             step_report = runtime.step()
             steps_executed += 1
             current_tree_size = _live_tree_node_count(runtime)
@@ -1782,8 +1835,28 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             rematerialization_count_by_phase = (
                 self._state_eviction_metrics.rematerialization_count_by_phase
             )
+            select_rematerialization_delta_by_phase = _phase_delta(
+                rematerialization_count_by_phase_before,
+                rematerialization_count_by_phase,
+                prefix="select",
+            )
+            select_rematerialization_miss_delta_by_phase = _phase_delta(
+                rematerialization_cache_miss_by_phase_before,
+                self._state_eviction_metrics.rematerialization_cache_miss_by_phase,
+                prefix="select",
+            )
+            select_rematerialization_s_delta_by_phase = _phase_delta(
+                rematerialization_total_s_by_phase_before,
+                self._state_eviction_metrics.rematerialization_total_s_by_phase,
+                prefix="select",
+            )
+            select_rematerialization_count_total = sum(
+                _phase_delta(
+                    {}, rematerialization_count_by_phase, prefix="select"
+                ).values()
+            )
             LOGGER.info(
-                "[selector-heap-detail] step=%s candidate_count=%s push_count=%s pop_count=%s stale_skip_count=%s signature_check_count=%s signature_recompute_count=%s version_mismatch_count=%s total_heap_entries=%s max_heap_size=%s depth_count=%s frontier_node_count_seen=%s select_rematerialization_count=%s",
+                "[selector-heap-detail] step=%s candidate_count=%s push_count=%s pop_count=%s stale_skip_count=%s signature_check_count=%s signature_recompute_count=%s version_mismatch_count=%s total_heap_entries=%s max_heap_size=%s depth_count=%s frontier_node_count_seen=%s select_rematerialization_count_total=%s select_rematerialization_count_delta=%s select_rematerialization_cache_miss_delta=%s select_rematerialization_total_s_delta=%s select_rematerialization_delta_by_phase=%r select_rematerialization_miss_delta_by_phase=%r select_rematerialization_s_delta_by_phase=%r",
                 steps_executed,
                 _metric_value(selector_heap_details["candidate_count"]),
                 _metric_value(selector_heap_details["push_count"]),
@@ -1796,7 +1869,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(selector_heap_details["max_heap_size"]),
                 _metric_value(selector_heap_details["depth_count"]),
                 _metric_value(selector_heap_details["frontier_node_count_seen"]),
-                rematerialization_count_by_phase.get("select", 0),
+                select_rematerialization_count_total,
+                sum(select_rematerialization_delta_by_phase.values()),
+                sum(select_rematerialization_miss_delta_by_phase.values()),
+                sum(select_rematerialization_s_delta_by_phase.values()),
+                select_rematerialization_delta_by_phase,
+                select_rematerialization_miss_delta_by_phase,
+                select_rematerialization_s_delta_by_phase,
             )
             if step_report is not None:
                 self._log_and_persist_linoo_selection_table(
@@ -1853,7 +1932,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if bool(getattr(runtime, "_chipiron_rematerialization_phase_hooks", False)):
             return
         phase_by_method_name = {
-            "_select_node_for_expansion": "select",
+            "_select_node_for_expansion": "select.total",
             "_expand_opening_instructions": "expand",
             "_evaluate_expansions": "evaluate",
             "_propagate_iteration_updates": "propagate",
@@ -1873,7 +1952,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     return cast("Any", _original_method)(*args, **kwargs)
 
             setattr(runtime, method_name, _phase_wrapped_method)
+        cast(
+            "Any", runtime
+        )._diagnostic_phase_context = self._state_rematerialization_phase
+        self._install_selector_diagnostic_phase_context(
+            getattr(runtime, "node_selector", None)
+        )
         cast("Any", runtime)._chipiron_rematerialization_phase_hooks = True
+
+    def _install_selector_diagnostic_phase_context(self, selector: object) -> None:
+        """Attach optional diagnostic phase context hooks to selector objects."""
+        if selector is None:
+            return
+        try:
+            object.__setattr__(
+                selector,
+                "_diagnostic_phase_context",
+                self._state_rematerialization_phase,
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            return
+        base_selector = getattr(selector, "base", None)
+        if base_selector is not None and base_selector is not selector:
+            self._install_selector_diagnostic_phase_context(base_selector)
 
     def _record_growth_selected_node(
         self,
