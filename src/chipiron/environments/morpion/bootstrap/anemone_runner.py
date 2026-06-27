@@ -1304,11 +1304,32 @@ class MorpionGrowthStateEvictionMetrics:
     eviction_payload_build_s: float = 0.0
     rematerialization_total_s: float = 0.0
     eviction_skipped_count_by_reason: dict[str, int] = field(default_factory=dict)
+    delta_payload_attempt_count: int = 0
+    delta_payload_success_count: int = 0
+    delta_payload_fallback_count: int = 0
+    delta_payload_fallback_count_by_reason: dict[str, int] = field(
+        default_factory=dict
+    )
 
     def skip(self, reason: str) -> None:
         """Record one skipped eviction attempt."""
         self.eviction_skipped_count_by_reason[reason] = (
             self.eviction_skipped_count_by_reason.get(reason, 0) + 1
+        )
+
+    def record_delta_payload_attempt(self) -> None:
+        """Record one attempt to build a live delta eviction payload."""
+        self.delta_payload_attempt_count += 1
+
+    def record_delta_payload_success(self) -> None:
+        """Record one successful live delta eviction payload build."""
+        self.delta_payload_success_count += 1
+
+    def record_delta_payload_fallback(self, reason: str) -> None:
+        """Record one live delta ineligibility reason before anchor fallback."""
+        self.delta_payload_fallback_count += 1
+        self.delta_payload_fallback_count_by_reason[reason] = (
+            self.delta_payload_fallback_count_by_reason.get(reason, 0) + 1
         )
 
     def record_rematerialization(
@@ -1372,6 +1393,12 @@ class MorpionGrowthStateEvictionMetrics:
             "eviction_skipped_count": skipped_count,
             "eviction_skipped_count_by_reason": dict(
                 sorted(self.eviction_skipped_count_by_reason.items())
+            ),
+            "delta_payload_attempt_count": self.delta_payload_attempt_count,
+            "delta_payload_success_count": self.delta_payload_success_count,
+            "delta_payload_fallback_count": self.delta_payload_fallback_count,
+            "delta_payload_fallback_count_by_reason": dict(
+                sorted(self.delta_payload_fallback_count_by_reason.items())
             ),
             "evicted_materialized_state_count": self.evicted_materialized_state_count,
             "compact_payload_count": self.compact_payload_count,
@@ -2219,6 +2246,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Build a bounded live compact payload, preferring safe deltas."""
         state_summary = self._state_codec.dump_state_summary(state)
         if self._args.growth_state_eviction_payload_mode == "delta_when_safe":
+            self._state_eviction_metrics.record_delta_payload_attempt()
             delta_payload = self._try_build_live_delta_eviction_payload(
                 node=node,
                 node_id=node_id,
@@ -2226,6 +2254,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 state_summary=state_summary,
             )
             if delta_payload is not None:
+                self._state_eviction_metrics.record_delta_payload_success()
                 return delta_payload
 
         anchor_ref = self._state_codec.dump_anchor_ref(state)
@@ -2249,24 +2278,34 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Return a parent-delta payload when every conservative precondition holds."""
         max_depth = self._args.growth_state_eviction_delta_chain_max_depth
         if max_depth <= 0:
-            self._state_eviction_metrics.skip("delta_chain_depth_disabled")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_chain_depth_disabled"
+            )
             return None
         parent_context = _single_parent_link_for_live_delta(node)
         if parent_context is None:
-            self._state_eviction_metrics.skip("delta_parent_ambiguous")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_parent_ambiguous"
+            )
             return None
         resolver = self._live_compact_state_resolver
         if parent_context.parent_node_id not in resolver.state_payloads_by_node_id:
-            self._state_eviction_metrics.skip("delta_parent_payload_missing")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_parent_payload_missing"
+            )
             return None
         parent_chain_depth = resolver.payload_chain_depth_by_node_id.get(
             parent_context.parent_node_id
         )
         if parent_chain_depth is None:
-            self._state_eviction_metrics.skip("delta_parent_depth_unknown")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_parent_depth_unknown"
+            )
             return None
         if parent_chain_depth >= max_depth:
-            self._state_eviction_metrics.skip("delta_chain_depth_limit")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_chain_depth_limit"
+            )
             return None
 
         try:
@@ -2281,7 +2320,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 branch_from_parent=parent_context.branch_from_parent,
             )
         except Exception:  # pylint: disable=broad-exception-caught
-            self._state_eviction_metrics.skip("delta_payload_build_failed")
+            self._state_eviction_metrics.record_delta_payload_fallback(
+                "delta_payload_build_failed"
+            )
             return None
 
         return _LiveEvictionPayload(

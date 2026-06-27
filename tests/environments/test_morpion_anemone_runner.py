@@ -215,7 +215,7 @@ class FakeAnemoneRuntime:
 
     def _nodes_by_public_id(self) -> dict[str, object]:
         """Return fake live nodes by public id."""
-        return {str(getattr(node, "id")): node for node in self._nodes}
+        return {str(node.id): node for node in self._nodes}
 
     def _apply_node_value_update(
         self,
@@ -494,8 +494,8 @@ class _NoopAwareFakeRuntime(FakeAnemoneRuntime):
         node: object,
         update: NodeValueUpdate,
     ) -> bool:
-        node_eval = getattr(node, "tree_evaluation")
-        previous_direct_value = getattr(node_eval, "direct_value")
+        node_eval = node.tree_evaluation
+        previous_direct_value = node_eval.direct_value
         previous_score = (
             None
             if previous_direct_value is None
@@ -898,6 +898,10 @@ def test_growth_state_eviction_cold_expanded_keeps_just_selected_node_hot() -> N
     assert metrics["eviction_success_count"] == 0
     assert metrics["evicted_materialized_state_count"] == 0
     assert metrics["eviction_skipped_count_by_reason"]["recently_selected"] == 1
+    assert metrics["delta_payload_attempt_count"] == 0
+    assert metrics["delta_payload_success_count"] == 0
+    assert metrics["delta_payload_fallback_count"] == 0
+    assert metrics["delta_payload_fallback_count_by_reason"] == {}
 
 
 def test_growth_state_eviction_cold_expanded_evicts_cold_node_and_caches() -> None:
@@ -968,6 +972,19 @@ def test_growth_state_eviction_delta_when_safe_emits_bounded_delta_payloads() ->
     assert metrics["state_eviction_delta_chain_max_depth"] == 4
     assert metrics["anchor_payload_count"] >= 1
     assert metrics["delta_payload_count"] >= 1
+    assert metrics["delta_payload_attempt_count"] >= metrics["delta_payload_count"]
+    assert metrics["delta_payload_success_count"] == metrics["delta_payload_count"]
+    assert metrics["delta_payload_fallback_count"] >= 1
+    assert (
+        metrics["delta_payload_attempt_count"]
+        == metrics["delta_payload_success_count"]
+        + metrics["delta_payload_fallback_count"]
+    )
+    assert metrics["delta_payload_fallback_count_by_reason"]
+    assert all(
+        not reason.startswith("delta_")
+        for reason in metrics["eviction_skipped_count_by_reason"]
+    )
     assert any(node.state.tag is not None for node in checkpoint_backed_nodes)
 
 
@@ -996,6 +1013,10 @@ def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
 
     assert first_state == second_state
     snapshot = metrics.snapshot()
+    assert snapshot["delta_payload_attempt_count"] == 0
+    assert snapshot["delta_payload_success_count"] == 0
+    assert snapshot["delta_payload_fallback_count"] == 0
+    assert snapshot["delta_payload_fallback_count_by_reason"] == {}
     assert snapshot["rematerialization_count_by_phase"] == {
         "select": 1,
         "select.heap_update.signature": 1,
@@ -2006,15 +2027,16 @@ def test_training_export_profile_logging_includes_state_and_reuse_metrics(
 def test_training_export_handle_classification_does_not_resolve_state() -> None:
     """Raw-handle classification must not touch ``node.state`` during export."""
 
+    def _unexpected_state_resolution_error() -> AssertionError:
+        return AssertionError("node.state should not be resolved during classification")
+
     class _NeverResolveNode:
         def __init__(self, state_handle: object) -> None:
             self.state_handle = state_handle
 
         @property
         def state(self) -> object:
-            raise AssertionError(
-                "node.state should not be resolved during classification"
-            )
+            raise _unexpected_state_resolution_error()
 
     resolver = CheckpointStateResolver(
         state_codec=Mock(),
