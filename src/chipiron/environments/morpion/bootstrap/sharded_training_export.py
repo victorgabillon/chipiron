@@ -14,6 +14,7 @@ from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
     checkpoint_payload_to_jsonable,
+    payload_for_node_id_or_none,
 )
 from anemone.checkpoints.state_handles import CheckpointBackedStateHandle
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
@@ -411,9 +412,11 @@ def _morpion_anchor_ref_from_delta_chain(
         seen_node_ids.add(current_node_id)
         delta_refs.append(current_payload.delta_ref)
         current_node_id = current_payload.state_parent_node_id
-        try:
-            current_payload = handle.resolver.payload_for_node_id(current_node_id)
-        except KeyError:
+        current_payload = payload_for_node_id_or_none(
+            handle.resolver,
+            current_node_id,
+        )
+        if current_payload is None:
             return None
 
     if not isinstance(current_payload, AnchorCheckpointStatePayload):

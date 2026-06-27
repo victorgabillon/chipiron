@@ -1006,6 +1006,12 @@ def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
         state_summary=None,
     )
 
+    assert (
+        resolver.payload_for_node_id_or_none(7)
+        is resolver.state_payloads_by_node_id[7]
+    )
+    assert resolver.payload_for_node_id_or_none(999) is None
+
     with resolver.phase("select"):
         first_state = resolver.resolve(7)
     with resolver.phase("select.heap_update.signature"):

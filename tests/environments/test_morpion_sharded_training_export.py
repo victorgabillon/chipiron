@@ -114,6 +114,13 @@ class _LiveNode:
         return self.state_payload
 
 
+@dataclass(slots=True)
+class _LiveResolverShape:
+    """Resolver stub matching live compact resolver payload storage shape."""
+
+    state_payloads_by_node_id: dict[int, object]
+
+
 def _value_to_scalar(value: object | None) -> float | None:
     """Return float scalars for the live-node stubs used in these tests."""
     if value is None:
@@ -429,6 +436,110 @@ def test_new_checkpoint_backed_delta_node_exports_without_state_access(
         expected_payload[0],
         list(expected_payload[1]),
     ]
+    assert loaded_snapshot.nodes[0].state_ref_payload == [
+        expected_payload[0],
+        list(expected_payload[1]),
+    ]
+
+
+def test_new_checkpoint_backed_delta_node_with_live_resolver_exports_without_state_access(
+    tmp_path: Path,
+) -> None:
+    """Live resolver payload maps should support the same no-state fast path."""
+    output_dir = tmp_path / "tree_exports_sharded"
+    base_payload = _compact_payload_after_n_moves(0)
+    expected_payload = _compact_payload_after_n_moves(1)
+    delta_move = expected_payload[1][0]
+    resolver = _LiveResolverShape(
+        state_payloads_by_node_id={
+            0: AnchorCheckpointStatePayload(anchor_ref=base_payload),
+            1: DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=None,
+                delta_ref=delta_move,
+            ),
+        }
+    )
+    node = _LiveNode(
+        id="live-checkpoint-backed",
+        depth=1,
+        state_payload=expected_payload,
+        direct_value=0.5,
+        backed_up_value=0.75,
+        is_terminal=False,
+        is_exact=True,
+        visit_count=4,
+        allow_state_access=False,
+        state_handle=CheckpointBackedStateHandle(
+            resolver=cast("object", resolver),
+            node_id=1,
+        ),
+    )
+
+    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=(node,),
+        root_node_id="live-checkpoint-backed",
+        output_dir=output_dir,
+        generation=1,
+        state_ref_dumper=lambda state: state,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
+
+    assert node.state_access_count == 0
+    assert loaded_snapshot.nodes[0].state_ref_payload == [
+        expected_payload[0],
+        list(expected_payload[1]),
+    ]
+
+
+def test_checkpoint_backed_delta_missing_parent_falls_back_to_state_access(
+    tmp_path: Path,
+) -> None:
+    """Missing raw parent payloads should not crash the sharded export."""
+    output_dir = tmp_path / "tree_exports_sharded"
+    expected_payload = _compact_payload_after_n_moves(1)
+    resolver = _LiveResolverShape(
+        state_payloads_by_node_id={
+            1: DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=None,
+                delta_ref=expected_payload[1][0],
+            ),
+        }
+    )
+    node = _LiveNode(
+        id="missing-parent",
+        depth=1,
+        state_payload=expected_payload,
+        direct_value=0.5,
+        backed_up_value=0.75,
+        is_terminal=False,
+        is_exact=True,
+        visit_count=4,
+        state_handle=CheckpointBackedStateHandle(
+            resolver=cast("object", resolver),
+            node_id=1,
+        ),
+    )
+
+    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=(node,),
+        root_node_id="missing-parent",
+        output_dir=output_dir,
+        generation=1,
+        state_ref_dumper=lambda state: state,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
+
+    assert node.state_access_count == 1
     assert loaded_snapshot.nodes[0].state_ref_payload == [
         expected_payload[0],
         list(expected_payload[1]),

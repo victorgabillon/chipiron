@@ -1547,6 +1547,13 @@ class _LiveCompactStateResolver:
         self.state_payloads_by_node_id[node_id] = payload
         self.payload_chain_depth_by_node_id[node_id] = chain_depth
 
+    def payload_for_node_id_or_none(
+        self,
+        node_id: int,
+    ) -> CheckpointNodeStatePayload | None:
+        """Return one compact payload without resolving concrete state."""
+        return self.state_payloads_by_node_id.get(node_id)
+
     def _cache_state(self, node_id: int, state: MorpionState) -> None:
         """Store one decoded state in the bounded LRU cache."""
         if self.cache_size <= 0:
