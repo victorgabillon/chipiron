@@ -16,13 +16,13 @@ from anemone.checkpoints import (
     checkpoint_payload_to_jsonable,
     payload_for_node_id_or_none,
 )
-from anemone.checkpoints.state_handles import CheckpointBackedStateHandle
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from anemone.training_export.builders import build_training_node_snapshot
 from anemone.training_export.model import (
     TRAINING_TREE_SNAPSHOT_FORMAT_KIND,
     TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
 )
+from anemone.training_export.state_refs import state_ref_payload_without_resolving
 
 from .pipeline_memory import current_rss_mb, format_metric, log_pipeline_memory
 
@@ -144,6 +144,7 @@ class MorpionShardedTrainingNodeUpdate:
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from anemone.checkpoints.state_handles import CheckpointBackedStateHandle
     from anemone.training_export.builders import (
         StateRefDumper,
         TrainingExportProfiler,
@@ -211,9 +212,12 @@ def save_morpion_sharded_training_tree_from_live_nodes(
         )
         if not node_is_new:
             continue
-        state_ref_payload = _state_ref_payload_without_resolving(
+        state_ref_payload = state_ref_payload_without_resolving(
             node,
-            fallback_state_ref_dumper=state_ref_dumper,
+            checkpoint_payload_to_state_ref=(
+                _morpion_training_state_ref_from_checkpoint_payload
+            ),
+            materialized_state_to_state_ref=state_ref_dumper,
             profile=profile,
         )
         node_records.append(
@@ -333,67 +337,15 @@ def _node_id_without_state(node: object) -> str | None:
     return None
 
 
-def _state_ref_payload_without_resolving(
-    node: object,
-    *,
-    fallback_state_ref_dumper: StateRefDumper,
-    profile: TrainingExportProfiler | None,
+def _morpion_training_state_ref_from_checkpoint_payload(
+    handle: CheckpointBackedStateHandle,
+    payload: object,
 ) -> object | None:
-    """Return a Morpion state-ref payload without resolving checkpoint handles."""
-    if profile is not None:
-        profile.observe_state_handle(node)
-    started_at = perf_counter()
-    checkpoint_payload = _checkpoint_state_ref_payload_without_resolving(node)
-    conversion_elapsed_s = perf_counter() - started_at
-    if checkpoint_payload is not None:
-        if profile is not None:
-            profile.record_state_ref_conversion(conversion_elapsed_s)
-        return checkpoint_payload
-
-    state_started_at = perf_counter()
-    state = _safe_getattr(node, "state")
-    state_access_elapsed_s = perf_counter() - state_started_at
-    if profile is not None:
-        profile.record_state_access(
-            state_access_elapsed_s,
-            state_present=state is not None,
-        )
-    if state is None:
-        return None
-
-    conversion_started_at = perf_counter()
-    state_ref_payload = fallback_state_ref_dumper(state)
-    if profile is not None:
-        profile.record_state_ref_conversion(perf_counter() - conversion_started_at)
-    return state_ref_payload
-
-
-def _checkpoint_state_ref_payload_without_resolving(node: object) -> object | None:
-    """Return the training state-ref payload from a checkpoint handle, if possible."""
-    handle = _raw_checkpoint_backed_state_handle(node)
-    if handle is None:
-        return None
-    payload = handle.checkpoint_payload_for_reuse_or_none()
+    """Convert one checkpoint payload to the Morpion training state-ref schema."""
     if isinstance(payload, AnchorCheckpointStatePayload):
         return payload.anchor_ref
     if isinstance(payload, DeltaCheckpointStatePayload):
         return _morpion_anchor_ref_from_delta_chain(handle, payload)
-    return None
-
-
-def _raw_checkpoint_backed_state_handle(
-    node: object,
-) -> CheckpointBackedStateHandle | None:
-    """Return a checkpoint-backed handle exposed by a node without resolving state."""
-    handle = _safe_getattr(node, "state_handle")
-    if isinstance(handle, CheckpointBackedStateHandle):
-        return handle
-    tree_node = _safe_getattr(node, "tree_node")
-    if tree_node is None:
-        return None
-    tree_handle = _safe_getattr(tree_node, "state_handle")
-    if isinstance(tree_handle, CheckpointBackedStateHandle):
-        return tree_handle
     return None
 
 
