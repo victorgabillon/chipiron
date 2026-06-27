@@ -15,7 +15,11 @@ if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-from anemone.checkpoints import checkpoint_payload_to_jsonable
+from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
+    checkpoint_payload_to_jsonable,
+)
 
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
@@ -42,6 +46,10 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+from anemone.checkpoints.state_handles import (
+    CheckpointBackedStateHandle,
+    CheckpointStateResolver,
+)
 from anemone.training_export import TrainingTreeSnapshot
 from atomheart.games.morpion import MorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
@@ -95,6 +103,7 @@ class _LiveNode:
     over_event_label: str | None = None
     allow_state_access: bool = True
     state_access_count: int = 0
+    state_handle: object | None = None
 
     @property
     def state(self) -> object:
@@ -362,6 +371,68 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
         "backed_up_value",
         "backed_up_value",
     )
+
+
+def test_new_checkpoint_backed_delta_node_exports_without_state_access(
+    tmp_path: Path,
+) -> None:
+    """New checkpoint-backed nodes should reuse payloads without resolving state."""
+    output_dir = tmp_path / "tree_exports_sharded"
+    base_payload = _compact_payload_after_n_moves(0)
+    expected_payload = _compact_payload_after_n_moves(1)
+    delta_move = expected_payload[1][0]
+    resolver = CheckpointStateResolver(
+        state_codec=cast("object", object()),
+        state_payloads_by_node_id={
+            0: AnchorCheckpointStatePayload(anchor_ref=base_payload),
+            1: DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=None,
+                delta_ref=delta_move,
+            ),
+        },
+    )
+    node = _LiveNode(
+        id="checkpoint-backed",
+        depth=1,
+        state_payload=expected_payload,
+        direct_value=0.5,
+        backed_up_value=0.75,
+        is_terminal=False,
+        is_exact=True,
+        visit_count=4,
+        allow_state_access=False,
+        state_handle=CheckpointBackedStateHandle(resolver=resolver, node_id=1),
+    )
+
+    generation_manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=(node,),
+        root_node_id="checkpoint-backed",
+        output_dir=output_dir,
+        generation=1,
+        state_ref_dumper=lambda state: state,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )
+    loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
+        generation_manifest_path
+    )
+    node_shard_payload = json.loads(
+        (output_dir / "node_shards" / "generation_000001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert stats.new_node_count == 1
+    assert node.state_access_count == 0
+    assert node_shard_payload["nodes"][0]["state_ref_payload"] == [
+        expected_payload[0],
+        list(expected_payload[1]),
+    ]
+    assert loaded_snapshot.nodes[0].state_ref_payload == [
+        expected_payload[0],
+        list(expected_payload[1]),
+    ]
 
 
 def test_sharded_export_serializes_compact_tuple_payloads(tmp_path: Path) -> None:

@@ -10,7 +10,12 @@ from time import perf_counter
 from typing import TYPE_CHECKING, cast
 
 from anemone._best_effort import safe_getattr as _safe_getattr
-from anemone.checkpoints import checkpoint_payload_to_jsonable
+from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
+    checkpoint_payload_to_jsonable,
+)
+from anemone.checkpoints.state_handles import CheckpointBackedStateHandle
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from anemone.training_export.builders import build_training_node_snapshot
 from anemone.training_export.model import (
@@ -182,22 +187,12 @@ def save_morpion_sharded_training_tree_from_live_nodes(
     for order_index, node in enumerate(nodes):
         node_id = _node_id_without_state(node)
         node_is_new = node_id is None or node_id not in node_index
-        update_snapshot = (
-            build_training_node_snapshot(
-                node,
-                state_ref_dumper=state_ref_dumper,
-                direct_value_extractor=direct_value_extractor,
-                backed_up_value_extractor=backed_up_value_extractor,
-                _profile=profile,
-            )
-            if node_is_new
-            else build_training_node_snapshot(
-                node,
-                state_ref_dumper=None,
-                direct_value_extractor=direct_value_extractor,
-                backed_up_value_extractor=backed_up_value_extractor,
-                _profile=profile,
-            )
+        update_snapshot = build_training_node_snapshot(
+            node,
+            state_ref_dumper=None,
+            direct_value_extractor=direct_value_extractor,
+            backed_up_value_extractor=backed_up_value_extractor,
+            _profile=profile,
         )
         node_updates.append(
             MorpionShardedTrainingNodeUpdate(
@@ -215,6 +210,11 @@ def save_morpion_sharded_training_tree_from_live_nodes(
         )
         if not node_is_new:
             continue
+        state_ref_payload = _state_ref_payload_without_resolving(
+            node,
+            fallback_state_ref_dumper=state_ref_dumper,
+            profile=profile,
+        )
         node_records.append(
             MorpionShardedTrainingNodeRecord(
                 node_id=update_snapshot.node_id,
@@ -222,8 +222,8 @@ def save_morpion_sharded_training_tree_from_live_nodes(
                 depth=update_snapshot.depth,
                 creation_generation=generation,
                 state_ref_payload=None
-                if update_snapshot.state_ref_payload is None
-                else checkpoint_payload_to_jsonable(update_snapshot.state_ref_payload),
+                if state_ref_payload is None
+                else checkpoint_payload_to_jsonable(state_ref_payload),
             )
         )
         node_index[update_snapshot.node_id] = generation
@@ -330,6 +330,118 @@ def _node_id_without_state(node: object) -> str | None:
     if generic_id is not None:
         return str(generic_id)
     return None
+
+
+def _state_ref_payload_without_resolving(
+    node: object,
+    *,
+    fallback_state_ref_dumper: StateRefDumper,
+    profile: TrainingExportProfiler | None,
+) -> object | None:
+    """Return a Morpion state-ref payload without resolving checkpoint handles."""
+    if profile is not None:
+        profile.observe_state_handle(node)
+    started_at = perf_counter()
+    checkpoint_payload = _checkpoint_state_ref_payload_without_resolving(node)
+    conversion_elapsed_s = perf_counter() - started_at
+    if checkpoint_payload is not None:
+        if profile is not None:
+            profile.record_state_ref_conversion(conversion_elapsed_s)
+        return checkpoint_payload
+
+    state_started_at = perf_counter()
+    state = _safe_getattr(node, "state")
+    state_access_elapsed_s = perf_counter() - state_started_at
+    if profile is not None:
+        profile.record_state_access(
+            state_access_elapsed_s,
+            state_present=state is not None,
+        )
+    if state is None:
+        return None
+
+    conversion_started_at = perf_counter()
+    state_ref_payload = fallback_state_ref_dumper(state)
+    if profile is not None:
+        profile.record_state_ref_conversion(perf_counter() - conversion_started_at)
+    return state_ref_payload
+
+
+def _checkpoint_state_ref_payload_without_resolving(node: object) -> object | None:
+    """Return the training state-ref payload from a checkpoint handle, if possible."""
+    handle = _raw_checkpoint_backed_state_handle(node)
+    if handle is None:
+        return None
+    payload = handle.checkpoint_payload_for_reuse_or_none()
+    if isinstance(payload, AnchorCheckpointStatePayload):
+        return payload.anchor_ref
+    if isinstance(payload, DeltaCheckpointStatePayload):
+        return _morpion_anchor_ref_from_delta_chain(handle, payload)
+    return None
+
+
+def _raw_checkpoint_backed_state_handle(
+    node: object,
+) -> CheckpointBackedStateHandle | None:
+    """Return a checkpoint-backed handle exposed by a node without resolving state."""
+    handle = _safe_getattr(node, "state_handle")
+    if isinstance(handle, CheckpointBackedStateHandle):
+        return handle
+    tree_node = _safe_getattr(node, "tree_node")
+    if tree_node is None:
+        return None
+    tree_handle = _safe_getattr(tree_node, "state_handle")
+    if isinstance(tree_handle, CheckpointBackedStateHandle):
+        return tree_handle
+    return None
+
+
+def _morpion_anchor_ref_from_delta_chain(
+    handle: CheckpointBackedStateHandle,
+    payload: DeltaCheckpointStatePayload,
+) -> object | None:
+    """Flatten a Morpion checkpoint delta chain into the anchor training schema."""
+    delta_refs: list[object] = []
+    current_node_id = handle.node_id
+    current_payload: object = payload
+    seen_node_ids: set[int] = set()
+    while isinstance(current_payload, DeltaCheckpointStatePayload):
+        if current_node_id in seen_node_ids:
+            return None
+        seen_node_ids.add(current_node_id)
+        delta_refs.append(current_payload.delta_ref)
+        current_node_id = current_payload.state_parent_node_id
+        try:
+            current_payload = handle.resolver.payload_for_node_id(current_node_id)
+        except KeyError:
+            return None
+
+    if not isinstance(current_payload, AnchorCheckpointStatePayload):
+        return None
+    return _append_morpion_delta_refs_to_anchor_ref(
+        current_payload.anchor_ref,
+        tuple(reversed(delta_refs)),
+    )
+
+
+def _append_morpion_delta_refs_to_anchor_ref(
+    anchor_ref: object,
+    delta_refs: tuple[object, ...],
+) -> object | None:
+    """Return a compact Morpion anchor ref extended with checkpoint delta refs."""
+    if not isinstance(anchor_ref, tuple | list) or len(anchor_ref) != 2:
+        return None
+    variant_code = anchor_ref[0]
+    played_moves = anchor_ref[1]
+    if not isinstance(variant_code, int) or isinstance(variant_code, bool):
+        return None
+    if not isinstance(played_moves, tuple | list):
+        return None
+    if any(not isinstance(move, int) or isinstance(move, bool) for move in played_moves):
+        return None
+    if any(not isinstance(move, int) or isinstance(move, bool) for move in delta_refs):
+        return None
+    return (variant_code, (*played_moves, *delta_refs))
 
 
 def _log_sharded_export_profile(stats: MorpionShardedTrainingExportStats) -> None:

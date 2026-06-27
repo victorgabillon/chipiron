@@ -221,9 +221,6 @@ class MorpionTrainingExportProfile:
         raw_handle: object = getattr(node, "state_handle", None)
         if isinstance(raw_handle, CheckpointBackedStateHandle):
             self.checkpoint_backed_state_handles += 1
-        # Profiling only for now: current Morpion training-export consumers decode
-        # state_ref_payload via the anchor-only load_state_ref path, so reusable
-        # checkpoint delta payloads are not yet drop-in compatible.
         reusable_payload = (
             raw_handle.checkpoint_payload_for_reuse_or_none()
             if isinstance(raw_handle, CheckpointBackedStateHandle)
