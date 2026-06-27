@@ -527,6 +527,8 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 11
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 13
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 17
+    assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
+    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
 
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
@@ -571,6 +573,8 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     )
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 5000
+    assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
+    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
 
 
 def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
@@ -587,6 +591,28 @@ def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
     )
 
     assert launcher_args.bootstrap_args.growth_state_eviction_policy == "frontier_cold"
+
+
+def test_launcher_args_parse_growth_state_eviction_delta_payload_options(
+    tmp_path: Path,
+) -> None:
+    """CLI should expose the C5 bounded delta live-eviction payload controls."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--growth-state-eviction-payload-mode",
+            "delta_when_safe",
+            "--growth-state-eviction-delta-chain-max-depth",
+            "7",
+        ]
+    )
+
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_payload_mode
+        == "delta_when_safe"
+    )
+    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 7
 
 
 def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(

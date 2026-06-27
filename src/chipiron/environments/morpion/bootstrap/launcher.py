@@ -539,6 +539,12 @@ def _bootstrap_args_with_persisted_config(
         growth_state_eviction_scan_node_limit=(
             persisted_config.runtime.growth_state_eviction_scan_node_limit
         ),
+        growth_state_eviction_payload_mode=(
+            persisted_config.runtime.growth_state_eviction_payload_mode
+        ),
+        growth_state_eviction_delta_chain_max_depth=(
+            persisted_config.runtime.growth_state_eviction_delta_chain_max_depth
+        ),
         search=persisted_config.search,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
@@ -592,6 +598,12 @@ def _build_launcher_runner(
             ),
             growth_state_eviction_scan_node_limit=(
                 startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit
+            ),
+            growth_state_eviction_payload_mode=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_payload_mode
+            ),
+            growth_state_eviction_delta_chain_max_depth=(
+                startup_status.resolved_bootstrap_args.growth_state_eviction_delta_chain_max_depth
             ),
         ),
         effective_runtime_config,
@@ -685,6 +697,14 @@ def _render_launcher_startup_summary(
                 f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_interval_steps} "
                 "node_limit="
                 f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit}"
+            ),
+            (
+                "growth state eviction payload mode: "
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_payload_mode}"
+            ),
+            (
+                "growth state eviction delta chain max depth: "
+                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_delta_chain_max_depth}"
             ),
             f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
             f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
@@ -1068,6 +1088,25 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Maximum nodes inspected during one cold-state eviction scan.",
     )
     parser.add_argument(
+        "--growth-state-eviction-payload-mode",
+        choices=("anchor", "delta_when_safe"),
+        default="anchor",
+        help=(
+            "Payload kind used by growth-time state eviction. 'anchor' preserves "
+            "the C4 behavior; 'delta_when_safe' stores bounded parent-delta "
+            "payloads when an unambiguous checkpoint-backed parent is available."
+        ),
+    )
+    parser.add_argument(
+        "--growth-state-eviction-delta-chain-max-depth",
+        type=int,
+        default=32,
+        help=(
+            "Maximum live parent-delta links from an evicted state to the nearest "
+            "anchor before falling back to an anchor payload."
+        ),
+    )
+    parser.add_argument(
         "--candidate-checkpoint-load-headroom-factor",
         type=float,
         default=60.0,
@@ -1340,6 +1379,10 @@ def launcher_args_from_cli(
         ),
         growth_state_eviction_scan_node_limit=(
             parsed.growth_state_eviction_scan_node_limit
+        ),
+        growth_state_eviction_payload_mode=parsed.growth_state_eviction_payload_mode,
+        growth_state_eviction_delta_chain_max_depth=(
+            parsed.growth_state_eviction_delta_chain_max_depth
         ),
         candidate_checkpoint_load_headroom_factor=(
             parsed.candidate_checkpoint_load_headroom_factor

@@ -111,6 +111,11 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+def _live_compact_state_payload_cycle_error(node_id: int) -> RuntimeError:
+    """Return the stable live compact payload-cycle error."""
+    return RuntimeError(f"Cycle in live compact state payload chain at {node_id}.")
+
+
 def _invalid_checkpoint_payload_mapping_error() -> TypeError:
     """Return the stable invalid checkpoint-payload mapping error."""
     return TypeError("checkpoint payload must be a string-keyed mapping")
@@ -1247,6 +1252,26 @@ class AnemoneMorpionSearchRunnerArgs:
     growth_state_rematerialization_cache_size: int = 10000
     growth_state_eviction_scan_interval_steps: int = 100
     growth_state_eviction_scan_node_limit: int = 5000
+    growth_state_eviction_payload_mode: str = "anchor"
+    growth_state_eviction_delta_chain_max_depth: int = 32
+
+
+@dataclass(frozen=True, slots=True)
+class _ParentDeltaContext:
+    """Single unambiguous parent edge eligible for live delta payloads."""
+
+    parent_node: object
+    parent_node_id: int
+    branch_from_parent: object
+
+
+@dataclass(frozen=True, slots=True)
+class _LiveEvictionPayload:
+    """Built payload plus live-chain metadata for one evicted node."""
+
+    payload: CheckpointNodeStatePayload
+    kind: str
+    chain_depth: int
 
 
 @dataclass(slots=True)
@@ -1254,6 +1279,8 @@ class MorpionGrowthStateEvictionMetrics:
     """Counters for experimental growth-time state eviction."""
 
     state_eviction_policy: str = "none"
+    state_eviction_payload_mode: str = "anchor"
+    state_eviction_delta_chain_max_depth: int = 32
     eviction_attempt_count: int = 0
     eviction_success_count: int = 0
     evicted_materialized_state_count: int = 0
@@ -1336,6 +1363,10 @@ class MorpionGrowthStateEvictionMetrics:
         )
         return {
             "state_eviction_policy": self.state_eviction_policy,
+            "state_eviction_payload_mode": self.state_eviction_payload_mode,
+            "state_eviction_delta_chain_max_depth": (
+                self.state_eviction_delta_chain_max_depth
+            ),
             "eviction_attempt_count": self.eviction_attempt_count,
             "eviction_success_count": self.eviction_success_count,
             "eviction_skipped_count": skipped_count,
@@ -1401,6 +1432,7 @@ class _LiveCompactStateResolver:
     state_payloads_by_node_id: dict[int, CheckpointNodeStatePayload] = field(
         default_factory=dict
     )
+    payload_chain_depth_by_node_id: dict[int, int] = field(default_factory=dict)
     metrics: MorpionGrowthStateEvictionMetrics = field(
         default_factory=MorpionGrowthStateEvictionMetrics
     )
@@ -1409,6 +1441,7 @@ class _LiveCompactStateResolver:
     _decoded_state_cache: OrderedDict[int, MorpionState] = field(
         default_factory=OrderedDict
     )
+    _resolving_node_ids: set[int] = field(default_factory=set)
 
     @contextmanager
     def phase(self, phase: str) -> Iterator[None]:
@@ -1440,9 +1473,13 @@ class _LiveCompactStateResolver:
             )
             return cached_state
         self.metrics.rematerialization_cache_miss += 1
+        if node_id in self._resolving_node_ids:
+            raise _live_compact_state_payload_cycle_error(node_id)
+        self._resolving_node_ids.add(node_id)
         try:
             state = self._resolve_uncached(node_id, depth=1)
         finally:
+            self._resolving_node_ids.discard(node_id)
             elapsed_s = perf_counter() - started_at
             self.metrics.rematerialization_total_s += elapsed_s
             self.metrics.record_rematerialization(
@@ -1468,6 +1505,17 @@ class _LiveCompactStateResolver:
                 branch_from_parent=None,
             )
         raise KeyError(node_id)
+
+    def store_payload(
+        self,
+        *,
+        node_id: int,
+        payload: CheckpointNodeStatePayload,
+        chain_depth: int,
+    ) -> None:
+        """Store one live compact payload and its bounded delta-chain depth."""
+        self.state_payloads_by_node_id[node_id] = payload
+        self.payload_chain_depth_by_node_id[node_id] = chain_depth
 
     def _cache_state(self, node_id: int, state: MorpionState) -> None:
         """Store one decoded state in the bounded LRU cache."""
@@ -1572,7 +1620,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
             state_eviction_policy=_effective_growth_state_eviction_policy(
                 self._args.growth_state_eviction_policy
-            )
+            ),
+            state_eviction_payload_mode=self._args.growth_state_eviction_payload_mode,
+            state_eviction_delta_chain_max_depth=(
+                self._args.growth_state_eviction_delta_chain_max_depth
+            ),
         )
         self._live_compact_state_resolver = _LiveCompactStateResolver(
             state_codec=self._state_codec,
@@ -1689,7 +1741,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         initial_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
-            "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s state_eviction_recent_window=%s state_rematerialization_cache_size=%s state_eviction_scan_interval_steps=%s state_eviction_scan_node_limit=%s",
+            "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s state_eviction_recent_window=%s state_rematerialization_cache_size=%s state_eviction_scan_interval_steps=%s state_eviction_scan_node_limit=%s state_eviction_payload_mode=%s state_eviction_delta_chain_max_depth=%s",
             max_growth_steps,
             initial_tree_size,
             _effective_growth_state_eviction_policy(
@@ -1699,6 +1751,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._args.growth_state_rematerialization_cache_size,
             self._args.growth_state_eviction_scan_interval_steps,
             self._args.growth_state_eviction_scan_node_limit,
+            self._args.growth_state_eviction_payload_mode,
+            self._args.growth_state_eviction_delta_chain_max_depth,
         )
         self._clear_linoo_selection_table_artifact()
         steps_executed = 0
@@ -1909,7 +1963,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
             state_eviction_policy=_effective_growth_state_eviction_policy(
                 self._args.growth_state_eviction_policy
-            )
+            ),
+            state_eviction_payload_mode=self._args.growth_state_eviction_payload_mode,
+            state_eviction_delta_chain_max_depth=(
+                self._args.growth_state_eviction_delta_chain_max_depth
+            ),
         )
         self._live_compact_state_resolver = _LiveCompactStateResolver(
             state_codec=self._state_codec,
@@ -2118,8 +2176,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         payload_started_at = perf_counter()
         try:
             with self._state_rematerialization_phase("eviction_payload_build"):
-                state_summary = self._state_codec.dump_state_summary(state)
-                anchor_ref = self._state_codec.dump_anchor_ref(state)
+                live_payload = self._build_live_eviction_payload(
+                    node=node,
+                    node_id=node_id,
+                    state=state,
+                )
         except Exception:  # pylint: disable=broad-exception-caught
             self._state_eviction_metrics.skip("payload_build_failed")
             return
@@ -2127,13 +2188,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._state_eviction_metrics.eviction_payload_build_s += (
                 perf_counter() - payload_started_at
             )
-        payload = AnchorCheckpointStatePayload(
-            anchor_ref=anchor_ref,
-            state_summary=state_summary,
-        )
         tree_node = getattr(node, "tree_node", None)
         assert tree_node is not None
-        self._live_compact_state_resolver.state_payloads_by_node_id[node_id] = payload
+        self._live_compact_state_resolver.store_payload(
+            node_id=node_id,
+            payload=live_payload.payload,
+            chain_depth=live_payload.chain_depth,
+        )
         tree_node.state_handle_ = CheckpointBackedStateHandle(
             resolver=cast("Any", self._live_compact_state_resolver),
             node_id=node_id,
@@ -2143,7 +2204,96 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._state_eviction_metrics.compact_payload_count = len(
             self._live_compact_state_resolver.state_payloads_by_node_id
         )
-        self._state_eviction_metrics.anchor_payload_count += 1
+        if live_payload.kind == "delta":
+            self._state_eviction_metrics.delta_payload_count += 1
+        else:
+            self._state_eviction_metrics.anchor_payload_count += 1
+
+    def _build_live_eviction_payload(
+        self,
+        *,
+        node: object,
+        node_id: int,
+        state: MorpionState,
+    ) -> _LiveEvictionPayload:
+        """Build a bounded live compact payload, preferring safe deltas."""
+        state_summary = self._state_codec.dump_state_summary(state)
+        if self._args.growth_state_eviction_payload_mode == "delta_when_safe":
+            delta_payload = self._try_build_live_delta_eviction_payload(
+                node=node,
+                node_id=node_id,
+                state=state,
+                state_summary=state_summary,
+            )
+            if delta_payload is not None:
+                return delta_payload
+
+        anchor_ref = self._state_codec.dump_anchor_ref(state)
+        return _LiveEvictionPayload(
+            payload=AnchorCheckpointStatePayload(
+                anchor_ref=anchor_ref,
+                state_summary=state_summary,
+            ),
+            kind="anchor",
+            chain_depth=0,
+        )
+
+    def _try_build_live_delta_eviction_payload(
+        self,
+        *,
+        node: object,
+        node_id: int,
+        state: MorpionState,
+        state_summary: object | None,
+    ) -> _LiveEvictionPayload | None:
+        """Return a parent-delta payload when every conservative precondition holds."""
+        max_depth = self._args.growth_state_eviction_delta_chain_max_depth
+        if max_depth <= 0:
+            self._state_eviction_metrics.skip("delta_chain_depth_disabled")
+            return None
+        parent_context = _single_parent_link_for_live_delta(node)
+        if parent_context is None:
+            self._state_eviction_metrics.skip("delta_parent_ambiguous")
+            return None
+        resolver = self._live_compact_state_resolver
+        if parent_context.parent_node_id not in resolver.state_payloads_by_node_id:
+            self._state_eviction_metrics.skip("delta_parent_payload_missing")
+            return None
+        parent_chain_depth = resolver.payload_chain_depth_by_node_id.get(
+            parent_context.parent_node_id
+        )
+        if parent_chain_depth is None:
+            self._state_eviction_metrics.skip("delta_parent_depth_unknown")
+            return None
+        if parent_chain_depth >= max_depth:
+            self._state_eviction_metrics.skip("delta_chain_depth_limit")
+            return None
+
+        try:
+            parent_state = cast("Any", parent_context.parent_node).state
+            delta_ref = self._state_codec.dump_delta_from_parent(
+                parent_state=parent_state,
+                child_state=state,
+                branch_from_parent=parent_context.branch_from_parent,
+            )
+            branch_payload = _dump_live_state_parent_branch_for_checkpoint(
+                state_codec=self._state_codec,
+                branch_from_parent=parent_context.branch_from_parent,
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._state_eviction_metrics.skip("delta_payload_build_failed")
+            return None
+
+        return _LiveEvictionPayload(
+            payload=DeltaCheckpointStatePayload(
+                state_parent_node_id=parent_context.parent_node_id,
+                state_parent_branch=branch_payload,
+                delta_ref=delta_ref,
+                state_summary=state_summary,
+            ),
+            kind="delta",
+            chain_depth=parent_chain_depth + 1,
+        )
 
     def _format_state_eviction_metrics(self) -> str:
         """Format state eviction metrics as stable key=value log fields."""
@@ -2370,6 +2520,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 ),
                 "state_eviction_scan_node_limit": (
                     self._args.growth_state_eviction_scan_node_limit
+                ),
+                "state_eviction_payload_mode": (
+                    self._args.growth_state_eviction_payload_mode
+                ),
+                "state_eviction_delta_chain_max_depth": (
+                    self._args.growth_state_eviction_delta_chain_max_depth
                 ),
                 "recent_selected_count": len(self._growth_eviction_recent_node_id_set),
                 "selected_step_tracked_count": len(
@@ -3336,6 +3492,46 @@ def _effective_growth_state_eviction_policy(policy: str) -> str:
     if policy == "expanded":
         return "cold_expanded"
     return policy
+
+
+def _single_parent_link_for_live_delta(node: object) -> _ParentDeltaContext | None:
+    """Return the sole parent edge for live deltas, or ``None`` if ambiguous."""
+    iter_parent_items = getattr(node, "iter_parent_items", None)
+    if callable(iter_parent_items):
+        try:
+            parent_items = tuple(iter_parent_items())
+        except Exception:  # pylint: disable=broad-exception-caught
+            return None
+    else:
+        parent_nodes = getattr(node, "parent_nodes", None)
+        if not isinstance(parent_nodes, Mapping):
+            return None
+        parent_items = tuple(parent_nodes.items())
+    if len(parent_items) != 1:
+        return None
+    parent_node, branch_keys = parent_items[0]
+    if not isinstance(branch_keys, set) or len(branch_keys) != 1:
+        return None
+    parent_node_id = getattr(parent_node, "id", None)
+    if not isinstance(parent_node_id, int):
+        return None
+    return _ParentDeltaContext(
+        parent_node=parent_node,
+        parent_node_id=parent_node_id,
+        branch_from_parent=next(iter(branch_keys)),
+    )
+
+
+def _dump_live_state_parent_branch_for_checkpoint(
+    *,
+    state_codec: object,
+    branch_from_parent: object,
+) -> object | None:
+    """Return the optional compact branch payload stored beside a live delta."""
+    hook = getattr(state_codec, "dump_state_parent_branch_for_checkpoint", None)
+    if callable(hook):
+        return hook(branch_from_parent)
+    return branch_from_parent
 
 
 def _selected_node_from_latest_expansions(

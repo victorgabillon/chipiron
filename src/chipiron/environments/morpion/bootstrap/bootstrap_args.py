@@ -30,6 +30,7 @@ type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
 type MorpionGrowthStateEvictionPolicy = Literal[
     "none", "cold_expanded", "frontier_cold", "expanded"
 ]
+type MorpionGrowthStateEvictionPayloadMode = Literal["anchor", "delta_when_safe"]
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -175,6 +176,20 @@ def _invalid_growth_state_eviction_scan_node_limit_error() -> ValueError:
     )
 
 
+def _invalid_growth_state_eviction_payload_mode_error() -> ValueError:
+    """Return the canonical growth state-eviction payload-mode error."""
+    return ValueError(
+        "growth_state_eviction_payload_mode must be 'anchor' or 'delta_when_safe'."
+    )
+
+
+def _invalid_growth_state_eviction_delta_chain_max_depth_error() -> ValueError:
+    """Return the canonical growth state-eviction delta-chain depth error."""
+    return ValueError(
+        "growth_state_eviction_delta_chain_max_depth must be a positive integer."
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -246,6 +261,10 @@ class MorpionBootstrapArgs:
     growth_state_rematerialization_cache_size: int = 10000
     growth_state_eviction_scan_interval_steps: int = 100
     growth_state_eviction_scan_node_limit: int = 5000
+    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = (
+        "anchor"
+    )
+    growth_state_eviction_delta_chain_max_depth: int = 32
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
@@ -283,6 +302,16 @@ class MorpionBootstrapArgs:
             or self.growth_state_eviction_scan_node_limit <= 0
         ):
             raise _invalid_growth_state_eviction_scan_node_limit_error()
+        if self.growth_state_eviction_payload_mode not in {
+            "anchor",
+            "delta_when_safe",
+        }:
+            raise _invalid_growth_state_eviction_payload_mode_error()
+        if (
+            isinstance(self.growth_state_eviction_delta_chain_max_depth, bool)
+            or self.growth_state_eviction_delta_chain_max_depth <= 0
+        ):
+            raise _invalid_growth_state_eviction_delta_chain_max_depth_error()
         if isinstance(self.reevaluation_blend_alpha, bool) or not (
             0.0 <= self.reevaluation_blend_alpha <= 1.0
         ):

@@ -426,6 +426,8 @@ def test_bootstrap_config_persists_growth_state_eviction_policy(
         growth_state_rematerialization_cache_size=11,
         growth_state_eviction_scan_interval_steps=13,
         growth_state_eviction_scan_node_limit=17,
+        growth_state_eviction_payload_mode="delta_when_safe",
+        growth_state_eviction_delta_chain_max_depth=19,
     )
     config = bootstrap_config_from_args(args)
 
@@ -437,11 +439,15 @@ def test_bootstrap_config_persists_growth_state_eviction_policy(
     assert payload["runtime"]["growth_state_rematerialization_cache_size"] == 11
     assert payload["runtime"]["growth_state_eviction_scan_interval_steps"] == 13
     assert payload["runtime"]["growth_state_eviction_scan_node_limit"] == 17
+    assert payload["runtime"]["growth_state_eviction_payload_mode"] == "delta_when_safe"
+    assert payload["runtime"]["growth_state_eviction_delta_chain_max_depth"] == 19
     assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
     assert loaded.runtime.growth_state_eviction_recent_window == 7
     assert loaded.runtime.growth_state_rematerialization_cache_size == 11
     assert loaded.runtime.growth_state_eviction_scan_interval_steps == 13
     assert loaded.runtime.growth_state_eviction_scan_node_limit == 17
+    assert loaded.runtime.growth_state_eviction_payload_mode == "delta_when_safe"
+    assert loaded.runtime.growth_state_eviction_delta_chain_max_depth == 19
 
 
 def test_bootstrap_config_accepts_frontier_cold_growth_state_eviction_policy(

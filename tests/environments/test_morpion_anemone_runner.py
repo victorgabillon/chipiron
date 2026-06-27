@@ -940,6 +940,37 @@ def test_growth_state_eviction_cold_expanded_evicts_cold_node_and_caches() -> No
     assert metrics["rematerialization_total_s"] >= 0.0
 
 
+def test_growth_state_eviction_delta_when_safe_emits_bounded_delta_payloads() -> None:
+    """C5 live eviction should use parent deltas once a parent payload exists."""
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(
+            growth_state_eviction_policy="frontier_cold",
+            growth_state_eviction_recent_window=0,
+            growth_state_eviction_scan_interval_steps=1,
+            growth_state_eviction_scan_node_limit=20,
+            growth_state_eviction_payload_mode="delta_when_safe",
+            growth_state_eviction_delta_chain_max_depth=4,
+        )
+    )
+
+    runner.load_or_create(None, None)
+    runner.grow(2)
+
+    checkpoint_backed_nodes = tuple(
+        node
+        for node in runner.iter_profile_nodes()
+        if isinstance(node.state_handle, CheckpointBackedStateHandle)
+    )
+    assert checkpoint_backed_nodes
+
+    metrics = runner.profile_state_eviction_runtime()
+    assert metrics["state_eviction_payload_mode"] == "delta_when_safe"
+    assert metrics["state_eviction_delta_chain_max_depth"] == 4
+    assert metrics["anchor_payload_count"] >= 1
+    assert metrics["delta_payload_count"] >= 1
+    assert any(node.state.tag is not None for node in checkpoint_backed_nodes)
+
+
 def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
     """Compact resolver diagnostics should attribute hits and misses by phase."""
 

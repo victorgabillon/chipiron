@@ -28,6 +28,7 @@ from .record_status import (
 if TYPE_CHECKING:
     from .bootstrap_args import (
         MorpionBootstrapArgs,
+        MorpionGrowthStateEvictionPayloadMode,
         MorpionGrowthStateEvictionPolicy,
         MorpionRuntimeCheckpointFormat,
     )
@@ -73,6 +74,10 @@ class MorpionBootstrapRuntimeConfig:
     growth_state_rematerialization_cache_size: int = 10000
     growth_state_eviction_scan_interval_steps: int = 100
     growth_state_eviction_scan_node_limit: int = 5000
+    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = (
+        "anchor"
+    )
+    growth_state_eviction_delta_chain_max_depth: int = 32
 
     def __post_init__(self) -> None:
         """Validate runtime scalar controls."""
@@ -146,6 +151,20 @@ class MorpionBootstrapRuntimeConfig:
         ):
             raise MalformedMorpionBootstrapConfigError.invalid_int(
                 "runtime.growth_state_eviction_scan_node_limit"
+            )
+        if self.growth_state_eviction_payload_mode not in {
+            "anchor",
+            "delta_when_safe",
+        }:
+            raise MalformedMorpionBootstrapConfigError.invalid_required_str(
+                "runtime.growth_state_eviction_payload_mode"
+            )
+        if (
+            isinstance(self.growth_state_eviction_delta_chain_max_depth, bool)
+            or self.growth_state_eviction_delta_chain_max_depth <= 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_state_eviction_delta_chain_max_depth"
             )
 
 
@@ -424,6 +443,12 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             growth_state_eviction_scan_node_limit=(
                 args.growth_state_eviction_scan_node_limit
             ),
+            growth_state_eviction_payload_mode=(
+                args.growth_state_eviction_payload_mode
+            ),
+            growth_state_eviction_delta_chain_max_depth=(
+                args.growth_state_eviction_delta_chain_max_depth
+            ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -481,6 +506,12 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             ),
             "growth_state_eviction_scan_node_limit": (
                 config.runtime.growth_state_eviction_scan_node_limit
+            ),
+            "growth_state_eviction_payload_mode": (
+                config.runtime.growth_state_eviction_payload_mode
+            ),
+            "growth_state_eviction_delta_chain_max_depth": (
+                config.runtime.growth_state_eviction_delta_chain_max_depth
             ),
         },
         "dataset": {
@@ -627,6 +658,17 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             growth_state_eviction_scan_node_limit=_coerce_int(
                 runtime.get("growth_state_eviction_scan_node_limit", 5000),
                 field_name="runtime.growth_state_eviction_scan_node_limit",
+            ),
+            growth_state_eviction_payload_mode=cast(
+                "MorpionGrowthStateEvictionPayloadMode",
+                _required_str(
+                    runtime.get("growth_state_eviction_payload_mode", "anchor"),
+                    field_name="runtime.growth_state_eviction_payload_mode",
+                ),
+            ),
+            growth_state_eviction_delta_chain_max_depth=_coerce_int(
+                runtime.get("growth_state_eviction_delta_chain_max_depth", 32),
+                field_name="runtime.growth_state_eviction_delta_chain_max_depth",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -997,6 +1039,12 @@ def _stage_bootstrap_config_field_values(
         ),
         "growth_state_eviction_scan_node_limit": (
             config.runtime.growth_state_eviction_scan_node_limit
+        ),
+        "growth_state_eviction_payload_mode": (
+            config.runtime.growth_state_eviction_payload_mode
+        ),
+        "growth_state_eviction_delta_chain_max_depth": (
+            config.runtime.growth_state_eviction_delta_chain_max_depth
         ),
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
