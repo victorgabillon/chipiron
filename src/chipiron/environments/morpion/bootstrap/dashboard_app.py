@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import time
+from collections.abc import Mapping
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
@@ -12,7 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 from matplotlib import pyplot as plt
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from .history import MorpionBootstrapTreeStatus
     from .tree_inspector import MorpionBootstrapChildSummary
@@ -262,6 +263,12 @@ def run_dashboard_app(work_dir: Path) -> None:
 
     st.subheader("Disk Usage")
     _render_disk_usage_section(st=st, summary=dashboard_data.disk_usage_summary)
+
+    st.subheader("Memory / Export Observability")
+    _render_observability_section(
+        st=st,
+        summary=_observability_summary_from_metadata(run_state.metadata),
+    )
 
     st.subheader("Record Status")
     _render_record_status_section(
@@ -594,6 +601,156 @@ def _format_disk_usage_pct(value: float | None) -> str:
     if value is None:
         return "unknown"
     return f"{value:.2f}% of device"
+
+
+def _mapping_value(
+    mapping: Mapping[str, object],
+    key: str,
+) -> Mapping[str, object]:
+    """Return one nested string-keyed mapping from dashboard metadata."""
+    value = mapping.get(key)
+    if not isinstance(value, Mapping):
+        return {}
+    raw_mapping = cast("Mapping[object, object]", value)
+    if not all(isinstance(item_key, str) for item_key in raw_mapping):
+        return {}
+    return cast("Mapping[str, object]", raw_mapping)
+
+
+def _numeric_value(value: object) -> float | None:
+    """Return one finite numeric value for derived dashboard metrics."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
+
+
+def _ratio(
+    numerator: object,
+    denominator: object,
+) -> float | None:
+    """Return a safe ratio for optional numeric values."""
+    normalized_numerator = _numeric_value(numerator)
+    normalized_denominator = _numeric_value(denominator)
+    if normalized_numerator is None or normalized_denominator is None:
+        return None
+    if normalized_denominator <= 0:
+        return None
+    return normalized_numerator / normalized_denominator
+
+
+def _percentage(value: object) -> str:
+    """Format one optional ratio as a dashboard percentage."""
+    normalized = _numeric_value(value)
+    if normalized is None:
+        return "n/a"
+    return f"{normalized * 100.0:.1f}%"
+
+
+def _export_fast_path_health(
+    profile: Mapping[str, object],
+) -> str:
+    """Return a compact health label for checkpoint-backed export state access."""
+    state_access_calls = _numeric_value(profile.get("state_access_calls"))
+    if state_access_calls is None:
+        return "unknown"
+    plain_states = _numeric_value(profile.get("plain_or_materialized_states"))
+    node_count = _numeric_value(profile.get("node_count"))
+    tolerance = 1.0 if node_count is None else max(1.0, node_count * 0.005)
+    if plain_states is not None and state_access_calls <= plain_states + tolerance:
+        return "good"
+    if node_count is not None and node_count > 0 and state_access_calls >= node_count * 0.5:
+        return "warning"
+    return "review"
+
+
+def _observability_summary_from_metadata(
+    metadata: Mapping[str, object],
+) -> dict[str, object]:
+    """Build dashboard-ready observability fields from status metadata."""
+    tree = _mapping_value(metadata, "tree")
+    memory = _mapping_value(metadata, "memory")
+    state_eviction = _mapping_value(metadata, "state_eviction")
+    checkpoint = _mapping_value(metadata, "checkpoint")
+    training_export = _mapping_value(metadata, "training_export")
+    training_export_profile = _mapping_value(metadata, "training_export_profile")
+    node_count = tree.get("node_count") or training_export_profile.get("node_count")
+    compact_payload_count = state_eviction.get("compact_payload_count")
+    delta_payload_count = state_eviction.get("delta_payload_count")
+    checkpoint_backed_handles = training_export_profile.get(
+        "checkpoint_backed_state_handles"
+    )
+    plain_states = training_export_profile.get("plain_or_materialized_states")
+    return {
+        "tree": dict(tree),
+        "memory": dict(memory),
+        "state_eviction": dict(state_eviction),
+        "checkpoint": dict(checkpoint),
+        "training_export": dict(training_export),
+        "training_export_profile": dict(training_export_profile),
+        "delta_payload_ratio": _ratio(delta_payload_count, compact_payload_count),
+        "checkpoint_backed_ratio": _ratio(checkpoint_backed_handles, node_count),
+        "materialized_ratio": _ratio(plain_states, node_count),
+        "export_fast_path_health": _export_fast_path_health(training_export_profile),
+    }
+
+
+def _render_observability_section(
+    *,
+    st: Any,
+    summary: Mapping[str, object],
+) -> None:
+    """Render memory/checkpoint/export observability from latest status metadata."""
+    tree = cast("Mapping[str, object]", summary.get("tree", {}))
+    memory = cast("Mapping[str, object]", summary.get("memory", {}))
+    state_eviction = cast("Mapping[str, object]", summary.get("state_eviction", {}))
+    checkpoint = cast("Mapping[str, object]", summary.get("checkpoint", {}))
+    training_export = cast("Mapping[str, object]", summary.get("training_export", {}))
+    profile = cast("Mapping[str, object]", summary.get("training_export_profile", {}))
+
+    metric_columns = st.columns(7)
+    metric_columns[0].metric("Nodes", _format_value(tree.get("node_count")))
+    metric_columns[1].metric("Branches", _format_value(tree.get("branch_count")))
+    metric_columns[2].metric("RSS MB", _format_value(memory.get("rss_mb")))
+    metric_columns[3].metric(
+        "Checkpoint-backed",
+        _percentage(summary.get("checkpoint_backed_ratio")),
+    )
+    metric_columns[4].metric(
+        "Delta payloads",
+        _percentage(summary.get("delta_payload_ratio")),
+    )
+    metric_columns[5].metric(
+        "Checkpoint save",
+        _format_seconds(checkpoint.get("total_s")),
+    )
+    metric_columns[6].metric(
+        "Training export",
+        _format_seconds(training_export.get("total_s")),
+    )
+
+    st.caption(
+        "Checkpoint-backed nodes store compact payloads instead of full states. "
+        "Delta payloads store parent plus move/delta. Export health warns if "
+        "checkpoint-backed nodes start resolving full state during export."
+    )
+    st.dataframe(
+        [
+            {"metric": "Materialized/plain %", "value": _percentage(summary.get("materialized_ratio"))},
+            {"metric": "State access calls", "value": _format_value(profile.get("state_access_calls"))},
+            {"metric": "Plain/materialized states", "value": _format_value(profile.get("plain_or_materialized_states"))},
+            {"metric": "Reusable checkpoint payloads", "value": _format_value(profile.get("reusable_checkpoint_payloads"))},
+            {"metric": "Export fast-path health", "value": _format_value(summary.get("export_fast_path_health"))},
+            {"metric": "Eviction successes", "value": _format_value(state_eviction.get("eviction_success_count"))},
+            {"metric": "Eviction skips", "value": _format_value(state_eviction.get("eviction_skipped_count"))},
+            {"metric": "Delta fallbacks", "value": _format_value(state_eviction.get("delta_payload_fallback_count"))},
+            {"metric": "Rematerializations", "value": _format_value(state_eviction.get("rematerialization_count"))},
+            {"metric": "Checkpoint bytes", "value": _format_value(checkpoint.get("bytes"))},
+            {"metric": "Rows written", "value": _format_value(training_export.get("rows_written"))},
+            {"metric": "Export bytes", "value": _format_value(training_export.get("bytes_written"))},
+        ],
+        width="stretch",
+        hide_index=True,
+    )
 
 
 def _downsample_series[SeriesPointT](
@@ -1896,6 +2053,14 @@ def _latest_optional_value(series: tuple[Any, ...]) -> object | None:
 def _format_value(value: object | None) -> str:
     """Render optional values consistently in the dashboard."""
     return "n/a" if value is None else str(value)
+
+
+def _format_seconds(value: object | None) -> str:
+    """Render optional duration values for compact metrics."""
+    normalized = _numeric_value(value)
+    if normalized is None:
+        return "n/a"
+    return f"{normalized:.3f}s"
 
 
 def _format_bool_icon(value: bool | None) -> str:

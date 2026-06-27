@@ -266,6 +266,97 @@ class MorpionTrainingExportProfile:
         self.node_traversal_s += elapsed_s
 
 
+def checkpoint_io_metrics_to_dict(metrics: CheckpointIoMetrics) -> dict[str, object]:
+    """Return JSON-friendly checkpoint I/O metrics."""
+    return {
+        "path": metrics.path,
+        "bytes": metrics.bytes,
+        "format": metrics.file_format,
+        "encoder": metrics.encoder,
+        "payload_build_s": metrics.payload_build_s,
+        "jsonable_s": metrics.jsonable_s,
+        "json_encode_s": metrics.json_encode_s,
+        "compress_s": metrics.compress_s,
+        "write_s": metrics.write_s,
+        "json_load_s": metrics.json_load_s,
+        "payload_decode_s": metrics.payload_decode_s,
+        "runtime_rebuild_s": metrics.runtime_rebuild_s,
+        "total_s": metrics.total_s,
+        "uncompressed_bytes": metrics.uncompressed_bytes,
+        "compression_ratio": metrics.compression_ratio,
+        "rss_before_mb": metrics.rss_before_mb,
+        "rss_after_mb": metrics.rss_after_mb,
+        "node_count": metrics.node_count,
+        "anchor_count": metrics.anchor_count,
+        "delta_count": metrics.delta_count,
+        "cache": metrics.cache,
+        "runtime_checkpoint_format": metrics.runtime_checkpoint_format,
+    }
+
+
+def training_export_profile_to_dict(
+    profile: MorpionTrainingExportProfile,
+) -> dict[str, object]:
+    """Return JSON-friendly training-export profile metrics."""
+    return {
+        "node_count": profile.node_count,
+        "state_ref_count": profile.state_ref_count,
+        "payload_build_s": profile.payload_build_s,
+        "node_traversal_s": profile.node_traversal_s,
+        "state_ref_serialization_s": profile.state_ref_serialization_s,
+        "node_payload_total_s": profile.node_payload_total_s,
+        "node_metadata_total_s": profile.node_metadata_total_s,
+        "node_value_total_s": profile.node_value_total_s,
+        "node_children_total_s": profile.node_children_total_s,
+        "node_state_access_total_s": profile.node_state_access_total_s,
+        "state_ref_conversion_total_s": profile.state_ref_conversion_total_s,
+        "checkpoint_backed_state_handles": profile.checkpoint_backed_state_handles,
+        "reusable_checkpoint_payloads": profile.reusable_checkpoint_payloads,
+        "plain_or_materialized_states": profile.plain_or_materialized_states,
+        "state_access_calls": profile.state_access_calls,
+        "state_ref_avg_ms": _average_ms(
+            profile.state_ref_serialization_s,
+            profile.state_ref_count,
+        ),
+        "state_access_avg_ms": _average_ms(
+            profile.node_state_access_total_s,
+            profile.state_access_calls,
+        ),
+        "state_ref_conversion_avg_ms": _average_ms(
+            profile.state_ref_conversion_total_s,
+            profile.state_ref_count,
+        ),
+    }
+
+
+def sharded_training_export_stats_to_dict(
+    stats: MorpionShardedTrainingExportStats,
+) -> dict[str, object]:
+    """Return JSON-friendly sharded training-export write metrics."""
+    rss_delta_mb = (
+        None
+        if stats.rss_before_mb is None or stats.rss_after_mb is None
+        else stats.rss_after_mb - stats.rss_before_mb
+    )
+    return {
+        "export_mode": "sharded",
+        "generation": stats.generation,
+        "node_count": stats.node_count,
+        "new_node_count": stats.new_node_count,
+        "reused_node_count": stats.reused_node_count,
+        "rows_written": stats.rows_written,
+        "shards_written": stats.shards_written,
+        "bytes_written": stats.bytes_written,
+        "row_build_s": stats.row_build_s,
+        "json_encode_s": stats.json_encode_s,
+        "write_s": stats.write_s,
+        "total_s": stats.total_s,
+        "rss_before_mb": stats.rss_before_mb,
+        "rss_after_mb": stats.rss_after_mb,
+        "rss_delta_mb": rss_delta_mb,
+    }
+
+
 def _format_optional_seconds(value: object) -> str:
     """Format one optional duration for stable timing logs."""
     return f"{float(value):.6f}" if isinstance(value, int | float) else "unknown"
@@ -1676,6 +1767,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_cycle_index: int | None = None
         self._linoo_selection_table_generation: int | None = None
         self._last_reevaluation_patch_apply_metrics: dict[str, object] | None = None
+        self._latest_checkpoint_metrics: dict[str, object] | None = None
+        self._latest_training_export_stats: dict[str, object] | None = None
+        self._latest_training_export_profile: dict[str, object] | None = None
 
     def configure_linoo_selection_table_artifact(
         self,
@@ -2465,6 +2559,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         profile.payload_build_s = time.perf_counter() - started_at
         _log_sharded_training_export_stats(stats)
         _log_training_export_profile(profile)
+        self._latest_training_export_stats = sharded_training_export_stats_to_dict(
+            stats
+        )
+        self._latest_training_export_stats["output_path"] = str(manifest_path)
+        self._latest_training_export_profile = training_export_profile_to_dict(profile)
         LOGGER.info(
             "[save] sharded_tree_export_done output=%s generation=%s nodes=%s rows=%s bytes=%s elapsed=%.3fs",
             str(manifest_path),
@@ -2595,6 +2694,24 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             }
         )
         return snapshot
+
+    def latest_checkpoint_metrics(self) -> Mapping[str, object] | None:
+        """Return the latest checkpoint save metrics for dashboard metadata."""
+        if self._latest_checkpoint_metrics is None:
+            return None
+        return dict(self._latest_checkpoint_metrics)
+
+    def latest_training_export_stats(self) -> Mapping[str, object] | None:
+        """Return the latest sharded training-export write metrics."""
+        if self._latest_training_export_stats is None:
+            return None
+        return dict(self._latest_training_export_stats)
+
+    def latest_training_export_profile(self) -> Mapping[str, object] | None:
+        """Return the latest training-export fast-path profile metrics."""
+        if self._latest_training_export_profile is None:
+            return None
+        return dict(self._latest_training_export_profile)
 
     def iter_profile_branches(self) -> Iterator[object]:
         """Yield live branch or ordering objects for memory profiling only."""
@@ -3203,36 +3320,38 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         elapsed_s = time.perf_counter() - save_started_at
         rss_after_mb = _current_rss_mb()
+        checkpoint_metrics = CheckpointIoMetrics(
+            path=str(output if write_stats is None else write_stats.output_path),
+            bytes=checkpoint_bytes,
+            file_format=(
+                "sharded" if write_stats is None else str(write_stats.file_format)
+            ),
+            encoder=None if write_stats is None else write_stats.encoder,
+            payload_build_s=payload_elapsed_s,
+            jsonable_s=None if write_stats is None else write_stats.jsonable_s,
+            json_encode_s=None if write_stats is None else write_stats.json_encode_s,
+            compress_s=None if write_stats is None else write_stats.compress_s,
+            write_s=None if write_stats is None else write_stats.write_s,
+            total_s=elapsed_s,
+            uncompressed_bytes=None
+            if write_stats is None
+            else write_stats.uncompressed_bytes,
+            compression_ratio=None
+            if write_stats is None
+            else write_stats.compression_ratio,
+            rss_before_mb=rss_before_mb,
+            rss_after_mb=rss_after_mb,
+            node_count=node_count,
+            anchor_count=anchor_count,
+            delta_count=delta_count,
+            runtime_checkpoint_format=self._args.runtime_checkpoint_format,
+        )
         _log_checkpoint_metrics(
             "save",
-            CheckpointIoMetrics(
-                path=str(output if write_stats is None else write_stats.output_path),
-                bytes=checkpoint_bytes,
-                file_format=(
-                    "sharded" if write_stats is None else str(write_stats.file_format)
-                ),
-                encoder=None if write_stats is None else write_stats.encoder,
-                payload_build_s=payload_elapsed_s,
-                jsonable_s=None if write_stats is None else write_stats.jsonable_s,
-                json_encode_s=None
-                if write_stats is None
-                else write_stats.json_encode_s,
-                compress_s=None if write_stats is None else write_stats.compress_s,
-                write_s=None if write_stats is None else write_stats.write_s,
-                total_s=elapsed_s,
-                uncompressed_bytes=None
-                if write_stats is None
-                else write_stats.uncompressed_bytes,
-                compression_ratio=None
-                if write_stats is None
-                else write_stats.compression_ratio,
-                rss_before_mb=rss_before_mb,
-                rss_after_mb=rss_after_mb,
-                node_count=node_count,
-                anchor_count=anchor_count,
-                delta_count=delta_count,
-                runtime_checkpoint_format=self._args.runtime_checkpoint_format,
-            ),
+            checkpoint_metrics,
+        )
+        self._latest_checkpoint_metrics = checkpoint_io_metrics_to_dict(
+            checkpoint_metrics
         )
         LOGGER.info(
             "[checkpoint] save_done path=%s elapsed=%.3fs",

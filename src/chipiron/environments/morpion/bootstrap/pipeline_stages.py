@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
@@ -244,6 +245,83 @@ def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
     except OSError:
         return None
     return None
+
+
+def _optional_runner_mapping(
+    runner: object,
+    method_name: str,
+) -> dict[str, object] | None:
+    """Return one optional mapping exposed by the runner."""
+    method = getattr(runner, method_name, None)
+    if not callable(method):
+        return None
+    value = method()
+    if not isinstance(value, Mapping):
+        return None
+    return dict(value)
+
+
+def _optional_ratio(numerator: object, denominator: object) -> float | None:
+    """Return one safe ratio for numeric dashboard metrics."""
+    if not isinstance(numerator, int | float) or not isinstance(denominator, int | float):
+        return None
+    if denominator <= 0:
+        return None
+    return float(numerator) / float(denominator)
+
+
+def _observability_metadata_for_dashboard(
+    *,
+    runner: object,
+    generation: int,
+    node_count: int,
+    branch_count: int | None,
+    nodes_added: int,
+    growth_duration_s: float,
+    cycle_duration_s: float,
+) -> dict[str, object]:
+    """Build compact status metadata for memory/checkpoint/export observability."""
+    rss_mb = current_rss_mb()
+    state_eviction = _optional_runner_mapping(runner, "profile_state_eviction_runtime")
+    checkpoint = _optional_runner_mapping(runner, "latest_checkpoint_metrics")
+    training_export = _optional_runner_mapping(runner, "latest_training_export_stats")
+    training_export_profile = _optional_runner_mapping(
+        runner,
+        "latest_training_export_profile",
+    )
+    memory: dict[str, object] = {
+        "event": "done",
+        "generation": generation,
+        "rss_mb": rss_mb,
+        "rss_mb_per_100k_nodes": None
+        if rss_mb is None or node_count <= 0
+        else rss_mb * 100_000.0 / node_count,
+    }
+    if checkpoint is not None:
+        memory["rss_before_checkpoint_save_mb"] = checkpoint.get("rss_before_mb")
+        memory["rss_after_checkpoint_save_mb"] = checkpoint.get("rss_after_mb")
+    if training_export is not None:
+        memory["rss_before_training_export_mb"] = training_export.get("rss_before_mb")
+        memory["rss_after_training_export_mb"] = training_export.get("rss_after_mb")
+    tree: dict[str, object] = {
+        "generation": generation,
+        "node_count": node_count,
+        "branch_count": branch_count,
+        "nodes_added": nodes_added,
+        "cycle_elapsed_s": cycle_duration_s,
+        "growth_elapsed_s": growth_duration_s,
+        "branch_count_per_node": _optional_ratio(branch_count, node_count),
+    }
+    return {
+        "tree": tree,
+        "memory": memory,
+        "state_eviction": {} if state_eviction is None else state_eviction,
+        "checkpoint": {} if checkpoint is None else checkpoint,
+        "training_export": {} if training_export is None else training_export,
+        "training_export_profile": {}
+        if training_export_profile is None
+        else training_export_profile,
+    }
 
 
 def _raise_dataset_rows_count_mismatch_error(
@@ -1219,6 +1297,22 @@ def _run_one_pipeline_growth_cycle_impl(
         )
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     cycle_duration_s = time.perf_counter() - cycle_started_at
+    observability_metadata = _observability_metadata_for_dashboard(
+        runner=runner,
+        generation=generation,
+        node_count=current_tree_size,
+        branch_count=branch_count,
+        nodes_added=nodes_added,
+        growth_duration_s=growth_duration_s,
+        cycle_duration_s=cycle_duration_s,
+    )
+    run_state_metadata = _next_metadata(
+        run_state.metadata,
+        relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+        control=resolved_control,
+        effective_runtime_config=effective_runtime_config,
+    )
+    run_state_metadata.update(observability_metadata)
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,
@@ -1233,12 +1327,7 @@ def _run_one_pipeline_growth_cycle_impl(
         latest_runtime_checkpoint_path=relative_runtime_checkpoint_path,
         latest_record_status=run_state.latest_record_status,
         latest_frontier_status=frontier_status,
-        metadata=_next_metadata(
-            run_state.metadata,
-            relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
-            control=resolved_control,
-            effective_runtime_config=effective_runtime_config,
-        ),
+        metadata=run_state_metadata,
     )
     history_recorder.record(
         build_bootstrap_event(
@@ -1266,6 +1355,7 @@ def _run_one_pipeline_growth_cycle_impl(
                     effective_runtime_config=effective_runtime_config,
                 ),
                 **_pipeline_metadata(args=args),
+                **observability_metadata,
             },
         )
     )
@@ -1280,7 +1370,7 @@ def _run_one_pipeline_growth_cycle_impl(
         selected_evaluator_name=None,
         dataset_status="not_started",
         training_status="not_started",
-        metadata=_pipeline_metadata(args=args),
+        metadata={**_pipeline_metadata(args=args), **observability_metadata},
     )
     LOGGER.info(
         "[pipeline] growth_cycle_done cycle=%s generation=%s saved=true elapsed=%.3fs",

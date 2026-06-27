@@ -251,6 +251,85 @@ class FakeMorpionSearchRunner:
         return self._branch_counts[index]
 
 
+class FakeObservabilityRunner(FakeMorpionSearchRunner):
+    """Fake runner exposing optional dashboard observability hooks."""
+
+    def profile_state_eviction_runtime(self) -> dict[str, object]:
+        """Return fake state-eviction metrics."""
+        return {
+            "compact_payload_count": 10,
+            "anchor_payload_count": 2,
+            "delta_payload_count": 8,
+            "eviction_success_count": 10,
+            "eviction_skipped_count": 1,
+            "delta_payload_fallback_count": 3,
+        }
+
+    def latest_checkpoint_metrics(self) -> dict[str, object]:
+        """Return fake checkpoint save metrics."""
+        return {
+            "path": "runtime_checkpoints/generation_000001.sharded",
+            "format": "sharded",
+            "bytes": 1024,
+            "total_s": 2.5,
+            "rss_before_mb": 700.0,
+            "rss_after_mb": 710.0,
+            "node_count": 20,
+            "anchor_count": 2,
+            "delta_count": 8,
+        }
+
+    def latest_training_export_stats(self) -> dict[str, object]:
+        """Return fake sharded export metrics."""
+        return {
+            "export_mode": "sharded",
+            "node_count": 20,
+            "new_node_count": 20,
+            "reused_node_count": 0,
+            "rows_written": 40,
+            "bytes_written": 2048,
+            "total_s": 3.5,
+            "rss_before_mb": 710.0,
+            "rss_after_mb": 720.0,
+        }
+
+    def latest_training_export_profile(self) -> dict[str, object]:
+        """Return fake fast-path profile metrics."""
+        return {
+            "node_count": 20,
+            "state_access_calls": 2,
+            "checkpoint_backed_state_handles": 18,
+            "reusable_checkpoint_payloads": 18,
+            "plain_or_materialized_states": 2,
+        }
+
+
+def test_observability_metadata_for_dashboard_includes_runtime_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pipeline status metadata should expose memory/checkpoint/export summaries."""
+    monkeypatch.setattr(pipeline_stages_module, "current_rss_mb", lambda: 720.0)
+
+    metadata = pipeline_stages_module._observability_metadata_for_dashboard(
+        runner=FakeObservabilityRunner(tree_sizes=(20,), target_values=(1.0,)),
+        generation=1,
+        node_count=20,
+        branch_count=24,
+        nodes_added=19,
+        growth_duration_s=1.25,
+        cycle_duration_s=8.5,
+    )
+
+    assert metadata["tree"]["node_count"] == 20
+    assert metadata["tree"]["branch_count_per_node"] == 1.2
+    assert metadata["memory"]["rss_mb"] == 720.0
+    assert metadata["memory"]["rss_mb_per_100k_nodes"] == 3_600_000.0
+    assert metadata["state_eviction"]["delta_payload_fallback_count"] == 3
+    assert metadata["checkpoint"]["total_s"] == 2.5
+    assert metadata["training_export"]["rows_written"] == 40
+    assert metadata["training_export_profile"]["state_access_calls"] == 2
+
+
 def _make_morpion_payload() -> dict[str, object]:
     """Build one real Morpion checkpoint payload from a one-step state."""
     dynamics = AtomMorpionDynamics()

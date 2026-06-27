@@ -86,6 +86,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _linoo_selection_table_rows,
     _load_applied_control,
     _load_latest_evaluator_training_diagnostics_for_dashboard,
+    _observability_summary_from_metadata,
     _pending_control_fields,
     _pending_control_sections,
     _render_launcher_command_text,
@@ -263,6 +264,67 @@ def test_pending_changes_helper_covers_runtime_control() -> None:
         ),
         applied_control,
     )
+
+
+def test_observability_summary_derives_ratios_and_fast_path_health() -> None:
+    """Dashboard observability summary should derive C5/C6 health fields safely."""
+    summary = _observability_summary_from_metadata(
+        {
+            "tree": {"node_count": 200, "branch_count": 240},
+            "memory": {"rss_mb": 1200.0},
+            "state_eviction": {
+                "compact_payload_count": 180,
+                "delta_payload_count": 153,
+                "eviction_success_count": 180,
+                "eviction_skipped_count": 2,
+                "delta_payload_fallback_count": 5,
+            },
+            "checkpoint": {"total_s": 24.5, "bytes": 1024},
+            "training_export": {"total_s": 28.75, "rows_written": 400},
+            "training_export_profile": {
+                "node_count": 200,
+                "state_access_calls": 20,
+                "checkpoint_backed_state_handles": 180,
+                "reusable_checkpoint_payloads": 180,
+                "plain_or_materialized_states": 20,
+            },
+        }
+    )
+
+    assert summary["delta_payload_ratio"] == 0.85
+    assert summary["checkpoint_backed_ratio"] == 0.9
+    assert summary["materialized_ratio"] == 0.1
+    assert summary["export_fast_path_health"] == "good"
+
+
+def test_observability_summary_handles_missing_and_zero_denominators() -> None:
+    """Older status files and zero denominators should not crash summaries."""
+    summary = _observability_summary_from_metadata(
+        {
+            "tree": {"node_count": 0},
+            "state_eviction": {"compact_payload_count": 0, "delta_payload_count": 0},
+        }
+    )
+
+    assert summary["delta_payload_ratio"] is None
+    assert summary["checkpoint_backed_ratio"] is None
+    assert summary["materialized_ratio"] is None
+    assert summary["export_fast_path_health"] == "unknown"
+
+
+def test_observability_summary_warns_when_export_resolves_most_states() -> None:
+    """Dashboard health should flag fast-path regressions."""
+    summary = _observability_summary_from_metadata(
+        {
+            "training_export_profile": {
+                "node_count": 100,
+                "state_access_calls": 95,
+                "plain_or_materialized_states": 5,
+            }
+        }
+    )
+
+    assert summary["export_fast_path_health"] == "warning"
 
 
 def test_tree_structure_rows_render_depth_counts_in_order() -> None:
