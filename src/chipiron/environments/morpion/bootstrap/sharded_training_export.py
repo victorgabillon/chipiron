@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import perf_counter
 from typing import TYPE_CHECKING, cast
 
+from anemone._best_effort import safe_getattr as _safe_getattr
 from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from anemone.training_export.builders import build_training_node_snapshot
@@ -15,10 +18,11 @@ from anemone.training_export.model import (
     TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
 )
 
-from .pipeline_memory import log_pipeline_memory
+from .pipeline_memory import current_rss_mb, format_metric, log_pipeline_memory
 
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND = "morpion_sharded_training_export"
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION = 1
+LOGGER = logging.getLogger(__name__)
 
 
 def _invalid_int_like_json_field_error(field_name: str) -> TypeError:
@@ -68,11 +72,29 @@ class MorpionShardedTrainingExportStats:
     generation: int
     node_count: int
     new_node_count: int
+    rows_written: int = 0
+    shards_written: int = 0
+    bytes_written: int = 0
+    row_build_s: float = 0.0
+    json_encode_s: float = 0.0
+    write_s: float = 0.0
+    total_s: float = 0.0
+    rss_before_mb: float | None = None
+    rss_after_mb: float | None = None
 
     @property
     def reused_node_count(self) -> int:
         """Return how many nodes reused existing immutable state payloads."""
         return self.node_count - self.new_node_count
+
+
+@dataclass(frozen=True, slots=True)
+class _JsonWriteStats:
+    """Small write timing payload for one JSON artifact."""
+
+    bytes_written: int
+    json_encode_s: float
+    write_s: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,7 +138,11 @@ class MorpionShardedTrainingNodeUpdate:
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from anemone.training_export.builders import StateRefDumper, ValueScalarExtractor
+    from anemone.training_export.builders import (
+        StateRefDumper,
+        TrainingExportProfiler,
+        ValueScalarExtractor,
+    )
 
 
 def save_morpion_sharded_training_tree_from_live_nodes(
@@ -128,8 +154,11 @@ def save_morpion_sharded_training_tree_from_live_nodes(
     state_ref_dumper: StateRefDumper,
     direct_value_extractor: ValueScalarExtractor | None = None,
     backed_up_value_extractor: ValueScalarExtractor | None = None,
+    profile: TrainingExportProfiler | None = None,
 ) -> tuple[Path, MorpionShardedTrainingExportStats]:
     """Persist one additive sharded training export from live ordered nodes."""
+    total_started_at = perf_counter()
+    rss_before_mb = current_rss_mb()
     root = Path(output_dir)
     log_pipeline_memory(
         stage="growth",
@@ -149,12 +178,26 @@ def save_morpion_sharded_training_tree_from_live_nodes(
 
     node_records: list[MorpionShardedTrainingNodeRecord] = []
     node_updates: list[MorpionShardedTrainingNodeUpdate] = []
+    row_build_started_at = perf_counter()
     for order_index, node in enumerate(nodes):
-        update_snapshot = build_training_node_snapshot(
-            node,
-            state_ref_dumper=None,
-            direct_value_extractor=direct_value_extractor,
-            backed_up_value_extractor=backed_up_value_extractor,
+        node_id = _node_id_without_state(node)
+        node_is_new = node_id is None or node_id not in node_index
+        update_snapshot = (
+            build_training_node_snapshot(
+                node,
+                state_ref_dumper=state_ref_dumper,
+                direct_value_extractor=direct_value_extractor,
+                backed_up_value_extractor=backed_up_value_extractor,
+                _profile=profile,
+            )
+            if node_is_new
+            else build_training_node_snapshot(
+                node,
+                state_ref_dumper=None,
+                direct_value_extractor=direct_value_extractor,
+                backed_up_value_extractor=backed_up_value_extractor,
+                _profile=profile,
+            )
         )
         node_updates.append(
             MorpionShardedTrainingNodeUpdate(
@@ -170,46 +213,46 @@ def save_morpion_sharded_training_tree_from_live_nodes(
                 metadata=dict(update_snapshot.metadata),
             )
         )
-        if update_snapshot.node_id in node_index:
+        if not node_is_new:
             continue
-        full_snapshot = build_training_node_snapshot(
-            node,
-            state_ref_dumper=state_ref_dumper,
-            direct_value_extractor=direct_value_extractor,
-            backed_up_value_extractor=backed_up_value_extractor,
-        )
         node_records.append(
             MorpionShardedTrainingNodeRecord(
-                node_id=full_snapshot.node_id,
-                parent_ids=full_snapshot.parent_ids,
-                depth=full_snapshot.depth,
+                node_id=update_snapshot.node_id,
+                parent_ids=update_snapshot.parent_ids,
+                depth=update_snapshot.depth,
                 creation_generation=generation,
                 state_ref_payload=None
-                if full_snapshot.state_ref_payload is None
-                else checkpoint_payload_to_jsonable(full_snapshot.state_ref_payload),
+                if update_snapshot.state_ref_payload is None
+                else checkpoint_payload_to_jsonable(update_snapshot.state_ref_payload),
             )
         )
-        node_index[full_snapshot.node_id] = generation
+        node_index[update_snapshot.node_id] = generation
+    row_build_s = perf_counter() - row_build_started_at
 
     node_shard_path = node_shards_dir / f"generation_{generation:06d}.json"
     update_shard_path = update_shards_dir / f"generation_{generation:06d}.json"
-    _write_json(
-        node_shard_path,
-        {
-            "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
-            "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
-            "generation": generation,
-            "nodes": [_node_record_to_dict(record) for record in node_records],
-        },
+    json_write_stats: list[_JsonWriteStats] = []
+    json_write_stats.append(
+        _write_json(
+            node_shard_path,
+            {
+                "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
+                "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
+                "generation": generation,
+                "nodes": [_node_record_to_dict(record) for record in node_records],
+            },
+        )
     )
-    _write_json(
-        update_shard_path,
-        {
-            "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
-            "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
-            "generation": generation,
-            "updates": [_node_update_to_dict(update) for update in node_updates],
-        },
+    json_write_stats.append(
+        _write_json(
+            update_shard_path,
+            {
+                "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
+                "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
+                "generation": generation,
+                "updates": [_node_update_to_dict(update) for update in node_updates],
+            },
+        )
     )
 
     generation_manifest = MorpionShardedTrainingGenerationManifest(
@@ -221,9 +264,11 @@ def save_morpion_sharded_training_tree_from_live_nodes(
         update_shard_path=update_shard_path.relative_to(root).as_posix(),
     )
     generation_manifest_path = root / f"generation_{generation:06d}.json"
-    _write_json(
-        generation_manifest_path,
-        _generation_manifest_to_dict(generation_manifest),
+    json_write_stats.append(
+        _write_json(
+            generation_manifest_path,
+            _generation_manifest_to_dict(generation_manifest),
+        )
     )
 
     manifest.generation_manifests[str(generation)] = generation_manifest_path.name
@@ -233,15 +278,24 @@ def save_morpion_sharded_training_tree_from_live_nodes(
         node_index_path=manifest.node_index_path,
         metadata=dict(manifest.metadata),
     )
-    _write_json(manifest_path, _root_manifest_to_dict(updated_manifest))
-    _write_json(
-        node_index_path,
-        {
-            "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
-            "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
-            "node_id_to_creation_generation": node_index,
-        },
+    json_write_stats.append(
+        _write_json(manifest_path, _root_manifest_to_dict(updated_manifest))
     )
+    json_write_stats.append(
+        _write_json(
+            node_index_path,
+            {
+                "format_kind": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
+                "format_version": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
+                "node_id_to_creation_generation": node_index,
+            },
+        )
+    )
+    bytes_written = sum(item.bytes_written for item in json_write_stats)
+    json_encode_s = sum(item.json_encode_s for item in json_write_stats)
+    write_s = sum(item.write_s for item in json_write_stats)
+    total_s = perf_counter() - total_started_at
+    rss_after_mb = current_rss_mb()
     log_pipeline_memory(
         stage="growth",
         generation=generation,
@@ -249,10 +303,69 @@ def save_morpion_sharded_training_tree_from_live_nodes(
         node_count=len(node_updates),
         new_node_count=len(node_records),
     )
-    return generation_manifest_path, MorpionShardedTrainingExportStats(
+    stats = MorpionShardedTrainingExportStats(
         generation=generation,
         node_count=len(node_updates),
         new_node_count=len(node_records),
+        rows_written=len(node_updates) + len(node_records),
+        shards_written=len(json_write_stats),
+        bytes_written=bytes_written,
+        row_build_s=row_build_s,
+        json_encode_s=json_encode_s,
+        write_s=write_s,
+        total_s=total_s,
+        rss_before_mb=rss_before_mb,
+        rss_after_mb=rss_after_mb,
+    )
+    _log_sharded_export_profile(stats)
+    return generation_manifest_path, stats
+
+
+def _node_id_without_state(node: object) -> str | None:
+    """Return a node id without touching lazy state, or ``None`` if unavailable."""
+    node_id = _safe_getattr(node, "node_id")
+    if node_id is not None:
+        return str(node_id)
+    generic_id = _safe_getattr(node, "id")
+    if generic_id is not None:
+        return str(generic_id)
+    return None
+
+
+def _log_sharded_export_profile(stats: MorpionShardedTrainingExportStats) -> None:
+    """Emit one grep-friendly C6 profile line for sharded tree export."""
+    LOGGER.info(
+        "[tree-export-profile] generation=%s node_count=%s rows_written=%s "
+        "new_node_count=%s reused_node_count=%s shards_written=%s bytes_written=%s",
+        stats.generation,
+        stats.node_count,
+        stats.rows_written,
+        stats.new_node_count,
+        stats.reused_node_count,
+        stats.shards_written,
+        stats.bytes_written,
+    )
+    LOGGER.info(
+        "[tree-export-timing] generation=%s row_build_s=%.6f json_encode_s=%.6f "
+        "write_s=%.6f total_s=%.6f",
+        stats.generation,
+        stats.row_build_s,
+        stats.json_encode_s,
+        stats.write_s,
+        stats.total_s,
+    )
+    rss_delta_mb = (
+        None
+        if stats.rss_before_mb is None or stats.rss_after_mb is None
+        else stats.rss_after_mb - stats.rss_before_mb
+    )
+    LOGGER.info(
+        "[tree-export-memory] generation=%s rss_before_mb=%s rss_after_mb=%s "
+        "rss_delta_mb=%s",
+        stats.generation,
+        format_metric(stats.rss_before_mb),
+        format_metric(stats.rss_after_mb),
+        format_metric(rss_delta_mb),
     )
 
 
@@ -513,11 +626,19 @@ def _load_node_index(path: Path) -> dict[str, int]:
     }
 
 
-def _write_json(path: Path, payload: dict[str, object]) -> None:
+def _write_json(path: Path, payload: dict[str, object]) -> _JsonWriteStats:
     """Persist one JSON artifact with stable indentation."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    encode_started_at = perf_counter()
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    json_encode_s = perf_counter() - encode_started_at
+    write_started_at = perf_counter()
+    path.write_text(text, encoding="utf-8")
+    write_s = perf_counter() - write_started_at
+    return _JsonWriteStats(
+        bytes_written=path.stat().st_size,
+        json_encode_s=json_encode_s,
+        write_s=write_s,
     )
 
 

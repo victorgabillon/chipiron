@@ -4,11 +4,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from _pytest.logging import LogCaptureFixture
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 from anemone.checkpoints import checkpoint_payload_to_jsonable
@@ -135,8 +139,11 @@ def _expected_snapshot(
     )
 
 
-def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) -> None:
+def test_sharded_generation_one_round_trips_rows_equivalently(
+    tmp_path: Path, caplog: LogCaptureFixture
+) -> None:
     """Generation one should write manifests/shards and load equivalent rows."""
+    caplog.set_level(logging.INFO)
     output_dir = tmp_path / "tree_exports_sharded"
     root_node = _LiveNode(
         id="root",
@@ -191,6 +198,18 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     assert stats.node_count == 2
     assert stats.new_node_count == 2
     assert stats.reused_node_count == 0
+    assert stats.rows_written == 4
+    assert stats.shards_written == 5
+    assert stats.bytes_written > 0
+    assert stats.row_build_s >= 0.0
+    assert stats.json_encode_s >= 0.0
+    assert stats.write_s >= 0.0
+    assert stats.total_s >= 0.0
+    assert "[tree-export-profile]" in caplog.text
+    assert "[tree-export-timing]" in caplog.text
+    assert "[tree-export-memory]" in caplog.text
+    assert root_node.state_access_count == 1
+    assert leaf_node.state_access_count == 1
     assert loaded_snapshot.root_node_id == expected_snapshot.root_node_id
     assert loaded_snapshot.nodes == expected_snapshot.nodes
     loaded_rows = training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot)
@@ -319,6 +338,8 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(
     assert generation_two_stats.node_count == 3
     assert generation_two_stats.new_node_count == 1
     assert generation_two_stats.reused_node_count == 2
+    assert generation_two_stats.rows_written == 4
+    assert generation_two_stats.bytes_written > 0
     assert old_a.state_access_count == 0
     assert old_b.state_access_count == 0
     assert new_c.state_access_count == 1

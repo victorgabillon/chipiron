@@ -365,11 +365,17 @@ def _log_sharded_training_export_stats(
 ) -> None:
     """Emit one stable summary line for sharded training-export writes."""
     LOGGER.info(
-        "[sharded-training-export] generation=%s nodes=%s new_nodes=%s reused_nodes=%s",
+        "[sharded-training-export] generation=%s nodes=%s new_nodes=%s reused_nodes=%s rows=%s bytes=%s row_build_s=%.6f json_encode_s=%.6f write_s=%.6f total_s=%.6f",
         stats.generation,
         stats.node_count,
         stats.new_node_count,
         stats.reused_node_count,
+        stats.rows_written,
+        stats.bytes_written,
+        stats.row_build_s,
+        stats.json_encode_s,
+        stats.write_s,
+        stats.total_s,
     )
 
 
@@ -2437,6 +2443,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         started_at = time.perf_counter()
+        profile = MorpionTrainingExportProfile()
 
         def state_ref_dumper(state: object) -> object:
             return self._state_codec.dump_state_ref(cast("MorpionState", state))
@@ -2449,13 +2456,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_ref_dumper=state_ref_dumper,
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
+            profile=profile,
         )
+        profile.payload_build_s = time.perf_counter() - started_at
         _log_sharded_training_export_stats(stats)
+        _log_training_export_profile(profile)
         LOGGER.info(
-            "[save] sharded_tree_export_done output=%s generation=%s nodes=%s elapsed=%.3fs",
+            "[save] sharded_tree_export_done output=%s generation=%s nodes=%s rows=%s bytes=%s elapsed=%.3fs",
             str(manifest_path),
             generation,
             len(ordered_nodes),
+            stats.rows_written,
+            stats.bytes_written,
             time.perf_counter() - started_at,
         )
         return manifest_path
