@@ -99,6 +99,11 @@ def _rollout_max_extra_steps_parse_error() -> argparse.ArgumentTypeError:
     return argparse.ArgumentTypeError("expected 'none' or a non-negative integer")
 
 
+def _positive_int_parse_error() -> argparse.ArgumentTypeError:
+    """Return the stable positive-integer parse error."""
+    return argparse.ArgumentTypeError("expected a positive integer")
+
+
 def _recursive_profile_events_parse_error() -> argparse.ArgumentTypeError:
     """Return the stable recursive-profile event-filter parse error."""
     return argparse.ArgumentTypeError("expected at least one event name")
@@ -114,6 +119,17 @@ def _parse_optional_non_negative_int(raw: str) -> int | None:
         raise _rollout_max_extra_steps_parse_error() from exc
     if value < 0:
         raise _rollout_max_extra_steps_parse_error()
+    return value
+
+
+def _parse_positive_int(raw: str) -> int:
+    """Parse one positive integer CLI value."""
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise _positive_int_parse_error() from exc
+    if value <= 0:
+        raise _positive_int_parse_error()
     return value
 
 
@@ -259,7 +275,7 @@ def run_morpion_bootstrap_experiment(
         return run_morpion_bootstrap_loop(
             startup_status.resolved_bootstrap_args,
             runner,
-            max_cycles=launcher_args.max_cycles,
+            max_cycles=_growth_effective_max_cycles(launcher_args),
         )
 
     if launcher_args.pipeline_stage == "loop":
@@ -268,9 +284,10 @@ def run_morpion_bootstrap_experiment(
         return run_morpion_artifact_pipeline_once(
             startup_status.resolved_bootstrap_args,
             runner,
-            max_growth_cycles=1
-            if launcher_args.max_cycles is None
-            else launcher_args.max_cycles,
+            max_growth_cycles=cast(
+                "int",
+                _growth_effective_max_cycles(launcher_args, default=1),
+            ),
         )
     if launcher_args.pipeline_stage == "reevaluation":
         return run_morpion_reevaluation_worker_once(
@@ -303,8 +320,21 @@ def run_morpion_bootstrap_experiment(
     return run_pipeline_growth_stage(
         startup_status.resolved_bootstrap_args,
         runner,
-        max_cycles=1 if launcher_args.max_cycles is None else launcher_args.max_cycles,
+        max_cycles=cast("int", _growth_effective_max_cycles(launcher_args, default=1)),
     )
+
+
+def _growth_effective_max_cycles(
+    launcher_args: MorpionBootstrapLauncherArgs,
+    *,
+    default: int | None = None,
+) -> int | None:
+    """Return the launch cycle bound after grow-save-exit normalization."""
+    if launcher_args.bootstrap_args.growth_save_and_exit:
+        return 1
+    if launcher_args.max_cycles is None:
+        return default
+    return launcher_args.max_cycles
 
 
 def _resolve_launcher_bootstrap_args(
@@ -1050,6 +1080,32 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--growth-additional-branch-budget",
+        type=_parse_positive_int,
+        default=None,
+        help=(
+            "Grow by this many additional branches from the branch count observed "
+            "after checkpoint restore, instead of requiring a manually calculated "
+            "absolute --tree-branch-limit."
+        ),
+    )
+    parser.add_argument(
+        "--growth-save-and-exit",
+        action="store_true",
+        help=(
+            "Run one growth cycle, force a checkpoint save when possible, then "
+            "exit cleanly."
+        ),
+    )
+    parser.add_argument(
+        "--growth-skip-training-export",
+        action="store_true",
+        help=(
+            "Skip training tree export after growth while still saving the runtime "
+            "checkpoint."
+        ),
+    )
+    parser.add_argument(
         "--growth-state-eviction-policy",
         choices=("none", "cold_expanded", "frontier_cold"),
         default="none",
@@ -1248,6 +1304,10 @@ def _validate_pipeline_stage_cli(
     pipeline_mode: str,
     pipeline_stage: str,
     pipeline_generation: int | None,
+    growth_additional_branch_budget: int | None,
+    growth_save_and_exit: bool,
+    diagnostic_stop_after_growth: bool,
+    tree_branch_limit_explicit: bool,
 ) -> None:
     """Validate CLI stage selection against the chosen pipeline mode."""
     if pipeline_mode == "single_process" and pipeline_stage != "loop":
@@ -1268,6 +1328,16 @@ def _validate_pipeline_stage_cli(
     ):
         parser.error(
             "--pipeline-generation is required for --pipeline-stage dataset and training."
+        )
+    if growth_additional_branch_budget is not None and tree_branch_limit_explicit:
+        parser.error(
+            "--growth-additional-branch-budget conflicts with explicit "
+            "--tree-branch-limit; choose one branch budget mode."
+        )
+    if growth_save_and_exit and diagnostic_stop_after_growth:
+        parser.error(
+            "--growth-save-and-exit conflicts with --diagnostic-stop-after-growth "
+            "because diagnostic stop skips checkpoint/export artifacts."
         )
 
 
@@ -1321,6 +1391,10 @@ def launcher_args_from_cli(
         pipeline_mode=parsed.pipeline_mode,
         pipeline_stage=parsed.pipeline_stage,
         pipeline_generation=parsed.pipeline_generation,
+        growth_additional_branch_budget=parsed.growth_additional_branch_budget,
+        growth_save_and_exit=parsed.growth_save_and_exit,
+        diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
+        tree_branch_limit_explicit=tree_branch_limit_explicit,
     )
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=parsed.work_dir,
@@ -1367,6 +1441,9 @@ def launcher_args_from_cli(
             parsed.growth_memory_profile_recursive_complete_map
         ),
         diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
+        growth_additional_branch_budget=parsed.growth_additional_branch_budget,
+        growth_save_and_exit=parsed.growth_save_and_exit,
+        growth_skip_training_export=parsed.growth_skip_training_export,
         growth_state_eviction_policy=parsed.growth_state_eviction_policy,
         growth_state_eviction_recent_window=(
             parsed.growth_state_eviction_recent_window

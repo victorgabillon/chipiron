@@ -161,6 +161,7 @@ class FakeMorpionSearchRunner:
         self.load_calls: list[tuple[str | None, str | None]] = []
         self.grow_calls: list[int] = []
         self.checkpoint_calls: list[str] = []
+        self.runtime_config_calls: list[object] = []
         self.call_order: list[str] = []
         self.received_patches: list[MorpionReevaluationPatch] = []
 
@@ -173,13 +174,18 @@ class FakeMorpionSearchRunner:
         reevaluate_tree: bool = False,
     ) -> None:
         """Record restore inputs without mutating external state."""
-        del effective_runtime_config, reevaluate_tree
+        del reevaluate_tree
         self.load_calls.append(
             (
                 None if tree_snapshot_path is None else str(tree_snapshot_path),
                 None if model_bundle_path is None else str(model_bundle_path),
             )
         )
+        self.runtime_config_calls.append(effective_runtime_config)
+
+    def apply_effective_runtime_config(self, effective_runtime_config: object) -> None:
+        """Record post-restore runtime config patches."""
+        self.runtime_config_calls.append(effective_runtime_config)
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -465,9 +471,7 @@ def _fake_training_result_for_evaluators(
     evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
     model_bundle_paths: dict[str, str] = {}
     for index, evaluator_name in enumerate(evaluator_names):
-        bundle_path = paths.model_bundle_path_for_generation(
-            generation, evaluator_name
-        )
+        bundle_path = paths.model_bundle_path_for_generation(generation, evaluator_name)
         bundle_path.mkdir(parents=True, exist_ok=True)
         relative_bundle_path = paths.relative_to_work_dir(bundle_path)
         model_bundle_paths[evaluator_name] = relative_bundle_path
@@ -743,6 +747,125 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
     assert not paths.model_generation_dir_for_generation(1).exists()
 
 
+def test_pipeline_growth_stage_additional_branch_budget_uses_restored_branch_count(
+    tmp_path: Path,
+) -> None:
+    """Additional branch budgets should become absolute limits after restore."""
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        branch_counts=(1000,),
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_additional_branch_budget=500,
+    )
+
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert runner.grow_calls == [5]
+    assert runner.runtime_config_calls[-1].tree_branch_limit == 1500
+    tree_metadata = run_state.metadata["tree"]
+    assert tree_metadata["growth_budget_mode"] == "additional"
+    assert tree_metadata["branch_count_before_growth"] == 1000
+    assert tree_metadata["branch_count_after_growth"] == 1000
+    assert tree_metadata["growth_additional_branch_budget"] == 500
+    assert tree_metadata["effective_branch_limit"] == 1500
+
+
+def test_pipeline_growth_stage_additional_branch_budget_works_from_fresh_root(
+    tmp_path: Path,
+) -> None:
+    """A fresh tree should use zero current branches for an additional budget."""
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(1,),
+        target_values=(1.0,),
+        branch_counts=(0,),
+    )
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_additional_branch_budget=2000,
+    )
+
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert runner.runtime_config_calls[-1].tree_branch_limit == 2000
+    assert run_state.metadata["tree"]["effective_branch_limit"] == 2000
+
+
+def test_pipeline_growth_stage_save_and_exit_forces_checkpoint_save(
+    tmp_path: Path,
+) -> None:
+    """Grow-save-exit should save even when ordinary thresholds are not reached."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=5,
+            last_save_unix_s=1_000.0,
+        ),
+        paths.run_state_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(6,), target_values=(1.0,))
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        save_after_seconds=999999.0,
+        save_after_tree_growth_factor=100.0,
+        growth_save_and_exit=True,
+    )
+
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    assert run_state.generation == 2
+    assert runner.checkpoint_calls == [
+        str(paths.runtime_checkpoint_path_for_generation(2))
+    ]
+
+
+def test_pipeline_growth_stage_skip_training_export_still_saves_checkpoint(
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Skip-training-export should not suppress the runtime checkpoint save."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    args = replace(
+        _artifact_pipeline_args(tmp_path),
+        growth_skip_training_export=True,
+    )
+
+    caplog.set_level(logging.INFO)
+    run_state = run_pipeline_growth_stage(args, runner, max_cycles=1)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+
+    assert run_state.generation == 1
+    assert run_state.latest_tree_snapshot_path is None
+    assert runner.checkpoint_calls == [
+        str(paths.runtime_checkpoint_path_for_generation(1))
+    ]
+    assert manifest.runtime_checkpoint_path == paths.relative_to_work_dir(
+        paths.runtime_checkpoint_path_for_generation(1)
+    )
+    assert manifest.tree_snapshot_path is None
+    assert manifest.dataset_status == "not_started"
+    assert manifest.metadata["training_export"] == {
+        "status": "skipped",
+        "reason": "config",
+    }
+    assert run_state.metadata["training_export"] == {
+        "status": "skipped",
+        "reason": "config",
+    }
+    assert not paths.tree_snapshot_path_for_generation(1).exists()
+    assert "training_export_skipped reason=config" in caplog.text
+
+
 def test_pipeline_growth_stage_diagnostic_stop_after_growth_skips_artifacts(
     tmp_path: Path,
     caplog: LogCaptureFixture,
@@ -901,9 +1024,7 @@ def test_pipeline_growth_stage_guards_candidate_checkpoint_load_before_validatio
             active_evaluator_name=None,
             tree_size_at_last_save=5,
             last_save_unix_s=0.0,
-            latest_runtime_checkpoint_path=paths.relative_to_work_dir(
-                checkpoint_path
-            ),
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
         ),
         paths.run_state_path,
     )
@@ -952,9 +1073,7 @@ def test_pipeline_growth_stage_loads_candidate_when_forecast_has_headroom(
             active_evaluator_name=None,
             tree_size_at_last_save=5,
             last_save_unix_s=0.0,
-            latest_runtime_checkpoint_path=paths.relative_to_work_dir(
-                checkpoint_path
-            ),
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
         ),
         paths.run_state_path,
     )
@@ -996,9 +1115,7 @@ def test_pipeline_growth_stage_profiles_candidate_checkpoint_load(
             active_evaluator_name=None,
             tree_size_at_last_save=5,
             last_save_unix_s=0.0,
-            latest_runtime_checkpoint_path=paths.relative_to_work_dir(
-                checkpoint_path
-            ),
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
         ),
         paths.run_state_path,
     )
@@ -1263,7 +1380,10 @@ def test_pipeline_growth_ram_guard_defers_before_tree_growth(
         "[ram-guard] stage=growth generation=0 action=tree_growth "
         "available_mb=1024.0 required_mb=5000 decision=skip"
     ) in messages
-    assert "growth_skip generation=0 reason=low_available_ram action=tree_growth" in messages
+    assert (
+        "growth_skip generation=0 reason=low_available_ram action=tree_growth"
+        in messages
+    )
 
 
 def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> None:
@@ -1451,8 +1571,14 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert "[pipeline] dataset_rows_stream_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_export_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_manifest_written generation=1" in messages
-    assert "[pipeline-memory] stage=dataset generation=1 event=after_snapshot_load" in messages
-    assert "[pipeline-memory] stage=dataset generation=1 event=after_rows_write_stream" in messages
+    assert (
+        "[pipeline-memory] stage=dataset generation=1 event=after_snapshot_load"
+        in messages
+    )
+    assert (
+        "[pipeline-memory] stage=dataset generation=1 event=after_rows_write_stream"
+        in messages
+    )
 
 
 def test_dataset_stage_rejects_streamed_rows_count_mismatch(
@@ -1482,7 +1608,9 @@ def test_dataset_stage_rejects_streamed_rows_count_mismatch(
         ),
         paths.pipeline_manifest_path_for_generation(1),
     )
-    original_streaming_rows = pipeline_stages_module._streaming_rows_from_training_snapshot
+    original_streaming_rows = (
+        pipeline_stages_module._streaming_rows_from_training_snapshot
+    )
 
     def _streaming_rows_with_bad_metadata(**kwargs: object) -> object:
         streaming_rows = original_streaming_rows(**kwargs)
@@ -1524,7 +1652,9 @@ def test_dataset_stage_ram_guard_defers_before_snapshot_load(
         dataset_status="not_started",
         training_status="not_started",
     )
-    save_pipeline_manifest(original_manifest, paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(
+        original_manifest, paths.pipeline_manifest_path_for_generation(1)
+    )
 
     def _unexpected_snapshot_load(**kwargs: object) -> TrainingTreeSnapshot:
         del kwargs
@@ -1543,7 +1673,9 @@ def test_dataset_stage_ram_guard_defers_before_snapshot_load(
             generation=1,
         )
 
-    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    persisted_manifest = load_pipeline_manifest(
+        paths.pipeline_manifest_path_for_generation(1)
+    )
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert returned_manifest == original_manifest
@@ -2027,7 +2159,9 @@ def test_train_and_select_evaluators_runs_diagnostics_by_default(
     )
     diagnostics_calls: list[str] = []
 
-    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+    def _fake_train_morpion_regressor(
+        training_args: object,
+    ) -> tuple[object, dict[str, object]]:
         del training_args
         return object(), {
             "final_loss": 0.25,
@@ -2090,7 +2224,9 @@ def test_train_and_select_evaluators_bounds_materialized_diagnostics_rows(
     )
     diagnostics_rows: list[object] = []
 
-    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+    def _fake_train_morpion_regressor(
+        training_args: object,
+    ) -> tuple[object, dict[str, object]]:
         del training_args
         return object(), {
             "final_loss": 0.25,
@@ -2165,7 +2301,9 @@ def test_train_and_select_evaluators_keeps_full_materialized_diagnostics_when_un
     )
     diagnostics_rows: list[object] = []
 
-    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+    def _fake_train_morpion_regressor(
+        training_args: object,
+    ) -> tuple[object, dict[str, object]]:
         del training_args
         return object(), {
             "final_loss": 0.25,
@@ -2330,7 +2468,9 @@ def test_train_and_select_evaluators_can_skip_diagnostics(
         evaluators={"linear_5": _multi_evaluator_config().evaluators["linear_5"]}
     )
 
-    def _fake_train_morpion_regressor(training_args: object) -> tuple[object, dict[str, object]]:
+    def _fake_train_morpion_regressor(
+        training_args: object,
+    ) -> tuple[object, dict[str, object]]:
         del training_args
         return object(), {
             "final_loss": 0.25,
@@ -2495,7 +2635,9 @@ def test_training_stage_skips_explicit_stale_generation(
         dataset_status="done",
         training_status="not_started",
     )
-    save_pipeline_manifest(original_manifest, paths.pipeline_manifest_path_for_generation(5))
+    save_pipeline_manifest(
+        original_manifest, paths.pipeline_manifest_path_for_generation(5)
+    )
 
     def _unexpected_train_and_select(**kwargs: object) -> BootstrapTrainingResult:
         del kwargs
@@ -2513,7 +2655,9 @@ def test_training_stage_skips_explicit_stale_generation(
             generation=5,
         )
 
-    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+    persisted_manifest = load_pipeline_manifest(
+        paths.pipeline_manifest_path_for_generation(5)
+    )
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert returned_manifest == original_manifest
@@ -2531,7 +2675,9 @@ def test_training_stage_ram_guard_defers_before_rows_load(
     """Low available RAM should defer training without marking it failed."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     _prepare_training_stage_input(paths, generation=5)
-    original_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+    original_manifest = load_pipeline_manifest(
+        paths.pipeline_manifest_path_for_generation(5)
+    )
 
     def _unexpected_rows_load(path: str | Path) -> MorpionSupervisedRows:
         del path
@@ -2550,7 +2696,9 @@ def test_training_stage_ram_guard_defers_before_rows_load(
             generation=5,
         )
 
-    persisted_manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(5))
+    persisted_manifest = load_pipeline_manifest(
+        paths.pipeline_manifest_path_for_generation(5)
+    )
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert returned_manifest == original_manifest
@@ -2627,7 +2775,9 @@ def test_training_stage_active_model_commit_cannot_go_backward(
     assert active_model.generation == 6
     assert active_model.evaluator_name == "mlp_5"
     assert cursor.latest_completed_generation == 5
-    assert "active_model_update_skipped generation=5 reason=stale_generation" in messages
+    assert (
+        "active_model_update_skipped generation=5 reason=stale_generation" in messages
+    )
 
 
 def test_training_stage_newer_generation_commits_and_updates_completed_cursor(

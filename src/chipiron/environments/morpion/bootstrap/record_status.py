@@ -594,7 +594,9 @@ def persist_certified_leaderboard_candidates(
             LOGGER.debug("[leaderboard] inserted fingerprint=%s", fingerprint)
         else:
             skipped_not_top_count += 1
-            LOGGER.debug("[leaderboard] skipped_not_top_100 fingerprint=%s", fingerprint)
+            LOGGER.debug(
+                "[leaderboard] skipped_not_top_100 fingerprint=%s", fingerprint
+            )
     _save_leaderboard_entries(resolved_path, entries)
     LOGGER.info(
         "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s candidate_total_points_buckets=%s inserted_total_points_buckets=%s",

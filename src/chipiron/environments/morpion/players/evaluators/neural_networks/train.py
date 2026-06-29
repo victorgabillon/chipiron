@@ -7,7 +7,7 @@ import math
 import os
 import random
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import torch
 from torch.utils.data import DataLoader, Subset
@@ -140,6 +140,7 @@ def train_morpion_regressor(
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor on persisted supervised rows."""
     collate_fn: Callable[[Any], Any] | None
+    dataset: MorpionSupervisedDataset | MorpionGraphSupervisedDataset
     if args.model_kind == MORPION_GRAPH_MODEL_KIND:
         dataset = MorpionGraphSupervisedDataset(
             MorpionGraphSupervisedDatasetArgs(
@@ -407,7 +408,10 @@ def _split_train_validation_dataset(
     sample_count = len(dataset)
     indices = list(range(sample_count))
     if sample_count < 2 or validation_fraction <= 0.0:
-        return Subset(dataset, indices), Subset(dataset, [])
+        return cast(
+            "tuple[Subset[MorpionSupervisedSample] | Subset[MorpionGraphSupervisedSample], Subset[MorpionSupervisedSample] | Subset[MorpionGraphSupervisedSample]]",
+            (Subset(dataset, indices), Subset(dataset, [])),
+        )
 
     rng = random.Random(validation_seed)
     rng.shuffle(indices)
@@ -415,7 +419,10 @@ def _split_train_validation_dataset(
     validation_count = min(sample_count - 1, validation_count)
     validation_indices = indices[:validation_count]
     train_indices = indices[validation_count:]
-    return Subset(dataset, train_indices), Subset(dataset, validation_indices)
+    return cast(
+        "tuple[Subset[MorpionSupervisedSample] | Subset[MorpionGraphSupervisedSample], Subset[MorpionSupervisedSample] | Subset[MorpionGraphSupervisedSample]]",
+        (Subset(dataset, train_indices), Subset(dataset, validation_indices)),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -519,7 +526,11 @@ def _evaluate_streaming_metrics(
                 value_count += int(targets.numel())
     if value_count == 0:
         return 0.0, 0.0, 0
-    return squared_error_sum / value_count, absolute_error_sum / value_count, value_count
+    return (
+        squared_error_sum / value_count,
+        absolute_error_sum / value_count,
+        value_count,
+    )
 
 
 def _indexed_row_chunks(
@@ -529,8 +540,9 @@ def _indexed_row_chunks(
     max_rows: int | None,
 ) -> Iterable[tuple[int, tuple[MorpionSupervisedRow, ...]]]:
     row_start_index = 0
+    row_path = os.fspath(path)
     for rows in iter_morpion_supervised_row_chunks_from_path(
-        path,
+        row_path,
         chunk_size=chunk_size,
         max_rows=max_rows,
     ):

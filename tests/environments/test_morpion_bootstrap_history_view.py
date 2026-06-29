@@ -290,7 +290,7 @@ def _write_small_sharded_snapshot(paths: MorpionBootstrapPaths) -> Path:
         root_node_id="root",
         output_dir=paths.sharded_tree_snapshot_dir,
         generation=1,
-        state_ref_dumper=lambda state: dict(cast("dict[str, object]", state)),
+        state_ref_dumper=lambda state: state,
         direct_value_extractor=_value_to_scalar,
         backed_up_value_extractor=_value_to_scalar,
     )[0]

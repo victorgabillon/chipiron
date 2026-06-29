@@ -99,8 +99,7 @@ class InvalidMorpionGraphRegressorArgsError(ValueError):
     ) -> InvalidMorpionGraphRegressorArgsError:
         """Return the invalid graph input feature dimension error."""
         return cls(
-            "graph_input_feature_dim must equal "
-            f"{expected_dim} for graph_tokens_v1."
+            f"graph_input_feature_dim must equal {expected_dim} for graph_tokens_v1."
         )
 
     @classmethod

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
+    CheckpointAtomPayload,
     CheckpointNodeStatePayload,
     DeltaCheckpointStatePayload,
     LinooSelectorCheckpointPayload,
@@ -85,6 +86,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 if TYPE_CHECKING:
+    from anemone.checkpoints._protocols import CheckpointStateSummary
     from torch import Tensor
 
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapRolloutConfig
@@ -549,9 +551,9 @@ def _phase_delta(
     after: Mapping[str, int] | Mapping[str, float],
     *,
     prefix: str,
-) -> dict[str, int] | dict[str, float]:
+) -> dict[str, int | float]:
     """Return changed phase counters for phases matching ``prefix``."""
-    delta: dict[str, int] | dict[str, float] = {}
+    delta: dict[str, int | float] = {}
     phase_names = {
         phase
         for phase in set(before) | set(after)
@@ -825,7 +827,7 @@ class _RestoreMemoryLogger:
 
     def callback(self, phase: str, metadata: Mapping[str, object]) -> None:
         """Receive one Anemone restore phase callback."""
-        self.log(phase, **metadata)
+        self.log(phase, **cast("dict[str, Any]", dict(metadata)))
 
     def log(
         self,
@@ -1239,7 +1241,7 @@ class _ChipironMorpionStateCheckpointCodec:
             self.inner, "dump_state_parent_branch_for_checkpoint", None
         )
         if callable(inner_hook):
-            return inner_hook(branch_from_parent)
+            return cast("object | None", inner_hook(branch_from_parent))
         return None
 
     def checkpoint_profile_snapshot(self) -> dict[str, object]:
@@ -1401,9 +1403,7 @@ class MorpionGrowthStateEvictionMetrics:
     delta_payload_attempt_count: int = 0
     delta_payload_success_count: int = 0
     delta_payload_fallback_count: int = 0
-    delta_payload_fallback_count_by_reason: dict[str, int] = field(
-        default_factory=dict
-    )
+    delta_payload_fallback_count_by_reason: dict[str, int] = field(default_factory=dict)
 
     def skip(self, reason: str) -> None:
         """Record one skipped eviction attempt."""
@@ -1617,13 +1617,19 @@ class _LiveCompactStateResolver:
         self.metrics.total_reconstruction_depth += depth
         payload = self.state_payloads_by_node_id[node_id]
         if isinstance(payload, AnchorCheckpointStatePayload):
-            return cast("Any", self.state_codec).load_anchor_ref(payload.anchor_ref)
+            return cast(
+                "MorpionState",
+                cast("Any", self.state_codec).load_anchor_ref(payload.anchor_ref),
+            )
         if isinstance(payload, DeltaCheckpointStatePayload):
             parent_state = self.resolve(payload.state_parent_node_id)
-            return cast("Any", self.state_codec).load_child_from_delta(
-                parent_state=parent_state,
-                delta_ref=payload.delta_ref,
-                branch_from_parent=None,
+            return cast(
+                "MorpionState",
+                cast("Any", self.state_codec).load_child_from_delta(
+                    parent_state=parent_state,
+                    delta_ref=payload.delta_ref,
+                    branch_from_parent=None,
+                ),
             )
         raise KeyError(node_id)
 
@@ -1705,6 +1711,7 @@ def load_morpion_evaluator_from_model_bundle(
     model, model_args, _ = load_morpion_model_bundle(model_bundle_path)
     model.eval()
     over_detector = MorpionOverEventDetector()
+    input_converter: MorpionStateToTensorConverter
     if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
         input_converter = MorpionGraphTokenConverter(
             dynamics=MorpionDynamics(),
@@ -1782,6 +1789,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_artifact_path = None if path is None else Path(path)
         self._linoo_selection_table_cycle_index = cycle_index
         self._linoo_selection_table_generation = generation
+
+    def apply_effective_runtime_config(
+        self,
+        runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+    ) -> None:
+        """Apply a supported runtime config to the loaded live runtime."""
+        runtime = self._require_runtime()
+        _apply_runtime_config_to_runtime(runtime, runtime_config)
+        self._last_applied_runtime_config = runtime_config
 
     def load_or_create(
         self,
@@ -2365,7 +2381,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         return _LiveEvictionPayload(
             payload=AnchorCheckpointStatePayload(
                 anchor_ref=anchor_ref,
-                state_summary=state_summary,
+                state_summary=cast("CheckpointStateSummary | None", state_summary),
             ),
             kind="anchor",
             chain_depth=0,
@@ -2432,9 +2448,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         return _LiveEvictionPayload(
             payload=DeltaCheckpointStatePayload(
                 state_parent_node_id=parent_context.parent_node_id,
-                state_parent_branch=branch_payload,
+                state_parent_branch=cast(
+                    "CheckpointAtomPayload | None", branch_payload
+                ),
                 delta_ref=delta_ref,
-                state_summary=state_summary,
+                state_summary=cast("CheckpointStateSummary | None", state_summary),
             ),
             kind="delta",
             chain_depth=parent_chain_depth + 1,
@@ -3400,7 +3418,7 @@ def load_morpion_search_checkpoint_payload(
                 ),
                 raw_checkpoint_referenced=phase == "after_raw_json_decode",
                 typed_checkpoint_referenced=False,
-                **log_metadata,
+                **cast("dict[str, Any]", log_metadata),
             )
 
         raw_payload, read_stats = load_checkpoint_json_payload(
@@ -3706,7 +3724,7 @@ def _dump_live_state_parent_branch_for_checkpoint(
     """Return the optional compact branch payload stored beside a live delta."""
     hook = getattr(state_codec, "dump_state_parent_branch_for_checkpoint", None)
     if callable(hook):
-        return hook(branch_from_parent)
+        return cast("object | None", hook(branch_from_parent))
     return branch_from_parent
 
 

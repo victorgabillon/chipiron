@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 import shutil
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
     from pathlib import Path
 
+    from anemone.training_export import TrainingTreeSnapshot
     from atomheart.games.morpion.state import MorpionState as AtomMorpionState
 
 from anemone.training_export import load_training_tree_snapshot
@@ -739,7 +741,7 @@ def _optional_node_flag(node: object, attribute_name: str) -> bool | None:
 
 def _load_resolved_training_tree_snapshot(
     resolved_snapshot: _ResolvedTreeSnapshotReference,
-) -> object | None:
+) -> TrainingTreeSnapshot | None:
     """Load the latest resolved training tree snapshot once for dashboard use."""
     snapshot_path = resolved_snapshot.snapshot_path
     if snapshot_path is None:
@@ -774,7 +776,7 @@ def _is_sharded_training_tree_snapshot_path(snapshot_path: Path) -> bool:
 
 def _load_sharded_training_tree_snapshot_for_dashboard(
     snapshot_path: Path,
-) -> object | None:
+) -> TrainingTreeSnapshot | None:
     """Load one sharded training tree snapshot without crashing dashboard views."""
     try:
         return load_morpion_sharded_training_tree_snapshot(snapshot_path)
@@ -850,10 +852,11 @@ def build_current_certified_record_board_view(
         return None
 
     try:
-        atom_state = decode_morpion_state_ref_payload(candidate.state_ref_payload)
+        state_ref_payload = candidate.state_ref_payload
+        atom_state = decode_morpion_state_ref_payload(state_ref_payload)
         return _certified_record_board_view_from_atom_state(
             atom_state=atom_state,
-            state_ref_payload=candidate.state_ref_payload,
+            state_ref_payload=state_ref_payload,
             is_exact=True,
             is_terminal=True,
             source="certified_terminal_leaf",
@@ -890,7 +893,7 @@ def format_num_bytes(num_bytes: int | None) -> str:
 def _certified_record_board_view_from_atom_state(
     *,
     atom_state: AtomMorpionState,
-    state_ref_payload: Mapping[str, object],
+    state_ref_payload: object,
     is_exact: bool,
     is_terminal: bool,
     source: str,
@@ -1242,7 +1245,9 @@ def _latest_tree_snapshot_generation_json_path(
         )
         if path is not None
     ]
-    return None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
+    return (
+        None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
+    )
 
 
 def _tree_depth_distribution_rows_from_counts(

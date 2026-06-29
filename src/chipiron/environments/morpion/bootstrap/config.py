@@ -69,14 +69,15 @@ class MorpionBootstrapRuntimeConfig:
     candidate_checkpoint_load_headroom_factor: float = 60.0
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
+    growth_additional_branch_budget: int | None = None
+    growth_save_and_exit: bool = False
+    growth_skip_training_export: bool = False
     growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
     growth_state_eviction_recent_window: int = 1000
     growth_state_rematerialization_cache_size: int = 10000
     growth_state_eviction_scan_interval_steps: int = 100
     growth_state_eviction_scan_node_limit: int = 5000
-    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = (
-        "anchor"
-    )
+    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = "anchor"
     growth_state_eviction_delta_chain_max_depth: int = 32
 
     def __post_init__(self) -> None:
@@ -108,6 +109,21 @@ class MorpionBootstrapRuntimeConfig:
         if self.runtime_checkpoint_format not in {"json-zst", "sharded"}:
             raise MalformedMorpionBootstrapConfigError.invalid_required_str(
                 "runtime.runtime_checkpoint_format"
+            )
+        if self.growth_additional_branch_budget is not None and (
+            isinstance(self.growth_additional_branch_budget, bool)
+            or self.growth_additional_branch_budget <= 0
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_int(
+                "runtime.growth_additional_branch_budget"
+            )
+        if not isinstance(self.growth_save_and_exit, bool):
+            raise MalformedMorpionBootstrapConfigError.invalid_bool(
+                "runtime.growth_save_and_exit"
+            )
+        if not isinstance(self.growth_skip_training_export, bool):
+            raise MalformedMorpionBootstrapConfigError.invalid_bool(
+                "runtime.growth_skip_training_export"
             )
         if self.growth_state_eviction_policy not in {
             "none",
@@ -371,6 +387,9 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
         "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
     }
 )
 
@@ -430,6 +449,9 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
                 args.candidate_checkpoint_load_min_headroom_mb
             ),
             runtime_checkpoint_format=args.runtime_checkpoint_format,
+            growth_additional_branch_budget=args.growth_additional_branch_budget,
+            growth_save_and_exit=args.growth_save_and_exit,
+            growth_skip_training_export=args.growth_skip_training_export,
             growth_state_eviction_policy=args.growth_state_eviction_policy,
             growth_state_eviction_recent_window=(
                 args.growth_state_eviction_recent_window
@@ -492,6 +514,11 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
                 config.runtime.candidate_checkpoint_load_min_headroom_mb
             ),
             "runtime_checkpoint_format": config.runtime.runtime_checkpoint_format,
+            "growth_additional_branch_budget": (
+                config.runtime.growth_additional_branch_budget
+            ),
+            "growth_save_and_exit": config.runtime.growth_save_and_exit,
+            "growth_skip_training_export": config.runtime.growth_skip_training_export,
             "growth_state_eviction_policy": (
                 config.runtime.growth_state_eviction_policy
             ),
@@ -635,6 +662,18 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                     runtime.get("runtime_checkpoint_format", "json-zst"),
                     field_name="runtime.runtime_checkpoint_format",
                 ),
+            ),
+            growth_additional_branch_budget=_optional_int(
+                runtime.get("growth_additional_branch_budget"),
+                field_name="runtime.growth_additional_branch_budget",
+            ),
+            growth_save_and_exit=_required_bool(
+                runtime.get("growth_save_and_exit", False),
+                field_name="runtime.growth_save_and_exit",
+            ),
+            growth_skip_training_export=_required_bool(
+                runtime.get("growth_skip_training_export", False),
+                field_name="runtime.growth_skip_training_export",
             ),
             growth_state_eviction_policy=cast(
                 "MorpionGrowthStateEvictionPolicy",
@@ -902,6 +941,9 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "growth_memory_profile_recursive_context_node_cap",
         "growth_memory_profile_recursive_events",
         "growth_memory_profile_recursive_complete_map",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
         "rollout_after_opening",
         "rollout_max_extra_steps",
         "rollout_action_selector_kind",
@@ -1046,6 +1088,11 @@ def _stage_bootstrap_config_field_values(
         "growth_state_eviction_delta_chain_max_depth": (
             config.runtime.growth_state_eviction_delta_chain_max_depth
         ),
+        "growth_additional_branch_budget": (
+            config.runtime.growth_additional_branch_budget
+        ),
+        "growth_save_and_exit": config.runtime.growth_save_and_exit,
+        "growth_skip_training_export": config.runtime.growth_skip_training_export,
         "rollout_after_opening": config.search.rollout.enabled,
         "rollout_max_extra_steps": config.search.rollout.max_extra_steps,
         "rollout_action_selector_kind": config.search.rollout.action_selector_kind,

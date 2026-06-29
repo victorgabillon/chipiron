@@ -583,9 +583,8 @@ def run_next_pipeline_training_stage_once(
     manifests = load_available_pipeline_manifests(paths)
     lower_bound = _training_lower_bound(paths)
     for generation in sorted(manifests):
-        if (
-            generation <= lower_bound.generation
-            and training_stage_is_pending(manifests[generation])
+        if generation <= lower_bound.generation and training_stage_is_pending(
+            manifests[generation]
         ):
             _log_stale_training_skip(generation=generation, lower_bound=lower_bound)
     pending_generations = tuple(
@@ -610,13 +609,13 @@ def run_next_pipeline_training_stage_once(
         _render_generation_list(pending_generations),
         _render_generation_list(claimable_generations),
     )
-    generation = select_next_claimable_training_generation(
+    selected_generation = select_next_claimable_training_generation(
         paths,
         manifests,
         lower_bound_generation=lower_bound.generation,
         now_unix_s=now_unix_s,
     )
-    if generation is None:
+    if selected_generation is None:
         LOGGER.info("[pipeline] training_worker_idle reason=no_claimable_generation")
         return MorpionPipelineWorkerResult(
             stage="training",
@@ -624,6 +623,7 @@ def run_next_pipeline_training_stage_once(
             ran_stage=False,
             reason="no_pending_work",
         )
+    generation = selected_generation
 
     LOGGER.info(
         "[pipeline] training_selection_done selected_generation=%s reason=latest_claimable manifest=%s",
@@ -695,9 +695,8 @@ def run_morpion_artifact_pipeline_once(
     training_generations: list[int] = []
     lower_bound = _training_lower_bound(paths)
     for generation in sorted(manifests):
-        if (
-            generation <= lower_bound.generation
-            and training_stage_is_pending(manifests[generation])
+        if generation <= lower_bound.generation and training_stage_is_pending(
+            manifests[generation]
         ):
             _log_stale_training_skip(generation=generation, lower_bound=lower_bound)
 

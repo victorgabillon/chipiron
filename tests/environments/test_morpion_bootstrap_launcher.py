@@ -528,7 +528,9 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 13
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 17
     assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
-    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    )
 
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
@@ -574,7 +576,78 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
     assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 5000
     assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
-    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    )
+
+
+def test_launcher_args_parse_growth_loop_controls(tmp_path: Path) -> None:
+    """Launcher CLI should expose explicit bounded growth-loop controls."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--growth-additional-branch-budget",
+            "500000",
+            "--growth-save-and-exit",
+            "--growth-skip-training-export",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.growth_additional_branch_budget == 500000
+    assert launcher_args.bootstrap_args.growth_save_and_exit is True
+    assert launcher_args.bootstrap_args.growth_skip_training_export is True
+
+
+def test_launcher_args_reject_non_positive_additional_branch_budget(
+    tmp_path: Path,
+) -> None:
+    """Additional branch budgets must be positive."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli(
+            [
+                "--work-dir",
+                str(tmp_path),
+                "--growth-additional-branch-budget",
+                "0",
+            ]
+        )
+
+
+def test_launcher_args_reject_additional_budget_with_explicit_absolute_limit(
+    tmp_path: Path,
+) -> None:
+    """Users should choose either relative or absolute branch budget mode."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli(
+            [
+                "--work-dir",
+                str(tmp_path),
+                "--growth-additional-branch-budget",
+                "500",
+                "--tree-branch-limit",
+                "1000",
+            ]
+        )
+
+
+def test_launcher_args_reject_save_and_exit_with_diagnostic_stop(
+    tmp_path: Path,
+) -> None:
+    """Grow-save-exit conflicts with the diagnostic no-save path."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli(
+            [
+                "--work-dir",
+                str(tmp_path),
+                "--growth-save-and-exit",
+                "--diagnostic-stop-after-growth",
+            ]
+        )
 
 
 def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
@@ -1409,6 +1482,56 @@ def test_launcher_constructs_real_runner_in_normal_path(
     assert len(created_runner_args) == 1
     stopping_criterion = created_runner_args[0].search_args.stopping_criterion
     assert stopping_criterion.tree_branch_limit == 40
+
+
+def test_launcher_growth_save_and_exit_clamps_loop_to_one_cycle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Grow-save-exit should force one cycle even if max-cycles is larger."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=5,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            pipeline_mode="artifact_pipeline",
+            growth_save_and_exit=True,
+        ),
+        pipeline_stage="growth",
+    )
+    sentinel_runner = object()
+    captured_max_cycles: list[int] = []
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        lambda _runner_args: sentinel_runner,
+    )
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        del args
+        assert runner is sentinel_runner
+        captured_max_cycles.append(max_cycles)
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_pipeline_growth_stage",
+        _fake_growth_stage,
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert captured_max_cycles == [1]
 
 
 def test_launcher_constructs_runner_with_persisted_rollout_config(

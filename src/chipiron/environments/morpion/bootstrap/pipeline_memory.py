@@ -189,6 +189,7 @@ def has_min_available_ram(required_mb: int | None) -> bool:
     """Return whether the host has enough available RAM for a guarded action."""
     if not _ram_guard_enabled(required_mb):
         return True
+    assert required_mb is not None
     available = available_ram_mb()
     return available is None or available >= required_mb
 
@@ -203,6 +204,7 @@ def log_available_ram_guard(
     """Log and return the available-RAM guard decision for one heavy action."""
     if not _ram_guard_enabled(required_mb):
         return True
+    assert required_mb is not None
     available = available_ram_mb()
     should_run = available is None or available >= required_mb
     LOGGER.info(

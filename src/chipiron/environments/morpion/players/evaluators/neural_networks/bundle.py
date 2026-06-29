@@ -369,9 +369,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
         raise InvalidMorpionModelBundleError.invalid_manifest_metadata(path)
     input_dim = _coerce_int(data.get("input_dim", MORPION_INPUT_DIM))
     model_kind = str(data.get("model_kind", "linear"))
-    input_representation = str(
-        data.get("input_representation", "handcrafted_features")
-    )
+    input_representation = str(data.get("input_representation", "handcrafted_features"))
     feature_subset = (
         full_morpion_feature_subset()
         if model_kind == MORPION_GRAPH_MODEL_KIND

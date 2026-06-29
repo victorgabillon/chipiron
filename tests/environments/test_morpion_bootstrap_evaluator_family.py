@@ -107,7 +107,9 @@ def test_graph_small_family_preset_resolves() -> None:
         CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
     )
 
-    assert resolved == canonical_linear_mlp_graph_small_morpion_evaluator_family_config()
+    assert (
+        resolved == canonical_linear_mlp_graph_small_morpion_evaluator_family_config()
+    )
     graph_spec = resolved.evaluators["graph_transformer_small"]
     assert graph_spec.name == "graph_transformer_small"
     assert graph_spec.model_type == MORPION_GRAPH_MODEL_KIND

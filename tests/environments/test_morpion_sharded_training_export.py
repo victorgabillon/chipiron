@@ -412,14 +412,16 @@ def test_new_checkpoint_backed_delta_node_exports_without_state_access(
         state_handle=CheckpointBackedStateHandle(resolver=resolver, node_id=1),
     )
 
-    generation_manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=(node,),
-        root_node_id="checkpoint-backed",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: state,
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=(node,),
+            root_node_id="checkpoint-backed",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: state,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
     loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
         generation_manifest_path
@@ -476,14 +478,16 @@ def test_new_checkpoint_backed_delta_node_with_live_resolver_exports_without_sta
         ),
     )
 
-    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=(node,),
-        root_node_id="live-checkpoint-backed",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: state,
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, _stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=(node,),
+            root_node_id="live-checkpoint-backed",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: state,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
     loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
         generation_manifest_path
@@ -526,14 +530,16 @@ def test_checkpoint_backed_delta_missing_parent_falls_back_to_state_access(
         ),
     )
 
-    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=(node,),
-        root_node_id="missing-parent",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: state,
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, _stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=(node,),
+            root_node_id="missing-parent",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: state,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
     loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
         generation_manifest_path
@@ -612,14 +618,16 @@ def test_sharded_export_preserves_opaque_mapping_payloads(tmp_path: Path) -> Non
         ),
     )
 
-    generation_manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
-        nodes=nodes,
-        root_node_id="root",
-        output_dir=output_dir,
-        generation=1,
-        state_ref_dumper=lambda state: state,
-        direct_value_extractor=_value_to_scalar,
-        backed_up_value_extractor=_value_to_scalar,
+    generation_manifest_path, _stats = (
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=nodes,
+            root_node_id="root",
+            output_dir=output_dir,
+            generation=1,
+            state_ref_dumper=lambda state: state,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
     )
     loaded_snapshot = load_morpion_sharded_training_tree_snapshot(
         generation_manifest_path

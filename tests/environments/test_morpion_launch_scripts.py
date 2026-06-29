@@ -83,8 +83,7 @@ def test_gnome_cluster_exposes_evaluator_diagnostics_max_rows_env() -> None:
         in script_text
     )
     assert (
-        "--evaluator-diagnostics-max-rows "
-        "$MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS"
+        "--evaluator-diagnostics-max-rows $MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS"
     ) in script_text
     assert (
         "evaluator_diagnostics_max_rows=$MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS"

@@ -53,7 +53,7 @@ def write_pipeline_manifest_for_generation(
     generation: int,
     timestamp_utc: str,
     relative_runtime_checkpoint_path: str | None,
-    relative_tree_snapshot_path: str,
+    relative_tree_snapshot_path: str | None,
     relative_rows_path: str | None,
     model_bundle_paths: Mapping[str, str],
     selected_evaluator_name: str | None,

@@ -123,7 +123,9 @@ def _latest_tree_snapshot_generation_json_path(
         )
         if path is not None
     ]
-    return None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
+    return (
+        None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
+    )
 
 
 def _cached_dashboard_data_freshness_tokens(
@@ -658,7 +660,11 @@ def _export_fast_path_health(
     tolerance = 1.0 if node_count is None else max(1.0, node_count * 0.005)
     if plain_states is not None and state_access_calls <= plain_states + tolerance:
         return "good"
-    if node_count is not None and node_count > 0 and state_access_calls >= node_count * 0.5:
+    if (
+        node_count is not None
+        and node_count > 0
+        and state_access_calls >= node_count * 0.5
+    ):
         return "warning"
     return "review"
 
@@ -725,7 +731,9 @@ def _render_observability_section(
     )
     metric_columns[6].metric(
         "Training export",
-        _format_seconds(training_export.get("total_s")),
+        "skipped"
+        if training_export.get("status") == "skipped"
+        else _format_seconds(training_export.get("total_s")),
     )
 
     st.caption(
@@ -735,18 +743,56 @@ def _render_observability_section(
     )
     st.dataframe(
         [
-            {"metric": "Materialized/plain %", "value": _percentage(summary.get("materialized_ratio"))},
-            {"metric": "State access calls", "value": _format_value(profile.get("state_access_calls"))},
-            {"metric": "Plain/materialized states", "value": _format_value(profile.get("plain_or_materialized_states"))},
-            {"metric": "Reusable checkpoint payloads", "value": _format_value(profile.get("reusable_checkpoint_payloads"))},
-            {"metric": "Export fast-path health", "value": _format_value(summary.get("export_fast_path_health"))},
-            {"metric": "Eviction successes", "value": _format_value(state_eviction.get("eviction_success_count"))},
-            {"metric": "Eviction skips", "value": _format_value(state_eviction.get("eviction_skipped_count"))},
-            {"metric": "Delta fallbacks", "value": _format_value(state_eviction.get("delta_payload_fallback_count"))},
-            {"metric": "Rematerializations", "value": _format_value(state_eviction.get("rematerialization_count"))},
-            {"metric": "Checkpoint bytes", "value": _format_value(checkpoint.get("bytes"))},
-            {"metric": "Rows written", "value": _format_value(training_export.get("rows_written"))},
-            {"metric": "Export bytes", "value": _format_value(training_export.get("bytes_written"))},
+            {
+                "metric": "Materialized/plain %",
+                "value": _percentage(summary.get("materialized_ratio")),
+            },
+            {
+                "metric": "State access calls",
+                "value": _format_value(profile.get("state_access_calls")),
+            },
+            {
+                "metric": "Plain/materialized states",
+                "value": _format_value(profile.get("plain_or_materialized_states")),
+            },
+            {
+                "metric": "Reusable checkpoint payloads",
+                "value": _format_value(profile.get("reusable_checkpoint_payloads")),
+            },
+            {
+                "metric": "Export fast-path health",
+                "value": _format_value(summary.get("export_fast_path_health")),
+            },
+            {
+                "metric": "Eviction successes",
+                "value": _format_value(state_eviction.get("eviction_success_count")),
+            },
+            {
+                "metric": "Eviction skips",
+                "value": _format_value(state_eviction.get("eviction_skipped_count")),
+            },
+            {
+                "metric": "Delta fallbacks",
+                "value": _format_value(
+                    state_eviction.get("delta_payload_fallback_count")
+                ),
+            },
+            {
+                "metric": "Rematerializations",
+                "value": _format_value(state_eviction.get("rematerialization_count")),
+            },
+            {
+                "metric": "Checkpoint bytes",
+                "value": _format_value(checkpoint.get("bytes")),
+            },
+            {
+                "metric": "Rows written",
+                "value": _format_value(training_export.get("rows_written")),
+            },
+            {
+                "metric": "Export bytes",
+                "value": _format_value(training_export.get("bytes_written")),
+            },
         ],
         width="stretch",
         hide_index=True,

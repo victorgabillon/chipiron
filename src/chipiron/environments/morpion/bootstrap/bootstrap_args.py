@@ -190,6 +190,23 @@ def _invalid_growth_state_eviction_delta_chain_max_depth_error() -> ValueError:
     )
 
 
+def _invalid_growth_additional_branch_budget_error() -> ValueError:
+    """Return the canonical additional branch-budget validation error."""
+    return ValueError(
+        "growth_additional_branch_budget must be a positive integer or None."
+    )
+
+
+def _invalid_growth_save_and_exit_error() -> TypeError:
+    """Return the canonical grow-save-exit flag validation error."""
+    return TypeError("growth_save_and_exit must be a bool.")
+
+
+def _invalid_growth_skip_training_export_error() -> TypeError:
+    """Return the canonical skip-training-export flag validation error."""
+    return TypeError("growth_skip_training_export must be a bool.")
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -256,20 +273,30 @@ class MorpionBootstrapArgs:
     candidate_checkpoint_load_min_headroom_mb: int = 512
     runtime_checkpoint_format: MorpionRuntimeCheckpointFormat = "json-zst"
     diagnostic_stop_after_growth: bool = False
+    growth_additional_branch_budget: int | None = None
+    growth_save_and_exit: bool = False
+    growth_skip_training_export: bool = False
     growth_state_eviction_policy: MorpionGrowthStateEvictionPolicy = "none"
     growth_state_eviction_recent_window: int = 1000
     growth_state_rematerialization_cache_size: int = 10000
     growth_state_eviction_scan_interval_steps: int = 100
     growth_state_eviction_scan_node_limit: int = 5000
-    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = (
-        "anchor"
-    )
+    growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = "anchor"
     growth_state_eviction_delta_chain_max_depth: int = 32
 
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
         if not isinstance(self.diagnostic_stop_after_growth, bool):
             raise _invalid_diagnostic_stop_after_growth_error()
+        if self.growth_additional_branch_budget is not None and (
+            isinstance(self.growth_additional_branch_budget, bool)
+            or self.growth_additional_branch_budget <= 0
+        ):
+            raise _invalid_growth_additional_branch_budget_error()
+        if not isinstance(self.growth_save_and_exit, bool):
+            raise _invalid_growth_save_and_exit_error()
+        if not isinstance(self.growth_skip_training_export, bool):
+            raise _invalid_growth_skip_training_export_error()
         if self.growth_state_eviction_policy not in {
             "none",
             "cold_expanded",

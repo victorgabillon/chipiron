@@ -34,9 +34,9 @@ dependencies = [
   "zstandard",
   "rich",
   "valanga==0.2.5",
-  "atomheart==0.2.10",
-  "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.20",
+  "atomheart==0.2.11",
+  "algorhino-coral==0.1.13",
+  "algorhino-anemone==0.2.21",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
@@ -54,17 +54,17 @@ authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 [project.optional-dependencies]
 test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
-lint = ["ruff>=0.15.8", "pylint>=4.0.5"]
+lint = ["ruff>=0.15.20", "pylint>=4.0.6"]
 
 typecheck = [
-  "mypy>=1.19.1",
-  "pyright[nodejs]>=1.1.408",
-  "types-PyYAML>=6.0.12.12",
+  "mypy>=2.1.0",
+  "pyright[nodejs]>=1.1.411",
+  "types-PyYAML>=6.0.12.20260518",
 ]
 
 dev = [
-  "tox>=4.30.2",
-  "black>=25.1.0",
+  "tox>=4.56.1",
+  "black>=26.5.1",
   "build",
   "twine",
   "sphinx",
@@ -371,8 +371,8 @@ commands = [
 description = "ruff + pylint (fast)"
 package = "skip"
 deps = [
-  "ruff>=0.15.8",
-  "pylint>=4.0.5",
+  "ruff>=0.15.20",
+  "pylint>=4.0.6",
   # optional: if pylint needs to import chipiron deps for module resolution
   # but usually it imports your code, so keep runtime deps available:
   "PyYAML",
@@ -398,9 +398,9 @@ deps = [
   "torchinfo",
   "platformdirs>=4.9.2",
   "valanga==0.2.5",
-  "atomheart==0.2.10",
-  "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.20",
+  "atomheart==0.2.11",
+  "algorhino-coral==0.1.13",
+  "algorhino-anemone==0.2.21",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
@@ -434,9 +434,9 @@ commands = [
 description = "mypy + pyright (fast)"
 package = "skip"
 deps = [
-  "mypy>=1.19.1",
-  "pyright[nodejs]>=1.1.408",
-  "types-PyYAML>=6.0.12.12",
+  "mypy>=2.1.0",
+  "pyright[nodejs]>=1.1.411",
+  "types-PyYAML>=6.0.12.20260518",
   # runtime deps for import resolution (same list as lint)
   "PyYAML",
   "PySide6==6.9.2",
@@ -459,9 +459,9 @@ deps = [
   "zstandard",
   "rich",
   "valanga==0.2.5",
-  "atomheart==0.2.10",
-  "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.20",
+  "atomheart==0.2.11",
+  "algorhino-coral==0.1.13",
+  "algorhino-anemone==0.2.21",
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",

@@ -8,6 +8,7 @@ import sys
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sized
 from itertools import islice
+from typing import cast
 
 from .pipeline_memory import current_rss_mb, format_metric
 
@@ -192,7 +193,7 @@ def _safe_getattr(
     default: object | None = None,
 ) -> object | None:
     try:
-        return getattr(value, attr_name)
+        return cast("object | None", getattr(value, attr_name))
     except Exception:
         return default
 
@@ -211,7 +212,7 @@ def _slot_names(type_or_obj: object) -> tuple[str, ...]:
     for base_type in value_type.__mro__:
         raw_slots = getattr(base_type, "__slots__", ())
         if isinstance(raw_slots, str):
-            candidate_names = (raw_slots,)
+            candidate_names: tuple[object, ...] = (raw_slots,)
         else:
             try:
                 candidate_names = tuple(raw_slots)
@@ -268,7 +269,7 @@ def _top_node_attr_names(sample: list[object]) -> list[str]:
         if node_dict is None:
             continue
         attr_name_counts.update(
-            str(attr_name) for attr_name in node_dict.keys() if attr_name is not None
+            str(attr_name) for attr_name in node_dict if attr_name is not None
         )
     return [attr_name for attr_name, _count in attr_name_counts.most_common(10)]
 
@@ -299,7 +300,9 @@ def _node_sample_summary_from_sample(
             totals["dict_len"] += node_dict_len
         if node_dict is not None:
             attr_name_counts.update(
-                str(attr_name) for attr_name in node_dict.keys() if attr_name is not None
+                str(attr_name)
+                for attr_name in node_dict
+                if attr_name is not None
             )
 
         state_payload = None
@@ -327,7 +330,9 @@ def _node_sample_summary_from_sample(
         "state_payload_fraction": format_metric(
             _truthy_fraction(state_payload_count, sample_size)
         ),
-        "terminal_fraction": format_metric(_truthy_fraction(terminal_count, sample_size)),
+        "terminal_fraction": format_metric(
+            _truthy_fraction(terminal_count, sample_size)
+        ),
         "exact_fraction": format_metric(_truthy_fraction(exact_count, sample_size)),
         "top_node_attrs": _format_pairs(attr_name_counts.most_common(10)),
     }
@@ -385,7 +390,7 @@ def _node_attr_sample_summaries(
                     attr_dict_seen += 1
                 child_attr_counts.update(
                     str(child_attr_name)
-                    for child_attr_name in attr_dict.keys()
+                    for child_attr_name in attr_dict
                     if child_attr_name is not None
                 )
 
@@ -526,9 +531,7 @@ def _branch_sample_summary(
     return {
         "source": source,
         "sample_size": sample_size,
-        "avg_branch_key_shallow_bytes": format_metric(
-            _avg(branch_total, sample_size)
-        ),
+        "avg_branch_key_shallow_bytes": format_metric(_avg(branch_total, sample_size)),
         "avg_branch_dict_shallow_bytes": format_metric(
             _avg(branch_dict_total, sample_size)
         ),
@@ -614,9 +617,7 @@ def log_growth_runtime_memory_profile(
             reason,
         )
         return
-    sample_text = " ".join(
-        f"{name}={value}" for name, value in sample_summary.items()
-    )
+    sample_text = " ".join(f"{name}={value}" for name, value in sample_summary.items())
     LOGGER.info("[growth-profile] event=%s node_sample %s", event, sample_text)
 
     try:
@@ -666,7 +667,9 @@ def log_growth_runtime_memory_profile(
             branch_text = " ".join(
                 f"{name}={value}" for name, value in branch_summary.items()
             )
-            LOGGER.info("[growth-profile] event=%s branch_sample %s", event, branch_text)
+            LOGGER.info(
+                "[growth-profile] event=%s branch_sample %s", event, branch_text
+            )
     except Exception as exc:
         LOGGER.info(
             "[growth-profile] event=%s branch_sample unavailable reason=%s: %s",

@@ -188,7 +188,9 @@ def _global_token(*, state: MorpionState, legal_action_count: int) -> list[float
     row[_feature_index("num_points")] = float(len(state.points))
     row[_feature_index("moves")] = float(state.moves)
     row[_feature_index("legal_action_count")] = float(legal_action_count)
-    row[_feature_index("used_unit_segment_count")] = float(len(state.used_unit_segments))
+    row[_feature_index("used_unit_segment_count")] = float(
+        len(state.used_unit_segments)
+    )
     return row
 
 

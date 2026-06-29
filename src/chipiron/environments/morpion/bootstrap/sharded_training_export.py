@@ -392,7 +392,9 @@ def _append_morpion_delta_refs_to_anchor_ref(
         return None
     if not isinstance(played_moves, tuple | list):
         return None
-    if any(not isinstance(move, int) or isinstance(move, bool) for move in played_moves):
+    if any(
+        not isinstance(move, int) or isinstance(move, bool) for move in played_moves
+    ):
         return None
     if any(not isinstance(move, int) or isinstance(move, bool) for move in delta_refs):
         return None

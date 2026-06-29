@@ -638,6 +638,23 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.training_export_mode == "flat"
 
 
+def test_bootstrap_config_round_trips_growth_loop_controls(tmp_path: Path) -> None:
+    """Growth-loop workflow controls should persist in bootstrap config JSON."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_additional_branch_budget=500000,
+        growth_save_and_exit=True,
+        growth_skip_training_export=True,
+    )
+
+    payload = bootstrap_config_to_dict(bootstrap_config_from_args(args))
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert loaded.runtime.growth_additional_branch_budget == 500000
+    assert loaded.runtime.growth_save_and_exit is True
+    assert loaded.runtime.growth_skip_training_export is True
+
+
 def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     tmp_path: Path,
 ) -> None:
@@ -658,6 +675,9 @@ def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
     assert args.growth_memory_profile_recursive_events == ("after_checkpoint_load",)
     assert args.growth_memory_profile_recursive_complete_map is False
     assert args.diagnostic_stop_after_growth is False
+    assert args.growth_additional_branch_budget is None
+    assert args.growth_save_and_exit is False
+    assert args.growth_skip_training_export is False
     assert args.candidate_checkpoint_load_headroom_factor == 60.0
     assert args.candidate_checkpoint_load_min_headroom_mb == 512
 
@@ -1116,6 +1136,9 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
     } == GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
     assert {
         "max_growth_steps_per_cycle",
@@ -1126,6 +1149,9 @@ def test_stage_owned_field_helpers_are_stable() -> None:
         "candidate_checkpoint_load_min_headroom_mb",
         "save_after_seconds",
         "save_after_tree_growth_factor",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
     } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
     assert {
         "rollout_after_opening",

@@ -311,9 +311,7 @@ def test_snapshot_metadata_records_target_sources_and_skipped_no_target() -> Non
 
 def test_invalid_payload_raises_clearly() -> None:
     """Malformed Morpion payloads should raise instead of being silently kept."""
-    node = _make_training_node(
-        state_ref_payload=[0, "not-a-sequence"]
-    )
+    node = _make_training_node(state_ref_payload=[0, "not-a-sequence"])
 
     with pytest.raises(InvalidMorpionStateRefPayloadError):
         training_node_to_morpion_supervised_row(node)
@@ -471,8 +469,12 @@ def test_metadata_load_works_for_json_and_jsonl(tmp_path: Path) -> None:
         path=jsonl_path,
     )
 
-    assert load_morpion_supervised_rows_metadata(json_path)["purpose"] == "metadata-test"
-    assert load_morpion_supervised_rows_metadata(jsonl_path)["purpose"] == "metadata-test"
+    assert (
+        load_morpion_supervised_rows_metadata(json_path)["purpose"] == "metadata-test"
+    )
+    assert (
+        load_morpion_supervised_rows_metadata(jsonl_path)["purpose"] == "metadata-test"
+    )
     assert morpion_supervised_rows_source_from_path(json_path).format_kind == "json"
     jsonl_source = morpion_supervised_rows_source_from_path(jsonl_path)
     assert jsonl_source.format_kind == "jsonl"
@@ -523,8 +525,7 @@ def test_jsonl_row_iterators_support_limits_and_chunks(tmp_path: Path) -> None:
         "row-2",
     ]
     assert [
-        row.node_id
-        for row in iter_morpion_supervised_rows_from_path(path, max_rows=1)
+        row.node_id for row in iter_morpion_supervised_rows_from_path(path, max_rows=1)
     ] == ["row-0"]
     chunks = list(iter_morpion_supervised_row_chunks_from_path(path, chunk_size=2))
     assert [len(chunk) for chunk in chunks] == [2, 1]

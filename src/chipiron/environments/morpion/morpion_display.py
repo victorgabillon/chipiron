@@ -21,6 +21,11 @@ from atomheart.games.morpion import (
 from atomheart.games.morpion import (
     initial_state as initial_atom_morpion_state,
 )
+from atomheart.games.morpion.checkpoints import (
+    MorpionCheckpointError,
+    MorpionCheckpointTypeError,
+    MorpionStateCheckpointCodec,
+)
 
 if TYPE_CHECKING:
     from atomheart.games.morpion import MorpionState as AtomMorpionState
@@ -87,6 +92,14 @@ class MorpionNumberedPointReplayError(ValueError):
     def played_moves_must_be_sequence(cls) -> MorpionNumberedPointReplayError:
         """Build the move-sequence-type error."""
         return cls("Morpion state_ref payload field `played_moves` must be a sequence.")
+
+    @classmethod
+    def compact_payload_must_be_pair(cls) -> MorpionNumberedPointReplayError:
+        """Build the compact-payload shape error."""
+        return cls(
+            "Morpion compact state_ref payload must be a two-item sequence: "
+            "(variant_code, played_moves)."
+        )
 
     @classmethod
     def invalid_move_payload(
@@ -231,9 +244,13 @@ def build_morpion_display_payload(
 
 
 def build_numbered_added_points_from_state_ref_payload(
-    state_ref_payload: Mapping[str, object],
+    state_ref_payload: object,
 ) -> tuple[MorpionNumberedPointDisplay, ...]:
     """Replay ordered checkpoint moves and recover the newly added point for each move."""
+    if not isinstance(state_ref_payload, Mapping):
+        return _build_numbered_added_points_from_compact_state_ref_payload(
+            state_ref_payload
+        )
     payload = _normalized_state_ref_payload_mapping(state_ref_payload)
     variant = _state_ref_payload_variant(payload)
     serialized_moves = _state_ref_payload_played_moves(payload)
@@ -269,6 +286,76 @@ def build_numbered_added_points_from_state_ref_payload(
         replay_state = next_state
 
     return tuple(numbered_points)
+
+
+def _build_numbered_added_points_from_compact_state_ref_payload(
+    state_ref_payload: object,
+) -> tuple[MorpionNumberedPointDisplay, ...]:
+    """Replay compact checkpoint prefixes and recover each newly added point."""
+    variant_code, serialized_moves = _compact_state_ref_payload_variant_and_moves(
+        state_ref_payload
+    )
+    codec = MorpionStateCheckpointCodec()
+    replay_state = _load_compact_state_ref_prefix(
+        codec=codec,
+        variant_code=variant_code,
+        serialized_moves=(),
+    )
+    numbered_points: list[MorpionNumberedPointDisplay] = []
+
+    for move_index in range(1, len(serialized_moves) + 1):
+        next_state = _load_compact_state_ref_prefix(
+            codec=codec,
+            variant_code=variant_code,
+            serialized_moves=serialized_moves[:move_index],
+        )
+        new_points = next_state.points - replay_state.points
+        if len(new_points) != 1:
+            raise MorpionNumberedPointReplayError.invalid_new_point_delta(move_index)
+        numbered_points.append(
+            MorpionNumberedPointDisplay(
+                move_index=move_index,
+                point=_normalize_point(next(iter(new_points))),
+            )
+        )
+        replay_state = next_state
+
+    return tuple(numbered_points)
+
+
+def _compact_state_ref_payload_variant_and_moves(
+    payload: object,
+) -> tuple[object, tuple[object, ...]]:
+    """Return the raw compact variant code and ordered compact move payloads."""
+    if not isinstance(payload, Sequence) or isinstance(
+        payload, str | bytes | bytearray
+    ):
+        raise MorpionNumberedPointReplayError.compact_payload_must_be_pair()
+    values = tuple(cast("Sequence[object]", payload))
+    if len(values) != 2:
+        raise MorpionNumberedPointReplayError.compact_payload_must_be_pair()
+    raw_moves = values[1]
+    if not isinstance(raw_moves, Sequence) or isinstance(
+        raw_moves, str | bytes | bytearray
+    ):
+        raise MorpionNumberedPointReplayError.played_moves_must_be_sequence()
+    return values[0], tuple(cast("Sequence[object]", raw_moves))
+
+
+def _load_compact_state_ref_prefix(
+    *,
+    codec: MorpionStateCheckpointCodec,
+    variant_code: object,
+    serialized_moves: tuple[object, ...],
+) -> AtomMorpionState:
+    """Load one compact checkpoint prefix through the public checkpoint codec."""
+    try:
+        return codec.load_state_ref((variant_code, serialized_moves))
+    except (MorpionCheckpointError, MorpionCheckpointTypeError) as exc:
+        raise MorpionNumberedPointReplayError.invalid_move_payload(
+            len(serialized_moves) - 1,
+            serialized_moves[-1] if serialized_moves else serialized_moves,
+        ) from exc
 
 
 def _build_move_display(

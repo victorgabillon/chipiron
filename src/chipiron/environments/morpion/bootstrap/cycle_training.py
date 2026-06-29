@@ -516,6 +516,7 @@ def train_and_select_evaluators(
                 evaluator_name,
             )
         else:
+            assert diagnostic_rows is not None
             _log_diagnostic_sample(
                 generation=generation,
                 evaluator_name=evaluator_name,

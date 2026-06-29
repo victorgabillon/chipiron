@@ -148,7 +148,9 @@ class MalformedMorpionSupervisedRowsError(TypeError):
     @classmethod
     def invalid_max_rows(cls) -> MalformedMorpionSupervisedRowsError:
         """Return the invalid streaming row-limit error."""
-        return cls("Morpion supervised max_rows must be a non-negative integer or None.")
+        return cls(
+            "Morpion supervised max_rows must be a non-negative integer or None."
+        )
 
 
 def is_morpion_state_ref_payload(payload: object) -> bool:

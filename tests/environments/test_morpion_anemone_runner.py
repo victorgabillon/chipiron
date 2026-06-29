@@ -1007,8 +1007,7 @@ def test_live_compact_resolver_tracks_rematerialization_by_phase() -> None:
     )
 
     assert (
-        resolver.payload_for_node_id_or_none(7)
-        is resolver.state_payloads_by_node_id[7]
+        resolver.payload_for_node_id_or_none(7) is resolver.state_payloads_by_node_id[7]
     )
     assert resolver.payload_for_node_id_or_none(999) is None
 
@@ -1653,7 +1652,7 @@ def test_runner_growth_logs_selected_node_id_and_depth(
     assert "[growth-selection-table-timing] step=1" in caplog.text
     assert (
         "depth total opened frontier terminal exact uncached_terminal "
-        "non_openable index selected"
+        "non_openable index weight probability selected"
     ) in caplog.text
 
 

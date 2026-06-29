@@ -292,7 +292,9 @@ def _frozenset_len_bucket(length: int) -> str:
 
 
 def _format_name_float_pairs(items: Iterable[tuple[str, float]]) -> str:
-    return "[" + ",".join(f"{name}:{format_metric(value)}" for name, value in items) + "]"
+    return (
+        "[" + ",".join(f"{name}:{format_metric(value)}" for name, value in items) + "]"
+    )
 
 
 def _format_name_int_pairs(items: Iterable[tuple[str, int]]) -> str:
@@ -553,7 +555,9 @@ def _observe_morpion_state_frozenset_fields(
         if not isinstance(field_value, frozenset):
             continue
         accumulator.field_ref_counts[field_name] += 1
-        accumulator.field_len_bucket_counts[_frozenset_len_bucket(len(field_value))] += 1
+        accumulator.field_len_bucket_counts[
+            _frozenset_len_bucket(len(field_value))
+        ] += 1
         accumulator.total_field_shallow_bytes += _size_or_zero(field_value)
 
 
@@ -882,12 +886,13 @@ def _deep_size(
     depth: int,
     stats: DeepSizeStats,
 ) -> int:
+    stack: list[tuple[object, int]] = []
     total_size = _try_push_deep_size_object(
         obj,
         seen=seen,
         max_depth=max_depth,
         depth=depth,
-        stack=(stack := []),
+        stack=stack,
         stats=stats,
     )
 
@@ -1077,6 +1082,8 @@ def _find_checkpoint_payload_stores(
                         payload_mapping_ids.add(mapping_id)
                         stores.append(
                             CheckpointPayloadStore(
+                                resolver_type="attribute_scan",
+                                resolver_id=id(value),
                                 owner_type=_qualified_type_name(value),
                                 attr_name=attr_name,
                                 payloads=attr_value,
@@ -1306,7 +1313,10 @@ def _count_profile_branches(nodes: Iterable[object]) -> int:
     branch_count = 0
     for node in nodes:
         branch_count += sum(
-            1 for _ in _iter_child_branch_refs(_tree_node_slot(node, "branches_children_"))
+            1
+            for _ in _iter_child_branch_refs(
+                _tree_node_slot(node, "branches_children_")
+            )
         )
         branch_count += sum(
             1 for _ in _iter_parent_branch_refs(_tree_node_slot(node, "parent_nodes_"))
@@ -1406,9 +1416,11 @@ def build_recursive_profile_context(
             handle_cap,
         )
         fallback_checkpoint_stores_start = time.perf_counter()
-        checkpoint_payload_stores = _find_checkpoint_payload_stores_from_handle_fallback(
-            nodes,
-            handle_cap=handle_cap,
+        checkpoint_payload_stores = (
+            _find_checkpoint_payload_stores_from_handle_fallback(
+                nodes,
+                handle_cap=handle_cap,
+            )
         )
         LOGGER.info(
             "[growth-recursive-profile] event=%s "
@@ -1753,7 +1765,9 @@ def parent_link_storage_histogram(
         "one_parent_node_count": one_parent_nodes,
         "multi_parent_node_count": multi_parent_nodes,
         "parent_branch_ref_count": parent_branch_ref_count,
-        "parent_storage_types": dict(_ordered_counter_items(parent_storage_type_counts)),
+        "parent_storage_types": dict(
+            _ordered_counter_items(parent_storage_type_counts)
+        ),
         "parent_storage_shallow_bytes": parent_storage_shallow_bytes,
         "single_parent_recursive_bytes": single_parent_recursive_bytes,
         "single_parent_recursive_capped": single_stats.capped,
@@ -1984,9 +1998,7 @@ def state_handle_materialization_detail_histogram(
             field_shallow_bytes[field_name] += _size_or_zero(field_value)
             if isinstance(field_value, frozenset):
                 frozenset_field_counts[field_name] += 1
-                frozenset_field_shallow_bytes[field_name] += _size_or_zero(
-                    field_value
-                )
+                frozenset_field_shallow_bytes[field_name] += _size_or_zero(field_value)
 
     states_stats = DeepSizeStats(max_objects=max_objects)
     materialized_states_recursive_bytes = _exclusive_deep_size(
@@ -2082,9 +2094,7 @@ def state_retention_by_node_status_histogram(
             _raw_getattr(tree_node, "non_opened_branches_")
         )
         has_no_unopened_branches = unopened_branch_count == 0
-        all_branches_generated = bool(
-            _raw_getattr(tree_node, "all_branches_generated")
-        )
+        all_branches_generated = bool(_raw_getattr(tree_node, "all_branches_generated"))
         terminal = _node_eval_bool(node, "is_terminal")
         exact = _node_eval_bool(node, "has_exact_value")
         selector_status = _selector_node_status_from_table(node_state_by_id, node)
@@ -2245,7 +2255,9 @@ def node_evaluation_runtime_detail_histograms(
                 field_shallow_bytes[field_name] += _size_or_zero(field_value)
                 field_len = _len_or_none(field_value)
                 if field_len is not None:
-                    field_len_buckets[f"{field_name}:{_small_len_bucket(field_len)}"] += 1
+                    field_len_buckets[
+                        f"{field_name}:{_small_len_bucket(field_len)}"
+                    ] += 1
                     if field_len > 0:
                         state_is_empty = False
                 elif field_value not in (None, False, 0):
@@ -2276,7 +2288,11 @@ def node_evaluation_runtime_detail_histograms(
         )
         field_recursive_bytes: dict[str, int] = {}
         for field_name in sorted(
-            {name for state in states for name, _value in _iter_direct_field_entries(state)}
+            {
+                name
+                for state in states
+                for name, _value in _iter_direct_field_entries(state)
+            }
         ):
             field_values = [
                 field_value
@@ -2311,11 +2327,11 @@ def node_evaluation_runtime_detail_histograms(
                 "non_empty_state_count": non_empty_count,
                 "field_type_counts": dict(_ordered_counter_items(field_type_counts)),
                 "field_len_buckets": dict(_ordered_counter_items(field_len_buckets)),
-                "field_shallow_bytes": dict(_ordered_counter_items(field_shallow_bytes)),
-                "field_recursive_bytes": field_recursive_bytes,
-                "top_child_object_types": dict(
-                    top_child_type_counts.most_common(10)
+                "field_shallow_bytes": dict(
+                    _ordered_counter_items(field_shallow_bytes)
                 ),
+                "field_recursive_bytes": field_recursive_bytes,
+                "top_child_object_types": dict(top_child_type_counts.most_common(10)),
             }
         )
 
@@ -2475,11 +2491,13 @@ def linoo_state_histograms(
         return {"present": False}
     linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
     if linoo_selector is None:
-        node_state_by_id = _raw_getattr(selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME)
+        raw_node_state_by_id = _raw_getattr(
+            selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME
+        )
         return {
             "present": True,
             "selector_type": _qualified_type_name(selector),
-            "node_state_table_type": _qualified_type_name(node_state_by_id),
+            "node_state_table_type": _qualified_type_name(raw_node_state_by_id),
         }
     assert isinstance(node_state_by_id, Mapping)
 
@@ -2709,9 +2727,7 @@ def linoo_selector_detail_histogram(
         max_depth=max_depth,
         max_objects=max_objects,
     )
-    node_state_table = (
-        node_state_by_id if node_state_by_id is not None else {}
-    )
+    node_state_table = node_state_by_id if node_state_by_id is not None else {}
     table_recursive_bytes, table_stats = _measure_standalone_reachable(
         node_state_table,
         max_depth=max_depth,
@@ -2983,7 +2999,9 @@ def linoo_node_state_slots_histogram(
         "slot_names": tuple(slot_names_seen),
         "slot_value_type_counts": dict(_ordered_counter_items(slot_value_type_counts)),
         "slot_value_kind_counts": dict(
-            _ordered_counter_items(slot_value_kind_counts, order=_LINOO_SLOT_VALUE_KIND_ORDER)
+            _ordered_counter_items(
+                slot_value_kind_counts, order=_LINOO_SLOT_VALUE_KIND_ORDER
+            )
         ),
         "slot_observation_counts": dict(
             _ordered_counter_items(slot_observation_counts, order=slot_names_seen)
@@ -3325,10 +3343,14 @@ def checkpoint_payload_lifetime_histograms(
             stats.unmaterialized_handle_count += 1
         node_id = _handle_node_id(handle)
         payloads = _resolver_payloads(resolver)
-        if isinstance(node_id, int) and isinstance(payloads, Mapping) and node_id in payloads:
-            stats.referenced_payload_keys_by_mapping_id.setdefault(id(payloads), set()).add(
-                node_id
-            )
+        if (
+            isinstance(node_id, int)
+            and isinstance(payloads, Mapping)
+            and node_id in payloads
+        ):
+            stats.referenced_payload_keys_by_mapping_id.setdefault(
+                id(payloads), set()
+            ).add(node_id)
 
     all_handles_share_one_resolver = (
         checkpoint_handle_count > 0
@@ -3367,13 +3389,19 @@ def checkpoint_payload_lifetime_histograms(
                 ),
                 "payload_mapping_shallow_bytes": _size_or_zero(payload_store.payloads),
                 "checkpoint_backed_state_handle_count": (
-                    0 if resolver_stats is None else resolver_stats.checkpoint_handle_count
+                    0
+                    if resolver_stats is None
+                    else resolver_stats.checkpoint_handle_count
                 ),
                 "materialized_handle_count": (
-                    0 if resolver_stats is None else resolver_stats.materialized_handle_count
+                    0
+                    if resolver_stats is None
+                    else resolver_stats.materialized_handle_count
                 ),
                 "unmaterialized_handle_count": (
-                    0 if resolver_stats is None else resolver_stats.unmaterialized_handle_count
+                    0
+                    if resolver_stats is None
+                    else resolver_stats.unmaterialized_handle_count
                 ),
                 "payload_entries_still_referenced_count": referenced_payload_entries_count,
                 "all_handles_share_one_resolver": all_handles_share_one_resolver,
@@ -3443,7 +3471,7 @@ def _small_payload_sample(
             )
         return sampled_items
     if isinstance(value, list | tuple):
-        sampled_items = [
+        sampled_sequence: list[object] = [
             _small_payload_sample(
                 item,
                 depth=depth + 1,
@@ -3453,10 +3481,10 @@ def _small_payload_sample(
             for item in value[:max_items]
         ]
         if len(value) > max_items:
-            sampled_items.append(f"... +{len(value) - max_items} more")
-        return tuple(sampled_items) if isinstance(value, tuple) else sampled_items
+            sampled_sequence.append(f"... +{len(value) - max_items} more")
+        return tuple(sampled_sequence) if isinstance(value, tuple) else sampled_sequence
     if isinstance(value, set | frozenset):
-        sampled_items = [
+        sampled_set: list[object] = [
             _small_payload_sample(
                 item,
                 depth=depth + 1,
@@ -3466,8 +3494,8 @@ def _small_payload_sample(
             for item in list(value)[:max_items]
         ]
         if len(value) > max_items:
-            sampled_items.append(f"... +{len(value) - max_items} more")
-        return sampled_items
+            sampled_set.append(f"... +{len(value) - max_items} more")
+        return sampled_set
     return _qualified_type_name(value)
 
 
@@ -3543,21 +3571,31 @@ def checkpoint_payload_shape_histograms(
     for payload_store in checkpoint_payload_stores:
         payloads = tuple(payload_store.payloads.values())
         anchor_payloads = [
-            payload for payload in payloads if _checkpoint_payload_kind(payload) == "anchor"
+            payload
+            for payload in payloads
+            if _checkpoint_payload_kind(payload) == "anchor"
         ]
         delta_payloads = [
-            payload for payload in payloads if _checkpoint_payload_kind(payload) == "delta"
+            payload
+            for payload in payloads
+            if _checkpoint_payload_kind(payload) == "delta"
         ]
-        anchor_refs = [_raw_getattr(payload, "anchor_ref") for payload in anchor_payloads]
+        anchor_refs = [
+            _raw_getattr(payload, "anchor_ref") for payload in anchor_payloads
+        ]
         delta_refs = [_raw_getattr(payload, "delta_ref") for payload in delta_payloads]
-        state_summaries = [_raw_getattr(payload, "state_summary") for payload in payloads]
+        state_summaries = [
+            _raw_getattr(payload, "state_summary") for payload in payloads
+        ]
         state_parent_branches = [
             _raw_getattr(payload, "state_parent_branch") for payload in delta_payloads
         ]
         state_parent_node_ids = [
             _raw_getattr(payload, "state_parent_node_id") for payload in delta_payloads
         ]
-        payload_type_counts = Counter[str](_qualified_type_name(payload) for payload in payloads)
+        payload_type_counts = Counter[str](
+            _qualified_type_name(payload) for payload in payloads
+        )
 
         histograms.append(
             {
@@ -3568,7 +3606,9 @@ def checkpoint_payload_shape_histograms(
                 "total_payload_count": len(payloads),
                 "anchor_payload_count": len(anchor_payloads),
                 "delta_payload_count": len(delta_payloads),
-                "payload_type_counts": dict(_ordered_counter_items(payload_type_counts)),
+                "payload_type_counts": dict(
+                    _ordered_counter_items(payload_type_counts)
+                ),
                 "anchor_payload_objects": _payload_shape_memory_stats(
                     anchor_payloads,
                     max_depth=max_depth,
@@ -3612,18 +3652,28 @@ def checkpoint_payload_shape_histograms(
                 "state_parent_branch_top_python_types": _payload_shape_type_counts(
                     state_parent_branches
                 ),
-                "anchor_ref_common_dict_keys": _payload_shape_dict_key_counts(anchor_refs),
-                "delta_ref_common_dict_keys": _payload_shape_dict_key_counts(delta_refs),
+                "anchor_ref_common_dict_keys": _payload_shape_dict_key_counts(
+                    anchor_refs
+                ),
+                "delta_ref_common_dict_keys": _payload_shape_dict_key_counts(
+                    delta_refs
+                ),
                 "state_summary_common_dict_keys": _payload_shape_dict_key_counts(
                     state_summaries
                 ),
                 "state_parent_branch_common_dict_keys": _payload_shape_dict_key_counts(
                     state_parent_branches
                 ),
-                "anchor_ref_sample": _small_payload_sample(anchor_refs[0]) if anchor_refs else None,
-                "delta_ref_sample": _small_payload_sample(delta_refs[0]) if delta_refs else None,
+                "anchor_ref_sample": _small_payload_sample(anchor_refs[0])
+                if anchor_refs
+                else None,
+                "delta_ref_sample": _small_payload_sample(delta_refs[0])
+                if delta_refs
+                else None,
                 "state_summary_sample": (
-                    _small_payload_sample(state_summaries[0]) if state_summaries else None
+                    _small_payload_sample(state_summaries[0])
+                    if state_summaries
+                    else None
                 ),
             }
         )
@@ -4070,10 +4120,16 @@ def _effective_recursive_max_depth(
 
 
 def _component_names(records: Iterable[ComponentProfileRecord], *, capped: bool) -> str:
-    return "[" + ",".join(record.component for record in records if record.capped is capped) + "]"
+    return (
+        "["
+        + ",".join(record.component for record in records if record.capped is capped)
+        + "]"
+    )
 
 
-def _largest_components(records: Iterable[ComponentProfileRecord], *, limit: int) -> str:
+def _largest_components(
+    records: Iterable[ComponentProfileRecord], *, limit: int
+) -> str:
     largest = sorted(records, key=lambda record: record.bytes, reverse=True)[:limit]
     return _format_name_float_pairs(
         (record.component, _mb(record.bytes)) for record in largest
@@ -4384,16 +4440,16 @@ __all__ = [
     "DeepSizeStats",
     "_find_linoo_selector_root",
     "build_recursive_profile_context",
-    "checkpoint_state_roots_detail_histogram",
     "checkpoint_payload_lifetime_histograms",
     "checkpoint_payload_shape_histograms",
     "checkpoint_state_histograms",
+    "checkpoint_state_roots_detail_histogram",
     "child_link_storage_detail_histogram",
     "deep_size",
     "frozenset_ownership_histogram",
     "linoo_candidate_heap_histogram",
-    "linoo_state_histograms",
     "linoo_selector_detail_histogram",
+    "linoo_state_histograms",
     "log_growth_recursive_memory_profile",
     "node_evaluation_runtime_detail_histograms",
     "node_evaluation_runtime_histograms",

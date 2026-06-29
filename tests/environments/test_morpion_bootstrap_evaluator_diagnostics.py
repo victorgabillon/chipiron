@@ -6,6 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import cast
 
 import torch
 
@@ -76,7 +77,7 @@ def _make_morpion_payload() -> dict[str, object]:
     first_action = dynamics.all_legal_actions(start_state)[0]
     next_state = dynamics.step(start_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
-    return dict(codec.dump_state_ref(next_state))
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
 
 
 def _rows_bundle(target_values: tuple[float, ...]) -> MorpionSupervisedRows:

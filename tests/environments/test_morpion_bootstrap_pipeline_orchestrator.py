@@ -816,7 +816,9 @@ def test_training_worker_ignores_generations_older_than_cursor_started(
     )
 
     with caplog.at_level(logging.INFO):
-        result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
@@ -899,7 +901,9 @@ def test_training_worker_returns_no_work_when_all_pending_generations_are_stale(
     )
 
     with caplog.at_level(logging.INFO):
-        result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
 

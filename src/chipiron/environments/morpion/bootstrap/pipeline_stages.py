@@ -32,6 +32,7 @@ from .config import (
 )
 from .control import (
     MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     apply_control_to_args,
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
@@ -241,7 +242,9 @@ def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
         if path.is_file():
             return path.stat().st_size
         if path.is_dir():
-            return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+            return sum(
+                item.stat().st_size for item in path.rglob("*") if item.is_file()
+            )
     except OSError:
         return None
     return None
@@ -263,11 +266,78 @@ def _optional_runner_mapping(
 
 def _optional_ratio(numerator: object, denominator: object) -> float | None:
     """Return one safe ratio for numeric dashboard metrics."""
-    if not isinstance(numerator, int | float) or not isinstance(denominator, int | float):
+    if not isinstance(numerator, int | float) or not isinstance(
+        denominator, int | float
+    ):
         return None
     if denominator <= 0:
         return None
     return float(numerator) / float(denominator)
+
+
+def _apply_effective_runtime_config_if_supported(
+    runner: object,
+    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> None:
+    """Patch the live runner runtime when it exposes the optional hook."""
+    apply_config = getattr(runner, "apply_effective_runtime_config", None)
+    if callable(apply_config):
+        apply_config(runtime_config)
+
+
+def _missing_branch_count_for_additional_budget_error() -> RuntimeError:
+    """Return the stable error for unresolved additional branch budgets."""
+    return RuntimeError(
+        "Cannot apply --growth-additional-branch-budget because the runner "
+        "does not expose a current branch count after restore."
+    )
+
+
+def _growth_budget_runtime_config(
+    *,
+    args: MorpionBootstrapArgs,
+    runner: object,
+    current_branch_count: int | None,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> tuple[MorpionBootstrapEffectiveRuntimeConfig, dict[str, object]]:
+    """Resolve the effective branch-limit budget for one growth cycle."""
+    if args.growth_additional_branch_budget is None:
+        LOGGER.info(
+            "[growth-budget] mode=absolute effective_branch_limit=%s",
+            effective_runtime_config.tree_branch_limit,
+        )
+        return (
+            effective_runtime_config,
+            {
+                "growth_budget_mode": "absolute",
+                "branch_count_before_growth": current_branch_count,
+                "growth_additional_branch_budget": None,
+                "effective_branch_limit": effective_runtime_config.tree_branch_limit,
+            },
+        )
+    if current_branch_count is None:
+        raise _missing_branch_count_for_additional_budget_error()
+    effective_branch_limit = current_branch_count + args.growth_additional_branch_budget
+    resolved_runtime_config = replace(
+        effective_runtime_config,
+        tree_branch_limit=effective_branch_limit,
+    )
+    _apply_effective_runtime_config_if_supported(runner, resolved_runtime_config)
+    LOGGER.info(
+        "[growth-budget] mode=additional current_branches=%s additional=%s effective_branch_limit=%s",
+        current_branch_count,
+        args.growth_additional_branch_budget,
+        effective_branch_limit,
+    )
+    return (
+        resolved_runtime_config,
+        {
+            "growth_budget_mode": "additional",
+            "branch_count_before_growth": current_branch_count,
+            "growth_additional_branch_budget": args.growth_additional_branch_budget,
+            "effective_branch_limit": effective_branch_limit,
+        },
+    )
 
 
 def _observability_metadata_for_dashboard(
@@ -276,6 +346,8 @@ def _observability_metadata_for_dashboard(
     generation: int,
     node_count: int,
     branch_count: int | None,
+    branch_count_before_growth: int | None = None,
+    growth_budget_metadata: Mapping[str, object] | None = None,
     nodes_added: int,
     growth_duration_s: float,
     cycle_duration_s: float,
@@ -307,11 +379,15 @@ def _observability_metadata_for_dashboard(
         "generation": generation,
         "node_count": node_count,
         "branch_count": branch_count,
+        "branch_count_before_growth": branch_count_before_growth,
+        "branch_count_after_growth": branch_count,
         "nodes_added": nodes_added,
         "cycle_elapsed_s": cycle_duration_s,
         "growth_elapsed_s": growth_duration_s,
         "branch_count_per_node": _optional_ratio(branch_count, node_count),
     }
+    if growth_budget_metadata is not None:
+        tree.update(dict(growth_budget_metadata))
     return {
         "tree": tree,
         "memory": memory,
@@ -839,6 +915,12 @@ def _run_one_pipeline_growth_cycle_impl(
     )
     restored_tree_size = runner.current_tree_size()
     restored_branch_count = _current_tree_branch_count(runner)
+    effective_runtime_config, growth_budget_metadata = _growth_budget_runtime_config(
+        args=args,
+        runner=runner,
+        current_branch_count=restored_branch_count,
+        effective_runtime_config=effective_runtime_config,
+    )
     log_pipeline_memory(
         stage="growth",
         generation=run_state.generation,
@@ -955,6 +1037,9 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+    if args.growth_save_and_exit:
+        save_triggered = True
+        save_reason = "growth_save_and_exit"
 
     if args.diagnostic_stop_after_growth:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -1284,28 +1369,49 @@ def _run_one_pipeline_growth_cycle_impl(
     else:
         LOGGER.info("[checkpoint] skipped reason=runner_has_no_save_checkpoint")
 
-    tree_snapshot_path = _export_training_snapshot_for_generation(
-        args=args,
-        paths=paths,
-        runner=runner,
-        generation=generation,
-    )
-    if not tree_snapshot_path.is_file():
-        raise MissingSavedBootstrapArtifactError(
-            action="export_training_snapshot_for_generation()",
-            artifact_path=tree_snapshot_path,
+    relative_tree_snapshot_path: str | None
+    training_export_override: dict[str, object] | None = None
+    if args.growth_skip_training_export:
+        LOGGER.info("[save] training_export_skipped reason=config")
+        relative_tree_snapshot_path = None
+        training_export_override = {"status": "skipped", "reason": "config"}
+    else:
+        tree_snapshot_path = _export_training_snapshot_for_generation(
+            args=args,
+            paths=paths,
+            runner=runner,
+            generation=generation,
         )
-    relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
+        if not tree_snapshot_path.is_file():
+            raise MissingSavedBootstrapArtifactError(
+                action="export_training_snapshot_for_generation()",
+                artifact_path=tree_snapshot_path,
+            )
+        relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     cycle_duration_s = time.perf_counter() - cycle_started_at
     observability_metadata = _observability_metadata_for_dashboard(
         runner=runner,
         generation=generation,
         node_count=current_tree_size,
         branch_count=branch_count,
+        branch_count_before_growth=branch_count_before_growth,
+        growth_budget_metadata=growth_budget_metadata,
         nodes_added=nodes_added,
         growth_duration_s=growth_duration_s,
         cycle_duration_s=cycle_duration_s,
     )
+    checkpoint_metadata = observability_metadata["checkpoint"]
+    if isinstance(checkpoint_metadata, dict):
+        checkpoint_metadata.setdefault(
+            "status",
+            "saved" if relative_runtime_checkpoint_path is not None else "skipped",
+        )
+    if training_export_override is not None:
+        observability_metadata["training_export"] = training_export_override
+    else:
+        training_export_metadata = observability_metadata["training_export"]
+        if isinstance(training_export_metadata, dict):
+            training_export_metadata.setdefault("status", "written")
     run_state_metadata = _next_metadata(
         run_state.metadata,
         relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
@@ -1436,9 +1542,7 @@ def _log_growth_profile_if_enabled(
             max_depth_explicit=(
                 args.growth_memory_profile_recursive_max_depth_explicit
             ),
-            context_node_cap=(
-                args.growth_memory_profile_recursive_context_node_cap
-            ),
+            context_node_cap=(args.growth_memory_profile_recursive_context_node_cap),
         )
 
 
@@ -1989,6 +2093,7 @@ def run_pipeline_training_stage(
                 args.validation_fraction
             )
         if rows_source.format_kind == "json":
+            assert rows is not None
             log_pipeline_memory(
                 stage="training",
                 generation=generation,

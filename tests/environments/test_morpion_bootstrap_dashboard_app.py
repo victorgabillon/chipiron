@@ -327,6 +327,25 @@ def test_observability_summary_warns_when_export_resolves_most_states() -> None:
     assert summary["export_fast_path_health"] == "warning"
 
 
+def test_observability_summary_handles_skipped_training_export() -> None:
+    """Skipped training exports should remain visible without health errors."""
+    summary = _observability_summary_from_metadata(
+        {
+            "tree": {
+                "node_count": 2000,
+                "growth_budget_mode": "additional",
+                "effective_branch_limit": 3000,
+            },
+            "training_export": {"status": "skipped", "reason": "config"},
+        }
+    )
+
+    assert summary["training_export"] == {"status": "skipped", "reason": "config"}
+    assert summary["tree"]["growth_budget_mode"] == "additional"
+    assert summary["tree"]["effective_branch_limit"] == 3000
+    assert summary["export_fast_path_health"] == "unknown"
+
+
 def test_tree_structure_rows_render_depth_counts_in_order() -> None:
     """Dashboard tree-structure helper should expose sorted per-depth rows."""
     rows = _tree_structure_rows(
