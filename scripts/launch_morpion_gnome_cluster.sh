@@ -81,11 +81,11 @@ MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS="${MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS
 MORPION_SKIP_EVALUATOR_DIAGNOSTICS="${MORPION_SKIP_EVALUATOR_DIAGNOSTICS:-0}"
 
 # Memory guards. The RAM floor prevents workers from starting risky loads on a
-# tight machine. Candidate checkpoint headroom defaults to disabled because this
-# run uses bounded sharded checkpoints.
+# tight machine. Candidate checkpoint headroom leaves forecast slack around
+# checkpoint loads before growth starts.
 MORPION_MIN_AVAILABLE_RAM_MB="${MORPION_MIN_AVAILABLE_RAM_MB:-1200}"
-MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR="${MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR:-0}"
-MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB="${MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB:-0}"
+MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR="${MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR:-60}"
+MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB="${MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB:-512}"
 
 # Optional growth memory profiling. Keep disabled in normal production because
 # profiling adds overhead; enable temporarily when investigating memory growth.
@@ -111,6 +111,7 @@ MORPION_ROLLOUT_AFTER_OPENING="${MORPION_ROLLOUT_AFTER_OPENING:-1}"
 MORPION_ROLLOUT_MAX_EXTRA_STEPS="${MORPION_ROLLOUT_MAX_EXTRA_STEPS:-none}"
 # Safe selector values are the action selector kinds supported by the launcher;
 # production currently uses `random_legal_prefer_openable`.
+# Example: MORPION_ROLLOUT_ACTION_SELECTOR_KIND=random_legal_prefer_openable
 MORPION_ROLLOUT_ACTION_SELECTOR_KIND="${MORPION_ROLLOUT_ACTION_SELECTOR_KIND:-random_legal_prefer_openable}"
 MORPION_ROLLOUT_RANDOM_SEED="${MORPION_ROLLOUT_RANDOM_SEED:-0}"
 # Set to `1` when rollouts should stop as soon as they reconnect to known tree

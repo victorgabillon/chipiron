@@ -2491,9 +2491,7 @@ def linoo_state_histograms(
         return {"present": False}
     linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
     if linoo_selector is None:
-        raw_node_state_by_id = _raw_getattr(
-            selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME
-        )
+        raw_node_state_by_id = _raw_getattr(selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME)
         return {
             "present": True,
             "selector_type": _qualified_type_name(selector),

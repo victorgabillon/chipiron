@@ -20,12 +20,12 @@ from atomheart.games.morpion import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
-from .anemone_runner import (
+from .bootstrap_loop import RUNTIME_CHECKPOINT_METADATA_KEY, MorpionBootstrapPaths
+from .run_state import load_bootstrap_run_state
+from .runtime.runner import (
     InvalidMorpionSearchCheckpointError,
     load_morpion_search_checkpoint_payload,
 )
-from .bootstrap_loop import RUNTIME_CHECKPOINT_METADATA_KEY, MorpionBootstrapPaths
-from .run_state import load_bootstrap_run_state
 
 LOGGER = logging.getLogger(__name__)
 _INDEXED_CHECKPOINT_TREE_CACHE: dict[tuple[str, int], _IndexedCheckpointTree] = {}

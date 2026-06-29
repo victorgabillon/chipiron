@@ -300,9 +300,7 @@ def _node_sample_summary_from_sample(
             totals["dict_len"] += node_dict_len
         if node_dict is not None:
             attr_name_counts.update(
-                str(attr_name)
-                for attr_name in node_dict
-                if attr_name is not None
+                str(attr_name) for attr_name in node_dict if attr_name is not None
             )
 
         state_payload = None

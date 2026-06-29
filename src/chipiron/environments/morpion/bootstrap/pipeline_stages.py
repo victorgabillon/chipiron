@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
@@ -32,7 +31,6 @@ from .config import (
 )
 from .control import (
     MorpionBootstrapControl,
-    MorpionBootstrapEffectiveRuntimeConfig,
     apply_control_to_args,
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
@@ -59,8 +57,6 @@ from .cycle_runtime import (
     GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
     GROWTH_STATUS_METADATA_KEY,
     CandidateCheckpointLoadDeferredError,
-    CandidateCheckpointLoadProfile,
-    ResolvedActiveMorpionModelBundle,
 )
 from .cycle_runtime import (
     build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
@@ -100,21 +96,76 @@ from .growth_memory_profile import (
 )
 from .history import MorpionBootstrapHistoryRecorder
 from .memory_diagnostics import MemoryDiagnostics
+from .pipeline.active_model import _resolve_pipeline_active_model_for_growth
+from .pipeline.checkpoint_loading import (
+    _candidate_checkpoint_payload_loader,
+    _log_candidate_checkpoint_load_profile,
+    _runtime_checkpoint_artifact_bytes,
+    _should_load_candidate_checkpoint,
+)
+from .pipeline.checkpoint_loading import (
+    _log_before_candidate_checkpoint_load as _log_before_candidate_checkpoint_load,
+)
+from .pipeline.cursors import (
+    _active_model_generation_for_training_guard as _active_model_generation_for_training_guard,
+)
+from .pipeline.cursors import (
+    _optional_generation_max as _optional_generation_max,
+)
+from .pipeline.cursors import (
+    _save_training_cursor_completed,
+    _save_training_cursor_started,
+    _training_lower_bound_generation,
+    _training_rows_subset_path,
+)
+from .pipeline.growth_budget import (
+    _apply_effective_runtime_config_if_supported as _apply_effective_runtime_config_if_supported,
+)
+from .pipeline.growth_budget import (
+    _growth_budget_runtime_config,
+)
+from .pipeline.growth_budget import (
+    _missing_branch_count_for_additional_budget_error as _missing_branch_count_for_additional_budget_error,
+)
+from .pipeline.manifests import (
+    MissingPipelineRowsFileError,
+    MissingPipelineTreeSnapshotFileError,
+    _load_generation_manifest,
+    _pipeline_manifest_path,
+    _require_manifest_rows_path,
+    _require_manifest_tree_snapshot_path,
+    _resolve_previous_pipeline_frontier_status,
+    _resolve_previous_pipeline_record_status,
+    _save_dataset_manifest_status,
+    _save_training_manifest_status,
+)
+from .pipeline.manifests import (
+    _latest_prior_dataset_status_artifact as _latest_prior_dataset_status_artifact,
+)
+from .pipeline.manifests import (
+    _manifest_rows_path_required_error as _manifest_rows_path_required_error,
+)
+from .pipeline.manifests import (
+    _manifest_tree_snapshot_required_error as _manifest_tree_snapshot_required_error,
+)
+from .pipeline.observability import (
+    _configure_linoo_selection_artifact_for_growth,
+)
+from .pipeline.observability import (
+    _observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
+)
+from .pipeline.observability import (
+    _optional_ratio as _optional_ratio,
+)
+from .pipeline.observability import (
+    _optional_runner_mapping as _optional_runner_mapping,
+)
 from .pipeline_artifacts import (
     MorpionPipelineActiveModel,
-    MorpionPipelineDatasetStatus,
-    MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
-    MorpionPipelineTrainingCursor,
-    MorpionPipelineTrainingStatus,
-    load_pipeline_active_model,
-    load_pipeline_dataset_status_file,
-    load_pipeline_manifest,
-    load_pipeline_training_cursor,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
     save_pipeline_manifest,
-    save_pipeline_training_cursor,
     save_pipeline_training_status_file,
 )
 from .pipeline_claims import (
@@ -125,12 +176,9 @@ from .pipeline_memory import (
     current_rss_mb,
     format_metric,
     log_available_ram_guard,
-    log_candidate_checkpoint_load_memory_forecast,
     log_pipeline_memory,
 )
 from .record_status import (
-    MorpionBootstrapFrontierStatus,
-    MorpionBootstrapRecordStatus,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
     resolve_frontier_status_for_cycle_with_metadata,
@@ -148,10 +196,8 @@ from .run_state import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Mapping
     from pathlib import Path
-
-    from anemone.checkpoints import SearchRuntimeCheckpointPayload
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .search_runner_protocol import MorpionSearchRunner
@@ -173,36 +219,6 @@ def _require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
 def require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
     """Public wrapper around the artifact-pipeline mode requirement."""
     _require_artifact_pipeline_mode(args)
-
-
-class MissingPipelineTreeSnapshotFileError(FileNotFoundError):
-    """Raised when a pipeline dataset stage cannot find its tree snapshot."""
-
-    @classmethod
-    def from_path(
-        cls, tree_snapshot_path: Path | None
-    ) -> MissingPipelineTreeSnapshotFileError:
-        """Build one missing-tree-snapshot error with the resolved path."""
-        return cls(f"Pipeline tree snapshot does not exist: {tree_snapshot_path}")
-
-
-class MissingPipelineRowsFileError(FileNotFoundError):
-    """Raised when a pipeline training stage cannot find its rows file."""
-
-    @classmethod
-    def from_path(cls, rows_path: Path | None) -> MissingPipelineRowsFileError:
-        """Build one missing-rows error with the resolved path."""
-        return cls(f"Pipeline rows file does not exist: {rows_path}")
-
-
-def _manifest_tree_snapshot_required_error() -> ValueError:
-    """Build the canonical missing tree snapshot path error."""
-    return ValueError("manifest.tree_snapshot_path is required")
-
-
-def _manifest_rows_path_required_error() -> ValueError:
-    """Build the canonical missing rows path error."""
-    return ValueError("manifest.rows_path is required")
 
 
 def _dataset_stage_requires_done_status_error() -> ValueError:
@@ -236,107 +252,17 @@ def _raise_missing_rows_file_error(rows_path: Path | None) -> NoReturn:
     raise MissingPipelineRowsFileError.from_path(rows_path)
 
 
-def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
-    """Return best-effort byte size for file or sharded directory checkpoint."""
-    try:
-        if path.is_file():
-            return path.stat().st_size
-        if path.is_dir():
-            return sum(
-                item.stat().st_size for item in path.rglob("*") if item.is_file()
-            )
-    except OSError:
-        return None
-    return None
-
-
-def _optional_runner_mapping(
-    runner: object,
-    method_name: str,
-) -> dict[str, object] | None:
-    """Return one optional mapping exposed by the runner."""
-    method = getattr(runner, method_name, None)
-    if not callable(method):
-        return None
-    value = method()
-    if not isinstance(value, Mapping):
-        return None
-    return dict(value)
-
-
-def _optional_ratio(numerator: object, denominator: object) -> float | None:
-    """Return one safe ratio for numeric dashboard metrics."""
-    if not isinstance(numerator, int | float) or not isinstance(
-        denominator, int | float
-    ):
-        return None
-    if denominator <= 0:
-        return None
-    return float(numerator) / float(denominator)
-
-
-def _apply_effective_runtime_config_if_supported(
-    runner: object,
-    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
-) -> None:
-    """Patch the live runner runtime when it exposes the optional hook."""
-    apply_config = getattr(runner, "apply_effective_runtime_config", None)
-    if callable(apply_config):
-        apply_config(runtime_config)
-
-
-def _missing_branch_count_for_additional_budget_error() -> RuntimeError:
-    """Return the stable error for unresolved additional branch budgets."""
-    return RuntimeError(
-        "Cannot apply --growth-additional-branch-budget because the runner "
-        "does not expose a current branch count after restore."
-    )
-
-
-def _growth_budget_runtime_config(
+def _raise_dataset_rows_count_mismatch_error(
     *,
-    args: MorpionBootstrapArgs,
-    runner: object,
-    current_branch_count: int | None,
-    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
-) -> tuple[MorpionBootstrapEffectiveRuntimeConfig, dict[str, object]]:
-    """Resolve the effective branch-limit budget for one growth cycle."""
-    if args.growth_additional_branch_budget is None:
-        LOGGER.info(
-            "[growth-budget] mode=absolute effective_branch_limit=%s",
-            effective_runtime_config.tree_branch_limit,
-        )
-        return (
-            effective_runtime_config,
-            {
-                "growth_budget_mode": "absolute",
-                "branch_count_before_growth": current_branch_count,
-                "growth_additional_branch_budget": None,
-                "effective_branch_limit": effective_runtime_config.tree_branch_limit,
-            },
-        )
-    if current_branch_count is None:
-        raise _missing_branch_count_for_additional_budget_error()
-    effective_branch_limit = current_branch_count + args.growth_additional_branch_budget
-    resolved_runtime_config = replace(
-        effective_runtime_config,
-        tree_branch_limit=effective_branch_limit,
-    )
-    _apply_effective_runtime_config_if_supported(runner, resolved_runtime_config)
-    LOGGER.info(
-        "[growth-budget] mode=additional current_branches=%s additional=%s effective_branch_limit=%s",
-        current_branch_count,
-        args.growth_additional_branch_budget,
-        effective_branch_limit,
-    )
-    return (
-        resolved_runtime_config,
-        {
-            "growth_budget_mode": "additional",
-            "branch_count_before_growth": current_branch_count,
-            "growth_additional_branch_budget": args.growth_additional_branch_budget,
-            "effective_branch_limit": effective_branch_limit,
-        },
+    generation: int,
+    expected_rows: int,
+    actual_rows: int,
+) -> NoReturn:
+    """Raise the canonical dataset-stage rows count mismatch error."""
+    raise _dataset_rows_count_mismatch_error(
+        generation=generation,
+        expected_rows=expected_rows,
+        actual_rows=actual_rows,
     )
 
 
@@ -352,353 +278,24 @@ def _observability_metadata_for_dashboard(
     growth_duration_s: float,
     cycle_duration_s: float,
 ) -> dict[str, object]:
-    """Build compact status metadata for memory/checkpoint/export observability."""
-    rss_mb = current_rss_mb()
-    state_eviction = _optional_runner_mapping(runner, "profile_state_eviction_runtime")
-    checkpoint = _optional_runner_mapping(runner, "latest_checkpoint_metrics")
-    training_export = _optional_runner_mapping(runner, "latest_training_export_stats")
-    training_export_profile = _optional_runner_mapping(
-        runner,
-        "latest_training_export_profile",
-    )
-    memory: dict[str, object] = {
-        "event": "done",
-        "generation": generation,
-        "rss_mb": rss_mb,
-        "rss_mb_per_100k_nodes": None
-        if rss_mb is None or node_count <= 0
-        else rss_mb * 100_000.0 / node_count,
-    }
-    if checkpoint is not None:
-        memory["rss_before_checkpoint_save_mb"] = checkpoint.get("rss_before_mb")
-        memory["rss_after_checkpoint_save_mb"] = checkpoint.get("rss_after_mb")
-    if training_export is not None:
-        memory["rss_before_training_export_mb"] = training_export.get("rss_before_mb")
-        memory["rss_after_training_export_mb"] = training_export.get("rss_after_mb")
-    tree: dict[str, object] = {
-        "generation": generation,
-        "node_count": node_count,
-        "branch_count": branch_count,
-        "branch_count_before_growth": branch_count_before_growth,
-        "branch_count_after_growth": branch_count,
-        "nodes_added": nodes_added,
-        "cycle_elapsed_s": cycle_duration_s,
-        "growth_elapsed_s": growth_duration_s,
-        "branch_count_per_node": _optional_ratio(branch_count, node_count),
-    }
-    if growth_budget_metadata is not None:
-        tree.update(dict(growth_budget_metadata))
-    return {
-        "tree": tree,
-        "memory": memory,
-        "state_eviction": {} if state_eviction is None else state_eviction,
-        "checkpoint": {} if checkpoint is None else checkpoint,
-        "training_export": {} if training_export is None else training_export,
-        "training_export_profile": {}
-        if training_export_profile is None
-        else training_export_profile,
-    }
-
-
-def _raise_dataset_rows_count_mismatch_error(
-    *,
-    generation: int,
-    expected_rows: int,
-    actual_rows: int,
-) -> NoReturn:
-    """Raise the canonical dataset-stage rows count mismatch error."""
-    raise _dataset_rows_count_mismatch_error(
+    """Compatibility wrapper preserving pipeline_stages RSS monkeypatching."""
+    return _build_observability_metadata_for_dashboard(
+        runner=runner,
         generation=generation,
-        expected_rows=expected_rows,
-        actual_rows=actual_rows,
+        node_count=node_count,
+        branch_count=branch_count,
+        branch_count_before_growth=branch_count_before_growth,
+        growth_budget_metadata=growth_budget_metadata,
+        nodes_added=nodes_added,
+        growth_duration_s=growth_duration_s,
+        cycle_duration_s=cycle_duration_s,
+        current_rss_provider=current_rss_mb,
     )
-
-
-def _pipeline_manifest_path(
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> Path:
-    """Return the canonical manifest path for one pipeline generation."""
-    return paths.pipeline_manifest_path_for_generation(generation)
 
 
 def _now_timestamp_utc() -> str:
     """Return the current UTC timestamp formatted like the bootstrap loop."""
     return _timestamp_utc_from_unix_s(time.time())
-
-
-def _optional_generation_max(left: int | None, right: int) -> int:
-    """Return max for an optional generation value and a concrete generation."""
-    return max(left if left is not None else -1, right)
-
-
-def _active_model_generation_for_training_guard(
-    paths: MorpionBootstrapPaths,
-) -> int | None:
-    """Return current active-model generation when the singleton artifact exists."""
-    if not paths.pipeline_active_model_path.is_file():
-        return None
-    return load_pipeline_active_model(paths.pipeline_active_model_path).generation
-
-
-def _training_lower_bound_generation(paths: MorpionBootstrapPaths) -> int:
-    """Return the monotonic lower bound for an explicit training stage."""
-    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
-    active_generation = _active_model_generation_for_training_guard(paths)
-    return max(
-        active_generation if active_generation is not None else -1,
-        (
-            cursor.latest_started_generation
-            if cursor.latest_started_generation is not None
-            else -1
-        ),
-        (
-            cursor.latest_completed_generation
-            if cursor.latest_completed_generation is not None
-            else -1
-        ),
-    )
-
-
-def _save_training_cursor_started(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionPipelineTrainingCursor:
-    """Persist that one generation has started training."""
-    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
-    next_cursor = replace(
-        cursor,
-        latest_started_generation=_optional_generation_max(
-            cursor.latest_started_generation,
-            generation,
-        ),
-    )
-    save_pipeline_training_cursor(next_cursor, paths.pipeline_training_cursor_path)
-    return next_cursor
-
-
-def _training_rows_subset_path(
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> Path:
-    """Return the debug training-row subset path for one generation."""
-    return paths.rows_dir / f"generation_{generation:06d}.training_subset.json"
-
-
-def _save_training_cursor_completed(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionPipelineTrainingCursor:
-    """Persist that one generation has completed training."""
-    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
-    next_cursor = replace(
-        cursor,
-        latest_completed_generation=_optional_generation_max(
-            cursor.latest_completed_generation,
-            generation,
-        ),
-    )
-    save_pipeline_training_cursor(next_cursor, paths.pipeline_training_cursor_path)
-    return next_cursor
-
-
-def _configure_linoo_selection_artifact_for_growth(
-    *,
-    runner: object,
-    paths: MorpionBootstrapPaths,
-    cycle_index: int,
-    generation: int,
-) -> None:
-    """Configure latest Linoo table persistence when the runner supports it."""
-    configure = getattr(runner, "configure_linoo_selection_table_artifact", None)
-    if not callable(configure):
-        return
-    configure(
-        path=paths.latest_linoo_selection_table_path,
-        cycle_index=cycle_index,
-        generation=generation,
-    )
-
-
-def _load_generation_manifest(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionPipelineGenerationManifest:
-    """Load the persisted pipeline manifest for one generation."""
-    return load_pipeline_manifest(_pipeline_manifest_path(paths, generation))
-
-
-def _latest_prior_dataset_status_artifact(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionPipelineDatasetStatusArtifact | None:
-    """Return the latest readable dataset-status artifact before one generation."""
-    for previous_generation in range(generation - 1, -1, -1):
-        status_path = paths.pipeline_dataset_status_path_for_generation(
-            previous_generation
-        )
-        if not status_path.is_file():
-            continue
-        try:
-            return load_pipeline_dataset_status_file(status_path)
-        except Exception:
-            LOGGER.warning(
-                "Skipping unreadable dataset status artifact: %s",
-                status_path,
-                exc_info=True,
-            )
-    return None
-
-
-def _resolve_previous_pipeline_record_status(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionBootstrapRecordStatus | None:
-    """Return the previous record status for one pipeline dataset generation."""
-    latest_dataset_status = _latest_prior_dataset_status_artifact(
-        paths=paths,
-        generation=generation,
-    )
-    if latest_dataset_status is not None:
-        return latest_dataset_status.record_status
-    if paths.run_state_path.is_file():
-        return load_bootstrap_run_state(paths.run_state_path).latest_record_status
-    return None
-
-
-def _resolve_previous_pipeline_frontier_status(
-    *,
-    paths: MorpionBootstrapPaths,
-    generation: int,
-) -> MorpionBootstrapFrontierStatus | None:
-    """Return the previous frontier status for one pipeline dataset generation."""
-    latest_dataset_status = _latest_prior_dataset_status_artifact(
-        paths=paths,
-        generation=generation,
-    )
-    if latest_dataset_status is not None:
-        return latest_dataset_status.frontier_status
-    if paths.run_state_path.is_file():
-        return load_bootstrap_run_state(paths.run_state_path).latest_frontier_status
-    return None
-
-
-def _save_dataset_manifest_status(
-    *,
-    paths: MorpionBootstrapPaths,
-    manifest: MorpionPipelineGenerationManifest,
-    dataset_status: MorpionPipelineDatasetStatus,
-    timestamp_utc: str,
-) -> MorpionPipelineGenerationManifest:
-    """Persist one updated dataset-stage manifest and matching status file."""
-    next_manifest = replace(manifest, dataset_status=dataset_status)
-    save_pipeline_manifest(
-        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
-    )
-    save_pipeline_dataset_status_file(
-        generation=manifest.generation,
-        dataset_status=next_manifest.dataset_status,
-        updated_at_utc=timestamp_utc,
-        metadata=next_manifest.metadata,
-        path=paths.pipeline_dataset_status_path_for_generation(manifest.generation),
-    )
-    return next_manifest
-
-
-def _save_training_manifest_status(
-    *,
-    paths: MorpionBootstrapPaths,
-    manifest: MorpionPipelineGenerationManifest,
-    training_status: MorpionPipelineTrainingStatus,
-    timestamp_utc: str,
-) -> MorpionPipelineGenerationManifest:
-    """Persist one updated training-stage manifest and matching status file."""
-    next_manifest = replace(manifest, training_status=training_status)
-    save_pipeline_manifest(
-        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
-    )
-    save_pipeline_training_status_file(
-        generation=manifest.generation,
-        training_status=next_manifest.training_status,
-        updated_at_utc=timestamp_utc,
-        metadata=next_manifest.metadata,
-        path=paths.pipeline_training_status_path_for_generation(manifest.generation),
-    )
-    return next_manifest
-
-
-def _require_manifest_tree_snapshot_path(
-    manifest: MorpionPipelineGenerationManifest,
-) -> str:
-    """Require one manifest tree snapshot path for dataset extraction."""
-    if manifest.tree_snapshot_path is None:
-        raise _manifest_tree_snapshot_required_error()
-    return manifest.tree_snapshot_path
-
-
-def _require_manifest_rows_path(
-    manifest: MorpionPipelineGenerationManifest,
-) -> str:
-    """Require one manifest rows path for pipeline training."""
-    if manifest.rows_path is None:
-        raise _manifest_rows_path_required_error()
-    return manifest.rows_path
-
-
-def _resolve_pipeline_active_model_for_growth(
-    *,
-    paths: MorpionBootstrapPaths,
-    force_evaluator: str | None,
-) -> ResolvedActiveMorpionModelBundle:
-    """Resolve the active model for artifact-pipeline growth from the pipeline artifact."""
-    if not paths.pipeline_active_model_path.is_file():
-        LOGGER.info(
-            "[growth] active_model_status source=none evaluator=none model_bundle=none"
-        )
-        return ResolvedActiveMorpionModelBundle(
-            active_evaluator_name=None,
-            model_bundle_path=None,
-        )
-
-    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
-    if force_evaluator is not None and active_model.evaluator_name != force_evaluator:
-        LOGGER.warning(
-            "[growth] active_model_force_evaluator_mismatch requested=%s active=%s artifact=%s",
-            force_evaluator,
-            active_model.evaluator_name,
-            paths.pipeline_active_model_path,
-        )
-    model_bundle_path = paths.resolve_work_dir_path(active_model.model_bundle_path)
-    if model_bundle_path is None or not model_bundle_path.exists():
-        LOGGER.warning(
-            "[growth] active_model_missing_bundle source=pipeline_active_model generation=%s evaluator=%s model_bundle=%s artifact=%s",
-            active_model.generation,
-            active_model.evaluator_name,
-            model_bundle_path,
-            paths.pipeline_active_model_path,
-        )
-        LOGGER.info(
-            "[growth] active_model_status source=none evaluator=none model_bundle=none"
-        )
-        return ResolvedActiveMorpionModelBundle(
-            active_evaluator_name=None,
-            model_bundle_path=None,
-        )
-    LOGGER.info(
-        "[growth] active_model_status source=pipeline_active_model generation=%s evaluator=%s model_bundle=%s",
-        active_model.generation,
-        active_model.evaluator_name,
-        model_bundle_path,
-    )
-    return ResolvedActiveMorpionModelBundle(
-        active_evaluator_name=active_model.evaluator_name,
-        model_bundle_path=model_bundle_path,
-    )
 
 
 def run_pipeline_growth_stage(
@@ -1544,129 +1141,6 @@ def _log_growth_profile_if_enabled(
             ),
             context_node_cap=(args.growth_memory_profile_recursive_context_node_cap),
         )
-
-
-def _log_before_candidate_checkpoint_load(
-    *,
-    args: MorpionBootstrapArgs,
-    generation: int,
-    candidate_path: Path,
-) -> bool:
-    """Log an opt-in profile marker before candidate checkpoint validation load."""
-    if args.growth_memory_profile:
-        try:
-            checkpoint_bytes = candidate_path.stat().st_size
-        except OSError:
-            checkpoint_bytes = None
-        LOGGER.info(
-            "[growth-profile] event=before_candidate_checkpoint_load "
-            "generation=%s rss_mb=%s checkpoint_bytes=%s path=%s",
-            generation,
-            format_metric(current_rss_mb()),
-            checkpoint_bytes,
-            str(candidate_path),
-        )
-    return True
-
-
-def _should_load_candidate_checkpoint(
-    *,
-    args: MorpionBootstrapArgs,
-    generation: int,
-    source: str,
-    candidate_path: Path,
-) -> bool:
-    """Return whether candidate checkpoint validation may load the payload."""
-    _log_before_candidate_checkpoint_load(
-        args=args,
-        generation=generation,
-        candidate_path=candidate_path,
-    )
-    forecast = log_candidate_checkpoint_load_memory_forecast(
-        stage="growth",
-        generation=generation,
-        action="candidate_checkpoint_load",
-        checkpoint_path=candidate_path,
-        min_available_ram_mb=args.min_available_ram_mb,
-        headroom_factor=args.candidate_checkpoint_load_headroom_factor,
-        min_headroom_mb=args.candidate_checkpoint_load_min_headroom_mb,
-    )
-    if forecast.decision == "skip":
-        raise CandidateCheckpointLoadDeferredError(
-            source=source,
-            artifact_path=candidate_path,
-            action="candidate_checkpoint_load_forecast",
-        )
-    return log_available_ram_guard(
-        stage="growth",
-        generation=generation,
-        action="candidate_checkpoint_load",
-        required_mb=args.min_available_ram_mb,
-    )
-
-
-def _candidate_checkpoint_payload_loader(
-    args: MorpionBootstrapArgs,
-) -> Callable[[Path], SearchRuntimeCheckpointPayload]:
-    """Build the optional instrumented candidate-checkpoint loader."""
-    from .anemone_runner import (
-        load_morpion_search_checkpoint_payload,
-        restore_memory_logger_for_checkpoint_path,
-    )
-
-    def load(path: Path) -> SearchRuntimeCheckpointPayload:
-        restore_memory_logger = restore_memory_logger_for_checkpoint_path(
-            path,
-            enabled=True,
-            recursive_enabled=args.growth_memory_profile_recursive,
-            recursive_max_objects=args.growth_memory_profile_recursive_max_objects,
-            recursive_max_depth=args.growth_memory_profile_recursive_max_depth,
-        )
-        if restore_memory_logger is not None:
-            restore_memory_logger.log(
-                "before_checkpoint_file_load",
-                raw_checkpoint_referenced=False,
-                typed_checkpoint_referenced=False,
-                cache="candidate_validation",
-            )
-        return load_morpion_search_checkpoint_payload(
-            path,
-            restore_memory_logger=restore_memory_logger,
-        )
-
-    return load
-
-
-def _log_candidate_checkpoint_load_profile(
-    profile: CandidateCheckpointLoadProfile,
-) -> None:
-    """Log the RSS delta observed while validating one candidate checkpoint."""
-    rss_delta_mb = None
-    if profile.rss_before_mb is not None and profile.rss_after_mb is not None:
-        rss_delta_mb = profile.rss_after_mb - profile.rss_before_mb
-    checkpoint_bytes_per_node = None
-    if (
-        profile.checkpoint_bytes is not None
-        and profile.node_count is not None
-        and profile.node_count > 0
-    ):
-        checkpoint_bytes_per_node = profile.checkpoint_bytes / profile.node_count
-    LOGGER.info(
-        "[growth-profile] event=candidate_checkpoint_load_done generation=%s "
-        "source=%s rss_before_mb=%s rss_after_mb=%s rss_delta_mb=%s "
-        "checkpoint_bytes=%s nodes=%s checkpoint_bytes_per_node=%s "
-        "load_elapsed=%.3fs path=%s",
-        profile.generation,
-        profile.source,
-        format_metric(profile.rss_before_mb),
-        format_metric(profile.rss_after_mb),
-        format_metric(rss_delta_mb),
-        profile.checkpoint_bytes,
-        profile.node_count,
-        format_metric(checkpoint_bytes_per_node),
-        profile.elapsed_s,
-        str(profile.path),
-    )
 
 
 def run_pipeline_dataset_stage(

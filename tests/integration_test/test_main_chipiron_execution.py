@@ -3,6 +3,8 @@
 import os
 import subprocess
 import sys
+import textwrap
+from pathlib import Path
 
 TESTS_ROOT = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(os.path.join(TESTS_ROOT, "../.."))
@@ -37,18 +39,48 @@ def run_with_live_output(cmd, env):
     return returncode, output
 
 
-def test_main_chipiron_one_match_executes() -> None:
+def test_main_chipiron_one_match_executes(tmp_path: Path) -> None:
     """Test main chipiron one match executes."""
     # NOTE:
     # This test runs the full application via subprocess.
     # Coverage is collected through `.coveragerc` subprocess support.
+    config_path = tmp_path / "fast_one_match.yaml"
+    config_path.write_text(
+        textwrap.dedent(
+            """
+            gui: false
+            match_args:
+              player_one: Random
+              player_two: Random
+              match_setting:
+                schedule:
+                  type: two_role_match_schedule
+                  number_of_games_player_one_on_first_role: 1
+                  number_of_games_player_one_on_second_role: 0
+                game_args:
+                  game_kind: chess
+                  each_player_has_its_own_thread: false
+                  max_half_moves: 2
+                  starting_position:
+                    type: from_file
+                    file_name: Board1.text
+            base_script_args:
+              seed: 11
+              profiling: false
+              testing: true
+              relative_script_instance_experiment_output_folder: test_main_chipiron_execution
+            """
+        ).strip(),
+        encoding="utf-8",
+    )
+
     cmd = [
         sys.executable,
         SCRIPT_PATH,
         "--script_name",
         "one_match",
-        "--match_args.player_one_overwrite.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit",
-        "100",
+        "--config_file_name",
+        str(config_path),
     ]
 
     env = os.environ.copy()

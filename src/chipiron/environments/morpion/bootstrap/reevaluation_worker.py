@@ -15,7 +15,6 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
-from .anemone_runner import load_morpion_evaluator_from_model_bundle
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
 from .pipeline_artifacts import (
@@ -31,6 +30,7 @@ from .pipeline_artifacts import (
 )
 from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
+from .runtime.runner import load_morpion_evaluator_from_model_bundle
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

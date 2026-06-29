@@ -374,9 +374,11 @@ def resolve_runtime_restore_path(
     ) = None,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
-    from .anemone_runner import (
-        InvalidMorpionSearchCheckpointError,
+    from .runtime.checkpoint_io import (
         cache_morpion_search_checkpoint_payload_for_restore,
+    )
+    from .runtime.runner import (
+        InvalidMorpionSearchCheckpointError,
         load_morpion_search_checkpoint_payload,
         log_morpion_checkpoint_memory_phase,
     )

@@ -11,12 +11,6 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
-from .anemone_runner import (
-    AnemoneMorpionSearchRunner,
-    AnemoneMorpionSearchRunnerArgs,
-    _default_search_args,
-    apply_runtime_control_to_runner_args,
-)
 from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_loop import (
     MorpionBootstrapPaths,
@@ -69,6 +63,12 @@ from .reevaluation_worker import (
     run_morpion_reevaluation_worker_once,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+from .runtime.runner import (
+    AnemoneMorpionSearchRunner,
+    AnemoneMorpionSearchRunnerArgs,
+    _default_search_args,
+    apply_runtime_control_to_runner_args,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

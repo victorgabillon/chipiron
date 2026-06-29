@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 import shutil
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
     from anemone.training_export import TrainingTreeSnapshot

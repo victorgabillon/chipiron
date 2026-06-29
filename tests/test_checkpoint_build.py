@@ -6,6 +6,9 @@ from dataclasses import asdict
 from types import SimpleNamespace
 
 import anemone.checkpoints.build as checkpoint_build_module
+import anemone.checkpoints.build_atoms as checkpoint_build_atoms_module
+import anemone.checkpoints.build_context as checkpoint_build_context_module
+import anemone.checkpoints.build_values as checkpoint_build_values_module
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
@@ -91,7 +94,7 @@ def test_checkpoint_build_branch_collection_matches_reference_order() -> None:
     )
     reference = sorted(
         (
-            checkpoint_build_module.serialize_checkpoint_atom(branch)
+            checkpoint_build_atoms_module.serialize_checkpoint_atom(branch)
             for branch in branches
         ),
         key=repr,
@@ -112,7 +115,7 @@ def test_checkpoint_build_atom_serialization_cache_reuses_hashable_atoms(
         return value
 
     monkeypatch.setattr(
-        checkpoint_build_module,
+        checkpoint_build_atoms_module,
         "serialize_checkpoint_atom",
         _spy_serialize_checkpoint_atom,
     )
@@ -152,7 +155,7 @@ def test_checkpoint_build_value_serialization_cache_reuses_value_identity(
 ) -> None:
     """Repeated serialization of the same Value object should hit the build-local cache."""
     validation_call_count = 0
-    real_validate = checkpoint_build_module.canonical_value.validate_value_semantics
+    real_validate = checkpoint_build_values_module.canonical_value.validate_value_semantics
 
     def _spy_validate_value_semantics(value: Value) -> Value:
         nonlocal validation_call_count
@@ -160,7 +163,7 @@ def test_checkpoint_build_value_serialization_cache_reuses_value_identity(
         return real_validate(value)
 
     monkeypatch.setattr(
-        checkpoint_build_module.canonical_value,
+        checkpoint_build_values_module.canonical_value,
         "validate_value_semantics",
         _spy_validate_value_semantics,
     )
@@ -198,7 +201,11 @@ def test_checkpoint_build_detail_log_includes_new_metrics(monkeypatch) -> None:
     def _capture_info(message: str, *args: object) -> None:
         messages.append(message % args)
 
-    monkeypatch.setattr(checkpoint_build_module.anemone_logger, "info", _capture_info)
+    monkeypatch.setattr(
+        checkpoint_build_context_module.anemone_logger,
+        "info",
+        _capture_info,
+    )
     metrics = checkpoint_build_module._CheckpointBuildMetrics(  # pylint: disable=protected-access
         node_evaluation_calls=4,
         node_evaluation_total_s=1.25,
@@ -257,7 +264,7 @@ def test_checkpoint_build_detail_log_includes_new_metrics(monkeypatch) -> None:
         node_count=2,
     )
 
-    checkpoint_build_module._log_checkpoint_build_metrics(metrics)  # pylint: disable=protected-access
+    checkpoint_build_context_module._log_checkpoint_build_metrics(metrics)  # pylint: disable=protected-access
 
     assert any("[checkpoint-build-detail]" in message for message in messages)
     assert any(

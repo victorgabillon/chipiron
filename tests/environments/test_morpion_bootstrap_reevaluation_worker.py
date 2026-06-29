@@ -56,6 +56,7 @@ from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import (
     MorpionCheckpointError,
+    MorpionCheckpointTypeError,
     MorpionStateCheckpointCodec,
 )
 
@@ -522,7 +523,7 @@ def test_active_model_reevaluation_evaluator_rejects_delta_state_ref_payload() -
     """Current reevaluation consumers cannot decode checkpoint-style delta refs."""
     evaluator = MorpionActiveModelNodeReevaluationEvaluator(model_bundle_path=Path("."))
 
-    with pytest.raises(MorpionCheckpointError):
+    with pytest.raises((MorpionCheckpointError, MorpionCheckpointTypeError)):
         evaluator._load_snapshot_state(_make_morpion_delta_payload())
 
 

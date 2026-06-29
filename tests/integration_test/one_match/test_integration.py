@@ -409,7 +409,10 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
     )
 
     # Override player two with test tree move limit using parsley_coco
-    match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+    match_args = _resolve_match_args_with_max_half_moves(
+        match_args,
+        TEST_MAX_HALF_MOVES,
+    )
 
     assert isinstance(match_args.player_one, PlayerArgs)
     print(
