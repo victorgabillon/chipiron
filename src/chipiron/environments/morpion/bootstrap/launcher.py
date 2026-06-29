@@ -1,4 +1,5 @@
 """Canonical human/operator launcher for one persistent Morpion bootstrap run."""
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -36,6 +37,11 @@ from .evaluator_family import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
 )
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
+from .pipeline.stages import (
+    run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
+    run_pipeline_training_stage,
+)
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
@@ -48,11 +54,6 @@ from .pipeline_orchestrator import (
     run_morpion_artifact_pipeline_once,
     run_next_pipeline_dataset_stage_once,
     run_next_pipeline_training_stage_once,
-)
-from .pipeline_stages import (
-    run_pipeline_dataset_stage,
-    run_pipeline_growth_stage,
-    run_pipeline_training_stage,
 )
 from .process_control import (
     mark_current_launcher_process_stopped,
@@ -657,7 +658,9 @@ def _configure_anemone_checkpoint_logging(*, verbose_checkpoint_logs: bool) -> N
 def _load_checkpoint_logger_level_setter() -> CheckpointLoggerSetter | None:
     """Resolve the optional Anemone checkpoint logger setter lazily."""
     try:
-        from anemone.utils.logger import set_checkpoint_logger_level
+        from anemone.utils.logger import (  # pylint: disable=import-outside-toplevel
+            set_checkpoint_logger_level,
+        )
     except ImportError:
         return None
     return cast("CheckpointLoggerSetter", set_checkpoint_logger_level)
@@ -822,7 +825,7 @@ def _latest_training_artifact_path(
 def _render_dashboard_hint(work_dir: Path, *, requested_open: bool) -> str:
     """Render the exact dashboard command for the current work directory."""
     command = (
-        "python -m chipiron.environments.morpion.bootstrap.dashboard_app "
+        "python -m chipiron.environments.morpion.bootstrap.dashboard.app "
         f"--work-dir {shlex.quote(str(work_dir))}"
     )
     heading = (

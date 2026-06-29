@@ -1,4 +1,5 @@
 """Artifact-driven bootstrap loop for Morpion self-training."""
+# pylint: disable=duplicate-code
 
 from __future__ import annotations
 
@@ -129,7 +130,6 @@ from .history import (
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
 )
-from .memory_diagnostics import MemoryDiagnostics
 from .pipeline_artifacts import save_pipeline_training_status_file
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
@@ -137,6 +137,7 @@ from .pipeline_config import (
     MorpionEvaluatorUpdatePolicy,
     MorpionPipelineMode,
 )
+from .profiling.memory_diagnostics import MemoryDiagnostics
 from .record_status import (
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
@@ -237,7 +238,7 @@ def _run_one_bootstrap_cycle_impl(
         resolved_bootstrap_config=resolved_bootstrap_config,
     )
     _validate_runtime_reconfiguration(
-        previous_effective_runtime_config=previous_effective_runtime_config,
+        previous_runtime_config=previous_effective_runtime_config,
         effective_runtime_config=effective_runtime_config,
     )
     resolved_evaluators_config = args.resolved_evaluators_config()
@@ -374,9 +375,8 @@ def _run_one_bootstrap_cycle_impl(
         return next_run_state
 
     if (
-        run_state.generation > 0
-        and nodes_added <= 0
-        and current_tree_size <= run_state.tree_size_at_last_save
+        run_state.generation > 0 >= nodes_added
+        and run_state.tree_size_at_last_save >= current_tree_size
     ):
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info(
@@ -810,7 +810,7 @@ def _cycle_start_tree_metrics(
     if callable(current_tree_size):
         try:
             raw_tree_size = current_tree_size()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             raw_tree_size = None
         if isinstance(raw_tree_size, int):
             tree_size = raw_tree_size
@@ -818,7 +818,7 @@ def _cycle_start_tree_metrics(
     if callable(current_tree_status):
         try:
             raw_tree_status = current_tree_status()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             raw_tree_status = None
         if isinstance(raw_tree_status, MorpionBootstrapTreeStatus):
             expanded_nodes = raw_tree_status.num_expanded_nodes

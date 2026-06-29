@@ -1,23 +1,49 @@
 """Dashboard-ready read-only history views for Morpion bootstrap runs."""
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
 import logging
 import shutil
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from pathlib import Path
-
-    from anemone.training_export import TrainingTreeSnapshot
-    from atomheart.games.morpion.state import MorpionState as AtomMorpionState
+from typing import TYPE_CHECKING, cast
 
 from anemone.training_export import load_training_tree_snapshot
 from anemone.training_export.serialization import MalformedNodesFieldError
 
 from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
+from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap.history import (
+    MorpionBootstrapEvent,
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapLatestStatus,
+    MorpionBootstrapTreeStatus,
+    MorpionEvaluatorMetrics,
+    load_bootstrap_history,
+    load_latest_bootstrap_status,
+)
+from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
+    LinooSelectionTable,
+    load_linoo_selection_table,
+)
+from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
+    MorpionPipelineDatasetStatusArtifact,
+    load_pipeline_dataset_status_file,
+    load_pipeline_training_status_file,
+)
+from chipiron.environments.morpion.bootstrap.record_status import (
+    MorpionBootstrapRecordStatus,
+    current_frontier_score,
+    current_record_score,
+    select_best_certified_record_candidate_from_training_tree_snapshot,
+)
+from chipiron.environments.morpion.bootstrap.run_state import (
+    MorpionBootstrapRunState,
+    load_bootstrap_run_state,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    load_morpion_sharded_training_tree_snapshot,
+)
 from chipiron.environments.morpion.learning import (
     InvalidMorpionStateRefPayloadError,
     decode_morpion_state_ref_payload,
@@ -28,33 +54,12 @@ from chipiron.environments.morpion.morpion_display import (
 )
 from chipiron.environments.morpion.types import MorpionDynamics
 
-from .bootstrap_loop import MorpionBootstrapPaths
-from .history import (
-    MorpionBootstrapEvent,
-    MorpionBootstrapFrontierStatus,
-    MorpionBootstrapLatestStatus,
-    MorpionBootstrapTreeStatus,
-    MorpionEvaluatorMetrics,
-    load_bootstrap_history,
-    load_latest_bootstrap_status,
-)
-from .linoo_selection_table import (
-    LinooSelectionTable,
-    load_linoo_selection_table,
-)
-from .pipeline_artifacts import (
-    MorpionPipelineDatasetStatusArtifact,
-    load_pipeline_dataset_status_file,
-    load_pipeline_training_status_file,
-)
-from .record_status import (
-    MorpionBootstrapRecordStatus,
-    current_frontier_score,
-    current_record_score,
-    select_best_certified_record_candidate_from_training_tree_snapshot,
-)
-from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
-from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from pathlib import Path
+
+    from anemone.training_export import TrainingTreeSnapshot
+    from atomheart.games.morpion.state import MorpionState as AtomMorpionState
 
 LOGGER = logging.getLogger(__name__)
 
@@ -282,7 +287,7 @@ def _dataset_status_artifacts(
     ):
         try:
             statuses.append(load_pipeline_dataset_status_file(status_path))
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.warning(
                 "Skipping unreadable dataset status artifact: %s",
                 status_path,
@@ -785,7 +790,7 @@ def _load_sharded_training_tree_snapshot_for_dashboard(
             str(snapshot_path),
         )
         return None
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[dashboard] sharded_tree_snapshot_load_failed malformed path=%s",
             str(snapshot_path),
@@ -803,7 +808,7 @@ def _evaluator_loss_series_by_name_from_training_status(
     ):
         try:
             status = load_pipeline_training_status_file(status_path)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.warning(
                 "Skipping unreadable training status artifact: %s",
                 status_path,
@@ -853,9 +858,12 @@ def build_current_certified_record_board_view(
     try:
         state_ref_payload = candidate.state_ref_payload
         atom_state = decode_morpion_state_ref_payload(state_ref_payload)
+        display_state_ref_payload = cast(
+            "Mapping[str, object] | None", state_ref_payload
+        )
         return _certified_record_board_view_from_atom_state(
             atom_state=atom_state,
-            state_ref_payload=state_ref_payload,
+            state_ref_payload=display_state_ref_payload,
             is_exact=True,
             is_terminal=True,
             source="certified_terminal_leaf",
@@ -892,7 +900,7 @@ def format_num_bytes(num_bytes: int | None) -> str:
 def _certified_record_board_view_from_atom_state(
     *,
     atom_state: AtomMorpionState,
-    state_ref_payload: object,
+    state_ref_payload: Mapping[str, object] | None,
     is_exact: bool,
     is_terminal: bool,
     source: str,

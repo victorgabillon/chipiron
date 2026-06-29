@@ -56,7 +56,7 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from valanga.evaluations import Certainty
 
-from chipiron.environments.morpion.bootstrap.anemone_runner import (
+from chipiron.environments.morpion.bootstrap.runtime.runner import (
     load_morpion_evaluator_from_model_bundle,
 )
 from chipiron.environments.morpion.learning import (

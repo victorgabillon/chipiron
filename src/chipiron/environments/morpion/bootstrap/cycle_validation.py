@@ -28,10 +28,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _unknown_pipeline_mode_error(pipeline_mode: object) -> ValueError:
+    """Build the stable unknown-pipeline-mode error."""
     return ValueError(f"Unknown Morpion pipeline mode: {pipeline_mode!r}")
 
 
 def _unknown_evaluator_update_policy_error(policy: object) -> ValueError:
+    """Build the stable unknown evaluator-update-policy error."""
     return ValueError(f"Unknown Morpion evaluator update policy: {policy!r}")
 
 
@@ -106,13 +108,13 @@ def previous_effective_runtime_config(
 
 def validate_runtime_reconfiguration(
     *,
-    previous_effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
+    previous_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
 ) -> None:
     """Validate that the requested runtime change stays within the supported subset."""
-    if previous_effective_runtime_config is None:
+    if previous_runtime_config is None:
         return
-    previous_limit = previous_effective_runtime_config.tree_branch_limit
+    previous_limit = previous_runtime_config.tree_branch_limit
     current_limit = effective_runtime_config.tree_branch_limit
     if current_limit > previous_limit:
         direction = "increased"

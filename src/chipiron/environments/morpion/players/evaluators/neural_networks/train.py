@@ -307,11 +307,14 @@ def train_morpion_regressor_streaming(
             epoch_index=epoch_index,
         )
         LOGGER.info(
-            "[train-stream] "
-            f"epoch={epoch_index + 1} chunks={epoch_stats.chunk_count} "
-            f"train_samples={epoch_stats.train_count} "
-            f"validation_samples={epoch_stats.validation_count} "
-            f"train_loss={epoch_stats.loss} split_policy={split_policy}",
+            "[train-stream] epoch=%s chunks=%s train_samples=%s "
+            "validation_samples=%s train_loss=%s split_policy=%s",
+            epoch_index + 1,
+            epoch_stats.chunk_count,
+            epoch_stats.train_count,
+            epoch_stats.validation_count,
+            epoch_stats.loss,
+            split_policy,
         )
 
     train_loss, train_mae, train_count = _evaluate_streaming_metrics(

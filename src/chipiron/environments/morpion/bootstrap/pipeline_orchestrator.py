@@ -11,6 +11,12 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
 
 from .bootstrap_paths import MorpionBootstrapPaths
+from .pipeline.stages import (
+    require_artifact_pipeline_mode,
+    run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
+    run_pipeline_training_stage,
+)
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
     MorpionPipelineActiveModel,
@@ -25,12 +31,6 @@ from .pipeline_artifacts import (
 from .pipeline_claims import (
     load_active_pipeline_stage_claim,
     pipeline_stage_claim_is_expired,
-)
-from .pipeline_stages import (
-    require_artifact_pipeline_mode,
-    run_pipeline_dataset_stage,
-    run_pipeline_growth_stage,
-    run_pipeline_training_stage,
 )
 
 if TYPE_CHECKING:
@@ -147,7 +147,7 @@ def _tolerant_status_updated_at(path: Path) -> str | None:
     """Load one stage-status updated timestamp without failing on old payloads."""
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
     if not isinstance(payload, dict):
         return None
@@ -548,7 +548,7 @@ def run_next_pipeline_dataset_stage_once(
             claim_ttl_seconds=claim_ttl_seconds,
             claim_owner=claim_owner,
         )
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[pipeline] dataset_worker_done action=error generation=%s elapsed=%.3fs",
             generation,

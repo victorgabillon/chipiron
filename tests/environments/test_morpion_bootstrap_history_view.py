@@ -97,7 +97,7 @@ from chipiron.environments.morpion.bootstrap import (
     training_triggered_series,
     tree_num_nodes_series,
 )
-from chipiron.environments.morpion.bootstrap.history_view import (
+from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
     DiskUsageRow,
     DiskUsageSummary,
     _load_resolved_training_tree_snapshot,
@@ -1535,7 +1535,7 @@ def test_dashboard_data_tolerates_snapshot_nodes_without_exact_terminal_flags(
         return _OldFormatSnapshot()
 
     monkeypatch.setattr(
-        "chipiron.environments.morpion.bootstrap.history_view.load_training_tree_snapshot",
+        "chipiron.environments.morpion.bootstrap.dashboard.history_view.load_training_tree_snapshot",
         _fake_load_training_tree_snapshot,
     )
 

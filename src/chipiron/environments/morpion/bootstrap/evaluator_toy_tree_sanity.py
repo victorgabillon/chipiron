@@ -18,6 +18,7 @@ python -m chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity \
   --output-dir /tmp/morpion_toy_F_linear_vicious
 ```
 """
+# pylint: disable=duplicate-code,too-many-lines
 # ruff: noqa: TRY003
 
 from __future__ import annotations

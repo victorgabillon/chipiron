@@ -80,7 +80,9 @@ from anemone.tree_manager import OpeningExpansionKind, RolloutActionSelectorKind
 from anemone.utils.logger import checkpoint_logger, set_checkpoint_logger_level
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
-import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
+import chipiron.environments.morpion.bootstrap.cycle_runtime as cycle_runtime_module
+import chipiron.environments.morpion.bootstrap.runtime.rollout_logging as rollout_logging_module
+import chipiron.environments.morpion.bootstrap.runtime.runner as anemone_runner_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
@@ -333,7 +335,7 @@ def test_log_latest_rollout_report_includes_path_details(
         tree_manager=SimpleNamespace(latest_rollout_report=report)
     )
 
-    anemone_runner_module._log_latest_rollout_report(runtime)
+    rollout_logging_module._log_latest_rollout_report(runtime)
 
     assert "[rollout] total_edges=4 initial_edges=2" in caplog.text
     assert (
@@ -390,7 +392,7 @@ def test_log_latest_rollout_report_warns_on_no_legal_non_terminal(
         tree_manager=SimpleNamespace(latest_rollout_report=report)
     )
 
-    anemone_runner_module._log_latest_rollout_report(runtime)
+    rollout_logging_module._log_latest_rollout_report(runtime)
 
     assert "no_legal_but_not_terminal=True" in caplog.text
     assert (
@@ -416,7 +418,7 @@ def test_log_latest_rollout_report_supports_legacy_report(
         tree_manager=SimpleNamespace(latest_rollout_report=report)
     )
 
-    anemone_runner_module._log_latest_rollout_report(runtime)
+    rollout_logging_module._log_latest_rollout_report(runtime)
 
     assert "[rollout] total_edges=1 initial_edges=1" in caplog.text
     assert "[rollout-lengths]" not in caplog.text
@@ -1410,7 +1412,7 @@ def test_checkpoint_validation_payload_is_reused_for_immediate_restore(
         return fake_runtime
 
     monkeypatch.setattr(
-        anemone_runner_module,
+        cycle_runtime_module,
         "load_morpion_search_checkpoint_payload",
         _fake_payload_loader,
     )

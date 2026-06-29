@@ -157,7 +157,8 @@ def _load_runtime_modules() -> dict[str, Any]:
         AnemoneMorpionSearchRunner,
         MorpionBootstrapPaths,
     )
-    import chipiron.environments.morpion.bootstrap.anemone_runner as runner_module
+    import chipiron.environments.morpion.bootstrap.runtime.checkpoint_io as checkpoint_io_module
+    import chipiron.environments.morpion.bootstrap.runtime.runner as runner_module
 
     return {
         "anemone": anemone,
@@ -166,6 +167,7 @@ def _load_runtime_modules() -> dict[str, Any]:
         "chipiron": chipiron,
         "MorpionBootstrapPaths": MorpionBootstrapPaths,
         "AnemoneMorpionSearchRunner": AnemoneMorpionSearchRunner,
+        "checkpoint_io_module": checkpoint_io_module,
         "runner_module": runner_module,
     }
 
@@ -275,6 +277,7 @@ def _profile_checkpoint_save(
     runner: Any,
 ) -> None:
     """Profile checkpoint payload build and optional serialization phases."""
+    checkpoint_io_module = modules["checkpoint_io_module"]
     runner_module = modules["runner_module"]
     build_search_checkpoint_payload = modules["build_search_checkpoint_payload"]
 
@@ -394,12 +397,12 @@ def _profile_checkpoint_save(
     print(f"[profile] phase=cprofile_dump output={profile_output}")
     _print_cprofile_stats(profiler, args.top)
 
-    node_count, anchor_count, delta_count = runner_module._checkpoint_node_counts(
+    node_count, anchor_count, delta_count = checkpoint_io_module._checkpoint_node_counts(
         payload
     )
-    runner_module._log_checkpoint_metrics(
+    checkpoint_io_module._log_checkpoint_metrics(
         "profile",
-        runner_module.CheckpointIoMetrics(
+        checkpoint_io_module.CheckpointIoMetrics(
             path=str(output_path) if output_path is not None else "none",
             bytes=output_bytes,
             file_format=output_format,

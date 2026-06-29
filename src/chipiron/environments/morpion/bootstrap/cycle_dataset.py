@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
-    from .memory_diagnostics import MemoryDiagnostics
+    from .profiling.memory_diagnostics import MemoryDiagnostics
     from .run_state import MorpionBootstrapRunState
     from .search_runner_protocol import MorpionSearchRunner
 

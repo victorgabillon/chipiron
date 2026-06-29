@@ -293,7 +293,7 @@ def _direction_index_for_segment(segment: Segment) -> int | None:
     delta = (abs(x1 - x0), y1 - y0)
     if delta == (1, 0):
         return 0
-    if delta == (0, 1) or delta == (0, -1):
+    if delta in ((0, 1), (0, -1)):
         return 1
     if delta == (1, 1):
         return 2

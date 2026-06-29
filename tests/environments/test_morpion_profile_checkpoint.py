@@ -7,7 +7,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
     default_checkpoint_file_suffix,
@@ -111,7 +110,7 @@ def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> Non
 
 def test_profile_script_smoke_grow_mode_without_json_dump(
     tmp_path: Path,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A tiny grow-mode profiling run should complete and emit a .prof file."""
@@ -151,7 +150,7 @@ def test_profile_script_smoke_grow_mode_without_json_dump(
 
 def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
     tmp_path: Path,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Checkpoint profiling output should expose encoder/compress/write timings."""
@@ -207,6 +206,7 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         ]
     )
     modules = {
+        "checkpoint_io_module": fake_runner_module,
         "runner_module": fake_runner_module,
         "build_search_checkpoint_payload": lambda runtime, state_codec: {
             "runtime": runtime,

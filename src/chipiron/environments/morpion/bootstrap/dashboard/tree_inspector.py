@@ -18,14 +18,18 @@ from anemone.checkpoints import (
 )
 from atomheart.games.morpion import MorpionStateCheckpointCodec
 
-from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
-
-from .bootstrap_loop import RUNTIME_CHECKPOINT_METADATA_KEY, MorpionBootstrapPaths
-from .run_state import load_bootstrap_run_state
-from .runtime.runner import (
+from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
+from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
+    RUNTIME_CHECKPOINT_METADATA_KEY,
+    MorpionBootstrapPaths,
+)
+from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
+from chipiron.environments.morpion.bootstrap.runtime.runner import (
     InvalidMorpionSearchCheckpointError,
     load_morpion_search_checkpoint_payload,
 )
+from chipiron.environments.morpion.morpion_display import build_morpion_display_payload
+from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 LOGGER = logging.getLogger(__name__)
 _INDEXED_CHECKPOINT_TREE_CACHE: dict[tuple[str, int], _IndexedCheckpointTree] = {}
@@ -588,11 +592,6 @@ def _build_state_view(
     state: MorpionState,
 ) -> MorpionBootstrapStateView:
     """Build one selected-state view with a rendered Morpion SVG board."""
-    from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
-    from chipiron.environments.morpion.morpion_display import (
-        build_morpion_display_payload,
-    )
-
     dynamics = MorpionDynamics()
     svg_adapter = MorpionSvgAdapter()
     render_size = 720
@@ -714,7 +713,7 @@ def _render_branch_label(state: MorpionState, branch_key: object) -> str:
     dynamics = MorpionDynamics()
     try:
         return dynamics.action_name(state, branch_key)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return repr(branch_key)
 
 

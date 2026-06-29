@@ -1,4 +1,5 @@
 """Persistent history and latest-status helpers for Morpion bootstrap runs."""
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 

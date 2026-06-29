@@ -539,7 +539,7 @@ def test_runtime_control_allows_tree_branch_limit_increase(
 def test_runtime_reconfiguration_allows_fresh_run_with_any_limit() -> None:
     """A fresh run with no persisted runtime config should accept any limit."""
     bootstrap_loop_module._validate_runtime_reconfiguration(
-        previous_effective_runtime_config=None,
+        previous_runtime_config=None,
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=512
         ),
@@ -551,7 +551,7 @@ def test_runtime_reconfiguration_allows_same_limit_on_resume() -> None:
     previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
 
     bootstrap_loop_module._validate_runtime_reconfiguration(
-        previous_effective_runtime_config=previous_config,
+        previous_runtime_config=previous_config,
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=64
         ),
@@ -563,7 +563,7 @@ def test_runtime_reconfiguration_allows_lower_limit_on_resume() -> None:
     previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
 
     bootstrap_loop_module._validate_runtime_reconfiguration(
-        previous_effective_runtime_config=previous_config,
+        previous_runtime_config=previous_config,
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=32
         ),
@@ -578,7 +578,7 @@ def test_runtime_reconfiguration_allows_higher_limit_on_resume(
 
     with caplog.at_level(logging.INFO):
         bootstrap_loop_module._validate_runtime_reconfiguration(
-            previous_effective_runtime_config=previous_config,
+            previous_runtime_config=previous_config,
             effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
                 tree_branch_limit=128
             ),

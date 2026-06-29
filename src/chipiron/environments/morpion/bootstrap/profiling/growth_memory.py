@@ -1,4 +1,5 @@
 """Opt-in shallow memory attribution for Morpion growth runtimes."""
+# pylint: disable=broad-exception-caught
 
 from __future__ import annotations
 
@@ -10,7 +11,10 @@ from collections.abc import Iterable, Iterator, Mapping, Sized
 from itertools import islice
 from typing import cast
 
-from .pipeline_memory import current_rss_mb, format_metric
+from chipiron.environments.morpion.bootstrap.pipeline_memory import (
+    current_rss_mb,
+    format_metric,
+)
 
 LOGGER = logging.getLogger(__name__)
 

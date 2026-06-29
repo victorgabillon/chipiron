@@ -1,4 +1,5 @@
 """Recursive restored-tree memory diagnostics for Morpion growth runtimes."""
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -7,7 +8,14 @@ import logging
 import sys
 import time
 from collections import Counter
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, Sized
+from collections.abc import (  # pylint: disable=unused-import
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+    Sized,
+)
 from dataclasses import dataclass, field
 from enum import Enum
 from types import (
@@ -21,7 +29,10 @@ from types import (
 )
 from typing import cast
 
-from .pipeline_memory import current_rss_mb, format_metric
+from chipiron.environments.morpion.bootstrap.pipeline_memory import (
+    current_rss_mb,
+    format_metric,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -346,7 +357,7 @@ def _raw_getattr(value: object, attr_name: str) -> object | None:
     """Read a concrete attribute/slot without using ``dir`` or properties."""
     try:
         result: object = object.__getattribute__(value, attr_name)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
     return result
 
@@ -355,7 +366,7 @@ def _raw_getattr_present(value: object, attr_name: str) -> tuple[bool, object | 
     """Return whether a concrete attribute exists plus its raw value."""
     try:
         result: object = object.__getattribute__(value, attr_name)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return False, None
     return True, result
 
@@ -365,7 +376,7 @@ def _safe_call_no_args(value: object) -> object | None:
         return value
     try:
         return cast("Callable[[], object]", value)()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 
@@ -847,6 +858,11 @@ def _mark_recursion_error(stats: DeepSizeStats) -> None:
     stats.capped = True
 
 
+def _deep_size_stats_capped(stats: DeepSizeStats) -> bool:
+    """Return whether a recursive-size traversal has reached a cap."""
+    return stats.capped
+
+
 def _try_push_deep_size_object(
     obj: object,
     *,
@@ -1265,7 +1281,7 @@ def _profile_nodes_from_runner_capped(
             continue
         try:
             iterator = _iter_from_candidate(cast("Callable[[], object]", method)())
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             continue
         if iterator is not None:
             return _materialize_profile_nodes(iterator, node_cap=node_cap)
@@ -1541,7 +1557,7 @@ def _safe_bool_method(value: object | None, method_name: str) -> bool | None:
         return None
     try:
         return bool(cast("Callable[[], object]", method)())
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 
@@ -2170,7 +2186,7 @@ def state_eviction_runtime_histogram(runner: object) -> dict[str, object]:
     if callable(profile):
         try:
             payload = cast("Callable[[], object]", profile)()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             payload = None
         if isinstance(payload, Mapping):
             return {"present": True, **dict(payload)}
@@ -2179,7 +2195,7 @@ def state_eviction_runtime_histogram(runner: object) -> dict[str, object]:
     if callable(snapshot):
         try:
             payload = cast("Callable[[], object]", snapshot)()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             payload = None
         if isinstance(payload, Mapping):
             return {"present": True, **dict(payload)}
@@ -2517,7 +2533,7 @@ def linoo_state_histograms(
                     default_count += 1
                 else:
                     non_default_count += 1
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 non_default_count += 1
         for slot_name in slot_names(state):
             slot_value = _raw_getattr(state, slot_name)
@@ -3144,10 +3160,10 @@ def checkpoint_state_histograms(
     materialized_state_count = 0
     payload_recursive_seen: set[int] = set()
     payload_recursive_bytes = 0
-    payload_stats = DeepSizeStats(max_objects=max_objects)
+    payload_stats: DeepSizeStats = DeepSizeStats(max_objects=max_objects)
     resolved_recursive_seen: set[int] = set()
     resolved_recursive_bytes = 0
-    resolved_stats = DeepSizeStats(max_objects=max_objects)
+    resolved_stats: DeepSizeStats = DeepSizeStats(max_objects=max_objects)
     payload_store_count = 0
     handles_seen = 0
     payloads_seen = 0
@@ -3169,6 +3185,12 @@ def checkpoint_state_histograms(
         nonlocal payload_recursive_bytes
         nonlocal payloads_seen
 
+        if (
+            payload_stats.max_objects is not None
+            and payload_stats.visited_objects >= payload_stats.max_objects
+        ):
+            payload_stats.capped = True
+            return
         if id(payload) in payload_ids:
             return
         payload_kind = _checkpoint_payload_kind(payload)
@@ -3207,11 +3229,11 @@ def checkpoint_state_histograms(
             )
 
     for payload_store in checkpoint_payload_stores:
-        if payload_stats.capped:
+        if _deep_size_stats_capped(payload_stats):
             break
         payload_store_count += 1
         for payload in payload_store.payloads.values():
-            if payload_stats.capped:
+            if _deep_size_stats_capped(payload_stats):
                 break
             add_payload(payload)
 
@@ -3355,9 +3377,7 @@ def checkpoint_payload_lifetime_histograms(
         and handles_without_resolver_count == 0
         and len(resolver_ids_seen_by_handles) == 1
     )
-    records_by_index = {
-        index: record for index, record in enumerate(payload_store_records, start=1)
-    }
+    records_by_index = dict(enumerate(payload_store_records, start=1))
     histograms: list[dict[str, object]] = []
     seen_store_resolver_ids: set[int] = set()
 

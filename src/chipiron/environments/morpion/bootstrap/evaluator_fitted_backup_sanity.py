@@ -1,4 +1,5 @@
 """Fitted-backup sanity loop on one frozen Morpion bootstrap tree."""
+# pylint: disable=duplicate-code,too-many-lines
 
 from __future__ import annotations
 

@@ -34,10 +34,10 @@ from anemone.checkpoints import (
 )
 from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
-from chipiron.environments.morpion.bootstrap.growth_memory_profile import (
+from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
 )
-from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
+from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     build_recursive_profile_context,
     checkpoint_payload_lifetime_histograms,
     checkpoint_payload_shape_histograms,
@@ -65,7 +65,7 @@ from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
 )
 
 recursive_memory_profile_module = importlib.import_module(
-    "chipiron.environments.morpion.bootstrap.recursive_memory_profile"
+    "chipiron.environments.morpion.bootstrap.profiling.recursive_memory"
 )
 
 if TYPE_CHECKING:

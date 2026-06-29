@@ -1,5 +1,6 @@
 """Restartable Morpion bootstrap orchestration helpers."""
 
+from . import profiling
 from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
@@ -71,9 +72,41 @@ from .control import (
     load_bootstrap_control,
     save_bootstrap_control,
 )
-from .dashboard_app import run_dashboard_app
-from .dashboard_cli import run_dashboard_cli
-from .dashboard_plot import (
+from .dashboard.app import run_dashboard_app
+from .dashboard.history_view import (
+    ActiveEvaluatorTimeSeriesPoint,
+    DiskUsageRow,
+    DiskUsageSummary,
+    EvaluatorSelectionSummary,
+    IntTimeSeriesPoint,
+    MorpionBootstrapDashboardData,
+    MorpionBootstrapRunSummary,
+    MorpionBootstrapRunView,
+    MorpionRecordProgressSummary,
+    MorpionTreeNodeClassificationSummary,
+    OptionalFloatTimeSeriesPoint,
+    OptionalIntTimeSeriesPoint,
+    TrainingTriggeredTimeSeriesPoint,
+    TreeDepthDistributionRow,
+    active_evaluator_series,
+    build_morpion_bootstrap_dashboard_data,
+    canonical_record_score_series,
+    certified_record_best_so_far_series,
+    certified_record_score_series,
+    dataset_num_rows_series,
+    evaluator_loss_series_by_name,
+    latest_tree_depth_distribution,
+    load_latest_linoo_selection_table_for_dashboard,
+    load_morpion_bootstrap_run_view,
+    record_total_points_series,
+    summarize_bootstrap_run,
+    summarize_evaluator_selection,
+    summarize_record_progress,
+    summarize_tree_node_classification,
+    training_triggered_series,
+    tree_num_nodes_series,
+)
+from .dashboard.plot import (
     plot_active_evaluator,
     plot_certified_record_score,
     plot_dataset_size,
@@ -82,6 +115,16 @@ from .dashboard_plot import (
     plot_tree_depth_distribution,
     plot_tree_size,
 )
+from .dashboard.tree_inspector import (
+    MorpionBootstrapChildSummary,
+    MorpionBootstrapLocalTreeView,
+    MorpionBootstrapNodeSummary,
+    MorpionBootstrapStateView,
+    MorpionBootstrapTreeInspectorSnapshot,
+    build_morpion_bootstrap_tree_inspector_snapshot,
+    resolve_latest_runtime_checkpoint,
+)
+from .dashboard_cli import run_dashboard_cli
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import (
     CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
@@ -116,40 +159,12 @@ from .history import (
     load_latest_bootstrap_status,
     rebuild_latest_bootstrap_status,
 )
-from .history_view import (
-    ActiveEvaluatorTimeSeriesPoint,
-    DiskUsageRow,
-    DiskUsageSummary,
-    EvaluatorSelectionSummary,
-    IntTimeSeriesPoint,
-    MorpionBootstrapDashboardData,
-    MorpionBootstrapRunSummary,
-    MorpionBootstrapRunView,
-    MorpionRecordProgressSummary,
-    MorpionTreeNodeClassificationSummary,
-    OptionalFloatTimeSeriesPoint,
-    OptionalIntTimeSeriesPoint,
-    TrainingTriggeredTimeSeriesPoint,
-    TreeDepthDistributionRow,
-    active_evaluator_series,
-    build_morpion_bootstrap_dashboard_data,
-    canonical_record_score_series,
-    certified_record_best_so_far_series,
-    certified_record_score_series,
-    dataset_num_rows_series,
-    evaluator_loss_series_by_name,
-    latest_tree_depth_distribution,
-    load_latest_linoo_selection_table_for_dashboard,
-    load_morpion_bootstrap_run_view,
-    record_total_points_series,
-    summarize_bootstrap_run,
-    summarize_evaluator_selection,
-    summarize_record_progress,
-    summarize_tree_node_classification,
-    training_triggered_series,
-    tree_num_nodes_series,
-)
 from .launcher import MorpionBootstrapLauncherArgs, run_morpion_bootstrap_experiment
+from .pipeline.stages import (
+    run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
+    run_pipeline_training_stage,
+)
 from .pipeline_artifacts import (
     InvalidMorpionPipelineArtifactError,
     MissingMorpionPipelineArtifactError,
@@ -238,11 +253,6 @@ from .pipeline_orchestrator import (
     select_next_training_generation,
     training_stage_is_pending,
 )
-from .pipeline_stages import (
-    run_pipeline_dataset_stage,
-    run_pipeline_growth_stage,
-    run_pipeline_training_stage,
-)
 from .process_control import (
     MorpionBootstrapProcessAlreadyRunningError,
     MorpionBootstrapProcessControlError,
@@ -310,21 +320,14 @@ from .runtime.runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
     InvalidMorpionSearchCheckpointError,
+    MorpionRegressorMasterEvaluator,
     UninitializedMorpionSearchRunnerError,
     apply_runtime_control_to_runner_args,
     load_morpion_evaluator_from_model_bundle,
     load_morpion_search_checkpoint_payload,
+    run_morpion_growth_search_once,
 )
 from .search_runner_protocol import MorpionSearchRunner
-from .tree_inspector import (
-    MorpionBootstrapChildSummary,
-    MorpionBootstrapLocalTreeView,
-    MorpionBootstrapNodeSummary,
-    MorpionBootstrapStateView,
-    MorpionBootstrapTreeInspectorSnapshot,
-    build_morpion_bootstrap_tree_inspector_snapshot,
-    resolve_latest_runtime_checkpoint,
-)
 
 __all__ = [
     "BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY",
@@ -433,6 +436,7 @@ __all__ = [
     "MorpionReevaluationPatchConsumptionResult",
     "MorpionReevaluationPatchRow",
     "MorpionReevaluationWorkerResult",
+    "MorpionRegressorMasterEvaluator",
     "MorpionSearchRunner",
     "MorpionTrainingExportMode",
     "MorpionTreeNodeClassificationSummary",
@@ -553,6 +557,7 @@ __all__ = [
     "plot_record_score",
     "plot_tree_depth_distribution",
     "plot_tree_size",
+    "profiling",
     "rebuild_latest_bootstrap_status",
     "record_total_points_series",
     "reevaluation_cursor_from_dict",
@@ -575,6 +580,7 @@ __all__ = [
     "run_morpion_artifact_pipeline_once",
     "run_morpion_bootstrap_experiment",
     "run_morpion_bootstrap_loop",
+    "run_morpion_growth_search_once",
     "run_morpion_reevaluation_worker_once",
     "run_next_pipeline_dataset_stage_once",
     "run_next_pipeline_training_stage_once",

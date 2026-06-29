@@ -1,4 +1,5 @@
 """Runtime and retention helpers shared by Morpion bootstrap workflows."""
+# pylint: disable=duplicate-code
 
 from __future__ import annotations
 
@@ -25,6 +26,12 @@ from .cycle_metadata import RUNTIME_CHECKPOINT_METADATA_KEY, next_metadata
 from .history import MorpionBootstrapTreeStatus
 from .pipeline_memory import current_rss_mb
 from .run_state import MorpionBootstrapRunState
+from .runtime.checkpoint_io import cache_morpion_search_checkpoint_payload_for_restore
+from .runtime.runner import (
+    InvalidMorpionSearchCheckpointError,
+    load_morpion_search_checkpoint_payload,
+    log_morpion_checkpoint_memory_phase,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -216,14 +223,16 @@ def build_growth_budget_exhausted_run_state(
         effective_runtime_config=effective_runtime_config,
         cycle_index=cycle_index,
     )
-    next_metadata = dict(next_state.metadata)
-    next_metadata[GROWTH_STATUS_METADATA_KEY] = GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS
-    next_metadata[CHECKPOINT_SKIPPED_METADATA_KEY] = True
-    next_metadata[CHECKPOINT_SKIPPED_REASON_METADATA_KEY] = (
+    updated_metadata = dict(next_state.metadata)
+    updated_metadata[GROWTH_STATUS_METADATA_KEY] = (
+        GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS
+    )
+    updated_metadata[CHECKPOINT_SKIPPED_METADATA_KEY] = True
+    updated_metadata[CHECKPOINT_SKIPPED_REASON_METADATA_KEY] = (
         NO_GROWTH_LIMIT_REACHED_CHECKPOINT_SKIP_REASON
     )
-    next_metadata["branch_count"] = branch_count
-    next_metadata["tree_branch_limit"] = tree_branch_limit
+    updated_metadata["branch_count"] = branch_count
+    updated_metadata["tree_branch_limit"] = tree_branch_limit
     return MorpionBootstrapRunState(
         generation=next_state.generation,
         cycle_index=next_state.cycle_index,
@@ -236,7 +245,7 @@ def build_growth_budget_exhausted_run_state(
         latest_runtime_checkpoint_path=next_state.latest_runtime_checkpoint_path,
         latest_record_status=next_state.latest_record_status,
         latest_frontier_status=next_state.latest_frontier_status,
-        metadata=next_metadata,
+        metadata=updated_metadata,
     )
 
 
@@ -374,15 +383,6 @@ def resolve_runtime_restore_path(
     ) = None,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
-    from .runtime.checkpoint_io import (
-        cache_morpion_search_checkpoint_payload_for_restore,
-    )
-    from .runtime.runner import (
-        InvalidMorpionSearchCheckpointError,
-        load_morpion_search_checkpoint_payload,
-        log_morpion_checkpoint_memory_phase,
-    )
-
     candidates: list[tuple[str, Path | None]] = [
         (
             "run_state.latest_runtime_checkpoint_path",

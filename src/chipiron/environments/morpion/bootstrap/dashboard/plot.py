@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.ticker import Formatter, Locator
 
-    from .history_view import (
+    from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
         ActiveEvaluatorTimeSeriesPoint,
         IntTimeSeriesPoint,
         OptionalFloatTimeSeriesPoint,

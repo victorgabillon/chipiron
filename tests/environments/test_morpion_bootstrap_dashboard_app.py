@@ -63,7 +63,7 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_config,
     save_bootstrap_run_state,
 )
-from chipiron.environments.morpion.bootstrap.dashboard_app import (
+from chipiron.environments.morpion.bootstrap.dashboard.app import (
     _applied_runtime_control,
     _baseline_tree_branch_limit,
     _build_next_control,
@@ -97,6 +97,10 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _tree_inspector_child_rows,
     _tree_structure_rows,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
+    MorpionBootstrapChildSummary,
+    MorpionBootstrapTreeInspectorSnapshot,
+)
 from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
     MorpionEvaluatorDiagnosticExample,
     MorpionEvaluatorTrainingDiagnostics,
@@ -106,10 +110,28 @@ from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     LinooSelectionTable,
     LinooSelectionTableRow,
 )
-from chipiron.environments.morpion.bootstrap.tree_inspector import (
-    MorpionBootstrapChildSummary,
-    MorpionBootstrapTreeInspectorSnapshot,
-)
+
+
+def test_dashboard_forward_imports_resolve_owner_modules() -> None:
+    """Dashboard APIs should resolve from the owner package modules."""
+    import chipiron.environments.morpion.bootstrap.dashboard as dashboard_pkg
+    import chipiron.environments.morpion.bootstrap.dashboard.app as dashboard_app_new
+    import chipiron.environments.morpion.bootstrap.dashboard.history_view as history_view_new
+    import chipiron.environments.morpion.bootstrap.dashboard.plot as dashboard_plot_new
+    import chipiron.environments.morpion.bootstrap.dashboard.streamlit_entry as streamlit_new
+    import chipiron.environments.morpion.bootstrap.dashboard.tree_inspector as tree_inspector_new
+
+    assert dashboard_pkg.run_dashboard_app is dashboard_app_new.run_dashboard_app
+    assert callable(streamlit_new.main)
+    assert callable(dashboard_plot_new.plot_tree_size)
+    assert (
+        history_view_new.build_morpion_bootstrap_dashboard_data.__name__
+        == "build_morpion_bootstrap_dashboard_data"
+    )
+    assert (
+        tree_inspector_new.build_morpion_bootstrap_tree_inspector_snapshot.__name__
+        == "build_morpion_bootstrap_tree_inspector_snapshot"
+    )
 
 
 def _multi_evaluator_config() -> MorpionEvaluatorsConfig:

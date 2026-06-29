@@ -1,4 +1,5 @@
 """Standalone sanity checks for Morpion bootstrap evaluator learning."""
+# pylint: disable=duplicate-code,too-many-lines
 
 from __future__ import annotations
 

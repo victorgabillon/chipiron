@@ -50,7 +50,7 @@ from anemone.checkpoints import (
 )
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 
-import chipiron.environments.morpion.bootstrap.tree_inspector as tree_inspector_module
+import chipiron.environments.morpion.bootstrap.dashboard.tree_inspector as tree_inspector_module
 from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunner,
     MorpionBootstrapPaths,
@@ -64,7 +64,7 @@ from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
 from chipiron.environments.morpion.bootstrap.control import (
     MorpionBootstrapEffectiveRuntimeConfig,
 )
-from chipiron.environments.morpion.bootstrap.tree_inspector import (
+from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     _decode_node_state,
     _display_value_scalar,
     _index_checkpoint_payload,

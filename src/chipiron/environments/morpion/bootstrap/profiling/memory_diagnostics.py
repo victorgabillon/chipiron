@@ -22,7 +22,7 @@ from collections import Counter
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from types import FrameType
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast  # pylint: disable=unused-import
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -100,7 +100,7 @@ class MemoryDiagnostics:
                 self._log_referrers(tag)
             if self._config.tracemalloc:
                 self._log_tracemalloc(tag)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.exception("[memory] diagnostics_failed tag=%s", tag)
 
     def close(self) -> None:
@@ -114,7 +114,7 @@ class MemoryDiagnostics:
 
     def _build_process(self) -> object | None:
         try:
-            import psutil
+            import psutil  # pylint: disable=import-outside-toplevel
         except ImportError:
             LOGGER.warning("[memory] psutil_unavailable rss_vms_logging=false")
             self._warned_psutil_unavailable = True
@@ -163,7 +163,7 @@ class MemoryDiagnostics:
 
     def _log_torch_tensors(self, tag: str) -> None:
         try:
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
         except ImportError:
             LOGGER.warning("[memory_torch] tag=%s torch_unavailable=true", tag)
             return
@@ -179,7 +179,7 @@ class MemoryDiagnostics:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", FutureWarning)
                     is_tensor = torch.is_tensor(obj)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 continue
             if not is_tensor:
                 continue
@@ -197,7 +197,7 @@ class MemoryDiagnostics:
                 if storage_key not in storage_ptrs:
                     storage_ptrs.add(storage_key)
                     storage_bytes += storage.nbytes()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 by_kind["uninspectable"] += 1
         LOGGER.info(
             "[memory_torch] tag=%s tensors=%s tensor_bytes_mb=%.3f "
@@ -219,7 +219,7 @@ class MemoryDiagnostics:
     def _log_referrers(self, tag: str) -> None:
         try:
             self._log_referrers_impl(tag)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.exception("[memory_referrers] tag=%s diagnostics_failed=true", tag)
 
     def _log_referrers_impl(self, tag: str) -> None:
@@ -408,7 +408,7 @@ def _should_skip_referrer(
 def _safe_repr(obj: object, max_chars: int = MAX_REFERRER_REPR_CHARS) -> str:
     try:
         rendered = repr(obj)
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         rendered = f"<repr_failed {type(exc).__module__}.{type(exc).__qualname__}>"
     rendered = " ".join(rendered.splitlines())
     if len(rendered) <= max_chars:

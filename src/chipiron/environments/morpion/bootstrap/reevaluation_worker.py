@@ -8,7 +8,7 @@ import math
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from anemone.training_export import TrainingTreeSnapshot, load_training_tree_snapshot
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
@@ -35,6 +35,7 @@ from .runtime.runner import load_morpion_evaluator_from_model_bundle
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+    from typing import Any
 
     from .bootstrap_args import MorpionBootstrapArgs
 
@@ -210,7 +211,6 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                 )
             )
         return tuple(rows)
-        raise AssertionError("unreachable")
 
 
 def build_active_model_reevaluation_evaluator(

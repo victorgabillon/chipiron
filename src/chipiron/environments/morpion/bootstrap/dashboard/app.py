@@ -15,16 +15,20 @@ from matplotlib import pyplot as plt
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from .history import MorpionBootstrapTreeStatus
-    from .tree_inspector import MorpionBootstrapChildSummary
+    from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
+        MorpionBootstrapChildSummary,
+    )
+    from chipiron.environments.morpion.bootstrap.history import (
+        MorpionBootstrapTreeStatus,
+    )
 
-from .bootstrap_loop import MorpionBootstrapPaths
-from .config import (
+from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap.config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
     load_bootstrap_config,
 )
-from .control import (
+from chipiron.environments.morpion.bootstrap.control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
     BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
     BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
@@ -39,21 +43,7 @@ from .control import (
     load_bootstrap_control,
     save_bootstrap_control,
 )
-from .dashboard_plot import (
-    plot_active_evaluator,
-    plot_certified_record_score,
-    plot_dataset_size,
-    plot_evaluator_losses,
-    plot_tree_depth_distribution,
-    plot_tree_size,
-)
-from .evaluator_diagnostics import (
-    MorpionEvaluatorDiagnosticExample,
-    MorpionEvaluatorTrainingDiagnostics,
-    load_latest_evaluator_training_diagnostics,
-)
-from .evaluator_family import canonical_morpion_evaluator_names
-from .history_view import (
+from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
     DiskUsageSummary,
     MorpionBootstrapCertifiedRecordBoardView,
     TreeDepthDistributionRow,
@@ -61,7 +51,26 @@ from .history_view import (
     build_morpion_bootstrap_dashboard_data,
     format_num_bytes,
 )
-from .process_control import (
+from chipiron.environments.morpion.bootstrap.dashboard.plot import (
+    plot_active_evaluator,
+    plot_certified_record_score,
+    plot_dataset_size,
+    plot_evaluator_losses,
+    plot_tree_depth_distribution,
+    plot_tree_size,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
+    build_morpion_bootstrap_tree_inspector_snapshot,
+)
+from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
+    MorpionEvaluatorDiagnosticExample,
+    MorpionEvaluatorTrainingDiagnostics,
+    load_latest_evaluator_training_diagnostics,
+)
+from chipiron.environments.morpion.bootstrap.evaluator_family import (
+    canonical_morpion_evaluator_names,
+)
+from chipiron.environments.morpion.bootstrap.process_control import (
     MorpionBootstrapProcessControlError,
     MorpionBootstrapProcessState,
     launcher_command_for_work_dir,
@@ -70,9 +79,13 @@ from .process_control import (
     start_morpion_bootstrap_process,
     stop_morpion_bootstrap_process,
 )
-from .run_state import initialize_bootstrap_run_state, load_bootstrap_run_state
-from .streamlit_morpion_clickable_board import render_clickable_morpion_board
-from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
+from chipiron.environments.morpion.bootstrap.run_state import (
+    initialize_bootstrap_run_state,
+    load_bootstrap_run_state,
+)
+from chipiron.environments.morpion.bootstrap.streamlit_morpion_clickable_board import (
+    render_clickable_morpion_board,
+)
 
 MAX_PLOT_POINTS = 2000
 TREE_INSPECTOR_TIMING_PREFIX = "[tree-inspector-timing]"

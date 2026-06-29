@@ -15,6 +15,10 @@ from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     log_available_ram_guard,
     log_candidate_checkpoint_load_memory_forecast,
 )
+from chipiron.environments.morpion.bootstrap.runtime.runner import (
+    load_morpion_search_checkpoint_payload,
+    restore_memory_logger_for_checkpoint_path,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -106,10 +110,6 @@ def _candidate_checkpoint_payload_loader(
     args: MorpionBootstrapArgs,
 ) -> Callable[[Path], SearchRuntimeCheckpointPayload]:
     """Build the optional instrumented candidate-checkpoint loader."""
-    from chipiron.environments.morpion.bootstrap.runtime.runner import (
-        load_morpion_search_checkpoint_payload,
-        restore_memory_logger_for_checkpoint_path,
-    )
 
     def load(path: Path) -> SearchRuntimeCheckpointPayload:
         restore_memory_logger = restore_memory_logger_for_checkpoint_path(

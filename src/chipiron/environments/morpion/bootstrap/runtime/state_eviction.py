@@ -7,7 +7,7 @@ from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
@@ -17,6 +17,22 @@ from anemone.checkpoints import (
 
 if TYPE_CHECKING:
     from chipiron.environments.morpion.types import MorpionState
+
+
+class _MorpionStateCheckpointCodec(Protocol):
+    """State codec operations needed by the live compact-state resolver."""
+
+    def load_anchor_ref(self, anchor_ref: object) -> object:
+        """Load one state from an anchor checkpoint reference."""
+
+    def load_child_from_delta(
+        self,
+        *,
+        parent_state: object,
+        delta_ref: object,
+        branch_from_parent: object | None,
+    ) -> object:
+        """Load one child state from a parent state and delta reference."""
 
 
 def _live_compact_state_payload_cycle_error(node_id: int) -> RuntimeError:
@@ -303,16 +319,22 @@ class _LiveCompactStateResolver:
         """Resolve one payload without checking the top-level decoded cache."""
         self.metrics.total_reconstruction_depth += depth
         payload = self.state_payloads_by_node_id[node_id]
+        state_codec = cast(
+            _MorpionStateCheckpointCodec,  # noqa: TC006
+            self.state_codec,
+        )
         if isinstance(payload, AnchorCheckpointStatePayload):
             return cast(
                 "MorpionState",
-                cast("Any", self.state_codec).load_anchor_ref(payload.anchor_ref),
+                state_codec.load_anchor_ref(  # pylint: disable=no-member
+                    payload.anchor_ref
+                ),
             )
         if isinstance(payload, DeltaCheckpointStatePayload):
             parent_state = self.resolve(payload.state_parent_node_id)
             return cast(
                 "MorpionState",
-                cast("Any", self.state_codec).load_child_from_delta(
+                state_codec.load_child_from_delta(  # pylint: disable=no-member
                     parent_state=parent_state,
                     delta_ref=payload.delta_ref,
                     branch_from_parent=None,

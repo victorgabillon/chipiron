@@ -59,8 +59,8 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+import chipiron.environments.morpion.bootstrap.pipeline.stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.pipeline_memory as pipeline_memory_module
-import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 import chipiron.environments.morpion.learning.tree_to_dataset as tree_to_dataset_module
 from chipiron.environments.morpion.bootstrap import (
@@ -112,7 +112,7 @@ from chipiron.environments.morpion.bootstrap.cycle_training import (
     BootstrapTrainingResult,
     train_and_select_evaluators,
 )
-from chipiron.environments.morpion.bootstrap.memory_diagnostics import (
+from chipiron.environments.morpion.bootstrap.profiling.memory_diagnostics import (
     MemoryDiagnostics,
     MemoryDiagnosticsConfig,
 )
@@ -3588,14 +3588,32 @@ def test_pipeline_stages_imports_bootstrap_loop_only_for_args() -> None:
     bootstrap_loop_imports: set[str] = set()
     protocol_imports: set[str] = set()
     for node in ast.walk(module):
-        if isinstance(node, ast.ImportFrom) and node.level == 1:
-            if node.module == "bootstrap_loop":
+        if isinstance(node, ast.ImportFrom):
+            if node.module in {
+                "bootstrap_loop",
+                "chipiron.environments.morpion.bootstrap.bootstrap_loop",
+            }:
                 bootstrap_loop_imports.update(alias.name for alias in node.names)
-            if node.module == "search_runner_protocol":
+            if node.module in {
+                "search_runner_protocol",
+                "chipiron.environments.morpion.bootstrap.search_runner_protocol",
+            }:
                 protocol_imports.update(alias.name for alias in node.names)
 
     assert bootstrap_loop_imports <= {"MorpionBootstrapArgs"}
     assert "MorpionSearchRunner" in protocol_imports
+
+
+def test_pipeline_stage_forward_imports_resolve_owner_api() -> None:
+    """Pipeline stage APIs should resolve from the owner package modules."""
+    from chipiron.environments.morpion.bootstrap import (
+        run_pipeline_growth_stage as package_run_pipeline_growth_stage,
+    )
+    from chipiron.environments.morpion.bootstrap.pipeline.stages import (
+        run_pipeline_growth_stage as owner_run_pipeline_growth_stage,
+    )
+
+    assert package_run_pipeline_growth_stage is owner_run_pipeline_growth_stage
 
 
 def test_package_root_reexports_search_runner_protocol() -> None:

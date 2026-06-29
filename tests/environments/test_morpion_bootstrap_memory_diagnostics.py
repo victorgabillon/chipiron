@@ -29,7 +29,7 @@ if "chipiron.environments.morpion.bootstrap" not in sys.modules:
     _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
     sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
-from chipiron.environments.morpion.bootstrap.memory_diagnostics import (
+from chipiron.environments.morpion.bootstrap.profiling.memory_diagnostics import (
     MemoryDiagnostics,
     MemoryDiagnosticsConfig,
 )
@@ -352,21 +352,22 @@ def _install_launcher_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
             self.__dict__.update(kwargs)
 
     stubs = {
-        "chipiron.environments.morpion.bootstrap.anemone_runner": {
-            "AnemoneMorpionSearchRunner": object,
-            "AnemoneMorpionSearchRunnerArgs": object,
-            "apply_runtime_control_to_runner_args": _simple_function,
+        "chipiron.environments.morpion.bootstrap.bootstrap_args": {
+            "MorpionBootstrapArgs": _BootstrapArgs,
         },
         "chipiron.environments.morpion.bootstrap.bootstrap_loop": {
-            "MorpionBootstrapArgs": _BootstrapArgs,
             "MorpionBootstrapPaths": object,
             "run_morpion_bootstrap_loop": _simple_function,
         },
         "chipiron.environments.morpion.bootstrap.config": {
             "DEFAULT_MORPION_TREE_BRANCH_LIMIT": 128,
             "MorpionBootstrapConfig": object,
+            "MorpionBootstrapRolloutConfig": _BootstrapArgs,
+            "MorpionBootstrapSearchConfig": _BootstrapArgs,
             "bootstrap_config_from_args": _simple_function,
             "load_bootstrap_config": _simple_function,
+            "save_bootstrap_config": _simple_function,
+            "validate_stage_bootstrap_config_compatibility": _simple_function,
         },
         "chipiron.environments.morpion.bootstrap.control": {
             "MorpionBootstrapControl": object,
@@ -374,19 +375,50 @@ def _install_launcher_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
             "load_bootstrap_control": _simple_function,
         },
         "chipiron.environments.morpion.bootstrap.evaluator_family": {
+            "CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET": (
+                "canonical_linear_mlp_graph_small"
+            ),
             "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET": "canonical",
         },
         "chipiron.environments.morpion.bootstrap.history": {
             "MorpionBootstrapLatestStatus": object,
             "load_latest_bootstrap_status": _simple_function,
         },
+        "chipiron.environments.morpion.bootstrap.pipeline.stages": {
+            "run_pipeline_dataset_stage": _simple_function,
+            "run_pipeline_growth_stage": _simple_function,
+            "run_pipeline_training_stage": _simple_function,
+        },
+        "chipiron.environments.morpion.bootstrap.pipeline_config": {
+            "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY": "when_better",
+            "DEFAULT_MORPION_PIPELINE_MODE": "off",
+            "DEFAULT_MORPION_TRAINING_EXPORT_MODE": "snapshot",
+            "MorpionPipelineStage": str,
+        },
+        "chipiron.environments.morpion.bootstrap.pipeline_orchestrator": {
+            "MorpionPipelineOrchestratorResult": object,
+            "MorpionPipelineWorkerResult": object,
+            "run_morpion_artifact_pipeline_once": _simple_function,
+            "run_next_pipeline_dataset_stage_once": _simple_function,
+            "run_next_pipeline_training_stage_once": _simple_function,
+        },
         "chipiron.environments.morpion.bootstrap.process_control": {
             "mark_current_launcher_process_stopped": _simple_function,
             "register_current_launcher_process": _simple_function,
         },
+        "chipiron.environments.morpion.bootstrap.reevaluation_worker": {
+            "MorpionReevaluationWorkerResult": object,
+            "run_morpion_reevaluation_worker_once": _simple_function,
+        },
         "chipiron.environments.morpion.bootstrap.run_state": {
             "MorpionBootstrapRunState": object,
             "load_bootstrap_run_state": _simple_function,
+        },
+        "chipiron.environments.morpion.bootstrap.runtime.runner": {
+            "AnemoneMorpionSearchRunner": object,
+            "AnemoneMorpionSearchRunnerArgs": object,
+            "_default_search_args": _simple_function,
+            "apply_runtime_control_to_runner_args": _simple_function,
         },
     }
     for module_name, attributes in stubs.items():

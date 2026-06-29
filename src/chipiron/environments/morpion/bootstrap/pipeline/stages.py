@@ -7,6 +7,164 @@ import time
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
+from chipiron.environments.morpion.bootstrap.bootstrap_errors import (
+    MissingSavedBootstrapArtifactError,
+)
+from chipiron.environments.morpion.bootstrap.bootstrap_memory import (
+    log_after_cycle_gc,
+    memory_diagnostics_config_from_args,
+)
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+    MorpionBootstrapPaths,
+    runtime_checkpoint_artifact_exists,
+)
+from chipiron.environments.morpion.bootstrap.config import (
+    MorpionBootstrapConfig,
+    bootstrap_config_from_args,
+    bootstrap_config_sha256,
+    load_bootstrap_config,
+    save_bootstrap_config,
+    validate_bootstrap_config_change,
+)
+from chipiron.environments.morpion.bootstrap.control import (
+    MorpionBootstrapControl,
+    apply_control_to_args,
+    effective_runtime_config_from_config_and_control,
+    load_bootstrap_control,
+)
+from chipiron.environments.morpion.bootstrap.cycle_dataset import (
+    export_training_snapshot_for_generation as _export_training_snapshot_for_generation,
+)
+from chipiron.environments.morpion.bootstrap.cycle_dataset import (
+    load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
+)
+from chipiron.environments.morpion.bootstrap.cycle_dataset import (
+    streaming_rows_from_training_snapshot as _streaming_rows_from_training_snapshot,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import build_bootstrap_event
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    build_event_metadata as _build_event_metadata,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    next_metadata as _next_metadata,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    pipeline_metadata as _pipeline_metadata,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    record_no_save_cycle_event as _record_no_save_cycle_event,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    with_config_hash_metadata as _with_config_hash_metadata,
+)
+from chipiron.environments.morpion.bootstrap.cycle_pipeline_manifest import (
+    write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
+    GROWTH_STATUS_METADATA_KEY,
+    CandidateCheckpointLoadDeferredError,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    build_no_save_run_state as _build_no_save_run_state,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    current_tree_branch_count as _current_tree_branch_count,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    no_growth_and_limit_reached as _no_growth_and_limit_reached,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    resolve_runtime_restore_path as _resolve_runtime_restore_path,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    resolve_tree_status as _resolve_tree_status,
+)
+from chipiron.environments.morpion.bootstrap.cycle_timing import (
+    save_trigger_reason as _save_trigger_reason,
+)
+from chipiron.environments.morpion.bootstrap.cycle_timing import should_save_progress
+from chipiron.environments.morpion.bootstrap.cycle_timing import (
+    timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
+)
+from chipiron.environments.morpion.bootstrap.cycle_training import (
+    restrict_evaluators_config as _restrict_evaluators_config,
+)
+from chipiron.environments.morpion.bootstrap.cycle_training import (
+    train_and_select_evaluators as _train_and_select_evaluators,
+)
+from chipiron.environments.morpion.bootstrap.cycle_training import (
+    train_and_select_evaluators_streaming as _train_and_select_evaluators_streaming,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    previous_effective_runtime_config as _previous_effective_runtime_config,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    reevaluate_tree_for_policy as _reevaluate_tree_for_policy,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    validate_dataset_family_target_args as _validate_dataset_family_target_args,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    validate_forced_evaluator as _validate_forced_evaluator,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    validate_pipeline_mode as _validate_pipeline_mode,
+)
+from chipiron.environments.morpion.bootstrap.cycle_validation import (
+    validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
+)
+from chipiron.environments.morpion.bootstrap.history import (
+    MorpionBootstrapHistoryRecorder,
+)
+from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
+    MorpionPipelineActiveModel,
+    MorpionPipelineGenerationManifest,
+    save_pipeline_active_model,
+    save_pipeline_dataset_status_file,
+    save_pipeline_manifest,
+    save_pipeline_training_status_file,
+)
+from chipiron.environments.morpion.bootstrap.pipeline_claims import (
+    claim_pipeline_stage,
+    release_pipeline_stage_claim,
+)
+from chipiron.environments.morpion.bootstrap.pipeline_memory import (
+    current_rss_mb,
+    format_metric,
+    log_available_ram_guard,
+    log_pipeline_memory,
+)
+from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
+    log_growth_runtime_memory_profile as _log_growth_runtime_memory_profile,
+)
+from chipiron.environments.morpion.bootstrap.profiling.memory_diagnostics import (
+    MemoryDiagnostics,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
+    log_growth_recursive_memory_profile as _log_growth_recursive_memory_profile,
+)
+from chipiron.environments.morpion.bootstrap.record_status import (
+    persist_certified_leaderboard_candidates,
+    resolve_frontier_status_for_cycle,
+    resolve_frontier_status_for_cycle_with_metadata,
+    resolve_record_status_for_cycle,
+)
+from chipiron.environments.morpion.bootstrap.reevaluation_patch_consumer import (
+    apply_pending_reevaluation_patch_to_runner,
+)
+from chipiron.environments.morpion.bootstrap.run_state import (
+    MorpionBootstrapRunState,
+    initialize_bootstrap_run_state,
+    load_bootstrap_run_state,
+    save_bootstrap_run_state,
+)
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRowsSource,
     load_morpion_supervised_rows,
@@ -18,116 +176,38 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     morpion_streaming_split_policy,
 )
 
-from .bootstrap_errors import MissingSavedBootstrapArtifactError
-from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
-from .bootstrap_paths import MorpionBootstrapPaths, runtime_checkpoint_artifact_exists
-from .config import (
-    MorpionBootstrapConfig,
-    bootstrap_config_from_args,
-    bootstrap_config_sha256,
-    load_bootstrap_config,
-    save_bootstrap_config,
-    validate_bootstrap_config_change,
-)
-from .control import (
-    MorpionBootstrapControl,
-    apply_control_to_args,
-    effective_runtime_config_from_config_and_control,
-    load_bootstrap_control,
-)
-from .cycle_dataset import (
-    export_training_snapshot_for_generation as _export_training_snapshot_for_generation,
-)
-from .cycle_dataset import (
-    load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
-)
-from .cycle_dataset import (
-    streaming_rows_from_training_snapshot as _streaming_rows_from_training_snapshot,
-)
-from .cycle_metadata import build_bootstrap_event
-from .cycle_metadata import build_event_metadata as _build_event_metadata
-from .cycle_metadata import next_metadata as _next_metadata
-from .cycle_metadata import pipeline_metadata as _pipeline_metadata
-from .cycle_metadata import record_no_save_cycle_event as _record_no_save_cycle_event
-from .cycle_metadata import with_config_hash_metadata as _with_config_hash_metadata
-from .cycle_pipeline_manifest import (
-    write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
-)
-from .cycle_runtime import (
-    GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
-    GROWTH_STATUS_METADATA_KEY,
-    CandidateCheckpointLoadDeferredError,
-)
-from .cycle_runtime import (
-    build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
-)
-from .cycle_runtime import build_no_save_run_state as _build_no_save_run_state
-from .cycle_runtime import current_tree_branch_count as _current_tree_branch_count
-from .cycle_runtime import no_growth_and_limit_reached as _no_growth_and_limit_reached
-from .cycle_runtime import (
-    prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
-)
-from .cycle_runtime import resolve_runtime_restore_path as _resolve_runtime_restore_path
-from .cycle_runtime import resolve_tree_status as _resolve_tree_status
-from .cycle_timing import save_trigger_reason as _save_trigger_reason
-from .cycle_timing import should_save_progress
-from .cycle_timing import timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s
-from .cycle_training import (
-    restrict_evaluators_config as _restrict_evaluators_config,
-)
-from .cycle_training import train_and_select_evaluators as _train_and_select_evaluators
-from .cycle_training import (
-    train_and_select_evaluators_streaming as _train_and_select_evaluators_streaming,
-)
-from .cycle_validation import (
-    previous_effective_runtime_config as _previous_effective_runtime_config,
-)
-from .cycle_validation import reevaluate_tree_for_policy as _reevaluate_tree_for_policy
-from .cycle_validation import (
-    validate_dataset_family_target_args as _validate_dataset_family_target_args,
-)
-from .cycle_validation import validate_forced_evaluator as _validate_forced_evaluator
-from .cycle_validation import validate_pipeline_mode as _validate_pipeline_mode
-from .cycle_validation import (
-    validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
-)
-from .growth_memory_profile import (
-    log_growth_runtime_memory_profile as _log_growth_runtime_memory_profile,
-)
-from .history import MorpionBootstrapHistoryRecorder
-from .memory_diagnostics import MemoryDiagnostics
-from .pipeline.active_model import _resolve_pipeline_active_model_for_growth
-from .pipeline.checkpoint_loading import (
+from .active_model import _resolve_pipeline_active_model_for_growth
+from .checkpoint_loading import (
     _candidate_checkpoint_payload_loader,
     _log_candidate_checkpoint_load_profile,
     _runtime_checkpoint_artifact_bytes,
     _should_load_candidate_checkpoint,
 )
-from .pipeline.checkpoint_loading import (
+from .checkpoint_loading import (
     _log_before_candidate_checkpoint_load as _log_before_candidate_checkpoint_load,
 )
-from .pipeline.cursors import (
+from .cursors import (
     _active_model_generation_for_training_guard as _active_model_generation_for_training_guard,
 )
-from .pipeline.cursors import (
+from .cursors import (
     _optional_generation_max as _optional_generation_max,
 )
-from .pipeline.cursors import (
+from .cursors import (
     _save_training_cursor_completed,
     _save_training_cursor_started,
     _training_lower_bound_generation,
     _training_rows_subset_path,
 )
-from .pipeline.growth_budget import (
+from .growth_budget import (
     _apply_effective_runtime_config_if_supported as _apply_effective_runtime_config_if_supported,
 )
-from .pipeline.growth_budget import (
+from .growth_budget import (
     _growth_budget_runtime_config,
 )
-from .pipeline.growth_budget import (
+from .growth_budget import (
     _missing_branch_count_for_additional_budget_error as _missing_branch_count_for_additional_budget_error,
 )
-from .pipeline.manifests import (
+from .manifests import (
     MissingPipelineRowsFileError,
     MissingPipelineTreeSnapshotFileError,
     _load_generation_manifest,
@@ -139,68 +219,38 @@ from .pipeline.manifests import (
     _save_dataset_manifest_status,
     _save_training_manifest_status,
 )
-from .pipeline.manifests import (
+from .manifests import (
     _latest_prior_dataset_status_artifact as _latest_prior_dataset_status_artifact,
 )
-from .pipeline.manifests import (
+from .manifests import (
     _manifest_rows_path_required_error as _manifest_rows_path_required_error,
 )
-from .pipeline.manifests import (
+from .manifests import (
     _manifest_tree_snapshot_required_error as _manifest_tree_snapshot_required_error,
 )
-from .pipeline.observability import (
+from .observability import (
     _configure_linoo_selection_artifact_for_growth,
 )
-from .pipeline.observability import (
+from .observability import (
     _observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
 )
-from .pipeline.observability import (
+from .observability import (
     _optional_ratio as _optional_ratio,
 )
-from .pipeline.observability import (
+from .observability import (
     _optional_runner_mapping as _optional_runner_mapping,
-)
-from .pipeline_artifacts import (
-    MorpionPipelineActiveModel,
-    MorpionPipelineGenerationManifest,
-    save_pipeline_active_model,
-    save_pipeline_dataset_status_file,
-    save_pipeline_manifest,
-    save_pipeline_training_status_file,
-)
-from .pipeline_claims import (
-    claim_pipeline_stage,
-    release_pipeline_stage_claim,
-)
-from .pipeline_memory import (
-    current_rss_mb,
-    format_metric,
-    log_available_ram_guard,
-    log_pipeline_memory,
-)
-from .record_status import (
-    persist_certified_leaderboard_candidates,
-    resolve_frontier_status_for_cycle,
-    resolve_frontier_status_for_cycle_with_metadata,
-    resolve_record_status_for_cycle,
-)
-from .recursive_memory_profile import (
-    log_growth_recursive_memory_profile as _log_growth_recursive_memory_profile,
-)
-from .reevaluation_patch_consumer import apply_pending_reevaluation_patch_to_runner
-from .run_state import (
-    MorpionBootstrapRunState,
-    initialize_bootstrap_run_state,
-    load_bootstrap_run_state,
-    save_bootstrap_run_state,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    from .bootstrap_args import MorpionBootstrapArgs
-    from .search_runner_protocol import MorpionSearchRunner
+    from chipiron.environments.morpion.bootstrap.bootstrap_args import (
+        MorpionBootstrapArgs,
+    )
+    from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
+        MorpionSearchRunner,
+    )
 
 LOGGER = logging.getLogger(__name__)
 
@@ -428,7 +478,7 @@ def _run_one_pipeline_growth_cycle_impl(
         resolved_bootstrap_config=bootstrap_config,
     )
     _validate_runtime_reconfiguration(
-        previous_effective_runtime_config=previous_effective_runtime_config,
+        previous_runtime_config=previous_effective_runtime_config,
         effective_runtime_config=effective_runtime_config,
     )
     resolved_evaluators_config = args.resolved_evaluators_config()

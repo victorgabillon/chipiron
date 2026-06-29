@@ -1,4 +1,5 @@
 """Persisted bootstrap configuration helpers for Morpion runs."""
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -18,6 +19,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.graph_toke
 )
 
 from .bootstrap_errors import InvalidReevaluationBlendAlphaError
+from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+from .pipeline_config import (
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+)
 from .record_status import (
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -32,7 +39,6 @@ if TYPE_CHECKING:
         MorpionGrowthStateEvictionPolicy,
         MorpionRuntimeCheckpointFormat,
     )
-    from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
     from .pipeline_config import (
         MorpionEvaluatorUpdatePolicy,
         MorpionPipelineMode,
@@ -40,12 +46,6 @@ if TYPE_CHECKING:
         MorpionTrainingExportMode,
     )
     from .pv_family_targets import PvFamilyTargetPolicy
-
-from .pipeline_config import (
-    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
-    DEFAULT_MORPION_PIPELINE_MODE,
-    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
-)
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
 DEFAULT_MORPION_TREE_BRANCH_LIMIT = 128
@@ -571,8 +571,6 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
 
 def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
     """Deserialize one bootstrap config from JSON-friendly data."""
-    from .evaluator_config import MorpionEvaluatorsConfig
-
     if not _is_str_key_mapping(data):
         raise MalformedMorpionBootstrapConfigError.invalid_top_level_mapping()
 
@@ -865,14 +863,13 @@ def validate_bootstrap_config_change(
     current: MorpionBootstrapConfig,
 ) -> None:
     """Validate whether a relaunch config change can continue one run safely."""
-    unsafe_changes = [
-        field_name
-        for field_name in _diff_dataclass_section(
+    unsafe_changes = list(
+        _diff_dataclass_section(
             previous.experiment,
             current.experiment,
             prefix="experiment",
         )
-    ]
+    )
     if not unsafe_changes:
         return
 
@@ -1188,8 +1185,6 @@ def _evaluator_spec_from_config_payload(
     spec_payload: object,
 ) -> MorpionEvaluatorSpec:
     """Deserialize one evaluator spec from JSON-friendly data."""
-    from .evaluator_config import MorpionEvaluatorSpec
-
     section_name = f"evaluators.evaluators.{evaluator_name}"
     spec_mapping = _require_section_mapping(spec_payload, section_name=section_name)
 

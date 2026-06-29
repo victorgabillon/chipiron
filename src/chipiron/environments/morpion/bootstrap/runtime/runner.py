@@ -62,27 +62,6 @@ from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 from dacite import Config, from_dict
 from valanga.evaluations import Certainty, Value
 
-from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
-    MorpionMasterEvaluator,
-    MorpionOverEventDetector,
-    MorpionStateEvaluator,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks import (
-    load_morpion_model_bundle,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
-    MorpionGraphTokenConverter,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
-    MorpionFeatureTensorConverter,
-)
-from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
-
-if TYPE_CHECKING:
-    from anemone.checkpoints._protocols import CheckpointStateSummary
-    from torch import Tensor
-
 from chipiron.environments.morpion.bootstrap.config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapRolloutConfig,
@@ -109,6 +88,22 @@ from chipiron.environments.morpion.bootstrap.sharded_training_export import (
     MorpionShardedTrainingExportStats,
     save_morpion_sharded_training_tree_from_live_nodes,
 )
+from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
+    MorpionMasterEvaluator,
+    MorpionOverEventDetector,
+    MorpionStateEvaluator,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    load_morpion_model_bundle,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_GRAPH_MODEL_KIND,
+    MorpionGraphTokenConverter,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
+    MorpionFeatureTensorConverter,
+)
+from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from . import checkpoint_io as _checkpoint_io
 from .checkpoint_io import (
@@ -129,18 +124,6 @@ from .rollout_logging import (
     _opening_expansion_kind_name,
     _opening_type_name,
 )
-from .rollout_logging import (
-    _rollout_no_legal_but_not_terminal as _rollout_no_legal_but_not_terminal,
-)
-from .rollout_logging import (
-    _rollout_path_reports as _rollout_path_reports,
-)
-from .rollout_logging import (
-    _rollout_path_stop_counts as _rollout_path_stop_counts,
-)
-from .rollout_logging import (
-    _rollout_path_stop_reason as _rollout_path_stop_reason,
-)
 from .state_eviction import (
     MorpionGrowthStateEvictionMetrics,
     _dump_live_state_parent_branch_for_checkpoint,
@@ -150,11 +133,10 @@ from .state_eviction import (
     _phase_delta,
     _single_parent_link_for_live_delta,
 )
-from .state_eviction import (
-    _ParentDeltaContext as _ParentDeltaContext,
-)
 
 if TYPE_CHECKING:
+    from anemone.checkpoints._protocols import CheckpointStateSummary
+
     from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
         MorpionReevaluationPatch,
         MorpionReevaluationPatchRow,
@@ -687,7 +669,7 @@ class _RestoreMemoryLogger:
     def _recursive_size_mb(self, value: object | None) -> float | None:
         if not self.recursive_enabled or value is None:
             return None
-        from chipiron.environments.morpion.bootstrap.recursive_memory_profile import (
+        from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
             DeepSizeStats,
             deep_size,
         )
@@ -985,9 +967,16 @@ def _new_morpion_state_checkpoint_codec(
 class MorpionStateToTensorConverter(Protocol):
     """Minimal interface shared by Morpion neural input converters."""
 
-    def state_to_tensor(self, state: MorpionState) -> Tensor:
+    def state_to_tensor(self, state: MorpionState) -> object:
         """Convert one Morpion state to the model input tensor."""
         ...
+
+
+class _MorpionRegressor(Protocol):
+    """Callable neural regressor loaded from a Morpion model bundle."""
+
+    def __call__(self, tensor: object) -> Any:
+        """Return the raw model output for one converted state."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1036,9 +1025,11 @@ class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
             )
 
         morpion_state = cast("MorpionState", state)
-        tensor = self.input_converter.state_to_tensor(morpion_state)
-        regressor = cast("Any", self.regressor)
-        raw_output = regressor(tensor)
+        tensor = self.input_converter.state_to_tensor(  # pylint: disable=assignment-from-no-return
+            morpion_state
+        )
+        regressor = cast(_MorpionRegressor, self.regressor)  # noqa: TC006
+        raw_output = regressor(tensor)  # pylint: disable=not-callable
         score = float(raw_output.detach().cpu().reshape(-1)[0].item())
         return Value(
             score=score,
@@ -1772,7 +1763,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             return None
 
         try:
-            parent_state = cast("Any", parent_context.parent_node).state
+            parent_state = cast(
+                Any,
+                parent_context.parent_node,
+            ).state
             delta_ref = self._state_codec.dump_delta_from_parent(
                 parent_state=parent_state,
                 child_state=state,
@@ -1792,7 +1786,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             payload=DeltaCheckpointStatePayload(
                 state_parent_node_id=parent_context.parent_node_id,
                 state_parent_branch=cast(
-                    "CheckpointAtomPayload | None", branch_payload
+                    CheckpointAtomPayload | None,  # noqa: TC006
+                    branch_payload,
                 ),
                 delta_ref=delta_ref,
                 state_summary=cast("CheckpointStateSummary | None", state_summary),
@@ -1973,7 +1968,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         all_nodes_in_tree_order = getattr(runtime, "_all_nodes_in_tree_order", None)
         if callable(all_nodes_in_tree_order):
             try:
-                return iter(all_nodes_in_tree_order())
+                return iter(all_nodes_in_tree_order())  # pylint: disable=not-callable
             except Exception:
                 return iter(())
 
@@ -2365,7 +2360,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                         None
                         if restore_memory_logger is None
                         else cast(
-                            "RestoreMemoryPhaseLogger",
+                            RestoreMemoryPhaseLogger,  # noqa: TC006
                             restore_memory_logger.callback,
                         )
                     ),
@@ -2462,7 +2457,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     None
                     if restore_memory_logger is None
                     else cast(
-                        "RestoreMemoryPhaseLogger", restore_memory_logger.callback
+                        RestoreMemoryPhaseLogger,  # noqa: TC006
+                        restore_memory_logger.callback,
                     )
                 ),
             ),
@@ -2628,6 +2624,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             nodes=node_count,
             generation=_generation_from_checkpoint_path(output),
         )
+        manifest = None
         if self._args.runtime_checkpoint_format == "sharded":
             manifest = write_sharded_search_checkpoint(
                 payload,
@@ -2646,6 +2643,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             generation=_generation_from_checkpoint_path(output),
         )
         if write_stats is None:
+            assert manifest is not None
             LOGGER.info(
                 "[checkpoint] sharded_checkpoint_write_done path=%s shards=%s nodes=%s branches=%s bytes=%s",
                 str(output),
@@ -3322,6 +3320,27 @@ def _safe_int_attr(node: Any, attribute_name: str) -> int | None:
     return value if isinstance(value, int) else None
 
 
+def run_morpion_growth_search_once(
+    *,
+    runner_args: AnemoneMorpionSearchRunnerArgs | None = None,
+    tree_snapshot_path: str | Path | None = None,
+    model_bundle_path: str | Path | None = None,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+    max_growth_steps: int,
+    reevaluate_tree: bool = False,
+) -> AnemoneMorpionSearchRunner:
+    """Create/load a runner, grow it once, and return the live runner."""
+    runner = AnemoneMorpionSearchRunner(runner_args)
+    runner.load_or_create(
+        tree_snapshot_path=tree_snapshot_path,
+        model_bundle_path=model_bundle_path,
+        effective_runtime_config=effective_runtime_config,
+        reevaluate_tree=reevaluate_tree,
+    )
+    runner.grow(max_growth_steps)
+    return runner
+
+
 def __getattr__(name: str) -> object:
     """Expose selected runtime checkpoint internals kept in checkpoint_io."""
     if name == "_validated_checkpoint_payload_cache":
@@ -3341,4 +3360,5 @@ __all__ = [
     "load_morpion_search_checkpoint_payload",
     "log_morpion_checkpoint_memory_phase",
     "restore_memory_logger_for_checkpoint_path",
+    "run_morpion_growth_search_once",
 ]

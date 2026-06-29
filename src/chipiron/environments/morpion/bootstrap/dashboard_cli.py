@@ -6,16 +6,16 @@ from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 
-from .dashboard_plot import (
+from .dashboard.history_view import (
+    MorpionBootstrapDashboardData,
+    build_morpion_bootstrap_dashboard_data,
+)
+from .dashboard.plot import (
     plot_active_evaluator,
     plot_dataset_size,
     plot_evaluator_losses,
     plot_record_score,
     plot_tree_size,
-)
-from .history_view import (
-    MorpionBootstrapDashboardData,
-    build_morpion_bootstrap_dashboard_data,
 )
 
 if TYPE_CHECKING:

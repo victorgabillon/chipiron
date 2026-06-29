@@ -397,9 +397,9 @@ mkdir -p ~/oldata/victor/morpion_runs/big_run_01
 
 ## 📊 4. Launch the dashboard (GUI)
 
-### ✅ Recommended (robust entrypoint)
+### ✅ Recommended
 
-We now use a dedicated module entrypoint to avoid Streamlit import issues:
+Use the dashboard owner entrypoint:
 
 ```bash
 cd ~/oldata/victor/chipiron
@@ -407,7 +407,7 @@ conda activate anemone
 export PYTHONPATH=src
 
 python -m streamlit run \
-  src/chipiron/environments/morpion/bootstrap/dashboard_streamlit_entry.py \
+  src/chipiron/environments/morpion/bootstrap/dashboard/streamlit_entry.py \
   -- --work-dir ~/oldata/victor/morpion_runs/big_run_01
 ```
 
@@ -419,7 +419,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from chipiron.environments.morpion.bootstrap.dashboard_app import run_dashboard_app
+from chipiron.environments.morpion.bootstrap.dashboard.app import run_dashboard_app
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -430,6 +430,9 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 ```
+
+The legacy `bootstrap/dashboard_streamlit_entry.py` wrapper remains available as a
+small executable convenience, but new commands should use the dashboard package path.
 
 ### 🌐 Access
 
@@ -566,7 +569,7 @@ sudo sysctl -p
 python -m chipiron.environments.morpion.bootstrap.launcher --work-dir ...
 
 # open dashboard
-python -m streamlit run src/chipiron/environments/morpion/bootstrap/dashboard_streamlit_entry.py -- --work-dir ...
+python -m streamlit run src/chipiron/environments/morpion/bootstrap/dashboard/streamlit_entry.py -- --work-dir ...
 ```
 
 ---

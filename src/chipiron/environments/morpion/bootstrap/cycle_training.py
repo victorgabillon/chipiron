@@ -8,6 +8,11 @@ import time
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, cast
 
+from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRows,
+    MorpionSupervisedRowsSource,
+    iter_morpion_supervised_rows_from_path,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
@@ -37,10 +42,6 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    from chipiron.environments.morpion.learning import (
-        MorpionSupervisedRows,
-        MorpionSupervisedRowsSource,
-    )
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
     from .control import MorpionBootstrapControl
     from .evaluator_config import MorpionEvaluatorSpec
-    from .memory_diagnostics import MemoryDiagnostics
+    from .profiling.memory_diagnostics import MemoryDiagnostics
     from .run_state import MorpionBootstrapRunState
 
 LOGGER = logging.getLogger(__name__)
@@ -175,7 +176,7 @@ def persist_evaluator_training_diagnostics(
             len(diagnostics.representative_examples),
             len(diagnostics.worst_examples),
         )
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[diagnostics] save_failed generation=%s evaluator=%s",
             generation,
@@ -328,11 +329,6 @@ def diagnostic_rows_from_streaming_rows(
     max_rows: int | None,
 ) -> MorpionSupervisedRows:
     """Return a bounded diagnostics sample from a streaming rows artifact."""
-    from chipiron.environments.morpion.learning import (
-        MorpionSupervisedRows,
-        iter_morpion_supervised_rows_from_path,
-    )
-
     effective_max_rows = (
         DEFAULT_STREAMING_DIAGNOSTIC_ROWS if max_rows is None else max_rows
     )

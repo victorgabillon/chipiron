@@ -188,7 +188,7 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
         layers.append(nn.Linear(previous_dim, 1))
         return nn.Sequential(*layers)
     if args.model_kind == MORPION_GRAPH_MODEL_KIND:
-        from coral.neural_networks.models.entity_token_transformer_value_net import (
+        from coral.neural_networks.models.entity_token_transformer_value_net import (  # pylint: disable=import-outside-toplevel
             EntityTokenTransformerValueNet,
             EntityTokenTransformerValueNetArgs,
         )

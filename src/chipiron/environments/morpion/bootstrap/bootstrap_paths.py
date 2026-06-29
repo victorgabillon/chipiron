@@ -1,8 +1,10 @@
 """Path and retention helpers for Morpion bootstrap artifacts."""
+# pylint: disable=too-many-public-methods
 
 from __future__ import annotations
 
 import logging
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -252,8 +254,6 @@ def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
             continue
         for path in paths:
             if path.is_dir():
-                import shutil
-
                 shutil.rmtree(path)
             else:
                 path.unlink()

@@ -8,10 +8,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-    from pathlib import Path
-
 from .cycle_timing import timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s
 from .pipeline_artifacts import (
     InvalidMorpionPipelineArtifactError,
@@ -23,6 +19,10 @@ from .pipeline_artifacts import (
     pipeline_stage_claim_to_dict,
     save_pipeline_stage_claim,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
 
 
 class PipelineStageAlreadyClaimedError(RuntimeError):
