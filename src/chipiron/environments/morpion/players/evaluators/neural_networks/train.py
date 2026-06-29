@@ -33,9 +33,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
     MorpionGraphTokenConverter,
+    is_morpion_entity_token_transformer_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
@@ -141,7 +141,7 @@ def train_morpion_regressor(
     """Train a Morpion regressor on persisted supervised rows."""
     collate_fn: Callable[[Any], Any] | None
     dataset: MorpionSupervisedDataset | MorpionGraphSupervisedDataset
-    if args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
         dataset = MorpionGraphSupervisedDataset(
             MorpionGraphSupervisedDatasetArgs(
                 file_name=os.fspath(args.dataset_file),
@@ -605,7 +605,7 @@ def _rows_to_sample_batch(
     args: MorpionTrainingArgs,
 ) -> MorpionSupervisedSample | MorpionGraphSupervisedSample:
     dynamics = MorpionDynamics()
-    if args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
         graph_converter = MorpionGraphTokenConverter(
             dynamics=dynamics,
             max_tokens=args.graph_max_tokens,

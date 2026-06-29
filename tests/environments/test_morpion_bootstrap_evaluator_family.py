@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from chipiron.environments.morpion.bootstrap import (
+    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     ConflictingMorpionEvaluatorConfigurationError,
@@ -12,10 +13,12 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     UnknownMorpionEvaluatorFamilyPresetError,
+    canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config,
     canonical_linear_mlp_graph_small_morpion_evaluator_family_config,
     canonical_morpion_evaluator_family_config,
     canonical_morpion_evaluator_names,
     canonical_morpion_evaluator_specs,
+    entity_token_transformer_small_morpion_evaluator_spec,
     graph_transformer_small_morpion_evaluator_spec,
     morpion_evaluators_config_from_preset,
 )
@@ -23,6 +26,7 @@ from chipiron.environments.morpion.bootstrap.cycle_training import (
     morpion_training_args_from_evaluator_spec,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
     MORPION_GRAPH_MODEL_KIND,
 )
 
@@ -115,12 +119,61 @@ def test_graph_small_family_preset_resolves() -> None:
     assert graph_spec.model_type == MORPION_GRAPH_MODEL_KIND
 
 
+def test_entity_transformer_small_family_extends_canonical_without_changing_it() -> None:
+    """The Coral entity-token preset should preserve canonical linear/MLP members."""
+    canonical = canonical_morpion_evaluator_family_config()
+    entity_family = (
+        canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    )
+
+    assert set(canonical.evaluators) == set(canonical_morpion_evaluator_names())
+    assert "entity_token_transformer_small" not in canonical.evaluators
+    assert set(entity_family.evaluators) == {
+        *canonical_morpion_evaluator_names(),
+        "entity_token_transformer_small",
+    }
+    for name in canonical_morpion_evaluator_names():
+        assert entity_family.evaluators[name] == canonical.evaluators[name]
+
+
+def test_entity_transformer_small_family_preset_resolves() -> None:
+    """The preset resolver should expose the Coral entity-token evaluator family."""
+    resolved = morpion_evaluators_config_from_preset(
+        CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+
+    assert (
+        resolved
+        == canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    )
+    entity_spec = resolved.evaluators["entity_token_transformer_small"]
+    assert entity_spec.name == "entity_token_transformer_small"
+    assert entity_spec.model_type == MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND
+
+
 def test_graph_transformer_small_spec_uses_laptop_safe_defaults() -> None:
     """The catalogue graph evaluator should be small enough for opt-in smoke runs."""
     spec = graph_transformer_small_morpion_evaluator_spec()
 
     assert spec.name == "graph_transformer_small"
     assert spec.model_type == MORPION_GRAPH_MODEL_KIND
+    assert spec.batch_size <= 16
+    assert spec.graph_max_tokens == 1536
+    assert spec.graph_d_model == 64
+    assert spec.graph_n_head == 4
+    assert spec.graph_n_layer == 2
+    assert spec.graph_dim_feedforward == 256
+    assert spec.graph_dropout_ratio == 0.0
+    assert spec.graph_pooling == "value_token"
+    assert spec.graph_output_tanh is True
+
+
+def test_entity_token_transformer_small_spec_uses_laptop_safe_defaults() -> None:
+    """The Coral entity-token evaluator should use the safe small defaults."""
+    spec = entity_token_transformer_small_morpion_evaluator_spec()
+
+    assert spec.name == "entity_token_transformer_small"
+    assert spec.model_type == MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND
     assert spec.batch_size <= 16
     assert spec.graph_max_tokens == 1536
     assert spec.graph_d_model == 64
@@ -176,6 +229,24 @@ def test_training_args_from_graph_spec_preserves_graph_fields() -> None:
     assert training_args.validation_seed == 17
 
 
+def test_training_args_from_entity_transformer_spec_uses_coral_model_kind() -> None:
+    """cycle_training should pass the Coral model kind through unchanged."""
+    spec = entity_token_transformer_small_morpion_evaluator_spec()
+
+    training_args = morpion_training_args_from_evaluator_spec(
+        spec=spec,
+        dataset_file="/tmp/morpion_rows.json",
+        output_dir="/tmp/morpion_model",
+        shuffle=False,
+        validation_fraction=0.125,
+        validation_seed=17,
+    )
+
+    assert training_args.model_kind == MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND
+    assert training_args.graph_input_feature_dim == spec.graph_input_feature_dim
+    assert training_args.graph_pooling == "value_token"
+
+
 def test_unknown_family_preset_fails_clearly() -> None:
     """Unknown family presets should raise a dedicated error."""
     with pytest.raises(UnknownMorpionEvaluatorFamilyPresetError):
@@ -206,6 +277,21 @@ def test_bootstrap_args_can_resolve_graph_family_preset() -> None:
     assert (
         args.resolved_evaluators_config()
         == canonical_linear_mlp_graph_small_morpion_evaluator_family_config()
+    )
+
+
+def test_bootstrap_args_can_resolve_entity_transformer_family_preset() -> None:
+    """Bootstrap args should resolve the Coral entity-token family preset."""
+    args = MorpionBootstrapArgs(
+        work_dir="/tmp/morpion-family",
+        evaluator_family_preset=(
+            CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
+        ),
+    )
+
+    assert (
+        args.resolved_evaluators_config()
+        == canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
     )
 
 

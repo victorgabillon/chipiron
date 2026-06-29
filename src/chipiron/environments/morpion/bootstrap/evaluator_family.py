@@ -10,6 +10,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     morpion_feature_subset_from_name,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
     MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
 )
@@ -20,6 +21,9 @@ CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_
 CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = (
     "canonical_linear_mlp_graph_small"
 )
+CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[
+    str
+] = "canonical_linear_mlp_entity_transformer_small"
 
 _CANONICAL_MORPION_EVALUATOR_SPECS: Final[
     tuple[tuple[str, str, str, tuple[int, ...] | None], ...]
@@ -86,7 +90,7 @@ def canonical_morpion_evaluator_family_config() -> MorpionEvaluatorsConfig:
 
 
 def graph_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
-    """Return the opt-in small graph-transformer Morpion evaluator spec."""
+    """Return the legacy small graph-token transformer Morpion evaluator spec."""
     return MorpionEvaluatorSpec(
         name="graph_transformer_small",
         model_type=MORPION_GRAPH_MODEL_KIND,
@@ -106,13 +110,44 @@ def graph_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
     )
 
 
+def entity_token_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
+    """Return the small Coral entity-token transformer Morpion evaluator spec."""
+    return MorpionEvaluatorSpec(
+        name="entity_token_transformer_small",
+        model_type=MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
+        hidden_sizes=None,
+        num_epochs=5,
+        batch_size=8,
+        learning_rate=1e-3,
+        graph_max_tokens=1536,
+        graph_input_feature_dim=MORPION_GRAPH_TOKEN_FEATURE_DIM,
+        graph_d_model=64,
+        graph_n_head=4,
+        graph_n_layer=2,
+        graph_dim_feedforward=256,
+        graph_dropout_ratio=0.0,
+        graph_pooling="value_token",
+        graph_output_tanh=True,
+    )
+
+
 def canonical_linear_mlp_graph_small_morpion_evaluator_family_config() -> (
     MorpionEvaluatorsConfig
 ):
-    """Return canonical linear/MLP evaluators plus one small graph evaluator."""
+    """Return canonical linear/MLP evaluators plus one legacy graph evaluator."""
     evaluators = dict(canonical_morpion_evaluator_specs())
     graph_spec = graph_transformer_small_morpion_evaluator_spec()
     evaluators[graph_spec.name] = graph_spec
+    return MorpionEvaluatorsConfig(evaluators=evaluators)
+
+
+def canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config() -> (
+    MorpionEvaluatorsConfig
+):
+    """Return canonical linear/MLP evaluators plus one Coral entity-token model."""
+    evaluators = dict(canonical_morpion_evaluator_specs())
+    entity_spec = entity_token_transformer_small_morpion_evaluator_spec()
+    evaluators[entity_spec.name] = entity_spec
     return MorpionEvaluatorsConfig(evaluators=evaluators)
 
 
@@ -122,6 +157,11 @@ def morpion_evaluators_config_from_preset(preset_name: str) -> MorpionEvaluators
         return canonical_morpion_evaluator_family_config()
     if preset_name == CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET:
         return canonical_linear_mlp_graph_small_morpion_evaluator_family_config()
+    if (
+        preset_name
+        == CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
+    ):
+        return canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
     raise UnknownMorpionEvaluatorFamilyPresetError(preset_name)
 
 
@@ -139,13 +179,16 @@ def _canonical_family_specs() -> tuple[_CanonicalFamilySpec, ...]:
 
 
 __all__ = [
+    "CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
     "UnknownMorpionEvaluatorFamilyPresetError",
+    "canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config",
     "canonical_linear_mlp_graph_small_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
+    "entity_token_transformer_small_morpion_evaluator_spec",
     "graph_transformer_small_morpion_evaluator_spec",
     "morpion_evaluators_config_from_preset",
 ]

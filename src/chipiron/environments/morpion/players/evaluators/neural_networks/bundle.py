@@ -20,9 +20,9 @@ from .feature_schema import (
 )
 from .graph_tokens import (
     MORPION_GRAPH_INPUT_REPRESENTATION,
-    MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
     MORPION_GRAPH_TOKEN_FEATURE_NAMES,
+    is_morpion_entity_token_transformer_model_kind,
 )
 from .model import (
     MORPION_INPUT_DIM,
@@ -256,7 +256,7 @@ def save_morpion_model_bundle(
         input_dim=model_args.input_dim,
         input_representation=(
             MORPION_GRAPH_INPUT_REPRESENTATION
-            if model_args.model_kind == MORPION_GRAPH_MODEL_KIND
+            if is_morpion_entity_token_transformer_model_kind(model_args.model_kind)
             else "handcrafted_features"
         ),
         model_kind=model_args.model_kind,
@@ -301,7 +301,7 @@ def _bundle_metadata(
 ) -> dict[str, object]:
     """Return manifest metadata augmented with graph-token schema details."""
     bundle_metadata = dict(metadata) if metadata is not None else {}
-    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
         bundle_metadata.update(
             {
                 "graph_token_feature_names": list(MORPION_GRAPH_TOKEN_FEATURE_NAMES),
@@ -327,7 +327,7 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
     feature_subset = (
         full_morpion_feature_subset()
-        if model_kind == MORPION_GRAPH_MODEL_KIND
+        if is_morpion_entity_token_transformer_model_kind(model_kind)
         else _load_feature_subset(
             data,
             path,
@@ -372,7 +372,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
     input_representation = str(data.get("input_representation", "handcrafted_features"))
     feature_subset = (
         full_morpion_feature_subset()
-        if model_kind == MORPION_GRAPH_MODEL_KIND
+        if is_morpion_entity_token_transformer_model_kind(model_kind)
         else _load_feature_subset(data, path, input_dim=input_dim)
     )
     return MorpionModelManifest(
@@ -410,8 +410,8 @@ def _validate_manifest_compatibility(
     """Validate that the loaded Morpion manifest matches current code."""
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
-    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
-        if manifest.model_kind != MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
+        if not is_morpion_entity_token_transformer_model_kind(manifest.model_kind):
             raise IncompatibleMorpionModelBundleError.wrong_input_dim(
                 expected_input_dim=model_args.input_dim,
                 actual_input_dim=manifest.input_dim,
@@ -453,7 +453,7 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
         if model_args.hidden_sizes is None
         else list(model_args.hidden_sizes),
     }
-    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
         data.update(
             {
                 "graph_max_tokens": model_args.graph_max_tokens,

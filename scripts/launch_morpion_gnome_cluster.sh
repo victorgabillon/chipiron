@@ -29,6 +29,8 @@ PYTHON_BIN="${PYTHON_BIN:-/home/pompote/oldata/conda_envs/anemone/bin/python}"
 # large Morpion trees; change only for compatibility testing.
 TRAINING_EXPORT_MODE="${TRAINING_EXPORT_MODE:-sharded}"
 RUNTIME_CHECKPOINT_FORMAT="${RUNTIME_CHECKPOINT_FORMAT:-sharded}"
+MORPION_EVALUATOR_FAMILY="${MORPION_EVALUATOR_FAMILY:-canonical_linear_mlp_entity_transformer_small}"
+MORPION_ALLOW_EVALUATOR_CATALOG_EXTENSION="${MORPION_ALLOW_EVALUATOR_CATALOG_EXTENSION:-1}"
 
 # Worker selection. `all` opens growth, dataset, training, and reevaluation;
 # use one of `growth`, `dataset`, `training`, or `reevaluation` for focused
@@ -302,16 +304,21 @@ RAM_GUARD_ARGS=""
 if [[ -n "$MORPION_MIN_AVAILABLE_RAM_MB" ]]; then
   RAM_GUARD_ARGS="--min-available-ram-mb $MORPION_MIN_AVAILABLE_RAM_MB"
 fi
+EVALUATOR_CATALOG_ARGS="--evaluator-family $MORPION_EVALUATOR_FAMILY"
+if [[ "$MORPION_ALLOW_EVALUATOR_CATALOG_EXTENSION" == "1" ]]; then
+  EVALUATOR_CATALOG_ARGS="$EVALUATOR_CATALOG_ARGS --allow-evaluator-catalog-extension"
+fi
 GROWTH_PROFILE_ARGS=""
 if [[ "$MORPION_GROWTH_MEMORY_PROFILE" == "1" ]]; then
   GROWTH_PROFILE_ARGS="--growth-memory-profile --growth-memory-profile-top-n $MORPION_GROWTH_MEMORY_PROFILE_TOP_N --growth-memory-profile-sample-nodes $MORPION_GROWTH_MEMORY_PROFILE_SAMPLE_NODES"
 fi
 
 GROWTH_STATE_EVICTION_ARGS="--growth-state-eviction-policy $MORPION_GROWTH_STATE_EVICTION_POLICY --growth-state-eviction-payload-mode $MORPION_GROWTH_STATE_EVICTION_PAYLOAD_MODE --growth-state-eviction-delta-chain-max-depth $MORPION_GROWTH_STATE_EVICTION_DELTA_CHAIN_MAX_DEPTH --growth-state-eviction-recent-window $MORPION_GROWTH_STATE_EVICTION_RECENT_WINDOW --growth-state-rematerialization-cache-size $MORPION_GROWTH_STATE_REMATERIALIZATION_CACHE_SIZE --growth-state-eviction-scan-interval-steps $MORPION_GROWTH_STATE_EVICTION_SCAN_INTERVAL_STEPS --growth-state-eviction-scan-node-limit $MORPION_GROWTH_STATE_EVICTION_SCAN_NODE_LIMIT"
-GROWTH_ARGS="--pipeline-stage growth --runtime-checkpoint-format $RUNTIME_CHECKPOINT_FORMAT --tree-branch-limit $GROWTH_TREE_BRANCH_LIMIT --max-growth-steps-per-cycle $GROWTH_MAX_STEPS_PER_CYCLE --save-after-tree-growth-factor $GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR --save-after-seconds $GROWTH_SAVE_AFTER_SECONDS --candidate-checkpoint-load-headroom-factor $MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR --candidate-checkpoint-load-min-headroom-mb $MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB $GROWTH_STATE_EVICTION_ARGS $ROLLOUT_ARGS $RAM_GUARD_ARGS $GROWTH_PROFILE_ARGS"
-DATASET_ARGS="--pipeline-stage dataset_worker $ROLLOUT_ARGS $RAM_GUARD_ARGS"
-TRAINING_ARGS="--pipeline-stage training_worker --training-row-chunk-size $MORPION_TRAINING_ROW_CHUNK_SIZE --evaluator-diagnostics-max-rows $MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS $ROLLOUT_ARGS $RAM_GUARD_ARGS"
-REEVALUATION_ARGS="--pipeline-stage reevaluation $ROLLOUT_ARGS $RAM_GUARD_ARGS"
+RUNTIME_CHECKPOINT_ARGS="--runtime-checkpoint-format $RUNTIME_CHECKPOINT_FORMAT"
+GROWTH_ARGS="--pipeline-stage growth $RUNTIME_CHECKPOINT_ARGS --tree-branch-limit $GROWTH_TREE_BRANCH_LIMIT --max-growth-steps-per-cycle $GROWTH_MAX_STEPS_PER_CYCLE --save-after-tree-growth-factor $GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR --save-after-seconds $GROWTH_SAVE_AFTER_SECONDS --candidate-checkpoint-load-headroom-factor $MORPION_CANDIDATE_CHECKPOINT_LOAD_HEADROOM_FACTOR --candidate-checkpoint-load-min-headroom-mb $MORPION_CANDIDATE_CHECKPOINT_LOAD_MIN_HEADROOM_MB $GROWTH_STATE_EVICTION_ARGS $ROLLOUT_ARGS $RAM_GUARD_ARGS $GROWTH_PROFILE_ARGS $EVALUATOR_CATALOG_ARGS"
+DATASET_ARGS="--pipeline-stage dataset_worker $RUNTIME_CHECKPOINT_ARGS $GROWTH_STATE_EVICTION_ARGS $ROLLOUT_ARGS $RAM_GUARD_ARGS $EVALUATOR_CATALOG_ARGS"
+TRAINING_ARGS="--pipeline-stage training_worker $RUNTIME_CHECKPOINT_ARGS --training-row-chunk-size $MORPION_TRAINING_ROW_CHUNK_SIZE --evaluator-diagnostics-max-rows $MORPION_EVALUATOR_DIAGNOSTICS_MAX_ROWS $GROWTH_STATE_EVICTION_ARGS $ROLLOUT_ARGS $RAM_GUARD_ARGS $EVALUATOR_CATALOG_ARGS"
+REEVALUATION_ARGS="--pipeline-stage reevaluation $RUNTIME_CHECKPOINT_ARGS $GROWTH_STATE_EVICTION_ARGS $ROLLOUT_ARGS $RAM_GUARD_ARGS $EVALUATOR_CATALOG_ARGS"
 if [[ -n "$MORPION_TRAINING_EVALUATOR_NAMES" ]]; then
   TRAINING_ARGS="$TRAINING_ARGS --training-evaluator-names $MORPION_TRAINING_EVALUATOR_NAMES"
 fi

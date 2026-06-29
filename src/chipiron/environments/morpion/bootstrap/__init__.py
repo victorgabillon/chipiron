@@ -127,13 +127,16 @@ from .dashboard.tree_inspector import (
 from .dashboard_cli import run_dashboard_cli
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import (
+    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     UnknownMorpionEvaluatorFamilyPresetError,
+    canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config,
     canonical_linear_mlp_graph_small_morpion_evaluator_family_config,
     canonical_morpion_evaluator_family_config,
     canonical_morpion_evaluator_names,
     canonical_morpion_evaluator_specs,
+    entity_token_transformer_small_morpion_evaluator_spec,
     graph_transformer_small_morpion_evaluator_spec,
     morpion_evaluators_config_from_preset,
 )
@@ -335,6 +338,7 @@ __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
+    "CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
     "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
@@ -470,6 +474,7 @@ __all__ = [
     "build_bootstrap_event",
     "build_morpion_bootstrap_dashboard_data",
     "build_morpion_bootstrap_tree_inspector_snapshot",
+    "canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config",
     "canonical_linear_mlp_graph_small_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_names",
@@ -494,6 +499,7 @@ __all__ = [
     "effective_runtime_config_from_config_and_control",
     "effective_runtime_config_sha256",
     "effective_runtime_config_to_dict",
+    "entity_token_transformer_small_morpion_evaluator_spec",
     "evaluator_loss_series_by_name",
     "evaluator_metrics_from_dict",
     "evaluator_metrics_to_dict",

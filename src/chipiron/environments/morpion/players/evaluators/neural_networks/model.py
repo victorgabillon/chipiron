@@ -17,8 +17,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
+    is_morpion_entity_token_transformer_model_kind,
 )
 
 MORPION_INPUT_DIM = full_morpion_feature_subset().dimension
@@ -44,7 +44,7 @@ class MorpionRegressorArgs:
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
-        if self.model_kind == MORPION_GRAPH_MODEL_KIND:
+        if is_morpion_entity_token_transformer_model_kind(self.model_kind):
             _validate_graph_transformer_args(self)
         subset = resolve_morpion_feature_subset(
             feature_subset_name=self.feature_subset_name,
@@ -64,7 +64,7 @@ class MorpionRegressorArgs:
     @property
     def input_dim(self) -> int:
         """Return the model input width."""
-        if self.model_kind == MORPION_GRAPH_MODEL_KIND:
+        if is_morpion_entity_token_transformer_model_kind(self.model_kind):
             return self.graph_input_feature_dim
         return self.feature_subset.dimension
 
@@ -187,7 +187,7 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
             previous_dim = hidden_size
         layers.append(nn.Linear(previous_dim, 1))
         return nn.Sequential(*layers)
-    if args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
         from coral.neural_networks.models.entity_token_transformer_value_net import (  # pylint: disable=import-outside-toplevel
             EntityTokenTransformerValueNet,
             EntityTokenTransformerValueNetArgs,

@@ -21,8 +21,27 @@ from chipiron.environments.morpion.types import (
 if TYPE_CHECKING:
     from atomheart.games.morpion.state import Point, Segment
 
+try:
+    from coral.neural_networks.nn_model_type import NNModelType
+except ModuleNotFoundError:
+    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND = "entity_token_transformer_value_net"
+else:
+    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND = (
+        NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
+    )
+MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND: Final[str] = (
+    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND
+)
 MORPION_GRAPH_MODEL_KIND: Final[str] = "graph_transformer"
 MORPION_GRAPH_INPUT_REPRESENTATION: Final[str] = "graph_tokens_v1"
+
+
+def is_morpion_entity_token_transformer_model_kind(model_kind: str) -> bool:
+    """Return whether a model kind consumes Morpion entity-token tensors."""
+    return model_kind in {
+        MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
+        MORPION_GRAPH_MODEL_KIND,
+    }
 
 
 class MorpionGraphTokenType(IntEnum):
@@ -323,6 +342,7 @@ def _feature_index(name: str) -> int:
 
 
 __all__ = [
+    "MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND",
     "MORPION_GRAPH_DIRECTIONS",
     "MORPION_GRAPH_INPUT_REPRESENTATION",
     "MORPION_GRAPH_MODEL_KIND",
@@ -330,4 +350,5 @@ __all__ = [
     "MORPION_GRAPH_TOKEN_FEATURE_NAMES",
     "MorpionGraphTokenConverter",
     "MorpionGraphTokenType",
+    "is_morpion_entity_token_transformer_model_kind",
 ]

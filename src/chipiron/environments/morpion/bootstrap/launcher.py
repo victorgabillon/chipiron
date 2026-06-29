@@ -33,6 +33,7 @@ from .control import (
     load_bootstrap_control,
 )
 from .evaluator_family import (
+    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
 )
@@ -191,6 +192,7 @@ class MorpionBootstrapLauncherArgs:
     min_available_ram_mb_explicit: bool = False
     tree_branch_limit_explicit: bool = False
     candidate_checkpoint_load_headroom_explicit: bool = False
+    allow_evaluator_catalog_extension: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -429,6 +431,12 @@ def _collect_launcher_startup_status(
             rollout_config_explicit=launcher_args.rollout_config_explicit,
             config_path=paths.bootstrap_config_path,
         )
+        bootstrap_config = _adopt_evaluator_catalog_extension_if_allowed(
+            persisted_config=bootstrap_config,
+            requested_config=requested_config,
+            allow_extension=launcher_args.allow_evaluator_catalog_extension,
+            config_path=paths.bootstrap_config_path,
+        )
         validate_stage_bootstrap_config_compatibility(
             stage=launcher_args.pipeline_stage,
             persisted_config=bootstrap_config,
@@ -475,6 +483,63 @@ def _collect_launcher_startup_status(
         history_exists=history_exists,
         latest_status_exists=latest_status_exists,
     )
+
+
+def _adopt_evaluator_catalog_extension_if_allowed(
+    *,
+    persisted_config: MorpionBootstrapConfig,
+    requested_config: MorpionBootstrapConfig,
+    allow_extension: bool,
+    config_path: Path,
+) -> MorpionBootstrapConfig:
+    """Persist append-only evaluator catalog additions when explicitly allowed."""
+    additions = _append_only_evaluator_catalog_additions(
+        persisted_config=persisted_config,
+        requested_config=requested_config,
+    )
+    if additions is None or not additions:
+        return persisted_config
+    if not allow_extension:
+        raise _evaluator_catalog_extension_requires_opt_in_error(additions)
+
+    adopted_config = replace(persisted_config, evaluators=requested_config.evaluators)
+    LOGGER.info(
+        "[runtime-reconfig] evaluator family extended with new evaluator(s): %s",
+        ", ".join(additions),
+    )
+    save_bootstrap_config(adopted_config, config_path)
+    return adopted_config
+
+
+def _evaluator_catalog_extension_requires_opt_in_error(
+    additions: tuple[str, ...],
+) -> ValueError:
+    """Return the explicit opt-in error for append-only catalog extensions."""
+    return ValueError(
+        "Evaluator catalog changes on an existing Morpion run are append-only "
+        "but require explicit opt-in. Re-run with "
+        "--allow-evaluator-catalog-extension or set "
+        "MORPION_ALLOW_EVALUATOR_CATALOG_EXTENSION=1 in the GNOME launcher. "
+        f"New evaluator(s): {', '.join(additions)}."
+    )
+
+
+def _append_only_evaluator_catalog_additions(
+    *,
+    persisted_config: MorpionBootstrapConfig,
+    requested_config: MorpionBootstrapConfig,
+) -> tuple[str, ...] | None:
+    """Return added evaluator names if the evaluator diff is append-only."""
+    persisted_evaluators = persisted_config.evaluators.evaluators
+    requested_evaluators = requested_config.evaluators.evaluators
+    persisted_names = set(persisted_evaluators)
+    requested_names = set(requested_evaluators)
+    if not persisted_names < requested_names:
+        return None
+    for name in persisted_names:
+        if persisted_evaluators[name] != requested_evaluators[name]:
+            return None
+    return tuple(name for name in sorted(requested_names - persisted_names))
 
 
 def _stage_can_adopt_growth_rollout_config(stage: MorpionPipelineStage) -> bool:
@@ -855,7 +920,18 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
             "to the canonical 8-model Morpion family unless explicit "
             "evaluators_config is supplied programmatically. Available presets "
             f"include {CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET!r} and "
-            f"{CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r}."
+            f"{CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r} "
+            "and "
+            f"{CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r}."
+        ),
+    )
+    parser.add_argument(
+        "--allow-evaluator-catalog-extension",
+        action="store_true",
+        default=False,
+        help=(
+            "Allow an existing bootstrap_config.json to adopt append-only "
+            "evaluator additions when all existing evaluator specs are unchanged."
         ),
     )
     parser.add_argument("--max-cycles", type=int, default=None)
@@ -1517,6 +1593,7 @@ def launcher_args_from_cli(
         candidate_checkpoint_load_headroom_explicit=(
             candidate_checkpoint_load_headroom_explicit
         ),
+        allow_evaluator_catalog_extension=parsed.allow_evaluator_catalog_extension,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

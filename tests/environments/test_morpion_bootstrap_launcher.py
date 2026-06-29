@@ -83,6 +83,8 @@ from chipiron.environments.morpion.bootstrap.config import (
     load_bootstrap_config,
 )
 from chipiron.environments.morpion.bootstrap.evaluator_family import (
+    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+    canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config,
     canonical_morpion_evaluator_family_config,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
@@ -1638,6 +1640,73 @@ def test_launcher_preserves_explicit_evaluator_family_preset(tmp_path: Path) -> 
         startup_status.resolved_evaluator_family_preset
         == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
     )
+
+
+def test_launcher_allows_append_only_evaluator_catalog_extension(
+    tmp_path: Path,
+) -> None:
+    """Existing runs may explicitly adopt append-only evaluator family additions."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        pipeline_mode="artifact_pipeline",
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "training_worker",
+            "--evaluator-family",
+            CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+            "--allow-evaluator-catalog-extension",
+        ]
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    expected = canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    assert startup_status.bootstrap_config.evaluators == expected
+    assert load_bootstrap_config(paths.bootstrap_config_path).evaluators == expected
+    assert "entity_token_transformer_small" in startup_status.resolved_evaluator_names
+
+
+def test_launcher_requires_opt_in_for_evaluator_catalog_extension(
+    tmp_path: Path,
+) -> None:
+    """Append-only evaluator additions should fail clearly without explicit opt-in."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        pipeline_mode="artifact_pipeline",
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "training_worker",
+            "--evaluator-family",
+            CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+        ]
+    )
+
+    with pytest.raises(ValueError, match="allow-evaluator-catalog-extension"):
+        launcher_module._collect_launcher_startup_status(launcher_args)
 
 
 def test_launcher_explicit_evaluator_config_suppresses_default_family(

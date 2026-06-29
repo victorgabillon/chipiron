@@ -97,8 +97,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     load_morpion_model_bundle,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
     MorpionGraphTokenConverter,
+    is_morpion_entity_token_transformer_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
@@ -1046,7 +1046,7 @@ def load_morpion_evaluator_from_model_bundle(
     model.eval()
     over_detector = MorpionOverEventDetector()
     input_converter: MorpionStateToTensorConverter
-    if model_args.model_kind == MORPION_GRAPH_MODEL_KIND:
+    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
         input_converter = MorpionGraphTokenConverter(
             dynamics=MorpionDynamics(),
             max_tokens=model_args.graph_max_tokens,
@@ -1764,7 +1764,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
         try:
             parent_state = cast(
-                Any,
+                "Any",
                 parent_context.parent_node,
             ).state
             delta_ref = self._state_codec.dump_delta_from_parent(

@@ -39,6 +39,7 @@ from .feature_schema import (
     validate_morpion_feature_subset,
 )
 from .graph_tokens import (
+    MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
     MORPION_GRAPH_DIRECTIONS,
     MORPION_GRAPH_INPUT_REPRESENTATION,
     MORPION_GRAPH_MODEL_KIND,
@@ -46,6 +47,7 @@ from .graph_tokens import (
     MORPION_GRAPH_TOKEN_FEATURE_NAMES,
     MorpionGraphTokenConverter,
     MorpionGraphTokenType,
+    is_morpion_entity_token_transformer_model_kind,
 )
 from .model import (
     MORPION_INPUT_DIM,
@@ -70,6 +72,7 @@ __all__ = [
     "HANDCRAFTED_20_CORE_FEATURE_NAMES",
     "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
+    "MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND",
     "MORPION_FEATURE_SCHEMA",
     "MORPION_GRAPH_DIRECTIONS",
     "MORPION_GRAPH_INPUT_REPRESENTATION",
@@ -104,6 +107,7 @@ __all__ = [
     "extract_morpion_features",
     "full_morpion_feature_schema",
     "full_morpion_feature_subset",
+    "is_morpion_entity_token_transformer_model_kind",
     "load_morpion_model_bundle",
     "load_morpion_regressor_for_inference",
     "morpion_feature_names",

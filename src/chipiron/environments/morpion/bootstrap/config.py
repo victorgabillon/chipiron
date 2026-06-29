@@ -14,8 +14,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
+    is_morpion_entity_token_transformer_model_kind,
 )
 
 from .bootstrap_errors import InvalidReevaluationBlendAlphaError
@@ -1288,10 +1288,9 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "feature_subset_name": spec.feature_subset_name,
         "feature_names": list(spec.feature_names),
     }
-    if (
-        spec.model_type == MORPION_GRAPH_MODEL_KIND
-        or _has_non_default_graph_evaluator_settings(spec)
-    ):
+    if is_morpion_entity_token_transformer_model_kind(
+        spec.model_type
+    ) or _has_non_default_graph_evaluator_settings(spec):
         payload.update(_graph_evaluator_settings_to_dict(spec))
     return payload
 
