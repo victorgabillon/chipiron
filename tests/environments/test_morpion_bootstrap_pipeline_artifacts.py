@@ -397,6 +397,48 @@ def test_pipeline_active_model_roundtrip(tmp_path: Path) -> None:
     assert load_pipeline_active_model(path) == active_model
 
 
+def test_pipeline_external_seed_active_model_roundtrip(tmp_path: Path) -> None:
+    """Active-model provenance should preserve external seed metadata."""
+    active_model = MorpionPipelineActiveModel(
+        generation=430,
+        evaluator_name="mlp_41",
+        model_bundle_path="models/generation_000430/mlp_41",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        source="external_seed",
+        source_generation=430,
+        local_trained_generation=None,
+    )
+    path = tmp_path / "pipeline" / "active_model.json"
+
+    save_pipeline_active_model(active_model, path)
+
+    loaded = load_pipeline_active_model(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert loaded == active_model
+    assert payload["source"] == "external_seed"
+    assert payload["source_generation"] == 430
+    assert payload["local_trained_generation"] is None
+
+
+def test_pipeline_active_model_old_schema_defaults_to_local_training() -> None:
+    """Older active-model artifacts should remain valid."""
+    active_model = pipeline_artifacts_module.pipeline_active_model_from_dict(
+        {
+            "generation": 3,
+            "evaluator_name": "linear",
+            "model_bundle_path": "models/generation_000003/linear",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+            "metadata": {"selection_policy": "lowest_final_loss"},
+        }
+    )
+
+    assert active_model.source == "local_training"
+    assert active_model.source_generation == 3
+    assert active_model.local_trained_generation == 3
+    assert active_model.source_was_inferred is True
+
+
 def test_pipeline_training_status_roundtrip(tmp_path: Path) -> None:
     """One saved training-status artifact should round-trip through JSON unchanged."""
     training_status = MorpionPipelineTrainingStatusArtifact(

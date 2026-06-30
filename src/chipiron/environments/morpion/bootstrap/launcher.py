@@ -68,9 +68,9 @@ from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 from .runtime.runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
-    apply_runtime_control_to_runner_args,
     default_search_args,
 )
+from .runtime.runtime_control import apply_runtime_control_to_runner_args
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

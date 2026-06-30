@@ -9,7 +9,7 @@ import time
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 from random import Random
 from time import perf_counter
@@ -45,7 +45,6 @@ from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.nodes.state_handles import MaterializedStateHandle
 from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
-    TreeBranchLimit,
     TreeBranchLimitArgs,
 )
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
@@ -54,16 +53,13 @@ from anemone.training_export import (
     build_training_tree_snapshot,
     save_training_tree_snapshot,
 )
-from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
+from anemone.value_updates import NodeValueUpdate
 from atomheart.games.morpion import initial_state
 from valanga.evaluations import Certainty, Value
 
 from chipiron.environments.morpion.bootstrap.config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapRolloutConfig,
-)
-from chipiron.environments.morpion.bootstrap.control import (
-    MorpionBootstrapEffectiveRuntimeConfig,
 )
 from chipiron.environments.morpion.bootstrap.cycle_timing import (
     timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
@@ -118,6 +114,12 @@ from .checkpoint_io import (
     cache_morpion_search_checkpoint_payload_for_restore,
     checkpoint_io_metrics_to_dict,
 )
+from .reevaluation_patching import (
+    ReevaluationBlendMetrics,
+    _blend_average,
+    _uninitialized_reevaluation_patch_runtime_error,
+    apply_blended_reevaluation_patch,
+)
 from .restore_memory_logging import (
     RestoreMemoryLogger,
     current_rss_mb,
@@ -130,6 +132,11 @@ from .rollout_logging import (
     _opening_expansion_config_from_rollout,
     _opening_expansion_kind_name,
     _opening_type_name,
+)
+from .runtime_control import (
+    apply_runtime_config_to_runtime,
+    apply_runtime_control_to_runner_args,
+    runtime_config_from_search_args,
 )
 from .selection_logging import (
     checkpoint_selector_state_fields,
@@ -166,9 +173,11 @@ from .training_export_profile import (
 if TYPE_CHECKING:
     from anemone.checkpoints._protocols import CheckpointStateSummary
 
+    from chipiron.environments.morpion.bootstrap.control import (
+        MorpionBootstrapEffectiveRuntimeConfig,
+    )
     from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
         MorpionReevaluationPatch,
-        MorpionReevaluationPatchRow,
     )
 
 LOGGER = logging.getLogger(__name__)
@@ -178,60 +187,12 @@ _GROWTH_STEP_SEPARATOR = (
 _VERBOSE_SELECTION_TABLE_ENV = "MORPION_VERBOSE_SELECTION_TABLE"
 
 
-_TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (
-    "Morpion bootstrap runtime reconfiguration currently supports only "
-    "TreeBranchLimitArgs stopping criteria."
-)
-_LIVE_TREE_BRANCH_LIMIT_REQUIRED_MESSAGE = (
-    "Morpion bootstrap runtime reconfiguration currently supports only "
-    "tree-branch-limit stopping criteria on the live runtime."
-)
 _LIVE_TREE_REQUIRED_MESSAGE = "Anemone runtime must expose a live tree."
-
-
-@dataclass(slots=True)
-class _ReevaluationBlendMetrics:
-    """Aggregate diagnostics for smoothed reevaluation patch updates."""
-
-    count: int = 0
-    old_sum: float = 0.0
-    new_sum: float = 0.0
-    blended_sum: float = 0.0
-
-    def record(
-        self,
-        *,
-        old_value: float,
-        new_value: float,
-        blended_value: float,
-    ) -> None:
-        """Record one actually blended node update."""
-        self.count += 1
-        self.old_sum += old_value
-        self.new_sum += new_value
-        self.blended_sum += blended_value
 
 
 def _env_flag_enabled(name: str) -> bool:
     """Return whether an operator-facing boolean env flag is enabled."""
     return os.environ.get(name, "0").strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
-    """Invalidate selector caches when the runtime or selector exposes a hook."""
-    invalidate_runtime = getattr(
-        runtime, "_invalidate_selector_cache_if_supported", None
-    )
-    if callable(invalidate_runtime):
-        return bool(invalidate_runtime())
-
-    selector = getattr(runtime, "node_selector", None)
-    invalidate_selector = getattr(selector, "invalidate", None)
-    if callable(invalidate_selector):
-        invalidate_selector()
-        return True
-
-    return False
 
 
 def default_search_args(
@@ -269,13 +230,6 @@ class UninitializedMorpionSearchRunnerError(RuntimeError):
         super().__init__(
             "AnemoneMorpionSearchRunner has no live runtime. Call load_or_create() first."
         )
-
-
-def _uninitialized_reevaluation_patch_runtime_error() -> RuntimeError:
-    """Build the stable missing-runtime error for live patch application."""
-    return RuntimeError(
-        "Cannot apply Morpion reevaluation patch before the Anemone search runtime is initialized."
-    )
 
 
 class MorpionStateToTensorConverter(Protocol):
@@ -397,7 +351,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             profile_checkpoint=True,
         )
         self._current_evaluator_bundle_path: Path | None = None
-        self._last_applied_runtime_config = _runtime_config_from_search_args(
+        self._last_applied_runtime_config = runtime_config_from_search_args(
             self._args.search_args
         )
         self._state_eviction_metrics = MorpionGrowthStateEvictionMetrics(
@@ -444,7 +398,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> None:
         """Apply a supported runtime config to the loaded live runtime."""
         runtime = self._require_runtime()
-        _apply_runtime_config_to_runtime(runtime, runtime_config)
+        apply_runtime_config_to_runtime(runtime, runtime_config)
         self._last_applied_runtime_config = runtime_config
 
     def load_or_create(
@@ -490,7 +444,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 resolved_bundle_path,
                 search_args=self._args.search_args,
             )
-            _apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
+            apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
             self._install_state_rematerialization_phase_hooks(self._runtime)
             elapsed_s = time.perf_counter() - started_at
             LOGGER.info("[runtime] create_done elapsed=%.3fs", elapsed_s)
@@ -517,7 +471,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         elapsed_s = time.perf_counter() - started_at
         self._runtime = runtime
-        _apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
+        apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
         self._install_state_rematerialization_phase_hooks(runtime)
         LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
         self._current_evaluator_bundle_path = None
@@ -1634,8 +1588,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
             selector_invalidated: bool | None = None
         else:
-            blend_metrics = _ReevaluationBlendMetrics()
-            result, selector_invalidated = _apply_blended_reevaluation_patch(
+            blend_metrics = ReevaluationBlendMetrics()
+            result, selector_invalidated = apply_blended_reevaluation_patch(
                 runtime=runtime,
                 patch=patch,
                 blend_alpha=blend_alpha,
@@ -2199,65 +2153,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
 
 
-def apply_runtime_control_to_runner_args(
-    runner_args: AnemoneMorpionSearchRunnerArgs,
-    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
-) -> AnemoneMorpionSearchRunnerArgs:
-    """Return runner args rebound to one effective runtime config.
-
-    This helper is kept as the pure arg-transformation counterpart of the live
-    runtime patching path used during checkpoint restore.
-    """
-    return replace(
-        runner_args,
-        search_args=_search_args_with_tree_branch_limit(
-            runner_args.search_args,
-            tree_branch_limit=runtime_config.tree_branch_limit,
-        ),
-    )
-
-
-def _runtime_config_from_search_args(
-    search_args: SearchArgs,
-) -> MorpionBootstrapEffectiveRuntimeConfig:
-    """Extract the supported effective runtime config from one SearchArgs object."""
-    stopping_criterion = search_args.stopping_criterion
-    if not isinstance(stopping_criterion, TreeBranchLimitArgs):
-        raise TypeError(_TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE)
-    return MorpionBootstrapEffectiveRuntimeConfig(
-        tree_branch_limit=stopping_criterion.tree_branch_limit,
-    )
-
-
-def _search_args_with_tree_branch_limit(
-    search_args: SearchArgs,
-    *,
-    tree_branch_limit: int,
-) -> SearchArgs:
-    """Return SearchArgs rebound to one explicit tree-branch limit."""
-    stopping_criterion = search_args.stopping_criterion
-    if not isinstance(stopping_criterion, TreeBranchLimitArgs):
-        raise TypeError(_TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE)
-    return replace(
-        search_args,
-        stopping_criterion=replace(
-            stopping_criterion,
-            tree_branch_limit=tree_branch_limit,
-        ),
-    )
-
-
-def _apply_runtime_config_to_runtime(
-    runtime: object,
-    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
-) -> None:
-    """Apply the supported runtime config to one live runtime after create/restore."""
-    stopping_criterion = getattr(runtime, "stopping_criterion", None)
-    if not isinstance(stopping_criterion, TreeBranchLimit):
-        raise TypeError(_LIVE_TREE_BRANCH_LIMIT_REQUIRED_MESSAGE)
-    stopping_criterion.tree_branch_limit = runtime_config.tree_branch_limit
-
-
 def _count_expanded_nodes(runtime: Any) -> int:
     """Count nodes that have already generated all branches in the live tree."""
     return sum(
@@ -2311,154 +2206,6 @@ def _runtime_depth_counts(runtime: Any) -> dict[int, int]:
             count_at_depth = len(descendants[absolute_depth])
         counts_by_depth[int(absolute_depth) - int(root_depth)] = count_at_depth
     return counts_by_depth
-
-
-def _apply_blended_reevaluation_patch(
-    *,
-    runtime: Any,
-    patch: MorpionReevaluationPatch,
-    blend_alpha: float,
-    blend_metrics: _ReevaluationBlendMetrics,
-) -> tuple[NodeValueUpdateResult, bool]:
-    """Apply one smoothed patch using Anemone's existing single node lookup pass."""
-    nodes_by_id = runtime._nodes_by_public_id()  # pylint: disable=protected-access
-    missing_node_ids = tuple(
-        row.node_id for row in patch.rows if row.node_id not in nodes_by_id
-    )
-    applied_nodes: list[object] = []
-    changed_nodes: list[object] = []
-    for row in patch.rows:
-        live_node = nodes_by_id.get(row.node_id)
-        if live_node is None:
-            continue
-        update = NodeValueUpdate(
-            node_id=row.node_id,
-            direct_value=_reevaluation_patch_direct_value(
-                row=row,
-                live_node=live_node,
-                blend_alpha=blend_alpha,
-                blend_metrics=blend_metrics,
-            ),
-            backed_up_value=row.backed_up_value,
-            is_exact=row.is_exact,
-            is_terminal=row.is_terminal,
-            metadata=row.metadata,
-        )
-        changed = bool(
-            runtime._apply_node_value_update(  # pylint: disable=protected-access
-                node=live_node,
-                update=update,
-            )
-        )
-        applied_nodes.append(live_node)
-        if changed:
-            changed_nodes.append(live_node)
-
-    recomputed_count = _recompute_after_blended_reevaluation(
-        runtime=runtime,
-        changed_nodes=changed_nodes,
-    )
-    selector_invalidated = False
-    if changed_nodes:
-        selector_invalidated = _invalidate_selector_cache_if_supported(runtime)
-    return (
-        NodeValueUpdateResult(
-            requested_count=len(patch.rows),
-            applied_count=len(applied_nodes),
-            missing_node_ids=missing_node_ids,
-            recomputed_count=recomputed_count,
-        ),
-        selector_invalidated,
-    )
-
-
-def _recompute_after_blended_reevaluation(
-    *,
-    runtime: Any,
-    changed_nodes: list[object],
-) -> int:
-    """Refresh backups and exploration indices after local smoothed value writes."""
-    if not changed_nodes:
-        return 0
-    tree_manager = runtime.tree_manager
-    recomputed_nodes = (
-        tree_manager.value_propagator.propagate_after_local_value_changes(changed_nodes)
-    )
-    tree_manager.refresh_exploration_indices(tree=runtime.tree)
-    return len(recomputed_nodes)
-
-
-def _reevaluation_patch_direct_value(
-    *,
-    row: MorpionReevaluationPatchRow,
-    live_node: object | None,
-    blend_alpha: float,
-    blend_metrics: _ReevaluationBlendMetrics,
-) -> float:
-    """Return the direct value to write for one reevaluation patch row."""
-    new_value = float(row.direct_value)
-    if blend_alpha >= 1.0 or live_node is None:
-        return new_value
-    if _patch_row_is_authoritative(row) or _live_node_is_authoritative(live_node):
-        return new_value
-
-    old_value = _live_node_direct_value_score(live_node)
-    if old_value is None:
-        return new_value
-
-    blended_value = ((1.0 - blend_alpha) * old_value) + (blend_alpha * new_value)
-    blend_metrics.record(
-        old_value=old_value,
-        new_value=new_value,
-        blended_value=blended_value,
-    )
-    return blended_value
-
-
-def _patch_row_is_authoritative(row: object) -> bool:
-    """Return whether one patch row should bypass smoothing."""
-    return (
-        getattr(row, "is_exact", None) is True
-        or getattr(row, "is_terminal", None) is True
-    )
-
-
-def _live_node_is_authoritative(node: object) -> bool:
-    """Return whether one live node has terminal or exact authoritative value state."""
-    tree_evaluation = getattr(node, "tree_evaluation", None)
-    has_exact_value = getattr(tree_evaluation, "has_exact_value", None)
-    if callable(has_exact_value) and bool(has_exact_value()):
-        return True
-
-    state = getattr(node, "state", None)
-    is_game_over = getattr(state, "is_game_over", None)
-    if callable(is_game_over) and bool(is_game_over()):
-        return True
-
-    is_terminal = getattr(tree_evaluation, "is_terminal", None)
-    return bool(is_terminal()) if callable(is_terminal) else False
-
-
-def _live_node_direct_value_score(node: object) -> float | None:
-    """Return one live node's direct-value score when present."""
-    tree_evaluation = getattr(node, "tree_evaluation", None)
-    direct_value = getattr(tree_evaluation, "direct_value", None)
-    if direct_value is None:
-        return None
-    score = getattr(direct_value, "score", direct_value)
-    if isinstance(score, bool) or not isinstance(score, int | float):
-        return None
-    return float(score)
-
-
-def _blend_average(
-    value_sum: float,
-    metrics: _ReevaluationBlendMetrics,
-) -> float | None:
-    """Return one blend aggregate average, or None when no rows were blended."""
-    if metrics.count == 0:
-        return None
-    return value_sum / metrics.count
 
 
 def _selector_family_name(search_args: SearchArgs) -> str:

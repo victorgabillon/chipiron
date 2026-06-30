@@ -328,10 +328,10 @@ from .runtime.runner import (
     AnemoneMorpionSearchRunnerArgs,
     MorpionRegressorMasterEvaluator,
     UninitializedMorpionSearchRunnerError,
-    apply_runtime_control_to_runner_args,
     load_morpion_evaluator_from_model_bundle,
     run_morpion_growth_search_once,
 )
+from .runtime.runtime_control import apply_runtime_control_to_runner_args
 from .search_runner_protocol import MorpionSearchRunner
 
 __all__ = [

@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
 
 from .bootstrap_paths import MorpionBootstrapPaths
+from .pipeline.cursors import MorpionTrainingLowerBound, training_lower_bound_details
 from .pipeline.stages import (
     require_artifact_pipeline_mode,
     run_pipeline_dataset_stage,
@@ -19,14 +20,11 @@ from .pipeline.stages import (
 )
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
-    MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
     MorpionPipelineStageName,
-    load_pipeline_active_model,
     load_pipeline_manifest,
     load_pipeline_stage_claim,
-    load_pipeline_training_cursor,
 )
 from .pipeline_claims import (
     load_active_pipeline_stage_claim,
@@ -86,14 +84,6 @@ class _DatasetSelectionDiagnostics:
     claimable_generations: tuple[int, ...]
     selected_generation: int | None
     selected_manifest: MorpionPipelineGenerationManifest | None
-
-
-@dataclass(frozen=True, slots=True)
-class _TrainingLowerBound:
-    active_generation: int | None
-    cursor_started_generation: int | None
-    cursor_completed_generation: int | None
-    generation: int
 
 
 def list_pipeline_manifest_generations(paths: MorpionBootstrapPaths) -> tuple[int, ...]:
@@ -163,59 +153,25 @@ def _render_optional_log_value(value: object | None) -> str:
     return str(value)
 
 
-def _active_model_generation_from_artifact(
-    active_model: MorpionPipelineActiveModel | None,
-) -> int | None:
-    """Return the active model generation when an active model exists."""
-    return None if active_model is None else active_model.generation
-
-
-def _load_pipeline_active_model_for_training_lower_bound(
-    paths: MorpionBootstrapPaths,
-) -> MorpionPipelineActiveModel | None:
-    """Load active model generation for training selection when present."""
-    if not paths.pipeline_active_model_path.is_file():
-        return None
-    return load_pipeline_active_model(paths.pipeline_active_model_path)
-
-
-def _training_lower_bound(paths: MorpionBootstrapPaths) -> _TrainingLowerBound:
+def _training_lower_bound(paths: MorpionBootstrapPaths) -> MorpionTrainingLowerBound:
     """Return the monotonic lower bound for pipeline training selection."""
-    active_model = _load_pipeline_active_model_for_training_lower_bound(paths)
-    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
-    active_generation = _active_model_generation_from_artifact(active_model)
-    lower_bound = max(
-        active_generation if active_generation is not None else -1,
-        (
-            cursor.latest_started_generation
-            if cursor.latest_started_generation is not None
-            else -1
-        ),
-        (
-            cursor.latest_completed_generation
-            if cursor.latest_completed_generation is not None
-            else -1
-        ),
-    )
-    return _TrainingLowerBound(
-        active_generation=active_generation,
-        cursor_started_generation=cursor.latest_started_generation,
-        cursor_completed_generation=cursor.latest_completed_generation,
-        generation=lower_bound,
-    )
+    return training_lower_bound_details(paths)
 
 
 def _log_stale_training_skip(
     *,
     generation: int,
-    lower_bound: _TrainingLowerBound,
+    lower_bound: MorpionTrainingLowerBound,
 ) -> None:
     """Log that one training candidate is stale under monotonic selection."""
     LOGGER.info(
-        "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s active_generation=%s cursor_started=%s cursor_completed=%s",
+        "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s active_generation=%s active_model_source_generation=%s local_training_lower_bound=%s source=%s cursor_started=%s cursor_completed=%s",
         generation,
         lower_bound.generation,
-        _render_optional_log_value(lower_bound.active_generation),
+        _render_optional_log_value(lower_bound.active_model_generation),
+        _render_optional_log_value(lower_bound.active_model_source_generation),
+        lower_bound.generation,
+        lower_bound.active_model_source,
         _render_optional_log_value(lower_bound.cursor_started_generation),
         _render_optional_log_value(lower_bound.cursor_completed_generation),
     )

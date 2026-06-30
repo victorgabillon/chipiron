@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from dataclasses import dataclass, replace
@@ -871,6 +872,163 @@ def test_training_worker_ignores_generations_older_than_active_model(
 
     assert captured == [6]
     assert result.generation == 6
+
+
+def test_training_worker_treats_newer_external_active_model_as_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """External seed source generation should not stale local training datasets."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    for generation in (1, 2, 25):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [25]
+    assert result.generation == 25
+    assert (
+        "active_model_source_generation=430 local_training_lower_bound=0 "
+        "source=external_seed"
+    ) in messages
+    assert "lower_bound_generation=430" not in messages
+
+
+def test_training_worker_infers_old_schema_external_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Old active-model JSON can still be recognized as an external seed."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_active_model_path.parent.mkdir(parents=True, exist_ok=True)
+    paths.pipeline_active_model_path.write_text(
+        json.dumps(
+            {
+                "evaluator_name": "mlp_41",
+                "generation": 430,
+                "metadata": {},
+                "model_bundle_path": "models/generation_000430/mlp_41",
+                "updated_at_utc": "2026-04-28T12:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    for generation in (1, 2, 25):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [25]
+    assert result.generation == 25
+
+
+def test_training_worker_uses_completed_cursor_as_local_lower_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A completed cursor should stale earlier local generations only."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_completed_generation=2),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (1, 2, 3):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [3]
+    assert result.generation == 3
+    assert "training_skip generation=1 reason=stale_generation" in messages
+    assert "training_skip generation=2 reason=stale_generation" in messages
+    assert "local_training_lower_bound=2" in messages
 
 
 def test_training_worker_returns_no_work_when_all_pending_generations_are_stale(

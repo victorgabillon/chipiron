@@ -34,6 +34,7 @@ MorpionPipelineTrainingStatus = Literal[
 ]
 
 MorpionPipelineStageName = Literal["dataset", "training"]
+MorpionPipelineActiveModelSource = Literal["local_training", "external_seed"]
 
 _DATASET_STATUSES: frozenset[str] = frozenset(
     {
@@ -48,6 +49,7 @@ _TRAINING_STATUSES: frozenset[str] = frozenset(
     {"not_started", "training", "selecting", "done", "failed"}
 )
 _STAGE_NAMES: frozenset[str] = frozenset({"dataset", "training"})
+_ACTIVE_MODEL_SOURCES: frozenset[str] = frozenset({"local_training", "external_seed"})
 
 
 def _empty_metadata() -> dict[str, object]:
@@ -281,6 +283,16 @@ def _stage_name(value: object) -> MorpionPipelineStageName:
     return cast("MorpionPipelineStageName", value)
 
 
+def _active_model_source(value: object) -> MorpionPipelineActiveModelSource:
+    """Return one validated active-model provenance source."""
+    if not isinstance(value, str) or value not in _ACTIVE_MODEL_SOURCES:
+        raise _invalid_field_error(
+            "source",
+            f"must be one of {sorted(_ACTIVE_MODEL_SOURCES)!r}",
+        )
+    return cast("MorpionPipelineActiveModelSource", value)
+
+
 def _top_level_mapping(data: object) -> Mapping[str, object]:
     """Return one top-level artifact payload mapping."""
     if not isinstance(data, Mapping):
@@ -363,6 +375,10 @@ class MorpionPipelineActiveModel:
     model_bundle_path: str
     updated_at_utc: str
     metadata: dict[str, object] = field(default_factory=_empty_metadata)
+    source: MorpionPipelineActiveModelSource = "local_training"
+    source_generation: int | None = None
+    local_trained_generation: int | None = None
+    source_was_inferred: bool = field(default=False, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         """Validate and normalize active-model fields eagerly."""
@@ -387,6 +403,34 @@ class MorpionPipelineActiveModel:
             _require_str(self.updated_at_utc, field_name="updated_at_utc"),
         )
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+        object.__setattr__(
+            self,
+            "source",
+            _active_model_source(self.source),
+        )
+        object.__setattr__(
+            self,
+            "source_generation",
+            self.generation
+            if self.source_generation is None
+            else _optional_generation(
+                self.source_generation,
+                field_name="source_generation",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "local_trained_generation",
+            (
+                self.generation
+                if self.local_trained_generation is None
+                and self.source == "local_training"
+                else _optional_generation(
+                    self.local_trained_generation,
+                    field_name="local_trained_generation",
+                )
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1084,8 +1128,11 @@ def pipeline_active_model_to_dict(
     return {
         "evaluator_name": active_model.evaluator_name,
         "generation": active_model.generation,
+        "local_trained_generation": active_model.local_trained_generation,
         "metadata": dict(active_model.metadata),
         "model_bundle_path": active_model.model_bundle_path,
+        "source": active_model.source,
+        "source_generation": active_model.source_generation,
         "updated_at_utc": active_model.updated_at_utc,
     }
 
@@ -1093,6 +1140,18 @@ def pipeline_active_model_to_dict(
 def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
     """Deserialize one active-model record from JSON-friendly data."""
     payload = _top_level_mapping(data)
+    raw_metadata = payload.get("metadata")
+    metadata = _metadata_dict(raw_metadata)
+    metadata_source = metadata.get("source")
+    source_was_inferred = "source" not in payload and (
+        metadata_source not in _ACTIVE_MODEL_SOURCES
+    )
+    raw_source = payload.get(
+        "source",
+        metadata_source
+        if metadata_source in _ACTIVE_MODEL_SOURCES
+        else "local_training",
+    )
     return MorpionPipelineActiveModel(
         generation=_require_generation(
             payload.get("generation"), field_name="generation"
@@ -1106,7 +1165,17 @@ def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
         updated_at_utc=_require_str(
             payload.get("updated_at_utc"), field_name="updated_at_utc"
         ),
-        metadata=_metadata_dict(payload.get("metadata")),
+        metadata=metadata,
+        source=_active_model_source(raw_source),
+        source_generation=_optional_generation(
+            payload.get("source_generation"),
+            field_name="source_generation",
+        ),
+        local_trained_generation=_optional_generation(
+            payload.get("local_trained_generation"),
+            field_name="local_trained_generation",
+        ),
+        source_was_inferred=source_was_inferred,
     )
 
 
@@ -1775,6 +1844,7 @@ __all__ = [
     "InvalidMorpionPipelineArtifactError",
     "MissingMorpionPipelineArtifactError",
     "MorpionPipelineActiveModel",
+    "MorpionPipelineActiveModelSource",
     "MorpionPipelineDatasetStatus",
     "MorpionPipelineDatasetStatusArtifact",
     "MorpionPipelineEvaluatorTrainingResult",

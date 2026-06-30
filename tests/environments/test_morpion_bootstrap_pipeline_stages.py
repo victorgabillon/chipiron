@@ -2667,6 +2667,66 @@ def test_training_stage_skips_explicit_stale_generation(
     assert "training_skip generation=5 reason=stale_generation" in messages
 
 
+def test_training_stage_trains_local_generation_after_external_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """External active-model generation should not stale local stage execution."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(5)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=5,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(5),
+    )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        lambda **kwargs: _fake_training_result(paths, generation=5),
+    )
+
+    with caplog.at_level(logging.INFO):
+        manifest = run_pipeline_training_stage(
+            _artifact_pipeline_args(tmp_path),
+            generation=5,
+        )
+
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert manifest.training_status == "done"
+    assert active_model.generation == 430
+    assert active_model.model_bundle_path == "models/generation_000430/mlp_41"
+    assert cursor.latest_completed_generation == 5
+    assert (
+        "active_model_source_generation=430 local_training_lower_bound=0 "
+        "source=external_seed"
+    ) in messages
+    assert "training_skip generation=5 reason=stale_generation" not in messages
+
+
 def test_training_stage_ram_guard_defers_before_rows_load(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

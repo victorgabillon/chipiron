@@ -82,9 +82,11 @@ from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
 import chipiron.environments.morpion.bootstrap.cycle_runtime as cycle_runtime_module
 import chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec as checkpoint_codec_module
+import chipiron.environments.morpion.bootstrap.runtime.reevaluation_patching as reevaluation_patching_module
 import chipiron.environments.morpion.bootstrap.runtime.restore_memory_logging as restore_memory_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.rollout_logging as rollout_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.runner as anemone_runner_module
+import chipiron.environments.morpion.bootstrap.runtime.runtime_control as runtime_control_module
 import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.training_export_profile as training_export_profile_module
 from chipiron.environments.morpion.bootstrap import (
@@ -105,6 +107,9 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
     save_bootstrap_control,
+)
+from chipiron.environments.morpion.bootstrap import (
+    apply_runtime_control_to_runner_args as bootstrap_apply_runtime_control_to_runner_args,
 )
 from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     RUNTIME_CHECKPOINT_METADATA_KEY,
@@ -151,6 +156,12 @@ def test_restore_memory_logging_import_smoke() -> None:
     assert current_rss_mb is not None
     assert log_morpion_checkpoint_memory_phase is not None
     assert restore_memory_logger_for_checkpoint_path is not None
+
+
+def test_reevaluation_patching_import_smoke() -> None:
+    """Reevaluation patching helpers should be importable from their owning module."""
+    assert reevaluation_patching_module.ReevaluationBlendMetrics is not None
+    assert reevaluation_patching_module.apply_blended_reevaluation_patch is not None
 
 
 def test_restore_memory_logger_emits_structured_phase(
@@ -944,11 +955,11 @@ def test_blended_reevaluation_patch_invalidates_selector_when_values_change() ->
     )
 
     result, selector_invalidated = (
-        anemone_runner_module._apply_blended_reevaluation_patch(
+        reevaluation_patching_module.apply_blended_reevaluation_patch(
             runtime=runtime,
             patch=patch,
             blend_alpha=0.2,
-            blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+            blend_metrics=reevaluation_patching_module.ReevaluationBlendMetrics(),
         )
     )
 
@@ -972,11 +983,11 @@ def test_blended_reevaluation_patch_does_not_invalidate_selector_for_noop() -> N
     )
 
     result, selector_invalidated = (
-        anemone_runner_module._apply_blended_reevaluation_patch(
+        reevaluation_patching_module.apply_blended_reevaluation_patch(
             runtime=runtime,
             patch=patch,
             blend_alpha=0.2,
-            blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+            blend_metrics=reevaluation_patching_module.ReevaluationBlendMetrics(),
         )
     )
 
@@ -2494,13 +2505,51 @@ def test_apply_runtime_control_to_runner_args_updates_tree_branch_limit() -> Non
     """Runner args rebinding helper should update TreeBranchLimitArgs cleanly."""
     runner_args = AnemoneMorpionSearchRunnerArgs()
 
-    rebound_args = anemone_runner_module.apply_runtime_control_to_runner_args(
+    rebound_args = runtime_control_module.apply_runtime_control_to_runner_args(
         runner_args,
         MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64),
     )
 
     assert rebound_args.search_args.stopping_criterion.tree_branch_limit == 64
     assert runner_args.search_args.stopping_criterion.tree_branch_limit == 128
+
+
+def test_runtime_control_helpers_roundtrip_branch_limit() -> None:
+    """Runtime-control pure helpers should preserve branch-limit semantics."""
+    runner_args = _runner_args_with_tree_branch_limit(128)
+
+    runtime_config = runtime_control_module.runtime_config_from_search_args(
+        runner_args.search_args
+    )
+    rebound_search_args = runtime_control_module.search_args_with_tree_branch_limit(
+        runner_args.search_args,
+        tree_branch_limit=64,
+    )
+
+    assert runtime_config == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=128
+    )
+    assert rebound_search_args.stopping_criterion.tree_branch_limit == 64
+    assert runner_args.search_args.stopping_criterion.tree_branch_limit == 128
+
+
+def test_runtime_control_unsupported_stopping_criterion_error_message() -> None:
+    """Unsupported SearchArgs stopping criteria should keep the stable error."""
+    search_args = SimpleNamespace(stopping_criterion=object())
+
+    with pytest.raises(
+        TypeError,
+        match="TreeBranchLimitArgs stopping criteria",
+    ):
+        runtime_control_module.runtime_config_from_search_args(search_args)
+
+
+def test_bootstrap_exports_runtime_control_helper() -> None:
+    """The bootstrap facade should continue exposing the runtime-control helper."""
+    assert (
+        bootstrap_apply_runtime_control_to_runner_args
+        is runtime_control_module.apply_runtime_control_to_runner_args
+    )
 
 
 def test_bootstrap_loop_works_with_real_runner(
