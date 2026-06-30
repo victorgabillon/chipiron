@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import gc
 import logging
-import sys
 import time
 from collections import Counter
 from collections.abc import (  # pylint: disable=unused-import
@@ -18,36 +17,79 @@ from collections.abc import (  # pylint: disable=unused-import
 )
 from dataclasses import dataclass, field
 from enum import Enum
-from types import (
-    BuiltinFunctionType,
-    BuiltinMethodType,
-    CodeType,
-    FrameType,
-    FunctionType,
-    MethodType,
-    ModuleType,
-)
+from types import FrameType
 from typing import cast
 
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     current_rss_mb,
     format_metric,
 )
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    DeepSizeStats,
+    deep_size,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    deep_size_stats_capped as _deep_size_stats_capped,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    mb as _mb,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    measure_standalone_reachable as _measure_standalone_reachable,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    size_or_zero as _size_or_zero,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    ATOMIC_TYPES as _ATOMIC_TYPES,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    CONTAINER_TYPES as _CONTAINER_TYPES,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    CONTAINER_VALUE_TYPES as _CONTAINER_VALUE_TYPES,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    all_attr_paths as _all_attr_paths,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    first_attr_path as _first_attr_path,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    iter_direct_field_entries as _iter_direct_field_entries,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    iter_object_attribute_values as _iter_object_attribute_values,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    len_or_none as _len_or_none,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    qualified_type_name as _qualified_type_name,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    raw_attr_path as _raw_attr_path,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    raw_getattr as _raw_getattr,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    raw_getattr_present as _raw_getattr_present,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    safe_object_dict as _safe_object_dict,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    should_skip_deep as _should_skip_deep,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    slot_names,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    small_len_bucket as _small_len_bucket,
+)
 
 LOGGER = logging.getLogger(__name__)
-
-_ATOMIC_TYPES = (str, bytes, bytearray, int, float, bool, type(None))
-_SKIP_DEEP_TYPES = (
-    ModuleType,
-    FunctionType,
-    BuiltinFunctionType,
-    MethodType,
-    BuiltinMethodType,
-    CodeType,
-    type,
-)
-_CONTAINER_TYPES = (list, tuple, set, frozenset)
-_CONTAINER_VALUE_TYPES = (Mapping, list, tuple, set, frozenset)
 
 _RUNTIME_ATTR_PATHS: tuple[tuple[str, ...], ...] = (
     ("profile_search_root",),
@@ -180,17 +222,6 @@ _KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
 type ProfileRoot = tuple[str, object]
 
 
-@dataclass(slots=True)
-class DeepSizeStats:
-    """Mutable counters for one recursive-size traversal."""
-
-    visited_objects: int = 0
-    max_objects: int | None = None
-    capped: bool = False
-    max_depth_reached_count: int = 0
-    recursion_error_count: int = 0
-
-
 @dataclass(frozen=True, slots=True)
 class CheckpointPayloadStore:
     """Concrete mapping that owns checkpoint state payload objects."""
@@ -262,26 +293,6 @@ class _MorpionStateFrozensetAccumulator:
     total_field_shallow_bytes: int = 0
 
 
-def _qualified_type_name(value: object) -> str:
-    value_type = type(value)
-    module = value_type.__module__
-    qualname = value_type.__qualname__
-    if module == "builtins":
-        return qualname
-    return f"{module}.{qualname}"
-
-
-def _mb(byte_count: int) -> float:
-    return byte_count / (1024 * 1024)
-
-
-def _size_or_zero(value: object) -> int:
-    try:
-        return sys.getsizeof(value)
-    except TypeError:
-        return 0
-
-
 def _frozenset_len_bucket(length: int) -> str:
     if length == 0:
         return "0"
@@ -324,138 +335,6 @@ def _ordered_counter_items(
         if ordered_items:
             return ordered_items
     return sorted(counts.items(), key=lambda item: (item[0],))
-
-
-def _len_or_none(value: object) -> int | None:
-    try:
-        return len(value) if isinstance(value, Sized) else None
-    except (TypeError, RuntimeError):
-        return None
-
-
-def _small_len_bucket(length: int) -> str:
-    if length == 0:
-        return "0"
-    if length == 1:
-        return "1"
-    if length <= 4:
-        return "2-4"
-    if length <= 9:
-        return "5-9"
-    if length <= 24:
-        return "10-24"
-    if length <= 99:
-        return "25-99"
-    return "100+"
-
-
-def _should_skip_deep(value: object) -> bool:
-    return isinstance(value, _SKIP_DEEP_TYPES)
-
-
-def _raw_getattr(value: object, attr_name: str) -> object | None:
-    """Read a concrete attribute/slot without using ``dir`` or properties."""
-    try:
-        result: object = object.__getattribute__(value, attr_name)
-    except Exception:  # pylint: disable=broad-exception-caught
-        return None
-    return result
-
-
-def _raw_getattr_present(value: object, attr_name: str) -> tuple[bool, object | None]:
-    """Return whether a concrete attribute exists plus its raw value."""
-    try:
-        result: object = object.__getattribute__(value, attr_name)
-    except Exception:  # pylint: disable=broad-exception-caught
-        return False, None
-    return True, result
-
-
-def _safe_call_no_args(value: object) -> object | None:
-    if not callable(value):
-        return value
-    try:
-        return cast("Callable[[], object]", value)()
-    except Exception:  # pylint: disable=broad-exception-caught
-        return None
-
-
-def _raw_attr_path(root: object, path: tuple[str, ...]) -> object | None:
-    value: object | None = root
-    for index, attr_name in enumerate(path):
-        if value is None:
-            return None
-        value = _raw_getattr(value, attr_name)
-        if (
-            index == len(path) - 1
-            and attr_name.startswith("profile_")
-            and callable(value)
-        ):
-            value = _safe_call_no_args(value)
-    return value
-
-
-def _first_attr_path(root: object, paths: tuple[tuple[str, ...], ...]) -> object | None:
-    for path in paths:
-        value = _raw_attr_path(root, path)
-        if value is not None:
-            return value
-    return None
-
-
-def _all_attr_paths(
-    root: object, paths: tuple[tuple[str, ...], ...]
-) -> tuple[object, ...]:
-    values: list[object] = []
-    seen_ids: set[int] = set()
-    for path in paths:
-        value = _raw_attr_path(root, path)
-        if value is None:
-            continue
-        value_id = id(value)
-        if value_id in seen_ids:
-            continue
-        seen_ids.add(value_id)
-        values.append(value)
-    return tuple(values)
-
-
-def _safe_object_dict(value: object) -> Mapping[object, object] | None:
-    raw_dict = _raw_getattr(value, "__dict__")
-    if isinstance(raw_dict, Mapping):
-        return raw_dict
-    return None
-
-
-def _iter_direct_field_entries(value: object) -> Iterator[tuple[str, object]]:
-    """Yield raw direct fields from __dict__ entries and declared slots."""
-    seen_names: set[str] = set()
-    raw_dict = _safe_object_dict(value)
-    if raw_dict is not None:
-        for field_name, field_value in raw_dict.items():
-            if not isinstance(field_name, str) or field_name in seen_names:
-                continue
-            seen_names.add(field_name)
-            yield field_name, field_value
-    for slot_name in slot_names(value):
-        if slot_name in seen_names:
-            continue
-        present, slot_value = _raw_getattr_present(value, slot_name)
-        if not present:
-            continue
-        seen_names.add(slot_name)
-        yield slot_name, slot_value
-
-
-def _measure_standalone_reachable(
-    value: object,
-    *,
-    max_depth: int | None,
-    max_objects: int | None,
-) -> tuple[int, DeepSizeStats]:
-    stats = DeepSizeStats(max_objects=max_objects)
-    byte_count = deep_size(value, seen=set(), max_depth=max_depth, stats=stats)
-    return byte_count, stats
 
 
 def _resolve_linoo_selector(
@@ -794,180 +673,6 @@ def _direct_frozenset_ownership_summary(
             ),
         ),
     }
-
-
-def slot_names(type_or_obj: object) -> tuple[str, ...]:
-    """Return declared slot names across the MRO without consulting ``dir``."""
-    value_type = type_or_obj if isinstance(type_or_obj, type) else type(type_or_obj)
-    seen: set[str] = set()
-    ordered_names: list[str] = []
-    for base_type in value_type.__mro__:
-        raw_slots = getattr(base_type, "__slots__", ())
-        candidate_names: tuple[object, ...]
-        if isinstance(raw_slots, str):
-            candidate_names = (raw_slots,)
-        else:
-            try:
-                candidate_names = tuple(raw_slots)
-            except TypeError:
-                candidate_names = ()
-        for slot_name in candidate_names:
-            if not isinstance(slot_name, str):
-                continue
-            if slot_name in {"__weakref__", "__dict__"} or slot_name in seen:
-                continue
-            seen.add(slot_name)
-            ordered_names.append(slot_name)
-    return tuple(ordered_names)
-
-
-def _iter_object_attribute_values(value: object) -> Iterator[object]:
-    raw_dict = _safe_object_dict(value)
-    if raw_dict is not None:
-        yield raw_dict
-    for slot_name in slot_names(value):
-        slot_value = _raw_getattr(value, slot_name)
-        if slot_value is not None:
-            yield slot_value
-
-
-def deep_size(
-    obj: object,
-    *,
-    seen: set[int],
-    max_depth: int | None = _DEFAULT_DEEP_SIZE_MAX_DEPTH,
-    max_objects: int | None = None,
-    stats: DeepSizeStats | None = None,
-) -> int:
-    """Return recursive size while avoiding cycles and lazy properties.
-
-    Traversal is intentionally limited to builtin containers, actual
-    ``__dict__`` mappings, and declared ``__slots__``. It does not inspect
-    ``dir(obj)`` and therefore avoids calling materializing runtime properties.
-    """
-    active_stats = stats
-    if active_stats is None:
-        active_stats = DeepSizeStats(max_objects=max_objects)
-    elif max_objects is not None:
-        active_stats.max_objects = max_objects
-    return _deep_size(obj, seen=seen, max_depth=max_depth, depth=0, stats=active_stats)
-
-
-def _mark_recursion_error(stats: DeepSizeStats) -> None:
-    stats.recursion_error_count += 1
-    stats.capped = True
-
-
-def _deep_size_stats_capped(stats: DeepSizeStats) -> bool:
-    """Return whether a recursive-size traversal has reached a cap."""
-    return stats.capped
-
-
-def _try_push_deep_size_object(
-    obj: object,
-    *,
-    seen: set[int],
-    max_depth: int | None,
-    depth: int,
-    stack: list[tuple[object, int]],
-    stats: DeepSizeStats,
-) -> int:
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    if stats.max_objects is not None and stats.visited_objects >= stats.max_objects:
-        stats.capped = True
-        return 0
-
-    seen.add(obj_id)
-    stats.visited_objects += 1
-    size = _size_or_zero(obj)
-
-    if isinstance(obj, _ATOMIC_TYPES) or _should_skip_deep(obj):
-        return size
-    if max_depth is not None and depth >= max_depth:
-        stats.max_depth_reached_count += 1
-        stats.capped = True
-        return size
-
-    stack.append((obj, depth))
-    return size
-
-
-def _deep_size(
-    obj: object,
-    *,
-    seen: set[int],
-    max_depth: int | None,
-    depth: int,
-    stats: DeepSizeStats,
-) -> int:
-    stack: list[tuple[object, int]] = []
-    total_size = _try_push_deep_size_object(
-        obj,
-        seen=seen,
-        max_depth=max_depth,
-        depth=depth,
-        stack=stack,
-        stats=stats,
-    )
-
-    while stack:
-        current, current_depth = stack.pop()
-        next_depth = current_depth + 1
-
-        if isinstance(current, Mapping):
-            try:
-                for key, value in current.items():
-                    total_size += _try_push_deep_size_object(
-                        key,
-                        seen=seen,
-                        max_depth=max_depth,
-                        depth=next_depth,
-                        stack=stack,
-                        stats=stats,
-                    )
-                    total_size += _try_push_deep_size_object(
-                        value,
-                        seen=seen,
-                        max_depth=max_depth,
-                        depth=next_depth,
-                        stack=stack,
-                        stats=stats,
-                    )
-            except RecursionError:
-                _mark_recursion_error(stats)
-            continue
-
-        if isinstance(current, _CONTAINER_TYPES):
-            try:
-                for item in current:
-                    total_size += _try_push_deep_size_object(
-                        item,
-                        seen=seen,
-                        max_depth=max_depth,
-                        depth=next_depth,
-                        stack=stack,
-                        stats=stats,
-                    )
-            except RecursionError:
-                _mark_recursion_error(stats)
-            continue
-
-        try:
-            for attr_value in _iter_object_attribute_values(current):
-                total_size += _try_push_deep_size_object(
-                    attr_value,
-                    seen=seen,
-                    max_depth=max_depth,
-                    depth=next_depth,
-                    stack=stack,
-                    stats=stats,
-                )
-        except RecursionError:
-            _mark_recursion_error(stats)
-
-    return total_size
 
 
 def _iter_from_candidate(candidate: object) -> Iterator[object] | None:

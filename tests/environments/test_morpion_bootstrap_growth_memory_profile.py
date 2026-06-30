@@ -14,14 +14,24 @@ from typing import TYPE_CHECKING
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_BOOTSTRAP_PACKAGE_ROOT = (
-    _CHIPIRON_PACKAGE_ROOT / "environments" / "morpion" / "bootstrap"
-)
+_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
+_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
+_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
 
 if "chipiron" not in sys.modules:
     _chipiron_stub = ModuleType("chipiron")
     _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
     sys.modules["chipiron"] = _chipiron_stub
+
+if "chipiron.environments" not in sys.modules:
+    _environments_stub = ModuleType("chipiron.environments")
+    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments"] = _environments_stub
+
+if "chipiron.environments.morpion" not in sys.modules:
+    _morpion_stub = ModuleType("chipiron.environments.morpion")
+    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion"] = _morpion_stub
 
 if "chipiron.environments.morpion.bootstrap" not in sys.modules:
     _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
@@ -34,8 +44,17 @@ from anemone.checkpoints import (
 )
 from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
+import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
+    DeepSizeStats,
+    deep_size,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
+    safe_object_dict,
+    slot_names,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     build_recursive_profile_context,
@@ -44,7 +63,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     checkpoint_state_histograms,
     checkpoint_state_roots_detail_histogram,
     child_link_storage_detail_histogram,
-    deep_size,
     frozenset_ownership_histogram,
     gc_shallow_size_summary,
     linoo_candidate_heap_histogram,
@@ -57,7 +75,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     node_evaluation_runtime_detail_histograms,
     node_evaluation_runtime_histograms,
     parent_link_storage_histogram,
-    slot_names,
     state_eviction_runtime_histogram,
     state_handle_materialization_detail_histogram,
     state_retention_by_node_status_histogram,
@@ -790,6 +807,19 @@ def test_deep_size_traverses_containers_dicts_and_slots() -> None:
     assert "child" in slot_names(root.child)
 
 
+def test_object_access_reads_dicts_and_slots_safely() -> None:
+    """Object-access helpers should expose safe direct object fields."""
+    dict_object = RecursiveDictObject("value")
+    slot_object = RecursiveSlotObject("slot-value")
+
+    object_dict = safe_object_dict(dict_object)
+
+    assert object_dict is not None
+    assert object_dict["child"] == "value"
+    assert safe_object_dict(slot_object) is None
+    assert "child" in slot_names(slot_object)
+
+
 def test_deep_size_does_not_call_properties() -> None:
     """Recursive sizing must avoid properties that may materialize lazy state."""
     size = deep_size(RecursivePropertyObject(), seen=set())
@@ -823,7 +853,7 @@ def test_deep_size_caps_on_default_max_depth() -> None:
         current.child = child
         current = child
 
-    stats = recursive_memory_profile_module.DeepSizeStats()
+    stats = DeepSizeStats()
     size = deep_size(root, seen=set(), stats=stats)
 
     assert size > 0
@@ -840,7 +870,7 @@ def test_deep_size_honors_explicit_none_max_depth() -> None:
         current.child = child
         current = child
 
-    stats = recursive_memory_profile_module.DeepSizeStats()
+    stats = DeepSizeStats()
     size = deep_size(root, seen=set(), max_depth=None, stats=stats)
 
     assert size > 0
@@ -857,7 +887,7 @@ def test_deep_size_handles_deeper_than_python_recursion_limit_iteratively() -> N
         current.child = child
         current = child
 
-    stats = recursive_memory_profile_module.DeepSizeStats()
+    stats = DeepSizeStats()
     size = deep_size(root, seen=set(), max_depth=None, stats=stats)
 
     assert size > 0
@@ -875,7 +905,7 @@ def test_deep_size_honors_explicit_max_depth() -> None:
         current.child = child
         current = child
 
-    stats = recursive_memory_profile_module.DeepSizeStats()
+    stats = DeepSizeStats()
     size = deep_size(root, seen=set(), max_depth=3, stats=stats)
 
     assert size > 0
@@ -886,7 +916,7 @@ def test_deep_size_honors_explicit_max_depth() -> None:
 def test_deep_size_honors_max_objects_cap() -> None:
     """Iterative traversal should preserve the object-visit cap."""
     root = [RecursiveDictObject(index) for index in range(10)]
-    stats = recursive_memory_profile_module.DeepSizeStats(max_objects=3)
+    stats = DeepSizeStats(max_objects=3)
 
     size = deep_size(root, seen=set(), max_objects=3, stats=stats)
 
@@ -907,7 +937,7 @@ def test_exclusive_deep_size_respects_shared_seen_across_roots() -> None:
         roots,
         seen=set(),
         max_depth=None,
-        stats=recursive_memory_profile_module.DeepSizeStats(),
+        stats=DeepSizeStats(),
     )
     seen: set[int] = set()
     combined_size = deep_size(roots[0], seen=seen, max_depth=None) + deep_size(
@@ -924,7 +954,7 @@ def test_deep_size_catches_recursion_error_from_attribute_iteration(
 ) -> None:
     """Recursive sizing should convert attribute-iteration recursion failures to stats."""
     root = RecursionDictObject()
-    original_iter = recursive_memory_profile_module._iter_object_attribute_values
+    original_iter = deep_size_module.iter_object_attribute_values
 
     def raising_iter(value: object):
         if value is root:
@@ -932,12 +962,12 @@ def test_deep_size_catches_recursion_error_from_attribute_iteration(
         yield from original_iter(value)
 
     monkeypatch.setattr(
-        recursive_memory_profile_module,
-        "_iter_object_attribute_values",
+        deep_size_module,
+        "iter_object_attribute_values",
         raising_iter,
     )
 
-    stats = recursive_memory_profile_module.DeepSizeStats()
+    stats = DeepSizeStats()
     size = deep_size(root, seen=set(), stats=stats)
 
     assert size == sys.getsizeof(root)
@@ -2239,7 +2269,7 @@ def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
     runner = FakeRunnerWithProfileIterator()
     sentinel_runtime = RecursionDictObject()
     runner._runtime = sentinel_runtime
-    original_iter = recursive_memory_profile_module._iter_object_attribute_values
+    original_iter = deep_size_module.iter_object_attribute_values
 
     def raising_iter(value: object):
         if value is sentinel_runtime:
@@ -2247,8 +2277,8 @@ def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
         yield from original_iter(value)
 
     monkeypatch.setattr(
-        recursive_memory_profile_module,
-        "_iter_object_attribute_values",
+        deep_size_module,
+        "iter_object_attribute_values",
         raising_iter,
     )
     caplog.set_level(logging.INFO)

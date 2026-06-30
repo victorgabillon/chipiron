@@ -6,11 +6,11 @@ from importlib import import_module
 
 _LAZY_EXPORT_MODULES = {
     "DEFAULT_REFERRER_TYPE_PATTERNS": "memory_diagnostics",
-    "DeepSizeStats": "recursive_memory",
+    "DeepSizeStats": "recursive.deep_size",
     "MemoryDiagnostics": "memory_diagnostics",
     "MemoryDiagnosticsConfig": "memory_diagnostics",
     "build_recursive_profile_context": "recursive_memory",
-    "deep_size": "recursive_memory",
+    "deep_size": "recursive.deep_size",
     "log_growth_recursive_memory_profile": "recursive_memory",
     "log_growth_runtime_memory_profile": "growth_memory",
 }

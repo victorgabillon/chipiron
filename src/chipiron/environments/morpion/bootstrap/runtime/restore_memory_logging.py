@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     current_rss_mb as _pipeline_current_rss_mb,
 )
-from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
+from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
     DeepSizeStats,
     deep_size,
 )
