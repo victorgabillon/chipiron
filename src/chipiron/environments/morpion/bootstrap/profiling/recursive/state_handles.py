@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping
 
-from .context import find_linoo_selector_root
 from .deep_size import DeepSizeStats, deep_size, size_or_zero
+from .linoo import resolve_linoo_selector, selector_node_status_from_table
 from .object_access import (
     iter_direct_field_entries,
     qualified_type_name,
@@ -18,13 +18,11 @@ from .tree_topology import (
     child_link_count_from_storage,
     node_depth_or_none,
     node_eval_bool,
-    node_id_or_none,
     node_tree_node,
     tree_node_slot,
 )
 
 _DEFAULT_DEEP_SIZE_MAX_DEPTH = 64
-_LINOO_NODE_STATE_TABLE_ATTR_NAME = "_node_state_by_id"
 
 __all__ = [
     "state_eviction_runtime_histogram",
@@ -90,36 +88,6 @@ def state_handle_storage_kind(handle: object | None) -> str:
     if handle is None:
         return "None"
     return "other"
-
-
-def _resolve_linoo_selector(
-    selector: object | None,
-) -> tuple[object | None, Mapping[object, object] | None]:
-    if selector is None:
-        return None, None
-    linoo_selector = find_linoo_selector_root(selector)
-    if linoo_selector is None:
-        return None, None
-    node_state_by_id = raw_getattr(linoo_selector, _LINOO_NODE_STATE_TABLE_ATTR_NAME)
-    if not isinstance(node_state_by_id, Mapping):
-        return linoo_selector, None
-    return linoo_selector, node_state_by_id
-
-
-def _selector_node_status_from_table(
-    node_state_by_id: Mapping[object, object] | None,
-    node: object,
-) -> str | None:
-    if node_state_by_id is None:
-        return None
-    node_id = node_id_or_none(node)
-    if node_id is None:
-        return None
-    state = node_state_by_id.get(node_id)
-    if state is None:
-        return "opened"
-    status = raw_getattr(state, "status")
-    return status if isinstance(status, str) else str(status)
 
 
 def state_handle_materialization_detail_histogram(
@@ -241,7 +209,7 @@ def state_retention_by_node_status_histogram(
     materialized_depth_counts = Counter[str]()
     selector_status_counts = Counter[str]()
     materialized_selector_status_counts = Counter[str]()
-    _linoo_selector, node_state_by_id = _resolve_linoo_selector(selector)
+    _linoo_selector, node_state_by_id = resolve_linoo_selector(selector)
     del _linoo_selector
 
     for node in nodes:
@@ -268,7 +236,7 @@ def state_retention_by_node_status_histogram(
         all_branches_generated = bool(raw_getattr(tree_node, "all_branches_generated"))
         terminal = node_eval_bool(node, "is_terminal")
         exact = node_eval_bool(node, "has_exact_value")
-        selector_status = _selector_node_status_from_table(node_state_by_id, node)
+        selector_status = selector_node_status_from_table(node_state_by_id, node)
         selector_status_key = selector_status or "unknown"
         selector_status_counts[selector_status_key] += 1
         is_frontier = selector_status == "frontier"

@@ -46,6 +46,8 @@ from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
 import chipiron.environments.morpion.bootstrap.profiling.recursive.context as recursive_context_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.linoo as linoo_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.node_evaluation as node_evaluation_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles as state_handles_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology as tree_topology_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
@@ -64,6 +66,18 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size impor
 from chipiron.environments.morpion.bootstrap.profiling.recursive.frozenset_ownership import (
     direct_frozenset_ownership_summary,
     frozenset_ownership_histogram,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.linoo import (
+    linoo_candidate_heap_histogram,
+    linoo_deep_breakdown_histograms,
+    linoo_node_state_slots_histogram,
+    linoo_node_state_table_histogram,
+    linoo_selector_detail_histogram,
+    linoo_state_histograms,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.node_evaluation import (
+    node_evaluation_runtime_detail_histograms,
+    node_evaluation_runtime_histograms,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
     safe_object_dict,
@@ -85,15 +99,7 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     checkpoint_state_histograms,
     checkpoint_state_roots_detail_histogram,
     gc_shallow_size_summary,
-    linoo_candidate_heap_histogram,
-    linoo_deep_breakdown_histograms,
-    linoo_node_state_slots_histogram,
-    linoo_node_state_table_histogram,
-    linoo_selector_detail_histogram,
-    linoo_state_histograms,
     log_growth_recursive_memory_profile,
-    node_evaluation_runtime_detail_histograms,
-    node_evaluation_runtime_histograms,
 )
 
 recursive_memory_profile_module = importlib.import_module(
@@ -864,6 +870,22 @@ def test_state_handles_import_smoke() -> None:
     )
     assert state_handles_module.state_retention_by_node_status_histogram is not None
     assert state_handles_module.state_eviction_runtime_histogram is not None
+
+
+def test_node_evaluation_import_smoke() -> None:
+    """Node-evaluation helpers should be importable from their owning module."""
+    assert node_evaluation_module.node_evaluation_runtime_histograms is not None
+    assert node_evaluation_module.node_evaluation_runtime_detail_histograms is not None
+
+
+def test_linoo_import_smoke() -> None:
+    """Linoo helpers should be importable from their owning module."""
+    assert linoo_module.linoo_state_histograms is not None
+    assert linoo_module.linoo_deep_breakdown_histograms is not None
+    assert linoo_module.linoo_candidate_heap_histogram is not None
+    assert linoo_module.linoo_selector_detail_histogram is not None
+    assert linoo_module.linoo_node_state_table_histogram is not None
+    assert linoo_module.linoo_node_state_slots_histogram is not None
 
 
 def test_deep_size_does_not_call_properties() -> None:
