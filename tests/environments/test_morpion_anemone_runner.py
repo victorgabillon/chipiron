@@ -84,6 +84,7 @@ import chipiron.environments.morpion.bootstrap.cycle_runtime as cycle_runtime_mo
 import chipiron.environments.morpion.bootstrap.runtime.rollout_logging as rollout_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.runner as anemone_runner_module
 import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
+import chipiron.environments.morpion.bootstrap.runtime.training_export_profile as training_export_profile_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
@@ -2363,7 +2364,7 @@ def test_training_export_profile_logging_includes_state_and_reuse_metrics(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Aggregate training-export profile logs should expose the new split metrics."""
-    profile = anemone_runner_module.MorpionTrainingExportProfile(
+    profile = training_export_profile_module.MorpionTrainingExportProfile(
         node_count=11,
         state_ref_count=10,
         payload_build_s=12.5,
@@ -2382,7 +2383,7 @@ def test_training_export_profile_logging_includes_state_and_reuse_metrics(
     )
     caplog.set_level(logging.INFO)
 
-    anemone_runner_module._log_training_export_profile(profile)
+    training_export_profile_module.log_training_export_profile(profile)
 
     assert "[training-export-profile]" in caplog.text
     assert "node_state_access_total_s=" in caplog.text
@@ -2418,7 +2419,7 @@ def test_training_export_handle_classification_does_not_resolve_state() -> None:
             node_id=7,
         )
     )
-    profile = anemone_runner_module.MorpionTrainingExportProfile()
+    profile = training_export_profile_module.MorpionTrainingExportProfile()
 
     profile.observe_state_handle(node)
 
@@ -2439,7 +2440,7 @@ def test_sharded_training_export_logging_includes_reuse_counts(
     )
     caplog.set_level(logging.INFO)
 
-    anemone_runner_module._log_sharded_training_export_stats(stats)
+    training_export_profile_module.log_sharded_training_export_stats(stats)
 
     assert "[sharded-training-export]" in caplog.text
     assert "generation=135" in caplog.text
