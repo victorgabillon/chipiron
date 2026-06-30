@@ -44,9 +44,16 @@ from anemone.checkpoints import (
 )
 from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
+import chipiron.environments.morpion.bootstrap.profiling.recursive.context as recursive_context_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.context import (
+    CheckpointPayloadStore,
+    ComponentProfileRecord,
+    RecursiveProfileContext,
+    build_recursive_profile_context,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
     DeepSizeStats,
@@ -57,7 +64,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access i
     slot_names,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
-    build_recursive_profile_context,
     checkpoint_payload_lifetime_histograms,
     checkpoint_payload_shape_histograms,
     checkpoint_state_histograms,
@@ -818,6 +824,14 @@ def test_object_access_reads_dicts_and_slots_safely() -> None:
     assert object_dict["child"] == "value"
     assert safe_object_dict(slot_object) is None
     assert "child" in slot_names(slot_object)
+
+
+def test_recursive_context_import_smoke() -> None:
+    """Recursive context helpers should be importable from their owning module."""
+    assert CheckpointPayloadStore is not None
+    assert ComponentProfileRecord is not None
+    assert RecursiveProfileContext is not None
+    assert build_recursive_profile_context is not None
 
 
 def test_deep_size_does_not_call_properties() -> None:
@@ -1605,7 +1619,7 @@ def test_checkpoint_payload_lifetime_histograms_do_not_materialize_states() -> N
             FakeNodeEvaluation(),
         )
     ]
-    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+    payload_store = CheckpointPayloadStore(
         resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
         resolver_id=id(resolver),
         owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
@@ -1660,7 +1674,7 @@ def test_checkpoint_payload_lifetime_histograms_support_dense_store() -> None:
             FakeNodeEvaluation(),
         ),
     ]
-    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+    payload_store = CheckpointPayloadStore(
         resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
         resolver_id=id(resolver),
         owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
@@ -1680,7 +1694,7 @@ def test_checkpoint_payload_lifetime_histograms_support_dense_store() -> None:
 
 def test_checkpoint_payload_shape_histogram_counts_fields_and_keys() -> None:
     """Payload shape histogram should count anchors/deltas and expose dict keys."""
-    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+    payload_store = CheckpointPayloadStore(
         resolver_type="fake.Resolver",
         resolver_id=1,
         owner_type="fake.Resolver",
@@ -1752,7 +1766,7 @@ def test_checkpoint_payload_shape_histogram_supports_dense_store_without_materia
             FakeNodeEvaluation(),
         )
     ]
-    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+    payload_store = CheckpointPayloadStore(
         resolver_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
         resolver_id=id(resolver),
         owner_type=type(resolver).__module__ + "." + type(resolver).__qualname__,
@@ -1773,7 +1787,7 @@ def test_checkpoint_payload_shape_histogram_supports_dense_store_without_materia
 
 def test_checkpoint_state_roots_detail_histogram_supports_dense_store() -> None:
     """Checkpoint roots detail should summarize dense payload stores compactly."""
-    payload_store = recursive_memory_profile_module.CheckpointPayloadStore(
+    payload_store = CheckpointPayloadStore(
         resolver_type="fake.Resolver",
         resolver_id=1,
         owner_type="fake.Resolver",
@@ -2154,11 +2168,13 @@ def test_growth_recursive_memory_profile_logs_context_build_progress(
 
 def test_known_path_checkpoint_store_discovery_finds_direct_resolver() -> None:
     """Known-path discovery should find direct resolver payload stores cheaply."""
-    stores = recursive_memory_profile_module._find_checkpoint_payload_stores_from_known_paths_only(
-        runner=SimpleNamespace(
-            profile_checkpoint_state_resolver=FakeResolverWithPayloads()
-        ),
-        runtime=None,
+    stores = (
+        recursive_context_module.find_checkpoint_payload_stores_from_known_paths_only(
+            runner=SimpleNamespace(
+                profile_checkpoint_state_resolver=FakeResolverWithPayloads()
+            ),
+            runtime=None,
+        )
     )
 
     assert len(stores) == 1
@@ -2171,10 +2187,10 @@ def test_build_recursive_profile_context_direct_checkpoint_store_skips_handles(
 ) -> None:
     """Direct checkpoint store discovery should avoid scanning node handles."""
     monkeypatch.setattr(
-        recursive_memory_profile_module,
-        "_find_checkpoint_payload_stores",
-        lambda _roots: (_ for _ in ()).throw(
-            AssertionError("generic checkpoint store discovery must not run")
+        recursive_context_module,
+        "find_checkpoint_payload_stores_from_handle_fallback",
+        lambda _nodes, *, handle_cap: (_ for _ in ()).throw(
+            AssertionError("handle fallback discovery must not run")
         ),
     )
     caplog.set_level(logging.INFO)
@@ -2199,14 +2215,14 @@ def test_build_recursive_profile_context_caps_handle_fallback_scan(
     """Fallback checkpoint store discovery should inspect only a capped handle set."""
     runner = FakeRunnerWithFallbackCheckpointHandles(node_count=1_500)
     scanned_handle_ids: list[int] = []
-    original_handle_resolver = recursive_memory_profile_module._handle_resolver
+    original_handle_resolver = recursive_context_module._handle_resolver
 
     def fake_handle_resolver(handle: object) -> object | None:
         scanned_handle_ids.append(id(handle))
         return original_handle_resolver(handle)
 
     monkeypatch.setattr(
-        recursive_memory_profile_module,
+        recursive_context_module,
         "_handle_resolver",
         fake_handle_resolver,
     )
@@ -2223,7 +2239,7 @@ def test_build_recursive_profile_context_caps_handle_fallback_scan(
     assert len(context.checkpoint_payload_stores) == 0
     assert (
         len(scanned_handle_ids)
-        == recursive_memory_profile_module._DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP
+        == recursive_context_module._DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP
     )
     assert "context_build_checkpoint_stores_known_paths_done count=0" in text
     assert (
@@ -2240,10 +2256,10 @@ def test_build_recursive_profile_context_known_paths_do_not_walk_runtime(
     runner = FakeRunnerWithProfileIterator()
     runner._runtime = RecursivelyDangerousRuntime(FakeResolverWithPayloads())
     monkeypatch.setattr(
-        recursive_memory_profile_module,
-        "_find_checkpoint_payload_stores",
-        lambda _roots: (_ for _ in ()).throw(
-            AssertionError("generic checkpoint store discovery must not run")
+        recursive_context_module,
+        "find_checkpoint_payload_stores_from_handle_fallback",
+        lambda _nodes, *, handle_cap: (_ for _ in ()).throw(
+            AssertionError("handle fallback discovery must not run")
         ),
     )
     caplog.set_level(logging.INFO)

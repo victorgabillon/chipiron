@@ -12,7 +12,6 @@ from collections.abc import (  # pylint: disable=unused-import
     Iterable,
     Iterator,
     Mapping,
-    Sequence,
     Sized,
 )
 from dataclasses import dataclass, field
@@ -23,6 +22,18 @@ from typing import cast
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     current_rss_mb,
     format_metric,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.context import (
+    CheckpointPayloadStore,
+    ComponentProfileRecord,
+    RecursiveProfileContext,
+    build_recursive_profile_context,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.context import (
+    component_roots as _component_roots,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.context import (
+    find_linoo_selector_root as _find_linoo_selector_root,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size import (
     DeepSizeStats,
@@ -50,12 +61,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access i
     CONTAINER_VALUE_TYPES as _CONTAINER_VALUE_TYPES,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
-    all_attr_paths as _all_attr_paths,
-)
-from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
-    first_attr_path as _first_attr_path,
-)
-from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
     iter_direct_field_entries as _iter_direct_field_entries,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
@@ -66,9 +71,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access i
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
     qualified_type_name as _qualified_type_name,
-)
-from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
-    raw_attr_path as _raw_attr_path,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
     raw_getattr as _raw_getattr,
@@ -222,31 +224,6 @@ _KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
 type ProfileRoot = tuple[str, object]
 
 
-@dataclass(frozen=True, slots=True)
-class CheckpointPayloadStore:
-    """Concrete mapping that owns checkpoint state payload objects."""
-
-    resolver_type: str
-    resolver_id: int
-    owner_type: str
-    attr_name: str
-    payloads: Mapping[object, object]
-    anchor_count: int
-    delta_count: int
-
-
-@dataclass(frozen=True, slots=True)
-class ComponentProfileRecord:
-    """One logged recursive component measurement."""
-
-    component: str
-    bytes: int
-    visited_objects: int
-    capped: bool
-    max_depth_reached_count: int = 0
-    recursion_error_count: int = 0
-
-
 @dataclass(slots=True)
 class _CheckpointResolverHandleStats:
     """Checkpoint-handle diagnostics grouped by resolver identity."""
@@ -258,19 +235,6 @@ class _CheckpointResolverHandleStats:
     referenced_payload_keys_by_mapping_id: dict[int, set[object]] = field(
         default_factory=dict
     )
-
-
-@dataclass(frozen=True, slots=True)
-class RecursiveProfileContext:
-    """Resolved roots used by one recursive growth-memory profile pass."""
-
-    runner: object
-    runtime: object | None
-    selector: object | None
-    checkpoint_roots: tuple[object, ...]
-    checkpoint_payload_stores: tuple[CheckpointPayloadStore, ...]
-    evaluator_roots: tuple[object, ...]
-    nodes: tuple[object, ...]
 
 
 @dataclass(slots=True)
@@ -675,61 +639,6 @@ def _direct_frozenset_ownership_summary(
     }
 
 
-def _iter_from_candidate(candidate: object) -> Iterator[object] | None:
-    if isinstance(candidate, Mapping):
-        return iter(candidate.values())
-    if isinstance(candidate, str | bytes | bytearray):
-        return None
-    try:
-        return iter(candidate) if isinstance(candidate, Iterable) else None
-    except TypeError:
-        return None
-
-
-def _iter_linoo_selector_search_children(value: object) -> Iterator[object]:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            yield key
-            yield item
-        return
-    if isinstance(value, _CONTAINER_TYPES):
-        yield from value
-        return
-
-    raw_dict = _safe_object_dict(value)
-    if raw_dict is not None:
-        yield from raw_dict.values()
-    for slot_name in slot_names(value):
-        slot_value = _raw_getattr(value, slot_name)
-        if slot_value is not None:
-            yield slot_value
-
-
-def _find_linoo_selector_root(root: object | None) -> object | None:
-    """Find the concrete nested Linoo selector without materializing properties."""
-    if root is None:
-        return None
-
-    seen: set[int] = set()
-    stack: list[object] = [root]
-    while stack:
-        value = stack.pop()
-        value_id = id(value)
-        if value_id in seen:
-            continue
-        seen.add(value_id)
-
-        if isinstance(value, _ATOMIC_TYPES) or _should_skip_deep(value):
-            continue
-
-        node_state_by_id = _raw_getattr(value, "_node_state_by_id")
-        if isinstance(node_state_by_id, Mapping):
-            return value
-
-        stack.extend(_iter_linoo_selector_search_children(value))
-    return None
-
-
 def _checkpoint_payload_kind(value: object) -> str | None:
     payload_type = _qualified_type_name(value)
     if payload_type.endswith(_ANCHOR_PAYLOAD_TYPE_SUFFIX):
@@ -749,432 +658,6 @@ def _checkpoint_payload_counts(payloads: Mapping[object, object]) -> tuple[int, 
         elif payload_kind == "delta":
             delta_count += 1
     return anchor_count, delta_count
-
-
-def _iter_named_raw_attribute_values(value: object) -> Iterator[tuple[str, object]]:
-    raw_dict = _safe_object_dict(value)
-    if raw_dict is not None:
-        for attr_name, attr_value in raw_dict.items():
-            if isinstance(attr_name, str):
-                yield attr_name, attr_value
-    for slot_name in slot_names(value):
-        slot_value = _raw_getattr(value, slot_name)
-        if slot_value is not None:
-            yield slot_name, slot_value
-
-
-def _find_checkpoint_payload_stores(
-    roots: Iterable[object | None],
-) -> tuple[CheckpointPayloadStore, ...]:
-    """Find checkpoint payload-owner mappings without consulting properties."""
-    stores: list[CheckpointPayloadStore] = []
-    seen: set[int] = set()
-    checked_mapping_ids: set[int] = set()
-    payload_mapping_ids: set[int] = set()
-    stack = [root for root in roots if root is not None]
-
-    while stack:
-        value = stack.pop()
-        value_id = id(value)
-        if value_id in seen:
-            continue
-        seen.add(value_id)
-
-        if isinstance(value, _ATOMIC_TYPES) or _should_skip_deep(value):
-            continue
-
-        if isinstance(value, Mapping):
-            for key, item in value.items():
-                stack.append(key)
-                stack.append(item)
-            continue
-
-        if isinstance(value, _CONTAINER_TYPES):
-            stack.extend(value)
-            continue
-
-        for attr_name, attr_value in _iter_named_raw_attribute_values(value):
-            if isinstance(attr_value, Mapping):
-                mapping_id = id(attr_value)
-                if mapping_id not in checked_mapping_ids:
-                    checked_mapping_ids.add(mapping_id)
-                    anchor_count, delta_count = _checkpoint_payload_counts(attr_value)
-                    if anchor_count or delta_count:
-                        payload_mapping_ids.add(mapping_id)
-                        stores.append(
-                            CheckpointPayloadStore(
-                                resolver_type="attribute_scan",
-                                resolver_id=id(value),
-                                owner_type=_qualified_type_name(value),
-                                attr_name=attr_name,
-                                payloads=attr_value,
-                                anchor_count=anchor_count,
-                                delta_count=delta_count,
-                            )
-                        )
-                        continue
-                elif mapping_id in payload_mapping_ids:
-                    continue
-            stack.append(attr_value)
-
-    return tuple(stores)
-
-
-def _append_checkpoint_payload_store_if_payload_mapping(
-    *,
-    stores: list[CheckpointPayloadStore],
-    checked_mapping_ids: set[int],
-    payload_mapping_ids: set[int],
-    resolver: object,
-    owner: object,
-    attr_name: str,
-    mapping: Mapping[object, object],
-) -> None:
-    mapping_id = id(mapping)
-    if mapping_id in checked_mapping_ids:
-        return
-    checked_mapping_ids.add(mapping_id)
-    anchor_count, delta_count = _checkpoint_payload_counts(mapping)
-    if not (anchor_count or delta_count):
-        return
-    payload_mapping_ids.add(mapping_id)
-    stores.append(
-        CheckpointPayloadStore(
-            resolver_type=_qualified_type_name(resolver),
-            resolver_id=id(resolver),
-            owner_type=_qualified_type_name(owner),
-            attr_name=attr_name,
-            payloads=mapping,
-            anchor_count=anchor_count,
-            delta_count=delta_count,
-        )
-    )
-
-
-def _append_checkpoint_payload_stores_from_shallow_candidate(
-    candidate: object | None,
-    *,
-    stores: list[CheckpointPayloadStore],
-    checked_mapping_ids: set[int],
-    payload_mapping_ids: set[int],
-) -> None:
-    if candidate is None:
-        return
-    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
-        mapping = _raw_getattr(candidate, attr_name)
-        if isinstance(mapping, Mapping):
-            _append_checkpoint_payload_store_if_payload_mapping(
-                stores=stores,
-                checked_mapping_ids=checked_mapping_ids,
-                payload_mapping_ids=payload_mapping_ids,
-                resolver=candidate,
-                owner=candidate,
-                attr_name=attr_name,
-                mapping=mapping,
-            )
-    owner = _raw_getattr(candidate, "owner")
-    if owner is None:
-        return
-    for attr_name in _KNOWN_CHECKPOINT_STORE_ATTR_NAMES:
-        mapping = _raw_getattr(owner, attr_name)
-        if isinstance(mapping, Mapping):
-            _append_checkpoint_payload_store_if_payload_mapping(
-                stores=stores,
-                checked_mapping_ids=checked_mapping_ids,
-                payload_mapping_ids=payload_mapping_ids,
-                resolver=candidate,
-                owner=owner,
-                attr_name=f"owner.{attr_name}",
-                mapping=mapping,
-            )
-
-
-def _find_checkpoint_payload_stores_from_known_paths_only(
-    *,
-    runner: object,
-    runtime: object | None,
-) -> tuple[CheckpointPayloadStore, ...]:
-    stores: list[CheckpointPayloadStore] = []
-    checked_mapping_ids: set[int] = set()
-    payload_mapping_ids: set[int] = set()
-    seen_candidate_ids: set[int] = set()
-
-    def add_candidate(candidate: object | None) -> None:
-        if candidate is None:
-            return
-        candidate_id = id(candidate)
-        if candidate_id in seen_candidate_ids:
-            return
-        seen_candidate_ids.add(candidate_id)
-        _append_checkpoint_payload_stores_from_shallow_candidate(
-            candidate,
-            stores=stores,
-            checked_mapping_ids=checked_mapping_ids,
-            payload_mapping_ids=payload_mapping_ids,
-        )
-
-    for attr_path in _KNOWN_CHECKPOINT_CANDIDATE_PATHS:
-        add_candidate(_raw_attr_path(runner, attr_path))
-    if runtime is not None:
-        add_candidate(runtime)
-        for attr_path in _CHECKPOINT_ROOT_ATTR_PATHS:
-            add_candidate(_raw_attr_path(runtime, attr_path))
-    return tuple(stores)
-
-
-def _find_checkpoint_payload_stores_from_handle_fallback(
-    nodes: Sequence[object],
-    *,
-    handle_cap: int,
-) -> tuple[CheckpointPayloadStore, ...]:
-    stores: list[CheckpointPayloadStore] = []
-    checked_mapping_ids: set[int] = set()
-    payload_mapping_ids: set[int] = set()
-    for node in nodes[:handle_cap]:
-        handle = _tree_node_slot(node, "state_handle_")
-        if handle is None:
-            continue
-        _append_checkpoint_payload_stores_from_shallow_candidate(
-            handle,
-            stores=stores,
-            checked_mapping_ids=checked_mapping_ids,
-            payload_mapping_ids=payload_mapping_ids,
-        )
-        resolver = _handle_resolver(handle)
-        _append_checkpoint_payload_stores_from_shallow_candidate(
-            resolver,
-            stores=stores,
-            checked_mapping_ids=checked_mapping_ids,
-            payload_mapping_ids=payload_mapping_ids,
-        )
-    return tuple(stores)
-
-
-def _unique_roots(roots: Iterable[object | None]) -> tuple[object, ...]:
-    unique: list[object] = []
-    seen_ids: set[int] = set()
-    for root in roots:
-        if root is None:
-            continue
-        root_id = id(root)
-        if root_id in seen_ids:
-            continue
-        seen_ids.add(root_id)
-        unique.append(root)
-    return tuple(unique)
-
-
-def _profile_nodes_from_runner(runner: object) -> tuple[object, ...]:
-    return _profile_nodes_from_runner_capped(runner, node_cap=None)
-
-
-def _profile_nodes_from_runner_capped(
-    runner: object,
-    *,
-    node_cap: int | None,
-) -> tuple[object, ...]:
-    for method_name in (
-        "profile_iter_nodes",
-        "iter_profile_nodes",
-        "_profile_iter_nodes",
-        "iter_nodes",
-        "live_nodes",
-        "nodes",
-    ):
-        method = _raw_getattr(runner, method_name)
-        if not callable(method):
-            continue
-        try:
-            iterator = _iter_from_candidate(cast("Callable[[], object]", method)())
-        except Exception:  # pylint: disable=broad-exception-caught
-            continue
-        if iterator is not None:
-            return _materialize_profile_nodes(iterator, node_cap=node_cap)
-
-    for attr_path in (
-        ("node_store",),
-        ("nodes",),
-        ("tree", "nodes"),
-        ("search_tree", "nodes"),
-        ("runtime", "nodes"),
-        ("runtime", "tree", "nodes"),
-        ("runtime", "search_tree", "nodes"),
-        ("_runtime", "nodes"),
-        ("_runtime", "tree", "nodes"),
-        ("_runtime", "search_tree", "nodes"),
-        ("_runtime", "node_store"),
-        ("_runtime", "node_store", "nodes"),
-        ("_runtime", "_nodes"),
-    ):
-        value = _raw_attr_path(runner, attr_path)
-        if value is None:
-            continue
-        iterator = _iter_from_candidate(value)
-        if iterator is not None:
-            return _materialize_profile_nodes(iterator, node_cap=node_cap)
-    return ()
-
-
-def _materialize_profile_nodes(
-    values: Iterable[object],
-    *,
-    node_cap: int | None,
-) -> tuple[object, ...]:
-    if node_cap is None:
-        return tuple(values)
-    materialized: list[object] = []
-    for value in values:
-        materialized.append(value)
-        if len(materialized) >= node_cap:
-            break
-    return tuple(materialized)
-
-
-def _count_profile_branches(nodes: Iterable[object]) -> int:
-    branch_count = 0
-    for node in nodes:
-        branch_count += sum(
-            1
-            for _ in _iter_child_branch_refs(
-                _tree_node_slot(node, "branches_children_")
-            )
-        )
-        branch_count += sum(
-            1 for _ in _iter_parent_branch_refs(_tree_node_slot(node, "parent_nodes_"))
-        )
-    return branch_count
-
-
-def _checkpoint_store_handle_discovery_cap(
-    *,
-    node_cap: int | None,
-    handle_cap: int = _DEFAULT_CHECKPOINT_STORE_HANDLE_DISCOVERY_CAP,
-) -> int:
-    if node_cap is None:
-        return handle_cap
-    return min(node_cap, handle_cap)
-
-
-def build_recursive_profile_context(
-    runner: object,
-    *,
-    event: str = "unknown",
-    branch_count: int | None = None,
-    node_cap: int | None = None,
-) -> RecursiveProfileContext:
-    """Resolve profile roots once, without forcing lazy runtime properties."""
-    start_time = time.perf_counter()
-    LOGGER.info("[growth-recursive-profile] event=%s context_build_start", event)
-    runtime = _first_attr_path(runner, _RUNTIME_ATTR_PATHS)
-    selector_root = _first_attr_path(runner, _SELECTOR_ATTR_PATHS)
-    linoo_selector = _find_linoo_selector_root(selector_root)
-    if linoo_selector is None and runtime is not None:
-        linoo_selector = _find_linoo_selector_root(runtime)
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_runtime_found "
-        "runtime_found=%s selector_found=%s",
-        event,
-        runtime is not None,
-        (linoo_selector or selector_root) is not None,
-    )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_nodes_start node_cap=%s",
-        event,
-        node_cap,
-    )
-    nodes_start = time.perf_counter()
-    nodes = _profile_nodes_from_runner_capped(runner, node_cap=node_cap)
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_nodes_done "
-        "node_count=%s elapsed_s=%s",
-        event,
-        len(nodes),
-        format_metric(time.perf_counter() - nodes_start),
-    )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_branches_start",
-        event,
-    )
-    branches_start = time.perf_counter()
-    resolved_branch_count = (
-        branch_count if branch_count is not None else _count_profile_branches(nodes)
-    )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_branches_done "
-        "branch_count=%s elapsed_s=%s",
-        event,
-        resolved_branch_count,
-        format_metric(time.perf_counter() - branches_start),
-    )
-    checkpoint_roots = _all_attr_paths(runner, _CHECKPOINT_ROOT_ATTR_PATHS)
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_start",
-        event,
-    )
-    checkpoint_stores_start = time.perf_counter()
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_known_paths_start",
-        event,
-    )
-    known_paths_checkpoint_stores_start = time.perf_counter()
-    checkpoint_payload_stores = _find_checkpoint_payload_stores_from_known_paths_only(
-        runner=runner,
-        runtime=runtime,
-    )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_known_paths_done "
-        "count=%s elapsed_s=%s",
-        event,
-        len(checkpoint_payload_stores),
-        format_metric(time.perf_counter() - known_paths_checkpoint_stores_start),
-    )
-    if not checkpoint_payload_stores:
-        handle_cap = _checkpoint_store_handle_discovery_cap(node_cap=node_cap)
-        LOGGER.info(
-            "[growth-recursive-profile] event=%s "
-            "context_build_checkpoint_stores_handle_fallback_start handle_cap=%s",
-            event,
-            handle_cap,
-        )
-        fallback_checkpoint_stores_start = time.perf_counter()
-        checkpoint_payload_stores = (
-            _find_checkpoint_payload_stores_from_handle_fallback(
-                nodes,
-                handle_cap=handle_cap,
-            )
-        )
-        LOGGER.info(
-            "[growth-recursive-profile] event=%s "
-            "context_build_checkpoint_stores_handle_fallback_done count=%s elapsed_s=%s",
-            event,
-            len(checkpoint_payload_stores),
-            format_metric(time.perf_counter() - fallback_checkpoint_stores_start),
-        )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_checkpoint_stores_done "
-        "count=%s elapsed_s=%s",
-        event,
-        len(checkpoint_payload_stores),
-        format_metric(time.perf_counter() - checkpoint_stores_start),
-    )
-    checkpoint_roots_with_payloads = _unique_roots(
-        (*checkpoint_roots, *(store.payloads for store in checkpoint_payload_stores))
-    )
-    LOGGER.info(
-        "[growth-recursive-profile] event=%s context_build_done total_elapsed_s=%s",
-        event,
-        format_metric(time.perf_counter() - start_time),
-    )
-
-    return RecursiveProfileContext(
-        runner=runner,
-        runtime=runtime,
-        selector=linoo_selector or selector_root,
-        checkpoint_roots=checkpoint_roots_with_payloads,
-        checkpoint_payload_stores=checkpoint_payload_stores,
-        evaluator_roots=_all_attr_paths(runner, _EVALUATOR_ATTR_PATHS),
-        nodes=nodes,
-    )
 
 
 def _node_tree_node(node: object) -> object | None:
@@ -1354,39 +837,6 @@ def _iter_child_branch_refs(branches_children: object | None) -> Iterator[object
     branch = _raw_getattr(branches_children, "branch") if branches_children else None
     if branch is not None:
         yield branch
-
-
-def _component_roots(context: RecursiveProfileContext) -> tuple[ProfileRoot, ...]:
-    node_tree_nodes = tuple(
-        tree_node
-        for node in context.nodes
-        if (tree_node := _node_tree_node(node)) is not None
-    )
-    node_evaluations = tuple(
-        node_eval
-        for node in context.nodes
-        if (node_eval := _node_tree_evaluation(node)) is not None
-    )
-    state_handles = tuple(
-        handle
-        for node in context.nodes
-        if (handle := _tree_node_slot(node, "state_handle_")) is not None
-    )
-    roots: list[ProfileRoot] = [
-        ("all_profile_nodes", context.nodes),
-        ("tree_node_structures", node_tree_nodes),
-        ("node_evaluations", node_evaluations),
-        ("state_handles", state_handles),
-    ]
-    if context.runtime is not None:
-        roots.append(("runtime_root", context.runtime))
-    if context.selector is not None:
-        roots.append(("linoo_selector", context.selector))
-    if context.checkpoint_roots:
-        roots.append(("checkpoint_state_roots", context.checkpoint_roots))
-    if context.evaluator_roots:
-        roots.append(("evaluator_model_runtime", context.evaluator_roots))
-    return tuple(roots)
 
 
 def tree_topology_histograms(nodes: Iterable[object]) -> dict[str, object]:
