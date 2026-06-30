@@ -46,6 +46,8 @@ from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
 import chipiron.environments.morpion.bootstrap.profiling.recursive.context as recursive_context_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles as state_handles_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology as tree_topology_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
 )
@@ -67,12 +69,21 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access i
     safe_object_dict,
     slot_names,
 )
+from chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles import (
+    state_eviction_runtime_histogram,
+    state_handle_materialization_detail_histogram,
+    state_retention_by_node_status_histogram,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology import (
+    child_link_storage_detail_histogram,
+    parent_link_storage_histogram,
+    tree_topology_histograms,
+)
 from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     checkpoint_payload_lifetime_histograms,
     checkpoint_payload_shape_histograms,
     checkpoint_state_histograms,
     checkpoint_state_roots_detail_histogram,
-    child_link_storage_detail_histogram,
     gc_shallow_size_summary,
     linoo_candidate_heap_histogram,
     linoo_deep_breakdown_histograms,
@@ -83,11 +94,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     log_growth_recursive_memory_profile,
     node_evaluation_runtime_detail_histograms,
     node_evaluation_runtime_histograms,
-    parent_link_storage_histogram,
-    state_eviction_runtime_histogram,
-    state_handle_materialization_detail_histogram,
-    state_retention_by_node_status_histogram,
-    tree_topology_histograms,
 )
 
 recursive_memory_profile_module = importlib.import_module(
@@ -841,6 +847,23 @@ def test_frozenset_ownership_import_smoke() -> None:
     """Frozenset ownership helpers should be importable from their owning module."""
     assert direct_frozenset_ownership_summary is not None
     assert frozenset_ownership_histogram is not None
+
+
+def test_tree_topology_import_smoke() -> None:
+    """Tree-topology helpers should be importable from their owning module."""
+    assert tree_topology_module.tree_topology_histograms is not None
+    assert tree_topology_module.parent_link_storage_histogram is not None
+    assert tree_topology_module.child_link_storage_detail_histogram is not None
+
+
+def test_state_handles_import_smoke() -> None:
+    """State-handle helpers should be importable from their owning module."""
+    assert state_handles_module.state_handle_storage_kind is not None
+    assert (
+        state_handles_module.state_handle_materialization_detail_histogram is not None
+    )
+    assert state_handles_module.state_retention_by_node_status_histogram is not None
+    assert state_handles_module.state_eviction_runtime_histogram is not None
 
 
 def test_deep_size_does_not_call_properties() -> None:

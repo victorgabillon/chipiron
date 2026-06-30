@@ -113,7 +113,9 @@ def log_training_cycle_start(
         "active_generation=%s local_lower_bound=%s cursor_started=%s "
         "cursor_completed=%s",
         active_model_cursor_summary.active_model_source,
-        _format_optional_int(active_model_cursor_summary.active_model_source_generation),
+        _format_optional_int(
+            active_model_cursor_summary.active_model_source_generation
+        ),
         _format_optional_int(active_model_cursor_summary.active_model_generation),
         active_model_cursor_summary.local_lower_bound_generation,
         _format_optional_int(active_model_cursor_summary.cursor_started_generation),
@@ -278,7 +280,9 @@ def log_training_cycle_idle(
     )
 
 
-def training_chunk_count(*, row_count: int | None, chunk_size: int | None) -> int | None:
+def training_chunk_count(
+    *, row_count: int | None, chunk_size: int | None
+) -> int | None:
     """Return the number of chunks a row source will produce."""
     return _chunk_count(row_count=row_count, chunk_size=chunk_size)
 

@@ -1,44 +1,38 @@
 """Tests for human-readable Morpion bootstrap training logs."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import sys
 from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
-_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
-_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-if "chipiron.environments" not in sys.modules:
-    _environments_stub = ModuleType("chipiron.environments")
-    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments"] = _environments_stub
-if "chipiron.environments.morpion" not in sys.modules:
-    _morpion_stub = ModuleType("chipiron.environments.morpion")
-    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion"] = _morpion_stub
-if "chipiron.environments.morpion.bootstrap" not in sys.modules:
-    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
-    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
-
-from chipiron.environments.morpion.bootstrap.training_logging import (
-    TrainingActiveModelCursorSummary,
-    log_training_cycle_idle,
-    log_training_cycle_start,
-    log_training_evaluator_start,
-    log_training_progress,
+_TRAINING_LOGGING_PATH = (
+    _REPO_ROOT
+    / "src"
+    / "chipiron"
+    / "environments"
+    / "morpion"
+    / "bootstrap"
+    / "training_logging.py"
 )
+_SPEC = importlib.util.spec_from_file_location(
+    "chipiron.environments.morpion.bootstrap.training_logging",
+    _TRAINING_LOGGING_PATH,
+)
+if _SPEC is None or _SPEC.loader is None:
+    raise ImportError(_TRAINING_LOGGING_PATH)
+_training_logging = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = _training_logging
+_SPEC.loader.exec_module(_training_logging)
+
+TrainingActiveModelCursorSummary = _training_logging.TrainingActiveModelCursorSummary
+log_training_cycle_idle = _training_logging.log_training_cycle_idle
+log_training_cycle_start = _training_logging.log_training_cycle_start
+log_training_evaluator_start = _training_logging.log_training_evaluator_start
+log_training_progress = _training_logging.log_training_progress
 
 if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
