@@ -44,6 +44,8 @@ from anemone.checkpoints import (
 )
 from anemone.checkpoints.state_handles import DenseCheckpointPayloadStore
 
+import chipiron.environments.morpion.bootstrap.profiling.recursive.checkpoint_payloads as checkpoint_payloads_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.checkpoint_states as checkpoint_states_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.context as recursive_context_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.linoo as linoo_module
@@ -52,6 +54,14 @@ import chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles
 import chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology as tree_topology_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.checkpoint_payloads import (
+    checkpoint_payload_lifetime_histograms,
+    checkpoint_payload_shape_histograms,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.checkpoint_states import (
+    checkpoint_state_histograms,
+    checkpoint_state_roots_detail_histogram,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive.context import (
     CheckpointPayloadStore,
@@ -94,10 +104,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology i
     tree_topology_histograms,
 )
 from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
-    checkpoint_payload_lifetime_histograms,
-    checkpoint_payload_shape_histograms,
-    checkpoint_state_histograms,
-    checkpoint_state_roots_detail_histogram,
     gc_shallow_size_summary,
     log_growth_recursive_memory_profile,
 )
@@ -886,6 +892,18 @@ def test_linoo_import_smoke() -> None:
     assert linoo_module.linoo_selector_detail_histogram is not None
     assert linoo_module.linoo_node_state_table_histogram is not None
     assert linoo_module.linoo_node_state_slots_histogram is not None
+
+
+def test_checkpoint_payloads_import_smoke() -> None:
+    """Checkpoint payload helpers should be importable from their owning module."""
+    assert checkpoint_payloads_module.checkpoint_payload_lifetime_histograms is not None
+    assert checkpoint_payloads_module.checkpoint_payload_shape_histograms is not None
+
+
+def test_checkpoint_states_import_smoke() -> None:
+    """Checkpoint state helpers should be importable from their owning module."""
+    assert checkpoint_states_module.checkpoint_state_histograms is not None
+    assert checkpoint_states_module.checkpoint_state_roots_detail_histogram is not None
 
 
 def test_deep_size_does_not_call_properties() -> None:
