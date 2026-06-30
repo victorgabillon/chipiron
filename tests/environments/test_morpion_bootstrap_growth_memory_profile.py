@@ -59,6 +59,10 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size impor
     DeepSizeStats,
     deep_size,
 )
+from chipiron.environments.morpion.bootstrap.profiling.recursive.frozenset_ownership import (
+    direct_frozenset_ownership_summary,
+    frozenset_ownership_histogram,
+)
 from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access import (
     safe_object_dict,
     slot_names,
@@ -69,7 +73,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
     checkpoint_state_histograms,
     checkpoint_state_roots_detail_histogram,
     child_link_storage_detail_histogram,
-    frozenset_ownership_histogram,
     gc_shallow_size_summary,
     linoo_candidate_heap_histogram,
     linoo_deep_breakdown_histograms,
@@ -832,6 +835,12 @@ def test_recursive_context_import_smoke() -> None:
     assert ComponentProfileRecord is not None
     assert RecursiveProfileContext is not None
     assert build_recursive_profile_context is not None
+
+
+def test_frozenset_ownership_import_smoke() -> None:
+    """Frozenset ownership helpers should be importable from their owning module."""
+    assert direct_frozenset_ownership_summary is not None
+    assert frozenset_ownership_histogram is not None
 
 
 def test_deep_size_does_not_call_properties() -> None:

@@ -165,6 +165,11 @@ from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from chipiron.environments.morpion.bootstrap.training_logging import (
+    TrainingActiveModelCursorSummary,
+    log_training_cycle_done,
+    log_training_cycle_start,
+)
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRowsSource,
     load_morpion_supervised_rows,
@@ -184,10 +189,11 @@ from .checkpoint_loading import (
     should_load_candidate_checkpoint,
 )
 from .cursors import (
+    MorpionTrainingLowerBound,
     active_model_generation_for_training_guard,
     save_training_cursor_completed,
     save_training_cursor_started,
-    training_lower_bound_generation,
+    training_lower_bound_details,
     training_rows_subset_path,
 )
 from .growth_budget import growth_budget_runtime_config
@@ -315,6 +321,20 @@ def _observability_metadata_for_dashboard(
 def _now_timestamp_utc() -> str:
     """Return the current UTC timestamp formatted like the bootstrap loop."""
     return _timestamp_utc_from_unix_s(time.time())
+
+
+def _training_active_model_cursor_summary(
+    lower_bound: MorpionTrainingLowerBound,
+) -> TrainingActiveModelCursorSummary:
+    """Adapt lower-bound details into the human training-log DTO."""
+    return TrainingActiveModelCursorSummary(
+        active_model_generation=lower_bound.active_model_generation,
+        active_model_source_generation=lower_bound.active_model_source_generation,
+        active_model_source=lower_bound.active_model_source,
+        cursor_started_generation=lower_bound.cursor_started_generation,
+        cursor_completed_generation=lower_bound.cursor_completed_generation,
+        local_lower_bound_generation=lower_bound.generation,
+    )
 
 
 def run_pipeline_growth_stage(
@@ -1484,12 +1504,12 @@ def run_pipeline_training_stage(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = load_generation_manifest(paths=paths, generation=generation)
-    lower_bound_generation = training_lower_bound_generation(paths)
-    if generation <= lower_bound_generation:
+    lower_bound = training_lower_bound_details(paths)
+    if generation <= lower_bound.generation:
         LOGGER.info(
             "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s",
             generation,
-            lower_bound_generation,
+            lower_bound.generation,
         )
         return manifest
     if manifest.dataset_status != "done":
@@ -1529,6 +1549,7 @@ def run_pipeline_training_stage(
         metadata={"entrypoint": "run_pipeline_training_stage"},
     )
     timestamp_utc = _now_timestamp_utc()
+    training_cycle_started_at = time.perf_counter()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
     log_pipeline_memory(
         stage="training",
@@ -1643,6 +1664,20 @@ def run_pipeline_training_stage(
             )
             manifest_metadata["evaluator_diagnostics_sample_policy"] = "first_n"
         manifest = replace(manifest, metadata=manifest_metadata)
+        log_training_cycle_start(
+            generation=generation,
+            rows_path=training_rows_path,
+            row_count=original_training_rows,
+            row_format=rows_source.format_kind,
+            chunk_size=args.training_row_chunk_size
+            if rows_source.format_kind == "jsonl"
+            else None,
+            evaluator_names=tuple(resolved_evaluators_config.evaluators),
+            active_model_cursor_summary=_training_active_model_cursor_summary(
+                lower_bound
+            ),
+            max_rows=args.training_max_rows,
+        )
         run_state = (
             load_bootstrap_run_state(paths.run_state_path)
             if paths.run_state_path.is_file()
@@ -1743,6 +1778,19 @@ def run_pipeline_training_stage(
             "[pipeline] training_done generation=%s selected=%s",
             generation,
             training_result.selected_evaluator_name,
+        )
+        log_training_cycle_done(
+            generation=generation,
+            elapsed_s=time.perf_counter() - training_cycle_started_at,
+            evaluators_done=len(training_result.evaluator_results),
+            evaluator_count=len(resolved_evaluators_config.evaluators),
+            row_count=training_rows_used,
+            outputs=paths.relative_to_work_dir(
+                paths.model_generation_dir_for_generation(generation)
+            ),
+            active_model_candidate=training_result.model_bundle_paths[
+                training_result.selected_evaluator_name
+            ],
         )
         log_pipeline_memory(
             stage="training",

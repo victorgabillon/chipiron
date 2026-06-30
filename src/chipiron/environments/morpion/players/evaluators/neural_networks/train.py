@@ -124,6 +124,7 @@ class MorpionStreamingTrainingArgs:
     training_args: MorpionTrainingArgs
     row_chunk_size: int = 8192
     max_rows: int | None = None
+    progress_callback: Callable[[int, int, int, int], None] | None = None
 
     def __post_init__(self) -> None:
         """Validate streaming controls."""
@@ -305,6 +306,7 @@ def train_morpion_regressor_streaming(
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
             epoch_index=epoch_index,
+            progress_callback=args.progress_callback,
         )
         LOGGER.info(
             "[train-stream] epoch=%s chunks=%s train_samples=%s "
@@ -445,6 +447,7 @@ def _train_streaming_epoch(
     row_chunk_size: int,
     max_rows: int | None,
     epoch_index: int,
+    progress_callback: Callable[[int, int, int, int], None] | None,
 ) -> _StreamingEpochStats:
     model.train()
     chunk_count = 0
@@ -483,6 +486,13 @@ def _train_streaming_epoch(
             errors = predictions.detach() - targets
             squared_error_sum += float(torch.sum(errors * errors).item())
             value_count += int(targets.numel())
+        if progress_callback is not None:
+            progress_callback(
+                chunk_count,
+                row_start_index + len(rows),
+                epoch_index + 1,
+                args.num_epochs,
+            )
     loss_value = 0.0 if value_count == 0 else squared_error_sum / value_count
     return _StreamingEpochStats(
         chunk_count=chunk_count,

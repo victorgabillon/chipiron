@@ -37,6 +37,14 @@ from .evaluator_diagnostics import (
 from .history import MorpionEvaluatorMetrics
 from .pipeline_artifacts import MorpionPipelineEvaluatorTrainingResult
 from .pipeline_memory import log_pipeline_memory
+from .training_logging import (
+    log_training_evaluator_done,
+    log_training_evaluator_failed,
+    log_training_evaluator_start,
+    log_training_progress,
+    should_log_training_progress,
+    training_chunk_count,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -400,6 +408,10 @@ def train_and_select_evaluators(
         len(resolved_evaluators_config.evaluators),
         len(rows.rows),
     )
+    evaluator_names = tuple(resolved_evaluators_config.evaluators)
+    evaluator_count = len(evaluator_names)
+    row_count = len(rows.rows)
+    chunk_count = training_chunk_count(row_count=row_count, chunk_size=None)
     diagnostic_rows = None
     if not args.skip_evaluator_diagnostics:
         diagnostic_rows = diagnostic_rows_from_materialized_rows(
@@ -407,10 +419,14 @@ def train_and_select_evaluators(
             max_rows=args.evaluator_diagnostics_max_rows,
             source_format="json",
         )
-    for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
+    for evaluator_index, (evaluator_name, spec) in enumerate(
+        resolved_evaluators_config.evaluators.items(),
+        start=1,
+    ):
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
         )
+        model_bundle_relative_path = paths.relative_to_work_dir(model_bundle_path)
         previous_model = None
         if not args.skip_evaluator_diagnostics:
             previous_model = load_previous_evaluator_for_diagnostics(
@@ -421,6 +437,14 @@ def train_and_select_evaluators(
                 )
             )
         LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
+        log_training_evaluator_start(
+            generation=generation,
+            evaluator_name=evaluator_name,
+            evaluator_index=evaluator_index,
+            evaluator_count=evaluator_count,
+            row_count=row_count,
+            chunk_count=chunk_count,
+        )
         log_pipeline_memory(
             stage="training",
             generation=generation,
@@ -428,16 +452,27 @@ def train_and_select_evaluators(
             evaluator=evaluator_name,
         )
         evaluator_started_at = time.perf_counter()
-        trained_model, metrics = train_morpion_regressor(
-            morpion_training_args_from_evaluator_spec(
-                spec=spec,
-                dataset_file=rows_path,
-                output_dir=model_bundle_path,
-                shuffle=args.shuffle,
-                validation_fraction=args.validation_fraction,
-                validation_seed=args.validation_seed,
+        try:
+            trained_model, metrics = train_morpion_regressor(
+                morpion_training_args_from_evaluator_spec(
+                    spec=spec,
+                    dataset_file=rows_path,
+                    output_dir=model_bundle_path,
+                    shuffle=args.shuffle,
+                    validation_fraction=args.validation_fraction,
+                    validation_seed=args.validation_seed,
+                )
             )
-        )
+        except Exception as exc:
+            log_training_evaluator_failed(
+                generation=generation,
+                evaluator_name=evaluator_name,
+                evaluator_index=evaluator_index,
+                evaluator_count=evaluator_count,
+                elapsed_s=time.perf_counter() - evaluator_started_at,
+                error=exc,
+            )
+            raise
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         learning_rate = _metric_optional_float(metrics, "learning_rate")
@@ -465,9 +500,7 @@ def train_and_select_evaluators(
             ),
             loss_name=_metric_optional_str(metrics, "loss_name") or "mse",
         )
-        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
-            model_bundle_path
-        )
+        model_bundle_paths[evaluator_name] = model_bundle_relative_path
         evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
             final_loss=_required_metric_float(
                 evaluator_metrics[evaluator_name].final_loss,
@@ -496,6 +529,16 @@ def train_and_select_evaluators(
             evaluator_metrics[evaluator_name].validation_loss,
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
+        )
+        log_training_evaluator_done(
+            generation=generation,
+            evaluator_name=evaluator_name,
+            evaluator_index=evaluator_index,
+            evaluator_count=evaluator_count,
+            elapsed_s=evaluator_elapsed_s,
+            row_count=row_count,
+            output=model_bundle_relative_path,
+            metrics=metrics,
         )
         log_pipeline_memory(
             stage="training",
@@ -620,6 +663,16 @@ def train_and_select_evaluators_streaming(
         chunk_size,
         max_rows,
     )
+    evaluator_names = tuple(resolved_evaluators_config.evaluators)
+    evaluator_count = len(evaluator_names)
+    row_count = (
+        None
+        if rows_source.row_count is None
+        else min(rows_source.row_count, max_rows)
+        if max_rows is not None
+        else rows_source.row_count
+    )
+    chunk_count = training_chunk_count(row_count=row_count, chunk_size=chunk_size)
     diagnostic_rows: MorpionSupervisedRows | None = None
     if not args.skip_evaluator_diagnostics:
         diagnostic_rows = diagnostic_rows_from_streaming_rows(
@@ -627,10 +680,14 @@ def train_and_select_evaluators_streaming(
             rows_source=rows_source,
             max_rows=args.evaluator_diagnostics_max_rows,
         )
-    for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
+    for evaluator_index, (evaluator_name, spec) in enumerate(
+        resolved_evaluators_config.evaluators.items(),
+        start=1,
+    ):
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
         )
+        model_bundle_relative_path = paths.relative_to_work_dir(model_bundle_path)
         previous_model = None
         if not args.skip_evaluator_diagnostics:
             previous_model = load_previous_evaluator_for_diagnostics(
@@ -641,6 +698,14 @@ def train_and_select_evaluators_streaming(
                 )
             )
         LOGGER.info("[train-stream] evaluator_start name=%s", evaluator_name)
+        log_training_evaluator_start(
+            generation=generation,
+            evaluator_name=evaluator_name,
+            evaluator_index=evaluator_index,
+            evaluator_count=evaluator_count,
+            row_count=row_count,
+            chunk_count=chunk_count,
+        )
         log_pipeline_memory(
             stage="training",
             generation=generation,
@@ -648,20 +713,58 @@ def train_and_select_evaluators_streaming(
             evaluator=evaluator_name,
         )
         evaluator_started_at = time.perf_counter()
-        trained_model, metrics = train_morpion_regressor_streaming(
-            MorpionStreamingTrainingArgs(
-                training_args=morpion_training_args_from_evaluator_spec(
-                    spec=spec,
-                    dataset_file=rows_path,
-                    output_dir=model_bundle_path,
-                    shuffle=args.shuffle,
-                    validation_fraction=args.validation_fraction,
-                    validation_seed=args.validation_seed,
-                ),
-                row_chunk_size=chunk_size,
-                max_rows=max_rows,
+
+        def _log_progress(
+            chunk_index: int,
+            rows_seen: int,
+            epoch_index: int,
+            epoch_count: int,
+            evaluator_name: str = evaluator_name,
+            evaluator_started_at: float = evaluator_started_at,
+        ) -> None:
+            if not should_log_training_progress(
+                chunk_index=chunk_index,
+                chunk_count=chunk_count,
+            ):
+                return
+            log_training_progress(
+                generation=generation,
+                evaluator_name=evaluator_name,
+                chunk_index=chunk_index,
+                chunk_count=chunk_count,
+                rows_seen=rows_seen,
+                row_count=row_count,
+                elapsed_s=time.perf_counter() - evaluator_started_at,
+                epoch_index=epoch_index,
+                epoch_count=epoch_count,
             )
-        )
+
+        try:
+            trained_model, metrics = train_morpion_regressor_streaming(
+                MorpionStreamingTrainingArgs(
+                    training_args=morpion_training_args_from_evaluator_spec(
+                        spec=spec,
+                        dataset_file=rows_path,
+                        output_dir=model_bundle_path,
+                        shuffle=args.shuffle,
+                        validation_fraction=args.validation_fraction,
+                        validation_seed=args.validation_seed,
+                    ),
+                    row_chunk_size=chunk_size,
+                    max_rows=max_rows,
+                    progress_callback=_log_progress,
+                )
+            )
+        except Exception as exc:
+            log_training_evaluator_failed(
+                generation=generation,
+                evaluator_name=evaluator_name,
+                evaluator_index=evaluator_index,
+                evaluator_count=evaluator_count,
+                elapsed_s=time.perf_counter() - evaluator_started_at,
+                error=exc,
+            )
+            raise
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         learning_rate = _metric_optional_float(metrics, "learning_rate")
@@ -689,9 +792,7 @@ def train_and_select_evaluators_streaming(
             ),
             loss_name=_metric_optional_str(metrics, "loss_name") or "mse",
         )
-        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
-            model_bundle_path
-        )
+        model_bundle_paths[evaluator_name] = model_bundle_relative_path
         evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
             final_loss=_required_metric_float(
                 evaluator_metrics[evaluator_name].final_loss,
@@ -720,6 +821,16 @@ def train_and_select_evaluators_streaming(
             evaluator_metrics[evaluator_name].validation_loss,
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
+        )
+        log_training_evaluator_done(
+            generation=generation,
+            evaluator_name=evaluator_name,
+            evaluator_index=evaluator_index,
+            evaluator_count=evaluator_count,
+            elapsed_s=evaluator_elapsed_s,
+            row_count=row_count,
+            output=model_bundle_relative_path,
+            metrics=metrics,
         )
         log_pipeline_memory(
             stage="training",

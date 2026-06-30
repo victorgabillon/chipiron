@@ -30,6 +30,7 @@ from .pipeline_claims import (
     load_active_pipeline_stage_claim,
     pipeline_stage_claim_is_expired,
 )
+from .training_logging import log_training_cycle_idle
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -572,6 +573,13 @@ def run_next_pipeline_training_stage_once(
         now_unix_s=now_unix_s,
     )
     if selected_generation is None:
+        log_training_cycle_idle(
+            reason="no_claimable_generation",
+            pending_generations=pending_generations,
+            claimable_generations=claimable_generations,
+            local_lower_bound=lower_bound.generation,
+            active_model_source_generation=lower_bound.active_model_source_generation,
+        )
         LOGGER.info("[pipeline] training_worker_idle reason=no_claimable_generation")
         return MorpionPipelineWorkerResult(
             stage="training",
