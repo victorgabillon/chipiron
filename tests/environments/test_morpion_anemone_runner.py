@@ -83,6 +83,7 @@ from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 import chipiron.environments.morpion.bootstrap.cycle_runtime as cycle_runtime_module
 import chipiron.environments.morpion.bootstrap.runtime.rollout_logging as rollout_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.runner as anemone_runner_module
+import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
@@ -1838,7 +1839,7 @@ def test_linoo_selection_depth_table_formatter_marks_selected_depth() -> None:
         ),
     )
 
-    table = anemone_runner_module._format_linoo_selection_depth_table(
+    table = selection_logging_module.format_linoo_selection_depth_table(
         selector_report=selector_report,
         selected_depth=2,
     )
@@ -2137,7 +2138,7 @@ def test_selector_growth_diagnostic_fields_extract_required_values() -> None:
         frontier_nodes_scanned=10,
     )
 
-    fields = anemone_runner_module._selector_growth_diagnostic_fields(selector_report)
+    fields = selection_logging_module.selector_growth_diagnostic_fields(selector_report)
 
     assert fields["selector_state_rebuilt"] is False
     assert fields["selector_nodes_incrementally_updated"] == 2
@@ -2147,7 +2148,9 @@ def test_selector_growth_diagnostic_fields_extract_required_values() -> None:
 
 def test_selector_growth_diagnostic_fields_tolerate_missing_values() -> None:
     """Growth log helpers should leave missing selector fields unset."""
-    fields = anemone_runner_module._selector_growth_diagnostic_fields(SimpleNamespace())
+    fields = selection_logging_module.selector_growth_diagnostic_fields(
+        SimpleNamespace()
+    )
 
     assert fields["selector_state_rebuilt"] is None
     assert fields["selector_nodes_incrementally_updated"] is None
@@ -2159,7 +2162,7 @@ def test_checkpoint_selector_state_fields_report_presence() -> None:
     """Checkpoint selector-state helpers should expose presence and metadata."""
     payload = SimpleNamespace(selector_state=SimpleNamespace(type="linoo", version=1))
 
-    fields = anemone_runner_module._checkpoint_selector_state_fields(
+    fields = selection_logging_module.checkpoint_selector_state_fields(
         payload,
         prefix="checkpoint",
     )
@@ -2171,7 +2174,7 @@ def test_checkpoint_selector_state_fields_report_presence() -> None:
 
 def test_checkpoint_selector_state_fields_handle_absence() -> None:
     """Checkpoint selector-state helpers should stay safe when absent."""
-    fields = anemone_runner_module._checkpoint_selector_state_fields(
+    fields = selection_logging_module.checkpoint_selector_state_fields(
         SimpleNamespace(selector_state=None),
         prefix="restore_checkpoint",
     )

@@ -151,14 +151,16 @@ def _load_runtime_modules() -> dict[str, Any]:
     """Import runtime modules lazily so parser tests stay lightweight."""
     import anemone
     import atomheart
-    import chipiron
     from anemone.checkpoints import build_search_checkpoint_payload
+
+    import chipiron
+    import chipiron.environments.morpion.bootstrap.runtime.checkpoint_io as checkpoint_io_module
+    import chipiron.environments.morpion.bootstrap.runtime.runner as runner_module
+    import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
     from chipiron.environments.morpion.bootstrap import (
         AnemoneMorpionSearchRunner,
         MorpionBootstrapPaths,
     )
-    import chipiron.environments.morpion.bootstrap.runtime.checkpoint_io as checkpoint_io_module
-    import chipiron.environments.morpion.bootstrap.runtime.runner as runner_module
 
     return {
         "anemone": anemone,
@@ -169,6 +171,7 @@ def _load_runtime_modules() -> dict[str, Any]:
         "AnemoneMorpionSearchRunner": AnemoneMorpionSearchRunner,
         "checkpoint_io_module": checkpoint_io_module,
         "runner_module": runner_module,
+        "selection_logging_module": selection_logging_module,
     }
 
 
@@ -279,6 +282,7 @@ def _profile_checkpoint_save(
     """Profile checkpoint payload build and optional serialization phases."""
     checkpoint_io_module = modules["checkpoint_io_module"]
     runner_module = modules["runner_module"]
+    selection_logging_module = modules["selection_logging_module"]
     build_search_checkpoint_payload = modules["build_search_checkpoint_payload"]
 
     runtime = runner._require_runtime()
@@ -397,8 +401,8 @@ def _profile_checkpoint_save(
     print(f"[profile] phase=cprofile_dump output={profile_output}")
     _print_cprofile_stats(profiler, args.top)
 
-    node_count, anchor_count, delta_count = checkpoint_io_module._checkpoint_node_counts(
-        payload
+    node_count, anchor_count, delta_count = (
+        checkpoint_io_module._checkpoint_node_counts(payload)
     )
     checkpoint_io_module._log_checkpoint_metrics(
         "profile",
@@ -422,7 +426,7 @@ def _profile_checkpoint_save(
             delta_count=delta_count,
         ),
     )
-    selector_fields = runner_module._checkpoint_selector_state_fields(
+    selector_fields = selection_logging_module.checkpoint_selector_state_fields(
         payload,
         prefix="checkpoint",
     )

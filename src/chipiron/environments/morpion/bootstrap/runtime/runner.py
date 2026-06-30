@@ -129,6 +129,18 @@ from .rollout_logging import (
     _opening_expansion_kind_name,
     _opening_type_name,
 )
+from .selection_logging import (
+    checkpoint_selector_state_fields,
+    format_linoo_selection_depth_table,
+    format_mapping_metric,
+    format_optional_int_log,
+    format_selected_metric,
+    linoo_depth_active_column,
+    resolve_selected_int,
+    selector_growth_diagnostic_fields,
+    selector_heap_detail_fields,
+    selector_report_row_count,
+)
 from .state_eviction import (
     MorpionGrowthStateEvictionMetrics,
     _dump_live_state_parent_branch_for_checkpoint,
@@ -446,218 +458,9 @@ def _log_sharded_training_export_stats(
     )
 
 
-def _format_optional_int_log(value: object) -> str:
-    """Format one optional integer for stable structured logs."""
-    return str(value) if isinstance(value, int) else "unknown"
-
-
-def _format_selected_metric(value: object) -> str:
-    """Format selected node/depth fields so missing values are visually obvious."""
-    return str(value) if isinstance(value, int) else "unknown"
-
-
-def _format_optional_table_int(value: object) -> str:
-    """Format an optional integer for human-facing aligned tables."""
-    return str(value) if isinstance(value, int) else "-"
-
-
-def _format_optional_table_float(value: object) -> str:
-    """Format an optional float for human-facing aligned tables."""
-    return f"{float(value):.3f}" if isinstance(value, int | float) else "-"
-
-
-def _format_text_table(
-    headers: tuple[str, ...],
-    rows: Sequence[Sequence[str]],
-) -> str:
-    """Format string rows as a simple aligned whitespace table."""
-    widths = tuple(
-        max([len(headers[column]), *(len(row[column]) for row in rows)])
-        for column in range(len(headers))
-    )
-    formatted_rows = tuple(
-        " ".join(value.rjust(widths[column]) for column, value in enumerate(row))
-        for row in rows
-    )
-    return "\n".join(
-        (
-            " ".join(
-                header.rjust(widths[column]) for column, header in enumerate(headers)
-            ),
-            *formatted_rows,
-        )
-    )
-
-
-def _resolve_selected_int(
-    *,
-    explicit_value: object,
-    report: object,
-    report_attribute: str,
-) -> int | None:
-    """Return an explicit selected metric, falling back to the selector report."""
-    if isinstance(explicit_value, int):
-        return explicit_value
-    report_value = getattr(report, report_attribute, None)
-    return report_value if isinstance(report_value, int) else None
-
-
-def _format_linoo_selection_depth_table(
-    *,
-    selector_report: object,
-    selected_depth: object,
-) -> str | None:
-    """Return the step-scoped Linoo depth table body with a marked selected row."""
-    depth_rows = getattr(selector_report, "depth_rows", None)
-    if depth_rows is None:
-        return None
-    resolved_selected_depth = _resolve_selected_int(
-        explicit_value=selected_depth,
-        report=selector_report,
-        report_attribute="selected_depth",
-    )
-    headers = (
-        "mark",
-        "depth",
-        "total",
-        "opened",
-        "frontier",
-        "terminal",
-        "exact",
-        "uncached_terminal",
-        "non_openable",
-        "deterministic_index",
-        "weight",
-        "probability",
-    )
-    rows: tuple[tuple[str, ...], ...] = tuple(
-        (
-            "*" if row_depth == resolved_selected_depth else "",
-            _format_optional_table_int(row_depth),
-            _format_optional_table_int(getattr(row, "total_nodes", None)),
-            _format_optional_table_int(getattr(row, "opened_count", None)),
-            _format_optional_table_int(getattr(row, "frontier_count", None)),
-            _format_optional_table_int(getattr(row, "terminal_count", None)),
-            _format_optional_table_int(getattr(row, "exact_count", None)),
-            _format_optional_table_int(
-                getattr(row, "uncached_terminal_candidates", None)
-            ),
-            _format_optional_table_int(getattr(row, "non_openable_count", None)),
-            _format_optional_table_int(getattr(row, "selection_index", None)),
-            _format_optional_table_float(getattr(row, "selection_weight", None)),
-            _format_optional_table_float(getattr(row, "selection_probability", None)),
-        )
-        for row in depth_rows
-        for row_depth in (getattr(row, "depth", None),)
-    )
-    return _format_text_table(headers, rows)
-
-
-def _linoo_depth_active_column(selector_report: object) -> str:
-    """Return the report-table column used by the active depth subpolicy."""
-    if getattr(selector_report, "depth_selection_subpolicy", None) == "inverse_depth":
-        return "probability"
-    return "deterministic_index"
-
-
-def _format_mapping_metric(value: object) -> str:
-    """Format a compact mapping as a stable log token."""
-    if not isinstance(value, Mapping):
-        return _metric_value(value)
-    return "{" + ",".join(f"{key}:{count}" for key, count in value.items()) + "}"
-
-
 def _env_flag_enabled(name: str) -> bool:
     """Return whether an operator-facing boolean env flag is enabled."""
     return os.environ.get(name, "0").strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _selector_report_row_count(selector_report: object | None) -> int | None:
-    """Return the selector report row count when exposed by the report."""
-    if selector_report is None:
-        return None
-    depth_row_count = getattr(selector_report, "depth_row_count", None)
-    if isinstance(depth_row_count, int):
-        return depth_row_count
-    depth_rows = getattr(selector_report, "depth_rows", None)
-    if depth_rows is None:
-        return None
-    try:
-        row_count = len(depth_rows)
-    except TypeError:
-        return None
-    return row_count
-
-
-def _selector_growth_diagnostic_fields(
-    selector_report: object | None,
-) -> dict[str, object]:
-    """Return stable optional selector diagnostics for growth-step logs."""
-    return {
-        "selector_state_rebuilt": getattr(selector_report, "state_rebuilt", None),
-        "selector_nodes_incrementally_updated": getattr(
-            selector_report,
-            "nodes_incrementally_updated",
-            None,
-        ),
-        "selector_total_nodes_scanned": getattr(
-            selector_report,
-            "total_nodes_scanned",
-            None,
-        ),
-        "selector_frontier_nodes_scanned": getattr(
-            selector_report,
-            "frontier_nodes_scanned",
-            None,
-        ),
-    }
-
-
-def _selector_heap_detail_fields(selector_report: object | None) -> dict[str, object]:
-    """Return optional Linoo heap detail counters for growth-step logs."""
-    return {
-        "candidate_count": getattr(
-            selector_report, "heap_update_candidate_count", None
-        ),
-        "push_count": getattr(selector_report, "heap_update_push_count", None),
-        "pop_count": getattr(selector_report, "heap_update_pop_count", None),
-        "stale_skip_count": getattr(
-            selector_report, "heap_update_stale_skip_count", None
-        ),
-        "signature_check_count": getattr(
-            selector_report, "heap_update_signature_check_count", None
-        ),
-        "signature_recompute_count": getattr(
-            selector_report, "heap_update_signature_recompute_count", None
-        ),
-        "version_mismatch_count": getattr(
-            selector_report, "heap_update_version_mismatch_count", None
-        ),
-        "total_heap_entries": getattr(
-            selector_report, "heap_update_total_heap_entries", None
-        ),
-        "max_heap_size": getattr(selector_report, "heap_update_max_heap_size", None),
-        "depth_count": getattr(selector_report, "heap_update_depth_count", None),
-        "frontier_node_count_seen": getattr(
-            selector_report, "heap_update_frontier_node_count_seen", None
-        ),
-    }
-
-
-def _checkpoint_selector_state_fields(
-    payload: object,
-    *,
-    prefix: str,
-) -> dict[str, object]:
-    """Return stable selector-state presence fields for checkpoint logs."""
-    selector_state = getattr(payload, "selector_state", None)
-    selector_state_type = getattr(selector_state, "type", None)
-    selector_state_version = getattr(selector_state, "version", None)
-    return {
-        f"{prefix}_selector_state_present": selector_state is not None,
-        f"{prefix}_selector_state_type": selector_state_type,
-        f"{prefix}_selector_state_version": selector_state_version,
-    }
 
 
 def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
@@ -1428,8 +1231,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 else None
             )
             if not isinstance(selector_report_rows, int):
-                selector_report_rows = _selector_report_row_count(selector_report)
-            selector_diagnostics = _selector_growth_diagnostic_fields(selector_report)
+                selector_report_rows = selector_report_row_count(selector_report)
+            selector_diagnostics = selector_growth_diagnostic_fields(selector_report)
             LOGGER.debug(
                 "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier_count=%s heap_registered=%s stale_skipped=%s selector_state_rebuilt=%s selector_nodes_incrementally_updated=%s selector_total_nodes_scanned=%s selector_frontier_nodes_scanned=%s",
                 steps_executed,
@@ -1479,20 +1282,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _format_optional_seconds(
                     getattr(selector_report, "make_report_s", None)
                 ),
-                _format_optional_int_log(selector_report_rows),
-                _format_optional_int_log(
+                format_optional_int_log(selector_report_rows),
+                format_optional_int_log(
                     getattr(selector_report, "total_nodes_scanned", None)
                 ),
-                _format_optional_int_log(
+                format_optional_int_log(
                     getattr(selector_report, "frontier_nodes_scanned", None)
                 ),
-                _format_optional_int_log(
+                format_optional_int_log(
                     getattr(selector_report, "selected_depth_frontier_count", None)
                 ),
-                _format_optional_int_log(
+                format_optional_int_log(
                     getattr(selector_report, "heap_candidates_registered", None)
                 ),
-                _format_optional_int_log(
+                format_optional_int_log(
                     getattr(selector_report, "stale_candidates_skipped", None)
                 ),
                 _metric_value(selector_diagnostics["selector_state_rebuilt"]),
@@ -1502,7 +1305,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(selector_diagnostics["selector_total_nodes_scanned"]),
                 _metric_value(selector_diagnostics["selector_frontier_nodes_scanned"]),
             )
-            selector_heap_details = _selector_heap_detail_fields(selector_report)
+            selector_heap_details = selector_heap_detail_fields(selector_report)
             rematerialization_count_by_phase = (
                 self._state_eviction_metrics.rematerialization_count_by_phase
             )
@@ -1616,8 +1419,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "[growth-step] step=%s selected_depth=%s selected_node_id=%s "
             "mode=%s depth_policy=%s subpolicy=%s step_parity=%s",
             step,
-            _format_selected_metric(selected_depth),
-            _format_selected_metric(selected_node_id),
+            format_selected_metric(selected_depth),
+            format_selected_metric(selected_node_id),
             _selector_family_name(self._args.search_args),
             _metric_value(getattr(selector_report, "depth_selection_policy", None)),
             _metric_value(getattr(selector_report, "depth_selection_subpolicy", None)),
@@ -1632,7 +1435,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             current_tree_size,
             branch_count if isinstance(branch_count, int) else "unknown",
             current_tree_size - initial_tree_size,
-            _format_optional_int_log(selected_depth_frontier),
+            format_optional_int_log(selected_depth_frontier),
         )
         LOGGER.info(
             "[growth-step] step=%s timing total=%s select=%s expand=%s evaluate=%s "
@@ -1652,17 +1455,17 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "[growth-step] step=%s selector rows=%s scanned_nodes=%s scanned_frontier=%s "
             "heap_candidates=%s stale_skipped=%s rebuilt=%s",
             step,
-            _format_optional_int_log(selector_report_rows),
-            _format_optional_int_log(
+            format_optional_int_log(selector_report_rows),
+            format_optional_int_log(
                 getattr(selector_report, "total_nodes_scanned", None)
             ),
-            _format_optional_int_log(
+            format_optional_int_log(
                 getattr(selector_report, "frontier_nodes_scanned", None)
             ),
-            _format_optional_int_log(
+            format_optional_int_log(
                 getattr(selector_report, "heap_candidates_registered", None)
             ),
-            _format_optional_int_log(
+            format_optional_int_log(
                 getattr(selector_report, "stale_candidates_skipped", None)
             ),
             _metric_value(selector_diagnostics["selector_state_rebuilt"]),
@@ -1681,7 +1484,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             _metric_value(getattr(rollout_summary, "start_depth", None)),
             _metric_value(getattr(rollout_summary, "end_depth", None)),
             _metric_value(getattr(rollout_summary, "depth_delta", None)),
-            _format_mapping_metric(getattr(rollout_summary, "stops", None)),
+            format_mapping_metric(getattr(rollout_summary, "stops", None)),
         )
 
     def _reset_growth_state_eviction_runtime(self) -> None:
@@ -2056,14 +1859,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         selector_report = getattr(step_report, "selector_report", None)
         if selector_report is None:
             return
-        row_count = _selector_report_row_count(selector_report)
+        row_count = selector_report_row_count(selector_report)
         verbose_selection_table = _env_flag_enabled(_VERBOSE_SELECTION_TABLE_ENV)
-        resolved_selected_depth = _resolve_selected_int(
+        resolved_selected_depth = resolve_selected_int(
             explicit_value=selected_depth,
             report=selector_report,
             report_attribute="selected_depth",
         )
-        resolved_selected_node_id = _resolve_selected_int(
+        resolved_selected_node_id = resolve_selected_int(
             explicit_value=selected_node_id,
             report=selector_report,
             report_attribute="selected_node_id",
@@ -2073,9 +1876,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "selected_depth_frontier_count=%s probability=%s depth_policy=%s "
             "subpolicy=%s step_parity=%s",
             step,
-            _format_selected_metric(resolved_selected_depth),
-            _format_selected_metric(resolved_selected_node_id),
-            _format_optional_int_log(
+            format_selected_metric(resolved_selected_depth),
+            format_selected_metric(resolved_selected_node_id),
+            format_optional_int_log(
                 getattr(selector_report, "selected_depth_frontier_count", None)
             ),
             _metric_value(
@@ -2091,7 +1894,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         format_elapsed_s: float | None = None
         log_elapsed_s: float | None = None
         format_started_at = time.perf_counter()
-        formatted_table = _format_linoo_selection_depth_table(
+        formatted_table = format_linoo_selection_depth_table(
             selector_report=selector_report,
             selected_depth=resolved_selected_depth,
         )
@@ -2103,8 +1906,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 "selected_node_id=%s depth_policy=%s subpolicy=%s step_parity=%s "
                 "active_column=%s\n%s",
                 step,
-                _format_selected_metric(resolved_selected_depth),
-                _format_selected_metric(resolved_selected_node_id),
+                format_selected_metric(resolved_selected_depth),
+                format_selected_metric(resolved_selected_node_id),
                 _metric_value(getattr(selector_report, "depth_selection_policy", None)),
                 _metric_value(
                     getattr(selector_report, "depth_selection_subpolicy", None)
@@ -2112,7 +1915,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(
                     getattr(selector_report, "depth_selection_step_parity", None)
                 ),
-                _linoo_depth_active_column(selector_report),
+                linoo_depth_active_column(selector_report),
                 formatted_table,
             )
             log_elapsed_s = time.perf_counter() - log_started_at
@@ -2120,7 +1923,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         timing_logger(
             "[growth-selection-table-timing] step=%s rows=%s format_s=%s log_s=%s",
             step,
-            _format_optional_int_log(row_count),
+            format_optional_int_log(row_count),
             _format_optional_seconds(format_elapsed_s),
             _format_optional_seconds(log_elapsed_s),
         )
@@ -2599,7 +2402,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 str(tree_snapshot_path),
             )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
-        restore_selector_state_fields = _checkpoint_selector_state_fields(
+        restore_selector_state_fields = checkpoint_selector_state_fields(
             payload,
             prefix="restore_checkpoint",
         )
@@ -2889,7 +2692,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 runtime,
                 state_codec=self._state_codec,
             )
-        checkpoint_selector_state_fields = _checkpoint_selector_state_fields(
+        checkpoint_selector_state = checkpoint_selector_state_fields(
             payload,
             prefix="checkpoint",
         )
@@ -2903,13 +2706,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
             str(output),
             _metric_value(
-                checkpoint_selector_state_fields["checkpoint_selector_state_present"]
+                checkpoint_selector_state["checkpoint_selector_state_present"]
             ),
+            _metric_value(checkpoint_selector_state["checkpoint_selector_state_type"]),
             _metric_value(
-                checkpoint_selector_state_fields["checkpoint_selector_state_type"]
-            ),
-            _metric_value(
-                checkpoint_selector_state_fields["checkpoint_selector_state_version"]
+                checkpoint_selector_state["checkpoint_selector_state_version"]
             ),
         )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)

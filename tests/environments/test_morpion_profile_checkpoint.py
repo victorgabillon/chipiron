@@ -168,12 +168,14 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         _current_rss_mb=lambda: 1.0,
         _checkpoint_node_counts=lambda _payload: (3, 1, 2),
         _log_checkpoint_metrics=lambda *_args, **_kwargs: None,
-        _checkpoint_selector_state_fields=lambda _payload, prefix: {
+        CheckpointIoMetrics=lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    fake_selection_logging_module = SimpleNamespace(
+        checkpoint_selector_state_fields=lambda _payload, prefix: {
             f"{prefix}_selector_state_present": False,
             f"{prefix}_selector_state_type": "none",
             f"{prefix}_selector_state_version": "none",
         },
-        CheckpointIoMetrics=lambda **kwargs: SimpleNamespace(**kwargs),
     )
 
     monkeypatch.setattr(
@@ -208,6 +210,7 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
     modules = {
         "checkpoint_io_module": fake_runner_module,
         "runner_module": fake_runner_module,
+        "selection_logging_module": fake_selection_logging_module,
         "build_search_checkpoint_payload": lambda runtime, state_codec: {
             "runtime": runtime,
             "state_codec": state_codec,
