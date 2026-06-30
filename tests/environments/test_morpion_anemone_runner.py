@@ -81,6 +81,8 @@ from anemone.utils.logger import checkpoint_logger, set_checkpoint_logger_level
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
 import chipiron.environments.morpion.bootstrap.cycle_runtime as cycle_runtime_module
+import chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec as checkpoint_codec_module
+import chipiron.environments.morpion.bootstrap.runtime.restore_memory_logging as restore_memory_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.rollout_logging as rollout_logging_module
 import chipiron.environments.morpion.bootstrap.runtime.runner as anemone_runner_module
 import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
@@ -89,7 +91,6 @@ from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
-    InvalidMorpionSearchCheckpointError,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapEffectiveRuntimeConfig,
@@ -111,6 +112,16 @@ from chipiron.environments.morpion.bootstrap.cycle_metadata import (
 from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     resolve_runtime_restore_path,
 )
+from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
+    InvalidMorpionSearchCheckpointError,
+    load_morpion_search_checkpoint_payload,
+    new_morpion_state_checkpoint_codec,
+)
+from chipiron.environments.morpion.bootstrap.runtime.restore_memory_logging import (
+    current_rss_mb,
+    log_morpion_checkpoint_memory_phase,
+    restore_memory_logger_for_checkpoint_path,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MorpionRegressorArgs,
     build_morpion_regressor,
@@ -128,11 +139,25 @@ def _parse_key_value_log_fields(line: str) -> dict[str, str]:
     }
 
 
+def test_checkpoint_codec_import_smoke() -> None:
+    """Checkpoint codec helpers should be importable from their owning module."""
+    assert InvalidMorpionSearchCheckpointError is not None
+    assert load_morpion_search_checkpoint_payload is not None
+    assert new_morpion_state_checkpoint_codec is not None
+
+
+def test_restore_memory_logging_import_smoke() -> None:
+    """Restore-memory helpers should be importable from their owning module."""
+    assert current_rss_mb is not None
+    assert log_morpion_checkpoint_memory_phase is not None
+    assert restore_memory_logger_for_checkpoint_path is not None
+
+
 def test_restore_memory_logger_emits_structured_phase(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Restore-memory logger should emit stable grep-friendly phase fields."""
-    logger = anemone_runner_module._RestoreMemoryLogger(
+    logger = restore_memory_logging_module.RestoreMemoryLogger(
         checkpoint_path=Path("checkpoint.json.zst"),
         compressed_checkpoint_bytes=123,
     )
@@ -1379,7 +1404,7 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
     assert restored_size == size_before_save
     assert second_runner.current_tree_size() >= restored_size
 
-    payload = anemone_runner_module.load_morpion_search_checkpoint_payload(
+    payload = checkpoint_codec_module.load_morpion_search_checkpoint_payload(
         checkpoint_path
     )
     assert all(

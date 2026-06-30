@@ -164,12 +164,12 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         def _require_runtime(self) -> object:
             return SimpleNamespace(tree=SimpleNamespace(branch_count=2))
 
-    fake_runner_module = SimpleNamespace(
-        _current_rss_mb=lambda: 1.0,
+    fake_checkpoint_io_module = SimpleNamespace(
         _checkpoint_node_counts=lambda _payload: (3, 1, 2),
         _log_checkpoint_metrics=lambda *_args, **_kwargs: None,
         CheckpointIoMetrics=lambda **kwargs: SimpleNamespace(**kwargs),
     )
+    fake_restore_memory_logging_module = SimpleNamespace(current_rss_mb=lambda: 1.0)
     fake_selection_logging_module = SimpleNamespace(
         checkpoint_selector_state_fields=lambda _payload, prefix: {
             f"{prefix}_selector_state_present": False,
@@ -208,8 +208,9 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         ]
     )
     modules = {
-        "checkpoint_io_module": fake_runner_module,
-        "runner_module": fake_runner_module,
+        "checkpoint_io_module": fake_checkpoint_io_module,
+        "restore_memory_logging_module": fake_restore_memory_logging_module,
+        "runner_module": SimpleNamespace(),
         "selection_logging_module": fake_selection_logging_module,
         "build_search_checkpoint_payload": lambda runtime, state_codec: {
             "runtime": runtime,

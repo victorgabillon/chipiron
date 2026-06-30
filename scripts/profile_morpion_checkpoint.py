@@ -155,6 +155,7 @@ def _load_runtime_modules() -> dict[str, Any]:
 
     import chipiron
     import chipiron.environments.morpion.bootstrap.runtime.checkpoint_io as checkpoint_io_module
+    import chipiron.environments.morpion.bootstrap.runtime.restore_memory_logging as restore_memory_logging_module
     import chipiron.environments.morpion.bootstrap.runtime.runner as runner_module
     import chipiron.environments.morpion.bootstrap.runtime.selection_logging as selection_logging_module
     from chipiron.environments.morpion.bootstrap import (
@@ -170,6 +171,7 @@ def _load_runtime_modules() -> dict[str, Any]:
         "MorpionBootstrapPaths": MorpionBootstrapPaths,
         "AnemoneMorpionSearchRunner": AnemoneMorpionSearchRunner,
         "checkpoint_io_module": checkpoint_io_module,
+        "restore_memory_logging_module": restore_memory_logging_module,
         "runner_module": runner_module,
         "selection_logging_module": selection_logging_module,
     }
@@ -281,7 +283,7 @@ def _profile_checkpoint_save(
 ) -> None:
     """Profile checkpoint payload build and optional serialization phases."""
     checkpoint_io_module = modules["checkpoint_io_module"]
-    runner_module = modules["runner_module"]
+    restore_memory_logging_module = modules["restore_memory_logging_module"]
     selection_logging_module = modules["selection_logging_module"]
     build_search_checkpoint_payload = modules["build_search_checkpoint_payload"]
 
@@ -324,7 +326,7 @@ def _profile_checkpoint_save(
     output_format: str | None = None
     output_encoder: str | None = None
 
-    rss_before_mb = runner_module._current_rss_mb()
+    rss_before_mb = restore_memory_logging_module.current_rss_mb()
     total_started_at = perf_counter()
 
     if args.profile_mode == "full_save":
@@ -336,7 +338,7 @@ def _profile_checkpoint_save(
     )
     if args.profile_mode == "build_only":
         profiler.disable()
-    rss_after_payload_build_mb = runner_module._current_rss_mb()
+    rss_after_payload_build_mb = restore_memory_logging_module.current_rss_mb()
     print(f"[profile] phase=payload_build elapsed_s={payload_build_s:.6f}")
 
     if args.dump_json:
@@ -353,7 +355,7 @@ def _profile_checkpoint_save(
         uncompressed_bytes = write_stats.uncompressed_bytes
         compression_ratio = write_stats.compression_ratio
         output_format = write_stats.file_format
-        rss_after_asdict_mb = runner_module._current_rss_mb()
+        rss_after_asdict_mb = restore_memory_logging_module.current_rss_mb()
         if jsonable_s is None:
             print("[profile] phase=payload_to_jsonable skipped=true")
         else:
@@ -378,13 +380,13 @@ def _profile_checkpoint_save(
         print("[profile] phase=payload_to_jsonable skipped=true")
         print("[profile] phase=checkpoint_write skipped=true")
 
-    rss_after_json_dump_mb = runner_module._current_rss_mb()
+    rss_after_json_dump_mb = restore_memory_logging_module.current_rss_mb()
 
     if args.profile_mode == "full_save":
         profiler.disable()
 
     total_s = perf_counter() - total_started_at
-    rss_after_total_mb = runner_module._current_rss_mb()
+    rss_after_total_mb = restore_memory_logging_module.current_rss_mb()
     print(f"[profile] phase=total elapsed_s={total_s:.6f}")
     print(
         "[profile-memory] rss_before_mb=%s rss_after_payload_build_mb=%s rss_after_asdict_mb=%s rss_after_json_dump_mb=%s rss_after_total_mb=%s"

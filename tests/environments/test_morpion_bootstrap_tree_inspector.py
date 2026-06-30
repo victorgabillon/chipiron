@@ -55,7 +55,6 @@ from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunner,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
-    load_morpion_search_checkpoint_payload,
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
@@ -71,6 +70,9 @@ from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     _IndexedCheckpointTree,
     build_morpion_bootstrap_tree_inspector_snapshot,
     resolve_latest_runtime_checkpoint,
+)
+from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
+    load_morpion_search_checkpoint_payload,
 )
 
 

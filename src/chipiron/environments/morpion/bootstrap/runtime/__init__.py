@@ -1,11 +1,15 @@
 """Stable Morpion bootstrap runtime APIs."""
 
-from .runner import (
-    AnemoneMorpionSearchRunner,
-    AnemoneMorpionSearchRunnerArgs,
-    MorpionRegressorMasterEvaluator,
-    run_morpion_growth_search_once,
-)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .runner import (
+        AnemoneMorpionSearchRunner,
+        AnemoneMorpionSearchRunnerArgs,
+        MorpionRegressorMasterEvaluator,
+    )
 
 __all__ = [
     "AnemoneMorpionSearchRunner",
@@ -13,3 +17,12 @@ __all__ = [
     "MorpionRegressorMasterEvaluator",
     "run_morpion_growth_search_once",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Lazily expose runner APIs without loading runner for helper submodules."""
+    if name in __all__:
+        from . import runner
+
+        return getattr(runner, name)
+    raise AttributeError(name)

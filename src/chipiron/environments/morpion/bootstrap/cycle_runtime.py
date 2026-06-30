@@ -26,10 +26,12 @@ from .cycle_metadata import RUNTIME_CHECKPOINT_METADATA_KEY, next_metadata
 from .history import MorpionBootstrapTreeStatus
 from .pipeline_memory import current_rss_mb
 from .run_state import MorpionBootstrapRunState
-from .runtime.checkpoint_io import cache_morpion_search_checkpoint_payload_for_restore
-from .runtime.runner import (
+from .runtime.checkpoint_codec import (
     InvalidMorpionSearchCheckpointError,
     load_morpion_search_checkpoint_payload,
+)
+from .runtime.checkpoint_io import cache_morpion_search_checkpoint_payload_for_restore
+from .runtime.restore_memory_logging import (
     log_morpion_checkpoint_memory_phase,
 )
 

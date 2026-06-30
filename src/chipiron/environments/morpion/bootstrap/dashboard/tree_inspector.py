@@ -24,7 +24,7 @@ from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
     MorpionBootstrapPaths,
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
-from chipiron.environments.morpion.bootstrap.runtime.runner import (
+from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
     InvalidMorpionSearchCheckpointError,
     load_morpion_search_checkpoint_payload,
 )

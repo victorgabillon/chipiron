@@ -15,8 +15,10 @@ from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     log_available_ram_guard,
     log_candidate_checkpoint_load_memory_forecast,
 )
-from chipiron.environments.morpion.bootstrap.runtime.runner import (
+from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
     load_morpion_search_checkpoint_payload,
+)
+from chipiron.environments.morpion.bootstrap.runtime.restore_memory_logging import (
     restore_memory_logger_for_checkpoint_path,
 )
 

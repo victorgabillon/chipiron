@@ -319,15 +319,17 @@ from .run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from .runtime.checkpoint_codec import (
+    InvalidMorpionSearchCheckpointError,
+    load_morpion_search_checkpoint_payload,
+)
 from .runtime.runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
-    InvalidMorpionSearchCheckpointError,
     MorpionRegressorMasterEvaluator,
     UninitializedMorpionSearchRunnerError,
     apply_runtime_control_to_runner_args,
     load_morpion_evaluator_from_model_bundle,
-    load_morpion_search_checkpoint_payload,
     run_morpion_growth_search_once,
 )
 from .search_runner_protocol import MorpionSearchRunner
