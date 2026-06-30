@@ -32,8 +32,9 @@ Chipiron integrates and builds upon other personal repositories:
 - [shakmaty_python_binding](https://github.com/victorgabillon/shakmaty_python_binding):
   Python bindings for the Rust chess library [shakmaty](https://github.com/niklasf/shakmaty).
 
-- [parsley_coco](https://github.com/victorgabillon/parsley_coco):
-  A generic parsing library.
+- [parsley-coco](https://github.com/victorgabillon/parsley_coco):
+  A generic parsing library, installed from PyPI as `parsley-coco` and
+  imported in Python as `parsley`.
 
 - [chipiron-website](https://github.com/victorgabillon/chipiron-website):
   Source code for the website where you can play against Chipiron online.
@@ -204,26 +205,49 @@ xdg-open _build/html/index.html
 
 ## Testing
 
-Run all tests with:
+The canonical quality gate is tox:
+
 ```bash
 tox
 ```
-or
+
+If tox is not installed in your active Python 3.13 environment:
+
 ```bash
-pytest
+python -m pip install -e '.[dev]'
 ```
 
-### Coverage for integration tests
-
-Some integration tests spawn subprocesses, including full Chipiron runs. To
-ensure coverage is collected from those processes, this repo uses:
-
-- `.coveragerc` with `patch = subprocess`
-
-Run tests with:
+Useful focused runs:
 
 ```bash
-pytest --cov=chipiron --cov-config=.coveragerc --cov-report=term-missing
+tox -e py313
+tox -e lint
+tox -e typecheck
+```
+
+For local IDEs or manual commands outside tox, install the same development
+extras into your active Python 3.13 environment:
+
+```bash
+python -m pip install -e '.[test,lint,typecheck]'
+```
+
+Then you can run pytest directly:
+
+```bash
+python -m pytest
+```
+
+### Coverage
+
+Some integration tests spawn subprocesses, including full Chipiron runs. To
+ensure coverage is collected from those processes, coverage is configured in
+`pyproject.toml` with `patch = ["subprocess"]`.
+
+The pytest defaults already enable coverage. To spell out the same command:
+
+```bash
+python -m pytest --cov=chipiron --cov-config=pyproject.toml --cov-report=term-missing
 ```
 
 If coverage appears empty, ensure:
@@ -266,10 +290,10 @@ Please open issues or pull requests on GitHub.
 
 **Development Requirements:**
 
-For development and testing, additional dependencies are listed in `requirements_dev.txt`:
+For development and testing, use the extras declared in `pyproject.toml`:
 
 ```bash
-pip install -r requirements_dev.txt
+python -m pip install -e '.[test,lint,typecheck,dev]'
 ```
 
 This includes tools for:
@@ -279,9 +303,10 @@ This includes tools for:
 - Documentation building (sphinx)
 - Code formatting and development tools
 
-For the prehook to work pleas run
+For the prehook to work please run:
+
 ```bash
-pre-commit install # precommit is supposed to be pip-installed from requirements_dev.txt
+pre-commit install
 ```
 
 

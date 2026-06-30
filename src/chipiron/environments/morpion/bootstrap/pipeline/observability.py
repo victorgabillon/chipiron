@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     )
 
 
-def _optional_runner_mapping(
+def optional_runner_mapping(
     runner: object,
     method_name: str,
 ) -> dict[str, object] | None:
@@ -27,7 +27,7 @@ def _optional_runner_mapping(
     return dict(value)
 
 
-def _optional_ratio(numerator: object, denominator: object) -> float | None:
+def optional_ratio(numerator: object, denominator: object) -> float | None:
     """Return one safe ratio for numeric dashboard metrics."""
     if not isinstance(numerator, int | float) or not isinstance(
         denominator, int | float
@@ -38,7 +38,7 @@ def _optional_ratio(numerator: object, denominator: object) -> float | None:
     return float(numerator) / float(denominator)
 
 
-def _observability_metadata_for_dashboard(
+def build_observability_metadata_for_dashboard(
     *,
     runner: object,
     generation: int,
@@ -52,11 +52,12 @@ def _observability_metadata_for_dashboard(
     current_rss_provider: object = current_rss_mb,
 ) -> dict[str, object]:
     """Build compact status metadata for memory/checkpoint/export observability."""
-    rss_mb = current_rss_provider() if callable(current_rss_provider) else None
-    state_eviction = _optional_runner_mapping(runner, "profile_state_eviction_runtime")
-    checkpoint = _optional_runner_mapping(runner, "latest_checkpoint_metrics")
-    training_export = _optional_runner_mapping(runner, "latest_training_export_stats")
-    training_export_profile = _optional_runner_mapping(
+    raw_rss_mb = current_rss_provider() if callable(current_rss_provider) else None
+    rss_mb = raw_rss_mb if isinstance(raw_rss_mb, int | float) else None
+    state_eviction = optional_runner_mapping(runner, "profile_state_eviction_runtime")
+    checkpoint = optional_runner_mapping(runner, "latest_checkpoint_metrics")
+    training_export = optional_runner_mapping(runner, "latest_training_export_stats")
+    training_export_profile = optional_runner_mapping(
         runner,
         "latest_training_export_profile",
     )
@@ -83,7 +84,7 @@ def _observability_metadata_for_dashboard(
         "nodes_added": nodes_added,
         "cycle_elapsed_s": cycle_duration_s,
         "growth_elapsed_s": growth_duration_s,
-        "branch_count_per_node": _optional_ratio(branch_count, node_count),
+        "branch_count_per_node": optional_ratio(branch_count, node_count),
     }
     if growth_budget_metadata is not None:
         tree.update(dict(growth_budget_metadata))
@@ -99,7 +100,7 @@ def _observability_metadata_for_dashboard(
     }
 
 
-def _configure_linoo_selection_artifact_for_growth(
+def configure_linoo_selection_artifact_for_growth(
     *,
     runner: object,
     paths: MorpionBootstrapPaths,

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-def _apply_effective_runtime_config_if_supported(
+def apply_effective_runtime_config_if_supported(
     runner: object,
     runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
 ) -> None:
@@ -27,7 +27,7 @@ def _apply_effective_runtime_config_if_supported(
         apply_config(runtime_config)
 
 
-def _missing_branch_count_for_additional_budget_error() -> RuntimeError:
+def missing_branch_count_for_additional_budget_error() -> RuntimeError:
     """Return the stable error for unresolved additional branch budgets."""
     return RuntimeError(
         "Cannot apply --growth-additional-branch-budget because the runner "
@@ -35,7 +35,7 @@ def _missing_branch_count_for_additional_budget_error() -> RuntimeError:
     )
 
 
-def _growth_budget_runtime_config(
+def growth_budget_runtime_config(
     *,
     args: MorpionBootstrapArgs,
     runner: object,
@@ -58,13 +58,13 @@ def _growth_budget_runtime_config(
             },
         )
     if current_branch_count is None:
-        raise _missing_branch_count_for_additional_budget_error()
+        raise missing_branch_count_for_additional_budget_error()
     effective_branch_limit = current_branch_count + args.growth_additional_branch_budget
     resolved_runtime_config = replace(
         effective_runtime_config,
         tree_branch_limit=effective_branch_limit,
     )
-    _apply_effective_runtime_config_if_supported(runner, resolved_runtime_config)
+    apply_effective_runtime_config_if_supported(runner, resolved_runtime_config)
     LOGGER.info(
         "[growth-budget] mode=additional current_branches=%s additional=%s effective_branch_limit=%s",
         current_branch_count,

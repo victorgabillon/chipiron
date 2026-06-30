@@ -53,17 +53,17 @@ class MissingPipelineRowsFileError(FileNotFoundError):
         return cls(f"Pipeline rows file does not exist: {rows_path}")
 
 
-def _manifest_tree_snapshot_required_error() -> ValueError:
+def manifest_tree_snapshot_required_error() -> ValueError:
     """Build the canonical missing tree snapshot path error."""
     return ValueError("manifest.tree_snapshot_path is required")
 
 
-def _manifest_rows_path_required_error() -> ValueError:
+def manifest_rows_path_required_error() -> ValueError:
     """Build the canonical missing rows path error."""
     return ValueError("manifest.rows_path is required")
 
 
-def _pipeline_manifest_path(
+def pipeline_manifest_path(
     paths: MorpionBootstrapPaths,
     generation: int,
 ) -> Path:
@@ -71,16 +71,16 @@ def _pipeline_manifest_path(
     return paths.pipeline_manifest_path_for_generation(generation)
 
 
-def _load_generation_manifest(
+def load_generation_manifest(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
 ) -> MorpionPipelineGenerationManifest:
     """Load the persisted pipeline manifest for one generation."""
-    return load_pipeline_manifest(_pipeline_manifest_path(paths, generation))
+    return load_pipeline_manifest(pipeline_manifest_path(paths, generation))
 
 
-def _latest_prior_dataset_status_artifact(
+def latest_prior_dataset_status_artifact(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
@@ -94,7 +94,7 @@ def _latest_prior_dataset_status_artifact(
             continue
         try:
             return load_pipeline_dataset_status_file(status_path)
-        except Exception:
+        except (OSError, TypeError, ValueError):
             LOGGER.warning(
                 "Skipping unreadable dataset status artifact: %s",
                 status_path,
@@ -103,13 +103,13 @@ def _latest_prior_dataset_status_artifact(
     return None
 
 
-def _resolve_previous_pipeline_record_status(
+def resolve_previous_pipeline_record_status(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
 ) -> MorpionBootstrapRecordStatus | None:
     """Return the previous record status for one pipeline dataset generation."""
-    latest_dataset_status = _latest_prior_dataset_status_artifact(
+    latest_dataset_status = latest_prior_dataset_status_artifact(
         paths=paths,
         generation=generation,
     )
@@ -120,13 +120,13 @@ def _resolve_previous_pipeline_record_status(
     return None
 
 
-def _resolve_previous_pipeline_frontier_status(
+def resolve_previous_pipeline_frontier_status(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
 ) -> MorpionBootstrapFrontierStatus | None:
     """Return the previous frontier status for one pipeline dataset generation."""
-    latest_dataset_status = _latest_prior_dataset_status_artifact(
+    latest_dataset_status = latest_prior_dataset_status_artifact(
         paths=paths,
         generation=generation,
     )
@@ -137,7 +137,7 @@ def _resolve_previous_pipeline_frontier_status(
     return None
 
 
-def _save_dataset_manifest_status(
+def save_dataset_manifest_status(
     *,
     paths: MorpionBootstrapPaths,
     manifest: MorpionPipelineGenerationManifest,
@@ -147,7 +147,7 @@ def _save_dataset_manifest_status(
     """Persist one updated dataset-stage manifest and matching status file."""
     next_manifest = replace(manifest, dataset_status=dataset_status)
     save_pipeline_manifest(
-        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
+        next_manifest, pipeline_manifest_path(paths, manifest.generation)
     )
     save_pipeline_dataset_status_file(
         generation=manifest.generation,
@@ -159,7 +159,7 @@ def _save_dataset_manifest_status(
     return next_manifest
 
 
-def _save_training_manifest_status(
+def save_training_manifest_status(
     *,
     paths: MorpionBootstrapPaths,
     manifest: MorpionPipelineGenerationManifest,
@@ -169,7 +169,7 @@ def _save_training_manifest_status(
     """Persist one updated training-stage manifest and matching status file."""
     next_manifest = replace(manifest, training_status=training_status)
     save_pipeline_manifest(
-        next_manifest, _pipeline_manifest_path(paths, manifest.generation)
+        next_manifest, pipeline_manifest_path(paths, manifest.generation)
     )
     save_pipeline_training_status_file(
         generation=manifest.generation,
@@ -181,19 +181,19 @@ def _save_training_manifest_status(
     return next_manifest
 
 
-def _require_manifest_tree_snapshot_path(
+def require_manifest_tree_snapshot_path(
     manifest: MorpionPipelineGenerationManifest,
 ) -> str:
     """Require one manifest tree snapshot path for dataset extraction."""
     if manifest.tree_snapshot_path is None:
-        raise _manifest_tree_snapshot_required_error()
+        raise manifest_tree_snapshot_required_error()
     return manifest.tree_snapshot_path
 
 
-def _require_manifest_rows_path(
+def require_manifest_rows_path(
     manifest: MorpionPipelineGenerationManifest,
 ) -> str:
     """Require one manifest rows path for pipeline training."""
     if manifest.rows_path is None:
-        raise _manifest_rows_path_required_error()
+        raise manifest_rows_path_required_error()
     return manifest.rows_path

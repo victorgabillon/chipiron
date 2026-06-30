@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     )
 
 
-def _optional_generation_max(left: int | None, right: int) -> int:
+def optional_generation_max(left: int | None, right: int) -> int:
     """Return max for an optional generation value and a concrete generation."""
     return max(left if left is not None else -1, right)
 
 
-def _active_model_generation_for_training_guard(
+def active_model_generation_for_training_guard(
     paths: MorpionBootstrapPaths,
 ) -> int | None:
     """Return current active-model generation when the singleton artifact exists."""
@@ -34,10 +34,10 @@ def _active_model_generation_for_training_guard(
     return load_pipeline_active_model(paths.pipeline_active_model_path).generation
 
 
-def _training_lower_bound_generation(paths: MorpionBootstrapPaths) -> int:
+def training_lower_bound_generation(paths: MorpionBootstrapPaths) -> int:
     """Return the monotonic lower bound for an explicit training stage."""
     cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
-    active_generation = _active_model_generation_for_training_guard(paths)
+    active_generation = active_model_generation_for_training_guard(paths)
     return max(
         active_generation if active_generation is not None else -1,
         (
@@ -53,7 +53,7 @@ def _training_lower_bound_generation(paths: MorpionBootstrapPaths) -> int:
     )
 
 
-def _save_training_cursor_started(
+def save_training_cursor_started(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
@@ -62,7 +62,7 @@ def _save_training_cursor_started(
     cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
     next_cursor = replace(
         cursor,
-        latest_started_generation=_optional_generation_max(
+        latest_started_generation=optional_generation_max(
             cursor.latest_started_generation,
             generation,
         ),
@@ -71,7 +71,7 @@ def _save_training_cursor_started(
     return next_cursor
 
 
-def _training_rows_subset_path(
+def training_rows_subset_path(
     paths: MorpionBootstrapPaths,
     generation: int,
 ) -> Path:
@@ -79,7 +79,7 @@ def _training_rows_subset_path(
     return paths.rows_dir / f"generation_{generation:06d}.training_subset.json"
 
 
-def _save_training_cursor_completed(
+def save_training_cursor_completed(
     *,
     paths: MorpionBootstrapPaths,
     generation: int,
@@ -88,7 +88,7 @@ def _save_training_cursor_completed(
     cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
     next_cursor = replace(
         cursor,
-        latest_completed_generation=_optional_generation_max(
+        latest_completed_generation=optional_generation_max(
             cursor.latest_completed_generation,
             generation,
         ),

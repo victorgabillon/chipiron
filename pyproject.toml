@@ -28,7 +28,10 @@ dependencies = [
   "pyarrow",
   "gprof2dot",
   "mlflow",
-  "parsley_coco>=0.1.34",
+  # PyPI distribution names differ from their import packages:
+  # parsley-coco -> parsley, algorhino-coral -> coral,
+  # algorhino-anemone -> anemone.
+  "parsley-coco>=0.1.34",
   "gdown",
   "orjson",
   "zstandard",
@@ -113,13 +116,23 @@ exclude = [
 
 
 [tool.pytest.ini_options]
-addopts = "--cov=chipiron --cov-config=.coveragerc --cov-report=term-missing"
+addopts = "--cov=chipiron --cov-config=pyproject.toml --cov-report=term-missing"
 testpaths = ["tests"]
 norecursedirs = ["src"]
 markers = [
   "integration: marks integration tests (deselect with '-m \"not integration\"')",
   "external_data: tests requiring external downloaded data",
 ]
+
+[tool.coverage.run]
+source = ["chipiron"]
+branch = true
+parallel = true
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
 
 [tool.mypy]
 mypy_path = "src"
@@ -273,6 +286,11 @@ disable = [
   "R0917",
   "R0911",
   "R0914",
+  "duplicate-code",
+  "invalid-name",
+  "too-many-lines",
+  "too-many-nested-blocks",
+  "too-many-public-methods",
 ]
 
 
@@ -283,12 +301,7 @@ init-hook = "import sys; sys.path.append('.')"
 
 [tool.pyright]
 include = ["src", "tests"]
-extraPaths = [
-  "src",
-  "../atomheart/src",
-  "../anemone/src",
-  "../../../valanga/src",
-]
+extraPaths = ["src"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingImports = true
@@ -296,6 +309,17 @@ reportUnusedImport = true
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportPrivateImportUsage = false
+reportPrivateUsage = false
+reportUnusedFunction = false
+reportUnusedClass = false
+reportUnknownArgumentType = false
+reportUnknownLambdaType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnnecessaryIsInstance = false
+reportUnsupportedDunderAll = false
+reportDeprecated = false
+reportMissingModuleSource = false
 
 
 #################### TOX ####################
@@ -369,39 +393,8 @@ commands = [
 # ----------------
 [tool.tox.env.lint]
 description = "ruff + pylint (fast)"
-package = "skip"
-deps = [
-  "ruff>=0.15.20",
-  "pylint>=4.0.6",
-  # optional: if pylint needs to import chipiron deps for module resolution
-  # but usually it imports your code, so keep runtime deps available:
-  "PyYAML",
-  "PySide6==6.9.2",
-  "plotly>=6.3.0",
-  "sortedcollections>=2.1.0",
-  "pandas==2.3.2",
-  "numpy==2.2.6",
-  "numba>=0.61.2",
-  "graphviz>=0.20.1",
-  "dacite>=1.9.2",
-  "customtkinter>=5.2",
-  "pyarrow",
-  "gprof2dot",
-    "huggingface_hub>=1.6.0",
-     "shakmaty_python_binding",
-
-  "mlflow",
-  "parsley_coco>=0.1.34",
-  "gdown",
-  "zstandard",
-  "rich",
-  "torchinfo",
-  "platformdirs>=4.9.2",
-  "valanga==0.2.5",
-  "atomheart==0.2.11",
-  "algorhino-coral==0.1.13",
-  "algorhino-anemone==0.2.21",
-]
+package = "editable"
+extras = ["lint"]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
   [
@@ -432,41 +425,8 @@ commands = [
 # ----------------
 [tool.tox.env.typecheck]
 description = "mypy + pyright (fast)"
-package = "skip"
-deps = [
-  "mypy>=2.1.0",
-  "pyright[nodejs]>=1.1.411",
-  "types-PyYAML>=6.0.12.20260518",
-  # runtime deps for import resolution (same list as lint)
-  "PyYAML",
-  "PySide6==6.9.2",
-  "plotly>=6.3.0",
-  "sortedcollections>=2.1.0",
-  "pandas==2.3.2",
-  "numpy==2.2.6",
-  "numba>=0.61.2",
-  "graphviz>=0.20.1",
-  "dacite>=1.9.2",
-  "customtkinter>=5.2",
-    "huggingface_hub>=1.6.0",
-
-  "pyarrow",
-  "gprof2dot",
-  "mlflow",
-  "parsley_coco>=0.1.34",
-  "gdown",
-  "torchinfo",
-  "zstandard",
-  "rich",
-  "valanga==0.2.5",
-  "atomheart==0.2.11",
-  "algorhino-coral==0.1.13",
-  "algorhino-anemone==0.2.21",
-  "pytest>=9.0.2",
-  "pytest-cov>=6.0.0",
-  "platformdirs>=4.9.2",
-   "shakmaty_python_binding",
-]
+package = "editable"
+extras = ["typecheck"]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [
   [
@@ -480,6 +440,8 @@ commands = [
     "python",
     "-m",
     "pyright",
+    "--pythonpath",
+    "{envpython}",
     "src/chipiron",
   ],
 ]

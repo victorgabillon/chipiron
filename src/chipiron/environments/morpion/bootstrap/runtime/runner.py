@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gc
 import logging
+import os
 import time
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -81,6 +82,10 @@ from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     current_rss_mb,
     log_pipeline_memory,
 )
+from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
+    DeepSizeStats,
+    deep_size,
+)
 from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
     MorpionSearchRunner,
 )
@@ -143,6 +148,10 @@ if TYPE_CHECKING:
     )
 
 LOGGER = logging.getLogger(__name__)
+_GROWTH_STEP_SEPARATOR = (
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+)
+_VERBOSE_SELECTION_TABLE_ENV = "MORPION_VERBOSE_SELECTION_TABLE"
 
 
 def _live_compact_state_payload_cycle_error(node_id: int) -> RuntimeError:
@@ -327,6 +336,11 @@ def _format_optional_seconds(value: object) -> str:
     return f"{float(value):.6f}" if isinstance(value, int | float) else "unknown"
 
 
+def _format_optional_seconds_with_unit(value: object) -> str:
+    """Format one optional duration for concise human-facing logs."""
+    return f"{float(value):.3f}s" if isinstance(value, int | float) else "unknown"
+
+
 def _value_to_scalar(value: object) -> float | None:
     """Extract a raw numeric score from one Anemone value-like object."""
     if value is None:
@@ -437,6 +451,127 @@ def _format_optional_int_log(value: object) -> str:
     return str(value) if isinstance(value, int) else "unknown"
 
 
+def _format_selected_metric(value: object) -> str:
+    """Format selected node/depth fields so missing values are visually obvious."""
+    return str(value) if isinstance(value, int) else "unknown"
+
+
+def _format_optional_table_int(value: object) -> str:
+    """Format an optional integer for human-facing aligned tables."""
+    return str(value) if isinstance(value, int) else "-"
+
+
+def _format_optional_table_float(value: object) -> str:
+    """Format an optional float for human-facing aligned tables."""
+    return f"{float(value):.3f}" if isinstance(value, int | float) else "-"
+
+
+def _format_text_table(
+    headers: tuple[str, ...],
+    rows: Sequence[Sequence[str]],
+) -> str:
+    """Format string rows as a simple aligned whitespace table."""
+    widths = tuple(
+        max([len(headers[column]), *(len(row[column]) for row in rows)])
+        for column in range(len(headers))
+    )
+    formatted_rows = tuple(
+        " ".join(value.rjust(widths[column]) for column, value in enumerate(row))
+        for row in rows
+    )
+    return "\n".join(
+        (
+            " ".join(
+                header.rjust(widths[column]) for column, header in enumerate(headers)
+            ),
+            *formatted_rows,
+        )
+    )
+
+
+def _resolve_selected_int(
+    *,
+    explicit_value: object,
+    report: object,
+    report_attribute: str,
+) -> int | None:
+    """Return an explicit selected metric, falling back to the selector report."""
+    if isinstance(explicit_value, int):
+        return explicit_value
+    report_value = getattr(report, report_attribute, None)
+    return report_value if isinstance(report_value, int) else None
+
+
+def _format_linoo_selection_depth_table(
+    *,
+    selector_report: object,
+    selected_depth: object,
+) -> str | None:
+    """Return the step-scoped Linoo depth table body with a marked selected row."""
+    depth_rows = getattr(selector_report, "depth_rows", None)
+    if depth_rows is None:
+        return None
+    resolved_selected_depth = _resolve_selected_int(
+        explicit_value=selected_depth,
+        report=selector_report,
+        report_attribute="selected_depth",
+    )
+    headers = (
+        "mark",
+        "depth",
+        "total",
+        "opened",
+        "frontier",
+        "terminal",
+        "exact",
+        "uncached_terminal",
+        "non_openable",
+        "deterministic_index",
+        "weight",
+        "probability",
+    )
+    rows: tuple[tuple[str, ...], ...] = tuple(
+        (
+            "*" if row_depth == resolved_selected_depth else "",
+            _format_optional_table_int(row_depth),
+            _format_optional_table_int(getattr(row, "total_nodes", None)),
+            _format_optional_table_int(getattr(row, "opened_count", None)),
+            _format_optional_table_int(getattr(row, "frontier_count", None)),
+            _format_optional_table_int(getattr(row, "terminal_count", None)),
+            _format_optional_table_int(getattr(row, "exact_count", None)),
+            _format_optional_table_int(
+                getattr(row, "uncached_terminal_candidates", None)
+            ),
+            _format_optional_table_int(getattr(row, "non_openable_count", None)),
+            _format_optional_table_int(getattr(row, "selection_index", None)),
+            _format_optional_table_float(getattr(row, "selection_weight", None)),
+            _format_optional_table_float(getattr(row, "selection_probability", None)),
+        )
+        for row in depth_rows
+        for row_depth in (getattr(row, "depth", None),)
+    )
+    return _format_text_table(headers, rows)
+
+
+def _linoo_depth_active_column(selector_report: object) -> str:
+    """Return the report-table column used by the active depth subpolicy."""
+    if getattr(selector_report, "depth_selection_subpolicy", None) == "inverse_depth":
+        return "probability"
+    return "deterministic_index"
+
+
+def _format_mapping_metric(value: object) -> str:
+    """Format a compact mapping as a stable log token."""
+    if not isinstance(value, Mapping):
+        return _metric_value(value)
+    return "{" + ",".join(f"{key}:{count}" for key, count in value.items()) + "}"
+
+
+def _env_flag_enabled(name: str) -> bool:
+    """Return whether an operator-facing boolean env flag is enabled."""
+    return os.environ.get(name, "0").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _selector_report_row_count(selector_report: object | None) -> int | None:
     """Return the selector report row count when exposed by the report."""
     if selector_report is None:
@@ -542,7 +677,7 @@ def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
     return False
 
 
-def _default_search_args(
+def default_search_args(
     *,
     rollout: MorpionBootstrapRolloutConfig | None = None,
 ) -> SearchArgs:
@@ -564,6 +699,9 @@ def _default_search_args(
         ),
         opening_expansion=_opening_expansion_config_from_rollout(rollout),
     )
+
+
+_default_search_args = default_search_args
 
 
 def _current_rss_mb() -> float | None:
@@ -669,10 +807,6 @@ class _RestoreMemoryLogger:
     def _recursive_size_mb(self, value: object | None) -> float | None:
         if not self.recursive_enabled or value is None:
             return None
-        from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
-            DeepSizeStats,
-            deep_size,
-        )
 
         stats = DeepSizeStats(max_objects=self.recursive_max_objects)
         byte_count = deep_size(
@@ -817,6 +951,7 @@ class _ChipironMorpionStateCheckpointCodec:
         branch_from_parent: object | None = None,
     ) -> object:
         """Serialize one child state as a parent-relative delta."""
+        _ = branch_from_parent
         started_at = perf_counter()
         result = self.inner.dump_delta_from_parent(
             parent_state=parent_state.to_atomheart_state(),
@@ -846,6 +981,7 @@ class _ChipironMorpionStateCheckpointCodec:
         branch_from_parent: object | None = None,
     ) -> MorpionState:
         """Restore one child state from its parent's concrete Chipiron state."""
+        _ = branch_from_parent
         return self.dynamics.wrap_atomheart_state(
             self.inner.load_child_from_delta(
                 parent_state=parent_state.to_atomheart_state(),
@@ -983,7 +1119,7 @@ class _MorpionRegressor(Protocol):
 class AnemoneMorpionSearchRunnerArgs:
     """Configuration for the real Anemone-backed Morpion runner."""
 
-    search_args: SearchArgs = field(default_factory=_default_search_args)
+    search_args: SearchArgs = field(default_factory=default_search_args)
     random_seed: int = 0
     reevaluation_scope: str = "leaves"
     restore_memory_profile: bool = False
@@ -1294,8 +1430,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             if not isinstance(selector_report_rows, int):
                 selector_report_rows = _selector_report_row_count(selector_report)
             selector_diagnostics = _selector_growth_diagnostic_fields(selector_report)
-            LOGGER.info(
-                "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier=%s heap_registered=%s stale_skipped=%s selector_state_rebuilt=%s selector_nodes_incrementally_updated=%s selector_total_nodes_scanned=%s selector_frontier_nodes_scanned=%s",
+            LOGGER.debug(
+                "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier_count=%s heap_registered=%s stale_skipped=%s selector_state_rebuilt=%s selector_nodes_incrementally_updated=%s selector_total_nodes_scanned=%s selector_frontier_nodes_scanned=%s",
                 steps_executed,
                 _format_optional_seconds(
                     getattr(step_report, "total_s", None)
@@ -1390,7 +1526,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     {}, rematerialization_count_by_phase, prefix="select"
                 ).values()
             )
-            LOGGER.info(
+            LOGGER.debug(
                 "[selector-heap-detail] step=%s candidate_count=%s push_count=%s pop_count=%s stale_skip_count=%s signature_check_count=%s signature_recompute_count=%s version_mismatch_count=%s total_heap_entries=%s max_heap_size=%s depth_count=%s frontier_node_count_seen=%s select_rematerialization_count_total=%s select_rematerialization_count_delta=%s select_rematerialization_cache_miss_delta=%s select_rematerialization_total_s_delta=%s select_rematerialization_delta_by_phase=%r select_rematerialization_miss_delta_by_phase=%r select_rematerialization_s_delta_by_phase=%r",
                 steps_executed,
                 _metric_value(selector_heap_details["candidate_count"]),
@@ -1412,6 +1548,23 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 select_rematerialization_miss_delta_by_phase,
                 select_rematerialization_s_delta_by_phase,
             )
+            rollout_summary = _log_latest_rollout_report(
+                runtime,
+                step=steps_executed,
+            )
+            self._log_growth_step_summary(
+                step=steps_executed,
+                step_report=step_report,
+                selector_report=selector_report,
+                selector_report_rows=selector_report_rows,
+                selector_diagnostics=selector_diagnostics,
+                current_tree_size=current_tree_size,
+                initial_tree_size=initial_tree_size,
+                branch_count=branch_count,
+                selected_node_id=selected_node_id,
+                selected_depth=selected_depth,
+                rollout_summary=rollout_summary,
+            )
             if step_report is not None:
                 self._log_and_persist_linoo_selection_table(
                     step_report=step_report,
@@ -1419,15 +1572,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     selected_depth=selected_depth,
                     selected_node_id=selected_node_id,
                 )
-            _log_latest_rollout_report(runtime)
-            LOGGER.info(
-                "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s selected_node_id=%s selected_depth=%s",
+            LOGGER.info(_GROWTH_STEP_SEPARATOR)
+            LOGGER.debug(
+                "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s",
                 steps_executed,
                 current_tree_size,
                 current_tree_size - initial_tree_size,
                 branch_count if isinstance(branch_count, int) else "unknown",
-                selected_node_id if isinstance(selected_node_id, int) else "unknown",
-                selected_depth if isinstance(selected_depth, int) else "unknown",
             )
         final_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
@@ -1438,6 +1589,100 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             stop_reason,
         )
         LOGGER.info("[state-eviction] %s", self._format_state_eviction_metrics())
+
+    def _log_growth_step_summary(
+        self,
+        *,
+        step: int,
+        step_report: object | None,
+        selector_report: object | None,
+        selector_report_rows: int | None,
+        selector_diagnostics: Mapping[str, object],
+        current_tree_size: int,
+        initial_tree_size: int,
+        branch_count: object,
+        selected_node_id: object,
+        selected_depth: object,
+        rollout_summary: object | None,
+    ) -> None:
+        """Emit the compact human-facing growth summary block."""
+        selected_depth_frontier = getattr(
+            selector_report,
+            "selected_depth_frontier_count",
+            None,
+        )
+        LOGGER.info(_GROWTH_STEP_SEPARATOR)
+        LOGGER.info(
+            "[growth-step] step=%s selected_depth=%s selected_node_id=%s "
+            "mode=%s depth_policy=%s subpolicy=%s step_parity=%s",
+            step,
+            _format_selected_metric(selected_depth),
+            _format_selected_metric(selected_node_id),
+            _selector_family_name(self._args.search_args),
+            _metric_value(getattr(selector_report, "depth_selection_policy", None)),
+            _metric_value(getattr(selector_report, "depth_selection_subpolicy", None)),
+            _metric_value(
+                getattr(selector_report, "depth_selection_step_parity", None)
+            ),
+        )
+        LOGGER.info(
+            "[growth-step] step=%s tree nodes=%s branches=%s nodes_added_total=%s "
+            "selected_depth_frontier_count=%s",
+            step,
+            current_tree_size,
+            branch_count if isinstance(branch_count, int) else "unknown",
+            current_tree_size - initial_tree_size,
+            _format_optional_int_log(selected_depth_frontier),
+        )
+        LOGGER.info(
+            "[growth-step] step=%s timing total=%s select=%s expand=%s evaluate=%s "
+            "propagate=%s",
+            step,
+            _format_optional_seconds_with_unit(getattr(step_report, "total_s", None)),
+            _format_optional_seconds_with_unit(getattr(step_report, "select_s", None)),
+            _format_optional_seconds_with_unit(getattr(step_report, "expand_s", None)),
+            _format_optional_seconds_with_unit(
+                getattr(step_report, "evaluate_s", None)
+            ),
+            _format_optional_seconds_with_unit(
+                getattr(step_report, "propagate_s", None)
+            ),
+        )
+        LOGGER.info(
+            "[growth-step] step=%s selector rows=%s scanned_nodes=%s scanned_frontier=%s "
+            "heap_candidates=%s stale_skipped=%s rebuilt=%s",
+            step,
+            _format_optional_int_log(selector_report_rows),
+            _format_optional_int_log(
+                getattr(selector_report, "total_nodes_scanned", None)
+            ),
+            _format_optional_int_log(
+                getattr(selector_report, "frontier_nodes_scanned", None)
+            ),
+            _format_optional_int_log(
+                getattr(selector_report, "heap_candidates_registered", None)
+            ),
+            _format_optional_int_log(
+                getattr(selector_report, "stale_candidates_skipped", None)
+            ),
+            _metric_value(selector_diagnostics["selector_state_rebuilt"]),
+        )
+        LOGGER.info(
+            "[growth-step] step=%s rollout enabled=%s paths=%s total_edges=%s "
+            "initial_edges=%s extra_edges=%s traversals=%s start_depth=%s "
+            "end_depth=%s depth_delta=%s stops=%s",
+            step,
+            rollout_summary is not None,
+            _metric_value(getattr(rollout_summary, "paths", None)),
+            _metric_value(getattr(rollout_summary, "total_edges", None)),
+            _metric_value(getattr(rollout_summary, "initial_edges", None)),
+            _metric_value(getattr(rollout_summary, "extra_edges", None)),
+            _metric_value(getattr(rollout_summary, "traversals", None)),
+            _metric_value(getattr(rollout_summary, "start_depth", None)),
+            _metric_value(getattr(rollout_summary, "end_depth", None)),
+            _metric_value(getattr(rollout_summary, "depth_delta", None)),
+            _format_mapping_metric(getattr(rollout_summary, "stops", None)),
+        )
 
     def _reset_growth_state_eviction_runtime(self) -> None:
         """Reset live compact payload storage for the next loaded runtime."""
@@ -1491,13 +1736,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     return cast("Any", _original_method)(*args, **kwargs)
 
             setattr(runtime, method_name, _phase_wrapped_method)
-        cast(
+        cast(  # pylint: disable=protected-access
             "Any", runtime
         )._diagnostic_phase_context = self._state_rematerialization_phase
         self._install_selector_diagnostic_phase_context(
             getattr(runtime, "node_selector", None)
         )
-        cast("Any", runtime)._chipiron_rematerialization_phase_hooks = True
+        cast("Any", runtime)._chipiron_rematerialization_phase_hooks = True  # pylint: disable=protected-access
 
     def _install_selector_diagnostic_phase_context(self, selector: object) -> None:
         """Attach optional diagnostic phase context hooks to selector objects."""
@@ -1509,7 +1754,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 "_diagnostic_phase_context",
                 self._state_rematerialization_phase,
             )
-        except Exception:  # pylint: disable=broad-exception-caught
+        except (AttributeError, TypeError):
             return
         base_selector = getattr(selector, "base", None)
         if base_selector is not None and base_selector is not selector:
@@ -1585,14 +1830,19 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         all_nodes_in_tree_order = getattr(runtime, "_all_nodes_in_tree_order", None)
         if callable(all_nodes_in_tree_order):
             try:
-                nodes = all_nodes_in_tree_order()
-            except Exception:
+                raw_nodes = all_nodes_in_tree_order()
+            except (AttributeError, RuntimeError, TypeError):
+                self._state_eviction_metrics.skip("scan_nodes_failed")
+                return iter(())
+            if isinstance(raw_nodes, Sequence):
+                nodes: Sequence[object] = raw_nodes
+            elif isinstance(raw_nodes, Iterable):
+                nodes = tuple(raw_nodes)
+            else:
                 self._state_eviction_metrics.skip("scan_nodes_failed")
                 return iter(())
         else:
             nodes = tuple(self.iter_profile_nodes())
-        if not isinstance(nodes, Sequence):
-            nodes = tuple(nodes)
         node_count = len(nodes)
         if node_count <= 0:
             return iter(())
@@ -1659,10 +1909,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             with self._state_rematerialization_phase("eviction_payload_build"):
                 live_payload = self._build_live_eviction_payload(
                     node=node,
-                    node_id=node_id,
                     state=state,
                 )
-        except Exception:  # pylint: disable=broad-exception-caught
+        except (AttributeError, RuntimeError, TypeError, ValueError):
             self._state_eviction_metrics.skip("payload_build_failed")
             return
         finally:
@@ -1694,7 +1943,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self,
         *,
         node: object,
-        node_id: int,
         state: MorpionState,
     ) -> _LiveEvictionPayload:
         """Build a bounded live compact payload, preferring safe deltas."""
@@ -1703,7 +1951,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._state_eviction_metrics.record_delta_payload_attempt()
             delta_payload = self._try_build_live_delta_eviction_payload(
                 node=node,
-                node_id=node_id,
                 state=state,
                 state_summary=state_summary,
             )
@@ -1725,7 +1972,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self,
         *,
         node: object,
-        node_id: int,
         state: MorpionState,
         state_summary: object | None,
     ) -> _LiveEvictionPayload | None:
@@ -1763,10 +2009,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             return None
 
         try:
-            parent_state = cast(
-                "Any",
-                parent_context.parent_node,
-            ).state
+            parent_state = cast("Any", parent_context.parent_node).state
             delta_ref = self._state_codec.dump_delta_from_parent(
                 parent_state=parent_state,
                 child_state=state,
@@ -1776,7 +2019,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 state_codec=self._state_codec,
                 branch_from_parent=parent_context.branch_from_parent,
             )
-        except Exception:  # pylint: disable=broad-exception-caught
+        except (AttributeError, RuntimeError, TypeError, ValueError):
             self._state_eviction_metrics.record_delta_payload_fallback(
                 "delta_payload_build_failed"
             )
@@ -1814,21 +2057,67 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if selector_report is None:
             return
         row_count = _selector_report_row_count(selector_report)
+        verbose_selection_table = _env_flag_enabled(_VERBOSE_SELECTION_TABLE_ENV)
+        resolved_selected_depth = _resolve_selected_int(
+            explicit_value=selected_depth,
+            report=selector_report,
+            report_attribute="selected_depth",
+        )
+        resolved_selected_node_id = _resolve_selected_int(
+            explicit_value=selected_node_id,
+            report=selector_report,
+            report_attribute="selected_node_id",
+        )
+        LOGGER.debug(
+            "[growth-selection] step=%s selected_depth=%s selected_node_id=%s "
+            "selected_depth_frontier_count=%s probability=%s depth_policy=%s "
+            "subpolicy=%s step_parity=%s",
+            step,
+            _format_selected_metric(resolved_selected_depth),
+            _format_selected_metric(resolved_selected_node_id),
+            _format_optional_int_log(
+                getattr(selector_report, "selected_depth_frontier_count", None)
+            ),
+            _metric_value(
+                getattr(selector_report, "selected_depth_selection_probability", None)
+            ),
+            _metric_value(getattr(selector_report, "depth_selection_policy", None)),
+            _metric_value(getattr(selector_report, "depth_selection_subpolicy", None)),
+            _metric_value(
+                getattr(selector_report, "depth_selection_step_parity", None)
+            ),
+        )
         formatted_table: str | None = None
         format_elapsed_s: float | None = None
         log_elapsed_s: float | None = None
-        if hasattr(selector_report, "format_depth_table"):
-            format_started_at = time.perf_counter()
-            formatted_table = selector_report.format_depth_table()
-            format_elapsed_s = time.perf_counter() - format_started_at
+        format_started_at = time.perf_counter()
+        formatted_table = _format_linoo_selection_depth_table(
+            selector_report=selector_report,
+            selected_depth=resolved_selected_depth,
+        )
+        format_elapsed_s = time.perf_counter() - format_started_at
+        if formatted_table is not None:
             log_started_at = time.perf_counter()
             LOGGER.info(
-                "[growth-selection-table] step=%s\n%s",
+                "[growth-selection-table] step=%s selected_depth=%s "
+                "selected_node_id=%s depth_policy=%s subpolicy=%s step_parity=%s "
+                "active_column=%s\n%s",
                 step,
+                _format_selected_metric(resolved_selected_depth),
+                _format_selected_metric(resolved_selected_node_id),
+                _metric_value(getattr(selector_report, "depth_selection_policy", None)),
+                _metric_value(
+                    getattr(selector_report, "depth_selection_subpolicy", None)
+                ),
+                _metric_value(
+                    getattr(selector_report, "depth_selection_step_parity", None)
+                ),
+                _linoo_depth_active_column(selector_report),
                 formatted_table,
             )
             log_elapsed_s = time.perf_counter() - log_started_at
-        LOGGER.info(
+        timing_logger = LOGGER.info if verbose_selection_table else LOGGER.debug
+        timing_logger(
             "[growth-selection-table-timing] step=%s rows=%s format_s=%s log_s=%s",
             step,
             _format_optional_int_log(row_count),
@@ -1895,7 +2184,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> Path:
         """Persist one additive sharded training export for the live tree."""
         runtime = self._require_runtime()
-        ordered_nodes = runtime._all_nodes_in_tree_order()
+        ordered_nodes = runtime._all_nodes_in_tree_order()  # pylint: disable=protected-access
         started_at = time.perf_counter()
         profile = MorpionTrainingExportProfile()
 
@@ -1936,7 +2225,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> tuple[TrainingTreeSnapshot, MorpionTrainingExportProfile]:
         """Build a training snapshot plus aggregate profiling for the live tree."""
         runtime = self._require_runtime()
-        ordered_nodes = runtime._all_nodes_in_tree_order()
+        ordered_nodes = runtime._all_nodes_in_tree_order()  # pylint: disable=protected-access
         profile = MorpionTrainingExportProfile()
         started_at = perf_counter()
 
@@ -1968,9 +2257,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         all_nodes_in_tree_order = getattr(runtime, "_all_nodes_in_tree_order", None)
         if callable(all_nodes_in_tree_order):
             try:
-                return iter(all_nodes_in_tree_order())  # pylint: disable=not-callable
-            except Exception:
+                raw_nodes = all_nodes_in_tree_order()  # pylint: disable=not-callable
+            except (AttributeError, RuntimeError, TypeError):
                 return iter(())
+            if isinstance(raw_nodes, Iterable):
+                return iter(raw_nodes)
+            return iter(())
 
         for attr_path in (
             ("node_store",),
@@ -2079,11 +2371,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             iter_child_links = getattr(node, "iter_child_links", None)
             if callable(iter_child_links):
                 try:
-                    for branch, _child in iter_child_links():
-                        yield branch
-                    continue
-                except Exception:
+                    child_links = iter_child_links()
+                except (AttributeError, RuntimeError, TypeError):
                     pass
+                else:
+                    if isinstance(child_links, Iterable):
+                        for child_link in child_links:
+                            if isinstance(child_link, tuple) and child_link:
+                                yield child_link[0]
+                        continue
 
             for attr_name in (
                 "branches",
@@ -2100,8 +2396,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 if isinstance(container, Iterable) and not isinstance(
                     container, str | bytes | bytearray
                 ):
-                    for branch in container:
-                        yield branch
+                    yield from container
 
     def current_tree_branch_count(self) -> int | None:
         """Return the live tree branch count when Anemone exposes it."""
@@ -2848,8 +3143,7 @@ def load_morpion_search_checkpoint_payload(
             resolved_path,
             f"payload shape is invalid: {exc}",
         ) from exc
-    else:
-        return payload
+    return payload
 
 
 def _generation_from_checkpoint_path(path: str | Path) -> int | None:
@@ -3017,7 +3311,7 @@ def _count_expanded_nodes(runtime: Any) -> int:
     """Count nodes that have already generated all branches in the live tree."""
     return sum(
         1
-        for node in runtime._all_nodes_in_tree_order()
+        for node in runtime._all_nodes_in_tree_order()  # pylint: disable=protected-access
         if bool(getattr(node, "all_branches_generated", False))
     )
 
@@ -3076,7 +3370,7 @@ def _apply_blended_reevaluation_patch(
     blend_metrics: _ReevaluationBlendMetrics,
 ) -> tuple[NodeValueUpdateResult, bool]:
     """Apply one smoothed patch using Anemone's existing single node lookup pass."""
-    nodes_by_id = runtime._nodes_by_public_id()
+    nodes_by_id = runtime._nodes_by_public_id()  # pylint: disable=protected-access
     missing_node_ids = tuple(
         row.node_id for row in patch.rows if row.node_id not in nodes_by_id
     )
@@ -3099,7 +3393,12 @@ def _apply_blended_reevaluation_patch(
             is_terminal=row.is_terminal,
             metadata=row.metadata,
         )
-        changed = bool(runtime._apply_node_value_update(node=live_node, update=update))
+        changed = bool(
+            runtime._apply_node_value_update(  # pylint: disable=protected-access
+                node=live_node,
+                update=update,
+            )
+        )
         applied_nodes.append(live_node)
         if changed:
             changed_nodes.append(live_node)
@@ -3303,14 +3602,14 @@ def _live_tree_node_count(runtime: Any) -> int:
             return int(count)
         if isinstance(count, int | float | str):
             return int(count)
-    return len(runtime._all_nodes_in_tree_order())
+    return len(runtime._all_nodes_in_tree_order())  # pylint: disable=protected-access
 
 
 def _optional_live_tree_node_count(runtime: Any) -> int | None:
     """Return live node count when available without affecting caller behavior."""
     try:
         return _live_tree_node_count(runtime)
-    except Exception:
+    except (AttributeError, RuntimeError, TypeError, ValueError):
         return None
 
 
@@ -3344,7 +3643,7 @@ def run_morpion_growth_search_once(
 def __getattr__(name: str) -> object:
     """Expose selected runtime checkpoint internals kept in checkpoint_io."""
     if name == "_validated_checkpoint_payload_cache":
-        return _checkpoint_io._validated_checkpoint_payload_cache
+        return _checkpoint_io._validated_checkpoint_payload_cache.entry  # pylint: disable=protected-access
     raise AttributeError(name)
 
 

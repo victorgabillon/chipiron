@@ -11,7 +11,7 @@ Methods:
 Dependencies:
     - enum
     - importlib.resources
-    - parsley_coco
+    - parsley
     - chipiron.players.PlayerArgs
     - chipiron.utils.path
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from time import perf_counter
@@ -389,9 +389,12 @@ def _single_parent_link_for_live_delta(node: object) -> _ParentDeltaContext | No
     iter_parent_items = getattr(node, "iter_parent_items", None)
     if callable(iter_parent_items):
         try:
-            parent_items = tuple(iter_parent_items())
+            raw_parent_items = iter_parent_items()
         except Exception:  # pylint: disable=broad-exception-caught
             return None
+        if not isinstance(raw_parent_items, Iterable):
+            return None
+        parent_items = tuple(raw_parent_items)
     else:
         parent_nodes = getattr(node, "parent_nodes", None)
         if not isinstance(parent_nodes, Mapping):
@@ -399,7 +402,10 @@ def _single_parent_link_for_live_delta(node: object) -> _ParentDeltaContext | No
         parent_items = tuple(parent_nodes.items())
     if len(parent_items) != 1:
         return None
-    parent_node, branch_keys = parent_items[0]
+    parent_item = parent_items[0]
+    if not isinstance(parent_item, tuple) or len(parent_item) != 2:
+        return None
+    parent_node, branch_keys = parent_item
     if not isinstance(branch_keys, set) or len(branch_keys) != 1:
         return None
     parent_node_id = getattr(parent_node, "id", None)

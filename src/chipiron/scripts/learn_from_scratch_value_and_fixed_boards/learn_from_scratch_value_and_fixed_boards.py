@@ -7,7 +7,6 @@ and from a fixed set of non-labelled boards.
 import logging
 import os
 import random
-import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, cast
@@ -59,7 +58,7 @@ from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger, suppress_logging
-from chipiron.utils.path_variables import ML_FLOW_URI_PATH
+from chipiron.utils.path_variables import ML_FLOW_URI_PATH, ML_FLOW_URI_PATH_TEST
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -216,8 +215,7 @@ class LearnNNFromScratchScript:
         self.index_evaluating_player_data: int = 0
 
         if self.args.base_script_args.testing:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                mlflow.set_tracking_uri(f"file:{tmpdir}")  # <- Key line!
+            mlflow.set_tracking_uri(uri=ML_FLOW_URI_PATH_TEST)
         else:
             mlflow.set_tracking_uri(uri=ML_FLOW_URI_PATH)
 

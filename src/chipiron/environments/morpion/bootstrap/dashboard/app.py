@@ -12,16 +12,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from matplotlib import pyplot as plt
 
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
-        MorpionBootstrapChildSummary,
-    )
-    from chipiron.environments.morpion.bootstrap.history import (
-        MorpionBootstrapTreeStatus,
-    )
-
 from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
 from chipiron.environments.morpion.bootstrap.config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
@@ -86,6 +76,16 @@ from chipiron.environments.morpion.bootstrap.run_state import (
 from chipiron.environments.morpion.bootstrap.streamlit_morpion_clickable_board import (
     render_clickable_morpion_board,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
+        MorpionBootstrapChildSummary,
+    )
+    from chipiron.environments.morpion.bootstrap.history import (
+        MorpionBootstrapTreeStatus,
+    )
 
 MAX_PLOT_POINTS = 2000
 TREE_INSPECTOR_TIMING_PREFIX = "[tree-inspector-timing]"
@@ -1078,7 +1078,9 @@ def _linoo_selection_table_rows(
             "depth": row.depth,
             "opened_count": row.opened,
             "frontier_count": row.frontier,
-            "selection_index": row.index,
+            "deterministic_index": row.deterministic_index,
+            "weight": row.weight,
+            "probability": row.probability,
             "best_node_id": row.best_node,
             "best_direct_value": row.best_value,
             "selected": row.selected,

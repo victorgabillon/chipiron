@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -234,6 +235,98 @@ def _write_manifest_with_snapshot(
     return snapshot_path
 
 
+def _write_manifest_with_sharded_snapshot(
+    paths: MorpionBootstrapPaths,
+    *,
+    generation: int,
+    snapshot: TrainingTreeSnapshot,
+) -> Path:
+    """Persist one minimal sharded snapshot and pipeline manifest."""
+    snapshot_path = paths.sharded_tree_snapshot_path_for_generation(generation)
+    root = snapshot_path.parent
+    node_shard_path = root / "node_shards" / f"generation_{generation:06d}.json"
+    update_shard_path = root / "update_shards" / f"generation_{generation:06d}.json"
+    node_shard_path.parent.mkdir(parents=True, exist_ok=True)
+    update_shard_path.parent.mkdir(parents=True, exist_ok=True)
+    node_records = [
+        {
+            "node_id": node.node_id,
+            "parent_ids": list(node.parent_ids),
+            "depth": node.depth,
+            "creation_generation": generation,
+            "state_ref_payload": node.state_ref_payload,
+        }
+        for node in snapshot.nodes
+    ]
+    node_updates = [
+        {
+            "node_id": node.node_id,
+            "order_index": index,
+            "child_ids": list(node.child_ids),
+            "direct_value_scalar": node.direct_value_scalar,
+            "backed_up_value_scalar": node.backed_up_value_scalar,
+            "is_terminal": node.is_terminal,
+            "is_exact": node.is_exact,
+            "over_event_label": node.over_event_label,
+            "visit_count": node.visit_count,
+            "metadata": dict(node.metadata),
+        }
+        for index, node in enumerate(snapshot.nodes)
+    ]
+    node_shard_path.write_text(
+        json.dumps({"generation": generation, "nodes": node_records}),
+        encoding="utf-8",
+    )
+    update_shard_path.write_text(
+        json.dumps({"generation": generation, "updates": node_updates}),
+        encoding="utf-8",
+    )
+    snapshot_path.write_text(
+        json.dumps(
+            {
+                "generation": generation,
+                "root_node_id": snapshot.root_node_id,
+                "node_count": len(snapshot.nodes),
+                "new_node_count": len(snapshot.nodes),
+                "node_shard_path": node_shard_path.relative_to(root).as_posix(),
+                "update_shard_path": update_shard_path.relative_to(root).as_posix(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "manifest.json").write_text(
+        json.dumps(
+            {
+                "latest_generation": generation,
+                "generation_manifests": {str(generation): snapshot_path.name},
+                "node_index_path": "node_index.json",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "node_index.json").write_text(
+        json.dumps(
+            {
+                "node_id_to_creation_generation": {
+                    node.node_id: generation for node in snapshot.nodes
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=generation,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path=paths.relative_to_work_dir(snapshot_path),
+            dataset_status="not_started",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(generation),
+    )
+    return snapshot_path
+
+
 def test_select_reevaluation_node_window_contiguous_without_wrap() -> None:
     """One bounded window should advance contiguously when no wrap is needed."""
     selected, next_cursor, completed_full_pass = select_reevaluation_node_window(
@@ -352,6 +445,36 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
     assert cursor.next_node_cursor == "node-c"
     assert cursor.completed_full_pass_count == 0
     assert cursor.last_patch_id == "patch-1"
+
+
+def test_worker_loads_sharded_tree_snapshot_manifest(tmp_path: Path) -> None:
+    """The worker should load Morpion sharded exports referenced by manifests."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    _write_manifest_with_sharded_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("node-c", "node-a", "node-b")),
+    )
+
+    result = run_morpion_reevaluation_worker_once(
+        _artifact_pipeline_args(tmp_path),
+        max_nodes_per_patch=2,
+        now_unix_s=1_777_377_600.0,
+        patch_id="patch-sharded",
+        use_snapshot_value_fallback=True,
+    )
+
+    patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+    assert result.patch_written
+    assert result.reason is None
+    assert result.patch_id == "patch-sharded"
+    assert result.evaluator_generation == active_model.generation
+    assert result.evaluator_name == active_model.evaluator_name
+    assert patch.tree_generation == 7
+    assert tuple(row.node_id for row in patch.rows) == ("node-a", "node-b")
 
 
 def test_worker_ram_guard_defers_before_snapshot_load(

@@ -54,7 +54,14 @@ class _ValidatedCheckpointPayloadCacheEntry:
     payload: SearchRuntimeCheckpointPayload
 
 
-_validated_checkpoint_payload_cache: _ValidatedCheckpointPayloadCacheEntry | None = None
+@dataclass(slots=True)
+class _ValidatedCheckpointPayloadCache:
+    """Mutable holder for the short-lived validated checkpoint payload."""
+
+    entry: _ValidatedCheckpointPayloadCacheEntry | None = None
+
+
+_validated_checkpoint_payload_cache = _ValidatedCheckpointPayloadCache()
 
 
 def checkpoint_io_metrics_to_dict(metrics: CheckpointIoMetrics) -> dict[str, object]:
@@ -187,13 +194,12 @@ def cache_morpion_search_checkpoint_payload_for_restore(
     payload: SearchRuntimeCheckpointPayload,
 ) -> None:
     """Retain one validated payload for an immediately following restore."""
-    global _validated_checkpoint_payload_cache
     try:
         resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
     except FileNotFoundError:
-        _validated_checkpoint_payload_cache = None
+        _validated_checkpoint_payload_cache.entry = None
         return
-    _validated_checkpoint_payload_cache = _ValidatedCheckpointPayloadCacheEntry(
+    _validated_checkpoint_payload_cache.entry = _ValidatedCheckpointPayloadCacheEntry(
         path=resolved_path,
         bytes=bytes_loaded,
         mtime_ns=mtime_ns,
@@ -205,21 +211,20 @@ def _pop_cached_morpion_search_checkpoint_payload_for_restore(
     path: str | Path,
 ) -> tuple[SearchRuntimeCheckpointPayload, int] | None:
     """Return and clear the matching validated payload cache entry, if any."""
-    global _validated_checkpoint_payload_cache
-    entry = _validated_checkpoint_payload_cache
+    entry = _validated_checkpoint_payload_cache.entry
     if entry is None:
         return None
     try:
         resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
     except FileNotFoundError:
-        _validated_checkpoint_payload_cache = None
+        _validated_checkpoint_payload_cache.entry = None
         return None
     if (
         entry.path != resolved_path
         or entry.bytes != bytes_loaded
         or entry.mtime_ns != mtime_ns
     ):
-        _validated_checkpoint_payload_cache = None
+        _validated_checkpoint_payload_cache.entry = None
         return None
-    _validated_checkpoint_payload_cache = None
+    _validated_checkpoint_payload_cache.entry = None
     return entry.payload, entry.bytes

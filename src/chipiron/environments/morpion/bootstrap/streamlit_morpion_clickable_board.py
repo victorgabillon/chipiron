@@ -11,7 +11,7 @@ from typing import Any, cast
 @lru_cache(maxsize=1)
 def _morpion_clickable_board_component() -> Any:
     """Return the declared Streamlit component for clickable Morpion boards."""
-    import streamlit.components.v1 as components  # pylint: disable=import-outside-toplevel,import-error
+    import streamlit.components.v1 as components  # pyright: ignore[reportMissingImports] # pylint: disable=import-outside-toplevel,import-error
 
     frontend_dir = Path(__file__).with_name(
         "streamlit_morpion_clickable_board_frontend"

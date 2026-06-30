@@ -116,6 +116,16 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
 )
 
 
+def _parse_key_value_log_fields(line: str) -> dict[str, str]:
+    """Parse simple key=value tokens from one log line."""
+    return {
+        key: value
+        for token in line.split()
+        if "=" in token
+        for key, value in (token.split("=", 1),)
+    }
+
+
 def test_restore_memory_logger_emits_structured_phase(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -276,11 +286,11 @@ class _FakeTreeManager:
         self.refresh_calls += 1
 
 
-def test_log_latest_rollout_report_includes_path_details(
+def test_log_latest_rollout_report_includes_compact_summary_by_default(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Rollout report logging includes aggregate, compact, and detail records."""
-    caplog.set_level(logging.INFO)
+    """Rollout report logging keeps standalone summary output below INFO."""
+    caplog.set_level(logging.DEBUG)
     path_reports = (
         SimpleNamespace(
             start_node_id="n1",
@@ -335,14 +345,180 @@ def test_log_latest_rollout_report_includes_path_details(
         tree_manager=SimpleNamespace(latest_rollout_report=report)
     )
 
+    summary = rollout_logging_module._log_latest_rollout_report(runtime, step=9)
+
+    assert summary is not None
+    assert summary.paths == 2
+    assert (
+        "[rollout-summary] step=9 paths=2 edges=4 initial=2 extra=2 "
+        "traversals=2 stops={terminal:1,action_selector_stop:1} "
+        "total_len=min:1 mean:2.0 max:3 extra_len=min:0 mean:1.0 max:2 "
+        "start_depth=min:1 mean:1.0 max:1 end_depth=min:1 mean:3.0 max:5 "
+        "depth_delta=min:0 mean:2.0 max:4"
+    ) in caplog.text
+    assert (
+        "[rollout-execution] step=9 paths=2 start_depths=[1,1] "
+        "end_depths=[5,1] depth_deltas=[4,0] end_node_ids=[n5,n2] "
+        "stops={terminal:1,action_selector_stop:1} end_terminal=1/2 "
+        "end_legal_actions=min:3 mean:3.0 max:3 "
+        "end_openable_actions=min:2 mean:2.0 max:2 created_node=1/2 "
+        "existing_node=1/2"
+    ) in caplog.text
+    assert not any(
+        record.levelno == logging.INFO
+        and record.getMessage().startswith("[rollout-detail]")
+        for record in caplog.records
+    )
+
+
+def test_log_latest_rollout_report_single_path_execution_depths(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Single-path rollout execution logs start/end depths and stop reason."""
+    caplog.set_level(logging.INFO)
+    report = SimpleNamespace(
+        total_edge_count=2,
+        initial_edge_count=1,
+        extra_edge_count=1,
+        traversal_count=0,
+        stop_reason_counts={"no_legal_actions": 1},
+        path_reports=(
+            SimpleNamespace(
+                start_node_id=97218,
+                start_depth=84,
+                end_node_id=97220,
+                end_depth=86,
+                initial_edge_count=1,
+                extra_edge_count=1,
+                traversal_count=0,
+                total_edge_count=2,
+                stop_reason="no_legal_actions",
+                end_is_terminal=True,
+                end_was_created_node=True,
+                end_was_existing_node=False,
+                end_legal_action_count=0,
+                end_openable_action_count=0,
+                no_legal_actions_but_not_terminal=False,
+            ),
+        ),
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
+    summary = rollout_logging_module._log_latest_rollout_report(runtime, step=10)
+
+    assert summary is not None
+    assert summary.total_edges == 2
+    assert summary.initial_edges == 1
+    assert summary.extra_edges == 1
+    assert summary.start_depth == "84"
+    assert summary.end_depth == "86"
+    assert summary.depth_delta == "2"
+    assert (
+        "[rollout-execution] step=10 paths=1 start_depths=[84] "
+        "end_depths=[86] depth_deltas=[2] end_node_ids=[97220] "
+        "stops={no_legal_actions:1} end_terminal=1/1 "
+        "end_legal_actions=min:0 mean:0.0 max:0 "
+        "end_openable_actions=min:0 mean:0.0 max:0 created_node=1/1 "
+        "existing_node=0/1"
+    ) in caplog.text
+    assert "[rollout-detail]" not in caplog.text
+
+
+def test_log_latest_rollout_report_multi_path_execution_uses_stats(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Larger rollout batches use min/mean/max execution summaries."""
+    caplog.set_level(logging.INFO)
+    path_reports = tuple(
+        SimpleNamespace(
+            start_node_id=f"n{index}",
+            start_depth=6,
+            end_node_id=f"e{index}",
+            end_depth=end_depth,
+            initial_edge_count=1,
+            extra_edge_count=end_depth - 7,
+            traversal_count=0,
+            total_edge_count=end_depth - 6,
+            stop_reason="no_legal_actions",
+            end_is_terminal=True,
+            end_was_created_node=True,
+            end_was_existing_node=False,
+            end_legal_action_count=0,
+            end_openable_action_count=0,
+            no_legal_actions_but_not_terminal=False,
+        )
+        for index, end_depth in enumerate((61, 62, 63, 64, 65, 70), start=1)
+    )
+    report = SimpleNamespace(
+        total_edge_count=348,
+        initial_edge_count=6,
+        extra_edge_count=342,
+        traversal_count=0,
+        stop_reason_counts={"no_legal_actions": 6},
+        path_reports=path_reports,
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
+    rollout_logging_module._log_latest_rollout_report(runtime, step=9)
+
+    assert (
+        "[rollout-execution] step=9 paths=6 start_depth=min:6 mean:6.0 max:6 "
+        "end_depth=min:61 mean:64.2 max:70 depth_delta=min:55 mean:58.2 max:64 "
+        "stops={no_legal_actions:6} end_terminal=6/6 "
+        "end_legal_actions=min:0 mean:0.0 max:0 "
+        "end_openable_actions=min:0 mean:0.0 max:0 created_node=6/6 "
+        "existing_node=0/6"
+    ) in caplog.text
+    assert "end_node_ids=" not in caplog.text
+
+
+def test_log_latest_rollout_report_verbose_env_includes_path_details(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rollout detail records remain available behind the verbose env flag."""
+    caplog.set_level(logging.INFO)
+    monkeypatch.setenv("MORPION_VERBOSE_ROLLOUT_DETAILS", "1")
+    path_reports = (
+        SimpleNamespace(
+            start_node_id="n1",
+            start_depth=1,
+            end_node_id="n5",
+            end_depth=5,
+            initial_edge_count=1,
+            extra_edge_count=2,
+            traversal_count=2,
+            total_edge_count=3,
+            stop_reason="terminal",
+            end_is_terminal=True,
+            end_is_exact=True,
+            end_was_created_node=True,
+            end_was_existing_node=False,
+            end_legal_action_count=3,
+            end_openable_action_count=2,
+            end_opened_action_count=1,
+            end_non_opened_branch_count=2,
+            no_legal_actions_but_not_terminal=False,
+        ),
+    )
+    report = SimpleNamespace(
+        total_edge_count=3,
+        initial_edge_count=1,
+        extra_edge_count=2,
+        traversal_count=2,
+        stop_reason_counts={"terminal": 1},
+        path_reports=path_reports,
+    )
+    runtime = SimpleNamespace(
+        tree_manager=SimpleNamespace(latest_rollout_report=report)
+    )
+
     rollout_logging_module._log_latest_rollout_report(runtime)
 
-    assert "[rollout] total_edges=4 initial_edges=2" in caplog.text
-    assert (
-        "[rollout-lengths] count=2 total_lengths=[3, 1] extra_lengths=[2, 0]"
-        in caplog.text
-    )
-    assert "stops={'terminal': 1, 'action_selector_stop': 1}" in caplog.text
     assert (
         "[rollout-detail] rollout_index=0 start_node_id=n1 start_depth=1 "
         "end_node_id=n5 end_depth=5 total_edges=3 initial_edges=1 "
@@ -396,9 +572,9 @@ def test_log_latest_rollout_report_warns_on_no_legal_non_terminal(
 
     assert "no_legal_but_not_terminal=True" in caplog.text
     assert (
-        "[rollout-warning] no_legal_actions_but_not_terminal rollout_index=0 "
-        "end_node_id=n1 end_depth=1 end_legal_actions=0 "
-        "end_non_opened_branches=0"
+        "[rollout-warning] no_legal_actions_but_not_terminal "
+        "no_legal_but_not_terminal=True rollout_index=0 end_node_id=n1 "
+        "end_depth=1 end_legal_actions=0 end_non_opened_branches=0"
     ) in caplog.text
 
 
@@ -406,7 +582,7 @@ def test_log_latest_rollout_report_supports_legacy_report(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A report without path reports still logs aggregates without crashing."""
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
     report = SimpleNamespace(
         total_edge_count=1,
         initial_edge_count=1,
@@ -418,10 +594,10 @@ def test_log_latest_rollout_report_supports_legacy_report(
         tree_manager=SimpleNamespace(latest_rollout_report=report)
     )
 
-    rollout_logging_module._log_latest_rollout_report(runtime)
+    summary = rollout_logging_module._log_latest_rollout_report(runtime)
 
-    assert "[rollout] total_edges=1 initial_edges=1" in caplog.text
-    assert "[rollout-lengths]" not in caplog.text
+    assert summary is not None
+    assert "[rollout-summary] step=none paths=0 edges=1 initial=1" in caplog.text
     assert "[rollout-detail]" not in caplog.text
 
 
@@ -582,6 +758,7 @@ def test_default_search_args_use_linoo_selector() -> None:
     assert isinstance(node_selector, ComposedNodeSelectorArgs)
     assert isinstance(node_selector.base, LinooArgs)
     assert node_selector.base.type == NodeSelectorType.LINOO
+    assert node_selector.base.depth_selection_policy == "alternating_by_step"
     assert (
         runner._args.search_args.opening_expansion.kind == OpeningExpansionKind.ONE_PLY
     )
@@ -1627,10 +1804,64 @@ def test_runtime_step_returns_selected_node_growth_report() -> None:
     assert report.selector_report_rows is not None and report.selector_report_rows >= 1
 
 
+def test_linoo_selection_depth_table_formatter_marks_selected_depth() -> None:
+    """The visible Linoo table should keep all rows and mark the selected depth."""
+    selector_report = SimpleNamespace(
+        selected_depth=2,
+        depth_rows=(
+            SimpleNamespace(
+                depth=1,
+                total_nodes=4,
+                opened_count=0,
+                frontier_count=4,
+                terminal_count=0,
+                exact_count=0,
+                uncached_terminal_candidates=0,
+                non_openable_count=0,
+                selection_index=0,
+                selection_weight=1.0,
+                selection_probability=0.0,
+            ),
+            SimpleNamespace(
+                depth=2,
+                total_nodes=12,
+                opened_count=3,
+                frontier_count=9,
+                terminal_count=0,
+                exact_count=0,
+                uncached_terminal_candidates=0,
+                non_openable_count=0,
+                selection_index=1,
+                selection_weight=0.333333333,
+                selection_probability=0.25,
+            ),
+        ),
+    )
+
+    table = anemone_runner_module._format_linoo_selection_depth_table(
+        selector_report=selector_report,
+        selected_depth=2,
+    )
+
+    assert table is not None
+    table_lines = table.splitlines()
+    table_header = table_lines[0].split()
+    assert table_header[0] == "mark"
+    assert "deterministic_index" in table_header
+    assert "weight" in table_header
+    assert "probability" in table_header
+    selected_rows = [line for line in table_lines[1:] if line.lstrip().startswith("* ")]
+    assert len(selected_rows) == 1
+    assert selected_rows[0].split()[1] == "2"
+    assert selected_rows[0].split()[-2:] == ["0.333", "0.250"]
+
+
 def test_runner_growth_logs_selected_node_id_and_depth(
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Growth logs should surface selected-node observability from Anemone."""
+    monkeypatch.delenv("MORPION_VERBOSE_SELECTION_TABLE", raising=False)
     caplog.set_level(logging.INFO)
     runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
     runner.load_or_create(
@@ -1641,21 +1872,149 @@ def test_runner_growth_logs_selected_node_id_and_depth(
 
     runner.grow(1)
 
+    selected_depth_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.INFO
+        and "[growth-step] step=1 selected_depth=" in record.getMessage()
+    ]
+    assert len(selected_depth_messages) == 1
+    selected_depth_line = selected_depth_messages[0]
+    summary_fields = _parse_key_value_log_fields(selected_depth_line)
+    assert summary_fields["step"] == "1"
+    assert "selected_depth" in summary_fields
+    assert "selected_node_id" in summary_fields
+    assert "depth_policy=alternating_by_step" in selected_depth_line
+    assert "subpolicy=inverse_depth" in selected_depth_line
+    assert "step_parity=odd" in selected_depth_line
     assert "selected_node_id=" in caplog.text
     assert "selected_depth=" in caplog.text
     assert "selected_depth=unknown" not in caplog.text
-    assert "[growth-timing] step=1" in caplog.text
-    assert "selector_total_s=" in caplog.text
-    assert "selector_state_rebuilt=" in caplog.text
-    assert "selector_nodes_incrementally_updated=" in caplog.text
-    assert "selector_total_nodes_scanned=" in caplog.text
-    assert "selector_frontier_nodes_scanned=" in caplog.text
-    assert "[growth-selection-table] step=1" in caplog.text
-    assert "[growth-selection-table-timing] step=1" in caplog.text
+    assert "[growth-step] step=1 timing total=" in caplog.text
+    assert "[growth-step] step=1 tree nodes=" in caplog.text
+    assert "selected_depth_frontier_count=" in caplog.text
+    assert "rebuilt=" in caplog.text
+    assert "[growth-selection]" not in caplog.text
+    assert "[rollout-summary]" not in caplog.text
+    assert "SELECTED depth=" not in caplog.text
+    assert " node_id=" not in caplog.text
+    assert " depth_frontier=" not in caplog.text
+    table_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.INFO
+        and record.getMessage().startswith("[growth-selection-table] step=1 ")
+    ]
+    assert len(table_messages) == 1
+    table_message = table_messages[0]
+    table_lines = table_message.splitlines()
+    table_fields = _parse_key_value_log_fields(table_lines[0])
+    assert table_fields["step"] == "1"
+    assert table_fields["selected_depth"] == summary_fields["selected_depth"]
+    assert table_fields["selected_node_id"] == summary_fields["selected_node_id"]
+    assert table_fields["depth_policy"] == "alternating_by_step"
+    assert table_fields["subpolicy"] == "inverse_depth"
+    assert table_fields["step_parity"] == "odd"
+    assert table_fields["active_column"] == "probability"
+    table_header = table_lines[1].split()
+    assert table_header[0] == "mark"
+    assert "depth" in table_header
+    assert "deterministic_index" in table_header
+    assert "weight" in table_header
+    assert "probability" in table_header
+    selected_rows = [line for line in table_lines[2:] if line.lstrip().startswith("* ")]
+    assert len(selected_rows) == 1
+    assert selected_rows[0].split()[1] == table_fields["selected_depth"]
+    candidate_rows = [line.split() for line in table_lines[2:] if line.strip()]
+    assert any(row[-2] != "-" and row[-1] != "-" for row in candidate_rows)
+    assert "[growth-selection-table-timing] step=1" not in caplog.text
+
+
+def test_runner_growth_deterministic_selection_table_keeps_diagnostics(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Deterministic depth steps should still show stochastic diagnostics."""
+    monkeypatch.delenv("MORPION_VERBOSE_SELECTION_TABLE", raising=False)
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+
+    runner.grow(2)
+
+    table_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.INFO
+        and record.getMessage().startswith("[growth-selection-table] step=")
+    ]
+    assert len(table_messages) == 2
     assert (
-        "depth total opened frontier terminal exact uncached_terminal "
-        "non_openable index weight probability selected"
-    ) in caplog.text
+        sum(
+            message.startswith("[growth-selection-table] step=1 ")
+            for message in table_messages
+        )
+        == 1
+    )
+    assert (
+        sum(
+            message.startswith("[growth-selection-table] step=2 ")
+            for message in table_messages
+        )
+        == 1
+    )
+    table_lines = table_messages[1].splitlines()
+    table_fields = _parse_key_value_log_fields(table_lines[0])
+    assert table_fields["step"] == "2"
+    assert table_fields["selected_depth"]
+    assert table_fields["selected_node_id"]
+    assert table_fields["depth_policy"] == "alternating_by_step"
+    assert table_fields["subpolicy"] == "opened_count_depth_index"
+    assert table_fields["step_parity"] == "even"
+    assert table_fields["active_column"] == "deterministic_index"
+    assert "deterministic_index" in table_lines[1].split()
+    selected_rows = [line for line in table_lines[2:] if line.lstrip().startswith("* ")]
+    assert len(selected_rows) == 1
+    selected_cells = selected_rows[0].split()
+    assert selected_cells[1] == table_fields["selected_depth"]
+    assert selected_cells[-3] != "-"
+    assert selected_cells[-2] != "-"
+    assert selected_cells[-1] != "-"
+    assert "SELECTED depth=" not in caplog.text
+
+
+def test_runner_growth_verbose_selection_table_adds_timing_only(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verbose selection logging should add timing without hiding the table."""
+    monkeypatch.setenv("MORPION_VERBOSE_SELECTION_TABLE", "1")
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+
+    runner.grow(1)
+
+    table_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.INFO
+        and record.getMessage().startswith("[growth-selection-table] step=1 ")
+    ]
+    assert len(table_messages) == 1
+    assert "[growth-selection-table-timing] step=1" in caplog.text
+    assert "[growth-selection] " not in caplog.text
+    assert "SELECTED depth=" not in caplog.text
+    assert " node_id=" not in caplog.text
+    assert " depth_frontier=" not in caplog.text
 
 
 def test_runner_growth_writes_latest_linoo_selection_table(tmp_path: Path) -> None:
@@ -1693,7 +2052,9 @@ def test_runner_growth_writes_latest_linoo_selection_table(tmp_path: Path) -> No
     assert any(row["selected"] for row in payload["rows"])
     assert sum(1 for row in payload["rows"] if row["selected"]) == 1
     for row in payload["rows"]:
-        assert row["index"] == row["opened"] * (row["depth"] + 1)
+        assert row["deterministic_index"] == row["opened"] * (row["depth"] + 1)
+        assert isinstance(row["weight"], float)
+        assert isinstance(row["probability"], float)
 
 
 def test_runner_growth_falls_back_safely_when_step_report_is_unavailable(
@@ -1725,8 +2086,8 @@ def test_runner_growth_falls_back_safely_when_step_report_is_unavailable(
 
     runner.grow(1)
 
-    assert "selected_node_id=unknown selected_depth=unknown" in caplog.text
-    assert "[growth-timing] step=1 total_s=unknown" in caplog.text
+    assert "selected_depth=unknown selected_node_id=unknown" in caplog.text
+    assert "[growth-step] step=1 timing total=unknown" in caplog.text
 
 
 def test_runner_growth_logs_unknown_timing_fields_without_crashing(
@@ -1762,12 +2123,9 @@ def test_runner_growth_logs_unknown_timing_fields_without_crashing(
 
     runner.grow(1)
 
-    assert "[growth-timing] step=1 total_s=unknown" in caplog.text
+    assert "[growth-step] step=1 timing total=unknown" in caplog.text
     assert "rows=unknown" not in caplog.text
-    assert (
-        "[growth-selection-table-timing] step=1 rows=0 format_s=unknown log_s=unknown"
-        in caplog.text
-    )
+    assert "[growth-selection-table-timing]" not in caplog.text
 
 
 def test_selector_growth_diagnostic_fields_extract_required_values() -> None:

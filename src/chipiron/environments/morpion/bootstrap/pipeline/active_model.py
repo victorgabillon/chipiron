@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-def _resolve_pipeline_active_model_for_growth(
+def resolve_pipeline_active_model_for_growth(
     *,
     paths: MorpionBootstrapPaths,
     force_evaluator: str | None,

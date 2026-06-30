@@ -176,69 +176,38 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     morpion_streaming_split_policy,
 )
 
-from .active_model import _resolve_pipeline_active_model_for_growth
+from .active_model import resolve_pipeline_active_model_for_growth
 from .checkpoint_loading import (
-    _candidate_checkpoint_payload_loader,
-    _log_candidate_checkpoint_load_profile,
-    _runtime_checkpoint_artifact_bytes,
-    _should_load_candidate_checkpoint,
-)
-from .checkpoint_loading import (
-    _log_before_candidate_checkpoint_load as _log_before_candidate_checkpoint_load,
+    candidate_checkpoint_payload_loader,
+    log_candidate_checkpoint_load_profile,
+    runtime_checkpoint_artifact_bytes,
+    should_load_candidate_checkpoint,
 )
 from .cursors import (
-    _active_model_generation_for_training_guard as _active_model_generation_for_training_guard,
+    active_model_generation_for_training_guard,
+    save_training_cursor_completed,
+    save_training_cursor_started,
+    training_lower_bound_generation,
+    training_rows_subset_path,
 )
-from .cursors import (
-    _optional_generation_max as _optional_generation_max,
-)
-from .cursors import (
-    _save_training_cursor_completed,
-    _save_training_cursor_started,
-    _training_lower_bound_generation,
-    _training_rows_subset_path,
-)
-from .growth_budget import (
-    _apply_effective_runtime_config_if_supported as _apply_effective_runtime_config_if_supported,
-)
-from .growth_budget import (
-    _growth_budget_runtime_config,
-)
-from .growth_budget import (
-    _missing_branch_count_for_additional_budget_error as _missing_branch_count_for_additional_budget_error,
-)
+from .growth_budget import growth_budget_runtime_config
 from .manifests import (
     MissingPipelineRowsFileError,
     MissingPipelineTreeSnapshotFileError,
-    _load_generation_manifest,
-    _pipeline_manifest_path,
-    _require_manifest_rows_path,
-    _require_manifest_tree_snapshot_path,
-    _resolve_previous_pipeline_frontier_status,
-    _resolve_previous_pipeline_record_status,
-    _save_dataset_manifest_status,
-    _save_training_manifest_status,
-)
-from .manifests import (
-    _latest_prior_dataset_status_artifact as _latest_prior_dataset_status_artifact,
-)
-from .manifests import (
-    _manifest_rows_path_required_error as _manifest_rows_path_required_error,
-)
-from .manifests import (
-    _manifest_tree_snapshot_required_error as _manifest_tree_snapshot_required_error,
+    load_generation_manifest,
+    pipeline_manifest_path,
+    require_manifest_rows_path,
+    require_manifest_tree_snapshot_path,
+    resolve_previous_pipeline_frontier_status,
+    resolve_previous_pipeline_record_status,
+    save_dataset_manifest_status,
+    save_training_manifest_status,
 )
 from .observability import (
-    _configure_linoo_selection_artifact_for_growth,
+    build_observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
 )
 from .observability import (
-    _observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
-)
-from .observability import (
-    _optional_ratio as _optional_ratio,
-)
-from .observability import (
-    _optional_runner_mapping as _optional_runner_mapping,
+    configure_linoo_selection_artifact_for_growth,
 )
 
 if TYPE_CHECKING:
@@ -499,7 +468,7 @@ def _run_one_pipeline_growth_cycle_impl(
         event="start",
     )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
-    resolved_active_model = _resolve_pipeline_active_model_for_growth(
+    resolved_active_model = resolve_pipeline_active_model_for_growth(
         paths=paths,
         force_evaluator=resolved_control.force_evaluator,
     )
@@ -508,18 +477,18 @@ def _run_one_pipeline_growth_cycle_impl(
             paths=paths,
             run_state=run_state,
             before_candidate_checkpoint_load=lambda _source, _path: (
-                _should_load_candidate_checkpoint(
+                should_load_candidate_checkpoint(
                     args=args,
                     generation=run_state.generation,
                     source=_source,
                     candidate_path=_path,
                 )
             ),
-            after_candidate_checkpoint_load=_log_candidate_checkpoint_load_profile
+            after_candidate_checkpoint_load=log_candidate_checkpoint_load_profile
             if args.growth_memory_profile
             else None,
             candidate_checkpoint_payload_loader=(
-                _candidate_checkpoint_payload_loader(args)
+                candidate_checkpoint_payload_loader(args)
                 if args.growth_memory_profile
                 else None
             ),
@@ -562,7 +531,7 @@ def _run_one_pipeline_growth_cycle_impl(
     )
     restored_tree_size = runner.current_tree_size()
     restored_branch_count = _current_tree_branch_count(runner)
-    effective_runtime_config, growth_budget_metadata = _growth_budget_runtime_config(
+    effective_runtime_config, growth_budget_metadata = growth_budget_runtime_config(
         args=args,
         runner=runner,
         current_branch_count=restored_branch_count,
@@ -626,7 +595,7 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=tree_size_before_growth,
         branch_count=branch_count_before_growth,
     )
-    _configure_linoo_selection_artifact_for_growth(
+    configure_linoo_selection_artifact_for_growth(
         runner=runner,
         paths=paths,
         cycle_index=cycle_index,
@@ -805,11 +774,15 @@ def _run_one_pipeline_growth_cycle_impl(
         )
         return next_run_state
 
+    is_after_initial_generation = run_state.generation > 0
+    has_no_growth = nodes_added <= 0
+    did_not_expand_tree = current_tree_size <= run_state.tree_size_at_last_save
+    has_no_reevaluation_patch = not reevaluation_patch_result.patch_applied
     if (
-        run_state.generation > 0
-        and nodes_added <= 0
-        and current_tree_size <= run_state.tree_size_at_last_save
-        and not reevaluation_patch_result.patch_applied
+        is_after_initial_generation
+        and has_no_growth
+        and did_not_expand_tree
+        and has_no_reevaluation_patch
     ):
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info(
@@ -978,7 +951,7 @@ def _run_one_pipeline_growth_cycle_impl(
         checkpoint_save_elapsed_s = time.perf_counter() - checkpoint_save_started_at
         if args.growth_memory_profile:
             checkpoint_save_rss_after_mb = current_rss_mb()
-            checkpoint_bytes = _runtime_checkpoint_artifact_bytes(
+            checkpoint_bytes = runtime_checkpoint_artifact_bytes(
                 runtime_checkpoint_path
             )
             LOGGER.info(
@@ -1205,7 +1178,7 @@ def run_pipeline_dataset_stage(
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = _load_generation_manifest(paths=paths, generation=generation)
+    manifest = load_generation_manifest(paths=paths, generation=generation)
     guard_tree_snapshot_path = (
         paths.resolve_work_dir_path(manifest.tree_snapshot_path)
         if manifest.tree_snapshot_path is not None
@@ -1254,7 +1227,7 @@ def run_pipeline_dataset_stage(
         generation=generation,
         event="start",
     )
-    manifest = _save_dataset_manifest_status(
+    manifest = save_dataset_manifest_status(
         paths=paths,
         manifest=manifest,
         dataset_status="extracting_rows",
@@ -1262,7 +1235,7 @@ def run_pipeline_dataset_stage(
     )
     try:
         tree_snapshot_path = paths.resolve_work_dir_path(
-            _require_manifest_tree_snapshot_path(manifest)
+            require_manifest_tree_snapshot_path(manifest)
         )
         rows_path = (
             paths.resolve_work_dir_path(manifest.rows_path)
@@ -1288,7 +1261,7 @@ def run_pipeline_dataset_stage(
                 "[pipeline] dataset_skip generation=%s reason=missing_tree_export tree_export=%s manifest=%s",
                 generation,
                 tree_snapshot_path,
-                _pipeline_manifest_path(paths, generation),
+                pipeline_manifest_path(paths, generation),
             )
             _raise_missing_tree_snapshot_file_error(tree_snapshot_path)
         export_started_at = time.perf_counter()
@@ -1308,11 +1281,11 @@ def run_pipeline_dataset_stage(
             event="after_snapshot_load",
             node_count=len(snapshot.nodes),
         )
-        previous_record_status = _resolve_previous_pipeline_record_status(
+        previous_record_status = resolve_previous_pipeline_record_status(
             paths=paths,
             generation=generation,
         )
-        previous_frontier_status = _resolve_previous_pipeline_frontier_status(
+        previous_frontier_status = resolve_previous_pipeline_frontier_status(
             paths=paths,
             generation=generation,
         )
@@ -1428,7 +1401,7 @@ def run_pipeline_dataset_stage(
             dataset_status="done",
             metadata=manifest_metadata,
         )
-        save_pipeline_manifest(manifest, _pipeline_manifest_path(paths, generation))
+        save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
         LOGGER.info(
             "[leaderboard] persist_start generation=%s cycle=%s",
             generation,
@@ -1460,7 +1433,7 @@ def run_pipeline_dataset_stage(
         LOGGER.info(
             "[pipeline] dataset_manifest_written generation=%s manifest=%s created_at=%s rows=%s",
             generation,
-            _pipeline_manifest_path(paths, generation),
+            pipeline_manifest_path(paths, generation),
             timestamp_utc,
             write_stats.row_count,
         )
@@ -1477,7 +1450,7 @@ def run_pipeline_dataset_stage(
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
-        _save_dataset_manifest_status(
+        save_dataset_manifest_status(
             paths=paths,
             manifest=manifest,
             dataset_status="failed",
@@ -1510,8 +1483,8 @@ def run_pipeline_training_stage(
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = _load_generation_manifest(paths=paths, generation=generation)
-    lower_bound_generation = _training_lower_bound_generation(paths)
+    manifest = load_generation_manifest(paths=paths, generation=generation)
+    lower_bound_generation = training_lower_bound_generation(paths)
     if generation <= lower_bound_generation:
         LOGGER.info(
             "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s",
@@ -1562,7 +1535,7 @@ def run_pipeline_training_stage(
         generation=generation,
         event="start",
     )
-    manifest = _save_training_manifest_status(
+    manifest = save_training_manifest_status(
         paths=paths,
         manifest=manifest,
         training_status="training",
@@ -1573,8 +1546,8 @@ def run_pipeline_training_stage(
             args.resolved_evaluators_config(),
             args.training_evaluator_names,
         )
-        _save_training_cursor_started(paths=paths, generation=generation)
-        rows_path = paths.resolve_work_dir_path(_require_manifest_rows_path(manifest))
+        save_training_cursor_started(paths=paths, generation=generation)
+        rows_path = paths.resolve_work_dir_path(require_manifest_rows_path(manifest))
         if rows_path is None or not rows_path.is_file():
             _raise_missing_rows_file_error(rows_path)
         log_pipeline_memory(
@@ -1640,7 +1613,7 @@ def run_pipeline_training_stage(
                     },
                 )
                 training_rows_used = len(rows.rows)
-                training_rows_path = _training_rows_subset_path(paths, generation)
+                training_rows_path = training_rows_subset_path(paths, generation)
                 save_morpion_supervised_rows(rows, training_rows_path)
                 manifest_metadata["training_rows_used"] = training_rows_used
                 manifest_metadata["training_rows_original"] = original_training_rows
@@ -1722,7 +1695,7 @@ def run_pipeline_training_stage(
             training_status="done",
             metadata=manifest_metadata,
         )
-        save_pipeline_manifest(manifest, _pipeline_manifest_path(paths, generation))
+        save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
         save_pipeline_training_status_file(
             generation=generation,
             training_status=manifest.training_status,
@@ -1733,7 +1706,7 @@ def run_pipeline_training_stage(
             evaluator_results=training_result.evaluator_results,
             path=paths.pipeline_training_status_path_for_generation(generation),
         )
-        current_active_generation = _active_model_generation_for_training_guard(paths)
+        current_active_generation = active_model_generation_for_training_guard(paths)
         if (
             current_active_generation is not None
             and generation <= current_active_generation
@@ -1765,7 +1738,7 @@ def run_pipeline_training_stage(
                     training_result.selected_evaluator_name
                 ],
             )
-        _save_training_cursor_completed(paths=paths, generation=generation)
+        save_training_cursor_completed(paths=paths, generation=generation)
         LOGGER.info(
             "[pipeline] training_done generation=%s selected=%s",
             generation,
@@ -1779,7 +1752,7 @@ def run_pipeline_training_stage(
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
-        _save_training_manifest_status(
+        save_training_manifest_status(
             paths=paths,
             manifest=manifest,
             training_status="failed",

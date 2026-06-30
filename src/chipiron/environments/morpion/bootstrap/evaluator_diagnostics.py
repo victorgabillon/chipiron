@@ -335,7 +335,7 @@ def load_previous_evaluator_for_diagnostics(
         return None
     try:
         return load_morpion_regressor_for_inference(path)
-    except Exception:
+    except (OSError, RuntimeError, ValueError):
         return None
 
 

@@ -325,7 +325,7 @@ def test_randomness(log_level: int = logging.ERROR) -> None:
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
     match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
 
-    # Override player two with test tree move limit using parsley_coco
+    # Override player two with test tree move limit using parsley.
     match_args.player_one_overwrite = test_player_overwrite
     match_args = _resolve_match_args_with_max_half_moves(
         match_args,
@@ -408,7 +408,7 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
         test_player_overwrite  # Override player one with test tree move limit
     )
 
-    # Override player two with test tree move limit using parsley_coco
+    # Override player two with test tree move limit using parsley.
     match_args = _resolve_match_args_with_max_half_moves(
         match_args,
         TEST_MAX_HALF_MOVES,

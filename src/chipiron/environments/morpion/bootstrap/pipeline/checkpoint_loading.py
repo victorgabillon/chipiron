@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
+def runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
     """Return best-effort byte size for file or sharded directory checkpoint."""
     try:
         if path.is_file():
@@ -47,7 +47,7 @@ def _runtime_checkpoint_artifact_bytes(path: Path) -> int | None:
     return None
 
 
-def _log_before_candidate_checkpoint_load(
+def log_before_candidate_checkpoint_load(
     *,
     args: MorpionBootstrapArgs,
     generation: int,
@@ -70,7 +70,7 @@ def _log_before_candidate_checkpoint_load(
     return True
 
 
-def _should_load_candidate_checkpoint(
+def should_load_candidate_checkpoint(
     *,
     args: MorpionBootstrapArgs,
     generation: int,
@@ -78,7 +78,7 @@ def _should_load_candidate_checkpoint(
     candidate_path: Path,
 ) -> bool:
     """Return whether candidate checkpoint validation may load the payload."""
-    _log_before_candidate_checkpoint_load(
+    log_before_candidate_checkpoint_load(
         args=args,
         generation=generation,
         candidate_path=candidate_path,
@@ -106,7 +106,7 @@ def _should_load_candidate_checkpoint(
     )
 
 
-def _candidate_checkpoint_payload_loader(
+def candidate_checkpoint_payload_loader(
     args: MorpionBootstrapArgs,
 ) -> Callable[[Path], SearchRuntimeCheckpointPayload]:
     """Build the optional instrumented candidate-checkpoint loader."""
@@ -134,7 +134,7 @@ def _candidate_checkpoint_payload_loader(
     return load
 
 
-def _log_candidate_checkpoint_load_profile(
+def log_candidate_checkpoint_load_profile(
     profile: CandidateCheckpointLoadProfile,
 ) -> None:
     """Log the RSS delta observed while validating one candidate checkpoint."""

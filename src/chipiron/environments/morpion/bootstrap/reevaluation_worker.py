@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol, cast
 
 from anemone.training_export import TrainingTreeSnapshot, load_training_tree_snapshot
+from anemone.training_export.serialization import MalformedNodesFieldError
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
@@ -31,6 +32,7 @@ from .pipeline_artifacts import (
 from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
 from .runtime.runner import load_morpion_evaluator_from_model_bundle
+from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -261,6 +263,23 @@ def resolve_latest_reevaluation_tree_snapshot(
     return None
 
 
+def load_reevaluation_training_tree_snapshot(
+    snapshot_path: Path,
+) -> TrainingTreeSnapshot:
+    """Load a flat or Morpion sharded training tree snapshot for reevaluation."""
+    if _is_sharded_training_tree_snapshot_path(snapshot_path):
+        return load_morpion_sharded_training_tree_snapshot(snapshot_path)
+    try:
+        return load_training_tree_snapshot(snapshot_path)
+    except MalformedNodesFieldError:
+        return load_morpion_sharded_training_tree_snapshot(snapshot_path)
+
+
+def _is_sharded_training_tree_snapshot_path(snapshot_path: Path) -> bool:
+    """Return whether one snapshot reference points at a sharded export."""
+    return "tree_exports_sharded" in snapshot_path.parts
+
+
 def select_reevaluation_node_window(
     node_ids: Sequence[str],
     *,
@@ -474,7 +493,7 @@ def run_morpion_reevaluation_worker_once(
         event="before_snapshot_load",
         tree_snapshot_path=snapshot_path,
     )
-    snapshot = load_training_tree_snapshot(snapshot_path)
+    snapshot = load_reevaluation_training_tree_snapshot(snapshot_path)
     log_pipeline_memory(
         stage="reevaluation",
         generation=tree_generation,

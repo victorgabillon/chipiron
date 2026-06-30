@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -159,7 +160,8 @@ def start_morpion_bootstrap_process(
         paths.launcher_stdout_log_path.open("ab") as stdout_file,
         paths.launcher_stderr_log_path.open("ab") as stderr_file,
     ):
-        process = subprocess.Popen(
+        # Detached launcher: using Popen as a context manager would wait here.
+        process = subprocess.Popen(  # pylint: disable=consider-using-with
             command,
             stdout=stdout_file,
             stderr=stderr_file,
@@ -341,10 +343,8 @@ def _write_pid_file(path: Path, pid: int) -> None:
 
 def _remove_pid_file(path: Path) -> None:
     """Remove one launcher pid file if present."""
-    try:
+    with suppress(FileNotFoundError):
         path.unlink()
-    except FileNotFoundError:
-        return
 
 
 def _read_process_state_file(path: Path) -> dict[str, object] | None:

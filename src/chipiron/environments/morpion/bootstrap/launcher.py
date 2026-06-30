@@ -68,8 +68,8 @@ from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 from .runtime.runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
-    _default_search_args,
     apply_runtime_control_to_runner_args,
+    default_search_args,
 )
 
 if TYPE_CHECKING:
@@ -662,7 +662,7 @@ def _build_launcher_runner(
         )
     runner_args = apply_runtime_control_to_runner_args(
         AnemoneMorpionSearchRunnerArgs(
-            search_args=_default_search_args(
+            search_args=default_search_args(
                 rollout=startup_status.bootstrap_config.search.rollout
             ),
             restore_memory_profile=(

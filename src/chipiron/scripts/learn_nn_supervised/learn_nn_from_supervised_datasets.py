@@ -19,7 +19,6 @@ Example:
 import copy
 import logging
 import os
-import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, cast
@@ -231,8 +230,9 @@ class LearnNNScript:
         )
 
         if self.args.base_script_args.testing:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                mlflow.set_tracking_uri(f"file:{tmpdir}")  # <- Key line!
+            mlflow.set_tracking_uri(
+                uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
+            )
         else:
             mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
 

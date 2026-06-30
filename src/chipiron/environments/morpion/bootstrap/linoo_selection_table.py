@@ -18,10 +18,17 @@ class LinooSelectionTableRow:
     depth: int
     opened: int
     frontier: int
-    index: int
+    deterministic_index: int
+    weight: float | None
+    probability: float | None
     best_node: int | None
     best_value: float | None
     selected: bool
+
+    @property
+    def index(self) -> int:
+        """Return the legacy name for the deterministic selection index."""
+        return self.deterministic_index
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +97,11 @@ def linoo_selection_table_from_report(
                 depth=depth,
                 opened=opened_count,
                 frontier=frontier_count,
-                index=opened_count * (depth + 1),
+                deterministic_index=opened_count * (depth + 1),
+                weight=_optional_float(getattr(row, "selection_weight", None)),
+                probability=_optional_float(
+                    getattr(row, "selection_probability", None)
+                ),
                 best_node=best_node_id if isinstance(best_node_id, int) else None,
                 best_value=(
                     float(best_direct_value)
@@ -101,7 +112,7 @@ def linoo_selection_table_from_report(
             )
         )
 
-    rows.sort(key=lambda row: (row.index, row.depth))
+    rows.sort(key=lambda row: (row.deterministic_index, row.depth))
     return LinooSelectionTable(
         updated_at_utc=updated_at_utc,
         cycle_index=cycle_index,
@@ -129,7 +140,9 @@ def linoo_selection_table_to_dict(
                 "depth": row.depth,
                 "opened": row.opened,
                 "frontier": row.frontier,
-                "index": row.index,
+                "deterministic_index": row.deterministic_index,
+                "weight": row.weight,
+                "probability": row.probability,
                 "best_node": row.best_node,
                 "best_value": row.best_value,
                 "selected": row.selected,
@@ -210,13 +223,13 @@ def _linoo_selection_table_row_from_payload(
     depth = payload.get("depth")
     opened = payload.get("opened")
     frontier = payload.get("frontier")
-    index = payload.get("index")
+    deterministic_index = payload.get("deterministic_index", payload.get("index"))
     selected = payload.get("selected")
     if not (
         isinstance(depth, int)
         and isinstance(opened, int)
         and isinstance(frontier, int)
-        and isinstance(index, int)
+        and isinstance(deterministic_index, int)
         and isinstance(selected, bool)
     ):
         return None
@@ -224,7 +237,9 @@ def _linoo_selection_table_row_from_payload(
         depth=depth,
         opened=opened,
         frontier=frontier,
-        index=index,
+        deterministic_index=deterministic_index,
+        weight=_optional_float(payload.get("weight")),
+        probability=_optional_float(payload.get("probability")),
         best_node=_optional_int(payload.get("best_node")),
         best_value=_optional_float(payload.get("best_value")),
         selected=selected,

@@ -1,4 +1,5 @@
 """Graph-token tensor conversion for Morpion neural evaluators."""
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -24,13 +25,13 @@ if TYPE_CHECKING:
 try:
     from coral.neural_networks.nn_model_type import NNModelType
 except ModuleNotFoundError:
-    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND = "entity_token_transformer_value_net"
+    _morpion_entity_token_transformer_model_kind = "entity_token_transformer_value_net"
 else:
-    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND = (
+    _morpion_entity_token_transformer_model_kind = (
         NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
     )
 MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND: Final[str] = (
-    _MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND
+    _morpion_entity_token_transformer_model_kind
 )
 MORPION_GRAPH_MODEL_KIND: Final[str] = "graph_transformer"
 MORPION_GRAPH_INPUT_REPRESENTATION: Final[str] = "graph_tokens_v1"
