@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import shlex
 import sys
 from collections.abc import Callable
@@ -196,6 +197,7 @@ class MorpionBootstrapLauncherArgs:
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
+    quiet_worker_startup: bool = False
 
     @property
     def work_dir(self) -> Path:
@@ -245,14 +247,20 @@ def run_morpion_bootstrap_experiment(
     This launcher is the canonical human/operator entrypoint for one real
     Morpion bootstrap experiment backed by the Anemone search runner.
     """
-    LOGGER.info("[launcher] startup_start work_dir=%s", str(launcher_args.work_dir))
+    if not launcher_args.quiet_worker_startup:
+        LOGGER.info("[launcher] startup_start work_dir=%s", str(launcher_args.work_dir))
     startup_status = _collect_launcher_startup_status(launcher_args)
-    LOGGER.info(
-        "[launcher] startup_done mode=%s evaluators=%s max_cycles=%s",
-        startup_status.run_mode,
-        len(startup_status.resolved_evaluator_names),
-        "none" if launcher_args.max_cycles is None else str(launcher_args.max_cycles),
-    )
+    if not launcher_args.quiet_worker_startup:
+        LOGGER.info(
+            "[launcher] startup_done mode=%s evaluators=%s max_cycles=%s",
+            startup_status.run_mode,
+            len(startup_status.resolved_evaluator_names),
+            (
+                "none"
+                if launcher_args.max_cycles is None
+                else str(launcher_args.max_cycles)
+            ),
+        )
     if launcher_args.print_startup_summary:
         print(
             _render_launcher_startup_summary(
@@ -951,6 +959,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         dest="print_dashboard_hint",
         action="store_false",
     )
+    parser.add_argument(
+        "--quiet-worker-startup",
+        action="store_true",
+        default=False,
+        help=(
+            "Suppress repeated launcher startup logs, summary, and dashboard "
+            "hint for supervised one-shot worker loops."
+        ),
+    )
     parser.set_defaults(
         print_startup_summary=True,
         print_dashboard_hint=True,
@@ -1465,6 +1482,10 @@ def launcher_args_from_cli(
     )
     parser = build_launcher_argument_parser()
     parsed = parser.parse_args(argv_list)
+    quiet_worker_startup = (
+        parsed.quiet_worker_startup
+        or os.environ.get("MORPION_SUPERVISED_WORKER") == "1"
+    )
     _validate_pipeline_stage_cli(
         parser=parser,
         pipeline_mode=parsed.pipeline_mode,
@@ -1595,8 +1616,13 @@ def launcher_args_from_cli(
         ),
         allow_evaluator_catalog_extension=parsed.allow_evaluator_catalog_extension,
         open_dashboard=parsed.open_dashboard,
-        print_startup_summary=parsed.print_startup_summary,
-        print_dashboard_hint=parsed.print_dashboard_hint,
+        print_startup_summary=(
+            False if quiet_worker_startup else parsed.print_startup_summary
+        ),
+        print_dashboard_hint=False
+        if quiet_worker_startup
+        else parsed.print_dashboard_hint,
+        quiet_worker_startup=quiet_worker_startup,
     )
 
 

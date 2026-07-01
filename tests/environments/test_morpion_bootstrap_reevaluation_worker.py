@@ -520,6 +520,8 @@ def test_worker_ram_guard_defers_before_snapshot_load(
         start_cursor=None,
         end_cursor=None,
         completed_full_pass_count=None,
+        tree_generation=7,
+        model_bundle_path=active_model.model_bundle_path,
     )
     assert not paths.pipeline_reevaluation_patch_path.exists()
     assert not paths.pipeline_reevaluation_cursor_path.exists()
@@ -529,11 +531,11 @@ def test_worker_ram_guard_defers_before_snapshot_load(
     ) in messages
 
 
-def test_worker_logs_active_model_and_patch_creation(
+def test_worker_logs_cycle_start_and_patch_creation(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Worker logs should expose the active evaluator generation and patch creation."""
+    """Worker logs should make real reevaluation work easy to spot."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
     _write_active_model(paths, generation=4, evaluator_name="best")
@@ -554,11 +556,20 @@ def test_worker_logs_active_model_and_patch_creation(
     messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert (
-        "[reevaluation] active_model generation=4 evaluator=best "
-        "bundle=models/generation_000002/default"
+        "[reevaluation-cycle] generation=4 evaluator=best status=STARTED "
+        "latest_tree_generation=7 rows=1 total_rows=2 max_nodes=1"
     ) in messages
+    assert "[reevaluation-progress] generation=4 evaluator=best rows=1/1" in messages
     assert (
         "[reevaluation-patch] create_done patch_id=patch-log rows=1 direct_updates=1"
+    ) in messages
+    assert (
+        "[reevaluation-patch] status=WRITTEN generation=4 evaluator=best rows=1 "
+        "output=pipeline/reevaluation_patch.json patch_id=patch-log"
+    ) in messages
+    assert (
+        "[reevaluation-cycle] generation=4 evaluator=best status=PATCH_WRITTEN "
+        "rows=1 output=pipeline/reevaluation_patch.json latest_tree_generation=7"
     ) in messages
 
 
@@ -696,7 +707,10 @@ def test_worker_default_path_fails_loudly_for_missing_bundle(tmp_path: Path) -> 
         run_morpion_reevaluation_worker_once(_artifact_pipeline_args(tmp_path))
 
 
-def test_worker_does_not_overwrite_pending_patch(tmp_path: Path) -> None:
+def test_worker_does_not_overwrite_pending_patch(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """The worker should skip cleanly when a pending patch already exists."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
@@ -738,14 +752,40 @@ def test_worker_does_not_overwrite_pending_patch(tmp_path: Path) -> None:
     )
     save_reevaluation_cursor(existing_cursor, paths.pipeline_reevaluation_cursor_path)
 
-    result = run_morpion_reevaluation_worker_once(
-        _artifact_pipeline_args(tmp_path),
-        max_nodes_per_patch=2,
-        patch_id="new-patch",
-    )
+    with caplog.at_level("INFO"):
+        result = run_morpion_reevaluation_worker_once(
+            _artifact_pipeline_args(tmp_path),
+            max_nodes_per_patch=2,
+            now_unix_s=100.0,
+            patch_id="new-patch",
+        )
+        repeated_result = run_morpion_reevaluation_worker_once(
+            _artifact_pipeline_args(tmp_path),
+            max_nodes_per_patch=2,
+            now_unix_s=120.0,
+            patch_id="new-patch",
+        )
+        heartbeat_result = run_morpion_reevaluation_worker_once(
+            _artifact_pipeline_args(tmp_path),
+            max_nodes_per_patch=2,
+            now_unix_s=161.0,
+            patch_id="new-patch",
+        )
 
     assert not result.patch_written
     assert result.reason == "pending_patch_exists"
+    assert repeated_result.reason == "pending_patch_exists"
+    assert heartbeat_result.reason == "pending_patch_exists"
+    assert result.pending_patch_path == "pipeline/reevaluation_patch.json"
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert messages.count("[reevaluation-cycle] status=BLOCKED") == 1
+    assert (
+        "[reevaluation-cycle] status=BLOCKED reason=pending_patch_exists "
+        "active_model=default source_generation=2"
+    ) in messages
+    assert "action=waiting_for_growth_to_consume_patch" in messages
+    assert messages.count("[reevaluation-watch] status=IDLE") == 1
+    assert "idle_for=61s checks=3" in messages
     assert (
         load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
         == existing_patch

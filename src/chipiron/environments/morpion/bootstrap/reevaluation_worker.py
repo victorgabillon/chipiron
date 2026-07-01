@@ -43,6 +43,8 @@ if TYPE_CHECKING:
 
 
 LOGGER = logging.getLogger(__name__)
+REEVALUATION_IDLE_HEARTBEAT_SECONDS = 60.0
+_REEVALUATION_CYCLE_SEPARATOR = "=" * 70
 
 
 def _negative_max_nodes_per_patch_error() -> ValueError:
@@ -120,6 +122,216 @@ def _metric_value(value: object | None) -> str:
     return str(value)
 
 
+def _log_field_value(value: object) -> str:
+    """Render one structured human-log field value."""
+    if isinstance(value, float):
+        return f"{value:.1f}"
+    return str(value)
+
+
+def _format_log_fields(**fields: object | None) -> str:
+    """Return compact key=value fields, omitting absent values."""
+    return " ".join(
+        f"{key}={_log_field_value(value)}"
+        for key, value in fields.items()
+        if value is not None
+    )
+
+
+def _reevaluation_worker_state_path(paths: MorpionBootstrapPaths) -> Path:
+    """Return the cross-process idle-log suppression state path."""
+    return paths.work_dir / "logs" / "reevaluation_worker_state.json"
+
+
+def _read_reevaluation_worker_state(path: Path) -> dict[str, object]:
+    """Load idle-log suppression state, treating corrupt state as absent."""
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return payload
+
+
+def _write_reevaluation_worker_state(
+    path: Path,
+    state: dict[str, object],
+) -> None:
+    """Persist idle-log suppression state for the next one-shot worker pass."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_name(f"{path.name}.tmp")
+    with temporary_path.open("w", encoding="utf-8") as handle:
+        json.dump(state, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    temporary_path.replace(path)
+
+
+def _relative_to_work_dir(
+    paths: MorpionBootstrapPaths, path: Path | None
+) -> str | None:
+    """Render one path relative to the work dir when possible."""
+    if path is None:
+        return None
+    return paths.relative_to_work_dir(path)
+
+
+def _idle_signature(
+    *,
+    status: str,
+    reason: str,
+    active_model: MorpionPipelineActiveModel | None,
+    latest_generation: int | None,
+    pending_patch_path: str | None,
+) -> dict[str, object]:
+    """Build the state-change identity for idle reevaluation summaries."""
+    return {
+        "status": status,
+        "reason": reason,
+        "active_model_generation": (
+            None if active_model is None else active_model.generation
+        ),
+        "active_model_evaluator": (
+            None if active_model is None else active_model.evaluator_name
+        ),
+        "latest_generation": latest_generation,
+        "pending_patch_path": pending_patch_path,
+    }
+
+
+def _maybe_log_reevaluation_idle(
+    *,
+    paths: MorpionBootstrapPaths,
+    status: str,
+    reason: str,
+    active_model: MorpionPipelineActiveModel | None,
+    latest_generation: int | None,
+    pending_patch_path: str | None = None,
+    action: str | None = None,
+    next_check_s: int | None = None,
+    now_unix_s: float | None = None,
+) -> None:
+    """Log idle/blocking status only on state changes or periodic heartbeats."""
+    resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
+    state_path = _reevaluation_worker_state_path(paths)
+    state = _read_reevaluation_worker_state(state_path)
+    signature = _idle_signature(
+        status=status,
+        reason=reason,
+        active_model=active_model,
+        latest_generation=latest_generation,
+        pending_patch_path=pending_patch_path,
+    )
+    previous_signature = state.get("last_idle_signature")
+    signature_changed = previous_signature != signature
+    previous_checks = state.get("checks")
+    checks = int(previous_checks) + 1 if isinstance(previous_checks, int) else 1
+    idle_since_unix_s = state.get("idle_since_unix_s")
+    if signature_changed or not isinstance(idle_since_unix_s, int | float):
+        idle_since_unix_s = resolved_now_unix_s
+        checks = 1
+    last_logged_unix_s = state.get("last_logged_unix_s")
+    should_log = signature_changed or not isinstance(last_logged_unix_s, int | float)
+    if not should_log:
+        should_log = (
+            resolved_now_unix_s - float(last_logged_unix_s)
+            >= REEVALUATION_IDLE_HEARTBEAT_SECONDS
+        )
+
+    if should_log and signature_changed:
+        LOGGER.info(
+            "[reevaluation-cycle] %s",
+            _format_log_fields(
+                status=status,
+                reason=reason,
+                active_model=(
+                    None if active_model is None else active_model.evaluator_name
+                ),
+                source_generation=(
+                    None if active_model is None else active_model.generation
+                ),
+                latest_generation=latest_generation,
+                pending_patch=pending_patch_path,
+                action=action,
+                next_check_s=next_check_s,
+            ),
+        )
+    elif should_log:
+        LOGGER.info(
+            "[reevaluation-watch] %s",
+            _format_log_fields(
+                status="IDLE",
+                reason=reason,
+                active_model=(
+                    None if active_model is None else active_model.evaluator_name
+                ),
+                source_generation=(
+                    None if active_model is None else active_model.generation
+                ),
+                latest_generation=latest_generation,
+                pending_patch=pending_patch_path,
+                idle_for=f"{int(resolved_now_unix_s - float(idle_since_unix_s))}s",
+                checks=checks,
+            ),
+        )
+
+    state["last_idle_signature"] = signature
+    state["idle_since_unix_s"] = idle_since_unix_s
+    state["checks"] = checks
+    state["updated_unix_s"] = resolved_now_unix_s
+    if should_log:
+        state["last_logged_unix_s"] = resolved_now_unix_s
+    _write_reevaluation_worker_state(state_path, state)
+
+
+def _record_reevaluation_action(
+    paths: MorpionBootstrapPaths,
+    *,
+    status: str,
+    now_unix_s: float | None = None,
+) -> None:
+    """Clear idle suppression after real reevaluation action."""
+    resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
+    _write_reevaluation_worker_state(
+        _reevaluation_worker_state_path(paths),
+        {
+            "last_action_status": status,
+            "last_idle_signature": None,
+            "updated_unix_s": resolved_now_unix_s,
+        },
+    )
+
+
+def _log_reevaluation_start_block(
+    *,
+    active_model: MorpionPipelineActiveModel,
+    tree_generation: int,
+    snapshot_path: str,
+    max_nodes_per_patch: int,
+    selected_rows: int,
+    total_rows: int,
+) -> None:
+    """Emit the high-visibility operator log block for real reevaluation work."""
+    LOGGER.info(_REEVALUATION_CYCLE_SEPARATOR)
+    LOGGER.info(
+        "[reevaluation-cycle] %s",
+        _format_log_fields(
+            generation=active_model.generation,
+            evaluator=active_model.evaluator_name,
+            status="STARTED",
+            latest_tree_generation=tree_generation,
+            rows=selected_rows,
+            total_rows=total_rows,
+            max_nodes=max_nodes_per_patch,
+            target="tree_snapshot_nodes",
+        ),
+    )
+    LOGGER.info("[reevaluation-cycle] checkpoint=%s", snapshot_path)
+    LOGGER.info(_REEVALUATION_CYCLE_SEPARATOR)
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionReevaluationWorkerResult:
     """Summary of one reevaluation-worker pass."""
@@ -133,6 +345,9 @@ class MorpionReevaluationWorkerResult:
     start_cursor: str | None
     end_cursor: str | None
     completed_full_pass_count: int | None
+    tree_generation: int | None = None
+    pending_patch_path: str | None = None
+    model_bundle_path: str | None = None
 
 
 class MorpionNodeReevaluationEvaluator(Protocol):
@@ -374,6 +589,15 @@ def run_morpion_reevaluation_worker_once(
     )
 
     if max_nodes_per_patch == 0:
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="NO_WORK",
+            reason="max_nodes_per_patch_zero",
+            active_model=None,
+            latest_generation=None,
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             event="done",
@@ -395,6 +619,15 @@ def run_morpion_reevaluation_worker_once(
     try:
         active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
     except MissingMorpionPipelineArtifactError:
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="IDLE",
+            reason="missing_active_model",
+            active_model=None,
+            latest_generation=None,
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             event="done",
@@ -413,7 +646,7 @@ def run_morpion_reevaluation_worker_once(
             completed_full_pass_count=None,
         )
 
-    LOGGER.info(
+    LOGGER.debug(
         "[reevaluation] active_model generation=%s evaluator=%s bundle=%s",
         active_model.generation,
         active_model.evaluator_name,
@@ -421,6 +654,21 @@ def run_morpion_reevaluation_worker_once(
     )
 
     if paths.pipeline_reevaluation_patch_path.exists():
+        pending_patch_path = _relative_to_work_dir(
+            paths,
+            paths.pipeline_reevaluation_patch_path,
+        )
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="BLOCKED",
+            reason="pending_patch_exists",
+            active_model=active_model,
+            latest_generation=None,
+            pending_patch_path=pending_patch_path,
+            action="waiting_for_growth_to_consume_patch",
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=active_model.generation,
@@ -438,10 +686,21 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            pending_patch_path=pending_patch_path,
+            model_bundle_path=active_model.model_bundle_path,
         )
 
     latest_snapshot = resolve_latest_reevaluation_tree_snapshot(paths)
     if latest_snapshot is None:
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="IDLE",
+            reason="missing_tree_snapshot",
+            active_model=active_model,
+            latest_generation=None,
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=active_model.generation,
@@ -459,8 +718,10 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            model_bundle_path=active_model.model_bundle_path,
         )
     tree_generation, snapshot_path = latest_snapshot
+    snapshot_log_path = _relative_to_work_dir(paths, snapshot_path)
 
     if not log_available_ram_guard(
         stage="reevaluation",
@@ -468,6 +729,15 @@ def run_morpion_reevaluation_worker_once(
         action="snapshot_load",
         required_mb=args.min_available_ram_mb,
     ):
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="IDLE",
+            reason="low_available_ram",
+            active_model=active_model,
+            latest_generation=tree_generation,
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=tree_generation,
@@ -485,6 +755,8 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            tree_generation=tree_generation,
+            model_bundle_path=active_model.model_bundle_path,
         )
 
     log_pipeline_memory(
@@ -502,6 +774,15 @@ def run_morpion_reevaluation_worker_once(
     )
     sorted_node_ids = tuple(sorted(node.node_id for node in snapshot.nodes))
     if not sorted_node_ids:
+        _maybe_log_reevaluation_idle(
+            paths=paths,
+            status="NO_WORK",
+            reason="empty_tree_snapshot",
+            active_model=active_model,
+            latest_generation=tree_generation,
+            next_check_s=5,
+            now_unix_s=now_unix_s,
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=tree_generation,
@@ -519,6 +800,8 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            tree_generation=tree_generation,
+            model_bundle_path=active_model.model_bundle_path,
         )
 
     try:
@@ -547,6 +830,15 @@ def run_morpion_reevaluation_worker_once(
     )
     selected_start_cursor = selected_node_ids[0] if selected_node_ids else None
     selected_end_cursor = selected_node_ids[-1] if selected_node_ids else None
+    _record_reevaluation_action(paths, status="STARTED", now_unix_s=now_unix_s)
+    _log_reevaluation_start_block(
+        active_model=active_model,
+        tree_generation=tree_generation,
+        snapshot_path=snapshot_log_path or str(snapshot_path),
+        max_nodes_per_patch=max_nodes_per_patch,
+        selected_rows=len(selected_node_ids),
+        total_rows=len(sorted_node_ids),
+    )
 
     log_pipeline_memory(
         stage="reevaluation",
@@ -554,6 +846,7 @@ def run_morpion_reevaluation_worker_once(
         event="before_patch_rows_build",
         rows=len(selected_node_ids),
     )
+    patch_rows_start_unix_s = time.time()
     if evaluator is not None:
         patch_rows = tuple(evaluator.evaluate_patch_rows(snapshot, selected_node_ids))
     elif use_snapshot_value_fallback:
@@ -573,8 +866,39 @@ def run_morpion_reevaluation_worker_once(
         event="after_patch_rows_build",
         rows=len(patch_rows),
     )
+    patch_rows_elapsed_s = max(time.time() - patch_rows_start_unix_s, 0.0)
+    rows_per_s = (
+        len(patch_rows) / patch_rows_elapsed_s if patch_rows_elapsed_s > 0.0 else 0.0
+    )
+    LOGGER.info(
+        "[reevaluation-progress] %s",
+        _format_log_fields(
+            generation=active_model.generation,
+            evaluator=active_model.evaluator_name,
+            rows=f"{len(patch_rows)}/{len(selected_node_ids)}",
+            percent=100.0 if selected_node_ids else 0.0,
+            elapsed=f"{patch_rows_elapsed_s:.1f}s",
+            rows_per_s=f"{rows_per_s:.1f}",
+        ),
+    )
 
     if paths.pipeline_reevaluation_patch_path.exists():
+        pending_patch_path = _relative_to_work_dir(
+            paths,
+            paths.pipeline_reevaluation_patch_path,
+        )
+        LOGGER.info(
+            "[reevaluation-cycle] %s",
+            _format_log_fields(
+                status="BLOCKED",
+                reason="pending_patch_exists",
+                active_model=active_model.evaluator_name,
+                source_generation=active_model.generation,
+                latest_generation=tree_generation,
+                pending_patch=pending_patch_path,
+                action="waiting_for_growth_to_consume_patch",
+            ),
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=tree_generation,
@@ -592,6 +916,9 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            tree_generation=tree_generation,
+            pending_patch_path=pending_patch_path,
+            model_bundle_path=active_model.model_bundle_path,
         )
 
     resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
@@ -618,6 +945,22 @@ def run_morpion_reevaluation_worker_once(
         patch,
         paths.pipeline_reevaluation_patch_path,
     ):
+        pending_patch_path = _relative_to_work_dir(
+            paths,
+            paths.pipeline_reevaluation_patch_path,
+        )
+        LOGGER.info(
+            "[reevaluation-cycle] %s",
+            _format_log_fields(
+                status="BLOCKED",
+                reason="pending_patch_exists",
+                active_model=active_model.evaluator_name,
+                source_generation=active_model.generation,
+                latest_generation=tree_generation,
+                pending_patch=pending_patch_path,
+                action="waiting_for_growth_to_consume_patch",
+            ),
+        )
         log_pipeline_memory(
             stage="reevaluation",
             generation=tree_generation,
@@ -635,6 +978,9 @@ def run_morpion_reevaluation_worker_once(
             start_cursor=None,
             end_cursor=None,
             completed_full_pass_count=None,
+            tree_generation=tree_generation,
+            pending_patch_path=pending_patch_path,
+            model_bundle_path=active_model.model_bundle_path,
         )
 
     LOGGER.info(
@@ -645,6 +991,36 @@ def run_morpion_reevaluation_worker_once(
         _metric_value(patch.tree_generation),
         _metric_value(patch.start_cursor),
         _metric_value(patch.end_cursor),
+    )
+    patch_output_path = _relative_to_work_dir(
+        paths, paths.pipeline_reevaluation_patch_path
+    )
+    LOGGER.info(
+        "[reevaluation-patch] %s",
+        _format_log_fields(
+            status="WRITTEN",
+            generation=patch.evaluator_generation,
+            evaluator=patch.evaluator_name,
+            rows=len(patch.rows),
+            output=patch_output_path,
+            patch_id=patch.patch_id,
+        ),
+    )
+    LOGGER.info(
+        "[reevaluation-cycle] %s",
+        _format_log_fields(
+            generation=patch.evaluator_generation,
+            evaluator=patch.evaluator_name,
+            status="PATCH_WRITTEN",
+            rows=len(patch.rows),
+            output=patch_output_path,
+            latest_tree_generation=tree_generation,
+        ),
+    )
+    _record_reevaluation_action(
+        paths,
+        status="PATCH_WRITTEN",
+        now_unix_s=now_unix_s,
     )
 
     next_completed_full_pass_count = completed_full_pass_count + int(
@@ -681,6 +1057,9 @@ def run_morpion_reevaluation_worker_once(
         start_cursor=patch.start_cursor,
         end_cursor=patch.end_cursor,
         completed_full_pass_count=next_completed_full_pass_count,
+        tree_generation=tree_generation,
+        pending_patch_path=patch_output_path,
+        model_bundle_path=patch.model_bundle_path,
     )
 
 

@@ -3134,6 +3134,27 @@ def test_artifact_pipeline_reevaluation_stage_uses_default_batch_size(
     assert captured == [10_000]
 
 
+def test_launcher_quiet_worker_startup_suppresses_manual_startup_output(
+    tmp_path: Path,
+) -> None:
+    """Quiet supervised workers should skip repeated startup summaries and hints."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "reevaluation",
+            "--quiet-worker-startup",
+        ]
+    )
+
+    assert launcher_args.quiet_worker_startup
+    assert not launcher_args.print_startup_summary
+    assert not launcher_args.print_dashboard_hint
+
+
 def test_artifact_pipeline_reevaluation_stage_does_not_build_runner(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

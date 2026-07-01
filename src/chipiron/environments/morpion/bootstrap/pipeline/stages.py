@@ -147,7 +147,7 @@ from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
 from chipiron.environments.morpion.bootstrap.profiling.memory_diagnostics import (
     MemoryDiagnostics,
 )
-from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
+from chipiron.environments.morpion.bootstrap.profiling.recursive.runner import (
     log_growth_recursive_memory_profile as _log_growth_recursive_memory_profile,
 )
 from chipiron.environments.morpion.bootstrap.record_status import (

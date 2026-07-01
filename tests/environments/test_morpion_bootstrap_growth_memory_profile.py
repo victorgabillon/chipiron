@@ -50,6 +50,8 @@ import chipiron.environments.morpion.bootstrap.profiling.recursive.context as re
 import chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size as deep_size_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.linoo as linoo_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.node_evaluation as node_evaluation_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.rendering as recursive_rendering_module
+import chipiron.environments.morpion.bootstrap.profiling.recursive.runner as recursive_runner_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles as state_handles_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology as tree_topology_module
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
@@ -93,6 +95,14 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.object_access i
     safe_object_dict,
     slot_names,
 )
+from chipiron.environments.morpion.bootstrap.profiling.recursive.rendering import (
+    gc_shallow_size_summary,
+    log_gc_shallow_size_summary,
+    log_histogram,
+)
+from chipiron.environments.morpion.bootstrap.profiling.recursive.runner import (
+    log_growth_recursive_memory_profile,
+)
 from chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles import (
     state_eviction_runtime_histogram,
     state_handle_materialization_detail_histogram,
@@ -103,13 +113,9 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology i
     parent_link_storage_histogram,
     tree_topology_histograms,
 )
-from chipiron.environments.morpion.bootstrap.profiling.recursive_memory import (
-    gc_shallow_size_summary,
-    log_growth_recursive_memory_profile,
-)
 
-recursive_memory_profile_module = importlib.import_module(
-    "chipiron.environments.morpion.bootstrap.profiling.recursive_memory"
+recursive_runner_profile_module = importlib.import_module(
+    "chipiron.environments.morpion.bootstrap.profiling.recursive.runner"
 )
 
 if TYPE_CHECKING:
@@ -906,6 +912,22 @@ def test_checkpoint_states_import_smoke() -> None:
     assert checkpoint_states_module.checkpoint_state_roots_detail_histogram is not None
 
 
+def test_recursive_rendering_import_smoke() -> None:
+    """Recursive rendering helpers should be importable from their owning module."""
+    assert recursive_rendering_module.gc_shallow_size_summary is not None
+    assert recursive_rendering_module.log_gc_shallow_size_summary is not None
+    assert recursive_rendering_module.log_histogram is not None
+    assert gc_shallow_size_summary is not None
+    assert log_gc_shallow_size_summary is not None
+    assert log_histogram is not None
+
+
+def test_recursive_runner_import_smoke() -> None:
+    """Recursive runner helper should be importable from its owning module."""
+    assert recursive_runner_module.log_growth_recursive_memory_profile is not None
+    assert log_growth_recursive_memory_profile is not None
+
+
 def test_deep_size_does_not_call_properties() -> None:
     """Recursive sizing must avoid properties that may materialize lazy state."""
     size = deep_size(RecursivePropertyObject(), seen=set())
@@ -1019,7 +1041,7 @@ def test_exclusive_deep_size_respects_shared_seen_across_roots() -> None:
         RecursiveDictObject(shared),
     )
 
-    exclusive_size = recursive_memory_profile_module._exclusive_deep_size(
+    exclusive_size = recursive_runner_profile_module._exclusive_deep_size(
         roots,
         seen=set(),
         max_depth=None,
@@ -1651,7 +1673,7 @@ def test_checkpoint_payload_lifetime_histograms_detect_shared_resolver() -> None
         node_cap=10,
     )
     payload_store_records = (
-        recursive_memory_profile_module._log_checkpoint_payload_stores(
+        recursive_runner_profile_module._log_checkpoint_payload_stores(
             event="after_checkpoint_load",
             checkpoint_payload_stores=context.checkpoint_payload_stores,
             max_objects=None,

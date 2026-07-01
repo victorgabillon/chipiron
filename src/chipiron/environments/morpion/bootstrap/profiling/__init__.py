@@ -9,9 +9,9 @@ _LAZY_EXPORT_MODULES = {
     "DeepSizeStats": "recursive.deep_size",
     "MemoryDiagnostics": "memory_diagnostics",
     "MemoryDiagnosticsConfig": "memory_diagnostics",
-    "build_recursive_profile_context": "recursive_memory",
+    "build_recursive_profile_context": "recursive.context",
     "deep_size": "recursive.deep_size",
-    "log_growth_recursive_memory_profile": "recursive_memory",
+    "log_growth_recursive_memory_profile": "recursive.runner",
     "log_growth_runtime_memory_profile": "growth_memory",
 }
 
