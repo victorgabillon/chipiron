@@ -54,6 +54,18 @@ import chipiron.environments.morpion.bootstrap.profiling.recursive.rendering as 
 import chipiron.environments.morpion.bootstrap.profiling.recursive.runner as recursive_runner_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.state_handles as state_handles_module
 import chipiron.environments.morpion.bootstrap.profiling.recursive.tree_topology as tree_topology_module
+from chipiron.environments.morpion.bootstrap.profiling import (
+    DeepSizeStats as PackageDeepSizeStats,
+)
+from chipiron.environments.morpion.bootstrap.profiling import (
+    build_recursive_profile_context as package_build_recursive_profile_context,
+)
+from chipiron.environments.morpion.bootstrap.profiling import (
+    deep_size as package_deep_size,
+)
+from chipiron.environments.morpion.bootstrap.profiling import (
+    log_growth_recursive_memory_profile as package_log_growth_recursive_memory_profile,
+)
 from chipiron.environments.morpion.bootstrap.profiling.growth_memory import (
     log_growth_runtime_memory_profile,
 )
@@ -926,6 +938,17 @@ def test_recursive_runner_import_smoke() -> None:
     """Recursive runner helper should be importable from its owning module."""
     assert recursive_runner_module.log_growth_recursive_memory_profile is not None
     assert log_growth_recursive_memory_profile is not None
+
+
+def test_profiling_package_exports_import_smoke() -> None:
+    """Stable profiling package exports should resolve to their owning modules."""
+    assert PackageDeepSizeStats is DeepSizeStats
+    assert package_deep_size is deep_size
+    assert package_build_recursive_profile_context is build_recursive_profile_context
+    assert (
+        package_log_growth_recursive_memory_profile
+        is log_growth_recursive_memory_profile
+    )
 
 
 def test_deep_size_does_not_call_properties() -> None:

@@ -70,8 +70,6 @@ from chipiron.environments.morpion.bootstrap.dashboard.app import (
     _configured_evaluator_names,
     _dataset_status_summary,
     _diagnostic_examples_rows,
-    _downsample_loss_series_by_name,
-    _downsample_series,
     _effective_runtime_config,
     _effective_runtime_hash,
     _effective_state_summary,
@@ -80,13 +78,11 @@ from chipiron.environments.morpion.bootstrap.dashboard.app import (
     _force_evaluator_options,
     _format_force_evaluator_option,
     _format_force_evaluator_state,
-    _format_value,
     _has_pending_control_changes,
     _is_stale_forced_evaluator,
     _linoo_selection_table_rows,
     _load_applied_control,
     _load_latest_evaluator_training_diagnostics_for_dashboard,
-    _observability_summary_from_metadata,
     _pending_control_fields,
     _pending_control_sections,
     _render_launcher_command_text,
@@ -96,6 +92,29 @@ from chipiron.environments.morpion.bootstrap.dashboard.app import (
     _tree_branch_limit_input_value,
     _tree_inspector_child_rows,
     _tree_structure_rows,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    cached_build_morpion_bootstrap_dashboard_data,
+    cached_dashboard_data_freshness_tokens,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    downsample_loss_series_by_name as _downsample_loss_series_by_name,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    downsample_series as _downsample_series,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    format_value as _format_value,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage import (
+    render_disk_usage_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
+    _observability_summary_from_metadata,
+    render_observability_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
+    render_plot,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     MorpionBootstrapChildSummary,
@@ -116,14 +135,36 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     """Dashboard APIs should resolve from the owner package modules."""
     import chipiron.environments.morpion.bootstrap.dashboard as dashboard_pkg
     import chipiron.environments.morpion.bootstrap.dashboard.app as dashboard_app_new
+    import chipiron.environments.morpion.bootstrap.dashboard.data_cache as dashboard_data_cache_new
+    import chipiron.environments.morpion.bootstrap.dashboard.formatting as dashboard_formatting_new
     import chipiron.environments.morpion.bootstrap.dashboard.history_view as history_view_new
     import chipiron.environments.morpion.bootstrap.dashboard.plot as dashboard_plot_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage as dashboard_disk_usage_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.observability as dashboard_observability_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.plot as dashboard_plot_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.streamlit_entry as streamlit_new
     import chipiron.environments.morpion.bootstrap.dashboard.tree_inspector as tree_inspector_new
 
     assert dashboard_pkg.run_dashboard_app is dashboard_app_new.run_dashboard_app
     assert callable(streamlit_new.main)
+    assert (
+        dashboard_data_cache_new.cached_build_morpion_bootstrap_dashboard_data
+        is cached_build_morpion_bootstrap_dashboard_data
+    )
+    assert (
+        dashboard_data_cache_new.cached_dashboard_data_freshness_tokens
+        is cached_dashboard_data_freshness_tokens
+    )
+    assert dashboard_formatting_new.downsample_series is _downsample_series
+    assert dashboard_formatting_new.format_value is _format_value
     assert callable(dashboard_plot_new.plot_tree_size)
+    assert dashboard_disk_usage_section_new.render_disk_usage_section is (
+        render_disk_usage_section
+    )
+    assert dashboard_observability_section_new.render_observability_section is (
+        render_observability_section
+    )
+    assert dashboard_plot_section_new.render_plot is render_plot
     assert (
         history_view_new.build_morpion_bootstrap_dashboard_data.__name__
         == "build_morpion_bootstrap_dashboard_data"

@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import argparse
 import time
-from collections.abc import Mapping
-from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
-
-from matplotlib import pyplot as plt
 
 from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
 from chipiron.environments.morpion.bootstrap.config import (
@@ -33,13 +29,42 @@ from chipiron.environments.morpion.bootstrap.control import (
     load_bootstrap_control,
     save_bootstrap_control,
 )
-from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
-    DiskUsageSummary,
-    MorpionBootstrapCertifiedRecordBoardView,
-    TreeDepthDistributionRow,
-    build_current_certified_record_board_view,
-    build_morpion_bootstrap_dashboard_data,
-    format_num_bytes,
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    _checked_training_status_files_summary,
+    _loss_series_contains_points,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    cached_build_current_certified_record_board_view as _cached_build_current_certified_record_board_view,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    cached_build_morpion_bootstrap_dashboard_data as _cached_build_morpion_bootstrap_dashboard_data,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    cached_certified_record_board_freshness_tokens as _cached_certified_record_board_freshness_tokens,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    cached_dashboard_data_freshness_tokens as _cached_dashboard_data_freshness_tokens,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    control_float_value as _control_float_value,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    control_number_value as _control_number_value,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    downsample_loss_series_by_name as _downsample_loss_series_by_name,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    downsample_series as _downsample_series,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    format_bool_icon as _format_bool_icon,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    format_value as _format_value,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+    latest_optional_value as _latest_optional_value,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.plot import (
     plot_active_evaluator,
@@ -48,6 +73,18 @@ from chipiron.environments.morpion.bootstrap.dashboard.plot import (
     plot_evaluator_losses,
     plot_tree_depth_distribution,
     plot_tree_size,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage import (
+    render_disk_usage_section as _render_disk_usage_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
+    _observability_summary_from_metadata,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
+    render_observability_section as _render_observability_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
+    render_plot as _render_plot,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     build_morpion_bootstrap_tree_inspector_snapshot,
@@ -80,6 +117,10 @@ from chipiron.environments.morpion.bootstrap.streamlit_morpion_clickable_board i
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
+        MorpionBootstrapCertifiedRecordBoardView,
+        TreeDepthDistributionRow,
+    )
     from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
         MorpionBootstrapChildSummary,
     )
@@ -87,130 +128,7 @@ if TYPE_CHECKING:
         MorpionBootstrapTreeStatus,
     )
 
-MAX_PLOT_POINTS = 2000
 TREE_INSPECTOR_TIMING_PREFIX = "[tree-inspector-timing]"
-
-
-def _path_mtime_ns(path: Path) -> int:
-    """Return one path freshness token, treating missing paths as zero."""
-    try:
-        return path.stat().st_mtime_ns
-    except OSError:
-        return 0
-
-
-def _loss_series_contains_points(
-    loss_by_name: Mapping[str, tuple[Any, ...]],
-) -> bool:
-    """Return whether any evaluator loss series contains at least one concrete point."""
-    return any(series for series in loss_by_name.values())
-
-
-def _checked_training_status_files_summary(paths: MorpionBootstrapPaths) -> str:
-    """Summarize the training-status files the dashboard inspected for loss data."""
-    checked_files = sorted(paths.pipeline_dir.glob("generation_*/training_status.json"))
-    if not checked_files:
-        return "none"
-    rendered = [paths.relative_to_work_dir(path) for path in checked_files[-5:]]
-    omitted_count = len(checked_files) - len(rendered)
-    if omitted_count > 0:
-        return ", ".join(rendered) + f" (+{omitted_count} more)"
-    return ", ".join(rendered)
-
-
-def _latest_generation_json_path(directory: Path) -> Path | None:
-    """Return the newest generation JSON file in one directory when present."""
-    candidates = sorted(directory.glob("generation_*.json"))
-    return None if not candidates else candidates[-1]
-
-
-def _latest_tree_snapshot_generation_json_path(
-    paths: MorpionBootstrapPaths,
-) -> Path | None:
-    """Return the newest flat or sharded tree generation JSON file."""
-    candidates = [
-        path
-        for path in (
-            _latest_generation_json_path(paths.tree_snapshot_dir),
-            _latest_generation_json_path(paths.sharded_tree_snapshot_dir),
-        )
-        if path is not None
-    ]
-    return (
-        None if not candidates else sorted(candidates, key=lambda path: path.name)[-1]
-    )
-
-
-def _cached_dashboard_data_freshness_tokens(
-    paths: MorpionBootstrapPaths,
-) -> tuple[int, ...]:
-    """Return freshness tokens for dashboard-wide data rebuilds."""
-    latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
-    latest_runtime_checkpoint_path = _latest_generation_json_path(
-        paths.runtime_checkpoint_dir
-    )
-    return (
-        _path_mtime_ns(paths.work_dir),
-        _path_mtime_ns(paths.bootstrap_config_path),
-        _path_mtime_ns(paths.control_path),
-        _path_mtime_ns(paths.run_state_path),
-        _path_mtime_ns(paths.history_jsonl_path),
-        _path_mtime_ns(paths.latest_status_path),
-        _path_mtime_ns(paths.launcher_pid_path),
-        _path_mtime_ns(paths.launcher_process_state_path),
-        _path_mtime_ns(paths.launcher_stdout_log_path),
-        _path_mtime_ns(paths.launcher_stderr_log_path),
-        _path_mtime_ns(paths.tree_snapshot_dir),
-        _path_mtime_ns(paths.sharded_tree_snapshot_dir),
-        _path_mtime_ns(paths.runtime_checkpoint_dir),
-        _path_mtime_ns(paths.rows_dir),
-        _path_mtime_ns(paths.model_dir),
-        _path_mtime_ns(paths.latest_linoo_selection_table_path),
-        0
-        if latest_tree_snapshot_path is None
-        else _path_mtime_ns(latest_tree_snapshot_path),
-        (
-            0
-            if latest_runtime_checkpoint_path is None
-            else _path_mtime_ns(latest_runtime_checkpoint_path)
-        ),
-    )
-
-
-def _cached_certified_record_board_freshness_tokens(
-    paths: MorpionBootstrapPaths,
-) -> tuple[int, ...]:
-    """Return freshness tokens for certified-record board rebuilds."""
-    latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
-    return (
-        _path_mtime_ns(paths.run_state_path),
-        _path_mtime_ns(paths.history_jsonl_path),
-        _path_mtime_ns(paths.tree_snapshot_dir),
-        _path_mtime_ns(paths.sharded_tree_snapshot_dir),
-        0
-        if latest_tree_snapshot_path is None
-        else _path_mtime_ns(latest_tree_snapshot_path),
-    )
-
-
-@lru_cache(maxsize=1)
-def _cached_build_morpion_bootstrap_dashboard_data(
-    work_dir: str,
-    freshness_tokens: tuple[int, ...],
-) -> Any:
-    """Cache dashboard-wide data for one work dir until relevant artifacts change."""
-    _ = freshness_tokens
-    return build_morpion_bootstrap_dashboard_data(work_dir)
-
-
-@lru_cache(maxsize=1)
-def _cached_build_current_certified_record_board_view(
-    work_dir: str,
-    freshness_tokens: tuple[int, ...],
-) -> MorpionBootstrapCertifiedRecordBoardView | None:
-    """Cache the certified-record board view until its source artifacts change."""
-    _ = freshness_tokens
-    return build_current_certified_record_board_view(work_dir)
 
 
 def run_dashboard_app(work_dir: Path) -> None:
@@ -556,290 +474,6 @@ class MissingStreamlitDashboardDependencyError(RuntimeError):
         super().__init__(
             "Streamlit is not installed. Install `streamlit` to use the local dashboard."
         )
-
-
-class InvalidDashboardPlotPointLimitError(ValueError):
-    """Raised when dashboard plot downsampling is configured with an invalid cap."""
-
-    def __init__(self, max_points: int) -> None:
-        """Initialize the invalid plot-point-limit error."""
-        super().__init__(
-            f"Dashboard plot max_points must be at least 1, got {max_points}."
-        )
-
-
-def _render_plot(st: Any, build_plot: Any) -> None:
-    """Render one existing matplotlib plot helper into Streamlit."""
-    build_plot()
-    figure = plt.gcf()
-    st.pyplot(figure, clear_figure=True)
-    plt.close(figure)
-
-
-def _render_disk_usage_section(
-    *,
-    st: Any,
-    summary: DiskUsageSummary,
-) -> None:
-    """Render operator-facing run and device disk usage information."""
-    metric_columns = st.columns(4)
-    metric_columns[0].metric(
-        "Run Dir Size",
-        format_num_bytes(summary.run_dir_num_bytes),
-        delta=_format_disk_usage_pct(summary.run_dir_pct_of_device_total),
-    )
-    metric_columns[1].metric(
-        "Device Free Space",
-        format_num_bytes(summary.device_free_num_bytes),
-    )
-    metric_columns[2].metric(
-        "Device Used Space",
-        format_num_bytes(summary.device_used_num_bytes),
-    )
-    metric_columns[3].metric(
-        "Device Total Space",
-        format_num_bytes(summary.device_total_num_bytes),
-    )
-    breakdown_rows = [
-        {"artifact_group": row.label, "size": format_num_bytes(row.num_bytes)}
-        for row in summary.breakdown_rows
-    ]
-    st.dataframe(breakdown_rows, width="stretch", hide_index=True)
-    st.caption(
-        "Run breakdown is sorted largest-first. Retention keeps only the latest "
-        "checkpoint and tree export by default."
-    )
-
-
-def _format_disk_usage_pct(value: float | None) -> str:
-    """Format one optional disk-usage percentage for dashboard metrics."""
-    if value is None:
-        return "unknown"
-    return f"{value:.2f}% of device"
-
-
-def _mapping_value(
-    mapping: Mapping[str, object],
-    key: str,
-) -> Mapping[str, object]:
-    """Return one nested string-keyed mapping from dashboard metadata."""
-    value = mapping.get(key)
-    if not isinstance(value, Mapping):
-        return {}
-    raw_mapping = cast("Mapping[object, object]", value)
-    if not all(isinstance(item_key, str) for item_key in raw_mapping):
-        return {}
-    return cast("Mapping[str, object]", raw_mapping)
-
-
-def _numeric_value(value: object) -> float | None:
-    """Return one finite numeric value for derived dashboard metrics."""
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return None
-    return float(value)
-
-
-def _ratio(
-    numerator: object,
-    denominator: object,
-) -> float | None:
-    """Return a safe ratio for optional numeric values."""
-    normalized_numerator = _numeric_value(numerator)
-    normalized_denominator = _numeric_value(denominator)
-    if normalized_numerator is None or normalized_denominator is None:
-        return None
-    if normalized_denominator <= 0:
-        return None
-    return normalized_numerator / normalized_denominator
-
-
-def _percentage(value: object) -> str:
-    """Format one optional ratio as a dashboard percentage."""
-    normalized = _numeric_value(value)
-    if normalized is None:
-        return "n/a"
-    return f"{normalized * 100.0:.1f}%"
-
-
-def _export_fast_path_health(
-    profile: Mapping[str, object],
-) -> str:
-    """Return a compact health label for checkpoint-backed export state access."""
-    state_access_calls = _numeric_value(profile.get("state_access_calls"))
-    if state_access_calls is None:
-        return "unknown"
-    plain_states = _numeric_value(profile.get("plain_or_materialized_states"))
-    node_count = _numeric_value(profile.get("node_count"))
-    tolerance = 1.0 if node_count is None else max(1.0, node_count * 0.005)
-    if plain_states is not None and state_access_calls <= plain_states + tolerance:
-        return "good"
-    if (
-        node_count is not None
-        and node_count > 0
-        and state_access_calls >= node_count * 0.5
-    ):
-        return "warning"
-    return "review"
-
-
-def _observability_summary_from_metadata(
-    metadata: Mapping[str, object],
-) -> dict[str, object]:
-    """Build dashboard-ready observability fields from status metadata."""
-    tree = _mapping_value(metadata, "tree")
-    memory = _mapping_value(metadata, "memory")
-    state_eviction = _mapping_value(metadata, "state_eviction")
-    checkpoint = _mapping_value(metadata, "checkpoint")
-    training_export = _mapping_value(metadata, "training_export")
-    training_export_profile = _mapping_value(metadata, "training_export_profile")
-    node_count = tree.get("node_count") or training_export_profile.get("node_count")
-    compact_payload_count = state_eviction.get("compact_payload_count")
-    delta_payload_count = state_eviction.get("delta_payload_count")
-    checkpoint_backed_handles = training_export_profile.get(
-        "checkpoint_backed_state_handles"
-    )
-    plain_states = training_export_profile.get("plain_or_materialized_states")
-    return {
-        "tree": dict(tree),
-        "memory": dict(memory),
-        "state_eviction": dict(state_eviction),
-        "checkpoint": dict(checkpoint),
-        "training_export": dict(training_export),
-        "training_export_profile": dict(training_export_profile),
-        "delta_payload_ratio": _ratio(delta_payload_count, compact_payload_count),
-        "checkpoint_backed_ratio": _ratio(checkpoint_backed_handles, node_count),
-        "materialized_ratio": _ratio(plain_states, node_count),
-        "export_fast_path_health": _export_fast_path_health(training_export_profile),
-    }
-
-
-def _render_observability_section(
-    *,
-    st: Any,
-    summary: Mapping[str, object],
-) -> None:
-    """Render memory/checkpoint/export observability from latest status metadata."""
-    tree = cast("Mapping[str, object]", summary.get("tree", {}))
-    memory = cast("Mapping[str, object]", summary.get("memory", {}))
-    state_eviction = cast("Mapping[str, object]", summary.get("state_eviction", {}))
-    checkpoint = cast("Mapping[str, object]", summary.get("checkpoint", {}))
-    training_export = cast("Mapping[str, object]", summary.get("training_export", {}))
-    profile = cast("Mapping[str, object]", summary.get("training_export_profile", {}))
-
-    metric_columns = st.columns(7)
-    metric_columns[0].metric("Nodes", _format_value(tree.get("node_count")))
-    metric_columns[1].metric("Branches", _format_value(tree.get("branch_count")))
-    metric_columns[2].metric("RSS MB", _format_value(memory.get("rss_mb")))
-    metric_columns[3].metric(
-        "Checkpoint-backed",
-        _percentage(summary.get("checkpoint_backed_ratio")),
-    )
-    metric_columns[4].metric(
-        "Delta payloads",
-        _percentage(summary.get("delta_payload_ratio")),
-    )
-    metric_columns[5].metric(
-        "Checkpoint save",
-        _format_seconds(checkpoint.get("total_s")),
-    )
-    metric_columns[6].metric(
-        "Training export",
-        "skipped"
-        if training_export.get("status") == "skipped"
-        else _format_seconds(training_export.get("total_s")),
-    )
-
-    st.caption(
-        "Checkpoint-backed nodes store compact payloads instead of full states. "
-        "Delta payloads store parent plus move/delta. Export health warns if "
-        "checkpoint-backed nodes start resolving full state during export."
-    )
-    st.dataframe(
-        [
-            {
-                "metric": "Materialized/plain %",
-                "value": _percentage(summary.get("materialized_ratio")),
-            },
-            {
-                "metric": "State access calls",
-                "value": _format_value(profile.get("state_access_calls")),
-            },
-            {
-                "metric": "Plain/materialized states",
-                "value": _format_value(profile.get("plain_or_materialized_states")),
-            },
-            {
-                "metric": "Reusable checkpoint payloads",
-                "value": _format_value(profile.get("reusable_checkpoint_payloads")),
-            },
-            {
-                "metric": "Export fast-path health",
-                "value": _format_value(summary.get("export_fast_path_health")),
-            },
-            {
-                "metric": "Eviction successes",
-                "value": _format_value(state_eviction.get("eviction_success_count")),
-            },
-            {
-                "metric": "Eviction skips",
-                "value": _format_value(state_eviction.get("eviction_skipped_count")),
-            },
-            {
-                "metric": "Delta fallbacks",
-                "value": _format_value(
-                    state_eviction.get("delta_payload_fallback_count")
-                ),
-            },
-            {
-                "metric": "Rematerializations",
-                "value": _format_value(state_eviction.get("rematerialization_count")),
-            },
-            {
-                "metric": "Checkpoint bytes",
-                "value": _format_value(checkpoint.get("bytes")),
-            },
-            {
-                "metric": "Rows written",
-                "value": _format_value(training_export.get("rows_written")),
-            },
-            {
-                "metric": "Export bytes",
-                "value": _format_value(training_export.get("bytes_written")),
-            },
-        ],
-        width="stretch",
-        hide_index=True,
-    )
-
-
-def _downsample_series[SeriesPointT](
-    series: Sequence[SeriesPointT],
-    max_points: int = MAX_PLOT_POINTS,
-) -> tuple[SeriesPointT, ...]:
-    """Return one bounded series while preserving the first and last points."""
-    if max_points < 1:
-        raise InvalidDashboardPlotPointLimitError(max_points)
-    if len(series) <= max_points:
-        return tuple(series)
-    if max_points == 1:
-        return (series[-1],)
-    last_index = len(series) - 1
-    sampled_indices = tuple(
-        int(sample_index * last_index / (max_points - 1))
-        for sample_index in range(max_points)
-    )
-    return tuple(series[index] for index in sampled_indices)
-
-
-def _downsample_loss_series_by_name[SeriesPointT](
-    loss_by_name: Mapping[str, Sequence[SeriesPointT]],
-    max_points: int = MAX_PLOT_POINTS,
-) -> dict[str, tuple[SeriesPointT, ...]]:
-    """Return one bounded evaluator-loss mapping keyed by evaluator name."""
-    return {
-        evaluator_name: _downsample_series(series, max_points=max_points)
-        for evaluator_name, series in loss_by_name.items()
-    }
 
 
 def _render_run_control_section(*, st: Any, paths: MorpionBootstrapPaths) -> None:
@@ -2104,35 +1738,6 @@ def _build_next_control(
     )
 
 
-def _latest_optional_value(series: tuple[Any, ...]) -> object | None:
-    """Return the latest value from one optional dashboard series."""
-    if not series:
-        return None
-    return getattr(series[-1], "value", None)
-
-
-def _format_value(value: object | None) -> str:
-    """Render optional values consistently in the dashboard."""
-    return "n/a" if value is None else str(value)
-
-
-def _format_seconds(value: object | None) -> str:
-    """Render optional duration values for compact metrics."""
-    normalized = _numeric_value(value)
-    if normalized is None:
-        return "n/a"
-    return f"{normalized:.3f}s"
-
-
-def _format_bool_icon(value: bool | None) -> str:
-    """Render one optional boolean with compact visual icons."""
-    if value is True:
-        return "✔"
-    if value is False:
-        return "✖"
-    return "—"
-
-
 def _force_evaluator_option_index(
     options: tuple[str, ...],
     current_force_evaluator: str | None,
@@ -2175,16 +1780,6 @@ def _format_force_evaluator_option(
     ):
         return f"{value} (stale / not configured)"
     return value
-
-
-def _control_number_value(value: int | None, *, default: int = 0) -> int:
-    """Return one Streamlit-safe integer input default."""
-    return default if value is None else value
-
-
-def _control_float_value(value: float | None, *, default: float = 0.0) -> float:
-    """Return one Streamlit-safe float input default."""
-    return default if value is None else value
 
 
 def _resolved_force_evaluator(
