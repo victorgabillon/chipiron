@@ -65,11 +65,7 @@ from chipiron.environments.morpion.bootstrap import (
 )
 from chipiron.environments.morpion.bootstrap.dashboard.app import (
     _diagnostic_examples_rows,
-    _linoo_selection_table_rows,
     _load_latest_evaluator_training_diagnostics_for_dashboard,
-    _selected_child_node_id_for_branch,
-    _tree_inspector_child_rows,
-    _tree_structure_rows,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
     cached_build_morpion_bootstrap_dashboard_data,
@@ -86,6 +82,12 @@ from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage import (
     render_disk_usage_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.linoo import (
+    linoo_selection_table_rows as _linoo_selection_table_rows,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.linoo import (
+    render_linoo_selection_table,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
     _observability_summary_from_metadata,
@@ -171,6 +173,21 @@ from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers im
 from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
     tree_branch_limit_input_value as _tree_branch_limit_input_value,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector import (
+    render_tree_inspector_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector import (
+    selected_child_node_id_for_branch as _selected_child_node_id_for_branch,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector import (
+    tree_inspector_child_rows as _tree_inspector_child_rows,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure import (
+    render_tree_structure_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure import (
+    tree_structure_rows as _tree_structure_rows,
+)
 from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     MorpionBootstrapChildSummary,
     MorpionBootstrapTreeInspectorSnapshot,
@@ -195,10 +212,13 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     import chipiron.environments.morpion.bootstrap.dashboard.history_view as history_view_new
     import chipiron.environments.morpion.bootstrap.dashboard.plot as dashboard_plot_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage as dashboard_disk_usage_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.linoo as dashboard_linoo_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.observability as dashboard_observability_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.plot as dashboard_plot_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.run_control as dashboard_run_control_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers as dashboard_status_layers_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector as dashboard_tree_inspector_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure as dashboard_tree_structure_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.streamlit_entry as streamlit_new
     import chipiron.environments.morpion.bootstrap.dashboard.tree_inspector as tree_inspector_new
 
@@ -242,6 +262,15 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     )
     assert dashboard_status_layers_section_new.render_runtime_control_section is (
         render_runtime_control_section
+    )
+    assert dashboard_tree_inspector_section_new.render_tree_inspector_section is (
+        render_tree_inspector_section
+    )
+    assert dashboard_tree_structure_section_new.render_tree_structure_section is (
+        render_tree_structure_section
+    )
+    assert dashboard_linoo_section_new.render_linoo_selection_table is (
+        render_linoo_selection_table
     )
     assert (
         history_view_new.build_morpion_bootstrap_dashboard_data.__name__
