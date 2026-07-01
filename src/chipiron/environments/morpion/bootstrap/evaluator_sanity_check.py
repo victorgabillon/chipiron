@@ -28,7 +28,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     train_morpion_regressor,
 )
 
-from .bootstrap_loop import MorpionBootstrapPaths
+from .bootstrap_paths import MorpionBootstrapPaths
 from .evaluator_diagnostics import (
     build_evaluator_training_diagnostics,
     load_previous_evaluator_for_diagnostics,
@@ -42,7 +42,7 @@ from .evaluator_family import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from .bootstrap_loop import MorpionEvaluatorSpec
+    from .evaluator_config import MorpionEvaluatorSpec
 
 LOGGER = logging.getLogger(__name__)
 

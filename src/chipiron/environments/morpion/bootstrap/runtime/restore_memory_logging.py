@@ -7,7 +7,7 @@ import logging
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     current_rss_mb as _pipeline_current_rss_mb,
@@ -21,6 +21,7 @@ from .checkpoint_io import _checkpoint_artifact_bytes, _metric_value
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
     from anemone.checkpoints import SearchRuntimeCheckpointPayload
 

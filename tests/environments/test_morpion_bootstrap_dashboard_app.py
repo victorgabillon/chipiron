@@ -1,45 +1,11 @@
 """Tests for pure Morpion bootstrap dashboard-app helpers."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-from types import ModuleType
+from typing import TYPE_CHECKING
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-_MORPION_EVALUATORS_PACKAGE_ROOT = (
-    _REPO_ROOT
-    / "src"
-    / "chipiron"
-    / "environments"
-    / "morpion"
-    / "players"
-    / "evaluators"
-)
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
-    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
-    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
-
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
@@ -63,10 +29,6 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_config,
     save_bootstrap_run_state,
 )
-from chipiron.environments.morpion.bootstrap.dashboard.app import (
-    _diagnostic_examples_rows,
-    _load_latest_evaluator_training_diagnostics_for_dashboard,
-)
 from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
     cached_build_morpion_bootstrap_dashboard_data,
     cached_dashboard_data_freshness_tokens,
@@ -80,8 +42,20 @@ from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
     format_value as _format_value,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.sections.certified_record import (
+    render_current_certified_record_board_section,
+)
 from chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage import (
     render_disk_usage_section,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics import (
+    diagnostic_examples_rows as _diagnostic_examples_rows,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics import (
+    load_latest_evaluator_training_diagnostics_for_dashboard as _load_latest_evaluator_training_diagnostics_for_dashboard,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics import (
+    render_evaluator_training_diagnostics_section,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.linoo import (
     linoo_selection_table_rows as _linoo_selection_table_rows,
@@ -90,11 +64,16 @@ from chipiron.environments.morpion.bootstrap.dashboard.sections.linoo import (
     render_linoo_selection_table,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
-    _observability_summary_from_metadata,
+    observability_summary_from_metadata as _observability_summary_from_metadata,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
     render_observability_section,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
     render_plot,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.record_status import (
+    render_record_status_section,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.run_control import (
     render_launcher_command_text as _render_launcher_command_text,
@@ -211,10 +190,13 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     import chipiron.environments.morpion.bootstrap.dashboard.formatting as dashboard_formatting_new
     import chipiron.environments.morpion.bootstrap.dashboard.history_view as history_view_new
     import chipiron.environments.morpion.bootstrap.dashboard.plot as dashboard_plot_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.certified_record as dashboard_certified_record_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage as dashboard_disk_usage_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics as dashboard_evaluator_diagnostics_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.linoo as dashboard_linoo_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.observability as dashboard_observability_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.plot as dashboard_plot_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.record_status as dashboard_record_status_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.run_control as dashboard_run_control_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers as dashboard_status_layers_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector as dashboard_tree_inspector_section_new
@@ -271,6 +253,17 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     )
     assert dashboard_linoo_section_new.render_linoo_selection_table is (
         render_linoo_selection_table
+    )
+    assert dashboard_record_status_section_new.render_record_status_section is (
+        render_record_status_section
+    )
+    assert (
+        dashboard_evaluator_diagnostics_section_new.render_evaluator_training_diagnostics_section
+        is render_evaluator_training_diagnostics_section
+    )
+    assert (
+        dashboard_certified_record_section_new.render_current_certified_record_board_section
+        is render_current_certified_record_board_section
     )
     assert (
         history_view_new.build_morpion_bootstrap_dashboard_data.__name__
@@ -405,7 +398,7 @@ def test_configured_force_evaluator_options_come_from_config(tmp_path: Path) -> 
 
     assert configured_evaluator_names == ("linear", "mlp")
     assert _force_evaluator_options(
-        configured_evaluator_names=configured_evaluator_names,
+        configured_names=configured_evaluator_names,
         current_force_evaluator=None,
     ) == ("linear", "mlp")
 
@@ -735,21 +728,21 @@ def test_tree_branch_limit_input_value_prefers_override_then_baseline_then_defau
     assert (
         _tree_branch_limit_input_value(
             runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=96),
-            baseline_tree_branch_limit=64,
+            baseline_limit=64,
         )
         == 96
     )
     assert (
         _tree_branch_limit_input_value(
             runtime_control=MorpionBootstrapRuntimeControl(),
-            baseline_tree_branch_limit=64,
+            baseline_limit=64,
         )
         == 64
     )
     assert (
         _tree_branch_limit_input_value(
             runtime_control=MorpionBootstrapRuntimeControl(),
-            baseline_tree_branch_limit=None,
+            baseline_limit=None,
         )
         == DEFAULT_MORPION_TREE_BRANCH_LIMIT
     )
@@ -783,35 +776,35 @@ def test_stale_force_evaluator_helpers() -> None:
     assert (
         _format_force_evaluator_option(
             "linear",
-            configured_evaluator_names=configured,
+            configured_names=configured,
         )
         == "linear"
     )
     assert (
         _format_force_evaluator_option(
             "old-model",
-            configured_evaluator_names=configured,
+            configured_names=configured,
         )
         == "old-model (stale / not configured)"
     )
     assert (
         _format_force_evaluator_option(
             "old-model",
-            configured_evaluator_names=(),
+            configured_names=(),
         )
         == "old-model (stale / not configured)"
     )
     assert (
         _format_force_evaluator_state(
             None,
-            configured_evaluator_names=configured,
+            configured_names=configured,
         )
         == "auto"
     )
     assert (
         _format_force_evaluator_state(
             "old-model",
-            configured_evaluator_names=configured,
+            configured_names=configured,
         )
         == "old-model (stale / not configured)"
     )
@@ -886,7 +879,7 @@ def test_section_status_summaries_are_stable(tmp_path: Path) -> None:
     assert _evaluator_control_status_summary(
         control=current,
         applied_control=applied,
-        configured_evaluator_names=("linear", "mlp"),
+        configured_names=("linear", "mlp"),
     ) == {
         "selection_mode": {
             "baseline": "auto",
@@ -904,13 +897,11 @@ def test_section_status_summaries_are_stable(tmp_path: Path) -> None:
         "applied_force_evaluator_is_stale": False,
     }
     assert _runtime_status_summary(
-        baseline_tree_branch_limit=96,
+        baseline_limit=96,
         current_runtime_control=current.runtime,
-        applied_runtime_control=applied.runtime,
-        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
-            tree_branch_limit=80
-        ),
-        effective_runtime_hash="hash-80",
+        applied_runtime=applied.runtime,
+        effective_runtime=MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=80),
+        runtime_hash="hash-80",
     ) == {
         "tree_branch_limit": {
             "baseline": 96,
@@ -940,11 +931,11 @@ def test_effective_state_summary_handles_empty_and_populated_state() -> None:
         run_summary=type("Summary", (), {"latest_active_evaluator_name": None})(),
         run_state=empty_run_state,
         current_control=MorpionBootstrapControl(),
-        baseline_tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
-        effective_runtime_config=None,
+        baseline_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+        effective_runtime=None,
         latest_dataset_rows=None,
         pending_changes=False,
-        configured_evaluator_names=("linear",),
+        configured_names=("linear",),
     )
     assert empty_summary == {
         "active_evaluator": None,
@@ -981,13 +972,11 @@ def test_effective_state_summary_handles_empty_and_populated_state() -> None:
             force_evaluator="old-model",
             runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
         ),
-        baseline_tree_branch_limit=96,
-        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
-            tree_branch_limit=64
-        ),
+        baseline_limit=96,
+        effective_runtime=MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64),
         latest_dataset_rows=123,
         pending_changes=True,
-        configured_evaluator_names=("linear", "mlp"),
+        configured_names=("linear", "mlp"),
     )
     assert populated_summary == {
         "active_evaluator": "mlp",

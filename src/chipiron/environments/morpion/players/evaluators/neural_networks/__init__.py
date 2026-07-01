@@ -1,69 +1,8 @@
 """Morpion neural-network evaluator helpers."""
 
-from .bundle import (
-    MORPION_MANIFEST_FILE_NAME,
-    MORPION_MODEL_ARGS_FILE_NAME,
-    MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME,
-    MORPION_MODEL_WEIGHTS_FILE_NAME,
-    IncompatibleMorpionModelBundleError,
-    InvalidMorpionModelBundleError,
-    MorpionModelManifest,
-    load_morpion_model_bundle,
-    load_morpion_regressor_for_inference,
-    save_morpion_model_bundle,
-)
-from .feature_extractor import (
-    CandidateSegment,
-    extract_morpion_features,
-    morpion_feature_names,
-)
-from .feature_schema import (
-    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-    HANDCRAFTED_5_CORE_FEATURE_NAMES,
-    HANDCRAFTED_10_CORE_FEATURE_NAMES,
-    HANDCRAFTED_20_CORE_FEATURE_NAMES,
-    MORPION_BUILTIN_FEATURE_SUBSET_NAMES,
-    MORPION_CANONICAL_FEATURE_NAMES,
-    MORPION_FEATURE_SCHEMA,
-    InconsistentMorpionFeatureSubsetDefinitionError,
-    InvalidMorpionFeatureSubsetError,
-    MorpionFeatureSchema,
-    MorpionFeatureSubset,
-    UnknownMorpionFeatureSubsetError,
-    full_morpion_feature_schema,
-    full_morpion_feature_subset,
-    morpion_feature_subset_from_feature_names,
-    morpion_feature_subset_from_name,
-    resolve_morpion_feature_subset,
-    subset_indices,
-    validate_morpion_feature_subset,
-)
-from .graph_tokens import (
-    MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
-    MORPION_GRAPH_DIRECTIONS,
-    MORPION_GRAPH_INPUT_REPRESENTATION,
-    MORPION_GRAPH_MODEL_KIND,
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    MORPION_GRAPH_TOKEN_FEATURE_NAMES,
-    MorpionGraphTokenConverter,
-    MorpionGraphTokenType,
-    is_morpion_entity_token_transformer_model_kind,
-)
-from .model import (
-    MORPION_INPUT_DIM,
-    MissingMorpionHiddenDimError,
-    MissingMorpionHiddenSizesError,
-    MorpionRegressor,
-    MorpionRegressorArgs,
-    UnsupportedMorpionModelKindError,
-    build_morpion_regressor,
-)
-from .morpion_nn_input import MorpionNNInput, build_morpion_nn_input
-from .state_to_tensor import (
-    MorpionFeatureTensorConverter,
-    morpion_input_dim,
-    morpion_state_to_tensor,
-)
+from __future__ import annotations
+
+from typing import Any
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
@@ -120,3 +59,73 @@ __all__ = [
     "subset_indices",
     "validate_morpion_feature_subset",
 ]
+
+_EXPORT_MODULES = {
+    "DEFAULT_MORPION_FEATURE_SUBSET_NAME": ".feature_schema",
+    "HANDCRAFTED_5_CORE_FEATURE_NAMES": ".feature_schema",
+    "HANDCRAFTED_10_CORE_FEATURE_NAMES": ".feature_schema",
+    "HANDCRAFTED_20_CORE_FEATURE_NAMES": ".feature_schema",
+    "MORPION_BUILTIN_FEATURE_SUBSET_NAMES": ".feature_schema",
+    "MORPION_CANONICAL_FEATURE_NAMES": ".feature_schema",
+    "MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND": ".graph_tokens",
+    "MORPION_FEATURE_SCHEMA": ".feature_schema",
+    "MORPION_GRAPH_DIRECTIONS": ".graph_tokens",
+    "MORPION_GRAPH_INPUT_REPRESENTATION": ".graph_tokens",
+    "MORPION_GRAPH_MODEL_KIND": ".graph_tokens",
+    "MORPION_GRAPH_TOKEN_FEATURE_DIM": ".graph_tokens",
+    "MORPION_GRAPH_TOKEN_FEATURE_NAMES": ".graph_tokens",
+    "MORPION_INPUT_DIM": ".model",
+    "MORPION_MANIFEST_FILE_NAME": ".bundle",
+    "MORPION_MODEL_ARGS_FILE_NAME": ".bundle",
+    "MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME": ".bundle",
+    "MORPION_MODEL_WEIGHTS_FILE_NAME": ".bundle",
+    "CandidateSegment": ".feature_extractor",
+    "IncompatibleMorpionModelBundleError": ".bundle",
+    "InconsistentMorpionFeatureSubsetDefinitionError": ".feature_schema",
+    "InvalidMorpionFeatureSubsetError": ".feature_schema",
+    "InvalidMorpionModelBundleError": ".bundle",
+    "MissingMorpionHiddenDimError": ".model",
+    "MissingMorpionHiddenSizesError": ".model",
+    "MorpionFeatureSchema": ".feature_schema",
+    "MorpionFeatureSubset": ".feature_schema",
+    "MorpionFeatureTensorConverter": ".state_to_tensor",
+    "MorpionGraphTokenConverter": ".graph_tokens",
+    "MorpionGraphTokenType": ".graph_tokens",
+    "MorpionModelManifest": ".bundle",
+    "MorpionNNInput": ".morpion_nn_input",
+    "MorpionRegressor": ".model",
+    "MorpionRegressorArgs": ".model",
+    "UnknownMorpionFeatureSubsetError": ".feature_schema",
+    "UnsupportedMorpionModelKindError": ".model",
+    "build_morpion_nn_input": ".morpion_nn_input",
+    "build_morpion_regressor": ".model",
+    "extract_morpion_features": ".feature_extractor",
+    "full_morpion_feature_schema": ".feature_schema",
+    "full_morpion_feature_subset": ".feature_schema",
+    "is_morpion_entity_token_transformer_model_kind": ".graph_tokens",
+    "load_morpion_model_bundle": ".bundle",
+    "load_morpion_regressor_for_inference": ".bundle",
+    "morpion_feature_names": ".feature_extractor",
+    "morpion_feature_subset_from_feature_names": ".feature_schema",
+    "morpion_feature_subset_from_name": ".feature_schema",
+    "morpion_input_dim": ".state_to_tensor",
+    "morpion_state_to_tensor": ".state_to_tensor",
+    "resolve_morpion_feature_subset": ".feature_schema",
+    "save_morpion_model_bundle": ".bundle",
+    "subset_indices": ".feature_schema",
+    "validate_morpion_feature_subset": ".feature_schema",
+}
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve public helpers lazily so schema imports stay dependency-light."""
+    try:
+        module_name = _EXPORT_MODULES[name]
+    except KeyError as exc:
+        raise AttributeError(name) from exc
+
+    from importlib import import_module
+
+    value = getattr(import_module(module_name, __name__), name)
+    globals()[name] = value
+    return value

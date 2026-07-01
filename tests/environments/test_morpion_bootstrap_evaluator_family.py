@@ -119,7 +119,9 @@ def test_graph_small_family_preset_resolves() -> None:
     assert graph_spec.model_type == MORPION_GRAPH_MODEL_KIND
 
 
-def test_entity_transformer_small_family_extends_canonical_without_changing_it() -> None:
+def test_entity_transformer_small_family_extends_canonical_without_changing_it() -> (
+    None
+):
     """The Coral entity-token preset should preserve canonical linear/MLP members."""
     canonical = canonical_morpion_evaluator_family_config()
     entity_family = (

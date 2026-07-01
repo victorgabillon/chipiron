@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from chipiron.environments.morpion.bootstrap.dashboard.app import run_dashboard_app
+from chipiron.environments.morpion.bootstrap.dashboard import run_dashboard_app
 
 
 def main() -> None:

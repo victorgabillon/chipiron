@@ -57,23 +57,23 @@ authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 [project.optional-dependencies]
 test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
-lint = ["ruff>=0.15.20", "pylint>=4.0.6"]
+lint = ["ruff==0.15.20", "pylint==4.0.6"]
 
 typecheck = [
-  "mypy>=2.1.0",
-  "pyright[nodejs]>=1.1.411",
+  "mypy==2.1.0",
+  "pyright[nodejs]==1.1.411",
   "types-PyYAML>=6.0.12.20260518",
 ]
 
 dev = [
-  "tox>=4.56.1",
-  "black>=26.5.1",
-  "build",
+  "tox==4.56.1",
+  "black==26.5.1",
+  "build==1.5.0",
   "twine",
   "sphinx",
   "sphinx-rtd-theme",
   "sphinx-autodoc-typehints",
-  "pre-commit",
+  "pre-commit==4.6.0",
 ]
 
 [project.urls]
@@ -191,7 +191,7 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 88
 target-version = "py313"
-fix = true
+fix = false
 
 [tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
@@ -288,9 +288,12 @@ disable = [
   "R0914",
   "duplicate-code",
   "invalid-name",
+  "import-outside-toplevel",
+  "no-name-in-module",
   "too-many-lines",
   "too-many-nested-blocks",
   "too-many-public-methods",
+  "undefined-all-variable",
 ]
 
 
@@ -325,8 +328,8 @@ reportMissingModuleSource = false
 #################### TOX ####################
 
 [tool.tox]
-min_version = "4.30.2"
-env_list = ["py313", "lint", "typecheck"]
+min_version = "4.56.1"
+env_list = ["tooling", "py313", "lint", "typecheck"]
 isolated_build = true
 
 
@@ -334,10 +337,18 @@ isolated_build = true
 base_python = ["python3.13"]
 
 # ----------------
+# Tooling drift guard
+# ----------------
+[tool.tox.env.tooling]
+description = "verify pinned local, CI, and pre-commit toolchain versions agree"
+package = "skip"
+commands = [["python", "scripts/check_toolchain_versions.py"]]
+
+# ----------------
 # Tests (realistic)
 # ----------------
 [tool.tox.env.py313]
-deps = ["build"]
+deps = ["build==1.5.0"]
 description = "Build + install package, run tests"
 extras = ["test"]
 changedir = "{toxinidir}"

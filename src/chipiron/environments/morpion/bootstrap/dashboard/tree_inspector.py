@@ -19,9 +19,11 @@ from anemone.checkpoints import (
 from atomheart.games.morpion import MorpionStateCheckpointCodec
 
 from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
-from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
-    RUNTIME_CHECKPOINT_METADATA_KEY,
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    RUNTIME_CHECKPOINT_METADATA_KEY,
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (

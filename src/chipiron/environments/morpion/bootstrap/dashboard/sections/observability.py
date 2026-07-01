@@ -26,7 +26,10 @@ from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-__all__ = ["render_observability_section"]
+__all__ = [
+    "observability_summary_from_metadata",
+    "render_observability_section",
+]
 
 
 def _export_fast_path_health(
@@ -50,7 +53,7 @@ def _export_fast_path_health(
     return "review"
 
 
-def _observability_summary_from_metadata(
+def observability_summary_from_metadata(
     metadata: Mapping[str, object],
 ) -> dict[str, object]:
     """Build dashboard-ready observability fields from status metadata."""

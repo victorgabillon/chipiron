@@ -1,338 +1,41 @@
 """Restartable Morpion bootstrap orchestration helpers."""
 
-from . import profiling
-from .bootstrap_args import MorpionBootstrapArgs
-from .bootstrap_errors import (
-    ConflictingMorpionEvaluatorConfigurationError,
-    EmptyMorpionEvaluatorsConfigError,
-    IncompatibleMorpionResumeArtifactError,
-    InconsistentMorpionEvaluatorSpecNameError,
-    MissingActiveMorpionEvaluatorError,
-    MissingForcedMorpionEvaluatorBundleError,
-    NoSelectableMorpionEvaluatorError,
-    UnknownActiveMorpionEvaluatorError,
-    UnknownForcedMorpionEvaluatorError,
-    UnsupportedMorpionRuntimeReconfigurationError,
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
+_EXPORT_OWNER_MODULES = (
+    ".bootstrap_args",
+    ".bootstrap_errors",
+    ".bootstrap_paths",
+    ".config",
+    ".control",
+    ".dashboard.app",
+    ".dashboard.history_view",
+    ".dashboard.plot",
+    ".dashboard.tree_inspector",
+    ".dashboard_cli",
+    ".evaluator_config",
+    ".evaluator_family",
+    ".history",
+    ".pipeline_artifacts",
+    ".pipeline_claims",
+    ".pipeline_config",
+    ".process_control",
+    ".record_status",
+    ".run_state",
+    ".runtime.checkpoint_codec",
+    ".search_runner_protocol",
+    ".bootstrap_loop",
+    ".launcher",
+    ".pipeline.stages",
+    ".pipeline_orchestrator",
+    ".reevaluation_patch_consumer",
+    ".reevaluation_worker",
+    ".runtime.runner",
+    ".runtime.runtime_control",
 )
-from .bootstrap_loop import (
-    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
-    TRAINING_SKIPPED_REASON_METADATA_KEY,
-    build_bootstrap_event,
-    run_morpion_bootstrap_loop,
-    run_one_bootstrap_cycle,
-    select_active_evaluator_name,
-    should_save_progress,
-)
-from .bootstrap_paths import MorpionBootstrapPaths
-from .config import (
-    BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
-    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
-    GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS,
-    GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS,
-    RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
-    STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
-    IncompatibleStageBootstrapConfigError,
-    MalformedMorpionBootstrapConfigError,
-    MorpionBootstrapConfig,
-    MorpionBootstrapDatasetConfig,
-    MorpionBootstrapExperimentIdentityConfig,
-    MorpionBootstrapRolloutConfig,
-    MorpionBootstrapRuntimeConfig,
-    MorpionBootstrapSearchConfig,
-    UnsafeMorpionBootstrapConfigChangeError,
-    bootstrap_config_from_args,
-    bootstrap_config_from_dict,
-    bootstrap_config_sha256,
-    bootstrap_config_to_dict,
-    bootstrap_fields_owned_by_stage,
-    dataset_stage_owned_bootstrap_fields,
-    growth_stage_owned_bootstrap_fields,
-    load_bootstrap_config,
-    reevaluation_stage_owned_bootstrap_fields,
-    save_bootstrap_config,
-    training_stage_owned_bootstrap_fields,
-    validate_bootstrap_config_change,
-    validate_stage_bootstrap_config_compatibility,
-)
-from .control import (
-    BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
-    BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
-    BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
-    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
-    MorpionBootstrapControl,
-    MorpionBootstrapEffectiveRuntimeConfig,
-    MorpionBootstrapRuntimeControl,
-    apply_control_to_args,
-    bootstrap_runtime_control_from_metadata,
-    bootstrap_runtime_control_to_dict,
-    effective_runtime_config_from_config_and_control,
-    effective_runtime_config_sha256,
-    effective_runtime_config_to_dict,
-    load_bootstrap_control,
-    save_bootstrap_control,
-)
-from .dashboard.app import run_dashboard_app
-from .dashboard.history_view import (
-    ActiveEvaluatorTimeSeriesPoint,
-    DiskUsageRow,
-    DiskUsageSummary,
-    EvaluatorSelectionSummary,
-    IntTimeSeriesPoint,
-    MorpionBootstrapDashboardData,
-    MorpionBootstrapRunSummary,
-    MorpionBootstrapRunView,
-    MorpionRecordProgressSummary,
-    MorpionTreeNodeClassificationSummary,
-    OptionalFloatTimeSeriesPoint,
-    OptionalIntTimeSeriesPoint,
-    TrainingTriggeredTimeSeriesPoint,
-    TreeDepthDistributionRow,
-    active_evaluator_series,
-    build_morpion_bootstrap_dashboard_data,
-    canonical_record_score_series,
-    certified_record_best_so_far_series,
-    certified_record_score_series,
-    dataset_num_rows_series,
-    evaluator_loss_series_by_name,
-    latest_tree_depth_distribution,
-    load_latest_linoo_selection_table_for_dashboard,
-    load_morpion_bootstrap_run_view,
-    record_total_points_series,
-    summarize_bootstrap_run,
-    summarize_evaluator_selection,
-    summarize_record_progress,
-    summarize_tree_node_classification,
-    training_triggered_series,
-    tree_num_nodes_series,
-)
-from .dashboard.plot import (
-    plot_active_evaluator,
-    plot_certified_record_score,
-    plot_dataset_size,
-    plot_evaluator_losses,
-    plot_record_score,
-    plot_tree_depth_distribution,
-    plot_tree_size,
-)
-from .dashboard.tree_inspector import (
-    MorpionBootstrapChildSummary,
-    MorpionBootstrapLocalTreeView,
-    MorpionBootstrapNodeSummary,
-    MorpionBootstrapStateView,
-    MorpionBootstrapTreeInspectorSnapshot,
-    build_morpion_bootstrap_tree_inspector_snapshot,
-    resolve_latest_runtime_checkpoint,
-)
-from .dashboard_cli import run_dashboard_cli
-from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
-from .evaluator_family import (
-    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
-    CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
-    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
-    UnknownMorpionEvaluatorFamilyPresetError,
-    canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config,
-    canonical_linear_mlp_graph_small_morpion_evaluator_family_config,
-    canonical_morpion_evaluator_family_config,
-    canonical_morpion_evaluator_names,
-    canonical_morpion_evaluator_specs,
-    entity_token_transformer_small_morpion_evaluator_spec,
-    graph_transformer_small_morpion_evaluator_spec,
-    morpion_evaluators_config_from_preset,
-)
-from .history import (
-    MalformedMorpionBootstrapHistoryError,
-    MorpionBootstrapArtifacts,
-    MorpionBootstrapDatasetStatus,
-    MorpionBootstrapEvent,
-    MorpionBootstrapHistoryPaths,
-    MorpionBootstrapHistoryRecorder,
-    MorpionBootstrapLatestStatus,
-    MorpionBootstrapRecordStatus,
-    MorpionBootstrapTrainingStatus,
-    MorpionBootstrapTreeStatus,
-    MorpionEvaluatorMetrics,
-    bootstrap_event_from_dict,
-    bootstrap_event_to_dict,
-    evaluator_metrics_from_dict,
-    evaluator_metrics_to_dict,
-    latest_status_from_dict,
-    latest_status_to_dict,
-    load_bootstrap_history,
-    load_latest_bootstrap_status,
-    rebuild_latest_bootstrap_status,
-)
-from .launcher import MorpionBootstrapLauncherArgs, run_morpion_bootstrap_experiment
-from .pipeline.stages import (
-    run_pipeline_dataset_stage,
-    run_pipeline_growth_stage,
-    run_pipeline_training_stage,
-)
-from .pipeline_artifacts import (
-    InvalidMorpionPipelineArtifactError,
-    MissingMorpionPipelineArtifactError,
-    MorpionPipelineActiveModel,
-    MorpionPipelineDatasetStatus,
-    MorpionPipelineDatasetStatusArtifact,
-    MorpionPipelineEvaluatorTrainingResult,
-    MorpionPipelineGenerationManifest,
-    MorpionPipelineStageClaim,
-    MorpionPipelineStageName,
-    MorpionPipelineTrainingCursor,
-    MorpionPipelineTrainingStatus,
-    MorpionPipelineTrainingStatusArtifact,
-    MorpionReevaluationCursor,
-    MorpionReevaluationPatch,
-    MorpionReevaluationPatchRow,
-    delete_pipeline_stage_claim,
-    delete_reevaluation_cursor,
-    delete_reevaluation_patch,
-    load_pipeline_active_model,
-    load_pipeline_dataset_status_file,
-    load_pipeline_manifest,
-    load_pipeline_stage_claim,
-    load_pipeline_training_cursor,
-    load_pipeline_training_status_file,
-    load_reevaluation_cursor,
-    load_reevaluation_patch,
-    pipeline_active_model_from_dict,
-    pipeline_active_model_to_dict,
-    pipeline_dataset_status_from_dict,
-    pipeline_dataset_status_to_dict,
-    pipeline_evaluator_training_result_from_dict,
-    pipeline_evaluator_training_result_to_dict,
-    pipeline_manifest_from_dict,
-    pipeline_manifest_to_dict,
-    pipeline_stage_claim_from_dict,
-    pipeline_stage_claim_to_dict,
-    pipeline_training_cursor_from_dict,
-    pipeline_training_cursor_to_dict,
-    pipeline_training_status_from_dict,
-    pipeline_training_status_to_dict,
-    reevaluation_cursor_from_dict,
-    reevaluation_cursor_to_dict,
-    reevaluation_patch_from_dict,
-    reevaluation_patch_row_from_dict,
-    reevaluation_patch_row_to_dict,
-    reevaluation_patch_to_dict,
-    save_pipeline_active_model,
-    save_pipeline_dataset_status_file,
-    save_pipeline_manifest,
-    save_pipeline_stage_claim,
-    save_pipeline_stage_status_file,
-    save_pipeline_training_cursor,
-    save_pipeline_training_status_file,
-    save_reevaluation_cursor,
-    save_reevaluation_patch,
-)
-from .pipeline_claims import (
-    PipelineStageAlreadyClaimedError,
-    PipelineStageClaimMismatchError,
-    claim_pipeline_stage,
-    load_active_pipeline_stage_claim,
-    pipeline_stage_claim_is_expired,
-    release_pipeline_stage_claim,
-)
-from .pipeline_config import (
-    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
-    DEFAULT_MORPION_PIPELINE_MODE,
-    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
-    MorpionEvaluatorUpdatePolicy,
-    MorpionPipelineMode,
-    MorpionTrainingExportMode,
-)
-from .pipeline_orchestrator import (
-    MorpionPipelineOrchestratorResult,
-    MorpionPipelineWorkerResult,
-    dataset_stage_is_pending,
-    list_pipeline_manifest_generations,
-    load_available_pipeline_manifests,
-    run_morpion_artifact_pipeline_once,
-    run_next_pipeline_dataset_stage_once,
-    run_next_pipeline_training_stage_once,
-    select_next_claimable_dataset_generation,
-    select_next_claimable_training_generation,
-    select_next_dataset_generation,
-    select_next_training_generation,
-    training_stage_is_pending,
-)
-from .process_control import (
-    MorpionBootstrapProcessAlreadyRunningError,
-    MorpionBootstrapProcessControlError,
-    MorpionBootstrapProcessNotRunningError,
-    MorpionBootstrapProcessState,
-    MorpionBootstrapStartResult,
-    MorpionBootstrapStopResult,
-    launcher_command_for_work_dir,
-    load_morpion_bootstrap_process_state,
-    mark_current_launcher_process_stopped,
-    register_current_launcher_process,
-    restart_morpion_bootstrap_process,
-    start_morpion_bootstrap_process,
-    stop_morpion_bootstrap_process,
-)
-from .record_status import (
-    MORPION_BOOTSTRAP_GAME,
-    MORPION_BOOTSTRAP_INITIAL_PATTERN,
-    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
-    MORPION_BOOTSTRAP_VARIANT,
-    MorpionBootstrapFrontierStatus,
-    MorpionFrontierNodeCandidate,
-    MorpionFrontierResolution,
-    carried_forward_morpion_frontier_status,
-    carried_forward_morpion_record_status,
-    current_frontier_score,
-    current_record_score,
-    default_morpion_frontier_status,
-    default_morpion_record_status,
-    extract_certified_record_candidates_from_training_tree_snapshot,
-    extract_morpion_frontier_status_from_training_tree_snapshot,
-    extract_morpion_record_status_from_training_tree_snapshot,
-    extract_top_morpion_frontier_nodes_from_training_tree_snapshot,
-    fingerprint_morpion_state_payload,
-    morpion_bootstrap_experiment_metadata,
-    morpion_score_from_snapshot_depth,
-    persist_certified_leaderboard_candidates,
-    resolve_frontier_status_for_cycle,
-    resolve_frontier_status_for_cycle_with_metadata,
-    resolve_record_status_for_cycle,
-)
-from .reevaluation_patch_consumer import (
-    MorpionReevaluationPatchConsumptionResult,
-    apply_pending_reevaluation_patch_to_runner,
-)
-from .reevaluation_worker import (
-    MorpionActiveModelNodeReevaluationEvaluator,
-    MorpionNodeReevaluationEvaluator,
-    MorpionReevaluationWorkerResult,
-    build_active_model_reevaluation_evaluator,
-    cursor_matches_active_model,
-    resolve_latest_reevaluation_tree_snapshot,
-    run_morpion_reevaluation_worker_once,
-    select_reevaluation_node_window,
-    snapshot_values_to_patch_rows,
-)
-from .run_state import (
-    MalformedMorpionBootstrapRunStateError,
-    MorpionBootstrapRunState,
-    initialize_bootstrap_run_state,
-    load_bootstrap_run_state,
-    save_bootstrap_run_state,
-)
-from .runtime.checkpoint_codec import (
-    InvalidMorpionSearchCheckpointError,
-    load_morpion_search_checkpoint_payload,
-)
-from .runtime.runner import (
-    AnemoneMorpionSearchRunner,
-    AnemoneMorpionSearchRunnerArgs,
-    MorpionRegressorMasterEvaluator,
-    UninitializedMorpionSearchRunnerError,
-    load_morpion_evaluator_from_model_bundle,
-    run_morpion_growth_search_once,
-)
-from .runtime.runtime_control import apply_runtime_control_to_runner_args
-from .search_runner_protocol import MorpionSearchRunner
 
 __all__ = [
     "BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY",
@@ -629,3 +332,22 @@ __all__ = [
     "validate_bootstrap_config_change",
     "validate_stage_bootstrap_config_compatibility",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve public bootstrap exports from their owner modules on demand."""
+    if name not in __all__:
+        raise AttributeError(name)
+    if name == "profiling":
+        value = import_module(".profiling", __name__)
+        globals()[name] = value
+        return value
+
+    for module_name in _EXPORT_OWNER_MODULES:
+        module = import_module(module_name, __name__)
+        if hasattr(module, name):
+            value = getattr(module, name)
+            globals()[name] = value
+            return value
+
+    raise AttributeError(name)

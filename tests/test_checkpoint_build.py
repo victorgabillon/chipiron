@@ -155,7 +155,9 @@ def test_checkpoint_build_value_serialization_cache_reuses_value_identity(
 ) -> None:
     """Repeated serialization of the same Value object should hit the build-local cache."""
     validation_call_count = 0
-    real_validate = checkpoint_build_values_module.canonical_value.validate_value_semantics
+    real_validate = (
+        checkpoint_build_values_module.canonical_value.validate_value_semantics
+    )
 
     def _spy_validate_value_semantics(value: Value) -> Value:
         nonlocal validation_call_count

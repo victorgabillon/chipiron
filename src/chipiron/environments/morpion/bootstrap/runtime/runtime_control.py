@@ -22,6 +22,8 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from anemone.factory import SearchArgs
 
 _TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (
@@ -35,7 +37,10 @@ _LIVE_TREE_BRANCH_LIMIT_REQUIRED_MESSAGE = (
 
 
 class _RunnerArgsWithSearchArgs(Protocol):
-    search_args: SearchArgs
+    @property
+    def search_args(self) -> SearchArgs:
+        """Return the Anemone search args held by this runner-args object."""
+        ...
 
 
 def apply_runtime_control_to_runner_args[RunnerArgsT: _RunnerArgsWithSearchArgs](
@@ -47,16 +52,14 @@ def apply_runtime_control_to_runner_args[RunnerArgsT: _RunnerArgsWithSearchArgs]
     This helper is kept as the pure arg-transformation counterpart of the live
     runtime patching path used during checkpoint restore.
     """
-    return cast(
-        "RunnerArgsT",
-        replace(
-            runner_args,
-            search_args=search_args_with_tree_branch_limit(
-                runner_args.search_args,
-                tree_branch_limit=runtime_config.tree_branch_limit,
-            ),
+    updated_runner_args = replace(
+        cast("Any", runner_args),
+        search_args=search_args_with_tree_branch_limit(
+            runner_args.search_args,
+            tree_branch_limit=runtime_config.tree_branch_limit,
         ),
     )
+    return cast("RunnerArgsT", updated_runner_args)
 
 
 def runtime_config_from_search_args(

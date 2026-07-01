@@ -76,6 +76,7 @@ from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
     MorpionSearchRunner,
 )
 from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    MorpionShardedTrainingExportStats,
     save_morpion_sharded_training_tree_from_live_nodes,
 )
 from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
@@ -2350,6 +2351,7 @@ __all__ = [
     "AnemoneMorpionSearchRunnerArgs",
     "InvalidMorpionSearchCheckpointError",
     "MorpionRegressorMasterEvaluator",
+    "MorpionShardedTrainingExportStats",
     "UninitializedMorpionSearchRunnerError",
     "apply_runtime_control_to_runner_args",
     "cache_morpion_search_checkpoint_payload_for_restore",

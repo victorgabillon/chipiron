@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping, Sized
+from collections.abc import Iterator, Mapping, Sized
 from types import (
     BuiltinFunctionType,
     BuiltinMethodType,
@@ -11,7 +11,10 @@ from types import (
     MethodType,
     ModuleType,
 )
-from typing import cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ATOMIC_TYPES = (str, bytes, bytearray, int, float, bool, type(None))
 SKIP_DEEP_TYPES = (

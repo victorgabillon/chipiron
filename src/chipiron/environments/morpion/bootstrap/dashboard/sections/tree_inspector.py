@@ -25,7 +25,7 @@ from chipiron.environments.morpion.bootstrap.streamlit_morpion_clickable_board i
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
         MorpionBootstrapPaths,
     )
     from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (

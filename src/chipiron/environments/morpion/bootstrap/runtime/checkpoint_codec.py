@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
@@ -33,6 +33,7 @@ from .restore_memory_logging import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from typing import Any
 
     from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 

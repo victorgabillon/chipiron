@@ -33,7 +33,7 @@ from chipiron.environments.morpion.bootstrap.run_state import (
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
         MorpionBootstrapPaths,
     )
 
@@ -134,13 +134,13 @@ def effective_runtime_hash(run_state: Any) -> str | None:
 def tree_branch_limit_input_value(
     *,
     runtime_control: MorpionBootstrapRuntimeControl,
-    baseline_tree_branch_limit: int | None,
+    baseline_limit: int | None,
 ) -> int:
     """Return the displayed tree-branch-limit value for the dashboard input."""
     if runtime_control.tree_branch_limit is not None:
         return runtime_control.tree_branch_limit
-    if baseline_tree_branch_limit is not None:
-        return baseline_tree_branch_limit
+    if baseline_limit is not None:
+        return baseline_limit
     return DEFAULT_MORPION_TREE_BRANCH_LIMIT
 
 
@@ -249,20 +249,17 @@ def scheduling_status_summary(
 
 def is_stale_forced_evaluator(
     forced_evaluator: str | None,
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
 ) -> bool:
     """Return whether one forced evaluator is absent from current config."""
-    return (
-        forced_evaluator is not None
-        and forced_evaluator not in configured_evaluator_names
-    )
+    return forced_evaluator is not None and forced_evaluator not in configured_names
 
 
 def evaluator_control_status_summary(
     *,
     control: MorpionBootstrapControl,
     applied_control: MorpionBootstrapControl,
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
 ) -> dict[str, object | dict[str, object | None]]:
     """Return one stable evaluator-control status summary."""
     current_mode = "auto" if control.force_evaluator is None else "forced"
@@ -282,34 +279,34 @@ def evaluator_control_status_summary(
         ),
         "current_force_evaluator_is_stale": is_stale_forced_evaluator(
             control.force_evaluator,
-            configured_evaluator_names,
+            configured_names,
         ),
         "applied_force_evaluator_is_stale": is_stale_forced_evaluator(
             applied_control.force_evaluator,
-            configured_evaluator_names,
+            configured_names,
         ),
     }
 
 
 def runtime_status_summary(
     *,
-    baseline_tree_branch_limit: int,
+    baseline_limit: int,
     current_runtime_control: MorpionBootstrapRuntimeControl,
-    applied_runtime_control: MorpionBootstrapRuntimeControl,
-    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
-    effective_runtime_hash: str | None,
+    applied_runtime: MorpionBootstrapRuntimeControl,
+    effective_runtime: MorpionBootstrapEffectiveRuntimeConfig | None,
+    runtime_hash: str | None,
 ) -> dict[str, object | dict[str, object | None]]:
     """Return one stable runtime-control status summary."""
     return {
         "tree_branch_limit": _field_status_summary(
-            baseline=baseline_tree_branch_limit,
+            baseline=baseline_limit,
             current_override=current_runtime_control.tree_branch_limit,
-            applied_override=applied_runtime_control.tree_branch_limit,
+            applied_override=applied_runtime.tree_branch_limit,
             effective=None
-            if effective_runtime_config is None
-            else effective_runtime_config.tree_branch_limit,
+            if effective_runtime is None
+            else effective_runtime.tree_branch_limit,
         ),
-        "effective_runtime_hash": effective_runtime_hash,
+        "effective_runtime_hash": runtime_hash,
     }
 
 
@@ -366,28 +363,28 @@ def effective_state_summary(
     run_summary: Any,
     run_state: Any,
     current_control: MorpionBootstrapControl,
-    baseline_tree_branch_limit: int,
-    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
+    baseline_limit: int,
+    effective_runtime: MorpionBootstrapEffectiveRuntimeConfig | None,
     latest_dataset_rows: object | None,
     pending_changes: bool,
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
 ) -> dict[str, object | None]:
     """Return one compact operator-facing effective-state summary."""
     active_evaluator = getattr(run_summary, "latest_active_evaluator_name", None)
     if active_evaluator is None:
         active_evaluator = getattr(run_state, "active_evaluator_name", None)
-    evaluator_set = evaluator_set_summary(configured_evaluator_names)
+    evaluator_set = evaluator_set_summary(configured_names)
     return {
         "active_evaluator": active_evaluator,
         "forced_evaluator_request": current_control.force_evaluator,
         "forced_evaluator_request_label": format_force_evaluator_state(
             current_control.force_evaluator,
-            configured_evaluator_names=configured_evaluator_names,
+            configured_names=configured_names,
         ),
-        "baseline_tree_branch_limit": baseline_tree_branch_limit,
+        "baseline_tree_branch_limit": baseline_limit,
         "effective_tree_branch_limit": None
-        if effective_runtime_config is None
-        else effective_runtime_config.tree_branch_limit,
+        if effective_runtime is None
+        else effective_runtime.tree_branch_limit,
         "runtime_override_status": "set"
         if current_control.runtime.tree_branch_limit is not None
         else "unset",
@@ -467,10 +464,10 @@ def render_effective_state_section(
 
 
 def evaluator_set_summary(
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
 ) -> dict[str, object]:
     """Return one compact evaluator-set summary for dashboard/operator views."""
-    sorted_names = tuple(sorted(configured_evaluator_names))
+    sorted_names = tuple(sorted(configured_names))
     canonical_names = tuple(sorted(canonical_morpion_evaluator_names()))
     is_canonical_family = sorted_names == canonical_names
     if not sorted_names:
@@ -586,11 +583,11 @@ def configured_evaluator_names(
 
 def force_evaluator_options(
     *,
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
     current_force_evaluator: str | None,
 ) -> tuple[str, ...]:
     """Return selectable forced evaluators from config, preserving any stale current value."""
-    options = list(configured_evaluator_names)
+    options = list(configured_names)
     if current_force_evaluator is not None and current_force_evaluator not in options:
         options.append(current_force_evaluator)
     return tuple(options)
@@ -662,12 +659,12 @@ def force_evaluator_option_index(
 def format_force_evaluator_state(
     value: str | None,
     *,
-    configured_evaluator_names: tuple[str, ...],
+    configured_names: tuple[str, ...],
 ) -> str:
     """Render one requested forced evaluator state for operator display."""
     if value is None:
         return "auto"
-    if is_stale_forced_evaluator(value, configured_evaluator_names):
+    if is_stale_forced_evaluator(value, configured_names):
         return f"{value} (stale / not configured)"
     return value
 
@@ -675,14 +672,14 @@ def format_force_evaluator_state(
 def format_force_evaluator_option(
     value: str,
     *,
-    configured_evaluator_names: tuple[str, ...] = (),
+    configured_names: tuple[str, ...] = (),
 ) -> str:
     """Render one forced-evaluator option for the Streamlit select widget."""
     if not value:
         return "No configured evaluators"
     if is_stale_forced_evaluator(
         value,
-        configured_evaluator_names,
+        configured_names,
     ):
         return f"{value} (stale / not configured)"
     return value

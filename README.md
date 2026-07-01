@@ -220,22 +220,35 @@ python -m pip install -e '.[dev]'
 Useful focused runs:
 
 ```bash
+tox -e tooling
 tox -e py313
 tox -e lint
 tox -e typecheck
 ```
 
-For local IDEs or manual commands outside tox, install the same development
-extras into your active Python 3.13 environment:
+Tool versions for Ruff, Pylint, mypy, Pyright, tox, Black, build, and
+pre-commit are pinned in `pyproject.toml`. `tox -e tooling` checks that CI and
+pre-commit stay aligned with those pins.
+
+For local IDEs, pre-commit, or manual commands outside tox, install the same
+development extras into your active Python 3.13 environment:
 
 ```bash
-python -m pip install -e '.[test,lint,typecheck]'
+python -m pip install -e '.[test,lint,typecheck,dev]'
 ```
 
 Then you can run pytest directly:
 
 ```bash
 python -m pytest
+```
+
+Ruff does not auto-fix in the default quality gates. To rewrite files
+intentionally, run explicit fix commands:
+
+```bash
+python -m ruff check --fix src/chipiron tests
+python -m ruff format src/chipiron tests
 ```
 
 ### Coverage
@@ -303,7 +316,8 @@ This includes tools for:
 - Documentation building (sphinx)
 - Code formatting and development tools
 
-For the prehook to work please run:
+The pre-commit hooks use the pinned Ruff from your active Python environment,
+so install the development extras before installing the hooks:
 
 ```bash
 pre-commit install

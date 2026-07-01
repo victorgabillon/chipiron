@@ -5,19 +5,17 @@ from __future__ import annotations
 import argparse
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+    MorpionBootstrapPaths,
+)
 from chipiron.environments.morpion.bootstrap.control import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     bootstrap_control_to_dict,
     load_bootstrap_control,
     save_bootstrap_control,
-)
-from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
-    _checked_training_status_files_summary,
-    _loss_series_contains_points,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
     cached_build_current_certified_record_board_view as _cached_build_current_certified_record_board_view,
@@ -30,6 +28,10 @@ from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
 )
 from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
     cached_dashboard_data_freshness_tokens as _cached_dashboard_data_freshness_tokens,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+    checked_training_status_files_summary,
+    loss_series_contains_points,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
     control_float_value as _control_float_value,
@@ -56,17 +58,29 @@ from chipiron.environments.morpion.bootstrap.dashboard.plot import (
     plot_evaluator_losses,
     plot_tree_size,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.sections.certified_record import (
+    render_current_certified_record_board_section as _render_current_certified_record_board_section,
+)
 from chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage import (
     render_disk_usage_section as _render_disk_usage_section,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics import (
+    has_known_optional_series_values as _has_known_optional_series_values,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.evaluator_diagnostics import (
+    render_evaluator_training_diagnostics_section as _render_evaluator_training_diagnostics_section,
+)
 from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
-    _observability_summary_from_metadata,
+    observability_summary_from_metadata,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.observability import (
     render_observability_section as _render_observability_section,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
     render_plot as _render_plot,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.record_status import (
+    render_record_status_section as _render_record_status_section,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.run_control import (
     render_run_control_section as _render_run_control_section,
@@ -158,20 +172,6 @@ from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector i
 from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure import (
     render_tree_structure_section as _render_tree_structure_section,
 )
-from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
-    MorpionEvaluatorDiagnosticExample,
-    MorpionEvaluatorTrainingDiagnostics,
-    load_latest_evaluator_training_diagnostics,
-)
-
-# dashboard.sections.linoo is used by dashboard.sections.tree_inspector.
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
-        MorpionBootstrapCertifiedRecordBoardView,
-    )
 
 
 def run_dashboard_app(work_dir: Path) -> None:
@@ -192,7 +192,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     pending_changes = _has_pending_control_changes(control, applied_control)
     configured_evaluator_names = _configured_evaluator_names(config)
     force_evaluator_options = _force_evaluator_options(
-        configured_evaluator_names=configured_evaluator_names,
+        configured_names=configured_evaluator_names,
         current_force_evaluator=control.force_evaluator,
     )
     baseline_tree_branch_limit = _baseline_tree_branch_limit(config)
@@ -201,7 +201,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     effective_runtime_hash = _effective_runtime_hash(run_state)
     tree_branch_limit_input_value = _tree_branch_limit_input_value(
         runtime_control=control.runtime,
-        baseline_tree_branch_limit=baseline_tree_branch_limit,
+        baseline_limit=baseline_tree_branch_limit,
     )
     pending_fields = _pending_control_fields(control, applied_control)
     pending_sections = _pending_control_sections(control, applied_control)
@@ -210,14 +210,14 @@ def run_dashboard_app(work_dir: Path) -> None:
     evaluator_summary = _evaluator_control_status_summary(
         control=control,
         applied_control=applied_control,
-        configured_evaluator_names=configured_evaluator_names,
+        configured_names=configured_evaluator_names,
     )
     runtime_summary = _runtime_status_summary(
-        baseline_tree_branch_limit=baseline_tree_branch_limit,
+        baseline_limit=baseline_tree_branch_limit,
         current_runtime_control=control.runtime,
-        applied_runtime_control=applied_runtime_control,
-        effective_runtime_config=effective_runtime_config,
-        effective_runtime_hash=effective_runtime_hash,
+        applied_runtime=applied_runtime_control,
+        effective_runtime=effective_runtime_config,
+        runtime_hash=effective_runtime_hash,
     )
     st.title("Morpion Bootstrap Dashboard")
     st.caption(str(paths.work_dir))
@@ -243,7 +243,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     st.subheader("Memory / Export Observability")
     _render_observability_section(
         st=st,
-        summary=_observability_summary_from_metadata(run_state.metadata),
+        summary=observability_summary_from_metadata(run_state.metadata),
     )
 
     st.subheader("Record Status")
@@ -274,11 +274,11 @@ def run_dashboard_app(work_dir: Path) -> None:
             run_summary=summary,
             run_state=run_state,
             current_control=control,
-            baseline_tree_branch_limit=baseline_tree_branch_limit,
-            effective_runtime_config=effective_runtime_config,
+            baseline_limit=baseline_tree_branch_limit,
+            effective_runtime=effective_runtime_config,
             latest_dataset_rows=latest_dataset_rows,
             pending_changes=pending_changes,
-            configured_evaluator_names=configured_evaluator_names,
+            configured_names=configured_evaluator_names,
         ),
     )
     st.caption(
@@ -361,7 +361,7 @@ def run_dashboard_app(work_dir: Path) -> None:
         def _format_option(value: str) -> str:
             return _format_force_evaluator_option(
                 value,
-                configured_evaluator_names=configured_evaluator_names,
+                configured_names=configured_evaluator_names,
             )
 
         force_evaluator = st.selectbox(
@@ -441,10 +441,10 @@ def run_dashboard_app(work_dir: Path) -> None:
                 log_scale=loss_log_scale,
             ),
         )
-        if not _loss_series_contains_points(dashboard_data.evaluator_loss_by_name):
+        if not loss_series_contains_points(dashboard_data.evaluator_loss_by_name):
             st.caption(
                 "No evaluator loss data found yet. Checked training_status.json files: "
-                + _checked_training_status_files_summary(paths)
+                + checked_training_status_files_summary(paths)
             )
 
     st.subheader("Certified Record Progress")
@@ -517,176 +517,6 @@ class MissingStreamlitDashboardDependencyError(RuntimeError):
         super().__init__(
             "Streamlit is not installed. Install `streamlit` to use the local dashboard."
         )
-
-
-def _render_record_status_section(
-    *,
-    st: Any,
-    certified_status: Any,
-    frontier_status: Any,
-) -> None:
-    """Render a strict certified record summary alongside the frontier best."""
-    certified_columns = st.columns(4)
-    if certified_status is None or certified_status.current_best_total_points is None:
-        certified_columns[0].metric(
-            "Certified record total points", "No certified record yet"
-        )
-        certified_columns[1].metric("Certified record moves", "n/a")
-        certified_columns[2].metric("Certified exact", "n/a")
-        certified_columns[3].metric("Certified terminal", "n/a")
-    else:
-        certified_columns[0].metric(
-            "Certified record total points",
-            _format_value(certified_status.current_best_total_points),
-        )
-        certified_columns[1].metric(
-            "Certified record moves",
-            _format_value(certified_status.current_best_moves_since_start),
-        )
-        certified_columns[2].metric(
-            "Certified exact",
-            _format_value(certified_status.current_best_is_exact),
-        )
-        certified_columns[3].metric(
-            "Certified terminal",
-            _format_value(certified_status.current_best_is_terminal),
-        )
-
-    frontier_columns = st.columns(4)
-    frontier_columns[0].metric(
-        "Frontier best total points",
-        _format_value(
-            None
-            if frontier_status is None
-            else frontier_status.current_best_total_points
-        ),
-    )
-    frontier_columns[1].metric(
-        "Frontier best moves",
-        _format_value(
-            None
-            if frontier_status is None
-            else frontier_status.current_best_moves_since_start
-        ),
-    )
-    frontier_columns[2].metric(
-        "Frontier exact",
-        _format_value(
-            None if frontier_status is None else frontier_status.current_best_is_exact
-        ),
-    )
-    frontier_columns[3].metric(
-        "Frontier terminal",
-        _format_value(
-            None
-            if frontier_status is None
-            else frontier_status.current_best_is_terminal
-        ),
-    )
-    st.caption(
-        "Frontier best source: "
-        + _format_value(
-            None if frontier_status is None else frontier_status.current_best_source
-        )
-    )
-
-
-def _render_evaluator_training_diagnostics_section(*, st: Any, work_dir: Path) -> None:
-    """Render the latest persisted evaluator diagnostics for one work directory."""
-    diagnostics_by_evaluator = (
-        _load_latest_evaluator_training_diagnostics_for_dashboard(work_dir)
-    )
-    if not diagnostics_by_evaluator:
-        st.caption("No evaluator diagnostics have been saved yet.")
-        return
-
-    evaluator_names = tuple(sorted(diagnostics_by_evaluator))
-    selected_evaluator_name = st.selectbox(
-        "Diagnostics evaluator",
-        options=evaluator_names,
-        key="evaluator_training_diagnostics_name",
-    )
-    diagnostics = diagnostics_by_evaluator[selected_evaluator_name]
-    summary_columns = st.columns(5)
-    summary_columns[0].metric("Generation", diagnostics.generation)
-    summary_columns[1].metric("Dataset Size", diagnostics.dataset_size)
-    summary_columns[2].metric("MAE Before", _format_value(diagnostics.mae_before))
-    summary_columns[3].metric("MAE After", _format_value(diagnostics.mae_after))
-    summary_columns[4].metric(
-        "Max Error After",
-        _format_value(diagnostics.max_abs_error_after),
-    )
-    st.caption(
-        f"Created at {diagnostics.created_at} UTC. "
-        "Representative rows are deterministic scale windows; worst rows are sorted by post-training absolute error."
-    )
-    st.markdown("Representative Examples")
-    st.dataframe(
-        _diagnostic_examples_rows(diagnostics.representative_examples),
-        width="stretch",
-        hide_index=True,
-    )
-    st.markdown("Worst Error Examples")
-    worst_rows = _diagnostic_examples_rows(diagnostics.worst_examples)
-    if worst_rows:
-        st.dataframe(worst_rows, width="stretch", hide_index=True)
-    else:
-        st.caption(
-            "No post-training predictions were available for worst-error ranking."
-        )
-
-
-def _render_current_certified_record_board_section(
-    *,
-    st: Any,
-    board_view: MorpionBootstrapCertifiedRecordBoardView | None,
-) -> None:
-    """Render the current strict certified Morpion record board when available."""
-    if board_view is None:
-        st.caption("No certified record state available yet.")
-        return
-
-    summary_columns = st.columns(5)
-    summary_columns[0].metric("Total Points", str(board_view.total_points))
-    summary_columns[1].metric("Moves Since Start", str(board_view.moves_since_start))
-    summary_columns[2].metric("Exact", _format_value(board_view.is_exact))
-    summary_columns[3].metric("Terminal", _format_value(board_view.is_terminal))
-    summary_columns[4].metric("Source", board_view.source)
-    st.components.v1.html(board_view.board_svg, height=760)
-    if board_view.board_text is not None:
-        st.code(board_view.board_text)
-
-
-def _load_latest_evaluator_training_diagnostics_for_dashboard(
-    work_dir: str | Path,
-) -> dict[str, MorpionEvaluatorTrainingDiagnostics]:
-    """Load latest evaluator diagnostics, tolerating absent artifacts."""
-    return load_latest_evaluator_training_diagnostics(work_dir)
-
-
-def _diagnostic_examples_rows(
-    examples: Sequence[MorpionEvaluatorDiagnosticExample],
-) -> list[dict[str, object | None]]:
-    """Return dashboard-friendly diagnostic example rows."""
-    return [
-        {
-            "row_index": example.row_index,
-            "node_id": example.node_id,
-            "state_tag": example.state_tag,
-            "depth": example.depth,
-            "target_value": example.target_value,
-            "prediction_before": example.prediction_before,
-            "prediction_after": example.prediction_after,
-            "abs_error_before": example.abs_error_before,
-            "abs_error_after": example.abs_error_after,
-        }
-        for example in examples
-    ]
-
-
-def _has_known_optional_series_values(series: tuple[Any, ...]) -> bool:
-    """Return whether one optional-value time series contains any known value."""
-    return any(getattr(point, "value", None) is not None for point in series)
 
 
 if __name__ == "__main__":

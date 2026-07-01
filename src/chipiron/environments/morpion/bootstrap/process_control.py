@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from .bootstrap_loop import MorpionBootstrapPaths
+    from .bootstrap_paths import MorpionBootstrapPaths
 
 
 @dataclass(frozen=True, slots=True)

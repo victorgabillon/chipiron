@@ -12,7 +12,9 @@ from anemone.training_export import load_training_tree_snapshot
 from anemone.training_export.serialization import MalformedNodesFieldError
 
 from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
-from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+    MorpionBootstrapPaths,
+)
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapEvent,
     MorpionBootstrapFrontierStatus,

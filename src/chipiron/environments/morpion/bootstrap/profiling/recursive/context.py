@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.morpion.bootstrap.pipeline_memory import format_metric
 
@@ -22,6 +22,9 @@ from .object_access import (
     safe_object_dict,
     should_skip_deep,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 LOGGER = logging.getLogger(__name__)
 

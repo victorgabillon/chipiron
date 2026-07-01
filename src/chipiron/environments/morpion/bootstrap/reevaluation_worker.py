@@ -232,11 +232,16 @@ def _maybe_log_reevaluation_idle(
     if signature_changed or not isinstance(idle_since_unix_s, int | float):
         idle_since_unix_s = resolved_now_unix_s
         checks = 1
-    last_logged_unix_s = state.get("last_logged_unix_s")
-    should_log = signature_changed or not isinstance(last_logged_unix_s, int | float)
-    if not should_log:
+    last_logged_unix_s_object = state.get("last_logged_unix_s")
+    last_logged_unix_s = (
+        float(last_logged_unix_s_object)
+        if isinstance(last_logged_unix_s_object, int | float)
+        else None
+    )
+    should_log = signature_changed or last_logged_unix_s is None
+    if not should_log and last_logged_unix_s is not None:
         should_log = (
-            resolved_now_unix_s - float(last_logged_unix_s)
+            resolved_now_unix_s - last_logged_unix_s
             >= REEVALUATION_IDLE_HEARTBEAT_SECONDS
         )
 

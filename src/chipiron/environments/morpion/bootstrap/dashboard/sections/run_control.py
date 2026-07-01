@@ -18,7 +18,7 @@ from chipiron.environments.morpion.bootstrap.process_control import (
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.morpion.bootstrap.bootstrap_loop import (
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
         MorpionBootstrapPaths,
     )
 

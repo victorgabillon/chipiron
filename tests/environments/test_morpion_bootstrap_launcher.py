@@ -1672,7 +1672,9 @@ def test_launcher_allows_append_only_evaluator_catalog_extension(
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
-    expected = canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    expected = (
+        canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    )
     assert startup_status.bootstrap_config.evaluators == expected
     assert load_bootstrap_config(paths.bootstrap_config_path).evaluators == expected
     assert "entity_token_transformer_small" in startup_status.resolved_evaluator_names

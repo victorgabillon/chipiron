@@ -26,6 +26,8 @@ __all__ = [
     "cached_build_morpion_bootstrap_dashboard_data",
     "cached_certified_record_board_freshness_tokens",
     "cached_dashboard_data_freshness_tokens",
+    "checked_training_status_files_summary",
+    "loss_series_contains_points",
 ]
 
 
@@ -41,10 +43,22 @@ def _loss_series_contains_points(
     loss_by_name: Mapping[str, tuple[Any, ...]],
 ) -> bool:
     """Return whether any evaluator loss series contains at least one concrete point."""
+    return loss_series_contains_points(loss_by_name)
+
+
+def loss_series_contains_points(
+    loss_by_name: Mapping[str, tuple[Any, ...]],
+) -> bool:
+    """Return whether any evaluator loss series contains at least one concrete point."""
     return any(series for series in loss_by_name.values())
 
 
 def _checked_training_status_files_summary(paths: MorpionBootstrapPaths) -> str:
+    """Summarize the training-status files the dashboard inspected for loss data."""
+    return checked_training_status_files_summary(paths)
+
+
+def checked_training_status_files_summary(paths: MorpionBootstrapPaths) -> str:
     """Summarize the training-status files the dashboard inspected for loss data."""
     checked_files = sorted(paths.pipeline_dir.glob("generation_*/training_status.json"))
     if not checked_files:

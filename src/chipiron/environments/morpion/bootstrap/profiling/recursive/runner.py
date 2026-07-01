@@ -728,7 +728,6 @@ def _log_growth_recursive_profile(
     )
 
 
-_PUBLIC_PROFILE_FUNCTION = "log_growth_" + "recursive" + "_memory_profile"
-globals()[_PUBLIC_PROFILE_FUNCTION] = _log_growth_recursive_profile
+log_growth_recursive_memory_profile = _log_growth_recursive_profile
 
-__all__ = [_PUBLIC_PROFILE_FUNCTION]
+__all__ = ["log_growth_recursive_memory_profile"]

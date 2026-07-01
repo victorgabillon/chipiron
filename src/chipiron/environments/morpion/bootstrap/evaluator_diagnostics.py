@@ -7,27 +7,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-import torch
-
-from chipiron.environments.morpion.learning import (
-    MorpionSupervisedRows,
-    decode_morpion_state_ref_payload,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
-    load_morpion_regressor_for_inference,
-)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-    resolve_morpion_feature_subset,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
-    MorpionFeatureTensorConverter,
-)
-from chipiron.environments.morpion.types import MorpionDynamics
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from chipiron.environments.morpion.learning import MorpionSupervisedRows
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
@@ -328,6 +315,10 @@ def load_previous_evaluator_for_diagnostics(
     model_bundle_path: str | Path | None,
 ) -> MorpionRegressor | None:
     """Load one previous evaluator bundle for before-training predictions."""
+    from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+        load_morpion_regressor_for_inference,
+    )
+
     if model_bundle_path is None:
         return None
     path = Path(model_bundle_path)
@@ -347,7 +338,7 @@ class _PreparedDiagnosticRow:
     state_tag: int | None
     depth: int | None
     target_value: float
-    input_tensor: torch.Tensor
+    input_tensor: Any
 
 
 def _row_examples_and_targets(
@@ -357,6 +348,15 @@ def _row_examples_and_targets(
     feature_names: tuple[str, ...],
 ) -> tuple[list[_PreparedDiagnosticRow], list[float]]:
     """Prepare feature tensors and display metadata for all rows once."""
+    from chipiron.environments.morpion.learning import decode_morpion_state_ref_payload
+    from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+        resolve_morpion_feature_subset,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
+        MorpionFeatureTensorConverter,
+    )
+    from chipiron.environments.morpion.types import MorpionDynamics
+
     subset = resolve_morpion_feature_subset(
         feature_subset_name=feature_subset_name,
         feature_names=feature_names if feature_names else None,
@@ -390,6 +390,8 @@ def _predict_rows(
     rows: list[_PreparedDiagnosticRow],
 ) -> list[float | None]:
     """Return one prediction per row or ``None`` when no model is available."""
+    import torch
+
     if model is None:
         return [None] * len(rows)
     if not rows:
