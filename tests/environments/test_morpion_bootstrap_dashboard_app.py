@@ -64,32 +64,10 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.app import (
-    _applied_runtime_control,
-    _baseline_tree_branch_limit,
-    _build_next_control,
-    _configured_evaluator_names,
-    _dataset_status_summary,
     _diagnostic_examples_rows,
-    _effective_runtime_config,
-    _effective_runtime_hash,
-    _effective_state_summary,
-    _evaluator_control_status_summary,
-    _evaluator_set_summary,
-    _force_evaluator_options,
-    _format_force_evaluator_option,
-    _format_force_evaluator_state,
-    _has_pending_control_changes,
-    _is_stale_forced_evaluator,
     _linoo_selection_table_rows,
-    _load_applied_control,
     _load_latest_evaluator_training_diagnostics_for_dashboard,
-    _pending_control_fields,
-    _pending_control_sections,
-    _render_launcher_command_text,
-    _runtime_status_summary,
-    _scheduling_status_summary,
     _selected_child_node_id_for_branch,
-    _tree_branch_limit_input_value,
     _tree_inspector_child_rows,
     _tree_structure_rows,
 )
@@ -115,6 +93,83 @@ from chipiron.environments.morpion.bootstrap.dashboard.sections.observability im
 )
 from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
     render_plot,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.run_control import (
+    render_launcher_command_text as _render_launcher_command_text,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.run_control import (
+    render_run_control_section,
+    render_run_control_state,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    applied_runtime_control as _applied_runtime_control,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    baseline_tree_branch_limit as _baseline_tree_branch_limit,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    build_next_control as _build_next_control,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    configured_evaluator_names as _configured_evaluator_names,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    dataset_status_summary as _dataset_status_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    effective_runtime_config as _effective_runtime_config,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    effective_runtime_hash as _effective_runtime_hash,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    effective_state_summary as _effective_state_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    evaluator_control_status_summary as _evaluator_control_status_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    evaluator_set_summary as _evaluator_set_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    force_evaluator_options as _force_evaluator_options,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    format_force_evaluator_option as _format_force_evaluator_option,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    format_force_evaluator_state as _format_force_evaluator_state,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    has_pending_control_changes as _has_pending_control_changes,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    is_stale_forced_evaluator as _is_stale_forced_evaluator,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    load_applied_control as _load_applied_control,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    pending_control_fields as _pending_control_fields,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    pending_control_sections as _pending_control_sections,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    render_dataset_control_section,
+    render_evaluator_control_section,
+    render_runtime_control_section,
+    render_scheduling_control_section,
+    render_status_layers,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    runtime_status_summary as _runtime_status_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    scheduling_status_summary as _scheduling_status_summary,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers import (
+    tree_branch_limit_input_value as _tree_branch_limit_input_value,
 )
 from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
     MorpionBootstrapChildSummary,
@@ -142,6 +197,8 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
     import chipiron.environments.morpion.bootstrap.dashboard.sections.disk_usage as dashboard_disk_usage_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.observability as dashboard_observability_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.sections.plot as dashboard_plot_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.run_control as dashboard_run_control_section_new
+    import chipiron.environments.morpion.bootstrap.dashboard.sections.status_layers as dashboard_status_layers_section_new
     import chipiron.environments.morpion.bootstrap.dashboard.streamlit_entry as streamlit_new
     import chipiron.environments.morpion.bootstrap.dashboard.tree_inspector as tree_inspector_new
 
@@ -165,6 +222,27 @@ def test_dashboard_forward_imports_resolve_owner_modules() -> None:
         render_observability_section
     )
     assert dashboard_plot_section_new.render_plot is render_plot
+    assert dashboard_run_control_section_new.render_run_control_section is (
+        render_run_control_section
+    )
+    assert dashboard_run_control_section_new.render_run_control_state is (
+        render_run_control_state
+    )
+    assert dashboard_status_layers_section_new.render_status_layers is (
+        render_status_layers
+    )
+    assert dashboard_status_layers_section_new.render_dataset_control_section is (
+        render_dataset_control_section
+    )
+    assert dashboard_status_layers_section_new.render_scheduling_control_section is (
+        render_scheduling_control_section
+    )
+    assert dashboard_status_layers_section_new.render_evaluator_control_section is (
+        render_evaluator_control_section
+    )
+    assert dashboard_status_layers_section_new.render_runtime_control_section is (
+        render_runtime_control_section
+    )
     assert (
         history_view_new.build_morpion_bootstrap_dashboard_data.__name__
         == "build_morpion_bootstrap_dashboard_data"
