@@ -62,6 +62,7 @@ from chipiron.environments.morpion.learning import (
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
+    collate_morpion_supervised_samples,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
@@ -318,7 +319,7 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     dataset = MorpionSupervisedDataset(
         MorpionSupervisedDatasetArgs(file_name=dataset_file)
     )
-    sample_input, _ = dataset[0]
+    sample_input = dataset[0].get_input_layer()
     output = model(sample_input)
     assert output.shape == (1, 1)
 
@@ -396,7 +397,9 @@ def test_training_metrics_use_full_validation_mean_not_last_minibatch(
     validation_errors: list[float] = []
     with torch.no_grad():
         for index in validation_indices:
-            sample_input, target = dataset[index]
+            sample = dataset[index]
+            sample_input = sample.get_input_layer()
+            target = sample.get_target_value()
             prediction = model(sample_input)
             validation_errors.append(float(torch.square(prediction - target).item()))
     expected_validation_loss = sum(validation_errors) / len(validation_errors)
@@ -484,15 +487,21 @@ def test_training_metrics_small_dataset_does_not_require_validation(
 
 
 def test_dataloader_batch_collation_shapes_are_stable(tmp_path: Path) -> None:
-    """Default DataLoader collation should batch Morpion samples as expected."""
+    """Morpion DataLoader collation should batch samples as expected."""
     dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
     dataset = MorpionSupervisedDataset(
         MorpionSupervisedDatasetArgs(file_name=dataset_file)
     )
-    data_loader = DataLoader(dataset, batch_size=2, shuffle=False)
+    data_loader = DataLoader(
+        dataset,
+        batch_size=2,
+        shuffle=False,
+        collate_fn=collate_morpion_supervised_samples,
+    )
 
     batch = next(iter(data_loader))
 
+    assert batch.is_batch is True
     assert batch.get_input_layer().shape == (2, MORPION_INPUT_DIM)
     assert batch.get_target_value().shape == (2, 1)
 
@@ -516,7 +525,7 @@ def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
     dataset = MorpionSupervisedDataset(
         MorpionSupervisedDatasetArgs(file_name=dataset_file)
     )
-    sample_input, _ = dataset[0]
+    sample_input = dataset[0].get_input_layer()
     output = model(sample_input)
 
     assert model.training is False
@@ -560,7 +569,7 @@ def test_reduced_subset_training_round_trip_supports_linear_and_mlp(
             feature_names=subset.feature_names,
         )
     )
-    sample_input, _ = dataset[0]
+    sample_input = dataset[0].get_input_layer()
     output = loaded_model(sample_input)
 
     assert loaded_args.feature_names == subset.feature_names

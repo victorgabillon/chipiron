@@ -12,7 +12,7 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, no_type_check
+from typing import TYPE_CHECKING, Any, no_type_check
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,7 @@ from pandas import DataFrame
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.learning.supervised import SupervisedBatch
 from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
@@ -227,20 +228,6 @@ def process_stockfish_value(row: pd.Series) -> float:
     return target_value
 
 
-class SupervisedData(Protocol):
-    """A protocol that defines the structure for classes that have input and target value attributes."""
-
-    is_batch: bool = False  # Flag to indicate if this contains batched data
-
-    def get_input_layer(self) -> torch.Tensor:
-        """Return the input layer tensor."""
-        ...
-
-    def get_target_value(self) -> torch.Tensor:
-        """Return the target value tensor."""
-        ...
-
-
 @dataclass
 class FenAndValueData:
     """Represents the FEN and value data for a chess position."""
@@ -258,7 +245,7 @@ class FenAndValueData:
         return self.value_tensor
 
 
-def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:
+def custom_collate_fn_fen_and_value(batch: list[SupervisedBatch]) -> FenAndValueData:
     """Collate FenAndValueData items into batched tensors.
 
     Args:

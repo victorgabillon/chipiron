@@ -111,6 +111,7 @@ from chipiron.environments.morpion.learning import (
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
+    collate_morpion_supervised_samples,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
@@ -1853,8 +1854,18 @@ def test_saved_dataset_batches_after_cycle(tmp_path: Path) -> None:
             file_name=str(paths.resolve_work_dir_path(state.latest_rows_path))
         )
     )
-    batch = next(iter(DataLoader(dataset, batch_size=1, shuffle=False)))
+    batch = next(
+        iter(
+            DataLoader(
+                dataset,
+                batch_size=1,
+                shuffle=False,
+                collate_fn=collate_morpion_supervised_samples,
+            )
+        )
+    )
 
+    assert batch.is_batch is True
     assert batch.get_input_layer().ndim == 2
     assert batch.get_target_value().shape == (1, 1)
     assert batch.get_input_layer().dtype == torch.float32

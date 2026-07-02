@@ -150,10 +150,13 @@ def test_one_sample_has_correct_tensor_types_and_shapes(tmp_path: Path) -> None:
     path, _ = _build_rows_file(tmp_path)
     dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
 
-    input_tensor, target_tensor = dataset[0]
+    sample = dataset[0]
+    input_tensor = sample.get_input_layer()
+    target_tensor = sample.get_target_value()
 
     assert isinstance(input_tensor, torch.Tensor)
     assert isinstance(target_tensor, torch.Tensor)
+    assert sample.is_batch is False
     assert input_tensor.dtype == torch.float32
     assert target_tensor.dtype == torch.float32
     assert input_tensor.ndim == 1
@@ -165,7 +168,7 @@ def test_input_tensor_matches_morpion_converter_directly(tmp_path: Path) -> None
     """Dataset inputs should match the direct Morpion tensor-conversion path."""
     path, nodes = _build_rows_file(tmp_path, target_values=(1.25,))
     dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
-    sample_input, _ = dataset[0]
+    sample_input = dataset[0].get_input_layer()
 
     dynamics = MorpionDynamics()
     atom_state = MorpionStateCheckpointCodec().load_state_ref(
@@ -182,7 +185,7 @@ def test_target_tensor_matches_row_target_value(tmp_path: Path) -> None:
     path, _ = _build_rows_file(tmp_path, target_values=(1.25,))
     dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
 
-    _, target_tensor = dataset[0]
+    target_tensor = dataset[0].get_target_value()
 
     torch.testing.assert_close(target_tensor, torch.tensor([1.25], dtype=torch.float32))
 
@@ -201,8 +204,12 @@ def test_repeated_indexing_is_deterministic(tmp_path: Path) -> None:
     path, _ = _build_rows_file(tmp_path, target_values=(1.25,))
     dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
 
-    first_input, first_target = dataset[0]
-    second_input, second_target = dataset[0]
+    first_sample = dataset[0]
+    second_sample = dataset[0]
+    first_input = first_sample.get_input_layer()
+    first_target = first_sample.get_target_value()
+    second_input = second_sample.get_input_layer()
+    second_target = second_sample.get_target_value()
 
     torch.testing.assert_close(first_input, second_input)
     torch.testing.assert_close(first_target, second_target)
@@ -213,8 +220,8 @@ def test_dataset_preserves_row_order(tmp_path: Path) -> None:
     path, _ = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
     dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
 
-    _, first_target = dataset[0]
-    _, second_target = dataset[1]
+    first_target = dataset[0].get_target_value()
+    second_target = dataset[1].get_target_value()
 
     torch.testing.assert_close(first_target, torch.tensor([1.25], dtype=torch.float32))
     torch.testing.assert_close(second_target, torch.tensor([-0.5], dtype=torch.float32))

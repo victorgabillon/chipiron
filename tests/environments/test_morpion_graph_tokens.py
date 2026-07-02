@@ -193,14 +193,17 @@ def test_graph_collate_pads_variable_token_counts() -> None:
     sample_a = MorpionGraphSupervisedSample(
         input_tensor=torch.ones((2, MORPION_GRAPH_TOKEN_FEATURE_DIM)),
         target_tensor=torch.tensor([0.25], dtype=torch.float32),
+        is_batch=False,
     )
     sample_b = MorpionGraphSupervisedSample(
         input_tensor=torch.ones((4, MORPION_GRAPH_TOKEN_FEATURE_DIM)),
         target_tensor=torch.tensor([-0.5], dtype=torch.float32),
+        is_batch=False,
     )
 
     batch = collate_morpion_graph_supervised_samples((sample_a, sample_b))
 
+    assert batch.is_batch is True
     assert batch.get_input_layer().shape == (2, 4, MORPION_GRAPH_TOKEN_FEATURE_DIM)
     assert batch.get_target_value().shape == (2, 1)
     assert torch.all(batch.input_tensor[0, 2:, :] == 0.0)

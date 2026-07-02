@@ -29,6 +29,7 @@ from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
     MorpionSupervisedDatasetArgs,
     MorpionSupervisedSample,
     collate_morpion_graph_supervised_samples,
+    collate_morpion_supervised_samples,
     process_morpion_supervised_row_to_graph_tensors,
     process_morpion_supervised_row_to_tensors,
 )
@@ -46,6 +47,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+from chipiron.learning.supervised import (
+    TensorSupervisedBatch,
+    move_supervised_batch_to_device,
+)
 from chipiron.learning.timing import PhaseDurations, format_phase_durations
 from chipiron.learning.torch_runtime import (
     module_device,
@@ -187,7 +192,7 @@ def train_morpion_regressor(
                     feature_names=args.feature_names,
                 )
             )
-            collate_fn = None
+            collate_fn = collate_morpion_supervised_samples
     train_dataset, validation_dataset = _split_train_validation_dataset(
         dataset,
         validation_fraction=args.validation_fraction,
@@ -235,7 +240,10 @@ def train_morpion_regressor(
             for sample_batch in train_loader:
                 batch_count += 1
                 with _timed_torch_phase(epoch_timings, "batch_transfer", device):
-                    sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                    sample_batch = move_supervised_batch_to_device(
+                        sample_batch,
+                        device,
+                    )
                 with _timed_torch_phase(epoch_timings, "zero_grad", device):
                     optimizer.zero_grad()
                 with _timed_torch_phase(epoch_timings, "forward", device):
@@ -767,17 +775,6 @@ def _log_training_device(
     )
 
 
-def _move_sample_batch_to_device(
-    sample_batch: MorpionSupervisedSample | MorpionGraphSupervisedSample,
-    device: torch.device,
-) -> MorpionSupervisedSample | MorpionGraphSupervisedSample:
-    """Move one Morpion supervised batch to a concrete Torch device."""
-    return type(sample_batch)(
-        input_tensor=sample_batch.get_input_layer().to(device),
-        target_tensor=sample_batch.get_target_value().to(device),
-    )
-
-
 def _add_phase_durations(
     target: PhaseDurations,
     phase_durations: Mapping[str, float],
@@ -932,7 +929,7 @@ def _train_streaming_epoch(
             with epoch_timings.time_phase("row_to_sample_batch"):
                 sample_batch = _rows_to_sample_batch(row_batch, args=args)
             with _timed_torch_phase(epoch_timings, "batch_transfer", device):
-                sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                sample_batch = move_supervised_batch_to_device(sample_batch, device)
             with _timed_torch_phase(epoch_timings, "zero_grad", device):
                 optimizer.zero_grad()
             with _timed_torch_phase(epoch_timings, "forward", device):
@@ -1021,7 +1018,10 @@ def _evaluate_streaming_metrics(
                 with timings.time_phase("row_to_sample_batch"):
                     sample_batch = _rows_to_sample_batch(row_batch, args=args)
                 with _timed_torch_phase(timings, "batch_transfer", device):
-                    sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                    sample_batch = move_supervised_batch_to_device(
+                        sample_batch,
+                        device,
+                    )
                 with _timed_torch_phase(timings, "forward", device):
                     predictions = model(sample_batch.get_input_layer())
                 targets = sample_batch.get_target_value()
@@ -1115,7 +1115,7 @@ def _rows_to_sample_batch(
     rows: tuple[MorpionSupervisedRow, ...],
     *,
     args: MorpionTrainingArgs,
-) -> MorpionSupervisedSample | MorpionGraphSupervisedSample:
+) -> TensorSupervisedBatch:
     dynamics = MorpionDynamics()
     if is_morpion_entity_token_transformer_model_kind(args.model_kind):
         graph_converter = MorpionGraphTokenConverter(
@@ -1144,9 +1144,10 @@ def _rows_to_sample_batch(
         )
         for row in rows
     ]
-    return MorpionSupervisedSample(
+    return TensorSupervisedBatch(
         input_tensor=torch.stack([sample.input_tensor for sample in samples]),
         target_tensor=torch.stack([sample.target_tensor for sample in samples]),
+        is_batch=True,
     )
 
 
@@ -1231,7 +1232,7 @@ def _evaluate_regression_metrics(
     with torch.no_grad():
         for sample_batch in data_loader:
             with _timed_torch_phase(timings, "batch_transfer", device):
-                sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                sample_batch = move_supervised_batch_to_device(sample_batch, device)
             with _timed_torch_phase(timings, "forward", device):
                 predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()

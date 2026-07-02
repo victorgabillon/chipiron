@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor
 from torch.utils.data import Dataset
 
 from chipiron.environments.morpion.learning import (
@@ -28,6 +27,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+from chipiron.learning.supervised import TensorSupervisedBatch
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -59,44 +59,8 @@ class MorpionSupervisedDatasetArgs:
         )
 
 
-class MorpionSupervisedSample(NamedTuple):
-    """Tuple-like Morpion sample with small trainer-compatibility helpers."""
-
-    input_tensor: Tensor
-    target_tensor: Tensor
-
-    @property
-    def is_batch(self) -> bool:
-        """Return whether this sample contains batched tensors."""
-        return self.input_tensor.ndim > 1
-
-    def get_input_layer(self) -> Tensor:
-        """Return the feature tensor for the sample."""
-        return self.input_tensor
-
-    def get_target_value(self) -> Tensor:
-        """Return the regression target tensor for the sample."""
-        return self.target_tensor
-
-
-class MorpionGraphSupervisedSample(NamedTuple):
-    """Tuple-like Morpion graph-token sample."""
-
-    input_tensor: Tensor
-    target_tensor: Tensor
-
-    @property
-    def is_batch(self) -> bool:
-        """Return whether this sample contains batched tensors."""
-        return self.input_tensor.ndim > 2
-
-    def get_input_layer(self) -> Tensor:
-        """Return the graph-token tensor for the sample."""
-        return self.input_tensor
-
-    def get_target_value(self) -> Tensor:
-        """Return the regression target tensor for the sample."""
-        return self.target_tensor
+MorpionSupervisedSample = TensorSupervisedBatch
+MorpionGraphSupervisedSample = TensorSupervisedBatch
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +91,7 @@ def process_morpion_supervised_row_to_tensors(
     return MorpionSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
+        is_batch=False,
     )
 
 
@@ -148,6 +113,7 @@ def process_morpion_supervised_row_to_graph_tensors(
     return MorpionGraphSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
+        is_batch=False,
     )
 
 
@@ -249,6 +215,7 @@ def collate_morpion_graph_supervised_samples(
         return MorpionGraphSupervisedSample(
             input_tensor=torch.empty((0, 0, 0), dtype=torch.float32),
             target_tensor=torch.empty((0, 1), dtype=torch.float32),
+            is_batch=True,
         )
     batch_size = len(samples)
     max_token_count = max(sample.input_tensor.shape[0] for sample in samples)
@@ -265,6 +232,24 @@ def collate_morpion_graph_supervised_samples(
     return MorpionGraphSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
+        is_batch=True,
+    )
+
+
+def collate_morpion_supervised_samples(
+    samples: Sequence[MorpionSupervisedSample],
+) -> MorpionSupervisedSample:
+    """Stack fixed-width Morpion samples into one supervised tensor batch."""
+    if not samples:
+        return MorpionSupervisedSample(
+            input_tensor=torch.empty((0, 0), dtype=torch.float32),
+            target_tensor=torch.empty((0, 1), dtype=torch.float32),
+            is_batch=True,
+        )
+    return MorpionSupervisedSample(
+        input_tensor=torch.stack([sample.input_tensor for sample in samples]),
+        target_tensor=torch.stack([sample.target_tensor for sample in samples]),
+        is_batch=True,
     )
 
 
@@ -282,6 +267,7 @@ __all__ = [
     "MorpionSupervisedDataset",
     "MorpionSupervisedDatasetArgs",
     "collate_morpion_graph_supervised_samples",
+    "collate_morpion_supervised_samples",
     "load_morpion_supervised_dataset",
     "process_morpion_supervised_row_to_graph_tensors",
     "process_morpion_supervised_row_to_tensors",
