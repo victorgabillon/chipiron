@@ -213,6 +213,7 @@ def test_training_args_from_graph_spec_preserves_graph_fields() -> None:
         shuffle=False,
         validation_fraction=0.125,
         validation_seed=17,
+        device="cpu",
     )
 
     assert training_args.model_kind == MORPION_GRAPH_MODEL_KIND
@@ -242,6 +243,7 @@ def test_training_args_from_entity_transformer_spec_uses_coral_model_kind() -> N
         shuffle=False,
         validation_fraction=0.125,
         validation_seed=17,
+        device="cpu",
     )
 
     assert training_args.model_kind == MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND

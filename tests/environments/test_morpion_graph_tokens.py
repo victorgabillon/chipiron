@@ -16,7 +16,6 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-_CORAL_SRC_ROOT = _REPO_ROOT.parent / "coral" / "src"
 _MORPION_EVALUATORS_PACKAGE_ROOT = (
     _REPO_ROOT
     / "src"
@@ -26,9 +25,6 @@ _MORPION_EVALUATORS_PACKAGE_ROOT = (
     / "players"
     / "evaluators"
 )
-
-if str(_CORAL_SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(_CORAL_SRC_ROOT))
 
 if "chipiron" not in sys.modules:
     _chipiron_stub = ModuleType("chipiron")

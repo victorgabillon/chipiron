@@ -323,6 +323,38 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     assert output.shape == (1, 1)
 
 
+def test_minimal_training_helper_records_cpu_device_metadata(tmp_path: Path) -> None:
+    """Training with an explicit CPU device should persist device metadata."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / "trained_cpu_bundle"
+
+    _model, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            device="cpu",
+        )
+    )
+
+    manifest_path = output_dir / MORPION_MANIFEST_FILE_NAME
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_metadata = cast("dict[str, object]", manifest_data["metadata"])
+
+    assert metrics["requested_device"] == "cpu"
+    assert metrics["resolved_device"] == "cpu"
+    assert metrics["model_device"] == "cpu"
+    assert isinstance(metrics["parameter_count"], float)
+    assert metrics["parameter_count"] > 0.0
+    assert manifest_metadata["requested_device"] == "cpu"
+    assert manifest_metadata["resolved_device"] == "cpu"
+    assert manifest_metadata["model_device"] == "cpu"
+    assert manifest_metadata["parameter_count"] == metrics["parameter_count"]
+
+
 def test_training_metrics_use_full_validation_mean_not_last_minibatch(
     tmp_path: Path,
 ) -> None:

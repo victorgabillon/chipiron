@@ -43,6 +43,11 @@ def _invalid_training_row_chunk_size_error() -> ValueError:
     return ValueError("training_row_chunk_size must be a positive integer.")
 
 
+def _invalid_training_device_error() -> ValueError:
+    """Return the canonical training-device validation error."""
+    return ValueError("training_device must be a non-empty string.")
+
+
 def _invalid_evaluator_diagnostics_max_rows_error() -> ValueError:
     """Return the canonical evaluator-diagnostics row-limit validation error."""
     return ValueError(
@@ -240,6 +245,7 @@ class MorpionBootstrapArgs:
     shuffle: bool = True
     validation_fraction: float = 0.2
     validation_seed: int = 0
+    training_device: str = "auto"
     model_kind: str = "linear"
     hidden_dim: int | None = None
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
@@ -352,6 +358,11 @@ class MorpionBootstrapArgs:
             or self.training_row_chunk_size <= 0
         ):
             raise _invalid_training_row_chunk_size_error()
+        if (
+            not isinstance(self.training_device, str)
+            or not self.training_device.strip()
+        ):
+            raise _invalid_training_device_error()
         if self.evaluator_diagnostics_max_rows is not None and (
             isinstance(self.evaluator_diagnostics_max_rows, bool)
             or self.evaluator_diagnostics_max_rows < 0

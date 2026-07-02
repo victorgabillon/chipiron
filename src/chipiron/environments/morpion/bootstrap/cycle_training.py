@@ -122,6 +122,7 @@ def morpion_training_args_from_evaluator_spec(
     shuffle: bool,
     validation_fraction: float,
     validation_seed: int,
+    device: str,
 ) -> MorpionTrainingArgs:
     """Build training args for one evaluator spec."""
     return MorpionTrainingArgs(
@@ -146,6 +147,7 @@ def morpion_training_args_from_evaluator_spec(
         graph_output_tanh=spec.graph_output_tanh,
         validation_fraction=validation_fraction,
         validation_seed=validation_seed,
+        device=device,
     )
 
 
@@ -469,6 +471,7 @@ def train_and_select_evaluators(
                     shuffle=args.shuffle,
                     validation_fraction=args.validation_fraction,
                     validation_seed=args.validation_seed,
+                    device=args.training_device,
                 )
             )
         except Exception as exc:
@@ -757,6 +760,7 @@ def train_and_select_evaluators_streaming(
                         shuffle=args.shuffle,
                         validation_fraction=args.validation_fraction,
                         validation_seed=args.validation_seed,
+                        device=args.training_device,
                     ),
                     row_chunk_size=chunk_size,
                     max_rows=max_rows,

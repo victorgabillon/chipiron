@@ -42,6 +42,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+from chipiron.learning.torch_runtime import (
+    module_device,
+    parameter_count,
+    resolve_torch_device,
+    torch_device_info,
+)
 
 from .bundle import save_morpion_model_bundle
 from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regressor
@@ -105,6 +111,7 @@ class MorpionTrainingArgs:
     graph_output_tanh: bool = True
     validation_fraction: float = 0.2
     validation_seed: int = 0
+    device: str = "auto"
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
@@ -200,13 +207,21 @@ def train_morpion_regressor(
         graph_pooling=args.graph_pooling,
         graph_output_tanh=args.graph_output_tanh,
     )
-    model = build_morpion_regressor(model_args)
+    device = resolve_torch_device(args.device)
+    model = build_morpion_regressor(model_args).to(device)
+    _log_training_device(
+        model=model,
+        requested_device=args.device,
+        resolved_device=device,
+        model_kind=args.model_kind,
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     criterion = torch.nn.MSELoss()
 
     model.train()
     for _epoch in range(args.num_epochs):
         for sample_batch in train_loader:
+            sample_batch = _move_sample_batch_to_device(sample_batch, device)
             optimizer.zero_grad()
             predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
@@ -219,6 +234,7 @@ def train_morpion_regressor(
         train_dataset,
         batch_size=args.batch_size,
         collate_fn=collate_fn,
+        device=device,
     )
     validation_loss: float | None
     validation_mae: float | None
@@ -228,6 +244,7 @@ def train_morpion_regressor(
             validation_dataset,
             batch_size=args.batch_size,
             collate_fn=collate_fn,
+            device=device,
         )
     else:
         validation_loss = None
@@ -247,7 +264,15 @@ def train_morpion_regressor(
         "batch_size": float(args.batch_size),
         "learning_rate": float(args.learning_rate),
         "loss_name": "mse",
+        "requested_device": args.device,
+        "resolved_device": str(device),
+        "model_device": str(module_device(model)),
+        "parameter_count": float(parameter_count(model)),
     }
+    device_info = torch_device_info(
+        requested_device=args.device,
+        resolved_device=device,
+    )
     training_metadata = {
         "dataset_file": os.fspath(args.dataset_file),
         "output_dir": os.fspath(args.output_dir),
@@ -271,6 +296,13 @@ def train_morpion_regressor(
         "graph_output_tanh": args.graph_output_tanh,
         "validation_fraction": args.validation_fraction,
         "validation_seed": args.validation_seed,
+        "requested_device": args.device,
+        "resolved_device": str(device),
+        "model_device": str(module_device(model)),
+        "cuda_available": device_info.cuda_available,
+        "cuda_device_count": device_info.cuda_device_count,
+        "cuda_device_name": device_info.cuda_device_name,
+        "parameter_count": float(parameter_count(model)),
     }
     save_morpion_model_bundle(
         model,
@@ -305,7 +337,14 @@ def train_morpion_regressor_streaming(
         graph_pooling=training_args.graph_pooling,
         graph_output_tanh=training_args.graph_output_tanh,
     )
-    model = build_morpion_regressor(model_args)
+    device = resolve_torch_device(training_args.device)
+    model = build_morpion_regressor(model_args).to(device)
+    _log_training_device(
+        model=model,
+        requested_device=training_args.device,
+        resolved_device=device,
+        model_kind=training_args.model_kind,
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=training_args.learning_rate)
     criterion = torch.nn.MSELoss()
     split_policy = _streaming_split_policy(training_args.validation_fraction)
@@ -320,6 +359,7 @@ def train_morpion_regressor_streaming(
             max_rows=args.max_rows,
             epoch_index=epoch_index,
             progress_callback=args.progress_callback,
+            device=device,
         )
         LOGGER.info(
             "[train-stream] epoch=%s chunks=%s train_samples=%s "
@@ -338,6 +378,7 @@ def train_morpion_regressor_streaming(
         row_chunk_size=args.row_chunk_size,
         max_rows=args.max_rows,
         split="train",
+        device=device,
     )
     validation_loss: float | None
     validation_mae: float | None
@@ -348,6 +389,7 @@ def train_morpion_regressor_streaming(
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
             split="validation",
+            device=device,
         )
     )
     if validation_count > 0:
@@ -372,7 +414,15 @@ def train_morpion_regressor_streaming(
         "learning_rate": float(training_args.learning_rate),
         "loss_name": "mse",
         "split_policy": split_policy,
+        "requested_device": training_args.device,
+        "resolved_device": str(device),
+        "model_device": str(module_device(model)),
+        "parameter_count": float(parameter_count(model)),
     }
+    device_info = torch_device_info(
+        requested_device=training_args.device,
+        resolved_device=device,
+    )
     training_metadata = {
         "dataset_file": os.fspath(training_args.dataset_file),
         "output_dir": os.fspath(training_args.output_dir),
@@ -400,6 +450,13 @@ def train_morpion_regressor_streaming(
         "row_chunk_size": args.row_chunk_size,
         "max_rows": args.max_rows,
         "split_policy": split_policy,
+        "requested_device": training_args.device,
+        "resolved_device": str(device),
+        "model_device": str(module_device(model)),
+        "cuda_available": device_info.cuda_available,
+        "cuda_device_count": device_info.cuda_device_count,
+        "cuda_device_name": device_info.cuda_device_name,
+        "parameter_count": float(parameter_count(model)),
     }
     save_morpion_model_bundle(
         model,
@@ -476,6 +533,44 @@ def _split_train_validation_dataset(
     )
 
 
+def _log_training_device(
+    *,
+    model: nn.Module,
+    requested_device: str,
+    resolved_device: torch.device,
+    model_kind: str,
+) -> None:
+    """Log resolved Torch runtime details for one training evaluator."""
+    info = torch_device_info(
+        requested_device=requested_device,
+        resolved_device=resolved_device,
+    )
+    LOGGER.info(
+        "[train-device] model_kind=%s requested_device=%s resolved_device=%s "
+        "model_device=%s cuda_available=%s cuda_device_count=%s "
+        "cuda_device_name=%s parameter_count=%s",
+        model_kind,
+        info.requested_device,
+        info.resolved_device,
+        module_device(model),
+        info.cuda_available,
+        info.cuda_device_count,
+        info.cuda_device_name,
+        parameter_count(model),
+    )
+
+
+def _move_sample_batch_to_device(
+    sample_batch: MorpionSupervisedSample | MorpionGraphSupervisedSample,
+    device: torch.device,
+) -> MorpionSupervisedSample | MorpionGraphSupervisedSample:
+    """Move one Morpion supervised batch to a concrete Torch device."""
+    return type(sample_batch)(
+        input_tensor=sample_batch.get_input_layer().to(device),
+        target_tensor=sample_batch.get_target_value().to(device),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class _StreamingEpochStats:
     chunk_count: int
@@ -494,6 +589,7 @@ def _train_streaming_epoch(
     max_rows: int | None,
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
+    device: torch.device,
 ) -> _StreamingEpochStats:
     model.train()
     chunk_count = 0
@@ -523,6 +619,7 @@ def _train_streaming_epoch(
         train_count += len(train_rows)
         for row_batch in _row_batches(train_rows, batch_size=args.batch_size):
             sample_batch = _rows_to_sample_batch(row_batch, args=args)
+            sample_batch = _move_sample_batch_to_device(sample_batch, device)
             optimizer.zero_grad()
             predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
@@ -555,6 +652,7 @@ def _evaluate_streaming_metrics(
     row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
+    device: torch.device,
 ) -> tuple[float, float, int]:
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
@@ -577,6 +675,7 @@ def _evaluate_streaming_metrics(
             ]
             for row_batch in _row_batches(selected_rows, batch_size=args.batch_size):
                 sample_batch = _rows_to_sample_batch(row_batch, args=args)
+                sample_batch = _move_sample_batch_to_device(sample_batch, device)
                 predictions = model(sample_batch.get_input_layer())
                 targets = sample_batch.get_target_value()
                 errors = predictions - targets
@@ -732,17 +831,14 @@ def _diagnostic_training_args(
         graph_dropout_ratio=float(getattr(model_args, "graph_dropout_ratio", 0.0)),
         graph_pooling=str(getattr(model_args, "graph_pooling", "value_token")),
         graph_output_tanh=bool(getattr(model_args, "graph_output_tanh", True)),
+        device="auto",
     )
 
 
 def _move_tensor_to_model_device(
     tensor: torch.Tensor, model: nn.Module
 ) -> torch.Tensor:
-    try:
-        parameter = next(model.parameters())
-    except StopIteration:
-        return tensor
-    return tensor.to(parameter.device)
+    return tensor.to(module_device(model))
 
 
 def _evaluate_regression_metrics(
@@ -750,6 +846,7 @@ def _evaluate_regression_metrics(
     dataset: MorpionRegressionDataset,
     *,
     batch_size: int,
+    device: torch.device,
     collate_fn: Callable[[Any], Any] | None = None,
 ) -> tuple[float, float]:
     """Compute full-dataset mean MSE and MAE for one regression split."""
@@ -768,6 +865,7 @@ def _evaluate_regression_metrics(
     model.eval()
     with torch.no_grad():
         for sample_batch in data_loader:
+            sample_batch = _move_sample_batch_to_device(sample_batch, device)
             predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
             errors = predictions - targets

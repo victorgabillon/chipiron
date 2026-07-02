@@ -260,6 +260,7 @@ class MorpionBootstrapConfig:
     )
     validation_fraction: float = 0.2
     validation_seed: int = 0
+    training_device: str = "auto"
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
         DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     )
@@ -268,6 +269,16 @@ class MorpionBootstrapConfig:
         DEFAULT_MORPION_TRAINING_EXPORT_MODE
     )
     metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate top-level persisted training controls."""
+        if (
+            not isinstance(self.training_device, str)
+            or not self.training_device.strip()
+        ):
+            raise MalformedMorpionBootstrapConfigError.invalid_non_empty_str(
+                "training_device"
+            )
 
 
 class MalformedMorpionBootstrapConfigError(TypeError):
@@ -297,6 +308,16 @@ class MalformedMorpionBootstrapConfigError(TypeError):
     ) -> MalformedMorpionBootstrapConfigError:
         """Return one malformed required-string field error."""
         return cls(f"Morpion bootstrap config field `{field_name}` must be a string.")
+
+    @classmethod
+    def invalid_non_empty_str(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed non-empty-string field error."""
+        return cls(
+            f"Morpion bootstrap config field `{field_name}` must be a non-empty string."
+        )
 
     @classmethod
     def invalid_bool(cls, field_name: str) -> MalformedMorpionBootstrapConfigError:
@@ -485,6 +506,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         search=args.search,
         validation_fraction=args.validation_fraction,
         validation_seed=args.validation_seed,
+        training_device=args.training_device,
         evaluator_update_policy=args.evaluator_update_policy,
         pipeline_mode=args.pipeline_mode,
         training_export_mode=args.training_export_mode,
@@ -562,6 +584,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
         "evaluators": _evaluators_config_to_dict(config.evaluators),
         "validation_fraction": config.validation_fraction,
         "validation_seed": config.validation_seed,
+        "training_device": config.training_device,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
         "training_export_mode": config.training_export_mode,
@@ -751,6 +774,10 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             payload.get("validation_seed", 0),
             field_name="validation_seed",
         ),
+        training_device=_required_non_empty_str(
+            payload.get("training_device", "auto"),
+            field_name="training_device",
+        ),
         evaluator_update_policy=cast(
             "MorpionEvaluatorUpdatePolicy",
             _required_str(
@@ -907,6 +934,7 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "hidden_dim",
         "validation_fraction",
         "validation_seed",
+        "training_device",
         "evaluators_config",
         "evaluator_family_preset",
         "training_evaluator_names",
@@ -1105,6 +1133,7 @@ def _stage_bootstrap_config_field_values(
         "evaluators": config.evaluators,
         "validation_fraction": config.validation_fraction,
         "validation_seed": config.validation_seed,
+        "training_device": config.training_device,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
         "training_export_mode": config.training_export_mode,
@@ -1347,6 +1376,14 @@ def _required_str(value: object, *, field_name: str) -> str:
     if isinstance(value, str):
         return value
     raise MalformedMorpionBootstrapConfigError.invalid_required_str(field_name)
+
+
+def _required_non_empty_str(value: object, *, field_name: str) -> str:
+    """Return one required non-empty string field or raise."""
+    text = _required_str(value, field_name=field_name)
+    if text.strip():
+        return text
+    raise MalformedMorpionBootstrapConfigError.invalid_non_empty_str(field_name)
 
 
 def _required_bool(value: object, *, field_name: str) -> bool:

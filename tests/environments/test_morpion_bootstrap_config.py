@@ -415,6 +415,15 @@ def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> Non
     assert loaded.search.rollout == config.search.rollout
 
 
+def test_bootstrap_config_from_dict_rejects_blank_training_device() -> None:
+    """Persisted config parsing should reject blank training-device strings."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload["training_device"] = "   "
+
+    with pytest.raises(MalformedMorpionBootstrapConfigError, match="training_device"):
+        bootstrap_config_from_dict(payload)
+
+
 def test_bootstrap_config_persists_growth_state_eviction_policy(
     tmp_path: Path,
 ) -> None:
@@ -906,6 +915,7 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
     assert loaded.pipeline_mode == "single_process"
     assert loaded.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
     assert loaded.training_export_mode == "sharded"
+    assert loaded.training_device == "auto"
     assert loaded.runtime.reevaluation_blend_alpha == 1.0
     assert loaded.runtime.min_available_ram_mb is None
     assert loaded.runtime.candidate_checkpoint_load_headroom_factor == 60.0

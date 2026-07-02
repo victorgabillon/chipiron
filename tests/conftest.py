@@ -19,6 +19,7 @@ for path in (
     REPO_ROOT / "src",
     REPO_ROOT.parent / "atomheart" / "src",
     REPO_ROOT.parent / "anemone" / "src",
+    REPO_ROOT.parent / "coral" / "src",
 ):
     if path.exists() and str(path) not in sys.path:
         sys.path.insert(0, str(path))
@@ -74,15 +75,15 @@ def _patch_valanga_compat() -> None:
         def how_over(self) -> object:
             """Expose the legacy field name expected by older GUI formatting."""
             if self.outcome is Outcome.WIN:
-                return getattr(valanga.over_event, "HowOver").WIN
+                return valanga.over_event.HowOver.WIN
             if self.outcome is Outcome.DRAW:
-                return getattr(valanga.over_event, "HowOver").DRAW
-            return getattr(valanga.over_event, "HowOver").DO_NOT_KNOW_OVER
+                return valanga.over_event.HowOver.DRAW
+            return valanga.over_event.HowOver.DO_NOT_KNOW_OVER
 
         @property
         def who_is_winner(self) -> object:
             """Expose the legacy field name expected by older GUI formatting."""
-            winner_enum = getattr(valanga.over_event, "Winner")
+            winner_enum = valanga.over_event.Winner
             if self.winner == color_type.WHITE:
                 return winner_enum.WHITE
             if self.winner == color_type.BLACK:

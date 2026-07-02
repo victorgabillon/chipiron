@@ -10,6 +10,8 @@ from typing import Any, cast
 
 import torch
 
+from chipiron.learning.torch_runtime import state_dict_on_cpu
+
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
     MORPION_CANONICAL_FEATURE_NAMES,
@@ -246,7 +248,7 @@ def save_morpion_model_bundle(
     manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
     readable_weights_path = bundle_dir / MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME
 
-    torch.save(model.state_dict(), weights_path)
+    torch.save(state_dict_on_cpu(model), weights_path)
     model.log_readable_model_weights_to_file(str(readable_weights_path))
 
     with open(args_path, "w", encoding="utf-8") as handle:
