@@ -14,7 +14,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from chipiron.environments.morpion.learning import MorpionSupervisedRows
+    from chipiron.environments.morpion.learning import (
+        MorpionSupervisedRow,
+        MorpionSupervisedRows,
+    )
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
@@ -139,8 +142,18 @@ def build_evaluator_training_diagnostics(
         feature_subset_name=feature_subset_name,
         feature_names=feature_names,
     )
-    predictions_before = _predict_rows(model_before, row_examples)
-    predictions_after = _predict_rows(model_after, row_examples)
+    predictions_before = _predict_rows(
+        model_before,
+        row_examples,
+        feature_subset_name=feature_subset_name,
+        feature_names=feature_names,
+    )
+    predictions_after = _predict_rows(
+        model_after,
+        row_examples,
+        feature_subset_name=feature_subset_name,
+        feature_names=feature_names,
+    )
 
     indexed_examples = [
         _example_from_row(
@@ -339,6 +352,7 @@ class _PreparedDiagnosticRow:
     depth: int | None
     target_value: float
     input_tensor: Any
+    row: MorpionSupervisedRow
 
 
 def _row_examples_and_targets(
@@ -379,6 +393,7 @@ def _row_examples_and_targets(
                 depth=row.depth,
                 target_value=row.target_value,
                 input_tensor=converter.state_to_tensor(chipiron_state),
+                row=row,
             )
         )
         targets.append(row.target_value)
@@ -388,22 +403,26 @@ def _row_examples_and_targets(
 def _predict_rows(
     model: MorpionRegressor | None,
     rows: list[_PreparedDiagnosticRow],
+    *,
+    feature_subset_name: str,
+    feature_names: tuple[str, ...],
 ) -> list[float | None]:
     """Return one prediction per row or ``None`` when no model is available."""
-    import torch
+    from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+        predict_morpion_rows_for_diagnostics,
+    )
 
     if model is None:
         return [None] * len(rows)
     if not rows:
         return []
 
-    model.eval()
-    stacked_inputs = torch.stack([row.input_tensor for row in rows])
-    with torch.no_grad():
-        predictions = model(stacked_inputs).squeeze(-1).detach().cpu().tolist()
-    if isinstance(predictions, float):
-        return [float(predictions)]
-    return [float(prediction) for prediction in predictions]
+    return predict_morpion_rows_for_diagnostics(
+        model,
+        tuple(row.row for row in rows),
+        feature_subset_name=feature_subset_name,
+        feature_names=feature_names,
+    )
 
 
 def _example_from_row(

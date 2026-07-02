@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
-from types import ModuleType
-from typing import cast
+from types import ModuleType, SimpleNamespace
+from typing import Any, cast
 
 import torch
 
@@ -14,6 +15,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
+_CORAL_SRC_ROOT = _REPO_ROOT.parent / "coral" / "src"
 _MORPION_EVALUATORS_PACKAGE_ROOT = (
     _REPO_ROOT
     / "src"
@@ -23,6 +25,9 @@ _MORPION_EVALUATORS_PACKAGE_ROOT = (
     / "players"
     / "evaluators"
 )
+
+if str(_CORAL_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_CORAL_SRC_ROOT))
 
 if "chipiron" not in sys.modules:
     _chipiron_stub = ModuleType("chipiron")
@@ -48,6 +53,12 @@ from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
+from chipiron.environments.morpion.bootstrap.cycle_training import (
+    persist_evaluator_training_diagnostics,
+)
+from chipiron.environments.morpion.bootstrap.evaluator_config import (
+    MorpionEvaluatorSpec,
+)
 from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
     MorpionEvaluatorDiagnosticExample,
     MorpionEvaluatorTrainingDiagnostics,
@@ -63,6 +74,9 @@ from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
+    MORPION_GRAPH_MODEL_KIND,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressor,
@@ -109,6 +123,45 @@ def _constant_regressor(value: float) -> MorpionRegressor:
         linear.bias.fill_(value)
     model.eval()
     return model
+
+
+class _GraphOnlyDiagnosticModel(torch.nn.Module):
+    """Fake graph-family model that rejects the old flat diagnostics path."""
+
+    args: MorpionRegressorArgs
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.args = MorpionRegressorArgs(
+            model_kind=MORPION_GRAPH_MODEL_KIND,
+            graph_max_tokens=128,
+            graph_d_model=16,
+            graph_n_head=4,
+            graph_n_layer=1,
+            graph_dim_feedforward=32,
+        )
+        self.input_shape: tuple[int, ...] | None = None
+
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        """Return fixed predictions only for graph-token batches."""
+        self.input_shape = tuple(input_tensor.shape)
+        if input_tensor.ndim != 3:
+            raise ValueError
+        return torch.full((input_tensor.shape[0], 1), 0.25)
+
+
+class _UnsupportedDiagnosticModel(torch.nn.Module):
+    """Fake model family that diagnostics should skip cleanly."""
+
+    args: SimpleNamespace
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.args = SimpleNamespace(model_kind="unsupported_family")
+
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        """Raise if diagnostics incorrectly tries a raw flat model call."""
+        raise ValueError
 
 
 def test_representative_row_indexes_cover_small_medium_and_large_datasets() -> None:
@@ -178,6 +231,58 @@ def test_worst_examples_are_sorted_by_after_training_abs_error() -> None:
     assert diagnostics.worst_examples[0].abs_error_after == 3.0
     assert diagnostics.mae_after is not None
     assert diagnostics.mae_before is not None
+
+
+def test_diagnostics_predict_graph_family_with_adapter_path() -> None:
+    """Graph-family diagnostics should not call the model with flat feature tensors."""
+    model = _GraphOnlyDiagnosticModel()
+
+    diagnostics = build_evaluator_training_diagnostics(
+        generation=7,
+        evaluator_name="graph_transformer_small",
+        rows=_rows_bundle((1.0, -3.0, 0.5)),
+        created_at="2026-04-24T09:30:00Z",
+        model_after=cast("MorpionRegressor", model),
+    )
+
+    assert model.input_shape is not None
+    assert len(model.input_shape) == 3
+    assert model.input_shape[0] == 3
+    assert {example.prediction_after for example in diagnostics.worst_examples} == {
+        0.25
+    }
+
+
+def test_unsupported_diagnostics_input_family_skips_without_traceback(
+    tmp_path: Path,
+    caplog: Any,
+) -> None:
+    """Unsupported diagnostic input formats should not fail the training cycle."""
+    spec = MorpionEvaluatorSpec(
+        name="unsupported",
+        model_type="unsupported_family",
+        hidden_sizes=None,
+        num_epochs=1,
+        batch_size=1,
+        learning_rate=1e-3,
+    )
+    paths = SimpleNamespace(work_dir=tmp_path)
+
+    with caplog.at_level(logging.WARNING):
+        persist_evaluator_training_diagnostics(
+            paths=paths,
+            generation=7,
+            evaluator_name="unsupported",
+            rows=_rows_bundle((1.0,)),
+            created_at="2026-04-24T09:30:00Z",
+            spec=spec,
+            model_before=None,
+            model_after=cast("MorpionRegressor", _UnsupportedDiagnosticModel()),
+        )
+
+    assert not diagnostics_path(tmp_path, 7, "unsupported").exists()
+    assert "reason=unsupported_model_input_format" in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 def test_diagnostics_record_row_sampling_metadata() -> None:

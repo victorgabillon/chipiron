@@ -16,6 +16,7 @@ from chipiron.environments.morpion.learning import (
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
+    UnsupportedMorpionDiagnosticInputFormatError,
     train_morpion_regressor,
     train_morpion_regressor_streaming,
 )
@@ -183,6 +184,13 @@ def persist_evaluator_training_diagnostics(
             output_path,
             len(diagnostics.representative_examples),
             len(diagnostics.worst_examples),
+        )
+    except UnsupportedMorpionDiagnosticInputFormatError:
+        LOGGER.warning(
+            "[diagnostics] skipped generation=%s evaluator=%s reason=%s",
+            generation,
+            evaluator_name,
+            UnsupportedMorpionDiagnosticInputFormatError.reason,
         )
     except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
