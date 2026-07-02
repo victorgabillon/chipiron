@@ -7,7 +7,6 @@ import logging
 import math
 import os
 import random
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
@@ -48,8 +47,11 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 )
 from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.learning.supervised import (
+    RegressionEvaluationStats,
     TensorSupervisedBatch,
-    move_supervised_batch_to_device,
+    evaluate_regression_batch,
+    infer_batch_sample_count,
+    train_regression_batch,
 )
 from chipiron.learning.timing import PhaseDurations, format_phase_durations
 from chipiron.learning.torch_runtime import (
@@ -63,7 +65,7 @@ from .bundle import MORPION_MANIFEST_FILE_NAME, save_morpion_model_bundle
 from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regressor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 LOGGER = logging.getLogger(__name__)
 
@@ -239,22 +241,14 @@ def train_morpion_regressor(
         with epoch_timings.time_phase("epoch_total"):
             for sample_batch in train_loader:
                 batch_count += 1
-                with _timed_torch_phase(epoch_timings, "batch_transfer", device):
-                    sample_batch = move_supervised_batch_to_device(
-                        sample_batch,
-                        device,
-                    )
-                with _timed_torch_phase(epoch_timings, "zero_grad", device):
-                    optimizer.zero_grad()
-                with _timed_torch_phase(epoch_timings, "forward", device):
-                    predictions = model(sample_batch.get_input_layer())
-                targets = sample_batch.get_target_value()
-                with _timed_torch_phase(epoch_timings, "loss", device):
-                    loss = criterion(predictions, targets)
-                with _timed_torch_phase(epoch_timings, "backward", device):
-                    loss.backward()
-                with _timed_torch_phase(epoch_timings, "optimizer_step", device):
-                    optimizer.step()
+                train_regression_batch(
+                    model=model,
+                    optimizer=optimizer,
+                    criterion=criterion,
+                    batch=sample_batch,
+                    device=device,
+                    timings=epoch_timings,
+                )
         _add_phase_durations(train_timings, epoch_timings.as_dict())
         LOGGER.info(
             "[train-timing] mode=in_memory model_kind=%s epoch=%s/%s samples=%s "
@@ -289,7 +283,7 @@ def train_morpion_regressor(
     )
     validation_loss: float | None
     validation_mae: float | None
-    validation_stats: _RegressionEvaluationStats | None
+    validation_stats: RegressionEvaluationStats | None
     if len(validation_dataset) > 0:
         with timings.time_phase("validation_metrics_total"):
             validation_stats = _evaluate_regression_metrics(
@@ -803,28 +797,6 @@ def _rows_per_second(row_count: int, elapsed_seconds: float) -> float:
     return row_count / elapsed_seconds
 
 
-def _synchronize_if_cuda(device: torch.device) -> None:
-    """Synchronize CUDA work so diagnostic phase timings include GPU execution."""
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-
-
-@contextmanager
-def _timed_torch_phase(
-    timings: PhaseDurations,
-    phase: str,
-    device: torch.device,
-) -> Iterator[None]:
-    """Measure a Torch phase, synchronizing CUDA before and after the phase."""
-    _synchronize_if_cuda(device)
-    started_at = perf_counter()
-    try:
-        yield
-    finally:
-        _synchronize_if_cuda(device)
-        timings.add_duration(phase, perf_counter() - started_at)
-
-
 def _update_saved_manifest_metadata(
     output_dir: str | os.PathLike[str],
     metadata: dict[str, object],
@@ -840,30 +812,12 @@ def _update_saved_manifest_metadata(
 
 
 @dataclass(frozen=True, slots=True)
-class _RegressionEvaluationStats:
-    loss: float
-    mae: float
-    sample_count: int
-    phase_durations: dict[str, float]
-    elapsed_seconds: float
-
-
-@dataclass(frozen=True, slots=True)
 class _StreamingEpochStats:
     chunk_count: int
     train_count: int
     validation_count: int
     batch_count: int
     loss: float
-    phase_durations: dict[str, float]
-    elapsed_seconds: float
-
-
-@dataclass(frozen=True, slots=True)
-class _StreamingEvaluationStats:
-    loss: float
-    mae: float
-    sample_count: int
     phase_durations: dict[str, float]
     elapsed_seconds: float
 
@@ -928,23 +882,16 @@ def _train_streaming_epoch(
             batch_count += 1
             with epoch_timings.time_phase("row_to_sample_batch"):
                 sample_batch = _rows_to_sample_batch(row_batch, args=args)
-            with _timed_torch_phase(epoch_timings, "batch_transfer", device):
-                sample_batch = move_supervised_batch_to_device(sample_batch, device)
-            with _timed_torch_phase(epoch_timings, "zero_grad", device):
-                optimizer.zero_grad()
-            with _timed_torch_phase(epoch_timings, "forward", device):
-                predictions = model(sample_batch.get_input_layer())
-            targets = sample_batch.get_target_value()
-            with _timed_torch_phase(epoch_timings, "loss", device):
-                loss = criterion(predictions, targets)
-            with _timed_torch_phase(epoch_timings, "backward", device):
-                loss.backward()
-            with _timed_torch_phase(epoch_timings, "optimizer_step", device):
-                optimizer.step()
-            with _timed_torch_phase(epoch_timings, "metric_accumulation", device):
-                errors = predictions.detach() - targets
-                squared_error_sum += float(torch.sum(errors * errors).item())
-                value_count += int(targets.numel())
+            batch_stats = train_regression_batch(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                batch=sample_batch,
+                device=device,
+                timings=epoch_timings,
+            )
+            squared_error_sum += batch_stats.squared_error_sum
+            value_count += batch_stats.target_count
         if progress_callback is not None:
             with epoch_timings.time_phase("progress_callback"):
                 progress_callback(
@@ -975,12 +922,13 @@ def _evaluate_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
-) -> _StreamingEvaluationStats:
+) -> RegressionEvaluationStats:
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
-    value_count = 0
+    sample_count = 0
+    target_count = 0
     model.eval()
     with torch.no_grad():
         row_chunk_iter = iter(
@@ -1017,32 +965,31 @@ def _evaluate_streaming_metrics(
                     break
                 with timings.time_phase("row_to_sample_batch"):
                     sample_batch = _rows_to_sample_batch(row_batch, args=args)
-                with _timed_torch_phase(timings, "batch_transfer", device):
-                    sample_batch = move_supervised_batch_to_device(
-                        sample_batch,
-                        device,
-                    )
-                with _timed_torch_phase(timings, "forward", device):
-                    predictions = model(sample_batch.get_input_layer())
-                targets = sample_batch.get_target_value()
-                with _timed_torch_phase(timings, "metric_accumulation", device):
-                    errors = predictions - targets
-                    squared_error_sum += float(torch.sum(errors * errors).item())
-                    absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
-                    value_count += int(targets.numel())
+                sample_count += infer_batch_sample_count(sample_batch)
+                batch_metrics = evaluate_regression_batch(
+                    model=model,
+                    batch=sample_batch,
+                    device=device,
+                    timings=timings,
+                )
+                squared_error_sum += batch_metrics.squared_error_sum
+                absolute_error_sum += batch_metrics.absolute_error_sum
+                target_count += batch_metrics.target_count
     elapsed_seconds = perf_counter() - evaluation_started_at
-    if value_count == 0:
-        return _StreamingEvaluationStats(
+    if target_count == 0:
+        return RegressionEvaluationStats(
             loss=0.0,
             mae=0.0,
             sample_count=0,
+            target_count=0,
             phase_durations=timings.as_dict(),
             elapsed_seconds=elapsed_seconds,
         )
-    return _StreamingEvaluationStats(
-        loss=squared_error_sum / value_count,
-        mae=absolute_error_sum / value_count,
-        sample_count=value_count,
+    return RegressionEvaluationStats(
+        loss=squared_error_sum / target_count,
+        mae=absolute_error_sum / target_count,
+        sample_count=sample_count,
+        target_count=target_count,
         phase_durations=timings.as_dict(),
         elapsed_seconds=elapsed_seconds,
     )
@@ -1206,15 +1153,16 @@ def _evaluate_regression_metrics(
     batch_size: int,
     device: torch.device,
     collate_fn: Callable[[Any], Any] | None = None,
-) -> _RegressionEvaluationStats:
+) -> RegressionEvaluationStats:
     """Compute full-dataset mean MSE and MAE for one regression split."""
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     if len(dataset) == 0:
-        return _RegressionEvaluationStats(
+        return RegressionEvaluationStats(
             loss=0.0,
             mae=0.0,
             sample_count=0,
+            target_count=0,
             phase_durations={},
             elapsed_seconds=0.0,
         )
@@ -1227,33 +1175,36 @@ def _evaluate_regression_metrics(
     )
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
-    value_count = 0
+    sample_count = 0
+    target_count = 0
     model.eval()
     with torch.no_grad():
         for sample_batch in data_loader:
-            with _timed_torch_phase(timings, "batch_transfer", device):
-                sample_batch = move_supervised_batch_to_device(sample_batch, device)
-            with _timed_torch_phase(timings, "forward", device):
-                predictions = model(sample_batch.get_input_layer())
-            targets = sample_batch.get_target_value()
-            with _timed_torch_phase(timings, "metric_accumulation", device):
-                errors = predictions - targets
-                squared_error_sum += float(torch.sum(errors * errors).item())
-                absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
-                value_count += int(targets.numel())
+            sample_count += infer_batch_sample_count(sample_batch)
+            batch_metrics = evaluate_regression_batch(
+                model=model,
+                batch=sample_batch,
+                device=device,
+                timings=timings,
+            )
+            squared_error_sum += batch_metrics.squared_error_sum
+            absolute_error_sum += batch_metrics.absolute_error_sum
+            target_count += batch_metrics.target_count
     elapsed_seconds = perf_counter() - evaluation_started_at
-    if value_count == 0:
-        return _RegressionEvaluationStats(
+    if target_count == 0:
+        return RegressionEvaluationStats(
             loss=0.0,
             mae=0.0,
             sample_count=0,
+            target_count=0,
             phase_durations=timings.as_dict(),
             elapsed_seconds=elapsed_seconds,
         )
-    return _RegressionEvaluationStats(
-        loss=squared_error_sum / value_count,
-        mae=absolute_error_sum / value_count,
-        sample_count=value_count,
+    return RegressionEvaluationStats(
+        loss=squared_error_sum / target_count,
+        mae=absolute_error_sum / target_count,
+        sample_count=sample_count,
+        target_count=target_count,
         phase_durations=timings.as_dict(),
         elapsed_seconds=elapsed_seconds,
     )
