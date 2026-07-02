@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import math
+import os  # noqa: TC003 - keep available for typing.get_type_hints.
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
@@ -15,9 +15,6 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
     MORPION_GRAPH_TOKEN_FEATURE_DIM,
 )
-
-if TYPE_CHECKING:
-    import os
 
 type MorpionTrainingProgressCallback = Callable[[int, int, int, int], None]
 
