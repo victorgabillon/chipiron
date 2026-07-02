@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     )
 
 DIAGNOSTICS_DIRECTORY_NAME = "evaluator_diagnostics"
+LOGGER = logging.getLogger(__name__)
 _WORST_EXAMPLE_LIMIT = 20
 _REPRESENTATIVE_WINDOW_SIZE = 10
 _EXPECTED_JSON_OBJECT_MAPPING_ERROR = TypeError("Expected a JSON object mapping.")
@@ -145,12 +147,14 @@ def build_evaluator_training_diagnostics(
     predictions_before = _predict_rows(
         model_before,
         row_examples,
+        evaluator_name=evaluator_name,
         feature_subset_name=feature_subset_name,
         feature_names=feature_names,
     )
     predictions_after = _predict_rows(
         model_after,
         row_examples,
+        evaluator_name=evaluator_name,
         feature_subset_name=feature_subset_name,
         feature_names=feature_names,
     )
@@ -404,12 +408,13 @@ def _predict_rows(
     model: MorpionRegressor | None,
     rows: list[_PreparedDiagnosticRow],
     *,
+    evaluator_name: str,
     feature_subset_name: str,
     feature_names: tuple[str, ...],
 ) -> list[float | None]:
     """Return one prediction per row or ``None`` when no model is available."""
     from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
-        predict_morpion_rows_for_diagnostics,
+        try_predict_morpion_rows_for_diagnostics,
     )
 
     if model is None:
@@ -417,12 +422,21 @@ def _predict_rows(
     if not rows:
         return []
 
-    return predict_morpion_rows_for_diagnostics(
+    result = try_predict_morpion_rows_for_diagnostics(
         model,
         tuple(row.row for row in rows),
         feature_subset_name=feature_subset_name,
         feature_names=feature_names,
     )
+    if result.skipped:
+        LOGGER.warning(
+            "[diagnostics] skipped evaluator=%s reason=%s detail=%s",
+            evaluator_name,
+            result.reason,
+            result.detail,
+        )
+        return [None for _ in rows]
+    return result.predictions
 
 
 def _example_from_row(

@@ -9,14 +9,17 @@ from .args import (
     MorpionTrainingProgressCallback,
 )
 from .diagnostics import (
+    MorpionDiagnosticPredictionResult,
     UnsupportedMorpionDiagnosticInputFormatError,
     predict_morpion_rows_for_diagnostics,
+    try_predict_morpion_rows_for_diagnostics,
 )
 from .service import train_morpion_regressor, train_morpion_regressor_streaming
 from .streaming import morpion_streaming_split_policy
 
 __all__ = [
     "InvalidValidationFractionError",
+    "MorpionDiagnosticPredictionResult",
     "MorpionStreamingTrainingArgs",
     "MorpionTrainingArgs",
     "MorpionTrainingProgressCallback",
@@ -25,4 +28,5 @@ __all__ = [
     "predict_morpion_rows_for_diagnostics",
     "train_morpion_regressor",
     "train_morpion_regressor_streaming",
+    "try_predict_morpion_rows_for_diagnostics",
 ]

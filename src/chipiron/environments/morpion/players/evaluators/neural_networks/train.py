@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .training import (
     InvalidValidationFractionError,
+    MorpionDiagnosticPredictionResult,
     MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
     MorpionTrainingProgressCallback,
@@ -12,10 +13,12 @@ from .training import (
     predict_morpion_rows_for_diagnostics,
     train_morpion_regressor,
     train_morpion_regressor_streaming,
+    try_predict_morpion_rows_for_diagnostics,
 )
 
 __all__ = [
     "InvalidValidationFractionError",
+    "MorpionDiagnosticPredictionResult",
     "MorpionStreamingTrainingArgs",
     "MorpionTrainingArgs",
     "MorpionTrainingProgressCallback",
@@ -24,4 +27,5 @@ __all__ = [
     "predict_morpion_rows_for_diagnostics",
     "train_morpion_regressor",
     "train_morpion_regressor_streaming",
+    "try_predict_morpion_rows_for_diagnostics",
 ]

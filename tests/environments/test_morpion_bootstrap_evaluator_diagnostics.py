@@ -276,7 +276,10 @@ def test_unsupported_diagnostics_input_family_skips_without_traceback(
             model_after=cast("MorpionRegressor", _UnsupportedDiagnosticModel()),
         )
 
-    assert not diagnostics_path(tmp_path, 7, "unsupported").exists()
+    output_path = diagnostics_path(tmp_path, 7, "unsupported")
+    assert output_path.exists()
+    diagnostics = load_evaluator_training_diagnostics(output_path)
+    assert diagnostics.representative_examples[0].prediction_after is None
     assert "reason=unsupported_model_input_format" in caplog.text
     assert "Traceback" not in caplog.text
 
