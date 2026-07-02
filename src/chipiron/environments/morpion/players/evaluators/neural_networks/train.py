@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import random
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
@@ -57,7 +58,7 @@ from .bundle import MORPION_MANIFEST_FILE_NAME, save_morpion_model_bundle
 from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regressor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
 LOGGER = logging.getLogger(__name__)
 
@@ -233,17 +234,18 @@ def train_morpion_regressor(
         with epoch_timings.time_phase("epoch_total"):
             for sample_batch in train_loader:
                 batch_count += 1
-                with epoch_timings.time_phase("batch_transfer"):
+                with _timed_torch_phase(epoch_timings, "batch_transfer", device):
                     sample_batch = _move_sample_batch_to_device(sample_batch, device)
-                optimizer.zero_grad()
-                with epoch_timings.time_phase("forward"):
+                with _timed_torch_phase(epoch_timings, "zero_grad", device):
+                    optimizer.zero_grad()
+                with _timed_torch_phase(epoch_timings, "forward", device):
                     predictions = model(sample_batch.get_input_layer())
                 targets = sample_batch.get_target_value()
-                with epoch_timings.time_phase("loss"):
+                with _timed_torch_phase(epoch_timings, "loss", device):
                     loss = criterion(predictions, targets)
-                with epoch_timings.time_phase("backward"):
+                with _timed_torch_phase(epoch_timings, "backward", device):
                     loss.backward()
-                with epoch_timings.time_phase("optimizer_step"):
+                with _timed_torch_phase(epoch_timings, "optimizer_step", device):
                     optimizer.step()
         _add_phase_durations(train_timings, epoch_timings.as_dict())
         LOGGER.info(
@@ -804,6 +806,28 @@ def _rows_per_second(row_count: int, elapsed_seconds: float) -> float:
     return row_count / elapsed_seconds
 
 
+def _synchronize_if_cuda(device: torch.device) -> None:
+    """Synchronize CUDA work so diagnostic phase timings include GPU execution."""
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+
+
+@contextmanager
+def _timed_torch_phase(
+    timings: PhaseDurations,
+    phase: str,
+    device: torch.device,
+) -> Iterator[None]:
+    """Measure a Torch phase, synchronizing CUDA before and after the phase."""
+    _synchronize_if_cuda(device)
+    started_at = perf_counter()
+    try:
+        yield
+    finally:
+        _synchronize_if_cuda(device)
+        timings.add_duration(phase, perf_counter() - started_at)
+
+
 def _update_saved_manifest_metadata(
     output_dir: str | os.PathLike[str],
     metadata: dict[str, object],
@@ -897,27 +921,33 @@ def _train_streaming_epoch(
             if args.shuffle:
                 rng.shuffle(train_rows)
         train_count += len(train_rows)
-        with epoch_timings.time_phase("row_batching"):
-            row_batches = tuple(_row_batches(train_rows, batch_size=args.batch_size))
-        for row_batch in row_batches:
+        row_batch_iter = iter(_row_batches(train_rows, batch_size=args.batch_size))
+        while True:
+            try:
+                with epoch_timings.time_phase("row_batching"):
+                    row_batch = next(row_batch_iter)
+            except StopIteration:
+                break
             batch_count += 1
             with epoch_timings.time_phase("row_to_sample_batch"):
                 sample_batch = _rows_to_sample_batch(row_batch, args=args)
-            with epoch_timings.time_phase("batch_transfer"):
+            with _timed_torch_phase(epoch_timings, "batch_transfer", device):
                 sample_batch = _move_sample_batch_to_device(sample_batch, device)
-            optimizer.zero_grad()
-            with epoch_timings.time_phase("forward"):
+            with _timed_torch_phase(epoch_timings, "zero_grad", device):
+                optimizer.zero_grad()
+            with _timed_torch_phase(epoch_timings, "forward", device):
                 predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
-            with epoch_timings.time_phase("loss"):
+            with _timed_torch_phase(epoch_timings, "loss", device):
                 loss = criterion(predictions, targets)
-            with epoch_timings.time_phase("backward"):
+            with _timed_torch_phase(epoch_timings, "backward", device):
                 loss.backward()
-            with epoch_timings.time_phase("optimizer_step"):
+            with _timed_torch_phase(epoch_timings, "optimizer_step", device):
                 optimizer.step()
-            errors = predictions.detach() - targets
-            squared_error_sum += float(torch.sum(errors * errors).item())
-            value_count += int(targets.numel())
+            with _timed_torch_phase(epoch_timings, "metric_accumulation", device):
+                errors = predictions.detach() - targets
+                squared_error_sum += float(torch.sum(errors * errors).item())
+                value_count += int(targets.numel())
         if progress_callback is not None:
             with epoch_timings.time_phase("progress_callback"):
                 progress_callback(
@@ -979,19 +1009,23 @@ def _evaluate_streaming_metrics(
                         split=split,
                     )
                 ]
-            with timings.time_phase("row_batching"):
-                row_batches = tuple(
-                    _row_batches(selected_rows, batch_size=args.batch_size)
-                )
-            for row_batch in row_batches:
+            row_batch_iter = iter(
+                _row_batches(selected_rows, batch_size=args.batch_size)
+            )
+            while True:
+                try:
+                    with timings.time_phase("row_batching"):
+                        row_batch = next(row_batch_iter)
+                except StopIteration:
+                    break
                 with timings.time_phase("row_to_sample_batch"):
                     sample_batch = _rows_to_sample_batch(row_batch, args=args)
-                with timings.time_phase("batch_transfer"):
+                with _timed_torch_phase(timings, "batch_transfer", device):
                     sample_batch = _move_sample_batch_to_device(sample_batch, device)
-                with timings.time_phase("forward"):
+                with _timed_torch_phase(timings, "forward", device):
                     predictions = model(sample_batch.get_input_layer())
                 targets = sample_batch.get_target_value()
-                with timings.time_phase("metric_accumulation"):
+                with _timed_torch_phase(timings, "metric_accumulation", device):
                     errors = predictions - targets
                     squared_error_sum += float(torch.sum(errors * errors).item())
                     absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
@@ -1196,12 +1230,12 @@ def _evaluate_regression_metrics(
     model.eval()
     with torch.no_grad():
         for sample_batch in data_loader:
-            with timings.time_phase("batch_transfer"):
+            with _timed_torch_phase(timings, "batch_transfer", device):
                 sample_batch = _move_sample_batch_to_device(sample_batch, device)
-            with timings.time_phase("forward"):
+            with _timed_torch_phase(timings, "forward", device):
                 predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
-            with timings.time_phase("metric_accumulation"):
+            with _timed_torch_phase(timings, "metric_accumulation", device):
                 errors = predictions - targets
                 squared_error_sum += float(torch.sum(errors * errors).item())
                 absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
