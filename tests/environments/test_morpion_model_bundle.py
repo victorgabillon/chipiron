@@ -349,10 +349,21 @@ def test_minimal_training_helper_records_cpu_device_metadata(tmp_path: Path) -> 
     assert metrics["model_device"] == "cpu"
     assert isinstance(metrics["parameter_count"], float)
     assert metrics["parameter_count"] > 0.0
+    assert isinstance(metrics["timing_total_s"], float)
+    assert metrics["timing_total_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert metrics["timing_train_forward_s"] >= 0.0
+    assert isinstance(metrics["timing_bundle_save_s"], float)
+    assert metrics["timing_bundle_save_s"] >= 0.0
     assert manifest_metadata["requested_device"] == "cpu"
     assert manifest_metadata["resolved_device"] == "cpu"
     assert manifest_metadata["model_device"] == "cpu"
     assert manifest_metadata["parameter_count"] == metrics["parameter_count"]
+    timing_metadata = cast("dict[str, object]", manifest_metadata["timing"])
+    assert isinstance(timing_metadata["total_s"], float)
+    assert isinstance(timing_metadata["bundle_save_s"], float)
+    train_timing = cast("dict[str, object]", timing_metadata["train"])
+    assert isinstance(train_timing["forward"], float)
 
 
 def test_training_metrics_use_full_validation_mean_not_last_minibatch(
@@ -439,6 +450,12 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert metrics["num_validation_samples"] > 0.0
     assert metrics["split_policy"] == "index_modulo_4"
     assert metrics["final_loss"] is not None
+    assert isinstance(metrics["timing_train_chunk_load_s"], float)
+    assert metrics["timing_train_chunk_load_s"] >= 0.0
+    assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
+    assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert metrics["timing_train_forward_s"] >= 0.0
 
 
 def test_training_metrics_small_dataset_does_not_require_validation(

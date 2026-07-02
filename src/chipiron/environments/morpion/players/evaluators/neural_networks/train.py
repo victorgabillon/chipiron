@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
 import random
 from dataclasses import dataclass, field
+from pathlib import Path
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 import torch
@@ -42,6 +45,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
+from chipiron.learning.timing import PhaseDurations, format_phase_durations
 from chipiron.learning.torch_runtime import (
     module_device,
     parameter_count,
@@ -49,11 +53,11 @@ from chipiron.learning.torch_runtime import (
     torch_device_info,
 )
 
-from .bundle import save_morpion_model_bundle
+from .bundle import MORPION_MANIFEST_FILE_NAME, save_morpion_model_bundle
 from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regressor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 LOGGER = logging.getLogger(__name__)
 
@@ -160,25 +164,29 @@ def train_morpion_regressor(
     args: MorpionTrainingArgs,
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor on persisted supervised rows."""
+    total_started_at = perf_counter()
+    timings = PhaseDurations()
+    train_timings = PhaseDurations()
     collate_fn: Callable[[Any], Any] | None
     dataset: MorpionSupervisedDataset | MorpionGraphSupervisedDataset
-    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
-        dataset = MorpionGraphSupervisedDataset(
-            MorpionGraphSupervisedDatasetArgs(
-                file_name=os.fspath(args.dataset_file),
-                max_tokens=args.graph_max_tokens,
+    with timings.time_phase("dataset_load"):
+        if is_morpion_entity_token_transformer_model_kind(args.model_kind):
+            dataset = MorpionGraphSupervisedDataset(
+                MorpionGraphSupervisedDatasetArgs(
+                    file_name=os.fspath(args.dataset_file),
+                    max_tokens=args.graph_max_tokens,
+                )
             )
-        )
-        collate_fn = collate_morpion_graph_supervised_samples
-    else:
-        dataset = MorpionSupervisedDataset(
-            MorpionSupervisedDatasetArgs(
-                file_name=os.fspath(args.dataset_file),
-                feature_subset_name=args.feature_subset_name,
-                feature_names=args.feature_names,
+            collate_fn = collate_morpion_graph_supervised_samples
+        else:
+            dataset = MorpionSupervisedDataset(
+                MorpionSupervisedDatasetArgs(
+                    file_name=os.fspath(args.dataset_file),
+                    feature_subset_name=args.feature_subset_name,
+                    feature_names=args.feature_names,
+                )
             )
-        )
-        collate_fn = None
+            collate_fn = None
     train_dataset, validation_dataset = _split_train_validation_dataset(
         dataset,
         validation_fraction=args.validation_fraction,
@@ -219,37 +227,89 @@ def train_morpion_regressor(
     criterion = torch.nn.MSELoss()
 
     model.train()
-    for _epoch in range(args.num_epochs):
-        for sample_batch in train_loader:
-            sample_batch = _move_sample_batch_to_device(sample_batch, device)
-            optimizer.zero_grad()
-            predictions = model(sample_batch.get_input_layer())
-            targets = sample_batch.get_target_value()
-            loss = criterion(predictions, targets)
-            loss.backward()
-            optimizer.step()
+    for epoch_index in range(args.num_epochs):
+        epoch_timings = PhaseDurations()
+        batch_count = 0
+        with epoch_timings.time_phase("epoch_total"):
+            for sample_batch in train_loader:
+                batch_count += 1
+                with epoch_timings.time_phase("batch_transfer"):
+                    sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                optimizer.zero_grad()
+                with epoch_timings.time_phase("forward"):
+                    predictions = model(sample_batch.get_input_layer())
+                targets = sample_batch.get_target_value()
+                with epoch_timings.time_phase("loss"):
+                    loss = criterion(predictions, targets)
+                with epoch_timings.time_phase("backward"):
+                    loss.backward()
+                with epoch_timings.time_phase("optimizer_step"):
+                    optimizer.step()
+        _add_phase_durations(train_timings, epoch_timings.as_dict())
+        LOGGER.info(
+            "[train-timing] mode=in_memory model_kind=%s epoch=%s/%s samples=%s "
+            'batches=%s total_s=%.3f rows_per_s=%.3f phases="%s"',
+            args.model_kind,
+            epoch_index + 1,
+            args.num_epochs,
+            len(train_dataset),
+            batch_count,
+            epoch_timings.get("epoch_total"),
+            _rows_per_second(len(train_dataset), epoch_timings.get("epoch_total")),
+            format_phase_durations(epoch_timings.as_dict()),
+        )
+    timings.add_duration("train_epochs_total", train_timings.get("epoch_total"))
 
-    train_loss, train_mae = _evaluate_regression_metrics(
-        model,
-        train_dataset,
-        batch_size=args.batch_size,
-        collate_fn=collate_fn,
-        device=device,
-    )
-    validation_loss: float | None
-    validation_mae: float | None
-    if len(validation_dataset) > 0:
-        validation_loss, validation_mae = _evaluate_regression_metrics(
+    with timings.time_phase("train_metrics_total"):
+        train_stats = _evaluate_regression_metrics(
             model,
-            validation_dataset,
+            train_dataset,
             batch_size=args.batch_size,
             collate_fn=collate_fn,
             device=device,
         )
+    LOGGER.info(
+        "[train-timing] mode=in_memory-eval model_kind=%s split=train samples=%s "
+        'elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
+        args.model_kind,
+        train_stats.sample_count,
+        train_stats.elapsed_seconds,
+        _rows_per_second(train_stats.sample_count, train_stats.elapsed_seconds),
+        format_phase_durations(train_stats.phase_durations),
+    )
+    validation_loss: float | None
+    validation_mae: float | None
+    validation_stats: _RegressionEvaluationStats | None
+    if len(validation_dataset) > 0:
+        with timings.time_phase("validation_metrics_total"):
+            validation_stats = _evaluate_regression_metrics(
+                model,
+                validation_dataset,
+                batch_size=args.batch_size,
+                collate_fn=collate_fn,
+                device=device,
+            )
+        LOGGER.info(
+            "[train-timing] mode=in_memory-eval model_kind=%s split=validation "
+            'samples=%s elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
+            args.model_kind,
+            validation_stats.sample_count,
+            validation_stats.elapsed_seconds,
+            _rows_per_second(
+                validation_stats.sample_count,
+                validation_stats.elapsed_seconds,
+            ),
+            format_phase_durations(validation_stats.phase_durations),
+        )
+        validation_loss = validation_stats.loss
+        validation_mae = validation_stats.mae
     else:
+        validation_stats = None
         validation_loss = None
         validation_mae = None
-    final_loss = validation_loss if validation_loss is not None else train_loss
+    train_loss = train_stats.loss
+    train_mae = train_stats.mae
+    final_loss = validation_loss if validation_loss is not None else train_stats.loss
 
     metrics: dict[str, float | str | None] = {
         "final_loss": final_loss,
@@ -269,10 +329,38 @@ def train_morpion_regressor(
         "model_device": str(module_device(model)),
         "parameter_count": float(parameter_count(model)),
     }
+    _add_timing_metrics(metrics, prefix="", phase_durations=timings.as_dict())
+    _add_timing_metrics(
+        metrics, prefix="train", phase_durations=train_timings.as_dict()
+    )
+    _add_timing_metrics(
+        metrics,
+        prefix="train_metrics",
+        phase_durations=train_stats.phase_durations,
+    )
+    if validation_stats is not None:
+        _add_timing_metrics(
+            metrics,
+            prefix="validation_metrics",
+            phase_durations=validation_stats.phase_durations,
+        )
     device_info = torch_device_info(
         requested_device=args.device,
         resolved_device=device,
     )
+    timing_metadata: dict[str, object] = {
+        "total_s": timings.get("total"),
+        "dataset_load_s": timings.get("dataset_load"),
+        "train_epochs_total_s": timings.get("train_epochs_total"),
+        "train_metrics_total_s": timings.get("train_metrics_total"),
+        "validation_metrics_total_s": timings.get("validation_metrics_total"),
+        "bundle_save_s": 0.0,
+        "train": train_timings.as_dict(),
+        "train_metrics": train_stats.phase_durations,
+        "validation_metrics": (
+            {} if validation_stats is None else validation_stats.phase_durations
+        ),
+    }
     training_metadata = {
         "dataset_file": os.fspath(args.dataset_file),
         "output_dir": os.fspath(args.output_dir),
@@ -303,15 +391,39 @@ def train_morpion_regressor(
         "cuda_device_count": device_info.cuda_device_count,
         "cuda_device_name": device_info.cuda_device_name,
         "parameter_count": float(parameter_count(model)),
+        "timing": timing_metadata,
     }
-    save_morpion_model_bundle(
-        model,
-        os.fspath(args.output_dir),
-        model_args=model_args,
-        metadata={
-            **training_metadata,
-            **metrics,
-        },
+    bundle_metadata = {
+        **training_metadata,
+        **metrics,
+    }
+    with timings.time_phase("bundle_save"):
+        save_morpion_model_bundle(
+            model,
+            os.fspath(args.output_dir),
+            model_args=model_args,
+            metadata=bundle_metadata,
+        )
+    timings.add_duration("total", perf_counter() - total_started_at)
+    timing_metadata["bundle_save_s"] = timings.get("bundle_save")
+    timing_metadata["total_s"] = timings.get("total")
+    metrics["timing_bundle_save_s"] = timings.get("bundle_save")
+    metrics["timing_total_s"] = timings.get("total")
+    bundle_metadata = {
+        **training_metadata,
+        **metrics,
+    }
+    _update_saved_manifest_metadata(args.output_dir, bundle_metadata)
+    LOGGER.info(
+        "[train-timing] mode=in_memory-summary model_kind=%s total_s=%.3f "
+        "train_metrics_s=%.3f validation_metrics_s=%.3f bundle_save_s=%.3f "
+        'phases="%s"',
+        args.model_kind,
+        timings.get("total"),
+        timings.get("train_metrics_total"),
+        timings.get("validation_metrics_total"),
+        timings.get("bundle_save"),
+        format_phase_durations(timings.as_dict()),
     )
     return model, metrics
 
@@ -320,6 +432,9 @@ def train_morpion_regressor_streaming(
     args: MorpionStreamingTrainingArgs,
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor from row chunks without materializing all rows."""
+    total_started_at = perf_counter()
+    timings = PhaseDurations()
+    train_timings = PhaseDurations()
     training_args = args.training_args
     resolved_hidden_sizes = _resolve_hidden_sizes(training_args)
     model_args = MorpionRegressorArgs(
@@ -361,6 +476,8 @@ def train_morpion_regressor_streaming(
             progress_callback=args.progress_callback,
             device=device,
         )
+        _add_phase_durations(train_timings, epoch_stats.phase_durations)
+        timings.add_duration("train_epochs_total", epoch_stats.elapsed_seconds)
         LOGGER.info(
             "[train-stream] epoch=%s chunks=%s train_samples=%s "
             "validation_samples=%s train_loss=%s split_policy=%s",
@@ -371,19 +488,43 @@ def train_morpion_regressor_streaming(
             epoch_stats.loss,
             split_policy,
         )
+        LOGGER.info(
+            "[train-timing] mode=streaming model_kind=%s epoch=%s/%s chunks=%s "
+            "train_samples=%s batches=%s elapsed_s=%.3f rows_per_s=%.3f "
+            'phases="%s"',
+            training_args.model_kind,
+            epoch_index + 1,
+            training_args.num_epochs,
+            epoch_stats.chunk_count,
+            epoch_stats.train_count,
+            epoch_stats.batch_count,
+            epoch_stats.elapsed_seconds,
+            _rows_per_second(epoch_stats.train_count, epoch_stats.elapsed_seconds),
+            format_phase_durations(epoch_stats.phase_durations),
+        )
 
-    train_loss, train_mae, train_count = _evaluate_streaming_metrics(
-        model=model,
-        args=training_args,
-        row_chunk_size=args.row_chunk_size,
-        max_rows=args.max_rows,
-        split="train",
-        device=device,
+    with timings.time_phase("train_metrics_total"):
+        train_stats = _evaluate_streaming_metrics(
+            model=model,
+            args=training_args,
+            row_chunk_size=args.row_chunk_size,
+            max_rows=args.max_rows,
+            split="train",
+            device=device,
+        )
+    LOGGER.info(
+        "[train-timing] mode=streaming-eval model_kind=%s split=train samples=%s "
+        'elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
+        training_args.model_kind,
+        train_stats.sample_count,
+        train_stats.elapsed_seconds,
+        _rows_per_second(train_stats.sample_count, train_stats.elapsed_seconds),
+        format_phase_durations(train_stats.phase_durations),
     )
     validation_loss: float | None
     validation_mae: float | None
-    validation_loss_value, validation_mae_value, validation_count = (
-        _evaluate_streaming_metrics(
+    with timings.time_phase("validation_metrics_total"):
+        validation_stats = _evaluate_streaming_metrics(
             model=model,
             args=training_args,
             row_chunk_size=args.row_chunk_size,
@@ -391,13 +532,28 @@ def train_morpion_regressor_streaming(
             split="validation",
             device=device,
         )
+    LOGGER.info(
+        "[train-timing] mode=streaming-eval model_kind=%s split=validation "
+        'samples=%s elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
+        training_args.model_kind,
+        validation_stats.sample_count,
+        validation_stats.elapsed_seconds,
+        _rows_per_second(
+            validation_stats.sample_count,
+            validation_stats.elapsed_seconds,
+        ),
+        format_phase_durations(validation_stats.phase_durations),
     )
-    if validation_count > 0:
-        validation_loss = validation_loss_value
-        validation_mae = validation_mae_value
+    if validation_stats.sample_count > 0:
+        validation_loss = validation_stats.loss
+        validation_mae = validation_stats.mae
     else:
         validation_loss = None
         validation_mae = None
+    train_loss = train_stats.loss
+    train_mae = train_stats.mae
+    train_count = train_stats.sample_count
+    validation_count = validation_stats.sample_count
     num_samples = train_count + validation_count
     final_loss = validation_loss if validation_loss is not None else train_loss
     metrics: dict[str, float | str | None] = {
@@ -419,10 +575,34 @@ def train_morpion_regressor_streaming(
         "model_device": str(module_device(model)),
         "parameter_count": float(parameter_count(model)),
     }
+    _add_timing_metrics(metrics, prefix="", phase_durations=timings.as_dict())
+    _add_timing_metrics(
+        metrics, prefix="train", phase_durations=train_timings.as_dict()
+    )
+    _add_timing_metrics(
+        metrics,
+        prefix="train_metrics",
+        phase_durations=train_stats.phase_durations,
+    )
+    _add_timing_metrics(
+        metrics,
+        prefix="validation_metrics",
+        phase_durations=validation_stats.phase_durations,
+    )
     device_info = torch_device_info(
         requested_device=training_args.device,
         resolved_device=device,
     )
+    timing_metadata: dict[str, object] = {
+        "total_s": 0.0,
+        "train_epochs_total_s": timings.get("train_epochs_total"),
+        "train_metrics_total_s": timings.get("train_metrics_total"),
+        "validation_metrics_total_s": timings.get("validation_metrics_total"),
+        "bundle_save_s": 0.0,
+        "train": train_timings.as_dict(),
+        "train_metrics": train_stats.phase_durations,
+        "validation_metrics": validation_stats.phase_durations,
+    }
     training_metadata = {
         "dataset_file": os.fspath(training_args.dataset_file),
         "output_dir": os.fspath(training_args.output_dir),
@@ -457,15 +637,40 @@ def train_morpion_regressor_streaming(
         "cuda_device_count": device_info.cuda_device_count,
         "cuda_device_name": device_info.cuda_device_name,
         "parameter_count": float(parameter_count(model)),
+        "timing": timing_metadata,
     }
-    save_morpion_model_bundle(
-        model,
-        os.fspath(training_args.output_dir),
-        model_args=model_args,
-        metadata={
-            **training_metadata,
-            **metrics,
-        },
+    bundle_metadata = {
+        **training_metadata,
+        **metrics,
+    }
+    with timings.time_phase("bundle_save"):
+        save_morpion_model_bundle(
+            model,
+            os.fspath(training_args.output_dir),
+            model_args=model_args,
+            metadata=bundle_metadata,
+        )
+    timings.add_duration("total", perf_counter() - total_started_at)
+    timing_metadata["bundle_save_s"] = timings.get("bundle_save")
+    timing_metadata["total_s"] = timings.get("total")
+    metrics["timing_bundle_save_s"] = timings.get("bundle_save")
+    metrics["timing_total_s"] = timings.get("total")
+    bundle_metadata = {
+        **training_metadata,
+        **metrics,
+    }
+    _update_saved_manifest_metadata(training_args.output_dir, bundle_metadata)
+    LOGGER.info(
+        "[train-timing] mode=streaming-summary model_kind=%s total_s=%.3f "
+        "train_epochs_s=%.3f train_metrics_s=%.3f validation_metrics_s=%.3f "
+        'bundle_save_s=%.3f phases="%s"',
+        training_args.model_kind,
+        timings.get("total"),
+        timings.get("train_epochs_total"),
+        timings.get("train_metrics_total"),
+        timings.get("validation_metrics_total"),
+        timings.get("bundle_save"),
+        format_phase_durations(timings.as_dict()),
     )
     return model, metrics
 
@@ -571,12 +776,75 @@ def _move_sample_batch_to_device(
     )
 
 
+def _add_phase_durations(
+    target: PhaseDurations,
+    phase_durations: Mapping[str, float],
+) -> None:
+    """Accumulate one phase-duration mapping into another timer."""
+    for phase, seconds in phase_durations.items():
+        target.add_duration(phase, seconds)
+
+
+def _add_timing_metrics(
+    metrics: dict[str, float | str | None],
+    *,
+    prefix: str,
+    phase_durations: Mapping[str, float],
+) -> None:
+    """Add flat timing fields to a Morpion training metrics mapping."""
+    for phase, seconds in phase_durations.items():
+        key = f"timing_{prefix}_{phase}_s" if prefix else f"timing_{phase}_s"
+        metrics[key] = float(seconds)
+
+
+def _rows_per_second(row_count: int, elapsed_seconds: float) -> float:
+    """Return one safe row-throughput value for logs."""
+    if elapsed_seconds <= 0.0:
+        return 0.0
+    return row_count / elapsed_seconds
+
+
+def _update_saved_manifest_metadata(
+    output_dir: str | os.PathLike[str],
+    metadata: dict[str, object],
+) -> None:
+    """Update a saved Morpion manifest with final post-save metadata."""
+    manifest_path = Path(output_dir) / MORPION_MANIFEST_FILE_NAME
+    with open(manifest_path, encoding="utf-8") as handle:
+        manifest_payload = json.load(handle)
+    if isinstance(manifest_payload, dict):
+        manifest_payload["metadata"] = metadata
+        with open(manifest_path, "w", encoding="utf-8") as handle:
+            json.dump(manifest_payload, handle, indent=2, sort_keys=True)
+
+
+@dataclass(frozen=True, slots=True)
+class _RegressionEvaluationStats:
+    loss: float
+    mae: float
+    sample_count: int
+    phase_durations: dict[str, float]
+    elapsed_seconds: float
+
+
 @dataclass(frozen=True, slots=True)
 class _StreamingEpochStats:
     chunk_count: int
     train_count: int
     validation_count: int
+    batch_count: int
     loss: float
+    phase_durations: dict[str, float]
+    elapsed_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
+class _StreamingEvaluationStats:
+    loss: float
+    mae: float
+    sample_count: int
+    phase_durations: dict[str, float]
+    elapsed_seconds: float
 
 
 def _train_streaming_epoch(
@@ -591,57 +859,84 @@ def _train_streaming_epoch(
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
 ) -> _StreamingEpochStats:
+    epoch_started_at = perf_counter()
+    epoch_timings = PhaseDurations()
     model.train()
     chunk_count = 0
     train_count = 0
     validation_count = 0
+    batch_count = 0
     squared_error_sum = 0.0
     value_count = 0
     rng = random.Random(args.validation_seed + epoch_index)
-    for row_start_index, rows in _indexed_row_chunks(
-        args.dataset_file,
-        chunk_size=row_chunk_size,
-        max_rows=max_rows,
-    ):
+    row_chunk_iter = iter(
+        _indexed_row_chunks(
+            args.dataset_file,
+            chunk_size=row_chunk_size,
+            max_rows=max_rows,
+        )
+    )
+    while True:
+        try:
+            with epoch_timings.time_phase("chunk_load"):
+                row_start_index, rows = next(row_chunk_iter)
+        except StopIteration:
+            break
         chunk_count += 1
-        train_rows: list[MorpionSupervisedRow] = []
-        for offset, row in enumerate(rows):
-            row_index = row_start_index + offset
-            if _is_streaming_validation_index(
-                row_index,
-                validation_fraction=args.validation_fraction,
-            ):
-                validation_count += 1
-            else:
-                train_rows.append(row)
-        if args.shuffle:
-            rng.shuffle(train_rows)
+        with epoch_timings.time_phase("split_select"):
+            train_rows: list[MorpionSupervisedRow] = []
+            for offset, row in enumerate(rows):
+                row_index = row_start_index + offset
+                if _is_streaming_validation_index(
+                    row_index,
+                    validation_fraction=args.validation_fraction,
+                ):
+                    validation_count += 1
+                else:
+                    train_rows.append(row)
+            if args.shuffle:
+                rng.shuffle(train_rows)
         train_count += len(train_rows)
-        for row_batch in _row_batches(train_rows, batch_size=args.batch_size):
-            sample_batch = _rows_to_sample_batch(row_batch, args=args)
-            sample_batch = _move_sample_batch_to_device(sample_batch, device)
+        with epoch_timings.time_phase("row_batching"):
+            row_batches = tuple(_row_batches(train_rows, batch_size=args.batch_size))
+        for row_batch in row_batches:
+            batch_count += 1
+            with epoch_timings.time_phase("row_to_sample_batch"):
+                sample_batch = _rows_to_sample_batch(row_batch, args=args)
+            with epoch_timings.time_phase("batch_transfer"):
+                sample_batch = _move_sample_batch_to_device(sample_batch, device)
             optimizer.zero_grad()
-            predictions = model(sample_batch.get_input_layer())
+            with epoch_timings.time_phase("forward"):
+                predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
-            loss = criterion(predictions, targets)
-            loss.backward()
-            optimizer.step()
+            with epoch_timings.time_phase("loss"):
+                loss = criterion(predictions, targets)
+            with epoch_timings.time_phase("backward"):
+                loss.backward()
+            with epoch_timings.time_phase("optimizer_step"):
+                optimizer.step()
             errors = predictions.detach() - targets
             squared_error_sum += float(torch.sum(errors * errors).item())
             value_count += int(targets.numel())
         if progress_callback is not None:
-            progress_callback(
-                chunk_count,
-                row_start_index + len(rows),
-                epoch_index + 1,
-                args.num_epochs,
-            )
+            with epoch_timings.time_phase("progress_callback"):
+                progress_callback(
+                    chunk_count,
+                    row_start_index + len(rows),
+                    epoch_index + 1,
+                    args.num_epochs,
+                )
+    elapsed_seconds = perf_counter() - epoch_started_at
+    epoch_timings.add_duration("epoch_total", elapsed_seconds)
     loss_value = 0.0 if value_count == 0 else squared_error_sum / value_count
     return _StreamingEpochStats(
         chunk_count=chunk_count,
         train_count=train_count,
         validation_count=validation_count,
+        batch_count=batch_count,
         loss=loss_value,
+        phase_durations=epoch_timings.as_dict(),
+        elapsed_seconds=elapsed_seconds,
     )
 
 
@@ -653,41 +948,69 @@ def _evaluate_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
-) -> tuple[float, float, int]:
+) -> _StreamingEvaluationStats:
+    evaluation_started_at = perf_counter()
+    timings = PhaseDurations()
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
     value_count = 0
     model.eval()
     with torch.no_grad():
-        for row_start_index, rows in _indexed_row_chunks(
-            args.dataset_file,
-            chunk_size=row_chunk_size,
-            max_rows=max_rows,
-        ):
-            selected_rows = [
-                row
-                for offset, row in enumerate(rows)
-                if _streaming_row_is_in_split(
-                    row_start_index + offset,
-                    validation_fraction=args.validation_fraction,
-                    split=split,
+        row_chunk_iter = iter(
+            _indexed_row_chunks(
+                args.dataset_file,
+                chunk_size=row_chunk_size,
+                max_rows=max_rows,
+            )
+        )
+        while True:
+            try:
+                with timings.time_phase("chunk_load"):
+                    row_start_index, rows = next(row_chunk_iter)
+            except StopIteration:
+                break
+            with timings.time_phase("split_select"):
+                selected_rows = [
+                    row
+                    for offset, row in enumerate(rows)
+                    if _streaming_row_is_in_split(
+                        row_start_index + offset,
+                        validation_fraction=args.validation_fraction,
+                        split=split,
+                    )
+                ]
+            with timings.time_phase("row_batching"):
+                row_batches = tuple(
+                    _row_batches(selected_rows, batch_size=args.batch_size)
                 )
-            ]
-            for row_batch in _row_batches(selected_rows, batch_size=args.batch_size):
-                sample_batch = _rows_to_sample_batch(row_batch, args=args)
-                sample_batch = _move_sample_batch_to_device(sample_batch, device)
-                predictions = model(sample_batch.get_input_layer())
+            for row_batch in row_batches:
+                with timings.time_phase("row_to_sample_batch"):
+                    sample_batch = _rows_to_sample_batch(row_batch, args=args)
+                with timings.time_phase("batch_transfer"):
+                    sample_batch = _move_sample_batch_to_device(sample_batch, device)
+                with timings.time_phase("forward"):
+                    predictions = model(sample_batch.get_input_layer())
                 targets = sample_batch.get_target_value()
-                errors = predictions - targets
-                squared_error_sum += float(torch.sum(errors * errors).item())
-                absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
-                value_count += int(targets.numel())
+                with timings.time_phase("metric_accumulation"):
+                    errors = predictions - targets
+                    squared_error_sum += float(torch.sum(errors * errors).item())
+                    absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
+                    value_count += int(targets.numel())
+    elapsed_seconds = perf_counter() - evaluation_started_at
     if value_count == 0:
-        return 0.0, 0.0, 0
-    return (
-        squared_error_sum / value_count,
-        absolute_error_sum / value_count,
-        value_count,
+        return _StreamingEvaluationStats(
+            loss=0.0,
+            mae=0.0,
+            sample_count=0,
+            phase_durations=timings.as_dict(),
+            elapsed_seconds=elapsed_seconds,
+        )
+    return _StreamingEvaluationStats(
+        loss=squared_error_sum / value_count,
+        mae=absolute_error_sum / value_count,
+        sample_count=value_count,
+        phase_durations=timings.as_dict(),
+        elapsed_seconds=elapsed_seconds,
     )
 
 
@@ -848,10 +1171,18 @@ def _evaluate_regression_metrics(
     batch_size: int,
     device: torch.device,
     collate_fn: Callable[[Any], Any] | None = None,
-) -> tuple[float, float]:
+) -> _RegressionEvaluationStats:
     """Compute full-dataset mean MSE and MAE for one regression split."""
+    evaluation_started_at = perf_counter()
+    timings = PhaseDurations()
     if len(dataset) == 0:
-        return 0.0, 0.0
+        return _RegressionEvaluationStats(
+            loss=0.0,
+            mae=0.0,
+            sample_count=0,
+            phase_durations={},
+            elapsed_seconds=0.0,
+        )
 
     data_loader = DataLoader(
         dataset,
@@ -865,16 +1196,32 @@ def _evaluate_regression_metrics(
     model.eval()
     with torch.no_grad():
         for sample_batch in data_loader:
-            sample_batch = _move_sample_batch_to_device(sample_batch, device)
-            predictions = model(sample_batch.get_input_layer())
+            with timings.time_phase("batch_transfer"):
+                sample_batch = _move_sample_batch_to_device(sample_batch, device)
+            with timings.time_phase("forward"):
+                predictions = model(sample_batch.get_input_layer())
             targets = sample_batch.get_target_value()
-            errors = predictions - targets
-            squared_error_sum += float(torch.sum(errors * errors).item())
-            absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
-            value_count += int(targets.numel())
+            with timings.time_phase("metric_accumulation"):
+                errors = predictions - targets
+                squared_error_sum += float(torch.sum(errors * errors).item())
+                absolute_error_sum += float(torch.sum(torch.abs(errors)).item())
+                value_count += int(targets.numel())
+    elapsed_seconds = perf_counter() - evaluation_started_at
     if value_count == 0:
-        return 0.0, 0.0
-    return squared_error_sum / value_count, absolute_error_sum / value_count
+        return _RegressionEvaluationStats(
+            loss=0.0,
+            mae=0.0,
+            sample_count=0,
+            phase_durations=timings.as_dict(),
+            elapsed_seconds=elapsed_seconds,
+        )
+    return _RegressionEvaluationStats(
+        loss=squared_error_sum / value_count,
+        mae=absolute_error_sum / value_count,
+        sample_count=value_count,
+        phase_durations=timings.as_dict(),
+        elapsed_seconds=elapsed_seconds,
+    )
 
 
 def _resolve_hidden_sizes(args: MorpionTrainingArgs) -> tuple[int, ...] | None:

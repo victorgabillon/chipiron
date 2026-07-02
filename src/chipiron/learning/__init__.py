@@ -1,5 +1,6 @@
 """Common learning/runtime helpers owned by Chipiron."""
 
+from .timing import PhaseDurations, format_phase_durations
 from .torch_runtime import (
     TorchDeviceInfo,
     TorchDeviceUnavailableError,
@@ -11,8 +12,10 @@ from .torch_runtime import (
 )
 
 __all__ = [
+    "PhaseDurations",
     "TorchDeviceInfo",
     "TorchDeviceUnavailableError",
+    "format_phase_durations",
     "module_device",
     "parameter_count",
     "resolve_torch_device",
