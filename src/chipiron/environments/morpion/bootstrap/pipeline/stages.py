@@ -177,7 +177,7 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     morpion_streaming_split_policy,
 )
 

@@ -83,7 +83,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_ex
 from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
     _direction_index_for_segment,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     MorpionTrainingArgs,
     train_morpion_regressor,
 )

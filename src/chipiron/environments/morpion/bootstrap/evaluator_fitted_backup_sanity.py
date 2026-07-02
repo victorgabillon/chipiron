@@ -35,7 +35,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     MorpionTrainingArgs,
     train_morpion_regressor,
 )

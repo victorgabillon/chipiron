@@ -23,7 +23,7 @@ from chipiron.environments.morpion.learning import (
     training_node_to_morpion_supervised_row,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     MorpionTrainingArgs,
     train_morpion_regressor,
 )

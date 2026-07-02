@@ -13,7 +13,7 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRowsSource,
     iter_morpion_supervised_rows_from_path,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
     UnsupportedMorpionDiagnosticInputFormatError,

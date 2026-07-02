@@ -421,11 +421,11 @@ if (
     ] = _state_to_tensor_stub
 
 if (
-    "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+    "chipiron.environments.morpion.players.evaluators.neural_networks.training"
     not in sys.modules
 ):
     _train_stub = ModuleType(
-        "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+        "chipiron.environments.morpion.players.evaluators.neural_networks.training"
     )
 
     @dataclass(frozen=True, slots=True)
@@ -449,7 +449,7 @@ if (
     _train_stub.MorpionTrainingArgs = _MorpionTrainingArgs
     _train_stub.train_morpion_regressor = _train_morpion_regressor
     sys.modules[
-        "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+        "chipiron.environments.morpion.players.evaluators.neural_networks.training"
     ] = _train_stub
 
 if "atomheart" not in sys.modules:

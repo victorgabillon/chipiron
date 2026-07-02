@@ -80,7 +80,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     morpion_feature_subset_from_feature_names,
     save_morpion_model_bundle,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     MorpionStreamingTrainingArgs,
     MorpionTrainingArgs,
     train_morpion_regressor,

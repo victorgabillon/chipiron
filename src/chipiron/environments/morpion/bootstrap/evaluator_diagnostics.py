@@ -408,7 +408,7 @@ def _predict_rows(
     feature_names: tuple[str, ...],
 ) -> list[float | None]:
     """Return one prediction per row or ``None`` when no model is available."""
-    from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
         predict_morpion_rows_for_diagnostics,
     )
 
