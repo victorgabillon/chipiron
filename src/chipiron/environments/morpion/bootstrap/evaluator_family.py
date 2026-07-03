@@ -106,7 +106,7 @@ def graph_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
         graph_dim_feedforward=256,
         graph_dropout_ratio=0.0,
         graph_pooling="value_token",
-        graph_output_tanh=True,
+        graph_output_tanh=False,
     )
 
 
@@ -127,7 +127,7 @@ def entity_token_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorS
         graph_dim_feedforward=256,
         graph_dropout_ratio=0.0,
         graph_pooling="value_token",
-        graph_output_tanh=True,
+        graph_output_tanh=False,
     )
 
 

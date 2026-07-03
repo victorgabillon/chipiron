@@ -177,7 +177,7 @@ def diagnostic_training_args(
         graph_dim_feedforward=int(getattr(model_args, "graph_dim_feedforward", 256)),
         graph_dropout_ratio=float(getattr(model_args, "graph_dropout_ratio", 0.0)),
         graph_pooling=str(getattr(model_args, "graph_pooling", "value_token")),
-        graph_output_tanh=bool(getattr(model_args, "graph_output_tanh", True)),
+        graph_output_tanh=bool(getattr(model_args, "graph_output_tanh", False)),
         device="auto",
     )
 

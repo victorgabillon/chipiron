@@ -33,6 +33,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
 )
 from chipiron.learning.supervised import (
     RegressionEvaluationStats,
+    TensorSupervisedBatch,
     train_regression_batch,
 )
 from chipiron.learning.timing import PhaseDurations, format_phase_durations
@@ -51,6 +52,7 @@ from .flat_cache_streaming import (
 )
 from .flat_tensor_cache import (
     FlatTensorCache,
+    flat_cache_batch,
     is_flat_morpion_training_model_kind,
     load_or_materialize_flat_tensor_cache,
 )
@@ -60,6 +62,7 @@ from .graph_cache_streaming import (
 )
 from .graph_token_cache import (
     GraphTokenCache,
+    graph_cache_batch,
     load_or_materialize_graph_token_cache,
 )
 from .metadata import (
@@ -71,6 +74,12 @@ from .metadata import (
 from .model_args import (
     morpion_regressor_args_from_training_args,
     resolve_hidden_sizes,
+)
+from .scale_diagnostics import (
+    TensorScaleStats,
+    target_scale_metadata,
+    tensor_scale_stats,
+    tensor_scale_stats_to_metadata,
 )
 from .streaming import streaming_split_policy, train_streaming_epoch
 
@@ -407,6 +416,44 @@ def train_morpion_regressor_streaming(
             graph_cache.load_seconds,
             graph_cache.paths.tensor_path,
         )
+    target_scale: dict[str, object] = {}
+    prediction_scale_before_training: dict[str, object] = {}
+    prediction_scale_after_training: dict[str, object] = {}
+    cached_prediction_batch_builder = _cached_prediction_batch_builder(
+        flat_cache=flat_cache,
+        graph_cache=graph_cache,
+        training_args=training_args,
+    )
+    cached_row_count = _cached_row_count(flat_cache=flat_cache, graph_cache=graph_cache)
+    cached_target_tensor = _cached_target_tensor(
+        flat_cache=flat_cache,
+        graph_cache=graph_cache,
+    )
+    target_stats: TensorScaleStats | None = None
+    if cached_target_tensor is not None:
+        target_stats = tensor_scale_stats(cached_target_tensor)
+        target_scale = target_scale_metadata(cached_target_tensor)
+        warn_if_output_tanh_mismatches_target_scale(
+            model_kind=training_args.model_kind,
+            graph_output_tanh=training_args.graph_output_tanh,
+            target_stats=target_stats,
+        )
+    if cached_prediction_batch_builder is not None and cached_row_count > 0:
+        prediction_before_stats = prediction_scale_stats_for_cached_batches(
+            model=model,
+            batch_builder=cached_prediction_batch_builder,
+            row_count=cached_row_count,
+            batch_size=training_args.batch_size,
+            device=device,
+        )
+        prediction_scale_before_training = tensor_scale_stats_to_metadata(
+            prediction_before_stats
+        )
+        _log_scale_before_training(
+            model_kind=training_args.model_kind,
+            target_stats=target_stats,
+            prediction_stats=prediction_before_stats,
+        )
 
     for epoch_index in range(training_args.num_epochs):
         if flat_cache is not None:
@@ -563,6 +610,21 @@ def train_morpion_regressor_streaming(
     else:
         validation_loss = None
         validation_mae = None
+    if cached_prediction_batch_builder is not None and cached_row_count > 0:
+        prediction_after_stats = prediction_scale_stats_for_cached_batches(
+            model=model,
+            batch_builder=cached_prediction_batch_builder,
+            row_count=cached_row_count,
+            batch_size=training_args.batch_size,
+            device=device,
+        )
+        prediction_scale_after_training = tensor_scale_stats_to_metadata(
+            prediction_after_stats
+        )
+        _log_scale_after_training(
+            model_kind=training_args.model_kind,
+            prediction_stats=prediction_after_stats,
+        )
     train_loss = train_stats.loss
     train_mae = train_stats.mae
     train_count = train_stats.sample_count
@@ -616,6 +678,17 @@ def train_morpion_regressor_streaming(
                 "timing_graph_token_cache_load_s": graph_cache.load_seconds,
             }
         )
+    _add_target_scale_metrics(metrics, target_scale)
+    _add_prediction_scale_metrics(
+        metrics,
+        prefix="prediction_before",
+        metadata=prediction_scale_before_training,
+    )
+    _add_prediction_scale_metrics(
+        metrics,
+        prefix="prediction_after",
+        metadata=prediction_scale_after_training,
+    )
     add_timing_metrics(metrics, prefix="", phase_durations=timings.as_dict())
     add_timing_metrics(metrics, prefix="train", phase_durations=train_timings.as_dict())
     add_timing_metrics(
@@ -678,6 +751,9 @@ def train_morpion_regressor_streaming(
         "parameter_count": float(parameter_count(model)),
         "flat_tensor_cache": flat_tensor_cache_metadata,
         "graph_token_cache": graph_token_cache_metadata,
+        "target_scale": target_scale,
+        "prediction_scale_before_training": prediction_scale_before_training,
+        "prediction_scale_after_training": prediction_scale_after_training,
         "timing": timing_metadata,
     }
     bundle_metadata = {
@@ -714,6 +790,189 @@ def train_morpion_regressor_streaming(
         format_phase_durations(timings.as_dict()),
     )
     return model, metrics
+
+
+def _cached_prediction_batch_builder(
+    *,
+    flat_cache: FlatTensorCache | None,
+    graph_cache: GraphTokenCache | None,
+    training_args: MorpionTrainingArgs,
+) -> Callable[[tuple[int, ...]], TensorSupervisedBatch] | None:
+    """Return a small-batch builder for cache-backed prediction diagnostics."""
+    if flat_cache is not None:
+
+        def build_flat_batch(row_indices: tuple[int, ...]) -> TensorSupervisedBatch:
+            return flat_cache_batch(
+                cache=flat_cache,
+                row_indices=row_indices,
+                requested_feature_names=training_args.feature_names,
+            )
+
+        return build_flat_batch
+    if graph_cache is not None:
+
+        def build_graph_batch(row_indices: tuple[int, ...]) -> TensorSupervisedBatch:
+            return graph_cache_batch(cache=graph_cache, row_indices=row_indices)
+
+        return build_graph_batch
+    return None
+
+
+def _cached_row_count(
+    *,
+    flat_cache: FlatTensorCache | None,
+    graph_cache: GraphTokenCache | None,
+) -> int:
+    """Return row count for whichever streaming cache is active."""
+    if flat_cache is not None:
+        return flat_cache.manifest.row_count
+    if graph_cache is not None:
+        return graph_cache.manifest.row_count
+    return 0
+
+
+def _cached_target_tensor(
+    *,
+    flat_cache: FlatTensorCache | None,
+    graph_cache: GraphTokenCache | None,
+) -> torch.Tensor | None:
+    """Return target tensor for whichever streaming cache is active."""
+    if flat_cache is not None:
+        return flat_cache.target_tensor
+    if graph_cache is not None:
+        return graph_cache.target_tensor
+    return None
+
+
+def prediction_scale_stats_for_cached_batches(
+    *,
+    model: MorpionRegressor,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    row_count: int,
+    batch_size: int,
+    device: torch.device,
+    max_rows: int = 1024,
+) -> TensorScaleStats:
+    """Return prediction scale stats over a small prefix of cached rows."""
+    sample_count = min(max_rows, row_count)
+    if sample_count <= 0:
+        return tensor_scale_stats(torch.empty((0,), dtype=torch.float32))
+    effective_batch_size = max(1, batch_size)
+    predictions: list[torch.Tensor] = []
+    was_training = model.training
+    model.eval()
+    with torch.no_grad():
+        for start in range(0, sample_count, effective_batch_size):
+            row_indices = tuple(
+                range(start, min(start + effective_batch_size, sample_count))
+            )
+            sample_batch = batch_builder(row_indices)
+            batch_predictions = model(sample_batch.get_input_layer().to(device))
+            predictions.append(batch_predictions.detach().cpu().reshape(-1))
+    if was_training:
+        model.train()
+    if not predictions:
+        return tensor_scale_stats(torch.empty((0,), dtype=torch.float32))
+    return tensor_scale_stats(torch.cat(predictions))
+
+
+def warn_if_output_tanh_mismatches_target_scale(
+    *,
+    model_kind: str,
+    graph_output_tanh: bool,
+    target_stats: TensorScaleStats,
+) -> None:
+    """Warn when tanh output scaling conflicts with unnormalized targets."""
+    if (
+        graph_output_tanh
+        and target_stats.abs_max is not None
+        and target_stats.abs_max > 2.0
+    ):
+        LOGGER.warning(
+            "[train-scale] graph_output_tanh=true with target_abs_max=%s for "
+            "model_kind=%s; outputs may be constrained near [-1, 1] while "
+            "targets are unnormalized.",
+            target_stats.abs_max,
+            model_kind,
+        )
+
+
+def _log_scale_before_training(
+    *,
+    model_kind: str,
+    target_stats: TensorScaleStats | None,
+    prediction_stats: TensorScaleStats,
+) -> None:
+    """Log one target/prediction scale summary before training."""
+    LOGGER.info(
+        "[train-scale] model_kind=%s target_mean=%s target_std=%s "
+        "target_min=%s target_max=%s prediction_before_mean=%s "
+        "prediction_before_std=%s",
+        model_kind,
+        None if target_stats is None else target_stats.mean,
+        None if target_stats is None else target_stats.std,
+        None if target_stats is None else target_stats.min,
+        None if target_stats is None else target_stats.max,
+        prediction_stats.mean,
+        prediction_stats.std,
+    )
+
+
+def _log_scale_after_training(
+    *,
+    model_kind: str,
+    prediction_stats: TensorScaleStats,
+) -> None:
+    """Log one prediction scale summary after training."""
+    LOGGER.info(
+        "[train-scale] model_kind=%s prediction_after_mean=%s prediction_after_std=%s",
+        model_kind,
+        prediction_stats.mean,
+        prediction_stats.std,
+    )
+
+
+def _add_target_scale_metrics(
+    metrics: dict[str, float | str | None],
+    metadata: dict[str, object],
+) -> None:
+    """Add target scale metadata to flat training metrics."""
+    if not metadata:
+        return
+    metrics["target_count"] = _optional_metric_float(metadata.get("count"))
+    metrics["target_mean"] = _optional_metric_float(metadata.get("mean"))
+    metrics["target_std"] = _optional_metric_float(metadata.get("std"))
+    metrics["target_min"] = _optional_metric_float(metadata.get("min"))
+    metrics["target_max"] = _optional_metric_float(metadata.get("max"))
+    metrics["target_abs_mean"] = _optional_metric_float(metadata.get("abs_mean"))
+    metrics["target_abs_max"] = _optional_metric_float(metadata.get("abs_max"))
+    metrics["target_zero_prediction_mse"] = _optional_metric_float(
+        metadata.get("zero_prediction_mse")
+    )
+
+
+def _add_prediction_scale_metrics(
+    metrics: dict[str, float | str | None],
+    *,
+    prefix: str,
+    metadata: dict[str, object],
+) -> None:
+    """Add selected prediction scale metadata to flat training metrics."""
+    if not metadata:
+        return
+    metrics[f"{prefix}_mean"] = _optional_metric_float(metadata.get("mean"))
+    metrics[f"{prefix}_std"] = _optional_metric_float(metadata.get("std"))
+    metrics[f"{prefix}_min"] = _optional_metric_float(metadata.get("min"))
+    metrics[f"{prefix}_max"] = _optional_metric_float(metadata.get("max"))
+
+
+def _optional_metric_float(value: object) -> float | None:
+    """Return one metrics-compatible optional float."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
 
 
 def _split_train_validation_dataset(

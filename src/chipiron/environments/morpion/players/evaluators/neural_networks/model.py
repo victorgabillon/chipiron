@@ -40,7 +40,7 @@ class MorpionRegressorArgs:
     graph_dim_feedforward: int = 256
     graph_dropout_ratio: float = 0.0
     graph_pooling: str = "value_token"
-    graph_output_tanh: bool = True
+    graph_output_tanh: bool = False
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""

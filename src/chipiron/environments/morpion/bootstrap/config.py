@@ -1289,7 +1289,7 @@ def _evaluator_spec_from_config_payload(
             field_name=f"{section_name}.graph_pooling",
         ),
         graph_output_tanh=_required_bool(
-            spec_mapping.get("graph_output_tanh", True),
+            spec_mapping.get("graph_output_tanh", False),
             field_name=f"{section_name}.graph_output_tanh",
         ),
     )
@@ -1335,7 +1335,7 @@ def _has_non_default_graph_evaluator_settings(spec: MorpionEvaluatorSpec) -> boo
         or spec.graph_dim_feedforward != 256
         or spec.graph_dropout_ratio != 0.0
         or spec.graph_pooling != "value_token"
-        or spec.graph_output_tanh is not True
+        or spec.graph_output_tanh is not False
     )
 
 

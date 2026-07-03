@@ -351,7 +351,7 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         graph_dim_feedforward=_coerce_int(data.get("graph_dim_feedforward", 256)),
         graph_dropout_ratio=_coerce_float(data.get("graph_dropout_ratio", 0.0)),
         graph_pooling=str(data.get("graph_pooling", "value_token")),
-        graph_output_tanh=_coerce_bool(data.get("graph_output_tanh", True)),
+        graph_output_tanh=_coerce_bool(data.get("graph_output_tanh", False)),
     )
 
 

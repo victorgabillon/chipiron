@@ -167,7 +167,7 @@ def test_graph_transformer_small_spec_uses_laptop_safe_defaults() -> None:
     assert spec.graph_dim_feedforward == 256
     assert spec.graph_dropout_ratio == 0.0
     assert spec.graph_pooling == "value_token"
-    assert spec.graph_output_tanh is True
+    assert spec.graph_output_tanh is False
 
 
 def test_entity_token_transformer_small_spec_uses_laptop_safe_defaults() -> None:
@@ -184,7 +184,7 @@ def test_entity_token_transformer_small_spec_uses_laptop_safe_defaults() -> None
     assert spec.graph_dim_feedforward == 256
     assert spec.graph_dropout_ratio == 0.0
     assert spec.graph_pooling == "value_token"
-    assert spec.graph_output_tanh is True
+    assert spec.graph_output_tanh is False
 
 
 def test_training_args_from_graph_spec_preserves_graph_fields() -> None:

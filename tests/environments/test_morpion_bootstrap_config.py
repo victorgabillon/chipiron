@@ -1416,6 +1416,39 @@ def test_bootstrap_config_roundtrip_preserves_graph_evaluator_fields(
     assert loaded_spec.graph_output_tanh is False
 
 
+def test_bootstrap_config_missing_graph_output_tanh_defaults_false() -> None:
+    """Missing graph output tanh config should parse to the regression default."""
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "graph": MorpionEvaluatorSpec(
+                    name="graph",
+                    model_type=MORPION_GRAPH_MODEL_KIND,
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=2,
+                    learning_rate=1e-3,
+                )
+            }
+        ),
+    )
+    payload = bootstrap_config_to_dict(config)
+    graph_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
+            "graph"
+        ],
+    )
+    graph_payload.pop("graph_output_tanh", None)
+
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert loaded.evaluators.evaluators["graph"].graph_output_tanh is False
+
+
 def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:
     """Subset-only evaluator differences should affect the bootstrap config hash."""
     subset_name_10, feature_names_10 = _feature_subset(10)

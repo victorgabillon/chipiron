@@ -50,7 +50,7 @@ class MorpionTrainingArgs:
     graph_dim_feedforward: int = 256
     graph_dropout_ratio: float = 0.0
     graph_pooling: str = "value_token"
-    graph_output_tanh: bool = True
+    graph_output_tanh: bool = False
     validation_fraction: float = 0.2
     validation_seed: int = 0
     device: str = "auto"
