@@ -453,12 +453,27 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert metrics["num_validation_samples"] > 0.0
     assert metrics["split_policy"] == "index_modulo_4"
     assert metrics["final_loss"] is not None
+    assert metrics["flat_tensor_cache_used"] == "true"
+    assert metrics["flat_tensor_cache_rebuilt"] == "true"
+    assert isinstance(metrics["flat_tensor_cache_path"], str)
+    assert isinstance(metrics["timing_flat_tensor_cache_materialize_s"], float)
+    assert isinstance(metrics["timing_flat_tensor_cache_load_s"], float)
     assert isinstance(metrics["timing_train_chunk_load_s"], float)
     assert metrics["timing_train_chunk_load_s"] >= 0.0
     assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
     assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
     assert isinstance(metrics["timing_train_forward_s"], float)
     assert metrics["timing_train_forward_s"] >= 0.0
+    with open(output_dir / MORPION_MANIFEST_FILE_NAME, encoding="utf-8") as handle:
+        manifest_payload = json.load(handle)
+    manifest_metadata = cast("dict[str, object]", manifest_payload["metadata"])
+    flat_cache_metadata = cast(
+        "dict[str, object]",
+        manifest_metadata["flat_tensor_cache"],
+    )
+    assert flat_cache_metadata["used"] is True
+    assert flat_cache_metadata["rebuilt"] is True
+    assert flat_cache_metadata["row_count"] == 8
 
 
 def test_training_metrics_small_dataset_does_not_require_validation(

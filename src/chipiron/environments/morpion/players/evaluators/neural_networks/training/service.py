@@ -45,6 +45,15 @@ from chipiron.learning.torch_runtime import (
 
 from .device_logging import log_training_device
 from .evaluation import evaluate_regression_metrics, evaluate_streaming_metrics
+from .flat_cache_streaming import (
+    evaluate_flat_cache_streaming_metrics,
+    train_flat_cache_streaming_epoch,
+)
+from .flat_tensor_cache import (
+    FlatTensorCache,
+    is_flat_morpion_training_model_kind,
+    load_or_materialize_flat_tensor_cache,
+)
 from .metadata import (
     add_phase_durations,
     add_timing_metrics,
@@ -334,19 +343,60 @@ def train_morpion_regressor_streaming(
     optimizer = torch.optim.Adam(model.parameters(), lr=training_args.learning_rate)
     criterion = torch.nn.MSELoss()
     split_policy = streaming_split_policy(training_args.validation_fraction)
-
-    for epoch_index in range(training_args.num_epochs):
-        epoch_stats = train_streaming_epoch(
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
-            args=training_args,
+    flat_cache: FlatTensorCache | None = None
+    flat_tensor_cache_metadata: dict[str, object] = {"used": False}
+    if is_flat_morpion_training_model_kind(training_args.model_kind):
+        flat_cache = load_or_materialize_flat_tensor_cache(
+            rows_path=training_args.dataset_file,
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
-            epoch_index=epoch_index,
-            progress_callback=args.progress_callback,
-            device=device,
         )
+        flat_tensor_cache_metadata = {
+            "used": True,
+            "rebuilt": flat_cache.rebuilt,
+            "path": os.fspath(flat_cache.paths.tensor_path),
+            "manifest_path": os.fspath(flat_cache.paths.manifest_path),
+            "row_count": flat_cache.manifest.row_count,
+            "feature_names": flat_cache.manifest.feature_names,
+            "materialize_s": flat_cache.materialize_seconds,
+            "load_s": flat_cache.load_seconds,
+        }
+        LOGGER.info(
+            "[train-cache] kind=flat_tensor rows=%s rebuilt=%s materialize_s=%.3f "
+            "load_s=%.3f path=%s",
+            flat_cache.manifest.row_count,
+            flat_cache.rebuilt,
+            flat_cache.materialize_seconds,
+            flat_cache.load_seconds,
+            flat_cache.paths.tensor_path,
+        )
+
+    for epoch_index in range(training_args.num_epochs):
+        if flat_cache is None:
+            epoch_stats = train_streaming_epoch(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                args=training_args,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                epoch_index=epoch_index,
+                progress_callback=args.progress_callback,
+                device=device,
+            )
+        else:
+            epoch_stats = train_flat_cache_streaming_epoch(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                args=training_args,
+                cache=flat_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                epoch_index=epoch_index,
+                progress_callback=args.progress_callback,
+                device=device,
+            )
         add_phase_durations(train_timings, epoch_stats.phase_durations)
         timings.add_duration("train_epochs_total", epoch_stats.elapsed_seconds)
         LOGGER.info(
@@ -375,14 +425,25 @@ def train_morpion_regressor_streaming(
         )
 
     with timings.time_phase("train_metrics_total"):
-        train_stats = evaluate_streaming_metrics(
-            model=model,
-            args=training_args,
-            row_chunk_size=args.row_chunk_size,
-            max_rows=args.max_rows,
-            split="train",
-            device=device,
-        )
+        if flat_cache is None:
+            train_stats = evaluate_streaming_metrics(
+                model=model,
+                args=training_args,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="train",
+                device=device,
+            )
+        else:
+            train_stats = evaluate_flat_cache_streaming_metrics(
+                model=model,
+                args=training_args,
+                cache=flat_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="train",
+                device=device,
+            )
     LOGGER.info(
         "[train-timing] mode=streaming-eval model_kind=%s split=train samples=%s "
         'elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
@@ -395,14 +456,25 @@ def train_morpion_regressor_streaming(
     validation_loss: float | None
     validation_mae: float | None
     with timings.time_phase("validation_metrics_total"):
-        validation_stats = evaluate_streaming_metrics(
-            model=model,
-            args=training_args,
-            row_chunk_size=args.row_chunk_size,
-            max_rows=args.max_rows,
-            split="validation",
-            device=device,
-        )
+        if flat_cache is None:
+            validation_stats = evaluate_streaming_metrics(
+                model=model,
+                args=training_args,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="validation",
+                device=device,
+            )
+        else:
+            validation_stats = evaluate_flat_cache_streaming_metrics(
+                model=model,
+                args=training_args,
+                cache=flat_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="validation",
+                device=device,
+            )
     LOGGER.info(
         "[train-timing] mode=streaming-eval model_kind=%s split=validation "
         'samples=%s elapsed_s=%.3f rows_per_s=%.3f phases="%s"',
@@ -445,7 +517,21 @@ def train_morpion_regressor_streaming(
         "resolved_device": str(device),
         "model_device": str(module_device(model)),
         "parameter_count": float(parameter_count(model)),
+        "flat_tensor_cache_used": "true" if flat_cache is not None else "false",
     }
+    if flat_cache is not None:
+        metrics.update(
+            {
+                "flat_tensor_cache_rebuilt": (
+                    "true" if flat_cache.rebuilt else "false"
+                ),
+                "flat_tensor_cache_path": os.fspath(flat_cache.paths.tensor_path),
+                "timing_flat_tensor_cache_materialize_s": (
+                    flat_cache.materialize_seconds
+                ),
+                "timing_flat_tensor_cache_load_s": flat_cache.load_seconds,
+            }
+        )
     add_timing_metrics(metrics, prefix="", phase_durations=timings.as_dict())
     add_timing_metrics(metrics, prefix="train", phase_durations=train_timings.as_dict())
     add_timing_metrics(
@@ -506,6 +592,7 @@ def train_morpion_regressor_streaming(
         "cuda_device_count": device_info.cuda_device_count,
         "cuda_device_name": device_info.cuda_device_name,
         "parameter_count": float(parameter_count(model)),
+        "flat_tensor_cache": flat_tensor_cache_metadata,
         "timing": timing_metadata,
     }
     bundle_metadata = {

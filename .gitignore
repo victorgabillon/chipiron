@@ -119,3 +119,8 @@ docs/_build/
 # Profiling reports
 chipiron/scripts/profiling/benchmark_reports/**
 src/chipiron/scripts/profiling/benchmark_reports/**
+
+# Morpion generated tensor caches
+**/tensor_cache/
+*.flat_features.*.pt
+*.flat_features.*.manifest.json
