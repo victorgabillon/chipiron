@@ -67,6 +67,7 @@ from chipiron.environments.morpion.players.evaluators.datasets import (
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
     MORPION_FEATURE_SCHEMA,
+    MORPION_GRAPH_MODEL_KIND,
     MORPION_INPUT_DIM,
     MORPION_MANIFEST_FILE_NAME,
     MORPION_MODEL_ARGS_FILE_NAME,
@@ -456,6 +457,7 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert metrics["flat_tensor_cache_used"] == "true"
     assert metrics["flat_tensor_cache_rebuilt"] == "true"
     assert isinstance(metrics["flat_tensor_cache_path"], str)
+    assert metrics["graph_token_cache_used"] == "false"
     assert isinstance(metrics["timing_flat_tensor_cache_materialize_s"], float)
     assert isinstance(metrics["timing_flat_tensor_cache_load_s"], float)
     assert isinstance(metrics["timing_train_chunk_load_s"], float)
@@ -474,6 +476,76 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert flat_cache_metadata["used"] is True
     assert flat_cache_metadata["rebuilt"] is True
     assert flat_cache_metadata["row_count"] == 8
+
+
+def test_train_morpion_graph_regressor_streaming_tiny_jsonl(
+    tmp_path: Path,
+) -> None:
+    """Streaming graph-token training should use the packed graph cache."""
+    json_rows_path = _build_rows_file(
+        tmp_path,
+        target_values=(-1.0, -0.5, 0.0, 0.25, 0.5, 0.75),
+    )
+    rows = load_morpion_supervised_rows(json_rows_path)
+    jsonl_rows_path = tmp_path / "morpion_graph_supervised_rows.jsonl"
+    write_stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=jsonl_rows_path,
+    )
+    output_dir = tmp_path / "streaming_graph_trained_bundle"
+
+    _model, metrics = train_morpion_regressor_streaming(
+        MorpionStreamingTrainingArgs(
+            training_args=MorpionTrainingArgs(
+                dataset_file=jsonl_rows_path,
+                output_dir=output_dir,
+                batch_size=2,
+                num_epochs=1,
+                learning_rate=1e-3,
+                shuffle=False,
+                validation_fraction=0.25,
+                model_kind=MORPION_GRAPH_MODEL_KIND,
+                graph_max_tokens=128,
+                graph_d_model=16,
+                graph_n_head=4,
+                graph_n_layer=1,
+                graph_dim_feedforward=32,
+            ),
+            row_chunk_size=2,
+            max_rows=4,
+        )
+    )
+
+    assert write_stats.row_count == 6
+    assert output_dir.is_dir()
+    assert metrics["num_samples"] == 4.0
+    assert metrics["flat_tensor_cache_used"] == "false"
+    assert metrics["graph_token_cache_used"] == "true"
+    assert metrics["graph_token_cache_rebuilt"] == "true"
+    assert isinstance(metrics["graph_token_cache_path"], str)
+    assert isinstance(metrics["timing_graph_token_cache_materialize_s"], float)
+    assert metrics["timing_graph_token_cache_materialize_s"] >= 0.0
+    assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
+    assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert isinstance(metrics["timing_train_backward_s"], float)
+    assert isinstance(metrics["timing_train_metrics_row_to_sample_batch_s"], float)
+    assert isinstance(
+        metrics["timing_validation_metrics_row_to_sample_batch_s"],
+        float,
+    )
+    with open(output_dir / MORPION_MANIFEST_FILE_NAME, encoding="utf-8") as handle:
+        manifest_payload = json.load(handle)
+    manifest_metadata = cast("dict[str, object]", manifest_payload["metadata"])
+    graph_cache_metadata = cast(
+        "dict[str, object]",
+        manifest_metadata["graph_token_cache"],
+    )
+    assert graph_cache_metadata["used"] is True
+    assert graph_cache_metadata["rebuilt"] is True
+    assert graph_cache_metadata["row_count"] == 4
+    assert graph_cache_metadata["graph_max_tokens"] == 128
 
 
 def test_training_metrics_small_dataset_does_not_require_validation(

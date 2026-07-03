@@ -124,3 +124,5 @@ src/chipiron/scripts/profiling/benchmark_reports/**
 **/tensor_cache/
 *.flat_features.*.pt
 *.flat_features.*.manifest.json
+*.graph_tokens.*.pt
+*.graph_tokens.*.manifest.json
