@@ -108,6 +108,7 @@ def test_flat_cached_streaming_training_reports_scale_metrics(
     )
 
     _assert_scale_metric_keys(metrics)
+    assert metrics["cached_global_shuffle"] == "true"
     assert metrics["target_mean"] == pytest.approx(25.0)
     assert metrics["target_abs_max"] == pytest.approx(40.0)
     assert metrics["target_zero_prediction_mse"] == pytest.approx(750.0)
@@ -135,6 +136,7 @@ def test_graph_cached_streaming_training_reports_scale_metrics(
     )
 
     _assert_scale_metric_keys(metrics)
+    assert metrics["cached_global_shuffle"] == "true"
     assert metrics["graph_token_cache_used"] == "true"
     assert metrics["target_mean"] == pytest.approx(25.0)
 

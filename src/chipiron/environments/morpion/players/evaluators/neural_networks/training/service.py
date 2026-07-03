@@ -44,6 +44,7 @@ from chipiron.learning.torch_runtime import (
     torch_device_info,
 )
 
+from .cached_index_schedule import cached_index_schedule
 from .device_logging import log_training_device
 from .evaluation import evaluate_regression_metrics, evaluate_streaming_metrics
 from .flat_cache_streaming import (
@@ -429,6 +430,13 @@ def train_morpion_regressor_streaming(
         flat_cache=flat_cache,
         graph_cache=graph_cache,
     )
+    cached_training_schedule = _cached_training_schedule_metadata(
+        cached_row_count=cached_row_count,
+        max_rows=args.max_rows,
+        validation_fraction=training_args.validation_fraction,
+        shuffle=training_args.shuffle,
+        cache_used=flat_cache is not None or graph_cache is not None,
+    )
     target_stats: TensorScaleStats | None = None
     if cached_target_tensor is not None:
         target_stats = tensor_scale_stats(cached_target_tensor)
@@ -651,6 +659,11 @@ def train_morpion_regressor_streaming(
         "parameter_count": float(parameter_count(model)),
         "flat_tensor_cache_used": "true" if flat_cache is not None else "false",
         "graph_token_cache_used": "true" if graph_cache is not None else "false",
+        "cached_global_shuffle": (
+            "true"
+            if cached_training_schedule.get("global_shuffle") is True
+            else "false"
+        ),
     }
     if flat_cache is not None:
         metrics.update(
@@ -751,6 +764,7 @@ def train_morpion_regressor_streaming(
         "parameter_count": float(parameter_count(model)),
         "flat_tensor_cache": flat_tensor_cache_metadata,
         "graph_token_cache": graph_token_cache_metadata,
+        "cached_training_schedule": cached_training_schedule,
         "target_scale": target_scale,
         "prediction_scale_before_training": prediction_scale_before_training,
         "prediction_scale_after_training": prediction_scale_after_training,
@@ -842,6 +856,37 @@ def _cached_target_tensor(
     if graph_cache is not None:
         return graph_cache.target_tensor
     return None
+
+
+def _cached_training_schedule_metadata(
+    *,
+    cached_row_count: int,
+    max_rows: int | None,
+    validation_fraction: float,
+    shuffle: bool,
+    cache_used: bool,
+) -> dict[str, object]:
+    """Return persisted metadata for cached training-index scheduling."""
+    if not cache_used:
+        return {
+            "global_shuffle": False,
+            "shuffle": shuffle,
+        }
+    effective_row_count = cached_row_count
+    if max_rows is not None:
+        effective_row_count = min(effective_row_count, max_rows)
+    schedule = cached_index_schedule(
+        row_count=effective_row_count,
+        validation_fraction=validation_fraction,
+    )
+    return {
+        "global_shuffle": True,
+        "shuffle": shuffle,
+        "row_count": schedule.row_count,
+        "train_count": len(schedule.train_indices),
+        "validation_count": len(schedule.validation_indices),
+        "split_policy": schedule.split_policy,
+    }
 
 
 def prediction_scale_stats_for_cached_batches(
