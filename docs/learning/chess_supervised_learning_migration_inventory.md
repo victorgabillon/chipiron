@@ -164,6 +164,11 @@
 - Compatibility path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
 - Classification: keep as a public supervised chess script configuration
   dataclass.
+- Compatibility boundary: new code should import
+  `SupervisedTrainingArgs` and `SupervisedTrainingConfigError` from
+  `chipiron.scripts.learn_nn_supervised.training_args`; legacy imports through
+  `NNTrainerArgs`, `NNTrainerConfigError`, and
+  `chipiron.learningprocesses.nn_trainer.factory` remain supported for now.
 - Notes: contains optimizer, scheduler, batch-size, saving, and model input
   configuration.
 
@@ -413,6 +418,27 @@ PR14:
   `nn_trainer_args`; decide whether to remove the legacy factory module;
   decide whether checkpoint helpers should move to a chess-specific checkpoint
   module.
+
+## PR22 progress
+
+- Kept the public dataclass/YAML field name `nn_trainer_args` unchanged for
+  parser and options-file compatibility.
+- Kept `NNTrainerArgs` and `NNTrainerConfigError` as compatibility aliases in
+  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Clarified `chipiron.learningprocesses.nn_trainer.factory` as a legacy
+  compatibility facade; new code should import training config from
+  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Kept checkpoint helpers in
+  `chipiron.learningprocesses.nn_trainer.checkpoint_helpers` and kept their
+  legacy factory re-exports unchanged.
+- Added focused compatibility tests for canonical imports, legacy aliases,
+  the `nn_trainer_args` dataclass field, and supervised parser-backed options.
+- Future PR23 candidate: optional public YAML field migration from
+  `nn_trainer_args` to a clearer name with a backward-compatible loader.
+- Future PR24 candidate: optional deprecation or removal of legacy factory
+  imports once downstream imports have moved.
+- Future PR25 candidate: optional move of checkpoint helpers to a chess-specific
+  checkpoint module.
 
 ## Risk notes
 

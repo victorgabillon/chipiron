@@ -30,6 +30,8 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.model_inp
 
 if TYPE_CHECKING:
     from chipiron.utils import MyPath
+else:
+    MyPath = str
 
 
 class SupervisedTrainingConfigError(ValueError):
@@ -126,6 +128,7 @@ class SupervisedTrainingArgs:
             )
 
 
-# Compatibility aliases for legacy YAML/import paths.
+# Compatibility aliases kept for older imports/YAML migration.
+# Prefer SupervisedTrainingArgs and SupervisedTrainingConfigError in new code.
 NNTrainerArgs = SupervisedTrainingArgs
 NNTrainerConfigError = SupervisedTrainingConfigError
