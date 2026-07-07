@@ -5,6 +5,11 @@ from typing import TYPE_CHECKING
 
 import chess
 import pytest
+
+pytest.importorskip("atomheart")
+pytest.importorskip("coral")
+pytest.importorskip("parsley")
+
 import torch
 from atomheart.games.chess.board import (
     BoardModificationP,

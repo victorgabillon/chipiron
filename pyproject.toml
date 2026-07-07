@@ -193,6 +193,9 @@ line-length = 88
 target-version = "py313"
 fix = false
 
+[tool.ruff.format]
+preview = true
+
 [tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
 select = [
