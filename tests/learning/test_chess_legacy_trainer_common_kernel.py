@@ -215,6 +215,15 @@ def test_legacy_trainer_test_delegates_to_common_evaluation(
     assert float(loss.cpu()) == pytest.approx(1.0)
 
 
+def test_legacy_trainer_surface_no_longer_exposes_train_next_boards() -> None:
+    """The unreferenced next-board training special case should stay removed."""
+    nn_trainer_module = _import_legacy_trainer_module()
+
+    assert hasattr(nn_trainer_module.NNPytorchTrainer, "train")
+    assert hasattr(nn_trainer_module.NNPytorchTrainer, "test")
+    assert not hasattr(nn_trainer_module.NNPytorchTrainer, "train_next_boards")
+
+
 def test_loss_value_from_regression_sums_supports_mse_mean() -> None:
     """Legacy loss reconstruction should support mean MSE."""
     nn_trainer_module = _import_legacy_trainer_module()

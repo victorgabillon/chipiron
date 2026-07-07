@@ -129,8 +129,7 @@
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
 - Classification: live compatibility wrapper.
 - Notes: normal supervised train/test paths delegate to `chipiron.learning`.
-  `train_next_boards` remains a legacy next-position target path and should be
-  reviewed separately before removal.
+  The unreferenced legacy `train_next_boards` special case was removed in PR15.
 
 ### `compute_loss`
 
@@ -171,10 +170,11 @@
 ### `safe_nn_architecture_save`, `safe_nn_param_save`, `safe_nn_trainer_save`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
-- Classification: unclear; keep until chess checkpoint/bundle writing has a
-  clearer replacement.
-- Notes: `safe_nn_param_save` writes raw `nn.state_dict()` today rather than a
-  CPU-normalized state dict.
+- Classification: live compatibility APIs used by the supervised chess learning
+  script.
+- Notes: `safe_nn_param_save` now writes CPU-normalized state dicts through
+  `chipiron.learning.state_dict_on_cpu`; architecture YAML and trainer optimizer
+  or scheduler pickle saving remain unchanged.
 
 ## Current model/bundle/checkpoint paths
 
@@ -223,7 +223,8 @@ Obvious missing tests:
   common `train_regression_batch` kernel during PR13.
 - A direct chess evaluation-loop test using the common
   `evaluate_regression_batch` primitive.
-- Checkpoint portability tests for legacy chess `safe_nn_param_save`.
+- Broader script-level checkpoint assertions once optional chess dependencies
+  are available locally.
 - A script-level assertion that PR13 preserves the tiny supervised chess
   learning outputs and metrics while changing the trainer internals.
 
@@ -272,11 +273,26 @@ PR14:
 - `_loss_value_from_regression_sums` now raises a clear `TypeError` for
   unreduced losses and unsupported criteria instead of falling through to a
   non-existent metric field.
-- `train_next_boards` is still unreferenced by current source/test searches and
-  remains a legacy special case pending PR15 removal review.
-- Remaining PR15/PR16 work: decide whether to remove `NNPytorchTrainer` itself
-  and whether legacy checkpoint helpers should become a chess-specific bundle
-  writer.
+- At the end of PR14, `train_next_boards` was still unreferenced by current
+  source/test searches and remained pending PR15 removal review.
+- Remaining PR15/PR16 work at that point: decide whether to remove
+  `NNPytorchTrainer` itself and whether legacy checkpoint helpers should become
+  a chess-specific bundle writer.
+
+## PR15 progress
+
+- `train_next_boards`: removed from `NNPytorchTrainer` because current
+  source/test/doc searches found no live callers outside its own definition and
+  migration notes.
+- `safe_nn_param_save`: kept as a live compatibility API and updated to save
+  CPU-normalized state dicts via `chipiron.learning.state_dict_on_cpu`.
+- `safe_nn_architecture_save`: kept unchanged because the supervised chess
+  learning script still calls it to write legacy architecture YAML.
+- `safe_nn_trainer_save`: kept unchanged because the supervised chess learning
+  script still calls it to write optimizer and scheduler artifacts.
+- Remaining PR16 work: decide whether `NNPytorchTrainer` can be removed once
+  script-level tests run with optional dependencies, and decide whether legacy
+  checkpoint helpers should move into a chess-specific bundle writer.
 
 ## Risk notes
 

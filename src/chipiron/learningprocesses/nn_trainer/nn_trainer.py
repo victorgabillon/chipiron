@@ -81,7 +81,6 @@ class NNPytorchTrainer:
     Methods:
         train(input_layer, target_value): Trains the neural network model using the provided input and target values.
         test(input_layer, target_value): Tests the neural network model using the provided input and target values.
-        train_next_boards(input_layer, next_input_layer): Trains the neural network model using the provided input and next input layers.
 
     """
 
@@ -176,31 +175,6 @@ class NNPytorchTrainer:
         )
         self.net.train()
         return loss
-
-    def train_next_boards(
-        self, input_layer: torch.Tensor, next_input_layer: torch.Tensor
-    ) -> None:
-        """Train the neural network model using the provided input and next input layers.
-
-        Args:
-            input_layer (torch.Tensor): The input data.
-            next_input_layer (torch.Tensor): The next input data.
-
-        Returns:
-            None
-
-        """
-        # TODO(PR15): confirm whether this unreferenced legacy special case can be removed.
-        self.net.eval()
-        target_value = -self.net(next_input_layer)
-
-        self.net.train()
-        self.optimizer.zero_grad()
-        prediction_with_player_to_move_as_white = self.net(input_layer)
-
-        loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
-        loss.backward()
-        self.optimizer.step()
 
     def compute_test_error_on_dataset(
         self, data_test: DataLoader[SupervisedBatch]

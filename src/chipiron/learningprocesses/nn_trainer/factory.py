@@ -34,6 +34,7 @@ from coral.neural_networks.output_converters.model_output_type import (
 from torch import optim
 
 from chipiron.environments.types import GameKind
+from chipiron.learning import state_dict_on_cpu
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
@@ -338,14 +339,16 @@ def safe_nn_param_save(
         path_to_param_file = nn_file_path_pt
     try:
         chipiron_logger.info("saving to file: %s", path_to_param_file)
+        state_dict = state_dict_on_cpu(nn)
         with open(path_to_param_file, "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
+            torch.save(state_dict, file_nnw)
             nn.log_readable_model_weights_to_file(file_path=file_name_yaml)
         with open(path_to_param_file + "_save", "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
+            torch.save(state_dict, file_nnw)
     except KeyboardInterrupt:
+        state_dict = state_dict_on_cpu(nn)
         with open(path_to_param_file + "_save", "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
+            torch.save(state_dict, file_nnw)
         sys.exit(-1)
 
 
