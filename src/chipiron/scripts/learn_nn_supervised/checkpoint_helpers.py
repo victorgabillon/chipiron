@@ -1,4 +1,9 @@
-"""Checkpoint helpers for supervised chess neural-network training."""
+"""Canonical checkpoint helpers for supervised chess neural-network training.
+
+The ``safe_nn_*`` function names are legacy-compatible helper names. Checkpoint
+filenames and file formats remain compatible with the legacy supervised chess
+training artifacts.
+"""
 
 from __future__ import annotations
 

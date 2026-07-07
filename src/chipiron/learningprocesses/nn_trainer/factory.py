@@ -1,8 +1,13 @@
-"""Legacy compatibility facade for supervised chess training config.
+"""Compatibility facade for legacy supervised chess training imports.
 
-New code should import config classes from
-``chipiron.scripts.learn_nn_supervised.training_args`` and checkpoint helpers
-from ``chipiron.scripts.learn_nn_supervised.checkpoint_helpers``.
+New code should import training config from:
+    chipiron.scripts.learn_nn_supervised.training_args
+
+New code should import checkpoint helpers from:
+    chipiron.scripts.learn_nn_supervised.checkpoint_helpers
+
+This module remains only to support older imports during the migration away from
+learningprocesses.nn_trainer.
 """
 
 from __future__ import annotations

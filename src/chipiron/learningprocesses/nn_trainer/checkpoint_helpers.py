@@ -1,7 +1,10 @@
-"""Compatibility exports for legacy supervised chess checkpoint helper imports.
+"""Compatibility facade for legacy checkpoint helper imports.
 
-New code should import from
-``chipiron.scripts.learn_nn_supervised.checkpoint_helpers``.
+New code should import from:
+    chipiron.scripts.learn_nn_supervised.checkpoint_helpers
+
+This module re-exports the canonical supervised chess checkpoint helpers for
+older callers.
 """
 
 from __future__ import annotations

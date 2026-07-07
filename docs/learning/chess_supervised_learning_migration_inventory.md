@@ -440,8 +440,8 @@ PR14:
   the `nn_trainer_args` dataclass field, and supervised parser-backed options.
 - Future PR23 candidate: optional move of checkpoint helpers to the supervised
   chess learning script package.
-- Future PR24 candidate: optional deprecation or removal of legacy factory
-  imports once downstream imports have moved.
+- Future PR24 candidate: explicitly mark the remaining
+  `learningprocesses.nn_trainer` modules as compatibility facades.
 - Future PR25 candidate: optional public YAML field migration from
   `nn_trainer_args` to a clearer name with a backward-compatible loader.
 
@@ -455,10 +455,26 @@ PR14:
 - Kept `chipiron.learningprocesses.nn_trainer.factory` checkpoint helper
   re-exports as compatibility aliases.
 - Preserved checkpoint filenames and formats.
-- Remaining PR24 work: decide whether to remove the legacy factory module
-  entirely; decide whether to rename `safe_nn_*` helpers to clearer public
-  names; decide whether to remove old checkpoint helper compatibility paths
-  after downstream imports have moved.
+- Remaining PR24 work: explicitly mark the remaining
+  `learningprocesses.nn_trainer` modules as compatibility facades.
+
+## PR24 progress
+
+- Marked `chipiron.learningprocesses.nn_trainer.factory` as a legacy
+  compatibility facade.
+- Marked `chipiron.learningprocesses.nn_trainer.checkpoint_helpers` as a legacy
+  compatibility facade.
+- Confirmed canonical supervised chess training config lives in
+  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Confirmed canonical supervised chess checkpoint helpers live in
+  `chipiron.scripts.learn_nn_supervised.checkpoint_helpers`.
+- Added tests proving legacy imports re-export canonical objects exactly.
+- Added a guard that active supervised chess source uses canonical modules.
+- No runtime deprecation warnings were added to avoid noisy test/log output.
+- Remaining optional future work:
+  PR25: rename `safe_nn_*` helpers to clearer names with aliases.
+  PR26: remove legacy `learningprocesses.nn_trainer` facades if downstream
+  imports have moved.
 
 ## Risk notes
 
@@ -467,8 +483,8 @@ PR14:
   coverage and not only direct function calls.
 - Importing some chess learning modules pulls in optional GUI/script/runtime
   dependencies such as `parsley`, `PySide6`, `coral`, `atomheart`, and
-  `anemone`; tests should skip only when those dependencies are genuinely
-  absent.
+  `anemone`; facade tests should avoid those dependencies where possible, and
+  broader smoke tests should skip only when they are genuinely absent.
 - `learn_from_scratch_value_and_fixed_boards.py` constructs search/player and
   Syzygy-related runtime objects even though `learn_model_some_steps` is empty.
   This path should be treated carefully in PR13.

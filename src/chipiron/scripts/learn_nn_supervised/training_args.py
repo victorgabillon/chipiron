@@ -1,4 +1,9 @@
-"""Configuration dataclasses for supervised chess neural-network training."""
+"""Canonical configuration dataclasses for supervised chess training.
+
+``SupervisedTrainingArgs`` is the canonical config class for new code.
+``NNTrainerArgs`` remains as a compatibility alias, and the public script/YAML
+field name remains ``nn_trainer_args`` during the migration.
+"""
 
 from __future__ import annotations
 

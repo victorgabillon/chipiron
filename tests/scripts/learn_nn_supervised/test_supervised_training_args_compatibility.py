@@ -14,7 +14,7 @@ import yaml
 def test_canonical_and_legacy_training_args_imports_match() -> None:
     """Canonical imports and legacy aliases should resolve to the same objects."""
     from chipiron.learningprocesses.nn_trainer import factory
-    from chipiron.scripts.learn_nn_supervised import training_args
+    from chipiron.scripts.learn_nn_supervised import checkpoint_helpers, training_args
 
     assert training_args.SupervisedTrainingArgs is not None
     assert training_args.NNTrainerArgs is training_args.SupervisedTrainingArgs
@@ -29,6 +29,24 @@ def test_canonical_and_legacy_training_args_imports_match() -> None:
         is training_args.SupervisedTrainingConfigError
     )
     assert factory.NNTrainerConfigError is training_args.SupervisedTrainingConfigError
+    assert factory.OptimizerType is training_args.OptimizerType
+    assert factory.GameInputArgs is training_args.GameInputArgs
+    assert (
+        factory.safe_nn_architecture_save
+        is checkpoint_helpers.safe_nn_architecture_save
+    )
+    assert factory.safe_nn_param_save is checkpoint_helpers.safe_nn_param_save
+    assert factory.safe_nn_trainer_save is checkpoint_helpers.safe_nn_trainer_save
+
+
+def test_active_supervised_script_uses_canonical_training_imports() -> None:
+    """The active supervised script should not import legacy facades."""
+    source = Path(
+        "src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py"
+    ).read_text(encoding="utf-8")
+
+    assert "chipiron.learningprocesses.nn_trainer.factory" not in source
+    assert "chipiron.learningprocesses.nn_trainer.checkpoint_helpers" not in source
 
 
 def test_script_args_keep_public_nn_trainer_args_field_name() -> None:
