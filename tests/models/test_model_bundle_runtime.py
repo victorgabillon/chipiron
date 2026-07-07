@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import pytest
 
-pytest.importorskip("PySide6")
 pytest.importorskip("dacite")
 
 from chipiron.models.model_bundle import ResolvedModelBundle

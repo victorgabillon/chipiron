@@ -313,8 +313,7 @@ def _regression_sums() -> RegressionBatchMetricSums:
 
 
 def _import_legacy_trainer_module() -> Any:
-    """Import the legacy trainer module when its optional dependencies exist."""
-    pytest.importorskip("coral")
+    """Import the dependency-light legacy trainer module."""
     return importlib.import_module("chipiron.learningprocesses.nn_trainer.nn_trainer")
 
 
@@ -322,4 +321,3 @@ def _require_chess_learning_dependencies() -> None:
     """Skip chess batch tests when optional runtime dependencies are absent."""
     pytest.importorskip("atomheart")
     pytest.importorskip("coral")
-    pytest.importorskip("parsley")

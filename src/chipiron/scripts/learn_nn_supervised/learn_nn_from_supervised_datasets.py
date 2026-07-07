@@ -16,6 +16,8 @@ Example:
 
 """
 
+from __future__ import annotations
+
 import copy
 import logging
 import os
@@ -26,8 +28,6 @@ from typing import TYPE_CHECKING, Any, cast
 import mlflow
 import mlflow.pytorch
 import torch
-from coral.chi_nn import ChiNN
-from coral.neural_networks import NNBWStateEvaluator
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_architecture_args,
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
@@ -39,6 +39,7 @@ from mlflow.models.signature import (
 from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
+import chipiron
 import chipiron.utils.path_variables
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
@@ -53,7 +54,6 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
     create_content_to_input_from_folder,
     save_chipiron_nn_args,
 )
-from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.factory import (
     NNTrainerArgs,
     create_nn_trainer,
@@ -61,17 +61,21 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
-from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.path_runtime import output_root_path_str
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from coral.chi_nn import ChiNN
+    from coral.neural_networks import NNBWStateEvaluator
     from torch import Tensor
 
+    from chipiron.environments.chess.types import ChessState
     from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
+    from chipiron.scripts.script import Script
+    from chipiron.utils import MyPath
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -112,7 +116,7 @@ class LearnNNScript:
     args_dataclass_name: type[LearnNNScriptArgs] = LearnNNScriptArgs
 
     base_experiment_output_folder = os.path.join(
-        Script.base_experiment_output_folder,
+        output_root_path_str(),
         "learn_nn_supervised/learn_nn_supervised_outputs",
     )
 
@@ -436,7 +440,8 @@ class LearnNNScript:
 
             signature: ModelSignature = infer_signature(
                 x_train.numpy(),
-                self.nn_board_evaluator.net(x_train.to(device).detach())
+                self.nn_board_evaluator
+                .net(x_train.to(device).detach())
                 .cpu()
                 .detach()
                 .numpy(),

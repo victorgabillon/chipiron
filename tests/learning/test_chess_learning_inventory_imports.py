@@ -22,16 +22,21 @@ def test_legacy_chess_trainer_package_imports() -> None:
 
 
 def test_legacy_chess_trainer_modules_import() -> None:
-    """Important legacy trainer implementation modules should still import."""
+    """Factory trainer module should import when optional chess deps exist."""
     _require_chess_learning_dependencies()
 
     factory = importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
+
+    assert factory.NNTrainerArgs is not None
+    assert factory.create_nn_trainer is not None
+
+
+def test_legacy_nn_trainer_module_imports_without_chess_runtime_deps() -> None:
+    """The plain Torch trainer wrapper should not require chess runtime deps."""
     trainer = importlib.import_module(
         "chipiron.learningprocesses.nn_trainer.nn_trainer"
     )
 
-    assert factory.NNTrainerArgs is not None
-    assert factory.create_nn_trainer is not None
     assert trainer.NNPytorchTrainer is not None
     assert trainer.compute_test_error_on_dataset is not None
 
@@ -104,4 +109,3 @@ def _require_chess_learning_dependencies() -> None:
     """Skip chess import smoke tests when optional runtime dependencies are absent."""
     pytest.importorskip("atomheart")
     pytest.importorskip("coral")
-    pytest.importorskip("parsley")

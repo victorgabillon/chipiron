@@ -1,11 +1,12 @@
-"""Document the module contains the definition of the NNPytorchTrainer class, which is responsible for training and testing a neural network model using PyTorch."""
+"""Legacy PyTorch trainer compatibility wrapper for chess learning scripts."""
+
+from __future__ import annotations
 
 import typing
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import torch
-from coral.chi_nn import ChiNN
-from torch.utils.data import DataLoader
+from torch import nn
 
 from chipiron.learning import module_device
 from chipiron.learning.supervised import (
@@ -17,9 +18,14 @@ from chipiron.learning.supervised import (
 )
 from chipiron.utils.logger import chipiron_logger
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from torch.utils.data import DataLoader
+
 
 def compute_test_error_on_dataset(
-    net: ChiNN,
+    net: nn.Module,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     data_test: DataLoader[SupervisedBatch],
     number_of_tests: int = 100,
@@ -27,7 +33,7 @@ def compute_test_error_on_dataset(
     """Compute the test error on the given dataset.
 
     Args:
-        net (ChiNN): The neural network model to be tested.
+        net (nn.Module): The neural network model to be tested.
         criterion (Callable[[torch.Tensor, torch.Tensor], torch.Tensor]): The loss function used for testing.
         data_test (DataLoader[SupervisedBatch]): The test dataset.
         number_of_tests (int, optional): The number of tests to run. Defaults to 100.
@@ -68,12 +74,12 @@ class NNPytorchTrainer:
     """A class that trains a neural network model using PyTorch.
 
     Args:
-        net (ChiNN): The neural network model to be trained.
+        net (nn.Module): The neural network model to be trained.
         optimizer (torch.optim.Optimizer): The optimizer used for updating the model's parameters.
         scheduler (torch.optim.lr_scheduler.LRScheduler): The learning rate scheduler.
 
     Attributes:
-        net (ChiNN): The neural network model to be trained.
+        net (nn.Module): The neural network model to be trained.
         criterion (torch.nn.L1Loss): The loss function used for training.
         optimizer (torch.optim.Optimizer): The optimizer used for updating the model's parameters.
         scheduler (torch.optim.lr_scheduler.LRScheduler): The learning rate scheduler.
@@ -86,14 +92,14 @@ class NNPytorchTrainer:
 
     def __init__(
         self,
-        net: ChiNN,
+        net: nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler,
     ) -> None:
         """Initialize a new instance of the NNPytorchTrainer class.
 
         Args:
-            net (ChiNN): The neural network model to be trained.
+            net (nn.Module): The neural network model to be trained.
             optimizer (torch.optim.Optimizer): The optimizer used for updating the model's parameters.
             scheduler (torch.optim.lr_scheduler.LRScheduler): The learning rate scheduler.
 

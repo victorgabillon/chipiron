@@ -294,6 +294,30 @@ PR14:
   script-level tests run with optional dependencies, and decide whether legacy
   checkpoint helpers should move into a chess-specific bundle writer.
 
+## PR16 progress
+
+- `NNPytorchTrainer` no longer imports Coral at runtime; the legacy trainer
+  wrapper tests now run with plain `torch.nn.Linear` and
+  `TensorSupervisedBatch`.
+- Legacy checkpoint save helpers moved into the dependency-light
+  `chipiron.learningprocesses.nn_trainer.checkpoint_helpers` module and remain
+  re-exported from `factory.py` for existing script imports.
+- `chipiron.players` and `chipiron.scripts` now lazy-load their public package
+  exports so narrow learning/model imports do not pull move-selector factories,
+  GUI code, or the parser stack.
+- The tiny supervised chess learning script test now constructs
+  `LearnNNScript` directly with prebuilt dataclass args and local observability
+  stubs; it runs locally without `parsley`, `PySide6`, `mlflow`, or
+  `torchinfo`.
+- The chess script/model validation selection improved locally from all skipped
+  to `6 passed, 2 skipped`. The remaining skips are the scratch/fixed-board
+  script test and the YAML board-evaluator config parsing test, both because
+  `parsley` is not installed in this environment.
+- Remaining PR17 blocker: decide whether the still-public
+  `NNPytorchTrainer`, `NNTrainerArgs`, `create_nn_trainer`, and checkpoint
+  helper APIs can be removed or moved once parser-backed script coverage is
+  available in an environment with `parsley`.
+
 ## Risk notes
 
 - Several chess learning modules are reached through the dynamic script factory

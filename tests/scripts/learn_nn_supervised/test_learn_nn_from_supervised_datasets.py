@@ -2,62 +2,14 @@
 
 import sys
 import textwrap
-from importlib import import_module
+import types
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-pytest.importorskip("parsley")
 pytest.importorskip("torch")
-pytest.importorskip("PySide6")
 import torch
-from parsley import make_partial_dataclass_with_optional_paths
-
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_CHIPIRON_SRC = _REPO_ROOT / "src"
-_ATOMHEART_SRC = _REPO_ROOT.parent / "atomheart" / "src"
-_ANEMONE_SRC = _REPO_ROOT.parent / "anemone" / "src"
-
-if str(_CHIPIRON_SRC) not in sys.path:
-    sys.path.insert(0, str(_CHIPIRON_SRC))
-if str(_ATOMHEART_SRC) not in sys.path:
-    sys.path.insert(0, str(_ATOMHEART_SRC))
-if str(_ANEMONE_SRC) not in sys.path:
-    sys.path.insert(0, str(_ANEMONE_SRC))
-
-_stale_atomheart_modules = [
-    module_name
-    for module_name, module in sys.modules.items()
-    if module_name == "atomheart" or module_name.startswith("atomheart.")
-    if not hasattr(module, "__file__")
-]
-for module_name in _stale_atomheart_modules:
-    del sys.modules[module_name]
-
-import_module("atomheart")
-
-_stale_anemone_modules = [
-    module_name
-    for module_name, module in sys.modules.items()
-    if module_name == "anemone" or module_name.startswith("anemone.")
-    if not hasattr(module, "__file__")
-]
-for module_name in _stale_anemone_modules:
-    del sys.modules[module_name]
-
-import_module("anemone")
-
-_stale_chipiron_modules = [
-    module_name
-    for module_name, module in sys.modules.items()
-    if module_name == "chipiron" or module_name.startswith("chipiron.")
-    if not hasattr(module, "__file__")
-]
-for module_name in _stale_chipiron_modules:
-    del sys.modules[module_name]
-
-import_module("chipiron")
 
 
 def create_tiny_model_bundle(
@@ -101,7 +53,7 @@ def create_tiny_model_bundle(
     return bundle_dir
 
 
-def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
+def _make_config(*, saving_root: Path) -> Any:
     """Build a local-only config for the supervised learning test."""
     from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
         DataSetArgs,
@@ -119,72 +71,114 @@ def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
     )
     from chipiron.scripts.script_args import BaseScriptArgs
 
-    partial_op_learn_nn_script_args = make_partial_dataclass_with_optional_paths(
-        cls=LearnNNScriptArgs
-    )
-    partial_op_nn_trainer_args = make_partial_dataclass_with_optional_paths(
-        cls=NNTrainerArgs
-    )
-    partial_op_data_set_args = make_partial_dataclass_with_optional_paths(
-        cls=DataSetArgs
-    )
-    partial_op_base_script_args = make_partial_dataclass_with_optional_paths(
-        cls=BaseScriptArgs
-    )
-    partial_op_game_input_args = make_partial_dataclass_with_optional_paths(
-        cls=GameInputArgs
-    )
-
     dataset_file = str((Path(__file__).parent / "small_dataset.pi").resolve())
-    bundle_dir = create_tiny_model_bundle(
-        tmp_path,
-        bundle_name="supervised_model_bundle",
-        input_representation=ModelInputRepresentationType.PIECE_DIFFERENCE.value,
-    )
-    return partial_op_learn_nn_script_args(
-        nn_trainer_args=partial_op_nn_trainer_args(
+    return LearnNNScriptArgs(
+        nn_trainer_args=NNTrainerArgs(
             reuse_existing_model=False,
             specific_saving_folder=str(saving_root / "piece_difference"),
-            neural_network_architecture_args_path_to_yaml_file=str(
-                bundle_dir / "architecture.yaml"
-            ),
-            game_input=partial_op_game_input_args(
+            game_input=GameInputArgs(
                 game_kind=GameKind.CHESS,
                 representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
             ),
+            epochs_number=1,
+            saving_interval=10_000,
+            saving_intermediate_copy=False,
         ),
-        dataset_args=partial_op_data_set_args(
+        dataset_args=DataSetArgs(
             train_file_name=dataset_file,
             test_file_name=dataset_file,
         ),
-        base_script_args=partial_op_base_script_args(testing=True),
+        base_script_args=BaseScriptArgs(testing=True),
     )
 
 
 def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test learn nn."""
-    import chipiron.scripts.factory as script_factory_module
-    from chipiron import scripts
-    from chipiron.scripts.factory import create_script
+    pytest.importorskip("atomheart")
+    pytest.importorskip("coral")
+    _install_learning_script_observability_stubs(monkeypatch)
+    from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
+        LearnNNScript,
+    )
 
     original_is_available = torch.cuda.is_available
     torch.cuda.is_available = lambda: False
-    monkeypatch.setattr(
-        script_factory_module,
-        "get_package_root_path",
-        lambda package_name: str(_REPO_ROOT / "src" / package_name),
-    )
     saving_root = tmp_path / "learn_nn_supervised_outputs"
-    saving_root.mkdir(parents=True, exist_ok=True)
-    config = _make_config(tmp_path=tmp_path, saving_root=saving_root)
+    (saving_root / "piece_difference").mkdir(parents=True, exist_ok=True)
+    config = _make_config(saving_root=saving_root)
 
     try:
-        script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.LEARN_NN,
-            extra_args=config,
-            should_parse_command_line_arguments=False,
-        )
+        script_object = LearnNNScript(base_script=_FakeBaseScript(config))
         script_object.run()
         script_object.terminate()
     finally:
         torch.cuda.is_available = original_is_available
+
+
+class _FakeBaseScript:
+    """Tiny base-script adapter avoiding the parser/factory stack."""
+
+    def __init__(self, args: Any) -> None:
+        self.args = args
+        self.terminated = False
+
+    def initiate(self, experiment_output_folder: str | None = None) -> Any:
+        """Return prebuilt args and fill the experiment output path."""
+        if self.args.base_script_args.experiment_output_folder is None:
+            self.args.base_script_args.experiment_output_folder = (
+                experiment_output_folder
+            )
+        return self.args
+
+    def terminate(self) -> None:
+        """Mark termination for the test adapter."""
+        self.terminated = True
+
+
+class _NoopRun:
+    """No-op context manager matching mlflow.start_run."""
+
+    def __enter__(self) -> "_NoopRun":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        _ = exc_type, exc, traceback
+
+
+def _install_learning_script_observability_stubs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Install tiny mlflow and torchinfo stubs for dependency-light script import."""
+    mlflow_module = types.ModuleType("mlflow")
+    mlflow_pytorch_module = types.ModuleType("mlflow.pytorch")
+    mlflow_models_module = types.ModuleType("mlflow.models")
+    mlflow_signature_module = types.ModuleType("mlflow.models.signature")
+    torchinfo_module = types.ModuleType("torchinfo")
+
+    mlflow_module.set_tracking_uri = lambda uri: None
+    mlflow_module.log_metric = lambda *args, **kwargs: None
+    mlflow_module.log_params = lambda params: None
+    mlflow_module.log_artifact = lambda path: None
+    mlflow_module.start_run = lambda: _NoopRun()
+    mlflow_pytorch_module.log_model = lambda *args, **kwargs: None
+    mlflow_pytorch_module.get_default_conda_env = dict
+    mlflow_module.pytorch = mlflow_pytorch_module
+
+    class _ModelSignature:
+        """Placeholder signature type used by the supervised script."""
+
+    mlflow_signature_module.ModelSignature = _ModelSignature
+    mlflow_signature_module.infer_signature = lambda *args, **kwargs: _ModelSignature()
+    mlflow_models_module.signature = mlflow_signature_module
+    torchinfo_module.summary = lambda model: f"summary({type(model).__name__})"
+
+    monkeypatch.setitem(sys.modules, "mlflow", mlflow_module)
+    monkeypatch.setitem(sys.modules, "mlflow.pytorch", mlflow_pytorch_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models", mlflow_models_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models.signature", mlflow_signature_module)
+    monkeypatch.setitem(sys.modules, "torchinfo", torchinfo_module)

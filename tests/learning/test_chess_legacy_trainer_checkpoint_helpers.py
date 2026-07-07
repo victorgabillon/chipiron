@@ -12,8 +12,18 @@ from torch import nn
 
 
 def test_legacy_checkpoint_helpers_import() -> None:
-    """The legacy checkpoint helpers should remain importable while scripts use them."""
-    factory = _import_legacy_trainer_factory()
+    """The legacy checkpoint helpers should import without chess runtime deps."""
+    checkpoint_helpers = _import_legacy_checkpoint_helpers()
+
+    assert checkpoint_helpers.safe_nn_architecture_save is not None
+    assert checkpoint_helpers.safe_nn_param_save is not None
+    assert checkpoint_helpers.safe_nn_trainer_save is not None
+
+
+def test_legacy_factory_still_reexports_checkpoint_helpers() -> None:
+    """The old factory import path should remain available when deps exist."""
+    pytest.importorskip("coral")
+    factory = importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
 
     assert factory.safe_nn_architecture_save is not None
     assert factory.safe_nn_param_save is not None
@@ -22,13 +32,13 @@ def test_legacy_checkpoint_helpers_import() -> None:
 
 def test_safe_nn_param_save_writes_cpu_state_dict(tmp_path: Path) -> None:
     """Parameter checkpoints should be portable from CPU-only runtimes."""
-    factory = _import_legacy_trainer_factory()
+    checkpoint_helpers = _import_legacy_checkpoint_helpers()
     model = _ReadableLinear(3, 1)
 
     if torch.cuda.is_available():
         model = model.to("cuda")
 
-    factory.safe_nn_param_save(model, tmp_path)
+    checkpoint_helpers.safe_nn_param_save(model, tmp_path)
 
     state_dict = torch.load(tmp_path / "param.pt", map_location="cpu")
 
@@ -46,9 +56,8 @@ class _ReadableLinear(nn.Linear):
         Path(file_path).write_text("readable\n", encoding="utf-8")
 
 
-def _import_legacy_trainer_factory() -> Any:
-    """Import the legacy factory module when optional dependencies exist."""
-    pytest.importorskip("atomheart")
-    pytest.importorskip("coral")
-    pytest.importorskip("parsley")
-    return importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
+def _import_legacy_checkpoint_helpers() -> Any:
+    """Import the dependency-light legacy checkpoint helper module."""
+    return importlib.import_module(
+        "chipiron.learningprocesses.nn_trainer.checkpoint_helpers"
+    )
