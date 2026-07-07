@@ -175,6 +175,114 @@ def test_legacy_compute_test_error_delegates_to_common_evaluation(
     assert test_error == pytest.approx(2.0)
 
 
+def test_legacy_trainer_test_delegates_to_common_evaluation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The legacy trainer test method should call the common eval kernel."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    model = nn.Linear(5, 1)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.5)
+    trainer = nn_trainer_module.NNPytorchTrainer(
+        net=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+    )
+    calls: list[dict[str, Any]] = []
+
+    def fake_evaluate_regression_batch(**kwargs: Any) -> RegressionBatchMetricSums:
+        calls.append(kwargs)
+        return RegressionBatchMetricSums(
+            squared_error_sum=4.0,
+            absolute_error_sum=2.0,
+            target_count=2,
+        )
+
+    monkeypatch.setattr(
+        nn_trainer_module,
+        "evaluate_regression_batch",
+        fake_evaluate_regression_batch,
+    )
+
+    loss = trainer.test(
+        input_layer=torch.ones((2, 5)),
+        target_value=torch.tensor([[0.5], [-0.5]], dtype=torch.float32),
+    )
+
+    assert calls
+    assert calls[0]["model"] is model
+    assert isinstance(calls[0]["batch"], TensorSupervisedBatch)
+    assert float(loss.cpu()) == pytest.approx(1.0)
+
+
+def test_loss_value_from_regression_sums_supports_mse_mean() -> None:
+    """Legacy loss reconstruction should support mean MSE."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    assert nn_trainer_module._loss_value_from_regression_sums(
+        criterion=nn.MSELoss(reduction="mean"),
+        metrics=metrics,
+    ) == pytest.approx(2.0)
+
+
+def test_loss_value_from_regression_sums_supports_mse_sum() -> None:
+    """Legacy loss reconstruction should support summed MSE."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    assert nn_trainer_module._loss_value_from_regression_sums(
+        criterion=nn.MSELoss(reduction="sum"),
+        metrics=metrics,
+    ) == pytest.approx(6.0)
+
+
+def test_loss_value_from_regression_sums_supports_l1_mean() -> None:
+    """Legacy loss reconstruction should support mean L1."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    assert nn_trainer_module._loss_value_from_regression_sums(
+        criterion=nn.L1Loss(reduction="mean"),
+        metrics=metrics,
+    ) == pytest.approx(1.0)
+
+
+def test_loss_value_from_regression_sums_supports_l1_sum() -> None:
+    """Legacy loss reconstruction should support summed L1."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    assert nn_trainer_module._loss_value_from_regression_sums(
+        criterion=nn.L1Loss(reduction="sum"),
+        metrics=metrics,
+    ) == pytest.approx(3.0)
+
+
+def test_loss_value_from_regression_sums_rejects_unreduced_losses() -> None:
+    """Aggregate metrics cannot reconstruct unreduced criterion tensors."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    with pytest.raises(TypeError, match="Cannot reconstruct unreduced MSELoss"):
+        nn_trainer_module._loss_value_from_regression_sums(
+            criterion=nn.MSELoss(reduction="none"),
+            metrics=metrics,
+        )
+
+
+def test_loss_value_from_regression_sums_rejects_unknown_criterion() -> None:
+    """Aggregate compatibility loss reconstruction should fail loudly."""
+    nn_trainer_module = _import_legacy_trainer_module()
+    metrics = _regression_sums()
+
+    with pytest.raises(TypeError, match="MSELoss or L1Loss"):
+        nn_trainer_module._loss_value_from_regression_sums(
+            criterion=nn.SmoothL1Loss(),
+            metrics=metrics,
+        )
+
+
 def _collate_tensor_supervised_batches(
     samples: list[TensorSupervisedBatch],
 ) -> TensorSupervisedBatch:
@@ -183,6 +291,15 @@ def _collate_tensor_supervised_batches(
         input_tensor=torch.stack([sample.get_input_layer() for sample in samples]),
         target_tensor=torch.stack([sample.get_target_value() for sample in samples]),
         is_batch=True,
+    )
+
+
+def _regression_sums() -> RegressionBatchMetricSums:
+    """Return reusable aggregate regression metrics for compatibility tests."""
+    return RegressionBatchMetricSums(
+        squared_error_sum=6.0,
+        absolute_error_sum=3.0,
+        target_count=3,
     )
 
 

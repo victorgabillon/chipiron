@@ -127,29 +127,31 @@
 ### `NNPytorchTrainer`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: migrate to `chipiron.learning`, then delete after migration.
-- Notes: owns duplicated train/eval steps, optimizer stepping, local device
-  selection, and dataset evaluation. `train_next_boards` is a special
-  next-position target path and should be reviewed separately before removal.
+- Classification: live compatibility wrapper.
+- Notes: normal supervised train/test paths delegate to `chipiron.learning`.
+  `train_next_boards` remains a legacy next-position target path and should be
+  reviewed separately before removal.
 
 ### `compute_loss`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: migrate to `chipiron.learning`, then delete after migration.
-- Notes: thin wrapper around model forward plus criterion.
+- Classification: removed in PR14.
+- Notes: this duplicated forward-plus-criterion helper became dead after PR13
+  routed normal train/eval paths through common learning kernels.
 
 ### `compute_test_error_on_dataset`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: migrate to `chipiron.learning`, then delete after migration.
-- Notes: duplicated supervised evaluation loop used by the legacy trainer and
-  `evaluate_models.py`.
+- Classification: live compatibility API.
+- Notes: still used by the legacy trainer and `evaluate_models.py`, but now
+  delegates batch evaluation to `chipiron.learning.supervised`.
 
 ### `check_model_device`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: delete after migration.
-- Notes: overlaps with `chipiron.learning.module_device`.
+- Classification: removed in PR14.
+- Notes: all remaining internal device lookup uses
+  `chipiron.learning.module_device` directly.
 
 ### `NNTrainerArgs`
 
@@ -253,12 +255,28 @@ PR14:
 - `NNPytorchTrainer.test` and `compute_test_error_on_dataset` now delegate
   forward/metric collection to
   `chipiron.learning.supervised.evaluate_regression_batch`.
-- `check_model_device` remains as a compatibility helper, but now delegates to
-  `chipiron.learning.module_device`.
+- At PR13, `check_model_device` remained as a compatibility helper delegating
+  to `chipiron.learning.module_device`.
 - `NNTrainerArgs`, `create_nn_trainer`, and legacy checkpoint helpers remain
   compatibility shims.
 - `train_next_boards` remains a legacy special case because its targets are
   generated from the next board rather than supplied by a supervised batch.
+
+## PR14 progress
+
+- Removed dead duplicated helpers: `compute_loss` and `check_model_device`.
+- Kept compatibility wrappers: `NNPytorchTrainer`, `compute_test_error_on_dataset`,
+  `NNTrainerArgs`, `create_nn_trainer`, and legacy checkpoint helpers.
+- `_loss_value_from_regression_sums` now explicitly supports only scalar
+  `torch.nn.MSELoss` and `torch.nn.L1Loss` aggregate reconstruction.
+- `_loss_value_from_regression_sums` now raises a clear `TypeError` for
+  unreduced losses and unsupported criteria instead of falling through to a
+  non-existent metric field.
+- `train_next_boards` is still unreferenced by current source/test searches and
+  remains a legacy special case pending PR15 removal review.
+- Remaining PR15/PR16 work: decide whether to remove `NNPytorchTrainer` itself
+  and whether legacy checkpoint helpers should become a chess-specific bundle
+  writer.
 
 ## Risk notes
 

@@ -18,24 +18,6 @@ from chipiron.learning.supervised import (
 from chipiron.utils.logger import chipiron_logger
 
 
-def compute_loss(
-    net: ChiNN,
-    criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
-    input_layer: torch.Tensor,
-    target_value: torch.Tensor,
-) -> torch.Tensor:
-    """Compute loss."""
-    prediction: torch.Tensor = net(input_layer)
-    loss: torch.Tensor = criterion(prediction, target_value)
-    return loss
-
-
-def check_model_device(model: ChiNN) -> str | torch.device | int:
-    # Check the device of the first parameter
-    """Check model device."""
-    return module_device(model)
-
-
 def compute_test_error_on_dataset(
     net: ChiNN,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -57,7 +39,7 @@ def compute_test_error_on_dataset(
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
     target_count = 0
-    device = torch.device(check_model_device(net))
+    device = module_device(net)
     for _ in range(number_of_tests):
         sample = next(iter(data_test))
         batch_metrics = evaluate_regression_batch(
@@ -208,7 +190,7 @@ class NNPytorchTrainer:
             None
 
         """
-        # TODO(PR14): review whether train_next_boards can use the common supervised kernel.
+        # TODO(PR15): confirm whether this unreferenced legacy special case can be removed.
         self.net.eval()
         target_value = -self.net(next_input_layer)
 
@@ -249,12 +231,33 @@ def _loss_value_from_regression_sums(
     """Convert common regression sums back to the legacy criterion scalar."""
     if metrics.target_count == 0:
         return 0.0
-    if isinstance(criterion, torch.nn.L1Loss):
-        if criterion.reduction == "sum":
-            return metrics.absolute_error_sum
-        return metrics.absolute_error_sum / metrics.target_count
     if isinstance(criterion, torch.nn.MSELoss):
         if criterion.reduction == "sum":
             return metrics.squared_error_sum
-        return metrics.squared_error_sum / metrics.target_count
-    return metrics.loss
+        if criterion.reduction == "mean":
+            return metrics.squared_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("MSELoss")
+    if isinstance(criterion, torch.nn.L1Loss):
+        if criterion.reduction == "sum":
+            return metrics.absolute_error_sum
+        if criterion.reduction == "mean":
+            return metrics.absolute_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("L1Loss")
+    raise _unsupported_loss_reconstruction_error()
+
+
+def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
+    """Return a clear error for unreduced criterion reconstruction."""
+    return TypeError(
+        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
+    )
+
+
+def _unsupported_loss_reconstruction_error() -> TypeError:
+    """Return a clear error for unsupported criterion reconstruction."""
+    return TypeError(
+        "Legacy chess trainer can only reconstruct scalar losses for MSELoss or "
+        "L1Loss from common regression metric sums."
+    )
