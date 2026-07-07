@@ -1,5 +1,6 @@
 """Tests for the supervised chess neural-network learning script."""
 
+import inspect
 import sys
 import textwrap
 import types
@@ -113,6 +114,21 @@ def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         script_object.terminate()
     finally:
         torch.cuda.is_available = original_is_available
+
+
+def test_supervised_learning_script_no_longer_uses_legacy_trainer_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The active supervised script should not construct NNPytorchTrainer."""
+    pytest.importorskip("atomheart")
+    pytest.importorskip("coral")
+    _install_learning_script_observability_stubs(monkeypatch)
+    from chipiron.scripts.learn_nn_supervised import learn_nn_from_supervised_datasets
+
+    source = inspect.getsource(learn_nn_from_supervised_datasets)
+
+    assert "create_nn_trainer" not in source
+    assert "NNPytorchTrainer" not in source
 
 
 class _FakeBaseScript:

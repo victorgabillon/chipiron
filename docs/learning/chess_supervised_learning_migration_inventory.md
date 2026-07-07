@@ -344,6 +344,24 @@ PR14:
   is installed and exposes `import parsley`. Remaining skips only occur in
   lightweight environments that do not install Chipiron runtime dependencies.
 
+## PR18 progress
+
+- The active supervised chess learning script no longer constructs
+  `NNPytorchTrainer` through `create_nn_trainer`.
+- The script now uses `chipiron.learning.supervised.train_regression_batch` and
+  `evaluate_regression_batch` directly, while preserving `NNTrainerArgs` as the
+  public script configuration dataclass.
+- Optimizer and scheduler construction in the script preserves the legacy
+  `NNTrainerArgs` SGD and `StepLR` behavior, including reloading existing
+  optimizer/scheduler checkpoints.
+- Checkpoint helpers remain live compatibility APIs.
+- `safe_nn_trainer_save` now accepts any optimizer/scheduler holder, so direct
+  training code can save legacy optimizer and scheduler checkpoints without
+  constructing `NNPytorchTrainer`.
+- Remaining PR19 work: grep remaining internal uses of `NNPytorchTrainer`,
+  `create_nn_trainer`, and `NNTrainerArgs`; remove or relocate them if no
+  active script still needs them.
+
 ## Risk notes
 
 - Several chess learning modules are reached through the dynamic script factory

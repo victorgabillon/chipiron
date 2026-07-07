@@ -18,7 +18,6 @@ from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
     from chipiron.utils import MyPath
 
 
@@ -27,6 +26,13 @@ class ReadableWeightsModule(Protocol):
 
     def log_readable_model_weights_to_file(self, file_path: str) -> None:
         """Log model weights in the legacy readable YAML format."""
+
+
+class OptimizerSchedulerHolder(Protocol):
+    """Protocol for objects exposing legacy trainer checkpoint state."""
+
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler.LRScheduler
 
 
 def get_optimizer_file_path_from(folder_path: MyPath) -> str:
@@ -120,22 +126,25 @@ def safe_nn_param_save(
         sys.exit(-1)
 
 
-def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: MyPath) -> None:
-    """Safely save the optimizer and scheduler of a legacy trainer."""
+def safe_nn_trainer_save(
+    training_state: OptimizerSchedulerHolder,
+    nn_folder_path: MyPath,
+) -> None:
+    """Safely save optimizer and scheduler state in the legacy trainer format."""
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)
     try:
         with open(file_optimizer_path, "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
+            pickle.dump(training_state.optimizer, file_optimizer)
         with open(file_scheduler_path, "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
+            pickle.dump(training_state.scheduler, file_scheduler)
         with open(str(file_optimizer_path) + "_save", "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
+            pickle.dump(training_state.optimizer, file_optimizer)
         with open(file_scheduler_path + "_save", "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
+            pickle.dump(training_state.scheduler, file_scheduler)
     except KeyboardInterrupt:
         with open(file_optimizer_path + "_save", "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
+            pickle.dump(training_state.optimizer, file_optimizer)
         with open(file_scheduler_path + "_save", "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
+            pickle.dump(training_state.scheduler, file_scheduler)
         sys.exit(-1)

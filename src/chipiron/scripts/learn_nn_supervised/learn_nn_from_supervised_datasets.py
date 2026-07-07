@@ -21,6 +21,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import pickle
 import time
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, cast
@@ -54,26 +55,35 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
     create_content_to_input_from_folder,
     save_chipiron_nn_args,
 )
-from chipiron.learningprocesses.nn_trainer.factory import (
-    NNTrainerArgs,
-    create_nn_trainer,
+from chipiron.learning import module_device
+from chipiron.learning.supervised import (
+    RegressionBatchMetricSums,
+    SupervisedBatch,
+    evaluate_regression_batch,
+    train_regression_batch,
+)
+from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
+    get_folder_training_copies_path_from,
+    get_optimizer_file_path_from,
+    get_scheduler_file_path_from,
     safe_nn_architecture_save,
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
+from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_runtime import output_root_path_str
+from chipiron.utils.small_tools import mkdir_if_not_existing
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from coral.chi_nn import ChiNN
     from coral.neural_networks import NNBWStateEvaluator
-    from torch import Tensor
+    from torch import Tensor, nn
 
     from chipiron.environments.chess.types import ChessState
-    from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
     from chipiron.scripts.script import Script
     from chipiron.utils import MyPath
 
@@ -98,6 +108,14 @@ class LearnNNScriptArgs:
             preprocessing_data_set=False,
         )
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _OptimizerSchedulerCheckpointState:
+    """Small holder for saving optimizer/scheduler checkpoints."""
+
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler.LRScheduler
 
 
 class LearnNNScript:
@@ -125,6 +143,10 @@ class LearnNNScript:
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBWStateEvaluator[ChessState]
     saving_folder: MyPath
+    criterion: nn.Module
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler.LRScheduler
+    device: torch.device
 
     def __init__(
         self,
@@ -185,9 +207,13 @@ class LearnNNScript:
             assert self.args.base_script_args.experiment_output_folder is not None
             self.saving_folder = self.args.base_script_args.experiment_output_folder
 
-        self.nn_trainer: NNPytorchTrainer = create_nn_trainer(
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.nn_board_evaluator.net.to(self.device)
+        chipiron_logger.info("Model put to device %s", self.device)
+        self.criterion = torch.nn.L1Loss()
+        self.optimizer, self.scheduler = _create_optimizer_and_scheduler(
             args=self.args.nn_trainer_args,
-            nn=self.nn_board_evaluator.net,
+            model=self.nn_board_evaluator.net,
             saving_folder=self.saving_folder,
         )
         transform_white_value_to_model_output_function = cast(
@@ -258,7 +284,7 @@ class LearnNNScript:
             "count_train_step: %s, training loss: %s, lr: %s, time_elapsed: %s",
             count_train_step,
             training_loss,
-            self.nn_trainer.scheduler.get_last_lr(),
+            self.scheduler.get_last_lr(),
             time.time() - self.start_time,
         )
         mlflow.log_metric(
@@ -273,7 +299,7 @@ class LearnNNScript:
         )
         mlflow.log_metric(
             "lr",
-            float(self.nn_trainer.scheduler.get_last_lr()[-1]),
+            float(self.scheduler.get_last_lr()[-1]),
             step=count_train_step,
         )
 
@@ -320,10 +346,8 @@ class LearnNNScript:
                     if count_train_step % 10000 == 0 and count_train_step > 0:
                         training_loss: float = sum_loss_train_print / 10000
                         sum_loss_train_print = 0
-                        test_error: float = (
-                            self.nn_trainer.compute_test_error_on_dataset(
-                                data_test=self.data_loader_stockfish_boards_test
-                            )
+                        test_error: float = self._compute_test_error_on_dataset(
+                            data_test=self.data_loader_stockfish_boards_test,
                         )
                         self.print_and_log_metrics(
                             count_train_step=count_train_step,
@@ -349,13 +373,13 @@ class LearnNNScript:
                         if (
                             previous_train_loss is not None
                             and sum_loss_train > previous_train_loss
-                            and self.nn_trainer.scheduler.get_last_lr()[-1]
+                            and self.scheduler.get_last_lr()[-1]
                             > self.args.nn_trainer_args.min_lr
                         ):
-                            self.nn_trainer.scheduler.step()
+                            self.scheduler.step()
                             chipiron_logger.info(
                                 "decaying the learning rate to %s",
-                                self.nn_trainer.scheduler.get_last_lr(),
+                                self.scheduler.get_last_lr(),
                             )
 
                         chipiron_logger.info("count_train_step %s", count_train_step)
@@ -369,7 +393,7 @@ class LearnNNScript:
                             "previous_train_loss %s", previous_train_loss
                         )
                         chipiron_logger.info(
-                            "learning rate %s", self.nn_trainer.scheduler.get_last_lr()
+                            "learning rate %s", self.scheduler.get_last_lr()
                         )
 
                         if previous_dict is not None:
@@ -391,10 +415,15 @@ class LearnNNScript:
 
                     # MAIN: the training bit
                     count_train_step += 1
-                    loss_train = self.nn_trainer.train(
-                        fens_and_values_sample_batch.get_input_layer(),
-                        fens_and_values_sample_batch.get_target_value(),
+                    train_stats = train_regression_batch(
+                        model=self.nn_board_evaluator.net,
+                        optimizer=self.optimizer,
+                        criterion=self.criterion,
+                        batch=fens_and_values_sample_batch,
+                        device=self.device,
+                        timings=None,
                     )
+                    loss_train = train_stats.loss
                     sum_loss_train += float(loss_train)
                     sum_loss_train_print += float(loss_train)
 
@@ -403,6 +432,38 @@ class LearnNNScript:
                         count_train_step=count_train_step,
                         x_train=fens_and_values_sample_batch.get_input_layer(),
                     )
+
+    def _compute_test_error_on_dataset(
+        self,
+        data_test: DataLoader[SupervisedBatch],
+    ) -> float:
+        """Compute test loss over the full test dataloader."""
+        self.nn_board_evaluator.net.eval()
+        squared_error_sum = 0.0
+        absolute_error_sum = 0.0
+        target_count = 0
+        with torch.no_grad():
+            for sample in data_test:
+                batch_metrics = evaluate_regression_batch(
+                    model=self.nn_board_evaluator.net,
+                    batch=sample,
+                    device=self.device,
+                    timings=None,
+                )
+                squared_error_sum += batch_metrics.squared_error_sum
+                absolute_error_sum += batch_metrics.absolute_error_sum
+                target_count += batch_metrics.target_count
+        self.nn_board_evaluator.net.train()
+        test_error = _loss_value_from_regression_sums_for_criterion(
+            criterion=self.criterion,
+            metrics=RegressionBatchMetricSums(
+                squared_error_sum=squared_error_sum,
+                absolute_error_sum=absolute_error_sum,
+                target_count=target_count,
+            ),
+        )
+        chipiron_logger.info("test error %f", test_error)
+        return test_error
 
     def saving_things_to_file(
         self, count_train_step: int, x_train: torch.Tensor
@@ -418,7 +479,7 @@ class LearnNNScript:
         """
         if count_train_step % self.args.nn_trainer_args.saving_interval == 0:
             safe_nn_param_save(
-                nn=self.nn_board_evaluator.net,
+                nn_module=self.nn_board_evaluator.net,
                 nn_param_folder_name=self.saving_folder,
                 file_name=self.args.nn_trainer_args.neural_network_architecture_args.filename(),
             )
@@ -434,14 +495,18 @@ class LearnNNScript:
                 ),
                 folder_path=self.saving_folder,
             )
-            safe_nn_trainer_save(self.nn_trainer, self.saving_folder)
-
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            safe_nn_trainer_save(
+                _OptimizerSchedulerCheckpointState(
+                    optimizer=self.optimizer,
+                    scheduler=self.scheduler,
+                ),
+                self.saving_folder,
+            )
 
             signature: ModelSignature = infer_signature(
                 x_train.numpy(),
                 self.nn_board_evaluator
-                .net(x_train.to(device).detach())
+                .net(x_train.to(module_device(self.nn_board_evaluator.net)).detach())
                 .cpu()
                 .detach()
                 .numpy(),
@@ -460,7 +525,7 @@ class LearnNNScript:
             == 0
         ):
             safe_nn_param_save(
-                nn=self.nn_board_evaluator.net,
+                nn_module=self.nn_board_evaluator.net,
                 nn_param_folder_name=self.saving_folder,
                 training_copy=True,
             )
@@ -478,3 +543,82 @@ class LearnNNScript:
 
         """
         return LearnNNScriptArgs
+
+
+def _create_optimizer_and_scheduler(
+    *,
+    args: NNTrainerArgs,
+    model: torch.nn.Module,
+    saving_folder: MyPath,
+) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LRScheduler]:
+    """Create or load optimizer/scheduler using legacy NNTrainerArgs semantics."""
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler.LRScheduler
+    if args.reuse_existing_trainer:
+        file_optimizer_path = get_optimizer_file_path_from(folder_path=saving_folder)
+        with open(file_optimizer_path, "rb") as file_optimizer:
+            optimizer = pickle.load(file_optimizer)
+
+        file_scheduler_path = get_scheduler_file_path_from(folder_path=saving_folder)
+        with open(file_scheduler_path, "rb") as file_scheduler:
+            scheduler = pickle.load(file_scheduler)
+    else:
+        optimizer = torch.optim.SGD(
+            model.parameters(),
+            lr=args.starting_lr,
+            momentum=args.momentum_op,
+            weight_decay=0.000,
+        )
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=args.scheduler_step_size,
+            gamma=args.scheduler_gamma,
+        )
+
+    if args.saving_intermediate_copy:
+        folder_path_training_copies = get_folder_training_copies_path_from(
+            saving_folder
+        )
+        mkdir_if_not_existing(folder_path_training_copies)
+
+    return optimizer, scheduler
+
+
+def _loss_value_from_regression_sums_for_criterion(
+    *,
+    criterion: torch.nn.Module,
+    metrics: RegressionBatchMetricSums,
+) -> float:
+    """Convert regression sums back to the configured scalar criterion."""
+    if metrics.target_count == 0:
+        return 0.0
+    if isinstance(criterion, torch.nn.MSELoss):
+        if criterion.reduction == "sum":
+            return metrics.squared_error_sum
+        if criterion.reduction == "mean":
+            return metrics.squared_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("MSELoss")
+    if isinstance(criterion, torch.nn.L1Loss):
+        if criterion.reduction == "sum":
+            return metrics.absolute_error_sum
+        if criterion.reduction == "mean":
+            return metrics.absolute_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("L1Loss")
+    raise _unsupported_loss_reconstruction_error()
+
+
+def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
+    """Return a clear error for unreduced criterion reconstruction."""
+    return TypeError(
+        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
+    )
+
+
+def _unsupported_loss_reconstruction_error() -> TypeError:
+    """Return a clear error for unsupported criterion reconstruction."""
+    return TypeError(
+        "Chess supervised learning can only reconstruct scalar losses for MSELoss "
+        "or L1Loss from common regression metric sums."
+    )
