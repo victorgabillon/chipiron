@@ -340,8 +340,9 @@ PR14:
 - Added `test_parsley_dependency_contract.py` to document that parser-backed
   Chipiron config uses `import parsley` even though the dependency distribution
   is named `parsley-coco`.
-- Remaining local skips after PR17: only parser-specific tests skip because the
-  local environment does not have the `parsley` import package installed.
+- Parser-backed tests pass in the anemone/dev environment where `parsley-coco`
+  is installed and exposes `import parsley`. Remaining skips only occur in
+  lightweight environments that do not install Chipiron runtime dependencies.
 
 ## Risk notes
 
