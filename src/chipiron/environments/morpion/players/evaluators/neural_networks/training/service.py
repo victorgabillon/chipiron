@@ -34,6 +34,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
 from chipiron.learning.supervised import (
     RegressionEvaluationStats,
     TensorSupervisedBatch,
+    regression_quality_stats_to_metadata,
     train_regression_batch,
 )
 from chipiron.learning.timing import PhaseDurations, format_phase_durations
@@ -44,7 +45,10 @@ from chipiron.learning.torch_runtime import (
     torch_device_info,
 )
 
-from .cached_index_schedule import cached_index_schedule
+from .cached_index_schedule import (
+    cached_index_schedule,
+    split_indices_for_streaming_policy,
+)
 from .device_logging import log_training_device
 from .evaluation import evaluate_regression_metrics, evaluate_streaming_metrics
 from .flat_cache_streaming import (
@@ -76,6 +80,10 @@ from .model_args import (
     morpion_regressor_args_from_training_args,
     resolve_hidden_sizes,
 )
+from .quality_diagnostics import (
+    SplitQualityDiagnostics,
+    cached_split_regression_quality_diagnostics,
+)
 from .scale_diagnostics import (
     TensorScaleStats,
     target_scale_metadata,
@@ -90,6 +98,7 @@ if TYPE_CHECKING:
     from .args import MorpionStreamingTrainingArgs, MorpionTrainingArgs
 
 LOGGER = logging.getLogger(__name__)
+REGRESSION_QUALITY_SAMPLE_MAX_ROWS = 4096
 
 
 def train_morpion_regressor(
@@ -420,6 +429,9 @@ def train_morpion_regressor_streaming(
     target_scale: dict[str, object] = {}
     prediction_scale_before_training: dict[str, object] = {}
     prediction_scale_after_training: dict[str, object] = {}
+    regression_quality: dict[str, object] = {
+        "sample_max_rows": REGRESSION_QUALITY_SAMPLE_MAX_ROWS,
+    }
     cached_prediction_batch_builder = _cached_prediction_batch_builder(
         flat_cache=flat_cache,
         graph_cache=graph_cache,
@@ -633,6 +645,16 @@ def train_morpion_regressor_streaming(
             model_kind=training_args.model_kind,
             prediction_stats=prediction_after_stats,
         )
+        regression_quality = _cached_regression_quality_metadata(
+            model=model,
+            batch_builder=cached_prediction_batch_builder,
+            cached_row_count=cached_row_count,
+            max_rows=args.max_rows,
+            validation_fraction=training_args.validation_fraction,
+            batch_size=training_args.batch_size,
+            device=device,
+            sample_max_rows=REGRESSION_QUALITY_SAMPLE_MAX_ROWS,
+        )
     train_loss = train_stats.loss
     train_mae = train_stats.mae
     train_count = train_stats.sample_count
@@ -702,6 +724,16 @@ def train_morpion_regressor_streaming(
         prefix="prediction_after",
         metadata=prediction_scale_after_training,
     )
+    _add_regression_quality_metrics(
+        metrics,
+        prefix="train_quality",
+        metadata=_quality_split_metadata(regression_quality, split="train"),
+    )
+    _add_regression_quality_metrics(
+        metrics,
+        prefix="validation_quality",
+        metadata=_quality_split_metadata(regression_quality, split="validation"),
+    )
     add_timing_metrics(metrics, prefix="", phase_durations=timings.as_dict())
     add_timing_metrics(metrics, prefix="train", phase_durations=train_timings.as_dict())
     add_timing_metrics(
@@ -768,6 +800,7 @@ def train_morpion_regressor_streaming(
         "target_scale": target_scale,
         "prediction_scale_before_training": prediction_scale_before_training,
         "prediction_scale_after_training": prediction_scale_after_training,
+        "regression_quality": regression_quality,
         "timing": timing_metadata,
     }
     bundle_metadata = {
@@ -887,6 +920,87 @@ def _cached_training_schedule_metadata(
         "validation_count": len(schedule.validation_indices),
         "split_policy": schedule.split_policy,
     }
+
+
+def _cached_regression_quality_metadata(
+    *,
+    model: MorpionRegressor,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    cached_row_count: int,
+    max_rows: int | None,
+    validation_fraction: float,
+    batch_size: int,
+    device: torch.device,
+    sample_max_rows: int,
+) -> dict[str, object]:
+    """Return sampled cached train/validation regression quality metadata."""
+    effective_row_count = cached_row_count
+    if max_rows is not None:
+        effective_row_count = min(effective_row_count, max_rows)
+    train_indices = split_indices_for_streaming_policy(
+        row_count=effective_row_count,
+        validation_fraction=validation_fraction,
+        split="train",
+    )
+    validation_indices = split_indices_for_streaming_policy(
+        row_count=effective_row_count,
+        validation_fraction=validation_fraction,
+        split="validation",
+    )
+    train_diagnostics = cached_split_regression_quality_diagnostics(
+        model=model,
+        batch_builder=batch_builder,
+        row_indices=train_indices,
+        batch_size=batch_size,
+        device=device,
+        max_rows=sample_max_rows,
+        split="train",
+    )
+    validation_diagnostics = cached_split_regression_quality_diagnostics(
+        model=model,
+        batch_builder=batch_builder,
+        row_indices=validation_indices,
+        batch_size=batch_size,
+        device=device,
+        max_rows=sample_max_rows,
+        split="validation",
+    )
+    _log_regression_quality(train_diagnostics)
+    _log_regression_quality(validation_diagnostics)
+    return {
+        "sample_max_rows": sample_max_rows,
+        "train": _split_quality_metadata(train_diagnostics),
+        "validation": _split_quality_metadata(validation_diagnostics),
+    }
+
+
+def _split_quality_metadata(
+    diagnostics: SplitQualityDiagnostics,
+) -> dict[str, object]:
+    """Return JSON-friendly metadata for one split's quality diagnostics."""
+    metadata = regression_quality_stats_to_metadata(diagnostics.stats)
+    metadata["split"] = diagnostics.split
+    metadata["sample_count"] = diagnostics.sample_count
+    return metadata
+
+
+def _log_regression_quality(diagnostics: SplitQualityDiagnostics) -> None:
+    """Log one compact regression quality line for a sampled split."""
+    stats = diagnostics.stats
+    LOGGER.info(
+        "[train-quality] split=%s count=%s mse=%s mean_baseline_mse=%s "
+        "r2=%s corr=%s target_std=%s prediction_std=%s "
+        "pred_std_over_target_std=%s",
+        diagnostics.split,
+        diagnostics.sample_count,
+        stats.mse,
+        stats.mean_baseline_mse,
+        stats.r2_vs_mean_baseline,
+        stats.pearson_correlation,
+        stats.target_std,
+        stats.prediction_std,
+        stats.prediction_std_over_target_std,
+    )
 
 
 def prediction_scale_stats_for_cached_batches(
@@ -1009,6 +1123,54 @@ def _add_prediction_scale_metrics(
     metrics[f"{prefix}_std"] = _optional_metric_float(metadata.get("std"))
     metrics[f"{prefix}_min"] = _optional_metric_float(metadata.get("min"))
     metrics[f"{prefix}_max"] = _optional_metric_float(metadata.get("max"))
+
+
+def _quality_split_metadata(
+    regression_quality: dict[str, object],
+    *,
+    split: str,
+) -> dict[str, object]:
+    """Return one split metadata mapping from regression quality metadata."""
+    metadata = regression_quality.get(split)
+    if not isinstance(metadata, dict):
+        return {}
+    return metadata
+
+
+def _add_regression_quality_metrics(
+    metrics: dict[str, float | str | None],
+    *,
+    prefix: str,
+    metadata: dict[str, object],
+) -> None:
+    """Add sampled regression quality diagnostics to flat training metrics."""
+    if not metadata:
+        return
+    for field_name in (
+        "count",
+        "target_mean",
+        "target_std",
+        "target_min",
+        "target_max",
+        "prediction_mean",
+        "prediction_std",
+        "prediction_min",
+        "prediction_max",
+        "residual_mean",
+        "residual_std",
+        "residual_min",
+        "residual_max",
+        "mse",
+        "mae",
+        "mean_baseline_mse",
+        "zero_baseline_mse",
+        "r2_vs_mean_baseline",
+        "pearson_correlation",
+        "prediction_std_over_target_std",
+    ):
+        metrics[f"{prefix}_{field_name}"] = _optional_metric_float(
+            metadata.get(field_name)
+        )
 
 
 def _optional_metric_float(value: object) -> float | None:
