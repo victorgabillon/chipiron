@@ -126,3 +126,11 @@ def _install_learning_script_observability_stubs(
 
     monkeypatch.setitem(sys.modules, "mlflow", mlflow_module)
     monkeypatch.setitem(sys.modules, "torchinfo", torchinfo_module)
+
+    script_module = sys.modules.get(
+        "chipiron.scripts.learn_from_scratch_value_and_fixed_boards."
+        "learn_from_scratch_value_and_fixed_boards"
+    )
+    if script_module is not None:
+        monkeypatch.setattr(script_module, "mlflow", mlflow_module)
+        monkeypatch.setattr(script_module, "summary", torchinfo_module.summary)

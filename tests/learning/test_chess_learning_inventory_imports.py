@@ -28,6 +28,9 @@ def test_legacy_chess_trainer_modules_import() -> None:
     _require_chess_learning_dependencies()
 
     factory = importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
+    checkpoint_helpers = importlib.import_module(
+        "chipiron.scripts.learn_nn_supervised.checkpoint_helpers"
+    )
     training_args = importlib.import_module(
         "chipiron.scripts.learn_nn_supervised.training_args"
     )
@@ -47,9 +50,12 @@ def test_legacy_chess_trainer_modules_import() -> None:
     )
     assert factory.NNTrainerConfigError is training_args.SupervisedTrainingConfigError
     assert factory.OptimizerType is training_args.OptimizerType
-    assert factory.safe_nn_architecture_save is not None
-    assert factory.safe_nn_param_save is not None
-    assert factory.safe_nn_trainer_save is not None
+    assert (
+        factory.safe_nn_architecture_save
+        is checkpoint_helpers.safe_nn_architecture_save
+    )
+    assert factory.safe_nn_param_save is checkpoint_helpers.safe_nn_param_save
+    assert factory.safe_nn_trainer_save is checkpoint_helpers.safe_nn_trainer_save
 
 
 def test_supervised_training_args_legacy_alias_preserves_validation() -> None:

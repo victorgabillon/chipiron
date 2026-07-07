@@ -13,7 +13,7 @@
 - Current trainer config/checkpoint dependency: imports
   `SupervisedTrainingArgs` from
   `chipiron.scripts.learn_nn_supervised.training_args` and checkpoint helpers
-  from `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`. The public
+  from `chipiron.scripts.learn_nn_supervised.checkpoint_helpers`. The public
   dataclass field remains named `nn_trainer_args` for YAML compatibility.
 - `chipiron.learning` usage: directly uses
   `chipiron.learning.supervised.train_regression_batch` and
@@ -181,8 +181,11 @@
 
 ### `safe_nn_architecture_save`, `safe_nn_param_save`, `safe_nn_trainer_save`
 
-- Path: `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py`,
-  re-exported from `src/chipiron/learningprocesses/nn_trainer/factory.py`.
+- Canonical path:
+  `src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py`.
+- Compatibility paths:
+  `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py` and
+  `src/chipiron/learningprocesses/nn_trainer/factory.py`.
 - Classification: live compatibility APIs used by the supervised chess learning
   script.
 - Notes: `safe_nn_param_save` now writes CPU-normalized state dicts through
@@ -201,9 +204,11 @@
   representation.
 - `src/chipiron/players/boardevaluators/neural_networks/neural_net_board_eval_args.py`
   defines bundle-backed neural evaluator config.
-- `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py` writes
+- `src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py` writes
   legacy checkpoint artifacts: architecture YAML, weights `.pt`, readable
   weights YAML, optimizer pickle, scheduler pickle, and training copies.
+- `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py` remains as a
+  compatibility facade for older imports.
 - Checked-in chess model data exists under
   `src/chipiron/data/players/board_evaluators/nn_pytorch/`.
 - Current tests include `tests/models/test_chess_model_bundle_evaluator.py`,
@@ -433,12 +438,27 @@ PR14:
   legacy factory re-exports unchanged.
 - Added focused compatibility tests for canonical imports, legacy aliases,
   the `nn_trainer_args` dataclass field, and supervised parser-backed options.
-- Future PR23 candidate: optional public YAML field migration from
-  `nn_trainer_args` to a clearer name with a backward-compatible loader.
+- Future PR23 candidate: optional move of checkpoint helpers to the supervised
+  chess learning script package.
 - Future PR24 candidate: optional deprecation or removal of legacy factory
   imports once downstream imports have moved.
-- Future PR25 candidate: optional move of checkpoint helpers to a chess-specific
-  checkpoint module.
+- Future PR25 candidate: optional public YAML field migration from
+  `nn_trainer_args` to a clearer name with a backward-compatible loader.
+
+## PR23 progress
+
+- Moved canonical supervised chess checkpoint helpers to
+  `chipiron.scripts.learn_nn_supervised.checkpoint_helpers`.
+- Updated active source imports to use the new canonical checkpoint module.
+- Kept `chipiron.learningprocesses.nn_trainer.checkpoint_helpers` as a
+  compatibility facade.
+- Kept `chipiron.learningprocesses.nn_trainer.factory` checkpoint helper
+  re-exports as compatibility aliases.
+- Preserved checkpoint filenames and formats.
+- Remaining PR24 work: decide whether to remove the legacy factory module
+  entirely; decide whether to rename `safe_nn_*` helpers to clearer public
+  names; decide whether to remove old checkpoint helper compatibility paths
+  after downstream imports have moved.
 
 ## Risk notes
 

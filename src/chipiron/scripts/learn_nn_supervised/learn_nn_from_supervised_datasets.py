@@ -62,7 +62,7 @@ from chipiron.learning.supervised import (
     evaluate_regression_batch,
     train_regression_batch,
 )
-from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     get_folder_training_copies_path_from,
     get_optimizer_file_path_from,
     get_scheduler_file_path_from,

@@ -2,18 +2,18 @@
 
 New code should import config classes from
 ``chipiron.scripts.learn_nn_supervised.training_args`` and checkpoint helpers
-from ``chipiron.learningprocesses.nn_trainer.checkpoint_helpers``.
+from ``chipiron.scripts.learn_nn_supervised.checkpoint_helpers``.
 """
 
 from __future__ import annotations
 
-from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     safe_nn_architecture_save as safe_nn_architecture_save,
 )
-from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     safe_nn_param_save as safe_nn_param_save,
 )
-from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     safe_nn_trainer_save as safe_nn_trainer_save,
 )
 from chipiron.scripts.learn_nn_supervised.training_args import (
