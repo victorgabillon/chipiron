@@ -68,13 +68,13 @@ def _make_config(*, saving_root: Path) -> Any:
     )
     from chipiron.scripts.learn_nn_supervised.training_args import (
         GameInputArgs,
-        NNTrainerArgs,
+        SupervisedTrainingArgs,
     )
     from chipiron.scripts.script_args import BaseScriptArgs
 
     dataset_file = str((Path(__file__).parent / "small_dataset.pi").resolve())
     return LearnNNScriptArgs(
-        nn_trainer_args=NNTrainerArgs(
+        nn_trainer_args=SupervisedTrainingArgs(
             reuse_existing_model=False,
             specific_saving_folder=str(saving_root / "piece_difference"),
             game_input=GameInputArgs(

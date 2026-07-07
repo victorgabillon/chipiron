@@ -70,7 +70,7 @@ from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
-from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
+from chipiron.scripts.learn_nn_supervised.training_args import SupervisedTrainingArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_runtime import output_root_path_str
@@ -95,12 +95,14 @@ class LearnNNScriptArgs:
     """Represents the arguments for the LearnNNScript.
 
     Attributes:
-        nn_trainer_args (NNTrainerArgs): The arguments for the NNTrainer.
+        nn_trainer_args (SupervisedTrainingArgs): The supervised training arguments.
 
     """
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
-    nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
+    nn_trainer_args: SupervisedTrainingArgs = field(
+        default_factory=SupervisedTrainingArgs
+    )
     dataset_args: DataSetArgs = field(
         default_factory=lambda: DataSetArgs(
             train_file_name="data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi",
@@ -547,11 +549,11 @@ class LearnNNScript:
 
 def _create_optimizer_and_scheduler(
     *,
-    args: NNTrainerArgs,
+    args: SupervisedTrainingArgs,
     model: torch.nn.Module,
     saving_folder: MyPath,
 ) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LRScheduler]:
-    """Create or load optimizer/scheduler using legacy NNTrainerArgs semantics."""
+    """Create or load optimizer/scheduler using supervised training semantics."""
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
     if args.reuse_existing_trainer:

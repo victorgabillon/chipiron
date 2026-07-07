@@ -32,13 +32,40 @@ def test_legacy_chess_trainer_modules_import() -> None:
         "chipiron.scripts.learn_nn_supervised.training_args"
     )
 
-    assert training_args.NNTrainerArgs is not None
+    assert training_args.SupervisedTrainingArgs is not None
+    assert training_args.NNTrainerArgs is training_args.SupervisedTrainingArgs
+    assert (
+        training_args.NNTrainerConfigError
+        is training_args.SupervisedTrainingConfigError
+    )
     assert training_args.OptimizerType is not None
-    assert factory.NNTrainerArgs is training_args.NNTrainerArgs
+    assert factory.SupervisedTrainingArgs is training_args.SupervisedTrainingArgs
+    assert factory.NNTrainerArgs is training_args.SupervisedTrainingArgs
+    assert (
+        factory.SupervisedTrainingConfigError
+        is training_args.SupervisedTrainingConfigError
+    )
+    assert factory.NNTrainerConfigError is training_args.SupervisedTrainingConfigError
     assert factory.OptimizerType is training_args.OptimizerType
     assert factory.safe_nn_architecture_save is not None
     assert factory.safe_nn_param_save is not None
     assert factory.safe_nn_trainer_save is not None
+
+
+def test_supervised_training_args_legacy_alias_preserves_validation() -> None:
+    """The legacy config alias should preserve validation behavior."""
+    _require_chess_learning_dependencies()
+    training_args = importlib.import_module(
+        "chipiron.scripts.learn_nn_supervised.training_args"
+    )
+
+    assert training_args.NNTrainerArgs is training_args.SupervisedTrainingArgs
+
+    with pytest.raises(training_args.SupervisedTrainingConfigError):
+        training_args.SupervisedTrainingArgs(reuse_existing_model=True)
+
+    with pytest.raises(training_args.NNTrainerConfigError):
+        training_args.NNTrainerArgs(reuse_existing_model=True)
 
 
 def test_chess_learning_entrypoint_modules_import(

@@ -23,3 +23,9 @@ from chipiron.scripts.learn_nn_supervised.training_args import (
 from chipiron.scripts.learn_nn_supervised.training_args import (
     OptimizerType as OptimizerType,
 )
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    SupervisedTrainingArgs as SupervisedTrainingArgs,
+)
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    SupervisedTrainingConfigError as SupervisedTrainingConfigError,
+)

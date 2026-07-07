@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from chipiron.utils import MyPath
 
 
-class NNTrainerConfigError(ValueError):
-    """Raised when NN trainer configuration is inconsistent."""
+class SupervisedTrainingConfigError(ValueError):
+    """Raised when supervised training configuration is inconsistent."""
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class GameInputArgs:
 
 
 @dataclass
-class NNTrainerArgs:
+class SupervisedTrainingArgs:
     """Arguments for supervised chess neural-network training.
 
     Attributes:
@@ -120,7 +120,12 @@ class NNTrainerArgs:
             self.reuse_existing_model
             and self.nn_parameters_file_if_reusing_existing_one is None
         ):
-            raise NNTrainerConfigError(
+            raise SupervisedTrainingConfigError(
                 self.reuse_existing_model,
                 self.nn_parameters_file_if_reusing_existing_one,
             )
+
+
+# Compatibility aliases for legacy YAML/import paths.
+NNTrainerArgs = SupervisedTrainingArgs
+NNTrainerConfigError = SupervisedTrainingConfigError

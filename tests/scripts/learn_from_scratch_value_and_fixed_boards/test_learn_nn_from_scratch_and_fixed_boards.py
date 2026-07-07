@@ -24,7 +24,9 @@ def _make_config(*, tmp_path: Path) -> Any:
     from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
         LearnNNFromScratchScriptArgs,
     )
-    from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
+    from chipiron.scripts.learn_nn_supervised.training_args import (
+        SupervisedTrainingArgs,
+    )
     from chipiron.scripts.script_args import BaseScriptArgs
 
     out_dir = tmp_path / "learn_from_scratch_outputs"
@@ -35,7 +37,7 @@ def _make_config(*, tmp_path: Path) -> Any:
         epochs_number_with_respect_to_evaluating_player=1,
         number_of_evaluating_player_per_loop=1,
         number_of_gradient_descent_per_loop=0,
-        nn_trainer_args=NNTrainerArgs(
+        nn_trainer_args=SupervisedTrainingArgs(
             reuse_existing_model=False,
             specific_saving_folder=str(out_dir),
             saving_intermediate_copy=False,

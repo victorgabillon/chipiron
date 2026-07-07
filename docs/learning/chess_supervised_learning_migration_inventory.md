@@ -10,9 +10,11 @@
   options live next to the module in `exp_options.yaml`.
 - Current tests:
   `tests/scripts/learn_nn_supervised/test_learn_nn_from_supervised_datasets.py`.
-- Current trainer config/checkpoint dependency: imports `NNTrainerArgs` from
+- Current trainer config/checkpoint dependency: imports
+  `SupervisedTrainingArgs` from
   `chipiron.scripts.learn_nn_supervised.training_args` and checkpoint helpers
-  from `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`.
+  from `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`. The public
+  dataclass field remains named `nn_trainer_args` for YAML compatibility.
 - `chipiron.learning` usage: directly uses
   `chipiron.learning.supervised.train_regression_batch` and
   `evaluate_regression_batch`; `FenAndValueData` implements the common
@@ -27,8 +29,9 @@
   default options live next to the module in `exp_options.yaml`.
 - Current tests:
   `tests/scripts/learn_from_scratch_value_and_fixed_boards/test_learn_nn_from_scratch_and_fixed_boards.py`.
-- Current training config dependency: imports `NNTrainerArgs` from
-  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Current training config dependency: imports `SupervisedTrainingArgs` from
+  `chipiron.scripts.learn_nn_supervised.training_args`. The public dataclass
+  field remains named `nn_trainer_args` for YAML compatibility.
 - `chipiron.learning` usage: indirect through `FenAndValueDataSet`. The method
   `learn_model_some_steps` is currently empty, so there is no active train loop
   to migrate in this script yet.
@@ -153,8 +156,10 @@
 - Notes: all remaining internal device lookup uses
   `chipiron.learning.module_device` directly.
 
-### `NNTrainerArgs`
+### `SupervisedTrainingArgs`
 
+- Canonical name: `SupervisedTrainingArgs`.
+- Compatibility alias: `NNTrainerArgs`.
 - Canonical path: `src/chipiron/scripts/learn_nn_supervised/training_args.py`.
 - Compatibility path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
 - Classification: keep as a public supervised chess script configuration
@@ -390,6 +395,24 @@ PR14:
   entirely; decide whether checkpoint helpers should move to a chess-specific
   checkpoint module; decide whether `NNTrainerArgs` should be renamed to a
   clearer public name.
+
+## PR21 progress
+
+- Renamed the canonical supervised chess training config dataclass from
+  `NNTrainerArgs` to `SupervisedTrainingArgs`.
+- Renamed the canonical config validation error from `NNTrainerConfigError` to
+  `SupervisedTrainingConfigError`.
+- Kept `NNTrainerArgs` and `NNTrainerConfigError` as compatibility aliases in
+  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Kept `chipiron.learningprocesses.nn_trainer.factory.NNTrainerArgs` as a
+  compatibility re-export.
+- Active source now imports `SupervisedTrainingArgs` from the canonical module.
+- The public dataclass field name `nn_trainer_args` remains unchanged for YAML
+  and parser compatibility.
+- Remaining PR22 work: decide whether to rename the public field
+  `nn_trainer_args`; decide whether to remove the legacy factory module;
+  decide whether checkpoint helpers should move to a chess-specific checkpoint
+  module.
 
 ## Risk notes
 

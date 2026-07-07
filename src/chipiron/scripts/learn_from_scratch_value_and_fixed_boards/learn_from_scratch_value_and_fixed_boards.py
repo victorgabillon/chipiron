@@ -47,7 +47,7 @@ from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
+from chipiron.scripts.learn_nn_supervised.training_args import SupervisedTrainingArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_runtime import output_root_path_str
@@ -96,7 +96,9 @@ class LearnNNFromScratchScriptArgs:
     )
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
-    nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
+    nn_trainer_args: SupervisedTrainingArgs = field(
+        default_factory=SupervisedTrainingArgs
+    )
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
 
 
