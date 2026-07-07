@@ -28,8 +28,14 @@ def test_legacy_chess_trainer_modules_import() -> None:
     _require_chess_learning_dependencies()
 
     factory = importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
+    training_args = importlib.import_module(
+        "chipiron.scripts.learn_nn_supervised.training_args"
+    )
 
-    assert factory.NNTrainerArgs is not None
+    assert training_args.NNTrainerArgs is not None
+    assert training_args.OptimizerType is not None
+    assert factory.NNTrainerArgs is training_args.NNTrainerArgs
+    assert factory.OptimizerType is training_args.OptimizerType
     assert factory.safe_nn_architecture_save is not None
     assert factory.safe_nn_param_save is not None
     assert factory.safe_nn_trainer_save is not None

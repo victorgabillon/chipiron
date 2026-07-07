@@ -12,6 +12,14 @@ chipiron.scripts.learn\_nn\_supervised.learn\_nn\_from\_supervised\_datasets mod
    :undoc-members:
    :show-inheritance:
 
+chipiron.scripts.learn\_nn\_supervised.training\_args module
+------------------------------------------------------------
+
+.. automodule:: chipiron.scripts.learn_nn_supervised.training_args
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

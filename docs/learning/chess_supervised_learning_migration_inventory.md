@@ -11,8 +11,8 @@
 - Current tests:
   `tests/scripts/learn_nn_supervised/test_learn_nn_from_supervised_datasets.py`.
 - Current trainer config/checkpoint dependency: imports `NNTrainerArgs` from
-  `chipiron.learningprocesses.nn_trainer.factory` and checkpoint helpers from
-  `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`.
+  `chipiron.scripts.learn_nn_supervised.training_args` and checkpoint helpers
+  from `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`.
 - `chipiron.learning` usage: directly uses
   `chipiron.learning.supervised.train_regression_batch` and
   `evaluate_regression_batch`; `FenAndValueData` implements the common
@@ -27,8 +27,8 @@
   default options live next to the module in `exp_options.yaml`.
 - Current tests:
   `tests/scripts/learn_from_scratch_value_and_fixed_boards/test_learn_nn_from_scratch_and_fixed_boards.py`.
-- Old trainer dependency: imports `NNTrainerArgs` from
-  `chipiron.learningprocesses.nn_trainer.factory`.
+- Current training config dependency: imports `NNTrainerArgs` from
+  `chipiron.scripts.learn_nn_supervised.training_args`.
 - `chipiron.learning` usage: indirect through `FenAndValueDataSet`. The method
   `learn_model_some_steps` is currently empty, so there is no active train loop
   to migrate in this script yet.
@@ -155,7 +155,8 @@
 
 ### `NNTrainerArgs`
 
-- Path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
+- Canonical path: `src/chipiron/scripts/learn_nn_supervised/training_args.py`.
+- Compatibility path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
 - Classification: keep as a public supervised chess script configuration
   dataclass.
 - Notes: contains optimizer, scheduler, batch-size, saving, and model input
@@ -376,6 +377,19 @@ PR14:
   `learningprocesses.nn_trainer.factory`; decide whether checkpoint helpers
   should move to a chess-specific training/checkpoint module; remove stale
   compatibility re-exports if desired.
+
+## PR20 progress
+
+- Moved `NNTrainerArgs` and `OptimizerType` to
+  `chipiron.scripts.learn_nn_supervised.training_args`.
+- Updated active source imports to use the new canonical module.
+- Kept `chipiron.learningprocesses.nn_trainer.factory.NNTrainerArgs` and
+  `OptimizerType` as compatibility re-exports.
+- Kept checkpoint helper re-exports from the legacy factory module.
+- Remaining PR21 work: decide whether to remove the legacy factory module
+  entirely; decide whether checkpoint helpers should move to a chess-specific
+  checkpoint module; decide whether `NNTrainerArgs` should be renamed to a
+  clearer public name.
 
 ## Risk notes
 

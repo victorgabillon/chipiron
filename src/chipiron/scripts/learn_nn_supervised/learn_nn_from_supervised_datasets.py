@@ -70,7 +70,7 @@ from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
-from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
+from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_runtime import output_root_path_str

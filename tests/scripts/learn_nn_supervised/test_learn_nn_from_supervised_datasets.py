@@ -60,15 +60,15 @@ def _make_config(*, saving_root: Path) -> Any:
         DataSetArgs,
     )
     from chipiron.environments.types import GameKind
-    from chipiron.learningprocesses.nn_trainer.factory import (
-        GameInputArgs,
-        NNTrainerArgs,
-    )
     from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
         ModelInputRepresentationType,
     )
     from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
         LearnNNScriptArgs,
+    )
+    from chipiron.scripts.learn_nn_supervised.training_args import (
+        GameInputArgs,
+        NNTrainerArgs,
     )
     from chipiron.scripts.script_args import BaseScriptArgs
 

@@ -43,11 +43,11 @@ from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
+from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_runtime import output_root_path_str

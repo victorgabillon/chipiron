@@ -18,13 +18,13 @@ def _make_config(*, tmp_path: Path) -> Any:
     from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
         DataSetArgs,
     )
-    from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
     from chipiron.players.move_selector.random_args import RandomSelectorArgs
     from chipiron.players.player_args import PlayerArgs
     from chipiron.scripts.chipiron_args import ImplementationArgs
     from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
         LearnNNFromScratchScriptArgs,
     )
+    from chipiron.scripts.learn_nn_supervised.training_args import NNTrainerArgs
     from chipiron.scripts.script_args import BaseScriptArgs
 
     out_dir = tmp_path / "learn_from_scratch_outputs"
