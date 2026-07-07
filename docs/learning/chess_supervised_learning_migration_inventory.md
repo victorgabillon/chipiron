@@ -246,6 +246,20 @@ PR14:
 - Decide whether legacy checkpoint helpers stay as chess-specific bundle
   writers or are replaced by common bundle/checkpoint utilities.
 
+## PR13 progress
+
+- `NNPytorchTrainer.train` now delegates normal supervised regression updates
+  to `chipiron.learning.supervised.train_regression_batch`.
+- `NNPytorchTrainer.test` and `compute_test_error_on_dataset` now delegate
+  forward/metric collection to
+  `chipiron.learning.supervised.evaluate_regression_batch`.
+- `check_model_device` remains as a compatibility helper, but now delegates to
+  `chipiron.learning.module_device`.
+- `NNTrainerArgs`, `create_nn_trainer`, and legacy checkpoint helpers remain
+  compatibility shims.
+- `train_next_boards` remains a legacy special case because its targets are
+  generated from the next board rather than supplied by a supervised batch.
+
 ## Risk notes
 
 - Several chess learning modules are reached through the dynamic script factory

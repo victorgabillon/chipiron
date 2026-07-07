@@ -1,6 +1,8 @@
+"""Tests for the supervised chess neural-network learning script."""
+
+import sys
 import textwrap
 from importlib import import_module
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -117,17 +119,19 @@ def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
     )
     from chipiron.scripts.script_args import BaseScriptArgs
 
-    PartialOpLearnNNScriptArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_learn_nn_script_args = make_partial_dataclass_with_optional_paths(
         cls=LearnNNScriptArgs
     )
-    PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_nn_trainer_args = make_partial_dataclass_with_optional_paths(
         cls=NNTrainerArgs
     )
-    PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
-    PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_data_set_args = make_partial_dataclass_with_optional_paths(
+        cls=DataSetArgs
+    )
+    partial_op_base_script_args = make_partial_dataclass_with_optional_paths(
         cls=BaseScriptArgs
     )
-    PartialOpGameInputArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_game_input_args = make_partial_dataclass_with_optional_paths(
         cls=GameInputArgs
     )
 
@@ -137,30 +141,30 @@ def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
         bundle_name="supervised_model_bundle",
         input_representation=ModelInputRepresentationType.PIECE_DIFFERENCE.value,
     )
-    return PartialOpLearnNNScriptArgs(
-        nn_trainer_args=PartialOpNNTrainerArgs(
+    return partial_op_learn_nn_script_args(
+        nn_trainer_args=partial_op_nn_trainer_args(
             reuse_existing_model=False,
             specific_saving_folder=str(saving_root / "piece_difference"),
             neural_network_architecture_args_path_to_yaml_file=str(
                 bundle_dir / "architecture.yaml"
             ),
-            game_input=PartialOpGameInputArgs(
+            game_input=partial_op_game_input_args(
                 game_kind=GameKind.CHESS,
                 representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
             ),
         ),
-        dataset_args=PartialOpDataSetArgs(
+        dataset_args=partial_op_data_set_args(
             train_file_name=dataset_file,
             test_file_name=dataset_file,
         ),
-        base_script_args=PartialOpBaseScriptArgs(testing=True),
+        base_script_args=partial_op_base_script_args(testing=True),
     )
 
 
 def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test learn nn."""
-    from chipiron import scripts
     import chipiron.scripts.factory as script_factory_module
+    from chipiron import scripts
     from chipiron.scripts.factory import create_script
 
     original_is_available = torch.cuda.is_available

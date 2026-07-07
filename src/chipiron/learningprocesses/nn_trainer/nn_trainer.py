@@ -7,7 +7,14 @@ import torch
 from coral.chi_nn import ChiNN
 from torch.utils.data import DataLoader
 
-from chipiron.learning.supervised import SupervisedBatch
+from chipiron.learning import module_device
+from chipiron.learning.supervised import (
+    RegressionBatchMetricSums,
+    SupervisedBatch,
+    TensorSupervisedBatch,
+    evaluate_regression_batch,
+    train_regression_batch,
+)
 from chipiron.utils.logger import chipiron_logger
 
 
@@ -26,7 +33,7 @@ def compute_loss(
 def check_model_device(model: ChiNN) -> str | torch.device | int:
     # Check the device of the first parameter
     """Check model device."""
-    return next(model.parameters()).device
+    return module_device(model)
 
 
 def compute_test_error_on_dataset(
@@ -47,27 +54,31 @@ def compute_test_error_on_dataset(
         float: The test error on the given dataset.
 
     """
-    sum_loss_test = 0.0
-    count_test = 0
-    loss_test: torch.Tensor
-    device = check_model_device(net)
+    squared_error_sum = 0.0
+    absolute_error_sum = 0.0
+    target_count = 0
+    device = torch.device(check_model_device(net))
     for _ in range(number_of_tests):
         sample = next(iter(data_test))
-        input_layer, target_value = (
-            sample.get_input_layer().to(device),
-            sample.get_target_value().to(device),
+        batch_metrics = evaluate_regression_batch(
+            model=net,
+            batch=sample,
+            device=device,
+            timings=None,
         )
+        squared_error_sum += batch_metrics.squared_error_sum
+        absolute_error_sum += batch_metrics.absolute_error_sum
+        target_count += batch_metrics.target_count
 
-        loss_test = compute_loss(
-            net=net,
-            criterion=criterion,
-            input_layer=input_layer,
-            target_value=target_value,
-        )
-        sum_loss_test += float(loss_test)
-        count_test += 1
-    chipiron_logger.info("test error %f", float(sum_loss_test / float(count_test)))
-    test_error: float = float(sum_loss_test / float(count_test))
+    test_error = _loss_value_from_regression_sums(
+        criterion=criterion,
+        metrics=RegressionBatchMetricSums(
+            squared_error_sum=squared_error_sum,
+            absolute_error_sum=absolute_error_sum,
+            target_count=target_count,
+        ),
+    )
+    chipiron_logger.info("test error %f", test_error)
     return test_error
 
 
@@ -134,22 +145,20 @@ class NNPytorchTrainer:
         """
         self.net.train()
 
-        self.optimizer.zero_grad()
-        input_layer, target_value = (
-            input_layer.to(self.device),
-            target_value.to(self.device),
+        batch = TensorSupervisedBatch(
+            input_tensor=input_layer,
+            target_tensor=target_value,
+            is_batch=True,
         )
-
-        loss: torch.Tensor = compute_loss(
-            net=self.net,
+        batch_stats = train_regression_batch(
+            model=self.net,
+            optimizer=self.optimizer,
             criterion=self.criterion,
-            input_layer=input_layer,
-            target_value=target_value,
+            batch=batch,
+            device=self.device,
+            timings=None,
         )
-        loss.backward()
-
-        self.optimizer.step()
-        return loss
+        return torch.tensor(batch_stats.loss, device=self.device)
 
     def test(
         self, input_layer: torch.Tensor, target_value: torch.Tensor
@@ -165,15 +174,23 @@ class NNPytorchTrainer:
 
         """
         self.net.eval()
-        input_layer, target_value = (
-            input_layer.to(self.device),
-            target_value.to(self.device),
+        batch = TensorSupervisedBatch(
+            input_tensor=input_layer,
+            target_tensor=target_value,
+            is_batch=True,
         )
-        loss: torch.Tensor = compute_loss(
-            net=self.net,
-            criterion=self.criterion,
-            input_layer=input_layer,
-            target_value=target_value,
+        batch_metrics = evaluate_regression_batch(
+            model=self.net,
+            batch=batch,
+            device=self.device,
+            timings=None,
+        )
+        loss = torch.tensor(
+            _loss_value_from_regression_sums(
+                criterion=self.criterion,
+                metrics=batch_metrics,
+            ),
+            device=self.device,
         )
         self.net.train()
         return loss
@@ -191,6 +208,7 @@ class NNPytorchTrainer:
             None
 
         """
+        # TODO(PR14): review whether train_next_boards can use the common supervised kernel.
         self.net.eval()
         target_value = -self.net(next_input_layer)
 
@@ -221,3 +239,22 @@ class NNPytorchTrainer:
         )
         self.net.train()
         return test_error
+
+
+def _loss_value_from_regression_sums(
+    *,
+    criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    metrics: RegressionBatchMetricSums,
+) -> float:
+    """Convert common regression sums back to the legacy criterion scalar."""
+    if metrics.target_count == 0:
+        return 0.0
+    if isinstance(criterion, torch.nn.L1Loss):
+        if criterion.reduction == "sum":
+            return metrics.absolute_error_sum
+        return metrics.absolute_error_sum / metrics.target_count
+    if isinstance(criterion, torch.nn.MSELoss):
+        if criterion.reduction == "sum":
+            return metrics.squared_error_sum
+        return metrics.squared_error_sum / metrics.target_count
+    return metrics.loss
