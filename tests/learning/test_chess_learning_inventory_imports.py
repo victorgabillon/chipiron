@@ -24,23 +24,15 @@ def test_legacy_chess_trainer_package_imports() -> None:
 
 
 def test_legacy_chess_trainer_modules_import() -> None:
-    """Factory trainer module should import when optional chess deps exist."""
+    """Legacy factory module should keep public config and checkpoint exports."""
     _require_chess_learning_dependencies()
 
     factory = importlib.import_module("chipiron.learningprocesses.nn_trainer.factory")
 
     assert factory.NNTrainerArgs is not None
-    assert factory.create_nn_trainer is not None
-
-
-def test_legacy_nn_trainer_module_imports_without_chess_runtime_deps() -> None:
-    """The plain Torch trainer wrapper should not require chess runtime deps."""
-    trainer = importlib.import_module(
-        "chipiron.learningprocesses.nn_trainer.nn_trainer"
-    )
-
-    assert trainer.NNPytorchTrainer is not None
-    assert trainer.compute_test_error_on_dataset is not None
+    assert factory.safe_nn_architecture_save is not None
+    assert factory.safe_nn_param_save is not None
+    assert factory.safe_nn_trainer_save is not None
 
 
 def test_chess_learning_entrypoint_modules_import(

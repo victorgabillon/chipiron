@@ -1,15 +1,12 @@
-"""Module to create and save neural network trainers and their parameters."""
+"""Legacy neural-network training configuration and checkpoint re-exports."""
 
-import pickle
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, cast, no_type_check
 
-import torch
 from coral.board_evaluation import (
     PointOfView,
 )
-from coral.chi_nn import ChiNN
 from coral.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptronArgs,
 )
@@ -23,14 +20,8 @@ from coral.neural_networks.nn_model_type import (
 from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
-from torch import optim
 
 from chipiron.environments.types import GameKind
-from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
-    get_folder_training_copies_path_from,
-    get_optimizer_file_path_from,
-    get_scheduler_file_path_from,
-)
 from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
     safe_nn_architecture_save as safe_nn_architecture_save,
 )
@@ -40,12 +31,10 @@ from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
 from chipiron.learningprocesses.nn_trainer.checkpoint_helpers import (
     safe_nn_trainer_save as safe_nn_trainer_save,
 )
-from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import MyPath
-from chipiron.utils.small_tools import mkdir_if_not_existing
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -150,50 +139,6 @@ class NNTrainerArgs:
                 self.reuse_existing_model,
                 self.nn_parameters_file_if_reusing_existing_one,
             )
-
-
-def create_nn_trainer(
-    args: NNTrainerArgs, nn: ChiNN, saving_folder: MyPath
-) -> NNPytorchTrainer:
-    """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
-
-    Args:
-        args (NNTrainerArgs): The arguments for the NNTrainer.
-        nn (ChiNN): The neural network to be trained.
-
-    Returns:
-        NNPytorchTrainer: An instance of NNPytorchTrainer.
-
-    """
-    optimizer: torch.optim.Optimizer
-    scheduler: torch.optim.lr_scheduler.LRScheduler
-    if args.reuse_existing_trainer:
-        file_optimizer_path = get_optimizer_file_path_from(folder_path=saving_folder)
-        with open(file_optimizer_path, "rb") as file_optimizer:
-            optimizer = pickle.load(file_optimizer)
-
-        file_scheduler_path = get_scheduler_file_path_from(folder_path=saving_folder)
-        with open(file_scheduler_path, "rb") as file_scheduler:
-            scheduler = pickle.load(file_scheduler)
-
-    else:
-        optimizer = optim.SGD(
-            nn.parameters(),
-            lr=args.starting_lr,
-            momentum=args.momentum_op,
-            weight_decay=0.000,
-        )
-        scheduler = optim.lr_scheduler.StepLR(
-            optimizer, step_size=args.scheduler_step_size, gamma=args.scheduler_gamma
-        )
-
-    if args.saving_intermediate_copy:
-        folder_path_training_copies = get_folder_training_copies_path_from(
-            saving_folder
-        )
-        mkdir_if_not_existing(folder_path_training_copies)
-
-    return NNPytorchTrainer(net=nn, optimizer=optimizer, scheduler=scheduler)
 
 
 @no_type_check

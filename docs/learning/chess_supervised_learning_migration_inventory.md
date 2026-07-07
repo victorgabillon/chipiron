@@ -10,12 +10,13 @@
   options live next to the module in `exp_options.yaml`.
 - Current tests:
   `tests/scripts/learn_nn_supervised/test_learn_nn_from_supervised_datasets.py`.
-- Old trainer dependency: imports `NNTrainerArgs`, `create_nn_trainer`,
-  `safe_nn_architecture_save`, `safe_nn_param_save`, and
-  `safe_nn_trainer_save` from `chipiron.learningprocesses.nn_trainer.factory`.
-- `chipiron.learning` usage: indirectly through `FenAndValueData`, which
-  implements the common `SupervisedBatch` protocol. The train/eval loop still
-  calls the legacy trainer directly.
+- Current trainer config/checkpoint dependency: imports `NNTrainerArgs` from
+  `chipiron.learningprocesses.nn_trainer.factory` and checkpoint helpers from
+  `chipiron.learningprocesses.nn_trainer.checkpoint_helpers`.
+- `chipiron.learning` usage: directly uses
+  `chipiron.learning.supervised.train_regression_batch` and
+  `evaluate_regression_batch`; `FenAndValueData` implements the common
+  `SupervisedBatch` protocol.
 
 ### `src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py`
 
@@ -39,9 +40,9 @@
 - Invocation: script module and `__main__` block; default dataset path points at
   external data.
 - Current tests: `tests/scripts/evaluate_models/test_evaluate_models.py`.
-- Old trainer dependency: imports `compute_test_error_on_dataset` from
-  `chipiron.learningprocesses.nn_trainer.nn_trainer`.
-- `chipiron.learning` usage: none directly.
+- Old trainer dependency: removed in PR19.
+- `chipiron.learning` usage: directly uses
+  `chipiron.learning.supervised.evaluate_regression_batch`.
 
 ### Chess neural evaluator runtime modules
 
@@ -127,9 +128,9 @@
 ### `NNPytorchTrainer`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: live compatibility wrapper.
-- Notes: normal supervised train/test paths delegate to `chipiron.learning`.
-  The unreferenced legacy `train_next_boards` special case was removed in PR15.
+- Classification: removed in PR19.
+- Notes: no active source callers remained after the supervised learning script
+  and model evaluation script moved to common learning primitives.
 
 ### `compute_loss`
 
@@ -141,9 +142,9 @@
 ### `compute_test_error_on_dataset`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/nn_trainer.py`.
-- Classification: live compatibility API.
-- Notes: still used by the legacy trainer and `evaluate_models.py`, but now
-  delegates batch evaluation to `chipiron.learning.supervised`.
+- Classification: removed in PR19.
+- Notes: `evaluate_models.py` now aggregates
+  `chipiron.learning.supervised.evaluate_regression_batch` metrics directly.
 
 ### `check_model_device`
 
@@ -155,21 +156,22 @@
 ### `NNTrainerArgs`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
-- Classification: keep as a compatibility configuration shim during PR13;
-  migrate or retire after the active chess scripts use common learning
-  orchestration.
+- Classification: keep as a public supervised chess script configuration
+  dataclass.
 - Notes: contains optimizer, scheduler, batch-size, saving, and model input
   configuration.
 
 ### `create_nn_trainer`
 
 - Path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
-- Classification: migrate to common learning orchestration or delete after the
-  scripts no longer construct `NNPytorchTrainer`.
+- Classification: removed in PR19.
+- Notes: the active supervised chess script constructs optimizer and scheduler
+  state directly while preserving `NNTrainerArgs` semantics.
 
 ### `safe_nn_architecture_save`, `safe_nn_param_save`, `safe_nn_trainer_save`
 
-- Path: `src/chipiron/learningprocesses/nn_trainer/factory.py`.
+- Path: `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py`,
+  re-exported from `src/chipiron/learningprocesses/nn_trainer/factory.py`.
 - Classification: live compatibility APIs used by the supervised chess learning
   script.
 - Notes: `safe_nn_param_save` now writes CPU-normalized state dicts through
@@ -188,9 +190,9 @@
   representation.
 - `src/chipiron/players/boardevaluators/neural_networks/neural_net_board_eval_args.py`
   defines bundle-backed neural evaluator config.
-- `src/chipiron/learningprocesses/nn_trainer/factory.py` writes legacy trainer
-  artifacts: architecture YAML, weights `.pt`, readable weights YAML, optimizer
-  pickle, scheduler pickle, and training copies.
+- `src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py` writes
+  legacy checkpoint artifacts: architecture YAML, weights `.pt`, readable
+  weights YAML, optimizer pickle, scheduler pickle, and training copies.
 - Checked-in chess model data exists under
   `src/chipiron/data/players/board_evaluators/nn_pytorch/`.
 - Current tests include `tests/models/test_chess_model_bundle_evaluator.py`,
@@ -214,13 +216,14 @@
 - `tests/learning/test_chess_learning_inventory_imports.py` now pins import
   behavior for the main chess learning modules and verifies `FenAndValueData`
   can pass through the common supervised batch helpers.
+- `tests/learning/test_chess_supervised_batch_common_kernel.py` verifies
+  chess `FenAndValueData` batches work with common supervised train/eval
+  kernels.
 - `tests/learning/supervised/test_regression_quality_chess_like.py` now checks
   that common regression quality diagnostics handle chess-like value targets.
 
 Obvious missing tests:
 
-- A direct one-batch legacy chess trainer test that can be compared with the
-  common `train_regression_batch` kernel during PR13.
 - A direct chess evaluation-loop test using the common
   `evaluate_regression_batch` primitive.
 - Broader script-level checkpoint assertions once optional chess dependencies
@@ -358,9 +361,21 @@ PR14:
 - `safe_nn_trainer_save` now accepts any optimizer/scheduler holder, so direct
   training code can save legacy optimizer and scheduler checkpoints without
   constructing `NNPytorchTrainer`.
-- Remaining PR19 work: grep remaining internal uses of `NNPytorchTrainer`,
-  `create_nn_trainer`, and `NNTrainerArgs`; remove or relocate them if no
-  active script still needs them.
+
+## PR19 progress
+
+- Removed `NNPytorchTrainer` and the old dependency-light
+  `nn_trainer.py` wrapper module because no active source callers remained.
+- Removed `create_nn_trainer` from the legacy factory module because the active
+  supervised chess script now uses common learning directly.
+- Migrated `evaluate_models.py` away from the legacy dataset evaluator; it now
+  aggregates `evaluate_regression_batch` metrics directly.
+- Kept `NNTrainerArgs` as the public supervised chess script config dataclass.
+- Kept checkpoint helpers and factory re-exports as compatibility APIs.
+- Remaining PR20 work: decide whether to rename or move `NNTrainerArgs` out of
+  `learningprocesses.nn_trainer.factory`; decide whether checkpoint helpers
+  should move to a chess-specific training/checkpoint module; remove stale
+  compatibility re-exports if desired.
 
 ## Risk notes
 

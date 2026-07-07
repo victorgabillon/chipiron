@@ -346,7 +346,7 @@ class LearnNNScript:
                     if count_train_step % 10000 == 0 and count_train_step > 0:
                         training_loss: float = sum_loss_train_print / 10000
                         sum_loss_train_print = 0
-                        test_error: float = self._compute_test_error_on_dataset(
+                        test_error: float = self._evaluate_loss_on_dataset(
                             data_test=self.data_loader_stockfish_boards_test,
                         )
                         self.print_and_log_metrics(
@@ -433,7 +433,7 @@ class LearnNNScript:
                         x_train=fens_and_values_sample_batch.get_input_layer(),
                     )
 
-    def _compute_test_error_on_dataset(
+    def _evaluate_loss_on_dataset(
         self,
         data_test: DataLoader[SupervisedBatch],
     ) -> float:
@@ -454,7 +454,7 @@ class LearnNNScript:
                 absolute_error_sum += batch_metrics.absolute_error_sum
                 target_count += batch_metrics.target_count
         self.nn_board_evaluator.net.train()
-        test_error = _loss_value_from_regression_sums_for_criterion(
+        test_error = _scalar_loss_from_regression_metrics(
             criterion=self.criterion,
             metrics=RegressionBatchMetricSums(
                 squared_error_sum=squared_error_sum,
@@ -584,7 +584,7 @@ def _create_optimizer_and_scheduler(
     return optimizer, scheduler
 
 
-def _loss_value_from_regression_sums_for_criterion(
+def _scalar_loss_from_regression_metrics(
     *,
     criterion: torch.nn.Module,
     metrics: RegressionBatchMetricSums,

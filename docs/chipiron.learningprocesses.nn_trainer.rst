@@ -12,14 +12,6 @@ chipiron.learningprocesses.nn\_trainer.factory module
    :undoc-members:
    :show-inheritance:
 
-chipiron.learningprocesses.nn\_trainer.nn\_trainer module
----------------------------------------------------------
-
-.. automodule:: chipiron.learningprocesses.nn_trainer.nn_trainer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

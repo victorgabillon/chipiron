@@ -1,5 +1,7 @@
 """Module for test evaluate models."""
 
+import importlib
+import inspect
 import textwrap
 from pathlib import Path
 
@@ -11,6 +13,10 @@ import torch
 
 from chipiron.models.model_bundle import ModelBundleRef, ResolvedModelBundle
 from chipiron.scripts.evaluate_models.evaluate_models import evaluate_models
+
+evaluate_models_module = importlib.import_module(
+    "chipiron.scripts.evaluate_models.evaluate_models"
+)
 
 
 def create_tiny_model_bundle(
@@ -129,7 +135,7 @@ def test_evaluate_model_uses_model_bundle_refs(
         _FakeDataLoader,
     )
     monkeypatch.setattr(
-        "chipiron.scripts.evaluate_models.evaluate_models.compute_test_error_on_dataset",
+        "chipiron.scripts.evaluate_models.evaluate_models._compute_evaluation_loss_on_dataset",
         lambda **kwargs: 0.125,
     )
     monkeypatch.setattr(
@@ -147,3 +153,10 @@ def test_evaluate_model_uses_model_bundle_refs(
 
     assert calls["evaluator_bundle"] == bundle
     assert report_path.is_file()
+
+
+def test_evaluate_models_no_longer_uses_legacy_dataset_evaluator() -> None:
+    """Model evaluation should use common supervised evaluation directly."""
+    source = inspect.getsource(evaluate_models_module)
+
+    assert "compute_test_error_on_dataset" not in source
