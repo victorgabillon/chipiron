@@ -27,7 +27,7 @@ def test_load_nn_architecture_args_from_file() -> None:
     coral_architecture = types.ModuleType(
         "coral.neural_networks.neural_net_architecture_args"
     )
-    setattr(coral_architecture, "NeuralNetArchitectureArgs", _FakeArchitectureArgs)
+    coral_architecture.NeuralNetArchitectureArgs = _FakeArchitectureArgs
 
     def fake_yaml_fetch_args_in_file(path_file: str) -> dict[str, int]:
         calls["path_file"] = path_file
@@ -135,10 +135,8 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
         calls["content_to_input_convert"] = content_to_input_convert
         return evaluator
 
-    setattr(
-        coral_factory,
-        "create_nn_state_eval_from_nn_parameters_file_and_existing_model",
-        fake_create_nn_state_eval_from_existing_model,
+    coral_factory.create_nn_state_eval_from_nn_parameters_file_and_existing_model = (
+        fake_create_nn_state_eval_from_existing_model
     )
 
     model_bundle_runtime.load_nn_architecture_args_from_bundle = (

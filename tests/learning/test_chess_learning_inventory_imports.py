@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import sys
+import types
 from types import ModuleType
 
 import pytest
@@ -41,10 +43,12 @@ def test_legacy_nn_trainer_module_imports_without_chess_runtime_deps() -> None:
     assert trainer.compute_test_error_on_dataset is not None
 
 
-def test_chess_learning_entrypoint_modules_import() -> None:
+def test_chess_learning_entrypoint_modules_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Current chess learning and evaluation script modules should import."""
     _require_chess_learning_dependencies()
-    pytest.importorskip("PySide6")
+    _install_observability_stubs(monkeypatch)
 
     supervised_script = importlib.import_module(
         "chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets"
@@ -109,3 +113,34 @@ def _require_chess_learning_dependencies() -> None:
     """Skip chess import smoke tests when optional runtime dependencies are absent."""
     pytest.importorskip("atomheart")
     pytest.importorskip("coral")
+
+
+def _install_observability_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Install tiny mlflow and torchinfo stubs for dependency-light imports."""
+    mlflow_module = types.ModuleType("mlflow")
+    mlflow_pytorch_module = types.ModuleType("mlflow.pytorch")
+    mlflow_models_module = types.ModuleType("mlflow.models")
+    mlflow_signature_module = types.ModuleType("mlflow.models.signature")
+    torchinfo_module = types.ModuleType("torchinfo")
+
+    mlflow_module.set_tracking_uri = lambda uri: None
+    mlflow_module.log_metric = lambda *args, **kwargs: None
+    mlflow_module.log_params = lambda params: None
+    mlflow_module.log_artifact = lambda path: None
+    mlflow_pytorch_module.log_model = lambda *args, **kwargs: None
+    mlflow_pytorch_module.get_default_conda_env = dict
+    mlflow_module.pytorch = mlflow_pytorch_module
+
+    class _ModelSignature:
+        """Placeholder signature type used by the supervised script."""
+
+    mlflow_signature_module.ModelSignature = _ModelSignature
+    mlflow_signature_module.infer_signature = lambda *args, **kwargs: _ModelSignature()
+    mlflow_models_module.signature = mlflow_signature_module
+    torchinfo_module.summary = lambda model: f"summary({type(model).__name__})"
+
+    monkeypatch.setitem(sys.modules, "mlflow", mlflow_module)
+    monkeypatch.setitem(sys.modules, "mlflow.pytorch", mlflow_pytorch_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models", mlflow_models_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models.signature", mlflow_signature_module)
+    monkeypatch.setitem(sys.modules, "torchinfo", torchinfo_module)

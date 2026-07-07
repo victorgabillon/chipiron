@@ -1,10 +1,9 @@
 """Tests for model bundle resolution."""
 
+import re
 from pathlib import Path
 
 import pytest
-
-pytest.importorskip("PySide6")
 
 from chipiron.models import model_bundle
 from chipiron.models.model_bundle import (
@@ -125,7 +124,9 @@ def test_resolve_model_bundle_raises_for_missing_weights_file(tmp_path: Path) ->
     """Selecting a missing weights file should fail clearly."""
     bundle_root = _create_local_bundle(tmp_path / "bundle")
 
-    with pytest.raises(ModelBundleFileNotFoundError, match="missing_weights.pt"):
+    with pytest.raises(
+        ModelBundleFileNotFoundError, match=re.escape("missing_weights.pt")
+    ):
         resolve_model_bundle(
             ModelBundleRef(
                 uri=str(bundle_root),
@@ -141,7 +142,10 @@ def test_resolve_model_bundle_raises_for_ambiguous_weights_selection(
     bundle_root = _create_local_bundle(tmp_path / "bundle")
     (bundle_root / "weights_2.pt").write_text("weights\n", encoding="utf-8")
 
-    with pytest.raises(ModelBundleWeightsSelectionError, match="multiple '.pt' files"):
+    with pytest.raises(
+        ModelBundleWeightsSelectionError,
+        match=re.escape("multiple '.pt' files"),
+    ):
         resolve_model_bundle(ModelBundleRef(uri=str(bundle_root)))
 
 

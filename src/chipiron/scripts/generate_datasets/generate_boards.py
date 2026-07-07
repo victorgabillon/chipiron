@@ -84,11 +84,9 @@ def process_game(
             and (game_move_count - random_offset) % sampling_frequency == 0
         ):
             # Only store FEN strings since that's all we need
-            the_dic.append(
-                {
-                    "fen": chess_board.fen(),
-                }
-            )
+            the_dic.append({
+                "fen": chess_board.fen(),
+            })
     return total_count_move
 
 

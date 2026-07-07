@@ -318,6 +318,31 @@ PR14:
   helper APIs can be removed or moved once parser-backed script coverage is
   available in an environment with `parsley`.
 
+## PR17 progress
+
+- Parsley canonical import path: `parsley`. The PyPI distribution declared in
+  `pyproject.toml` is `parsley-coco>=0.1.34`, which exposes the `parsley`
+  import package.
+- Dependency declaration status: Parsley is already a runtime dependency via
+  `parsley-coco`; local lightweight environments may still miss it if Chipiron
+  was installed without project dependencies.
+- `PlayerConfigTag` no longer imports Parsley just to expose enum values;
+  Parsley is imported only by the parser-backed `get_players_args()` method.
+- The scratch/fixed-board learning script no longer imports the parser-backed
+  `Script` class at module import time; it follows the supervised script path
+  and derives its default output folder directly from `output_root_path_str()`.
+- Removed unnecessary parser and GUI skips from the scratch/fixed-board script
+  test by constructing `LearnNNFromScratchScriptArgs` directly and using a tiny
+  base-script adapter.
+- Split `test_neural_net_board_eval_args.py` into direct dataclass/model-bundle
+  behavior, which runs without Parsley, and YAML parser behavior, which skips
+  precisely when `parsley` is absent.
+- Added `test_parsley_dependency_contract.py` to document that parser-backed
+  Chipiron config uses `import parsley` even though the dependency distribution
+  is named `parsley-coco`.
+- Remaining local skips after PR17: only parser-specific tests skip because the
+  local environment does not have the `parsley` import package installed.
+
 ## Risk notes
 
 - Several chess learning modules are reached through the dynamic script factory

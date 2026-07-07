@@ -5,15 +5,13 @@ from importlib.resources import files
 
 import pytest
 
-parsley = pytest.importorskip("parsley")
-pytest.importorskip("PySide6")
-
 from chipiron.models.model_bundle import ModelBundleRef
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
+    NeuralNetModelBundleArgs,
 )
 
 
@@ -24,8 +22,34 @@ class _BoardEvalArgsWrapper:
     board_evaluator: AllBoardEvaluatorArgs
 
 
-def test_base_board_eval_config_parses_bundle_ref() -> None:
+def test_direct_board_eval_config_uses_bundle_ref_without_parser() -> None:
+    """Direct dataclass construction should not require the parser stack."""
+    board_evaluator = NeuralNetBoardEvalArgs(
+        neural_nets_model_and_architecture=NeuralNetModelBundleArgs(
+            model_bundle=ModelBundleRef(
+                uri="hf://VictorGabillon/chipiron/prelu_no_bug@main",
+                weights_file=(
+                    "param_multi_layer_perceptron_772_20_1_"
+                    "parametric_relu_hyperbolic_tangent_player_to_move.pt"
+                ),
+            )
+        )
+    )
+
+    assert board_evaluator.neural_nets_model_and_architecture.model_bundle == (
+        ModelBundleRef(
+            uri="hf://VictorGabillon/chipiron/prelu_no_bug@main",
+            weights_file=(
+                "param_multi_layer_perceptron_772_20_1_"
+                "parametric_relu_hyperbolic_tangent_player_to_move.pt"
+            ),
+        )
+    )
+
+
+def test_base_board_eval_yaml_config_parses_bundle_ref() -> None:
     """The default chess NN config should expose a ModelBundleRef directly."""
+    parsley = pytest.importorskip("parsley")
     package_root = files("chipiron")
     yaml_path = str(
         package_root.joinpath(

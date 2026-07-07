@@ -4,6 +4,8 @@ and from a fixed set of non-labelled boards.
 """
 # pylint: disable=duplicate-code
 
+from __future__ import annotations
+
 import logging
 import os
 import random
@@ -14,16 +16,9 @@ from typing import TYPE_CHECKING, cast
 import mlflow
 import pandas as pd
 from atomheart.games.chess.board.utils import FenPlusHistory
-from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_architecture_args,
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
-)
-from coral.neural_networks.neural_net_architecture_args import (
-    NeuralNetArchitectureArgs,
-)
-from coral.neural_networks.nn_state_evaluator import (
-    NNBWStateEvaluator,
 )
 from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
@@ -48,22 +43,31 @@ from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger, suppress_logging
+from chipiron.utils.path_runtime import output_root_path_str
 from chipiron.utils.path_variables import ML_FLOW_URI_PATH, ML_FLOW_URI_PATH_TEST
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from coral.chi_nn import ChiNN
+    from coral.neural_networks.neural_net_architecture_args import (
+        NeuralNetArchitectureArgs,
+    )
+    from coral.neural_networks.nn_state_evaluator import (
+        NNBWStateEvaluator,
+    )
     from torch import Tensor
+
+    from chipiron.environments.chess.types import ChessState
+    from chipiron.scripts.script import Script
+    from chipiron.utils import MyPath
 
 
 @dataclass
@@ -114,7 +118,7 @@ class LearnNNFromScratchScript:
     )
 
     base_experiment_output_folder = os.path.join(
-        Script.base_experiment_output_folder,
+        output_root_path_str(),
         "learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs",
     )
 
