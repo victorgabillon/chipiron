@@ -222,6 +222,73 @@ def test_render_training_recap_table_operator_plain_fallback(
     assert "* entity_token_transformer_small" in rendered
 
 
+def test_training_recap_warns_about_stale_training_state(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Status recap should show stale training before an empty table."""
+    _write_training_status_with_results(
+        tmp_path,
+        generation=37,
+        selected_evaluator_name="mlp_37",
+        evaluator_results={"mlp_37": {"train_loss": 2.0, "validation_loss": 3.0}},
+    )
+    generation_dir = tmp_path / "pipeline" / "generation_000038"
+    generation_dir.mkdir(parents=True, exist_ok=True)
+    (generation_dir / "manifest.json").write_text(
+        json.dumps({
+            "created_at_utc": "2026-07-08T13:00:00Z",
+            "dataset_status": "done",
+            "generation": 38,
+            "metadata": {},
+            "model_bundle_paths": {},
+            "rows_path": "rows/generation_000038.jsonl",
+            "runtime_checkpoint_path": None,
+            "selected_evaluator_name": None,
+            "training_status": "training",
+            "tree_snapshot_path": None,
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    (generation_dir / "training_status.json").write_text(
+        json.dumps({
+            "evaluator_results": {},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": None,
+            "selection_policy": None,
+            "status": "training",
+            "updated_at_utc": "2026-07-08T13:00:00Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    (generation_dir / "training_claim.json").write_text(
+        json.dumps({
+            "claim_id": "claim-38",
+            "claimed_at_utc": "2020-01-01T13:00:00Z",
+            "expires_at_utc": "2020-01-01T14:00:00Z",
+            "generation": 38,
+            "metadata": {},
+            "owner": None,
+            "stage": "training",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    exit_code = training_recap.main(["--work-dir", str(tmp_path), "--no-rich"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "TRAINING BLOCKED / STALE" in output
+    assert "generation=38" in output
+    assert "evaluator_results=0" in output
+    assert "Last completed training" in output
+    assert "mlp_37" in output
+
+
 def test_collect_latest_training_recap_table_uses_final_loss_fallback(
     tmp_path: Path,
 ) -> None:

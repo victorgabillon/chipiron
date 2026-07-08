@@ -7,6 +7,7 @@ import json
 import logging
 import sys
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 from typing import cast
@@ -941,15 +942,13 @@ def test_training_worker_infers_old_schema_external_seed(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.pipeline_active_model_path.parent.mkdir(parents=True, exist_ok=True)
     paths.pipeline_active_model_path.write_text(
-        json.dumps(
-            {
-                "evaluator_name": "mlp_41",
-                "generation": 430,
-                "metadata": {},
-                "model_bundle_path": "models/generation_000430/mlp_41",
-                "updated_at_utc": "2026-04-28T12:00:00Z",
-            }
-        ),
+        json.dumps({
+            "evaluator_name": "mlp_41",
+            "generation": 430,
+            "metadata": {},
+            "model_bundle_path": "models/generation_000430/mlp_41",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+        }),
         encoding="utf-8",
     )
     for generation in (1, 2, 25):
@@ -1190,6 +1189,88 @@ def test_training_worker_skips_actively_claimed_latest_generation(
     )
     assert (
         "training_selection_done selected_generation=1 reason=latest_claimable"
+        in messages
+    )
+
+
+def test_training_worker_recovers_stale_training_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Expired empty training state should become claimable again."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _training_manifest(38, training_status="training"),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    paths.pipeline_training_claim_path_for_generation(38).write_text(
+        json.dumps({
+            "claim_id": "claim-38",
+            "claimed_at_utc": "2026-07-08T13:03:32Z",
+            "expires_at_utc": "2026-07-08T14:03:32Z",
+            "generation": 38,
+            "metadata": {},
+            "owner": None,
+            "stage": "training",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    paths.pipeline_training_status_path_for_generation(38).write_text(
+        json.dumps({
+            "evaluator_results": {},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": None,
+            "selection_policy": None,
+            "status": "training",
+            "updated_at_utc": "2026-07-08T13:03:32Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=datetime(2026, 7, 8, 16, 0, tzinfo=UTC).timestamp(),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
+    assert result.generation == 38
+    assert (
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(38)
+        ).training_status
+        == "not_started"
+    )
+    assert not paths.pipeline_training_claim_path_for_generation(38).exists()
+    assert not paths.pipeline_training_status_path_for_generation(38).exists()
+    assert "training_stale_state_detected generation=38" in messages
+    assert "training_stale_state_recovered generation=38" in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
         in messages
     )
 

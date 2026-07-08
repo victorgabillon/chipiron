@@ -8,9 +8,15 @@ import math
 import re
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .operator_console import render_operator_panel, use_rich_output
+from .pipeline.training_recovery import (
+    DEFAULT_STALE_GRACE_SECONDS,
+    StaleTrainingState,
+    inspect_training_state_for_recovery,
+)
 
 _GENERATION_DIR_RE = re.compile(r"generation_(\d+)")
 _TRAINING_LOG_KEY_RE = re.compile(
@@ -99,6 +105,24 @@ def collect_latest_training_recap_table(
     if log_recap is None:
         return None
     return _recap_table_from_single(log_recap)
+
+
+def collect_latest_stale_training_state(
+    work_dir: Path,
+    *,
+    stale_grace_seconds: int = DEFAULT_STALE_GRACE_SECONDS,
+) -> StaleTrainingState | None:
+    """Return the latest stale training state, if a generation is blocked."""
+    now_utc = datetime.now(UTC)
+    for generation_dir in _latest_generation_dirs(work_dir.expanduser()):
+        state = inspect_training_state_for_recovery(
+            generation_dir,
+            now_utc=now_utc,
+            stale_grace_seconds=stale_grace_seconds,
+        )
+        if state.is_stale:
+            return state
+    return None
 
 
 def render_training_recap(recap: MorpionTrainingRecap | None) -> str:
@@ -233,6 +257,33 @@ def render_training_recap_table_operator(
     )
 
 
+def render_stale_training_warning(
+    state: StaleTrainingState,
+    *,
+    work_dir: Path,
+) -> str:
+    """Render a terminal warning for stale training state."""
+    claim_state = (
+        "expired"
+        if state.claim_expired
+        else ("missing" if state.claim_path is None else "active")
+    )
+    return "\n".join((
+        "TRAINING BLOCKED / STALE",
+        f"generation={state.generation}",
+        f"dataset_status={_format_value(state.dataset_status)}",
+        (f"manifest_training_status={_format_value(state.manifest_training_status)}"),
+        f"claim={claim_state}",
+        f"evaluator_results={_format_value(state.evaluator_results_count)}",
+        f"reason={state.reason}",
+        (
+            "suggested: python -m "
+            "chipiron.environments.morpion.bootstrap.training_recovery "
+            f"--work-dir {work_dir} --generation {state.generation} --recover"
+        ),
+    ))
+
+
 def recap_to_dict(recap: MorpionTrainingRecap | None) -> dict[str, object] | None:
     """Convert one recap to JSON-friendly data."""
     if recap is None:
@@ -336,18 +387,37 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 table = collect_latest_training_recap_table(args.work_dir)
                 output = recap_table_to_dict(table) if args.emit_json else None
-                rendered = (
-                    render_training_recap_table_operator(
-                        table,
-                        force_plain=args.force_plain,
-                        force_rich=args.force_rich,
-                    )
-                    if use_rich_output(
-                        force_plain=args.force_plain,
-                        force_rich=args.force_rich,
-                    )
-                    else render_training_recap_table(table)
+                stale_state = (
+                    None
+                    if args.emit_json
+                    else collect_latest_stale_training_state(args.work_dir)
                 )
+                if stale_state is not None:
+                    completed_table = _latest_completed_training_recap_table(
+                        args.work_dir
+                    )
+                    rendered = render_stale_training_warning(
+                        stale_state,
+                        work_dir=args.work_dir,
+                    )
+                    if completed_table is not None:
+                        rendered += (
+                            "\n\nLast completed training:\n"
+                            + render_training_recap_table(completed_table)
+                        )
+                else:
+                    rendered = (
+                        render_training_recap_table_operator(
+                            table,
+                            force_plain=args.force_plain,
+                            force_rich=args.force_rich,
+                        )
+                        if use_rich_output(
+                            force_plain=args.force_plain,
+                            force_rich=args.force_rich,
+                        )
+                        else render_training_recap_table(table)
+                    )
             if args.emit_json:
                 print(json.dumps(output, sort_keys=True))
             else:
@@ -368,6 +438,29 @@ def _latest_training_status_paths(work_dir: Path) -> list[Path]:
         key=lambda path: (_generation_from_path(path) or -1, _path_mtime_ns(path)),
         reverse=True,
     )
+
+
+def _latest_generation_dirs(work_dir: Path) -> list[Path]:
+    return sorted(
+        (
+            path
+            for path in (work_dir / "pipeline").glob("generation_*")
+            if path.is_dir()
+        ),
+        key=lambda path: (_generation_from_path(path) or -1, _path_mtime_ns(path)),
+        reverse=True,
+    )
+
+
+def _latest_completed_training_recap_table(
+    work_dir: Path,
+) -> MorpionTrainingRecapTable | None:
+    work_dir = work_dir.expanduser()
+    for status_path in _latest_training_status_paths(work_dir):
+        table = _recap_table_from_training_status(work_dir, status_path)
+        if table is not None and table.status == "done" and table.rows:
+            return table
+    return None
 
 
 def _latest_model_manifest_paths(work_dir: Path) -> list[Path]:

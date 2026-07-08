@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -17,6 +18,12 @@ from .pipeline.stages import (
     run_pipeline_dataset_stage,
     run_pipeline_growth_stage,
     run_pipeline_training_stage,
+)
+from .pipeline.training_recovery import (
+    DEFAULT_STALE_GRACE_SECONDS,
+    StaleTrainingState,
+    inspect_training_state_for_recovery,
+    recover_stale_training_state,
 )
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
@@ -132,6 +139,38 @@ def _render_generation_list(generations: tuple[int, ...]) -> str:
     if not generations:
         return "none"
     return ",".join(str(generation) for generation in generations)
+
+
+def _bool_env(name: str, *, default: bool) -> bool:
+    """Return one boolean environment flag."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _int_env(name: str, *, default: int) -> int:
+    """Return one integer environment knob with a safe fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        LOGGER.warning(
+            "[pipeline] invalid_env_int name=%s value=%s default=%s",
+            name,
+            value,
+            default,
+        )
+        return default
+
+
+def _training_recovery_now(now_unix_s: float | None) -> datetime:
+    """Return the UTC timestamp used for stale-claim recovery."""
+    if now_unix_s is None:
+        return datetime.now(UTC)
+    return datetime.fromtimestamp(now_unix_s, tz=UTC)
 
 
 def _tolerant_status_updated_at(path: Path) -> str | None:
@@ -353,6 +392,67 @@ def load_available_pipeline_manifests(
     }
 
 
+def _recover_stale_training_states(
+    paths: MorpionBootstrapPaths,
+    manifests: Mapping[int, MorpionPipelineGenerationManifest],
+    *,
+    now_unix_s: float | None,
+) -> tuple[StaleTrainingState, ...]:
+    """Recover safely stale training state before selection."""
+    auto_recover = _bool_env("MORPION_TRAINING_AUTO_RECOVER_STALE_CLAIMS", default=True)
+    stale_grace_seconds = _int_env(
+        "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",
+        default=DEFAULT_STALE_GRACE_SECONDS,
+    )
+    now_utc = _training_recovery_now(now_unix_s)
+    stale_states: list[StaleTrainingState] = []
+    for generation, manifest in sorted(manifests.items()):
+        if manifest.dataset_status != "done" or manifest.training_status == "done":
+            continue
+        state = inspect_training_state_for_recovery(
+            paths.pipeline_generation_dir_for_generation(generation),
+            now_utc=now_utc,
+            stale_grace_seconds=stale_grace_seconds,
+        )
+        if not state.is_stale:
+            continue
+        stale_states.append(state)
+        LOGGER.warning(
+            "[pipeline] training_stale_state_detected generation=%s reason=%s claim_expired=%s status_file_status=%s manifest_training_status=%s",
+            generation,
+            state.reason,
+            str(state.claim_expired).lower(),
+            _render_optional_log_value(state.status_file_status),
+            _render_optional_log_value(state.manifest_training_status),
+        )
+        if not auto_recover:
+            LOGGER.warning(
+                "[pipeline] training_stale_state_recovery_disabled generation=%s reason=%s",
+                generation,
+                state.reason,
+            )
+            continue
+        recovered = recover_stale_training_state(
+            paths.pipeline_generation_dir_for_generation(generation),
+            state,
+        )
+        if recovered:
+            LOGGER.warning(
+                "[pipeline] training_stale_state_recovered generation=%s backup_dir=%s",
+                generation,
+                _latest_stale_training_backup_dir(
+                    paths.pipeline_generation_dir_for_generation(generation)
+                ),
+            )
+    return tuple(stale_states)
+
+
+def _latest_stale_training_backup_dir(generation_dir: Path) -> str:
+    """Return the latest stale-training backup directory name for logs."""
+    backups = sorted(generation_dir.glob("stale_training_backup_*"))
+    return backups[-1].name if backups else "unknown"
+
+
 def dataset_stage_is_pending(manifest: MorpionPipelineGenerationManifest) -> bool:
     """Return whether one manifest is ready for dataset extraction."""
     return manifest.tree_snapshot_path is not None and manifest.dataset_status in {
@@ -538,6 +638,16 @@ def run_next_pipeline_training_stage_once(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifests = load_available_pipeline_manifests(paths)
+    stale_states = _recover_stale_training_states(
+        paths,
+        manifests,
+        now_unix_s=now_unix_s,
+    )
+    if stale_states and _bool_env(
+        "MORPION_TRAINING_AUTO_RECOVER_STALE_CLAIMS",
+        default=True,
+    ):
+        manifests = load_available_pipeline_manifests(paths)
     lower_bound = _training_lower_bound(paths)
     for generation in sorted(manifests):
         if generation <= lower_bound.generation and training_stage_is_pending(
@@ -657,6 +767,16 @@ def run_morpion_artifact_pipeline_once(
     manifests = load_available_pipeline_manifests(paths)
 
     training_generations: list[int] = []
+    stale_states = _recover_stale_training_states(
+        paths,
+        manifests,
+        now_unix_s=None,
+    )
+    if stale_states and _bool_env(
+        "MORPION_TRAINING_AUTO_RECOVER_STALE_CLAIMS",
+        default=True,
+    ):
+        manifests = load_available_pipeline_manifests(paths)
     lower_bound = _training_lower_bound(paths)
     for generation in sorted(manifests):
         if generation <= lower_bound.generation and training_stage_is_pending(
