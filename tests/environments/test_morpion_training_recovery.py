@@ -132,6 +132,30 @@ def test_recovery_backs_up_removes_stale_files_and_resets_manifest(
     assert model_artifact.is_file()
 
 
+def test_recovery_records_metadata_when_manifest_is_already_not_started(
+    tmp_path: Path,
+) -> None:
+    """Recovery should keep an audit trail even without changing manifest status."""
+    generation_dir = _stale_generation_fixture(
+        tmp_path,
+        manifest_training_status="not_started",
+    )
+    state = inspect_training_state_for_recovery(
+        generation_dir,
+        now_utc=_NOW,
+        stale_grace_seconds=300,
+    )
+
+    recovered = recover_stale_training_state(generation_dir, state)
+
+    assert recovered
+    manifest = load_pipeline_manifest(generation_dir / "manifest.json")
+    assert manifest.training_status == "not_started"
+    assert manifest.metadata["auto_recovery"]["old_training_status"] == "not_started"
+    assert manifest.metadata["auto_recovery"]["new_training_status"] == "not_started"
+    assert not (generation_dir / "training_claim.json").exists()
+
+
 def test_recovery_dry_run_does_not_mutate(tmp_path: Path) -> None:
     """Dry-run recovery should report planned action without touching files."""
     generation_dir = _stale_generation_fixture(tmp_path)
