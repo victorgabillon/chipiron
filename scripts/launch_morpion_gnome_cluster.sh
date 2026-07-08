@@ -36,6 +36,11 @@ MORPION_ALLOW_EVALUATOR_CATALOG_EXTENSION="${MORPION_ALLOW_EVALUATOR_CATALOG_EXT
 # use one of `growth`, `dataset`, `training`, or `reevaluation` for focused
 # debugging or partial restarts.
 MORPION_CLUSTER_WORKERS="${MORPION_CLUSTER_WORKERS:-all}"
+MORPION_CLUSTER_SHOW_RECAP="${MORPION_CLUSTER_SHOW_RECAP:-1}"
+MORPION_CLUSTER_RECAP_EVERY_SUCCESS="${MORPION_CLUSTER_RECAP_EVERY_SUCCESS:-1}"
+MORPION_CLUSTER_IDLE_LOG_EVERY="${MORPION_CLUSTER_IDLE_LOG_EVERY:-12}"
+MORPION_CLUSTER_OPEN_STATUS="${MORPION_CLUSTER_OPEN_STATUS:-1}"
+MORPION_CLUSTER_STATUS_REFRESH_SECONDS="${MORPION_CLUSTER_STATUS_REFRESH_SECONDS:-20}"
 
 # Optional model seeding. Leave MORPION_SEED_MODELS_FROM_WORK_DIR empty for a
 # self-contained run. Set it to another work dir only when bootstrapping a new
@@ -279,16 +284,82 @@ launch_worker_terminal() {
   local launcher_args="$4"
   local log_name="$5"
   local startup_message="$6"
-  local command="cd \"$REPO_ROOT\" && export PYTHONPATH=\"$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}\" && export MORPION_WORK_DIR=\"$MORPION_WORK_DIR\" && mkdir -p \"$LOG_DIR\" && trap 'echo; echo \"[$worker_name] stopped; terminal kept open\"; exec bash' INT TERM && printf '%b\\n' \"$startup_message\" && echo \"[$worker_name] python_bin=$PYTHON_BIN\" && which python && \"$PYTHON_BIN\" - <<'PY' && reevaluation_idle_checks=0 && while true; do ${extra_prefix}\"$PYTHON_BIN\" -m chipiron.environments.morpion.bootstrap.launcher --work-dir \"$MORPION_WORK_DIR\" --pipeline-mode artifact_pipeline --training-export-mode \"$TRAINING_EXPORT_MODE\" ${launcher_args} 2>&1 | tee -a \"$LOG_DIR/$log_name\"; status=\${PIPESTATUS[0]}; if [[ \"$worker_name\" == \"GROWTH\" && \"\$status\" -eq 0 ]] && \"$PYTHON_BIN\" -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]); sys.exit(0 if p.is_file() and json.loads(p.read_text(encoding=\"utf-8\")).get(\"metadata\", {}).get(\"growth_status\") == \"growth_budget_already_exhausted\" else 1)' \"$MORPION_WORK_DIR/run_state.json\"; then echo \"[$worker_name] worker exited with status \$status; growth_budget_already_exhausted; not restarting\"; break; fi; if [[ \"$worker_name\" == \"REEVALUATION\" && \"\$status\" -eq 0 ]]; then reevaluation_idle_checks=\$((reevaluation_idle_checks + 1)); if (( reevaluation_idle_checks == 1 || reevaluation_idle_checks % 12 == 0 )); then echo \"[REEVALUATION] idle; next check in $sleep_seconds s\"; fi; sleep $sleep_seconds; continue; fi; if [[ \"\$status\" -ne 0 ]]; then echo \"[$worker_name] ERROR worker exited status=\$status; restarting in $sleep_seconds s\"; else echo \"[$worker_name] worker exited with status \$status; restarting in $sleep_seconds s\"; fi; sleep $sleep_seconds; done
+  local command
+  command=$(cat <<EOF
+cd "$REPO_ROOT" &&
+export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
+export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
+mkdir -p "$LOG_DIR" &&
+trap 'echo; echo "[$worker_name] stopped; terminal kept open"; exec bash' INT TERM &&
+printf '%b\n' "$startup_message" &&
+echo "[$worker_name] python_bin=$PYTHON_BIN" &&
+which python &&
+"$PYTHON_BIN" - <<'PY' &&
 import anemone, atomheart, chipiron, coral
 print(\"anemone:\", anemone.__file__)
 print(\"atomheart:\", atomheart.__file__)
 print(\"chipiron:\", chipiron.__file__)
 print(\"coral:\", coral.__file__)
-PY"
+PY
+idle_checks=0
+while true; do
+  ${extra_prefix}"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.launcher --work-dir "$MORPION_WORK_DIR" --pipeline-mode artifact_pipeline --training-export-mode "$TRAINING_EXPORT_MODE" ${launcher_args} 2>&1 | tee -a "$LOG_DIR/$log_name"
+  status=\${PIPESTATUS[0]}
+  if [[ "$worker_name" == "GROWTH" && "\$status" -eq 0 ]] && "$PYTHON_BIN" -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]); sys.exit(0 if p.is_file() and json.loads(p.read_text(encoding="utf-8")).get("metadata", {}).get("growth_status") == "growth_budget_already_exhausted" else 1)' "$MORPION_WORK_DIR/run_state.json"; then
+    echo "[$worker_name] worker exited with status \$status; growth_budget_already_exhausted; not restarting"
+    break
+  fi
+  if [[ "\$status" -ne 0 ]]; then
+    echo "[$worker_name] ERROR worker exited status=\$status; restarting in $sleep_seconds s"
+    sleep $sleep_seconds
+    continue
+  fi
+  idle_checks=\$((idle_checks + 1))
+  if [[ "$worker_name" == "TRAINING" ]]; then
+    if [[ "$MORPION_CLUSTER_SHOW_RECAP" == "1" && ( "$MORPION_CLUSTER_RECAP_EVERY_SUCCESS" == "1" || "\$idle_checks" -eq 1 || \$((idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY)) -eq 0 ) ]]; then
+      "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" || true
+    fi
+    if (( idle_checks == 1 || idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY == 0 )); then
+      echo "[TRAINING] idle; no new training claim; restarting in $sleep_seconds s"
+    fi
+    sleep $sleep_seconds
+    continue
+  fi
+  if [[ "$worker_name" == "REEVALUATION" ]]; then
+    if (( idle_checks == 1 || idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY == 0 )); then
+      echo "[REEVALUATION] idle; next check in $sleep_seconds s"
+    fi
+    sleep $sleep_seconds
+    continue
+  fi
+  if (( idle_checks == 1 || idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY == 0 )); then
+    echo "[$worker_name] idle; next check in $sleep_seconds s"
+  fi
+  sleep $sleep_seconds
+done
+EOF
+)
 
   gnome-terminal \
     --title="$worker_name" \
+    -- bash -lc "$command"
+}
+
+launch_status_terminal() {
+  local command
+  command=$(cat <<EOF
+cd "$REPO_ROOT" &&
+export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
+export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
+echo "[STATUS] work_dir=$MORPION_WORK_DIR" &&
+echo "[STATUS] refresh_seconds=$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" &&
+trap 'echo; echo "[STATUS] stopped; terminal kept open"; exec bash' INT TERM &&
+"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" --watch "$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" --clear
+EOF
+)
+
+  gnome-terminal \
+    --title="STATUS" \
     -- bash -lc "$command"
 }
 
@@ -340,4 +411,8 @@ if should_launch_worker training; then
 fi
 if should_launch_worker reevaluation; then
   launch_worker_terminal "REEVALUATION" "$REEVALUATION_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=1 " "$REEVALUATION_ARGS" "reevaluation.log" "[REEVALUATION] work_dir=$MORPION_WORK_DIR\n[REEVALUATION] anemone_repo_root=$ANEMONE_REPO_ROOT\n[REEVALUATION] coral_repo_root=$CORAL_REPO_ROOT\n[REEVALUATION] atomheart_repo_root=$ATOMHEART_REPO_ROOT\n[REEVALUATION] training_export_mode=$TRAINING_EXPORT_MODE\n[REEVALUATION] min_available_ram_mb=${MORPION_MIN_AVAILABLE_RAM_MB:-disabled}\n[REEVALUATION] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"
+fi
+
+if [[ "$MORPION_CLUSTER_OPEN_STATUS" == "1" ]]; then
+  launch_status_terminal
 fi

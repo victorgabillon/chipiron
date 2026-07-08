@@ -58,6 +58,19 @@ def test_growth_cluster_supervisors_stop_on_exhausted_budget() -> None:
         assert "break" in script_text
 
 
+def test_cluster_scripts_expose_training_recap_controls() -> None:
+    """Cluster launch scripts should expose compact training recap controls."""
+    for script_name in (
+        "launch_morpion_gnome_cluster.sh",
+        "launch_morpion_tmux_cluster.sh",
+    ):
+        script_text = (_REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "training_recap" in script_text
+        assert "MORPION_CLUSTER_SHOW_RECAP" in script_text
+        assert "MORPION_CLUSTER_IDLE_LOG_EVERY" in script_text
+
+
 def test_gnome_cluster_exposes_streaming_training_chunk_size_env() -> None:
     """The GNOME cluster launcher should expose the JSONL training chunk knob."""
     script_text = (
