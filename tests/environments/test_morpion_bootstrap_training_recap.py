@@ -195,6 +195,33 @@ def test_render_training_recap_table_includes_all_evaluators(
     assert rendered.index("entity_token_transformer_small") < rendered.index("mlp_41")
 
 
+def test_render_training_recap_table_operator_plain_fallback(
+    tmp_path: Path,
+) -> None:
+    """Operator rendering should keep a readable non-Rich fallback."""
+    _write_training_status_with_results(
+        tmp_path,
+        generation=37,
+        selected_evaluator_name="entity_token_transformer_small",
+        evaluator_results={
+            "entity_token_transformer_small": {
+                "train_loss": 22.05,
+                "validation_loss": 22.5,
+            },
+        },
+    )
+
+    table = training_recap.collect_latest_training_recap_table(tmp_path)
+    rendered = training_recap.render_training_recap_table_operator(
+        table,
+        force_plain=True,
+    )
+
+    assert "[Morpion Training Recap]" in rendered
+    assert "selected entity_token_transformer_small" in rendered
+    assert "* entity_token_transformer_small" in rendered
+
+
 def test_collect_latest_training_recap_table_uses_final_loss_fallback(
     tmp_path: Path,
 ) -> None:

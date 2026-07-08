@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from .operator_console import render_operator_panel, use_rich_output
+
 _GENERATION_DIR_RE = re.compile(r"generation_(\d+)")
 _TRAINING_LOG_KEY_RE = re.compile(
     r"(?P<key>generation|evaluator|name|train_loss|validation_loss)=(?P<value>\S+)"
@@ -179,6 +181,58 @@ def render_training_recap_table(table: MorpionTrainingRecapTable | None) -> str:
     return "\n".join(lines)
 
 
+def render_training_recap_table_operator(
+    table: MorpionTrainingRecapTable | None,
+    *,
+    force_plain: bool = False,
+    force_rich: bool = False,
+) -> str:
+    """Render the all-evaluator recap with operator-facing Rich support."""
+    if table is None:
+        return render_operator_panel(
+            "Morpion Training Recap",
+            ["no training recap available"],
+            style="magenta",
+            force_plain=force_plain,
+            force_rich=force_rich,
+        )
+    lines = [
+        (
+            "generation "
+            f"{_format_value(table.generation)} | "
+            f"selected {_format_value(table.selected_evaluator_name)} | "
+            f"status {_format_value(table.status)}"
+        ),
+        "evaluator                         val_loss  train_loss  r2      pearson  flags",
+    ]
+    for row in table.rows:
+        marker = "*" if row.evaluator_name == table.selected_evaluator_name else " "
+        flags = " ".join(
+            part
+            for part in (
+                f"tanh={_format_bool(row.graph_output_tanh)}",
+                f"cache={_format_bool(row.graph_token_cache_used)}",
+                f"shuffle={_format_bool(row.cached_global_shuffle)}",
+            )
+            if part is not None
+        )
+        lines.append(
+            f"{marker} {row.evaluator_name:<32.32} "
+            f"{_format_float(row.validation_loss):>8} "
+            f"{_format_float(row.train_loss):>10} "
+            f"{_format_float(row.validation_quality_r2_vs_mean_baseline):>7} "
+            f"{_format_float(row.validation_quality_pearson_correlation):>8} "
+            f"{flags}"
+        )
+    return render_operator_panel(
+        "Morpion Training Recap",
+        lines,
+        style="magenta",
+        force_plain=force_plain,
+        force_rich=force_rich,
+    )
+
+
 def recap_to_dict(recap: MorpionTrainingRecap | None) -> dict[str, object] | None:
     """Convert one recap to JSON-friendly data."""
     if recap is None:
@@ -262,10 +316,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--watch", type=float, default=None)
     parser.add_argument("--clear", action="store_true")
     parser.add_argument("--json", action="store_true", dest="emit_json")
+    rich_mode = parser.add_mutually_exclusive_group()
+    rich_mode.add_argument("--rich", action="store_true", dest="force_rich")
+    rich_mode.add_argument("--no-rich", action="store_true", dest="force_plain")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--all-evaluators", action="store_false", dest="single")
     mode.add_argument("--single", action="store_true")
-    parser.set_defaults(single=False)
+    parser.set_defaults(single=False, force_rich=False, force_plain=False)
     args = parser.parse_args(argv)
 
     try:
@@ -279,7 +336,18 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 table = collect_latest_training_recap_table(args.work_dir)
                 output = recap_table_to_dict(table) if args.emit_json else None
-                rendered = render_training_recap_table(table)
+                rendered = (
+                    render_training_recap_table_operator(
+                        table,
+                        force_plain=args.force_plain,
+                        force_rich=args.force_rich,
+                    )
+                    if use_rich_output(
+                        force_plain=args.force_plain,
+                        force_rich=args.force_rich,
+                    )
+                    else render_training_recap_table(table)
+                )
             if args.emit_json:
                 print(json.dumps(output, sort_keys=True))
             else:

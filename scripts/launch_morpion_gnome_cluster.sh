@@ -41,6 +41,9 @@ MORPION_CLUSTER_RECAP_EVERY_SUCCESS="${MORPION_CLUSTER_RECAP_EVERY_SUCCESS:-1}"
 MORPION_CLUSTER_IDLE_LOG_EVERY="${MORPION_CLUSTER_IDLE_LOG_EVERY:-12}"
 MORPION_CLUSTER_OPEN_STATUS="${MORPION_CLUSTER_OPEN_STATUS:-1}"
 MORPION_CLUSTER_STATUS_REFRESH_SECONDS="${MORPION_CLUSTER_STATUS_REFRESH_SECONDS:-20}"
+MORPION_OPERATOR_RICH="${MORPION_OPERATOR_RICH:-auto}"
+MORPION_COLOR_RAW_LOGS="${MORPION_COLOR_RAW_LOGS:-0}"
+MORPION_GROWTH_SHOW_RECAP="${MORPION_GROWTH_SHOW_RECAP:-1}"
 
 # Optional model seeding. Leave MORPION_SEED_MODELS_FROM_WORK_DIR empty for a
 # self-contained run. Set it to another work dir only when bootstrapping a new
@@ -290,6 +293,10 @@ launch_worker_terminal() {
 cd "$REPO_ROOT" &&
 export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
 export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
+export MORPION_OPERATOR_RICH="$MORPION_OPERATOR_RICH" &&
+export MORPION_COLOR_RAW_LOGS="$MORPION_COLOR_RAW_LOGS" &&
+export MORPION_GROWTH_WORKER_MAX_CYCLES="$MORPION_GROWTH_WORKER_MAX_CYCLES" &&
+export MORPION_GROWTH_SHOW_RECAP="$MORPION_GROWTH_SHOW_RECAP" &&
 mkdir -p "$LOG_DIR" &&
 trap 'echo; echo "[$worker_name] stopped; terminal kept open"; exec bash' INT TERM &&
 printf '%b\n' "$startup_message" &&
@@ -304,6 +311,9 @@ print("coral:", coral.__file__)
 PY
 idle_checks=0
 while true; do
+  if [[ "$worker_name" == "GROWTH" && "$MORPION_GROWTH_SHOW_RECAP" == "1" ]]; then
+    "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.growth_recap --work-dir "$MORPION_WORK_DIR" --worker-max-cycles "$MORPION_GROWTH_WORKER_MAX_CYCLES" || true
+  fi
   ${extra_prefix}"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.launcher --work-dir "$MORPION_WORK_DIR" --pipeline-mode artifact_pipeline --training-export-mode "$TRAINING_EXPORT_MODE" ${launcher_args} 2>&1 | tee -a "$LOG_DIR/$log_name"
   status=\${PIPESTATUS[0]}
   if [[ "$worker_name" == "GROWTH" && "\$status" -eq 0 ]] && "$PYTHON_BIN" -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]); sys.exit(0 if p.is_file() and json.loads(p.read_text(encoding="utf-8")).get("metadata", {}).get("growth_status") == "growth_budget_already_exhausted" else 1)' "$MORPION_WORK_DIR/run_state.json"; then
@@ -352,6 +362,8 @@ launch_status_terminal() {
 cd "$REPO_ROOT" &&
 export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
 export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
+export MORPION_OPERATOR_RICH="$MORPION_OPERATOR_RICH" &&
+export MORPION_COLOR_RAW_LOGS="$MORPION_COLOR_RAW_LOGS" &&
 echo "[STATUS] work_dir=$MORPION_WORK_DIR" &&
 echo "[STATUS] refresh_seconds=$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" &&
 trap 'echo; echo "[STATUS] stopped; terminal kept open"; exec bash' INT TERM &&

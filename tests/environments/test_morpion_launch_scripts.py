@@ -104,6 +104,24 @@ def test_cluster_growth_worker_max_cycles_is_growth_only() -> None:
             assert "MORPION_GROWTH_WORKER_MAX_CYCLES" not in command
 
 
+def test_cluster_scripts_expose_operator_output_controls() -> None:
+    """Cluster launchers should expose human-output knobs without coloring logs."""
+    for script_name in (
+        "launch_morpion_gnome_cluster.sh",
+        "launch_morpion_tmux_cluster.sh",
+    ):
+        script_text = _script_text(script_name)
+
+        assert 'MORPION_OPERATOR_RICH="${MORPION_OPERATOR_RICH:-auto}"' in script_text
+        assert 'MORPION_COLOR_RAW_LOGS="${MORPION_COLOR_RAW_LOGS:-0}"' in script_text
+        assert 'MORPION_GROWTH_SHOW_RECAP="${MORPION_GROWTH_SHOW_RECAP:-1}"' in (
+            script_text
+        )
+        assert "chipiron.environments.morpion.bootstrap.growth_recap" in script_text
+        assert "--worker-max-cycles" in script_text
+        assert "tee -a" in script_text
+
+
 def test_cluster_scripts_expose_training_recap_controls() -> None:
     """Cluster launch scripts should expose compact training recap controls."""
     for script_name in (
