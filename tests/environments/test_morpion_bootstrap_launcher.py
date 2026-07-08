@@ -1536,6 +1536,55 @@ def test_launcher_growth_save_and_exit_clamps_loop_to_one_cycle(
     assert captured_max_cycles == [1]
 
 
+def test_launcher_growth_stage_respects_cli_max_cycles(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Artifact-pipeline growth should honor warm worker cycle counts."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=20,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            pipeline_mode="artifact_pipeline",
+        ),
+        pipeline_stage="growth",
+    )
+    sentinel_runner = object()
+    captured_max_cycles: list[int] = []
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        lambda _runner_args: sentinel_runner,
+    )
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        assert args.pipeline_mode == "artifact_pipeline"
+        assert runner is sentinel_runner
+        captured_max_cycles.append(max_cycles)
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_pipeline_growth_stage",
+        _fake_growth_stage,
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert captured_max_cycles == [20]
+
+
 def test_launcher_constructs_runner_with_persisted_rollout_config(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

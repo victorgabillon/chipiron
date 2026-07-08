@@ -405,6 +405,11 @@ def run_pipeline_growth_stage(
         run_state.generation,
         run_state.cycle_index,
     )
+    LOGGER.info(
+        "[growth-worker] done cycles=%s max_cycles=%s",
+        cycles_run,
+        max_cycles,
+    )
     return run_state
 
 

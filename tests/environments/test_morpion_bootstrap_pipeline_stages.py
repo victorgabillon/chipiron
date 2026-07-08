@@ -1194,8 +1194,10 @@ def test_pipeline_growth_stage_skips_no_op_checkpoint_when_limit_already_reached
         "[growth] no_op_limit_reached branch_count=1000000 limit=1000000 checkpoint_skipped=true"
         in messages
     )
+    assert "[pipeline] growth_start max_cycles=3" in messages
     assert "[save] skipped reason=no_growth_changes nodes_added=0" in messages
     assert "[pipeline] growth_stop reason=growth_budget_already_exhausted" in messages
+    assert "[growth-worker] done cycles=1 max_cycles=3" in messages
 
 
 def test_pipeline_growth_stage_skips_checkpoint_when_time_elapsed_but_no_growth(
