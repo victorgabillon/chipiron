@@ -69,6 +69,22 @@ def test_cluster_scripts_expose_training_recap_controls() -> None:
         assert "training_recap" in script_text
         assert "MORPION_CLUSTER_SHOW_RECAP" in script_text
         assert "MORPION_CLUSTER_IDLE_LOG_EVERY" in script_text
+        assert "--all-evaluators" in script_text
+
+
+def test_cluster_python_diagnostics_use_valid_quotes() -> None:
+    """Cluster launcher Python diagnostics should not escape heredoc quotes."""
+    for script_name in (
+        "launch_morpion_gnome_cluster.sh",
+        "launch_morpion_tmux_cluster.sh",
+    ):
+        script_text = (_REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert r"print(\"" not in script_text
+        assert 'print("anemone:", anemone.__file__)' in script_text
+        assert 'print("atomheart:", atomheart.__file__)' in script_text
+        assert 'print("chipiron:", chipiron.__file__)' in script_text
+        assert 'print("coral:", coral.__file__)' in script_text
 
 
 def test_gnome_cluster_exposes_streaming_training_chunk_size_env() -> None:

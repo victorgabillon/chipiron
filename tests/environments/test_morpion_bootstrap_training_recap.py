@@ -137,11 +137,88 @@ def test_render_training_recap_outputs_compact_text(tmp_path: Path) -> None:
     assert "model=models/generation_000005/mlp_20" in rendered
 
 
+def test_collect_latest_training_recap_table_reads_multiple_evaluators(
+    tmp_path: Path,
+) -> None:
+    """The table collector should include every evaluator result sorted by loss."""
+    _write_training_status_with_results(
+        tmp_path,
+        generation=37,
+        selected_evaluator_name="entity_token_transformer_small",
+        evaluator_results={
+            "mlp_41": {"train_loss": 30.0, "validation_loss": 31.0},
+            "entity_token_transformer_small": {
+                "train_loss": 22.05,
+                "validation_loss": 22.5,
+            },
+            "linear_41": {"train_loss": 48.0, "validation_loss": 49.0},
+        },
+    )
+
+    table = training_recap.collect_latest_training_recap_table(tmp_path)
+
+    assert table is not None
+    assert table.generation == 37
+    assert table.selected_evaluator_name == "entity_token_transformer_small"
+    assert [row.evaluator_name for row in table.rows] == [
+        "entity_token_transformer_small",
+        "mlp_41",
+        "linear_41",
+    ]
+
+
+def test_render_training_recap_table_includes_all_evaluators(
+    tmp_path: Path,
+) -> None:
+    """The table renderer should show all evaluator losses and mark selected."""
+    _write_training_status_with_results(
+        tmp_path,
+        generation=37,
+        selected_evaluator_name="entity_token_transformer_small",
+        evaluator_results={
+            "mlp_41": {"train_loss": 30.0, "validation_loss": 31.0},
+            "entity_token_transformer_small": {
+                "train_loss": 22.05,
+                "validation_loss": 22.5,
+            },
+            "linear_41": {"train_loss": 48.0, "validation_loss": 49.0},
+        },
+    )
+
+    table = training_recap.collect_latest_training_recap_table(tmp_path)
+    rendered = training_recap.render_training_recap_table(table)
+
+    assert "generation=37" in rendered
+    assert "* entity_token_transformer_small" in rendered
+    assert "mlp_41" in rendered
+    assert "linear_41" in rendered
+    assert rendered.index("entity_token_transformer_small") < rendered.index("mlp_41")
+
+
+def test_collect_latest_training_recap_table_uses_final_loss_fallback(
+    tmp_path: Path,
+) -> None:
+    """Table rows should use final_loss when validation_loss is missing."""
+    _write_training_status_with_results(
+        tmp_path,
+        generation=8,
+        selected_evaluator_name="linear_10",
+        evaluator_results={
+            "linear_10": {"train_loss": 5.0, "final_loss": 6.75},
+        },
+    )
+
+    table = training_recap.collect_latest_training_recap_table(tmp_path)
+
+    assert table is not None
+    assert table.rows[0].validation_loss == 6.75
+
+
 def test_training_recap_json_cli_emits_valid_json(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """The CLI JSON mode should emit valid JSON data."""
+    """The default CLI JSON mode should emit table JSON data."""
     _write_training_status(
         tmp_path,
         generation=6,
@@ -154,8 +231,30 @@ def test_training_recap_json_cli_emits_valid_json(
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["generation"] == 6
-    assert payload["evaluator_name"] == "linear_20"
-    assert payload["validation_loss"] == 6.25
+    assert payload["selected_evaluator_name"] == "linear_20"
+    assert payload["rows"][0]["evaluator_name"] == "linear_20"
+    assert payload["rows"][0]["validation_loss"] == 6.25
+
+
+def test_training_recap_single_json_cli_preserves_old_shape(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The --single JSON mode should preserve the old single-recap shape."""
+    _write_training_status(
+        tmp_path,
+        generation=9,
+        evaluator_name="mlp_20",
+        validation_loss=2.5,
+    )
+
+    exit_code = training_recap.main(["--work-dir", str(tmp_path), "--single", "--json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["generation"] == 9
+    assert payload["evaluator_name"] == "mlp_20"
+    assert payload["validation_loss"] == 2.5
 
 
 def test_find_key_finds_nested_values() -> None:
@@ -189,6 +288,37 @@ def _write_training_status(
         },
         "generation": generation,
         "selected_evaluator_name": evaluator_name,
+        "status": "done",
+        "updated_at_utc": "2026-07-08T10:00:00Z",
+    }
+    (status_dir / "training_status.json").write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+
+def _write_training_status_with_results(
+    work_dir: Path,
+    *,
+    generation: int,
+    selected_evaluator_name: str,
+    evaluator_results: dict[str, dict[str, float]],
+) -> None:
+    status_dir = work_dir / "pipeline" / f"generation_{generation:06d}"
+    status_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "evaluator_results": {
+            evaluator_name: {
+                "final_loss": result.get("final_loss", result.get("validation_loss")),
+                "model_bundle_path": (
+                    f"models/generation_{generation:06d}/{evaluator_name}"
+                ),
+                **result,
+            }
+            for evaluator_name, result in evaluator_results.items()
+        },
+        "generation": generation,
+        "selected_evaluator_name": selected_evaluator_name,
         "status": "done",
         "updated_at_utc": "2026-07-08T10:00:00Z",
     }

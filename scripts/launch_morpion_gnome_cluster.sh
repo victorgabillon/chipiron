@@ -296,10 +296,10 @@ echo "[$worker_name] python_bin=$PYTHON_BIN" &&
 which python &&
 "$PYTHON_BIN" - <<'PY' &&
 import anemone, atomheart, chipiron, coral
-print(\"anemone:\", anemone.__file__)
-print(\"atomheart:\", atomheart.__file__)
-print(\"chipiron:\", chipiron.__file__)
-print(\"coral:\", coral.__file__)
+print("anemone:", anemone.__file__)
+print("atomheart:", atomheart.__file__)
+print("chipiron:", chipiron.__file__)
+print("coral:", coral.__file__)
 PY
 idle_checks=0
 while true; do
@@ -317,7 +317,7 @@ while true; do
   idle_checks=\$((idle_checks + 1))
   if [[ "$worker_name" == "TRAINING" ]]; then
     if [[ "$MORPION_CLUSTER_SHOW_RECAP" == "1" && ( "$MORPION_CLUSTER_RECAP_EVERY_SUCCESS" == "1" || "\$idle_checks" -eq 1 || \$((idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY)) -eq 0 ) ]]; then
-      "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" || true
+      "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" --all-evaluators || true
     fi
     if (( idle_checks == 1 || idle_checks % $MORPION_CLUSTER_IDLE_LOG_EVERY == 0 )); then
       echo "[TRAINING] idle; no new training claim; restarting in $sleep_seconds s"
@@ -354,7 +354,7 @@ export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
 echo "[STATUS] work_dir=$MORPION_WORK_DIR" &&
 echo "[STATUS] refresh_seconds=$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" &&
 trap 'echo; echo "[STATUS] stopped; terminal kept open"; exec bash' INT TERM &&
-"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" --watch "$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" --clear
+"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.training_recap --work-dir "$MORPION_WORK_DIR" --all-evaluators --watch "$MORPION_CLUSTER_STATUS_REFRESH_SECONDS" --clear
 EOF
 )
 

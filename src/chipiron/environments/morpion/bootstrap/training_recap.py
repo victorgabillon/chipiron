@@ -35,25 +35,68 @@ class MorpionTrainingRecap:
     updated_at: str | None
 
 
+@dataclass(frozen=True)
+class MorpionEvaluatorTrainingRecap:
+    """One evaluator row in a Morpion training recap table."""
+
+    evaluator_name: str
+    status: str | None
+    train_loss: float | None
+    validation_loss: float | None
+    validation_quality_r2_vs_mean_baseline: float | None
+    validation_quality_pearson_correlation: float | None
+    graph_output_tanh: bool | None
+    graph_token_cache_used: bool | None
+    cached_global_shuffle: bool | None
+    model_bundle_path: Path | None
+
+
+@dataclass(frozen=True)
+class MorpionTrainingRecapTable:
+    """Latest dependency-light Morpion training recap for all evaluators."""
+
+    generation: int | None
+    status: str
+    selected_evaluator_name: str | None
+    updated_at: str | None
+    source_path: Path | None
+    rows: tuple[MorpionEvaluatorTrainingRecap, ...]
+
+
 def collect_latest_training_recap(work_dir: Path) -> MorpionTrainingRecap | None:
     """Return the best available compact recap for one Morpion work directory."""
+    table = collect_latest_training_recap_table(work_dir)
+    if table is not None:
+        return _single_recap_from_table(table)
+
+    work_dir = work_dir.expanduser()
+    return _recap_from_training_log(work_dir / "logs" / "training.log", work_dir)
+
+
+def collect_latest_training_recap_table(
+    work_dir: Path,
+) -> MorpionTrainingRecapTable | None:
+    """Return the best available all-evaluator recap for one work directory."""
     work_dir = work_dir.expanduser()
     for status_path in _latest_training_status_paths(work_dir):
-        recap = _recap_from_training_status(work_dir, status_path)
-        if recap is not None:
-            return recap
+        table = _recap_table_from_training_status(work_dir, status_path)
+        if table is not None:
+            return table
 
     for manifest_path in _latest_model_manifest_paths(work_dir):
-        recap = _recap_from_model_manifest(work_dir, manifest_path)
-        if recap is not None:
-            return recap
+        table = _recap_table_from_model_manifest(work_dir, manifest_path)
+        if table is not None:
+            return table
 
     for manifest_path in _latest_debug_training_manifest_paths(work_dir):
-        recap = _recap_from_debug_training_manifest(work_dir, manifest_path)
-        if recap is not None:
-            return recap
+        table = _recap_table_from_debug_training_manifest(work_dir, manifest_path)
+        if table is not None:
+            return table
 
-    return _recap_from_training_log(work_dir / "logs" / "training.log", work_dir)
+    log_recap = _recap_from_training_log(work_dir / "logs" / "training.log", work_dir)
+    if log_recap is None:
+        return None
+    return _recap_table_from_single(log_recap)
 
 
 def render_training_recap(recap: MorpionTrainingRecap | None) -> str:
@@ -93,6 +136,49 @@ def render_training_recap(recap: MorpionTrainingRecap | None) -> str:
     return "\n".join(lines)
 
 
+def render_training_recap_table(table: MorpionTrainingRecapTable | None) -> str:
+    """Render a compact all-evaluator recap table for a terminal."""
+    if table is None:
+        return "[TRAINING-RECAP] no training recap available"
+
+    header = (
+        "[TRAINING-RECAP] "
+        f"generation={_format_value(table.generation)} "
+        f"status={_format_value(table.status)} "
+        f"selected={_format_value(table.selected_evaluator_name)}"
+    )
+    if table.updated_at is not None:
+        header += f" updated={table.updated_at}"
+
+    if not table.rows:
+        return "\n".join([header, "  no evaluator loss rows available"])
+
+    lines = [
+        header,
+        "  evaluator                         train_loss  val_loss  "
+        "r2      pearson  tanh   graph_cache  shuffle",
+    ]
+    for row in table.rows:
+        marker = "*" if row.evaluator_name == table.selected_evaluator_name else " "
+        lines.append(
+            f"{marker} {row.evaluator_name:<32.32} "
+            f"{_format_float(row.train_loss):>10} "
+            f"{_format_float(row.validation_loss):>9} "
+            f"{_format_float(row.validation_quality_r2_vs_mean_baseline):>7} "
+            f"{_format_float(row.validation_quality_pearson_correlation):>8} "
+            f"{_format_bool(row.graph_output_tanh):>6} "
+            f"{_format_bool(row.graph_token_cache_used):>11} "
+            f"{_format_bool(row.cached_global_shuffle):>8}"
+        )
+
+    selected_row = _selected_row(table)
+    if selected_row is not None and selected_row.model_bundle_path is not None:
+        lines.append(f"  selected_model={selected_row.model_bundle_path}")
+    if table.source_path is not None:
+        lines.append(f"  source={table.source_path}")
+    return "\n".join(lines)
+
+
 def recap_to_dict(recap: MorpionTrainingRecap | None) -> dict[str, object] | None:
     """Convert one recap to JSON-friendly data."""
     if recap is None:
@@ -115,6 +201,40 @@ def recap_to_dict(recap: MorpionTrainingRecap | None) -> dict[str, object] | Non
         "model_bundle_path": _path_to_str(recap.model_bundle_path),
         "source_path": _path_to_str(recap.source_path),
         "updated_at": recap.updated_at,
+    }
+
+
+def recap_table_to_dict(
+    table: MorpionTrainingRecapTable | None,
+) -> dict[str, object] | None:
+    """Convert one all-evaluator recap table to JSON-friendly data."""
+    if table is None:
+        return None
+    return {
+        "generation": table.generation,
+        "status": table.status,
+        "selected_evaluator_name": table.selected_evaluator_name,
+        "updated_at": table.updated_at,
+        "source_path": _path_to_str(table.source_path),
+        "rows": [
+            {
+                "evaluator_name": row.evaluator_name,
+                "status": row.status,
+                "train_loss": row.train_loss,
+                "validation_loss": row.validation_loss,
+                "validation_quality_r2_vs_mean_baseline": (
+                    row.validation_quality_r2_vs_mean_baseline
+                ),
+                "validation_quality_pearson_correlation": (
+                    row.validation_quality_pearson_correlation
+                ),
+                "graph_output_tanh": row.graph_output_tanh,
+                "graph_token_cache_used": row.graph_token_cache_used,
+                "cached_global_shuffle": row.cached_global_shuffle,
+                "model_bundle_path": _path_to_str(row.model_bundle_path),
+            }
+            for row in table.rows
+        ],
     }
 
 
@@ -142,17 +262,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--watch", type=float, default=None)
     parser.add_argument("--clear", action="store_true")
     parser.add_argument("--json", action="store_true", dest="emit_json")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--all-evaluators", action="store_false", dest="single")
+    mode.add_argument("--single", action="store_true")
+    parser.set_defaults(single=False)
     args = parser.parse_args(argv)
 
     try:
         while True:
             if args.clear:
                 print("\033[2J\033[H", end="")
-            recap = collect_latest_training_recap(args.work_dir)
-            if args.emit_json:
-                print(json.dumps(recap_to_dict(recap), sort_keys=True))
+            if args.single:
+                recap = collect_latest_training_recap(args.work_dir)
+                output = recap_to_dict(recap) if args.emit_json else None
+                rendered = render_training_recap(recap)
             else:
-                print(render_training_recap(recap))
+                table = collect_latest_training_recap_table(args.work_dir)
+                output = recap_table_to_dict(table) if args.emit_json else None
+                rendered = render_training_recap_table(table)
+            if args.emit_json:
+                print(json.dumps(output, sort_keys=True))
+            else:
+                print(rendered)
             if args.watch is None:
                 return 0
             time.sleep(args.watch)
@@ -193,6 +324,207 @@ def _latest_debug_training_manifest_paths(work_dir: Path) -> list[Path]:
         key=lambda path: (_generation_from_path(path) or -1, _path_mtime_ns(path)),
         reverse=True,
     )
+
+
+def _recap_table_from_training_status(
+    work_dir: Path,
+    status_path: Path,
+) -> MorpionTrainingRecapTable | None:
+    payload = _read_json_file(status_path)
+    if not isinstance(payload, dict):
+        return None
+
+    evaluator_results = payload.get("evaluator_results")
+    if not isinstance(evaluator_results, dict):
+        return None
+
+    generation = _coerce_int(payload.get("generation")) or _generation_from_path(
+        status_path
+    )
+    status = _coerce_str(payload.get("status")) or _coerce_str(
+        payload.get("training_status")
+    )
+    rows = tuple(
+        sorted(
+            (
+                _row_from_evaluator_result(
+                    work_dir=work_dir,
+                    evaluator_name=str(evaluator_name),
+                    result_payload=result_payload,
+                    status=status,
+                    fallback_payload=payload,
+                )
+                for evaluator_name, result_payload in evaluator_results.items()
+            ),
+            key=_row_sort_key,
+        )
+    )
+    return MorpionTrainingRecapTable(
+        generation=generation,
+        status=status or "unknown",
+        selected_evaluator_name=_coerce_str(payload.get("selected_evaluator_name")),
+        updated_at=_coerce_str(payload.get("updated_at_utc"))
+        or _coerce_str(payload.get("updated_at")),
+        source_path=_relative_to_work_dir(status_path, work_dir),
+        rows=rows,
+    )
+
+
+def _recap_table_from_model_manifest(
+    work_dir: Path,
+    manifest_path: Path,
+) -> MorpionTrainingRecapTable | None:
+    recap = _recap_from_model_manifest(work_dir, manifest_path)
+    if recap is None:
+        return None
+    return _recap_table_from_single(recap)
+
+
+def _recap_table_from_debug_training_manifest(
+    work_dir: Path,
+    manifest_path: Path,
+) -> MorpionTrainingRecapTable | None:
+    recap = _recap_from_debug_training_manifest(work_dir, manifest_path)
+    if recap is None:
+        return None
+    return _recap_table_from_single(recap)
+
+
+def _recap_table_from_single(
+    recap: MorpionTrainingRecap,
+) -> MorpionTrainingRecapTable:
+    row = MorpionEvaluatorTrainingRecap(
+        evaluator_name=recap.evaluator_name or "n/a",
+        status=recap.status,
+        train_loss=recap.train_loss,
+        validation_loss=recap.validation_loss,
+        validation_quality_r2_vs_mean_baseline=(
+            recap.validation_quality_r2_vs_mean_baseline
+        ),
+        validation_quality_pearson_correlation=(
+            recap.validation_quality_pearson_correlation
+        ),
+        graph_output_tanh=recap.graph_output_tanh,
+        graph_token_cache_used=recap.graph_token_cache_used,
+        cached_global_shuffle=recap.cached_global_shuffle,
+        model_bundle_path=recap.model_bundle_path,
+    )
+    return MorpionTrainingRecapTable(
+        generation=recap.generation,
+        status=recap.status,
+        selected_evaluator_name=recap.evaluator_name,
+        updated_at=recap.updated_at,
+        source_path=recap.source_path,
+        rows=(row,),
+    )
+
+
+def _single_recap_from_table(table: MorpionTrainingRecapTable) -> MorpionTrainingRecap:
+    selected_row = _selected_row(table)
+    if selected_row is None and table.rows:
+        selected_row = table.rows[0]
+    if selected_row is None:
+        return MorpionTrainingRecap(
+            generation=table.generation,
+            evaluator_name=table.selected_evaluator_name,
+            status=table.status,
+            train_loss=None,
+            validation_loss=None,
+            validation_quality_r2_vs_mean_baseline=None,
+            validation_quality_pearson_correlation=None,
+            graph_output_tanh=None,
+            graph_token_cache_used=None,
+            cached_global_shuffle=None,
+            model_bundle_path=None,
+            source_path=table.source_path,
+            updated_at=table.updated_at,
+        )
+    return MorpionTrainingRecap(
+        generation=table.generation,
+        evaluator_name=selected_row.evaluator_name,
+        status=table.status,
+        train_loss=selected_row.train_loss,
+        validation_loss=selected_row.validation_loss,
+        validation_quality_r2_vs_mean_baseline=(
+            selected_row.validation_quality_r2_vs_mean_baseline
+        ),
+        validation_quality_pearson_correlation=(
+            selected_row.validation_quality_pearson_correlation
+        ),
+        graph_output_tanh=selected_row.graph_output_tanh,
+        graph_token_cache_used=selected_row.graph_token_cache_used,
+        cached_global_shuffle=selected_row.cached_global_shuffle,
+        model_bundle_path=selected_row.model_bundle_path,
+        source_path=table.source_path,
+        updated_at=table.updated_at,
+    )
+
+
+def _row_from_evaluator_result(
+    *,
+    work_dir: Path,
+    evaluator_name: str,
+    result_payload: object,
+    status: str | None,
+    fallback_payload: object,
+) -> MorpionEvaluatorTrainingRecap:
+    model_path = _coerce_model_path(
+        _find_first([result_payload, fallback_payload], "model_bundle_path"),
+        work_dir=work_dir,
+    )
+    manifest_payload, args_payload = _load_model_metadata(work_dir, model_path)
+    sources: list[object] = [
+        result_payload,
+        manifest_payload,
+        args_payload,
+        fallback_payload,
+    ]
+    validation_loss = _coerce_float(_find_first(sources, "validation_loss"))
+    if validation_loss is None:
+        validation_loss = _coerce_float(_find_first(sources, "final_loss"))
+    return MorpionEvaluatorTrainingRecap(
+        evaluator_name=evaluator_name,
+        status=status,
+        train_loss=_coerce_float(_find_first(sources, "train_loss")),
+        validation_loss=validation_loss,
+        validation_quality_r2_vs_mean_baseline=_validation_quality_metric(
+            sources,
+            "r2_vs_mean_baseline",
+            "validation_quality_r2_vs_mean_baseline",
+        ),
+        validation_quality_pearson_correlation=_validation_quality_metric(
+            sources,
+            "pearson_correlation",
+            "validation_quality_pearson_correlation",
+        ),
+        graph_output_tanh=_coerce_bool(_find_first(sources, "graph_output_tanh")),
+        graph_token_cache_used=_coerce_bool(
+            _find_first(sources, "graph_token_cache_used")
+        ),
+        cached_global_shuffle=_coerce_bool(
+            _find_first(sources, "cached_global_shuffle")
+        ),
+        model_bundle_path=model_path,
+    )
+
+
+def _row_sort_key(row: MorpionEvaluatorTrainingRecap) -> tuple[bool, float, str]:
+    return (
+        row.validation_loss is None,
+        math.inf if row.validation_loss is None else row.validation_loss,
+        row.evaluator_name,
+    )
+
+
+def _selected_row(
+    table: MorpionTrainingRecapTable,
+) -> MorpionEvaluatorTrainingRecap | None:
+    if table.selected_evaluator_name is None:
+        return None
+    for row in table.rows:
+        if row.evaluator_name == table.selected_evaluator_name:
+            return row
+    return None
 
 
 def _recap_from_training_status(
@@ -541,6 +873,10 @@ def _format_flag(name: str, value: bool | None) -> str | None:
     if value is None:
         return None
     return f"{name}={str(value).lower()}"
+
+
+def _format_bool(value: bool | None) -> str:
+    return "n/a" if value is None else str(value).lower()
 
 
 def _path_to_str(path: Path | None) -> str | None:
