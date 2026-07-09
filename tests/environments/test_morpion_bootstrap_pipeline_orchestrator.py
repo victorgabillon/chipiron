@@ -1295,8 +1295,91 @@ def test_training_worker_recovers_stale_training_claim(
     assert "training_stale_state_recovered generation=38" in messages
     assert "local_training_lower_bound=38 source=external_seed" in messages
     assert (
-        "training_recovered_generation_reclaimable generation=38 "
-        "cursor_started=38 cursor_completed=37"
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=true"
+    ) in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
+        in messages
+    )
+
+
+def test_training_worker_reclaims_manually_repaired_started_cursor_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A clean not-started cursor generation should be claimable without metadata."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(37, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(37),
+    )
+    save_pipeline_manifest(
+        _training_manifest(38),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    assert not paths.pipeline_training_claim_path_for_generation(38).exists()
+    assert not paths.pipeline_training_status_path_for_generation(38).exists()
+    assert (
+        "auto_recovery"
+        not in load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(38)
+        ).metadata
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
+    assert 37 not in captured
+    assert result.generation == 38
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=false"
     ) in messages
     assert (
         "training_selection_start pending_generations=38 claimable_generations=38"
@@ -1354,7 +1437,9 @@ def test_training_worker_does_not_reclaim_live_claim_at_started_cursor(
 
     assert result.ran_stage is False
     assert result.reason == "no_pending_work"
-    assert "training_recovered_generation_reclaimable generation=38" not in messages
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
     assert (
         "training_selection_start pending_generations=none claimable_generations=none"
     ) in messages
@@ -1420,11 +1505,72 @@ def test_training_worker_does_not_reclaim_started_cursor_with_results(
 
     assert result.ran_stage is False
     assert result.reason == "no_pending_work"
-    assert "training_recovered_generation_reclaimable generation=38" not in messages
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
     assert (
         "training_selection_start pending_generations=none claimable_generations=none"
     ) in messages
     assert "training_skip generation=38 reason=stale_generation" in messages
+
+
+def test_training_worker_never_reclaims_completed_started_cursor_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Completed cursor-started generations must never be selected again."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(38, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    paths.pipeline_training_status_path_for_generation(38).write_text(
+        json.dumps({
+            "evaluator_results": {"mlp_41": {"final_loss": 1.0}},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": "mlp_41",
+            "selection_policy": None,
+            "status": "done",
+            "updated_at_utc": "2026-07-08T13:03:32Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.ran_stage is False
+    assert result.reason == "no_pending_work"
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
+    assert (
+        "training_selection_start pending_generations=none claimable_generations=none"
+    ) in messages
 
 
 def test_dataset_worker_allows_expired_claim(

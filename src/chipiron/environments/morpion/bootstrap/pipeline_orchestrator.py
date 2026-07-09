@@ -7,7 +7,6 @@ import logging
 import os
 import re
 import time
-from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
@@ -25,6 +24,11 @@ from .pipeline.training_recovery import (
     StaleTrainingState,
     inspect_training_state_for_recovery,
     recover_stale_training_state,
+)
+from .pipeline.training_selection import (
+    manifest_has_auto_recovery,
+    started_cursor_generation_is_safely_reclaimable,
+    training_completed_cursor_generation,
 )
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
@@ -199,60 +203,6 @@ def _training_lower_bound(paths: MorpionBootstrapPaths) -> MorpionTrainingLowerB
     return training_lower_bound_details(paths)
 
 
-def _training_completed_cursor_generation(
-    lower_bound: MorpionTrainingLowerBound,
-) -> int:
-    """Return the completed cursor generation as a concrete skip boundary."""
-    return (
-        0
-        if lower_bound.cursor_completed_generation is None
-        else lower_bound.cursor_completed_generation
-    )
-
-
-def _manifest_has_auto_recovery(
-    manifest: MorpionPipelineGenerationManifest,
-) -> bool:
-    """Return whether one manifest records stale-training auto-recovery."""
-    return isinstance(manifest.metadata.get("auto_recovery"), MappingABC)
-
-
-def _recovered_started_generation_is_reclaimable(
-    paths: MorpionBootstrapPaths,
-    manifests: Mapping[int, MorpionPipelineGenerationManifest],
-    lower_bound: MorpionTrainingLowerBound,
-    *,
-    now_unix_s: float | None,
-) -> bool:
-    """Return whether the started cursor generation should bypass the skip bound."""
-    generation = lower_bound.cursor_started_generation
-    if generation is None or lower_bound.generation != generation:
-        return False
-    completed_generation = _training_completed_cursor_generation(lower_bound)
-    if completed_generation >= generation:
-        return False
-    manifest = manifests.get(generation)
-    if manifest is None or not training_stage_is_pending(manifest):
-        return False
-    if not _manifest_has_auto_recovery(manifest):
-        return False
-    state = inspect_training_state_for_recovery(
-        paths.pipeline_generation_dir_for_generation(generation),
-        now_utc=_training_recovery_now(now_unix_s),
-        stale_grace_seconds=_int_env(
-            "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",
-            default=DEFAULT_STALE_GRACE_SECONDS,
-        ),
-    )
-    if state.evaluator_results_count not in (0, None):
-        return False
-    claim = load_active_pipeline_stage_claim(
-        paths.pipeline_training_claim_path_for_generation(generation),
-        now_unix_s=now_unix_s,
-    )
-    return claim is None
-
-
 def _training_selection_lower_bound_generation(
     paths: MorpionBootstrapPaths,
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
@@ -261,19 +211,29 @@ def _training_selection_lower_bound_generation(
     now_unix_s: float | None,
 ) -> int:
     """Return the effective lower bound for selecting a claimable generation."""
-    if _recovered_started_generation_is_reclaimable(
+    if started_cursor_generation_is_safely_reclaimable(
         paths,
         manifests,
         lower_bound,
         now_unix_s=now_unix_s,
+        stale_grace_seconds=_int_env(
+            "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",
+            default=DEFAULT_STALE_GRACE_SECONDS,
+        ),
     ):
+        generation = lower_bound.cursor_started_generation
+        assert generation is not None
+        manifest = manifests[generation]
         LOGGER.info(
-            "[pipeline] training_recovered_generation_reclaimable generation=%s cursor_started=%s cursor_completed=%s",
-            lower_bound.cursor_started_generation,
+            "[pipeline] training_started_cursor_generation_reclaimable generation=%s cursor_started=%s cursor_completed=%s manifest_training_status=%s dataset_status=%s auto_recovery=%s",
+            generation,
             lower_bound.cursor_started_generation,
             _render_optional_log_value(lower_bound.cursor_completed_generation),
+            manifest.training_status,
+            manifest.dataset_status,
+            str(manifest_has_auto_recovery(manifest)).lower(),
         )
-        return _training_completed_cursor_generation(lower_bound)
+        return training_completed_cursor_generation(lower_bound)
     return lower_bound.generation
 
 

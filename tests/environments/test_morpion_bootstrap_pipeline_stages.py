@@ -2669,6 +2669,85 @@ def test_training_stage_skips_explicit_stale_generation(
     assert "training_skip generation=5 reason=stale_generation" in messages
 
 
+def test_training_stage_reclaims_clean_started_cursor_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Explicit training should run a clean not-started cursor generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(38)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=37,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="done",
+        ),
+        paths.pipeline_manifest_path_for_generation(37),
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=38,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    assert not paths.pipeline_training_claim_path_for_generation(38).exists()
+    assert not paths.pipeline_training_status_path_for_generation(38).exists()
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "_train_and_select_evaluators",
+        lambda **kwargs: _fake_training_result(paths, generation=38),
+    )
+
+    with caplog.at_level(logging.INFO):
+        manifest = run_pipeline_training_stage(
+            _artifact_pipeline_args(tmp_path),
+            generation=38,
+        )
+
+    cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert manifest.training_status == "done"
+    assert cursor.latest_started_generation == 38
+    assert cursor.latest_completed_generation == 38
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=false"
+    ) in messages
+    assert "training_start generation=38" in messages
+    assert "training_skip generation=38 reason=stale_generation" not in messages
+
+
 def test_training_stage_trains_local_generation_after_external_seed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

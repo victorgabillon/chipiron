@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
@@ -215,6 +216,12 @@ from .observability import (
 from .observability import (
     configure_linoo_selection_artifact_for_growth,
 )
+from .training_recovery import DEFAULT_STALE_GRACE_SECONDS
+from .training_selection import (
+    manifest_has_auto_recovery,
+    started_cursor_generation_is_safely_reclaimable,
+    training_completed_cursor_generation,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -321,6 +328,23 @@ def _observability_metadata_for_dashboard(
 def _now_timestamp_utc() -> str:
     """Return the current UTC timestamp formatted like the bootstrap loop."""
     return _timestamp_utc_from_unix_s(time.time())
+
+
+def _int_env(name: str, *, default: int) -> int:
+    """Return one integer environment knob with a safe fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        LOGGER.warning(
+            "[pipeline] invalid_env_int name=%s value=%s default=%s",
+            name,
+            value,
+            default,
+        )
+        return default
 
 
 def _training_active_model_cursor_summary(
@@ -1510,7 +1534,32 @@ def run_pipeline_training_stage(
     paths.ensure_directories()
     manifest = load_generation_manifest(paths=paths, generation=generation)
     lower_bound = training_lower_bound_details(paths)
-    if generation <= lower_bound.generation:
+    stage_lower_bound_generation = lower_bound.generation
+    if started_cursor_generation_is_safely_reclaimable(
+        paths,
+        {generation: manifest},
+        lower_bound,
+        now_unix_s=None,
+        stale_grace_seconds=_int_env(
+            "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",
+            default=DEFAULT_STALE_GRACE_SECONDS,
+        ),
+    ):
+        LOGGER.info(
+            "[pipeline] training_started_cursor_generation_reclaimable generation=%s cursor_started=%s cursor_completed=%s manifest_training_status=%s dataset_status=%s auto_recovery=%s",
+            generation,
+            lower_bound.cursor_started_generation,
+            (
+                "none"
+                if lower_bound.cursor_completed_generation is None
+                else lower_bound.cursor_completed_generation
+            ),
+            manifest.training_status,
+            manifest.dataset_status,
+            str(manifest_has_auto_recovery(manifest)).lower(),
+        )
+        stage_lower_bound_generation = training_completed_cursor_generation(lower_bound)
+    if generation <= stage_lower_bound_generation:
         LOGGER.info(
             "[pipeline] training_skip generation=%s reason=stale_generation lower_bound_generation=%s",
             generation,
