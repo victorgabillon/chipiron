@@ -46,6 +46,21 @@ def manifest_has_auto_recovery(
     return isinstance(manifest.metadata.get("auto_recovery"), MappingABC)
 
 
+def _started_cursor_status_file_allows_reclaim(
+    *,
+    status_file_status: str | None,
+    evaluator_results_count: int | None,
+) -> bool:
+    """Return whether persisted training status is still safe to reclaim.
+
+    The auto-recovery manifest marker is informational only. Reclaim depends on
+    whether training is still effectively not started for the cursor generation.
+    """
+    if evaluator_results_count not in (0, None):
+        return False
+    return status_file_status in (None, "not_started", "training")
+
+
 def started_cursor_generation_is_safely_reclaimable(
     paths: MorpionBootstrapPaths,
     manifests: Mapping[int, MorpionPipelineGenerationManifest],
@@ -77,9 +92,10 @@ def started_cursor_generation_is_safely_reclaimable(
         ),
         stale_grace_seconds=stale_grace_seconds,
     )
-    if state.evaluator_results_count not in (0, None):
-        return False
-    if state.status_file_status not in (None, "not_started", "training"):
+    if not _started_cursor_status_file_allows_reclaim(
+        status_file_status=state.status_file_status,
+        evaluator_results_count=state.evaluator_results_count,
+    ):
         return False
     claim = load_active_pipeline_stage_claim(
         paths.pipeline_training_claim_path_for_generation(generation),

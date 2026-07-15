@@ -1312,33 +1312,7 @@ def test_training_worker_reclaims_manually_repaired_started_cursor_generation(
 ) -> None:
     """A clean not-started cursor generation should be claimable without metadata."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
-    save_pipeline_active_model(
-        MorpionPipelineActiveModel(
-            generation=430,
-            evaluator_name="mlp_41",
-            model_bundle_path="models/generation_000430/mlp_41",
-            updated_at_utc="2026-04-28T12:00:00Z",
-            source="external_seed",
-            source_generation=430,
-            local_trained_generation=None,
-        ),
-        paths.pipeline_active_model_path,
-    )
-    save_pipeline_training_cursor(
-        MorpionPipelineTrainingCursor(
-            latest_started_generation=38,
-            latest_completed_generation=37,
-        ),
-        paths.pipeline_training_cursor_path,
-    )
-    save_pipeline_manifest(
-        _training_manifest(37, training_status="done"),
-        paths.pipeline_manifest_path_for_generation(37),
-    )
-    save_pipeline_manifest(
-        _training_manifest(38),
-        paths.pipeline_manifest_path_for_generation(38),
-    )
+    _configure_manual_repaired_started_cursor_generation(paths)
     assert not paths.pipeline_training_claim_path_for_generation(38).exists()
     assert not paths.pipeline_training_status_path_for_generation(38).exists()
     assert (
@@ -1375,6 +1349,59 @@ def test_training_worker_reclaims_manually_repaired_started_cursor_generation(
 
     assert captured == [38]
     assert 37 not in captured
+    assert result.generation == 38
+    assert "active_model_source_generation=430 local_training_lower_bound=38" in messages
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=false"
+    ) in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
+        in messages
+    )
+
+
+def test_training_worker_reclaims_started_cursor_without_auto_recovery_marker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The manual repair case must not depend on metadata.auto_recovery."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _configure_manual_repaired_started_cursor_generation(paths)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(38))
+
+    assert "auto_recovery" not in manifest.metadata
+
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=datetime(2026, 7, 8, 16, 0, tzinfo=UTC).timestamp(),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
     assert result.generation == 38
     assert (
         "training_started_cursor_generation_reclaimable generation=38 "
@@ -1617,6 +1644,38 @@ def test_dataset_worker_allows_expired_claim(
     assert captured == [1]
     assert result.generation == 1
     assert result.ran_stage is True
+
+
+def _configure_manual_repaired_started_cursor_generation(
+    paths: MorpionBootstrapPaths,
+) -> None:
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(37, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(37),
+    )
+    save_pipeline_manifest(
+        _training_manifest(38),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
 
 
 def test_orchestrator_runs_full_sequential_pipeline_for_new_generation(
