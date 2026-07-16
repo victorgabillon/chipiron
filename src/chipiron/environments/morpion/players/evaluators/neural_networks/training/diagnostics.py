@@ -14,6 +14,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tok
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
+from chipiron.learning.supervised import move_supervised_batch_to_device
 from chipiron.learning.torch_runtime import module_device
 
 from .args import MorpionTrainingArgs
@@ -190,9 +191,8 @@ def _predict_from_sample_batch(
     sample_batch: TensorSupervisedBatch,
 ) -> list[float]:
     """Run one diagnostics batch through the model and return float predictions."""
-    predictions = model(
-        move_tensor_to_model_device(sample_batch.get_input_layer(), model)
-    )
+    device_batch = move_supervised_batch_to_device(sample_batch, module_device(model))
+    predictions = model(*device_batch.get_model_input_tensors())
     prediction_values = predictions.squeeze(-1).detach().cpu().tolist()
     if isinstance(prediction_values, float):
         return [float(prediction_values)]

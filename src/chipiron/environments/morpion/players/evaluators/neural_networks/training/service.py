@@ -34,6 +34,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
 from chipiron.learning.supervised import (
     RegressionEvaluationStats,
     TensorSupervisedBatch,
+    move_supervised_batch_to_device,
     regression_quality_stats_to_metadata,
     train_regression_batch,
 )
@@ -1005,7 +1006,7 @@ def _log_regression_quality(diagnostics: SplitQualityDiagnostics) -> None:
 
 def prediction_scale_stats_for_cached_batches(
     *,
-    model: MorpionRegressor,
+    model: torch.nn.Module,
     batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
     row_count: int,
     batch_size: int,
@@ -1026,7 +1027,8 @@ def prediction_scale_stats_for_cached_batches(
                 range(start, min(start + effective_batch_size, sample_count))
             )
             sample_batch = batch_builder(row_indices)
-            batch_predictions = model(sample_batch.get_input_layer().to(device))
+            device_batch = move_supervised_batch_to_device(sample_batch, device)
+            batch_predictions = model(*device_batch.get_model_input_tensors())
             predictions.append(batch_predictions.detach().cpu().reshape(-1))
     if was_training:
         model.train()

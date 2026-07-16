@@ -6,13 +6,14 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass
 from time import perf_counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import torch
 from torch import nn
 
 from chipiron.learning.supervised.batches import (
     SupervisedBatch,
+    TensorSupervisedBatch,
     move_supervised_batch_to_device,
 )
 
@@ -102,6 +103,14 @@ def infer_batch_sample_count(batch: SupervisedBatch) -> int:
     return 1
 
 
+def _forward_supervised_batch(
+    model: nn.Module,
+    batch: TensorSupervisedBatch,
+) -> torch.Tensor:
+    """Run a model with every positional input tensor from one batch."""
+    return cast("torch.Tensor", model(*batch.get_model_input_tensors()))
+
+
 def train_regression_batch(
     *,
     model: nn.Module,
@@ -121,7 +130,7 @@ def train_regression_batch(
     with phase("zero_grad"):
         optimizer.zero_grad()
     with phase("forward"):
-        predictions = model(device_batch.get_input_layer())
+        predictions = _forward_supervised_batch(model, device_batch)
     targets = device_batch.get_target_value()
     with phase("loss"):
         loss = criterion(predictions, targets)
@@ -159,7 +168,7 @@ def evaluate_regression_batch(
     with phase("batch_transfer"):
         device_batch = move_supervised_batch_to_device(batch, device)
     with phase("forward"):
-        predictions = model(device_batch.get_input_layer())
+        predictions = _forward_supervised_batch(model, device_batch)
     targets = device_batch.get_target_value()
     with phase("metric_accumulation"):
         errors = predictions - targets

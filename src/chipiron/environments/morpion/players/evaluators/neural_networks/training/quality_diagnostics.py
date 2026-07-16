@@ -53,7 +53,7 @@ def cached_split_regression_quality_diagnostics(
         ):
             sample_batch = batch_builder(batch_indices)
             device_batch = move_supervised_batch_to_device(sample_batch, device)
-            batch_predictions = model(device_batch.get_input_layer())
+            batch_predictions = model(*device_batch.get_model_input_tensors())
             predictions.append(batch_predictions.detach().cpu().reshape(-1))
             targets.append(device_batch.get_target_value().detach().cpu().reshape(-1))
     if was_training:
