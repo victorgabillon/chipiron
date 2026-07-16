@@ -79,17 +79,15 @@ _KNOWN_CHECKPOINT_STORE_ATTR_NAMES = (
 )
 _LINOO_NODE_STATE_TABLE_ATTR_NAME = "_node_state_by_id"
 _KNOWN_CHECKPOINT_CANDIDATE_PATHS: tuple[tuple[str, ...], ...] = tuple(
-    dict.fromkeys(
-        (
-            *_CHECKPOINT_ROOT_ATTR_PATHS,
-            ("checkpoint_state_resolver",),
-            ("_checkpoint_state_resolver",),
-            ("_runtime", "checkpoint_state_resolver"),
-            ("_runtime", "_checkpoint_state_resolver"),
-            ("runtime", "checkpoint_state_resolver"),
-            ("runtime", "_checkpoint_state_resolver"),
-        )
-    )
+    dict.fromkeys((
+        *_CHECKPOINT_ROOT_ATTR_PATHS,
+        ("checkpoint_state_resolver",),
+        ("_checkpoint_state_resolver",),
+        ("_runtime", "checkpoint_state_resolver"),
+        ("_runtime", "_checkpoint_state_resolver"),
+        ("runtime", "checkpoint_state_resolver"),
+        ("runtime", "_checkpoint_state_resolver"),
+    ))
 )
 
 type ProfileRoot = tuple[str, object]
@@ -242,9 +240,10 @@ def build_recursive_profile_context(
         len(checkpoint_payload_stores),
         format_metric(time.perf_counter() - checkpoint_stores_start),
     )
-    checkpoint_roots_with_payloads = unique_roots(
-        (*checkpoint_roots, *(store.payloads for store in checkpoint_payload_stores))
-    )
+    checkpoint_roots_with_payloads = unique_roots((
+        *checkpoint_roots,
+        *(store.payloads for store in checkpoint_payload_stores),
+    ))
     LOGGER.info(
         "[growth-recursive-profile] event=%s context_build_done total_elapsed_s=%s",
         event,

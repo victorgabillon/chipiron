@@ -175,12 +175,10 @@ class FakeMorpionSearchRunner:
     ) -> None:
         """Record restore inputs without mutating external state."""
         del reevaluate_tree
-        self.load_calls.append(
-            (
-                None if tree_snapshot_path is None else str(tree_snapshot_path),
-                None if model_bundle_path is None else str(model_bundle_path),
-            )
-        )
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
         self.runtime_config_calls.append(effective_runtime_config)
 
     def apply_effective_runtime_config(self, effective_runtime_config: object) -> None:
@@ -1507,9 +1505,10 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     leaderboard_calls: list[tuple[int, int]] = []
 
     def _persist_leaderboard(**kwargs: object) -> None:
-        leaderboard_calls.append(
-            (int(kwargs["generation"]), int(kwargs["cycle_index"]))
-        )
+        leaderboard_calls.append((
+            int(kwargs["generation"]),
+            int(kwargs["cycle_index"]),
+        ))
 
     monkeypatch.setattr(
         pipeline_stages_module,
@@ -2066,14 +2065,12 @@ def test_training_stage_streams_jsonl_rows_without_materialized_load(
 
     def _fake_streaming_train(**kwargs: object) -> BootstrapTrainingResult:
         rows_source = cast("Any", kwargs["rows_source"])
-        streaming_calls.append(
-            (
-                cast("int | None", kwargs["max_rows"]),
-                int(kwargs["chunk_size"]),
-                str(rows_source.format_kind),
-                cast("int | None", rows_source.row_count),
-            )
-        )
+        streaming_calls.append((
+            cast("int | None", kwargs["max_rows"]),
+            int(kwargs["chunk_size"]),
+            str(rows_source.format_kind),
+            cast("int | None", rows_source.row_count),
+        ))
         return _fake_training_result_for_evaluators(
             paths,
             generation=1,
@@ -3063,20 +3060,18 @@ def test_launcher_dispatches_dataset_stage(
         launcher_module, "run_pipeline_dataset_stage", _fake_dataset_stage
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset",
-            "--pipeline-generation",
-            "1",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset",
+        "--pipeline-generation",
+        "1",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     run_morpion_bootstrap_experiment(launcher_args)
 
     assert len(captured) == 1
@@ -3111,18 +3106,16 @@ def test_launcher_dispatches_growth_stage(
         launcher_module, "run_morpion_bootstrap_loop", _unexpected_full_loop
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     run_morpion_bootstrap_experiment(launcher_args)
 
     assert len(captured) == 1
@@ -3152,20 +3145,18 @@ def test_artifact_pipeline_reevaluation_stage_dispatches_worker(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "reevaluation",
-            "--reevaluation-max-nodes-per-patch",
-            "123",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "reevaluation",
+        "--reevaluation-max-nodes-per-patch",
+        "123",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     result = run_morpion_bootstrap_experiment(launcher_args)
 
     assert result is fake_result
@@ -3197,18 +3188,16 @@ def test_artifact_pipeline_reevaluation_stage_uses_default_batch_size(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "reevaluation",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "reevaluation",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     result = run_morpion_bootstrap_experiment(launcher_args)
 
     assert result is fake_result
@@ -3219,17 +3208,15 @@ def test_launcher_quiet_worker_startup_suppresses_manual_startup_output(
     tmp_path: Path,
 ) -> None:
     """Quiet supervised workers should skip repeated startup summaries and hints."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "reevaluation",
-            "--quiet-worker-startup",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "reevaluation",
+        "--quiet-worker-startup",
+    ])
 
     assert launcher_args.quiet_worker_startup
     assert not launcher_args.print_startup_summary
@@ -3257,18 +3244,16 @@ def test_artifact_pipeline_reevaluation_stage_does_not_build_runner(
         lambda args, *, max_nodes_per_patch=10_000: fake_result,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "reevaluation",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "reevaluation",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
 
@@ -3295,20 +3280,18 @@ def test_artifact_pipeline_reevaluation_negative_batch_size_propagates(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "reevaluation",
-            "--reevaluation-max-nodes-per-patch",
-            "-1",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "reevaluation",
+        "--reevaluation-max-nodes-per-patch",
+        "-1",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     with pytest.raises(ValueError, match="max_nodes_per_patch must be >= 0"):
         run_morpion_bootstrap_experiment(launcher_args)
@@ -3338,18 +3321,16 @@ def test_artifact_pipeline_dataset_worker_dispatches_autonomous_worker(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     result = run_morpion_bootstrap_experiment(launcher_args)
 
     assert result is fake_result
@@ -3369,20 +3350,18 @@ def test_artifact_pipeline_worker_first_run_writes_bootstrap_config(
         lambda args: fake_result,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--min-visit-count",
-            "7",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--min-visit-count",
+        "7",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
 
@@ -3426,20 +3405,18 @@ def test_dataset_worker_rejects_owned_persisted_config_difference(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--min-visit-count",
-            "99",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--min-visit-count",
+        "99",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_visit_count"):
         run_morpion_bootstrap_experiment(launcher_args)
@@ -3462,20 +3439,18 @@ def test_dataset_worker_rejects_foreign_persisted_config_difference(
         bootstrap_config_from_args(persisted_args),
         paths.bootstrap_config_path,
     )
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--tree-branch-limit",
-            "1001",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--tree-branch-limit",
+        "1001",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     fake_result = _make_pipeline_worker_result("dataset")
 
@@ -3534,20 +3509,18 @@ def test_growth_stage_uses_requested_runtime_batch_size(
         launcher_module, "run_pipeline_growth_stage", _fake_growth_stage
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--max-growth-steps-per-cycle",
-            "10",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--max-growth-steps-per-cycle",
+        "10",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     run_morpion_bootstrap_experiment(launcher_args)
 
@@ -3601,20 +3574,18 @@ def test_growth_stage_uses_requested_tree_branch_limit(
         launcher_module, "run_pipeline_growth_stage", _fake_growth_stage
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--tree-branch-limit",
-            "128",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--tree-branch-limit",
+        "128",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     run_morpion_bootstrap_experiment(launcher_args)
 
@@ -3648,18 +3619,16 @@ def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(
         _fake_worker,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "training_worker",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "training_worker",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
     result = run_morpion_bootstrap_experiment(launcher_args)
 
     assert result is fake_result
@@ -3685,14 +3654,12 @@ def test_single_process_rejects_non_loop_pipeline_stage(
 ) -> None:
     """Single-process CLI mode should reject non-loop pipeline stages."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--pipeline-stage",
-                pipeline_stage,
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-stage",
+            pipeline_stage,
+        ])
 
     assert "only valid with 'loop'" in capsys.readouterr().err
 
@@ -3720,20 +3687,18 @@ def test_artifact_pipeline_loop_dispatches_orchestrator(
         _fake_orchestrator,
     )
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "loop",
-            "--max-cycles",
-            "2",
-            "--no-print-startup-summary",
-            "--no-print-dashboard-hint",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "loop",
+        "--max-cycles",
+        "2",
+        "--no-print-startup-summary",
+        "--no-print-dashboard-hint",
+    ])
 
     run_morpion_bootstrap_experiment(launcher_args)
 

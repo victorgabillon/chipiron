@@ -396,42 +396,34 @@ def _node_attr_sample_summaries(
                     if child_attr_name is not None
                 )
 
-            summaries.append(
-                {
-                    "attr": attr_name,
-                    "sample_size": sample_size,
-                    "top_types": _format_pairs(type_counts.most_common(5)),
-                    "avg_shallow_bytes": format_metric(
-                        _avg(shallow_total, sample_size)
-                    ),
-                    "avg_dict_shallow_bytes": format_metric(
-                        _avg(attr_dict_total, attr_dict_seen)
-                        if attr_dict_seen > 0
-                        else None
-                    ),
-                    "avg_dict_len": format_metric(
-                        _avg(attr_dict_len_total, attr_dict_seen)
-                        if attr_dict_seen > 0
-                        else None
-                    ),
-                    "avg_slots_count": format_metric(
-                        _avg(slots_count_total, sample_size)
-                    ),
-                    "top_slot_names": _format_pairs(slot_name_counts.most_common(10)),
-                    "top_slot_value_types": _format_pairs(
-                        slot_value_type_counts.most_common(10)
-                    ),
-                    "top_child_attrs": _format_pairs(child_attr_counts.most_common(10)),
-                }
-            )
+            summaries.append({
+                "attr": attr_name,
+                "sample_size": sample_size,
+                "top_types": _format_pairs(type_counts.most_common(5)),
+                "avg_shallow_bytes": format_metric(_avg(shallow_total, sample_size)),
+                "avg_dict_shallow_bytes": format_metric(
+                    _avg(attr_dict_total, attr_dict_seen)
+                    if attr_dict_seen > 0
+                    else None
+                ),
+                "avg_dict_len": format_metric(
+                    _avg(attr_dict_len_total, attr_dict_seen)
+                    if attr_dict_seen > 0
+                    else None
+                ),
+                "avg_slots_count": format_metric(_avg(slots_count_total, sample_size)),
+                "top_slot_names": _format_pairs(slot_name_counts.most_common(10)),
+                "top_slot_value_types": _format_pairs(
+                    slot_value_type_counts.most_common(10)
+                ),
+                "top_child_attrs": _format_pairs(child_attr_counts.most_common(10)),
+            })
         except Exception as exc:
-            summaries.append(
-                {
-                    "attr": attr_name,
-                    "sample_size": sample_size,
-                    "error": f"{type(exc).__name__}: {exc}",
-                }
-            )
+            summaries.append({
+                "attr": attr_name,
+                "sample_size": sample_size,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
     return summaries
 
 
@@ -466,27 +458,21 @@ def _node_attr_slot_sample_summaries(
                         continue
                     slot_value_type_counts[_qualified_type_name(slot_value)] += 1
 
-                summaries.append(
-                    {
-                        "attr": attr_name,
-                        "slot": slot_name,
-                        "sample_size": sample_size,
-                        "top_types": _format_pairs(
-                            slot_value_type_counts.most_common(5)
-                        ),
-                        "avg_shallow_bytes": format_metric(
-                            _avg(shallow_total, sample_size)
-                        ),
-                    }
-                )
-        except Exception as exc:
-            summaries.append(
-                {
+                summaries.append({
                     "attr": attr_name,
+                    "slot": slot_name,
                     "sample_size": sample_size,
-                    "error": f"{type(exc).__name__}: {exc}",
-                }
-            )
+                    "top_types": _format_pairs(slot_value_type_counts.most_common(5)),
+                    "avg_shallow_bytes": format_metric(
+                        _avg(shallow_total, sample_size)
+                    ),
+                })
+        except Exception as exc:
+            summaries.append({
+                "attr": attr_name,
+                "sample_size": sample_size,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
     return summaries
 
 

@@ -182,62 +182,54 @@ def checkpoint_payload_lifetime_histograms(
                     set(),
                 )
             )
-        histograms.append(
-            {
-                "resolver_type": payload_store.resolver_type,
-                "resolver_object_id": payload_store.resolver_id,
-                "payload_mapping_attr_name": payload_store.attr_name,
-                "payload_mapping_type": qualified_type_name(payload_store.payloads),
-                "payload_mapping_length": len(payload_store.payloads),
-                "anchor_count": payload_store.anchor_count,
-                "delta_count": payload_store.delta_count,
-                "payload_mapping_recursive_bytes": (
-                    0 if record is None else record.bytes
-                ),
-                "payload_mapping_shallow_bytes": size_or_zero(payload_store.payloads),
-                "checkpoint_backed_state_handle_count": (
-                    0
-                    if resolver_stats is None
-                    else resolver_stats.checkpoint_handle_count
-                ),
-                "materialized_handle_count": (
-                    0
-                    if resolver_stats is None
-                    else resolver_stats.materialized_handle_count
-                ),
-                "unmaterialized_handle_count": (
-                    0
-                    if resolver_stats is None
-                    else resolver_stats.unmaterialized_handle_count
-                ),
-                "payload_entries_still_referenced_count": referenced_payload_entries_count,
-                "all_handles_share_one_resolver": all_handles_share_one_resolver,
-                "handle_scan_capped": handle_scan_capped,
-            }
-        )
+        histograms.append({
+            "resolver_type": payload_store.resolver_type,
+            "resolver_object_id": payload_store.resolver_id,
+            "payload_mapping_attr_name": payload_store.attr_name,
+            "payload_mapping_type": qualified_type_name(payload_store.payloads),
+            "payload_mapping_length": len(payload_store.payloads),
+            "anchor_count": payload_store.anchor_count,
+            "delta_count": payload_store.delta_count,
+            "payload_mapping_recursive_bytes": (0 if record is None else record.bytes),
+            "payload_mapping_shallow_bytes": size_or_zero(payload_store.payloads),
+            "checkpoint_backed_state_handle_count": (
+                0 if resolver_stats is None else resolver_stats.checkpoint_handle_count
+            ),
+            "materialized_handle_count": (
+                0
+                if resolver_stats is None
+                else resolver_stats.materialized_handle_count
+            ),
+            "unmaterialized_handle_count": (
+                0
+                if resolver_stats is None
+                else resolver_stats.unmaterialized_handle_count
+            ),
+            "payload_entries_still_referenced_count": referenced_payload_entries_count,
+            "all_handles_share_one_resolver": all_handles_share_one_resolver,
+            "handle_scan_capped": handle_scan_capped,
+        })
 
     for resolver_id, resolver_stats in handle_stats_by_resolver_id.items():
         if resolver_id in seen_store_resolver_ids:
             continue
-        histograms.append(
-            {
-                "resolver_type": resolver_stats.resolver_type,
-                "resolver_object_id": resolver_id,
-                "payload_mapping_attr_name": None,
-                "payload_mapping_type": None,
-                "payload_mapping_length": 0,
-                "anchor_count": 0,
-                "delta_count": 0,
-                "payload_mapping_recursive_bytes": 0,
-                "payload_mapping_shallow_bytes": 0,
-                "checkpoint_backed_state_handle_count": resolver_stats.checkpoint_handle_count,
-                "materialized_handle_count": resolver_stats.materialized_handle_count,
-                "unmaterialized_handle_count": resolver_stats.unmaterialized_handle_count,
-                "payload_entries_still_referenced_count": 0,
-                "all_handles_share_one_resolver": all_handles_share_one_resolver,
-                "handle_scan_capped": handle_scan_capped,
-            }
-        )
+        histograms.append({
+            "resolver_type": resolver_stats.resolver_type,
+            "resolver_object_id": resolver_id,
+            "payload_mapping_attr_name": None,
+            "payload_mapping_type": None,
+            "payload_mapping_length": 0,
+            "anchor_count": 0,
+            "delta_count": 0,
+            "payload_mapping_recursive_bytes": 0,
+            "payload_mapping_shallow_bytes": 0,
+            "checkpoint_backed_state_handle_count": resolver_stats.checkpoint_handle_count,
+            "materialized_handle_count": resolver_stats.materialized_handle_count,
+            "unmaterialized_handle_count": resolver_stats.unmaterialized_handle_count,
+            "payload_entries_still_referenced_count": 0,
+            "all_handles_share_one_resolver": all_handles_share_one_resolver,
+            "handle_scan_capped": handle_scan_capped,
+        })
 
     if histograms:
         return tuple(histograms)
@@ -404,86 +396,76 @@ def checkpoint_payload_shape_histograms(
             qualified_type_name(payload) for payload in payloads
         )
 
-        histograms.append(
-            {
-                "resolver_type": payload_store.resolver_type,
-                "resolver_object_id": payload_store.resolver_id,
-                "payload_store_type": qualified_type_name(payload_store.payloads),
-                "payload_store_length": len(payload_store.payloads),
-                "total_payload_count": len(payloads),
-                "anchor_payload_count": len(anchor_payloads),
-                "delta_payload_count": len(delta_payloads),
-                "payload_type_counts": dict(
-                    _ordered_counter_items(payload_type_counts)
-                ),
-                "anchor_payload_objects": _payload_shape_memory_stats(
-                    anchor_payloads,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "delta_payload_objects": _payload_shape_memory_stats(
-                    delta_payloads,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "anchor_ref": _payload_shape_memory_stats(
-                    anchor_refs,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "delta_ref": _payload_shape_memory_stats(
-                    delta_refs,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "state_summary": _payload_shape_memory_stats(
-                    state_summaries,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "state_parent_branch": _payload_shape_memory_stats(
-                    state_parent_branches,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "state_parent_node_id": _payload_shape_memory_stats(
-                    state_parent_node_ids,
-                    max_depth=max_depth,
-                    max_objects=max_objects,
-                ),
-                "anchor_ref_top_python_types": _payload_shape_type_counts(anchor_refs),
-                "delta_ref_top_python_types": _payload_shape_type_counts(delta_refs),
-                "state_summary_top_python_types": _payload_shape_type_counts(
-                    state_summaries
-                ),
-                "state_parent_branch_top_python_types": _payload_shape_type_counts(
-                    state_parent_branches
-                ),
-                "anchor_ref_common_dict_keys": _payload_shape_dict_key_counts(
-                    anchor_refs
-                ),
-                "delta_ref_common_dict_keys": _payload_shape_dict_key_counts(
-                    delta_refs
-                ),
-                "state_summary_common_dict_keys": _payload_shape_dict_key_counts(
-                    state_summaries
-                ),
-                "state_parent_branch_common_dict_keys": _payload_shape_dict_key_counts(
-                    state_parent_branches
-                ),
-                "anchor_ref_sample": _small_payload_sample(anchor_refs[0])
-                if anchor_refs
-                else None,
-                "delta_ref_sample": _small_payload_sample(delta_refs[0])
-                if delta_refs
-                else None,
-                "state_summary_sample": (
-                    _small_payload_sample(state_summaries[0])
-                    if state_summaries
-                    else None
-                ),
-            }
-        )
+        histograms.append({
+            "resolver_type": payload_store.resolver_type,
+            "resolver_object_id": payload_store.resolver_id,
+            "payload_store_type": qualified_type_name(payload_store.payloads),
+            "payload_store_length": len(payload_store.payloads),
+            "total_payload_count": len(payloads),
+            "anchor_payload_count": len(anchor_payloads),
+            "delta_payload_count": len(delta_payloads),
+            "payload_type_counts": dict(_ordered_counter_items(payload_type_counts)),
+            "anchor_payload_objects": _payload_shape_memory_stats(
+                anchor_payloads,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "delta_payload_objects": _payload_shape_memory_stats(
+                delta_payloads,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "anchor_ref": _payload_shape_memory_stats(
+                anchor_refs,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "delta_ref": _payload_shape_memory_stats(
+                delta_refs,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "state_summary": _payload_shape_memory_stats(
+                state_summaries,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "state_parent_branch": _payload_shape_memory_stats(
+                state_parent_branches,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "state_parent_node_id": _payload_shape_memory_stats(
+                state_parent_node_ids,
+                max_depth=max_depth,
+                max_objects=max_objects,
+            ),
+            "anchor_ref_top_python_types": _payload_shape_type_counts(anchor_refs),
+            "delta_ref_top_python_types": _payload_shape_type_counts(delta_refs),
+            "state_summary_top_python_types": _payload_shape_type_counts(
+                state_summaries
+            ),
+            "state_parent_branch_top_python_types": _payload_shape_type_counts(
+                state_parent_branches
+            ),
+            "anchor_ref_common_dict_keys": _payload_shape_dict_key_counts(anchor_refs),
+            "delta_ref_common_dict_keys": _payload_shape_dict_key_counts(delta_refs),
+            "state_summary_common_dict_keys": _payload_shape_dict_key_counts(
+                state_summaries
+            ),
+            "state_parent_branch_common_dict_keys": _payload_shape_dict_key_counts(
+                state_parent_branches
+            ),
+            "anchor_ref_sample": _small_payload_sample(anchor_refs[0])
+            if anchor_refs
+            else None,
+            "delta_ref_sample": _small_payload_sample(delta_refs[0])
+            if delta_refs
+            else None,
+            "state_summary_sample": (
+                _small_payload_sample(state_summaries[0]) if state_summaries else None
+            ),
+        })
     if histograms:
         return tuple(histograms)
     return ({"present": False},)

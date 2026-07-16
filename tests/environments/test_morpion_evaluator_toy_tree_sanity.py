@@ -6,6 +6,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING
+
+import pytest
+import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -47,6 +54,16 @@ from chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity import (
     run_toy_tree_sanity,
     train_weighted_regressor,
 )
+
+
+@pytest.fixture(autouse=True)
+def restore_torch_determinism() -> Iterator[None]:
+    """Restore Torch's process-wide deterministic-algorithms flag after each test."""
+    previous = torch.are_deterministic_algorithms_enabled()
+    try:
+        yield
+    finally:
+        torch.use_deterministic_algorithms(previous)
 
 
 def test_case_a_max_backup_root_value_is_terminal_when_frontier_zero() -> None:

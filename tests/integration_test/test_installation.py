@@ -266,16 +266,14 @@ class ChipironIntegrationTester:
 
         try:
             # Create conda environment with the correct Python version
-            self.run_command(
-                [
-                    "conda",
-                    "create",
-                    "-n",
-                    self.conda_env_name,
-                    f"python={self.python_version}",
-                    "-y",
-                ]
-            )
+            self.run_command([
+                "conda",
+                "create",
+                "-n",
+                self.conda_env_name,
+                f"python={self.python_version}",
+                "-y",
+            ])
             self.result.add_result(
                 "conda_environment_creation",
                 True,
@@ -367,13 +365,11 @@ class ChipironIntegrationTester:
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
 
         try:
-            _ = self.run_command(
-                [
-                    "bash",
-                    "-c",
-                    f"{conda_activate} && cd {self.project_dir} && python -c 'import chipiron; print(\"Chipiron imported successfully\")'",
-                ]
-            )
+            _ = self.run_command([
+                "bash",
+                "-c",
+                f"{conda_activate} && cd {self.project_dir} && python -c 'import chipiron; print(\"Chipiron imported successfully\")'",
+            ])
 
             self.result.add_result(
                 "python_import", True, "Chipiron module imported successfully"
@@ -422,13 +418,11 @@ except Exception as e:
                 temp_script = f.name
 
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 # Clean up temp file
                 if os.path.exists(temp_script):
@@ -518,13 +512,11 @@ else:
                 temp_script = f.name
 
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
                 tables_exist = "SYZYGY_EXISTS:True" in result.stdout
             finally:
                 # Clean up temp file
@@ -621,13 +613,11 @@ except Exception as e:
                 temp_script = f.name
 
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 # Clean up temp file
 
@@ -721,13 +711,11 @@ except Exception as e:
                 temp_script = f.name
 
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 # Clean up temp file
 
@@ -779,13 +767,11 @@ except Exception as e:
                 temp_script = f.name
 
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 # Clean up temp file
 
@@ -840,13 +826,11 @@ except Exception as e:
                 f.write(python_script)
                 temp_script = f.name
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 if os.path.exists(temp_script):
                     os.remove(temp_script)
@@ -896,13 +880,11 @@ except Exception as e:
                 f.write(python_script)
                 temp_script = f.name
             try:
-                result = self.run_command(
-                    [
-                        "bash",
-                        "-c",
-                        f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
-                    ]
-                )
+                result = self.run_command([
+                    "bash",
+                    "-c",
+                    f"{conda_activate} && cd {self.project_dir} && python {temp_script}",
+                ])
             finally:
                 if os.path.exists(temp_script):
                     os.remove(temp_script)
@@ -932,9 +914,14 @@ except Exception as e:
         # Remove conda environment
         if self.conda_env_name:
             try:
-                self.run_command(
-                    ["conda", "env", "remove", "-n", self.conda_env_name, "-y"]
-                )
+                self.run_command([
+                    "conda",
+                    "env",
+                    "remove",
+                    "-n",
+                    self.conda_env_name,
+                    "-y",
+                ])
                 chipiron_logger.info(
                     "Removed conda environment: %s", self.conda_env_name
                 )

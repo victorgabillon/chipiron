@@ -272,20 +272,18 @@ def linoo_deep_breakdown_histograms(
             max_depth=max_depth,
             max_objects=max_objects,
         )
-        breakdowns.append(
-            {
-                "present": True,
-                "selector_type": qualified_type_name(linoo_selector),
-                "field_name": field_name,
-                "value_type": qualified_type_name(field_value),
-                "shallow_bytes": size_or_zero(field_value),
-                "recursive_reachable_bytes": recursive_reachable_bytes,
-                "visited_objects": stats.visited_objects,
-                "capped": stats.capped,
-                "max_depth_reached_count": stats.max_depth_reached_count,
-                "recursion_error_count": stats.recursion_error_count,
-            }
-        )
+        breakdowns.append({
+            "present": True,
+            "selector_type": qualified_type_name(linoo_selector),
+            "field_name": field_name,
+            "value_type": qualified_type_name(field_value),
+            "shallow_bytes": size_or_zero(field_value),
+            "recursive_reachable_bytes": recursive_reachable_bytes,
+            "visited_objects": stats.visited_objects,
+            "capped": stats.capped,
+            "max_depth_reached_count": stats.max_depth_reached_count,
+            "recursion_error_count": stats.recursion_error_count,
+        })
     if not breakdowns:
         return (
             {

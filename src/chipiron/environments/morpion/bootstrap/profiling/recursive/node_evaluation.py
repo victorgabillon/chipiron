@@ -172,13 +172,11 @@ def node_evaluation_runtime_detail_histograms(
             stats=states_stats,
         )
         field_recursive_bytes: dict[str, int] = {}
-        for field_name in sorted(
-            {
-                name
-                for state in states
-                for name, _value in iter_direct_field_entries(state)
-            }
-        ):
+        for field_name in sorted({
+            name
+            for state in states
+            for name, _value in iter_direct_field_entries(state)
+        }):
             field_values = [
                 field_value
                 for state in states
@@ -193,31 +191,27 @@ def node_evaluation_runtime_detail_histograms(
                 stats=field_stats,
             )
 
-        histograms.append(
-            {
-                "present": True,
-                "runtime_state_label": label,
-                "node_count": node_count,
-                "state_count": len(states),
-                "state_types": dict(_ordered_counter_items(state_type_counts)),
-                "recursive_reachable_bytes": recursive_bytes,
-                "recursive_reachable_capped": states_stats.capped,
-                "average_recursive_bytes_per_state": format_metric(
-                    recursive_bytes / len(states)
-                ),
-                "average_recursive_bytes_per_node": format_metric(
-                    recursive_bytes / node_count if node_count else None
-                ),
-                "empty_state_count": empty_count,
-                "non_empty_state_count": non_empty_count,
-                "field_type_counts": dict(_ordered_counter_items(field_type_counts)),
-                "field_len_buckets": dict(_ordered_counter_items(field_len_buckets)),
-                "field_shallow_bytes": dict(
-                    _ordered_counter_items(field_shallow_bytes)
-                ),
-                "field_recursive_bytes": field_recursive_bytes,
-                "top_child_object_types": dict(top_child_type_counts.most_common(10)),
-            }
-        )
+        histograms.append({
+            "present": True,
+            "runtime_state_label": label,
+            "node_count": node_count,
+            "state_count": len(states),
+            "state_types": dict(_ordered_counter_items(state_type_counts)),
+            "recursive_reachable_bytes": recursive_bytes,
+            "recursive_reachable_capped": states_stats.capped,
+            "average_recursive_bytes_per_state": format_metric(
+                recursive_bytes / len(states)
+            ),
+            "average_recursive_bytes_per_node": format_metric(
+                recursive_bytes / node_count if node_count else None
+            ),
+            "empty_state_count": empty_count,
+            "non_empty_state_count": non_empty_count,
+            "field_type_counts": dict(_ordered_counter_items(field_type_counts)),
+            "field_len_buckets": dict(_ordered_counter_items(field_len_buckets)),
+            "field_shallow_bytes": dict(_ordered_counter_items(field_shallow_bytes)),
+            "field_recursive_bytes": field_recursive_bytes,
+            "top_child_object_types": dict(top_child_type_counts.most_common(10)),
+        })
 
     return tuple(histograms)

@@ -1350,7 +1350,9 @@ def test_training_worker_reclaims_manually_repaired_started_cursor_generation(
     assert captured == [38]
     assert 37 not in captured
     assert result.generation == 38
-    assert "active_model_source_generation=430 local_training_lower_bound=38" in messages
+    assert (
+        "active_model_source_generation=430 local_training_lower_bound=38" in messages
+    )
     assert (
         "training_started_cursor_generation_reclaimable generation=38 "
         "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "

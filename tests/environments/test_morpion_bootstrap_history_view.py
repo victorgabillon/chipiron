@@ -1462,14 +1462,12 @@ def test_dashboard_data_tolerates_old_training_status_without_evaluator_results(
         exist_ok=True,
     )
     paths.pipeline_training_status_path_for_generation(1).write_text(
-        json.dumps(
-            {
-                "generation": 1,
-                "status": "done",
-                "updated_at_utc": "2026-04-11T08:00:00Z",
-                "metadata": {"source": "old-format"},
-            }
-        )
+        json.dumps({
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-11T08:00:00Z",
+            "metadata": {"source": "old-format"},
+        })
         + "\n",
         encoding="utf-8",
     )
@@ -1490,20 +1488,18 @@ def test_dashboard_loss_series_falls_back_to_old_final_loss(
         exist_ok=True,
     )
     paths.pipeline_training_status_path_for_generation(1).write_text(
-        json.dumps(
-            {
-                "generation": 1,
-                "status": "done",
-                "updated_at_utc": "2026-04-11T08:00:00Z",
-                "evaluator_results": {
-                    "linear": {
-                        "final_loss": 0.625,
-                        "elapsed_s": 1.0,
-                        "model_bundle_path": "models/generation_000001/linear",
-                    }
-                },
-            }
-        )
+        json.dumps({
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-11T08:00:00Z",
+            "evaluator_results": {
+                "linear": {
+                    "final_loss": 0.625,
+                    "elapsed_s": 1.0,
+                    "model_bundle_path": "models/generation_000001/linear",
+                }
+            },
+        })
         + "\n",
         encoding="utf-8",
     )

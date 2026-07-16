@@ -76,9 +76,10 @@ class MatchController:
                     continue
 
                 ctx = RequestContext(ev.request_id, ev.role)
-                merged_seed = unique_int_from_list(
-                    [self.game_manager.game.seed, self.game_manager.game.ply]
-                )
+                merged_seed = unique_int_from_list([
+                    self.game_manager.game.seed,
+                    self.game_manager.game.ply,
+                ])
                 if merged_seed is None:
                     merged_seed = int(self.game_manager.game.ply)
                 base_request = self.game_manager.game.player_encoder.make_move_request(

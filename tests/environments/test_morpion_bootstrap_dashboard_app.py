@@ -431,28 +431,26 @@ def test_pending_changes_helper_covers_runtime_control() -> None:
 
 def test_observability_summary_derives_ratios_and_fast_path_health() -> None:
     """Dashboard observability summary should derive C5/C6 health fields safely."""
-    summary = _observability_summary_from_metadata(
-        {
-            "tree": {"node_count": 200, "branch_count": 240},
-            "memory": {"rss_mb": 1200.0},
-            "state_eviction": {
-                "compact_payload_count": 180,
-                "delta_payload_count": 153,
-                "eviction_success_count": 180,
-                "eviction_skipped_count": 2,
-                "delta_payload_fallback_count": 5,
-            },
-            "checkpoint": {"total_s": 24.5, "bytes": 1024},
-            "training_export": {"total_s": 28.75, "rows_written": 400},
-            "training_export_profile": {
-                "node_count": 200,
-                "state_access_calls": 20,
-                "checkpoint_backed_state_handles": 180,
-                "reusable_checkpoint_payloads": 180,
-                "plain_or_materialized_states": 20,
-            },
-        }
-    )
+    summary = _observability_summary_from_metadata({
+        "tree": {"node_count": 200, "branch_count": 240},
+        "memory": {"rss_mb": 1200.0},
+        "state_eviction": {
+            "compact_payload_count": 180,
+            "delta_payload_count": 153,
+            "eviction_success_count": 180,
+            "eviction_skipped_count": 2,
+            "delta_payload_fallback_count": 5,
+        },
+        "checkpoint": {"total_s": 24.5, "bytes": 1024},
+        "training_export": {"total_s": 28.75, "rows_written": 400},
+        "training_export_profile": {
+            "node_count": 200,
+            "state_access_calls": 20,
+            "checkpoint_backed_state_handles": 180,
+            "reusable_checkpoint_payloads": 180,
+            "plain_or_materialized_states": 20,
+        },
+    })
 
     assert summary["delta_payload_ratio"] == 0.85
     assert summary["checkpoint_backed_ratio"] == 0.9
@@ -462,12 +460,10 @@ def test_observability_summary_derives_ratios_and_fast_path_health() -> None:
 
 def test_observability_summary_handles_missing_and_zero_denominators() -> None:
     """Older status files and zero denominators should not crash summaries."""
-    summary = _observability_summary_from_metadata(
-        {
-            "tree": {"node_count": 0},
-            "state_eviction": {"compact_payload_count": 0, "delta_payload_count": 0},
-        }
-    )
+    summary = _observability_summary_from_metadata({
+        "tree": {"node_count": 0},
+        "state_eviction": {"compact_payload_count": 0, "delta_payload_count": 0},
+    })
 
     assert summary["delta_payload_ratio"] is None
     assert summary["checkpoint_backed_ratio"] is None
@@ -477,31 +473,27 @@ def test_observability_summary_handles_missing_and_zero_denominators() -> None:
 
 def test_observability_summary_warns_when_export_resolves_most_states() -> None:
     """Dashboard health should flag fast-path regressions."""
-    summary = _observability_summary_from_metadata(
-        {
-            "training_export_profile": {
-                "node_count": 100,
-                "state_access_calls": 95,
-                "plain_or_materialized_states": 5,
-            }
+    summary = _observability_summary_from_metadata({
+        "training_export_profile": {
+            "node_count": 100,
+            "state_access_calls": 95,
+            "plain_or_materialized_states": 5,
         }
-    )
+    })
 
     assert summary["export_fast_path_health"] == "warning"
 
 
 def test_observability_summary_handles_skipped_training_export() -> None:
     """Skipped training exports should remain visible without health errors."""
-    summary = _observability_summary_from_metadata(
-        {
-            "tree": {
-                "node_count": 2000,
-                "growth_budget_mode": "additional",
-                "effective_branch_limit": 3000,
-            },
-            "training_export": {"status": "skipped", "reason": "config"},
-        }
-    )
+    summary = _observability_summary_from_metadata({
+        "tree": {
+            "node_count": 2000,
+            "growth_budget_mode": "additional",
+            "effective_branch_limit": 3000,
+        },
+        "training_export": {"status": "skipped", "reason": "config"},
+    })
 
     assert summary["training_export"] == {"status": "skipped", "reason": "config"}
     assert summary["tree"]["growth_budget_mode"] == "additional"
@@ -511,13 +503,11 @@ def test_observability_summary_handles_skipped_training_export() -> None:
 
 def test_tree_structure_rows_render_depth_counts_in_order() -> None:
     """Dashboard tree-structure helper should expose sorted per-depth rows."""
-    rows = _tree_structure_rows(
-        (
-            TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
-            TreeDepthDistributionRow(depth=1, num_nodes=5, cumulative_nodes=6),
-            TreeDepthDistributionRow(depth=2, num_nodes=3, cumulative_nodes=9),
-        )
-    )
+    rows = _tree_structure_rows((
+        TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
+        TreeDepthDistributionRow(depth=1, num_nodes=5, cumulative_nodes=6),
+        TreeDepthDistributionRow(depth=2, num_nodes=3, cumulative_nodes=9),
+    ))
 
     assert rows == [
         {"depth": 0, "num_nodes": 1, "cumulative_nodes": 1},
@@ -996,18 +986,16 @@ def test_effective_state_summary_handles_empty_and_populated_state() -> None:
 
 def test_evaluator_set_summary_detects_canonical_family() -> None:
     """Dashboard evaluator-set summary should detect the canonical family exactly."""
-    assert _evaluator_set_summary(
-        (
-            "mlp_41",
-            "linear_10",
-            "linear_5",
-            "mlp_5",
-            "linear_20",
-            "mlp_10",
-            "linear_41",
-            "mlp_20",
-        )
-    ) == {
+    assert _evaluator_set_summary((
+        "mlp_41",
+        "linear_10",
+        "linear_5",
+        "mlp_5",
+        "linear_20",
+        "mlp_10",
+        "linear_41",
+        "mlp_20",
+    )) == {
         "label": "canonical 8-model family",
         "count": 8,
         "configured_evaluator_names": (
@@ -1036,9 +1024,13 @@ def test_evaluator_set_summary_labels_custom_family() -> None:
 
 def test_render_launcher_command_text_joins_parts() -> None:
     """Launcher command rendering should stay stable for the run-control panel."""
-    assert _render_launcher_command_text(
-        ("python", "-m", "pkg", "--work-dir", "/tmp/run")
-    ) == ("python -m pkg --work-dir /tmp/run")
+    assert _render_launcher_command_text((
+        "python",
+        "-m",
+        "pkg",
+        "--work-dir",
+        "/tmp/run",
+    )) == ("python -m pkg --work-dir /tmp/run")
 
 
 def test_format_helpers() -> None:

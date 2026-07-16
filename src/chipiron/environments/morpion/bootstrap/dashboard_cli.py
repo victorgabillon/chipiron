@@ -54,21 +54,19 @@ def _render_run_summary(data: MorpionBootstrapDashboardData) -> str:
         summary.latest_frontier_score,
         summary.latest_frontier_total_points,
     )
-    return "\n".join(
-        (
-            "=== Morpion Bootstrap Run Summary ===",
-            "cycles: "
-            f"{summary.num_cycles} "
-            f"(train: {summary.num_train_cycles}, no-train: {summary.num_no_train_cycles})",
-            f"latest generation: {_format_optional_value(summary.latest_generation)}",
-            f"latest tree size: {_format_optional_value(summary.latest_tree_num_nodes)}",
-            f"latest certified record: {latest_record}",
-            f"latest frontier best: {latest_frontier}",
-            "latest frontier source: "
-            f"{_format_optional_value(summary.latest_frontier_source)}",
-            f"latest evaluator: {_format_optional_value(summary.latest_active_evaluator_name)}",
-        )
-    )
+    return "\n".join((
+        "=== Morpion Bootstrap Run Summary ===",
+        "cycles: "
+        f"{summary.num_cycles} "
+        f"(train: {summary.num_train_cycles}, no-train: {summary.num_no_train_cycles})",
+        f"latest generation: {_format_optional_value(summary.latest_generation)}",
+        f"latest tree size: {_format_optional_value(summary.latest_tree_num_nodes)}",
+        f"latest certified record: {latest_record}",
+        f"latest frontier best: {latest_frontier}",
+        "latest frontier source: "
+        f"{_format_optional_value(summary.latest_frontier_source)}",
+        f"latest evaluator: {_format_optional_value(summary.latest_active_evaluator_name)}",
+    ))
 
 
 def _render_evaluator_selection_summary(
@@ -88,14 +86,12 @@ def _render_evaluator_selection_summary(
             f"  {evaluator_name}: {count}" for evaluator_name, count in sorted_counts
         )
 
-    return "\n".join(
-        (
-            "=== Evaluator Selection ===",
-            f"latest: {_format_optional_value(summary.latest_active_evaluator_name)}",
-            f"switches: {summary.num_switches}",
-            *usage_lines,
-        )
-    )
+    return "\n".join((
+        "=== Evaluator Selection ===",
+        f"latest: {_format_optional_value(summary.latest_active_evaluator_name)}",
+        f"switches: {summary.num_switches}",
+        *usage_lines,
+    ))
 
 
 def _render_record_progress_summary(data: MorpionBootstrapDashboardData) -> str:
@@ -104,13 +100,11 @@ def _render_record_progress_summary(data: MorpionBootstrapDashboardData) -> str:
     best_line = _format_best_record(
         summary.best_score, summary.first_cycle_reaching_best
     )
-    return "\n".join(
-        (
-            "=== Certified Record Progress ===",
-            f"latest: {_format_optional_value(summary.latest_score)}",
-            f"best: {best_line}",
-        )
-    )
+    return "\n".join((
+        "=== Certified Record Progress ===",
+        f"latest: {_format_optional_value(summary.latest_score)}",
+        f"best: {best_line}",
+    ))
 
 
 def _format_latest_record(score: int | None, total_points: int | None) -> str:

@@ -25,11 +25,7 @@ if TYPE_CHECKING:
 
     from atomheart.games.morpion.state import Point, Segment
 
-from coral.neural_networks.nn_model_type import NNModelType
-
-MORPION_ENTITY_TOKEN_MODEL_KIND: Final[str] = (
-    NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
-)
+MORPION_ENTITY_TOKEN_MODEL_KIND: Final[str] = "entity_token_transformer_value_net"
 MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION: Final[str] = "morpion_entity_tokens_v1"
 
 
@@ -196,13 +192,16 @@ class MorpionEntityTokenConverter:
             )
             for point in sorted(candidate_points - state.points)
         )
-        records.extend(
-            _MorpionEntityTokenRecord(
-                row=_edge_token(segment=segment, normalizer=normalizer),
-                segment=segment,
+        edge_records: list[_MorpionEntityTokenRecord] = []
+        for raw_segment in sorted(state.used_unit_segments, key=_segment_sort_key):
+            segment = canonical_segment(raw_segment)
+            edge_records.append(
+                _MorpionEntityTokenRecord(
+                    row=_edge_token(segment=segment, normalizer=normalizer),
+                    segment=segment,
+                )
             )
-            for segment in sorted(state.used_unit_segments, key=_segment_sort_key)
-        )
+        records.extend(edge_records)
         records.extend(
             _MorpionEntityTokenRecord(
                 row=_move_token(action=action, normalizer=normalizer),
@@ -340,6 +339,13 @@ def _segment_sort_key(
     )
 
 
+def canonical_segment(segment: Segment) -> Segment:
+    """Return a unit segment with its endpoints in canonical point order."""
+    point_a, point_b = segment
+    ordered_a, ordered_b = sorted((point_a, point_b))
+    return ordered_a, ordered_b
+
+
 def _missing_point_from_action(action: MorpionAction) -> Point:
     """Return the absent point represented by one raw Morpion action."""
     dir_index, x0, y0, missing_index = action
@@ -391,5 +397,6 @@ __all__ = [
     "MorpionEntityTokenConverter",
     "MorpionEntityTokenLayout",
     "MorpionEntityTokenType",
+    "canonical_segment",
     "is_morpion_entity_token_model_kind",
 ]

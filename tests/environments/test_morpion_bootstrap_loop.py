@@ -260,12 +260,10 @@ class FakeMorpionSearchRunner:
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
         _ = effective_runtime_config
-        self.load_calls.append(
-            (
-                None if tree_snapshot_path is None else str(tree_snapshot_path),
-                None if model_bundle_path is None else str(model_bundle_path),
-            )
-        )
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
         self.reevaluate_tree_calls.append(reevaluate_tree)
 
     def grow(self, max_growth_steps: int) -> None:
@@ -862,17 +860,15 @@ def test_run_state_loads_legacy_single_model_path(tmp_path: Path) -> None:
     """Older single-model run states should migrate to the keyed mapping."""
     path = tmp_path / "run_state.json"
     path.write_text(
-        json.dumps(
-            {
-                "generation": 2,
-                "cycle_index": 8,
-                "latest_tree_snapshot_path": "tree_exports/generation_000002.json",
-                "latest_rows_path": "rows/generation_000002.json",
-                "latest_model_bundle_path": "models/generation_000002",
-                "tree_size_at_last_save": 21,
-                "last_save_unix_s": 123.0,
-            }
-        ),
+        json.dumps({
+            "generation": 2,
+            "cycle_index": 8,
+            "latest_tree_snapshot_path": "tree_exports/generation_000002.json",
+            "latest_rows_path": "rows/generation_000002.json",
+            "latest_model_bundle_path": "models/generation_000002",
+            "tree_size_at_last_save": 21,
+            "last_save_unix_s": 123.0,
+        }),
         encoding="utf-8",
     )
 
@@ -899,44 +895,40 @@ def test_empty_evaluators_config_raises_explicitly() -> None:
 
 def test_select_active_evaluator_name_uses_lowest_loss() -> None:
     """The active evaluator should be selected by the smallest reported final loss."""
-    selected = select_active_evaluator_name(
-        {
-            "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                final_loss=0.5,
-                num_epochs=1,
-                num_samples=1,
-            ),
-            "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                final_loss=0.1,
-                num_epochs=1,
-                num_samples=1,
-            ),
-        }
-    )
+    selected = select_active_evaluator_name({
+        "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+            final_loss=0.5,
+            num_epochs=1,
+            num_samples=1,
+        ),
+        "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
+            final_loss=0.1,
+            num_epochs=1,
+            num_samples=1,
+        ),
+    })
 
     assert selected == "mlp"
 
 
 def test_select_active_evaluator_name_prefers_validation_loss() -> None:
     """Selection should use validation loss ahead of train/final loss."""
-    selected = select_active_evaluator_name(
-        {
-            "overfit": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                final_loss=0.1,
-                train_loss=0.1,
-                validation_loss=0.9,
-                num_epochs=1,
-                num_samples=4,
-            ),
-            "generalizes": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                final_loss=0.4,
-                train_loss=0.4,
-                validation_loss=0.2,
-                num_epochs=1,
-                num_samples=4,
-            ),
-        }
-    )
+    selected = select_active_evaluator_name({
+        "overfit": bootstrap_loop_module.MorpionEvaluatorMetrics(
+            final_loss=0.1,
+            train_loss=0.1,
+            validation_loss=0.9,
+            num_epochs=1,
+            num_samples=4,
+        ),
+        "generalizes": bootstrap_loop_module.MorpionEvaluatorMetrics(
+            final_loss=0.4,
+            train_loss=0.4,
+            validation_loss=0.2,
+            num_epochs=1,
+            num_samples=4,
+        ),
+    })
 
     assert selected == "generalizes"
 
@@ -944,39 +936,35 @@ def test_select_active_evaluator_name_prefers_validation_loss() -> None:
 def test_select_active_evaluator_name_rejects_missing_losses() -> None:
     """Selection should fail loudly if no evaluator reports a usable loss."""
     with pytest.raises(NoSelectableMorpionEvaluatorError):
-        select_active_evaluator_name(
-            {
-                "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                    final_loss=None,
-                    num_epochs=1,
-                    num_samples=1,
-                )
-            }
-        )
+        select_active_evaluator_name({
+            "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=None,
+                num_epochs=1,
+                num_samples=1,
+            )
+        })
 
 
 def test_select_active_evaluator_name_rejects_all_nonfinite_losses() -> None:
     """Selection should fail if every reported loss is missing or non-finite."""
     with pytest.raises(NoSelectableMorpionEvaluatorError):
-        select_active_evaluator_name(
-            {
-                "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                    final_loss=float("nan"),
-                    num_epochs=1,
-                    num_samples=1,
-                ),
-                "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                    final_loss=float("inf"),
-                    num_epochs=1,
-                    num_samples=1,
-                ),
-                "default": bootstrap_loop_module.MorpionEvaluatorMetrics(
-                    final_loss=None,
-                    num_epochs=1,
-                    num_samples=1,
-                ),
-            }
-        )
+        select_active_evaluator_name({
+            "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=float("nan"),
+                num_epochs=1,
+                num_samples=1,
+            ),
+            "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=float("inf"),
+                num_epochs=1,
+                num_samples=1,
+            ),
+            "default": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=None,
+                num_epochs=1,
+                num_samples=1,
+            ),
+        })
 
 
 def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:

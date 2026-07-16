@@ -118,13 +118,11 @@ class RestoreMemoryLogger:
             f"typed_checkpoint_referenced={_metric_value(typed_checkpoint_referenced)}",
         ]
         gc_counts = gc.get_count()
-        parts.extend(
-            [
-                f"gc_count0={gc_counts[0]}",
-                f"gc_count1={gc_counts[1]}",
-                f"gc_count2={gc_counts[2]}",
-            ]
-        )
+        parts.extend([
+            f"gc_count0={gc_counts[0]}",
+            f"gc_count1={gc_counts[1]}",
+            f"gc_count2={gc_counts[2]}",
+        ])
         raw_recursive_mb = self._recursive_size_mb(raw_payload)
         if raw_recursive_mb is not None:
             parts.append(f"raw_decoded_recursive_mb={_metric_value(raw_recursive_mb)}")

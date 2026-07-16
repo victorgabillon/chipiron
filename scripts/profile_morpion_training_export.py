@@ -98,7 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _time_call(function: Callable[[], _T]) -> tuple[_T, float]:
+def _time_call[T](function: Callable[[], _T]) -> tuple[_T, float]:
     """Return the function result plus wall-clock elapsed seconds."""
     started_at = perf_counter()
     result = function()
@@ -119,8 +119,9 @@ def _load_runtime_modules() -> dict[str, Any]:
     """Import runtime modules lazily so parser tests stay lightweight."""
     import anemone
     import atomheart
-    import chipiron
     from anemone.training_export import training_tree_snapshot_to_dict
+
+    import chipiron
     from chipiron.environments.morpion.bootstrap import (
         AnemoneMorpionSearchRunner,
         MorpionBootstrapPaths,
@@ -184,8 +185,7 @@ def _profile_training_export(
     runtime_tree = getattr(runtime, "tree", None)
     runtime_branch_count = getattr(runtime_tree, "branch_count", None)
     print(
-        "[profile] runtime nodes=%s branches=%s"
-        % (
+        "[profile] runtime nodes={} branches={}".format(
             runner.current_tree_size(),
             runtime_branch_count
             if isinstance(runtime_branch_count, int)
@@ -236,8 +236,7 @@ def _profile_training_export(
                 lambda: _write_json_dump(dumped_json, output_path)
             )
             print(
-                "[profile] phase=json_write elapsed_s=%.6f bytes=%s output=%s"
-                % (json_write_s, json_write_bytes, output_path)
+                f"[profile] phase=json_write elapsed_s={json_write_s:.6f} bytes={json_write_bytes} output={output_path}"
             )
         else:
             print("[profile] phase=json_write skipped=true")

@@ -589,12 +589,10 @@ class FakeDenseCheckpointStateResolver:
     __slots__ = ("_resolved_states", "state_payloads_by_node_id")
 
     def __init__(self) -> None:
-        self.state_payloads_by_node_id = DenseCheckpointPayloadStore(
-            [
-                FakeAnchorCheckpointStatePayload({"board": [1, 2, 3]}),
-                FakeDeltaCheckpointStatePayload({"move": 4}),
-            ]
-        )
+        self.state_payloads_by_node_id = DenseCheckpointPayloadStore([
+            FakeAnchorCheckpointStatePayload({"board": [1, 2, 3]}),
+            FakeDeltaCheckpointStatePayload({"move": 4}),
+        ])
         self._resolved_states = {}
 
 
@@ -1290,12 +1288,10 @@ def test_state_retention_by_node_status_counts_internal_and_frontier() -> None:
         FakeNodeEvaluation(terminal=True),
         node_id=3,
     )
-    selector = FakeLinooSelector(
-        {
-            2: FakeLinooNodeState(frontier_node, status="frontier"),
-            3: FakeLinooNodeState(terminal_node, status="opened"),
-        }
-    )
+    selector = FakeLinooSelector({
+        2: FakeLinooNodeState(frontier_node, status="frontier"),
+        3: FakeLinooNodeState(terminal_node, status="opened"),
+    })
 
     histogram = state_retention_by_node_status_histogram(
         [internal_node, frontier_node, terminal_node],
@@ -1389,12 +1385,10 @@ def test_node_evaluation_runtime_detail_histograms_with_fake_nodes() -> None:
 
 def test_linoo_state_histograms_with_fake_selector() -> None:
     """Linoo histograms should classify default and non-default states."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
 
     histograms = linoo_state_histograms(selector)
 
@@ -1414,12 +1408,10 @@ def test_linoo_state_histograms_with_fake_selector() -> None:
 
 def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
     """Linoo candidate diagnostics should expose heap shape and stale entries."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
 
     histogram = linoo_candidate_heap_histogram(selector, max_depth=None)
 
@@ -1435,12 +1427,10 @@ def test_linoo_candidate_heap_histogram_with_fake_selector() -> None:
 
 def test_linoo_selector_detail_histogram_reports_state_and_candidate_counts() -> None:
     """Linoo detail diagnostics should summarize states, heaps, and reachability."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
     selector._depth_stats_by_depth = {1: SimpleNamespace(total_nodes=2)}
     selector._frontier_node_ids_by_depth = {1: {2}}
 
@@ -1467,11 +1457,9 @@ def test_linoo_diagnostics_report_tree_reachability_when_present() -> None:
     """Linoo reachability flags should expose accidental tree references."""
     tree_node = FakeTreeNode()
     algorithm_node = FakeAlgorithmNode(tree_node, FakeNodeEvaluation())
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(algorithm_node, status="opened"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(algorithm_node, status="opened"),
+    })
     selector._candidates_by_depth = {1: [(0.1, algorithm_node, 1)]}
 
     state_histogram = linoo_state_histograms(selector)
@@ -1488,12 +1476,10 @@ def test_linoo_diagnostics_report_tree_reachability_when_present() -> None:
 
 def test_linoo_state_histograms_finds_nested_selector() -> None:
     """Linoo histograms should traverse composed selector wrappers."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
 
     histograms = linoo_state_histograms(FakeComposedSelector(selector))
 
@@ -1509,12 +1495,10 @@ def test_linoo_state_histograms_finds_nested_selector() -> None:
 
 def test_linoo_deep_breakdown_histograms_report_direct_fields() -> None:
     """Linoo deep breakdown should report direct selector fields safely."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
 
     histograms = linoo_deep_breakdown_histograms(selector, max_depth=None)
 
@@ -1533,12 +1517,10 @@ def test_linoo_deep_breakdown_histograms_report_direct_fields() -> None:
 
 def test_linoo_node_state_table_histogram_detects_table() -> None:
     """Linoo table breakdown should expose table and state totals."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(object(), status="opened"),
-            2: FakeLinooNodeState(object(), status="frontier"),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(object(), status="opened"),
+        2: FakeLinooNodeState(object(), status="frontier"),
+    })
 
     histogram = linoo_node_state_table_histogram(selector, max_depth=None)
 
@@ -1555,18 +1537,16 @@ def test_linoo_node_state_table_histogram_detects_table() -> None:
 
 def test_linoo_node_state_slots_histogram_samples_slots() -> None:
     """Linoo slot breakdown should sample state slots and classify values."""
-    selector = FakeLinooSelector(
-        {
-            1: FakeLinooNodeState(
-                FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
-                status="opened",
-            ),
-            2: FakeLinooNodeState(
-                FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
-                status="frontier",
-            ),
-        }
-    )
+    selector = FakeLinooSelector({
+        1: FakeLinooNodeState(
+            FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
+            status="opened",
+        ),
+        2: FakeLinooNodeState(
+            FakeAlgorithmNode(FakeTreeNode(), FakeNodeEvaluation()),
+            status="frontier",
+        ),
+    })
 
     histogram = linoo_node_state_slots_histogram(selector, max_depth=None)
 
@@ -1816,20 +1796,18 @@ def test_checkpoint_payload_shape_histogram_counts_fields_and_keys() -> None:
         resolver_id=1,
         owner_type="fake.Resolver",
         attr_name="state_payloads_by_node_id",
-        payloads=DenseCheckpointPayloadStore(
-            [
-                AnchorCheckpointStatePayload(
-                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
-                    state_summary={"is_terminal": False, "tag": 1},
-                ),
-                DeltaCheckpointStatePayload(
-                    state_parent_node_id=0,
-                    state_parent_branch=3,
-                    delta_ref={"move": [0, 0, 4, 0]},
-                    state_summary={"is_terminal": False, "tag": 2},
-                ),
-            ]
-        ),
+        payloads=DenseCheckpointPayloadStore([
+            AnchorCheckpointStatePayload(
+                anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                state_summary={"is_terminal": False, "tag": 1},
+            ),
+            DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=3,
+                delta_ref={"move": [0, 0, 4, 0]},
+                state_summary={"is_terminal": False, "tag": 2},
+            ),
+        ]),
         anchor_count=1,
         delta_count=1,
     )
@@ -1862,20 +1840,18 @@ def test_checkpoint_payload_shape_histogram_supports_dense_store_without_materia
 ):
     """Payload shape histogram should work on dense stores without calling get()."""
     resolver = SimpleNamespace(
-        state_payloads_by_node_id=DenseCheckpointPayloadStore(
-            [
-                AnchorCheckpointStatePayload(
-                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
-                    state_summary={"is_terminal": False, "tag": 1},
-                ),
-                DeltaCheckpointStatePayload(
-                    state_parent_node_id=0,
-                    state_parent_branch=3,
-                    delta_ref={"move": [0, 0, 4, 0]},
-                    state_summary={"is_terminal": False, "tag": 2},
-                ),
-            ]
-        )
+        state_payloads_by_node_id=DenseCheckpointPayloadStore([
+            AnchorCheckpointStatePayload(
+                anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                state_summary={"is_terminal": False, "tag": 1},
+            ),
+            DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=3,
+                delta_ref={"move": [0, 0, 4, 0]},
+                state_summary={"is_terminal": False, "tag": 2},
+            ),
+        ])
     )
     nodes = [
         FakeAlgorithmNode(
@@ -1909,20 +1885,18 @@ def test_checkpoint_state_roots_detail_histogram_supports_dense_store() -> None:
         resolver_id=1,
         owner_type="fake.Resolver",
         attr_name="state_payloads_by_node_id",
-        payloads=DenseCheckpointPayloadStore(
-            [
-                AnchorCheckpointStatePayload(
-                    anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
-                    state_summary={"is_terminal": False, "tag": 1},
-                ),
-                DeltaCheckpointStatePayload(
-                    state_parent_node_id=0,
-                    state_parent_branch=3,
-                    delta_ref={"move": [0, 0, 4, 0]},
-                    state_summary={"is_terminal": False, "tag": 2},
-                ),
-            ]
-        ),
+        payloads=DenseCheckpointPayloadStore([
+            AnchorCheckpointStatePayload(
+                anchor_ref={"variant": "5T", "played_moves": [[0, 0, 4, 0]]},
+                state_summary={"is_terminal": False, "tag": 1},
+            ),
+            DeltaCheckpointStatePayload(
+                state_parent_node_id=0,
+                state_parent_branch=3,
+                delta_ref={"move": [0, 0, 4, 0]},
+                state_summary={"is_terminal": False, "tag": 2},
+            ),
+        ]),
         anchor_count=1,
         delta_count=1,
     )

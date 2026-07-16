@@ -306,6 +306,7 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
             num_epochs=1,
             learning_rate=1e-3,
             shuffle=False,
+            device="cpu",
         )
     )
 
@@ -386,6 +387,7 @@ def test_training_metrics_use_full_validation_mean_not_last_minibatch(
             shuffle=False,
             validation_fraction=0.5,
             validation_seed=validation_seed,
+            device="cpu",
         )
     )
 
@@ -440,6 +442,7 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
                 learning_rate=1e-3,
                 shuffle=False,
                 validation_fraction=0.25,
+                device="cpu",
             ),
             row_chunk_size=3,
         )
@@ -512,6 +515,7 @@ def test_train_morpion_entity_token_regressor_streaming_tiny_jsonl(
                 entity_n_head=4,
                 entity_n_layer=1,
                 entity_dim_feedforward=32,
+                device="cpu",
             ),
             row_chunk_size=2,
             max_rows=4,
@@ -565,6 +569,7 @@ def test_training_metrics_small_dataset_does_not_require_validation(
             learning_rate=1e-3,
             shuffle=False,
             validation_fraction=0.5,
+            device="cpu",
         )
     )
 
@@ -606,6 +611,7 @@ def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
             num_epochs=1,
             learning_rate=1e-3,
             shuffle=False,
+            device="cpu",
         )
     )
 
@@ -646,6 +652,7 @@ def test_reduced_subset_training_round_trip_supports_linear_and_mlp(
             hidden_sizes=hidden_sizes,
             feature_subset_name=subset.name,
             feature_names=subset.feature_names,
+            device="cpu",
         )
     )
 

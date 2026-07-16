@@ -658,14 +658,12 @@ def test_target_change_metrics_are_computed_between_iterations() -> None:
 
 def test_principal_variation_families_from_selected_child() -> None:
     """PV families should group nodes by final selected-child representative."""
-    families = principal_variation_families_from_selected_child(
-        {
-            "0": "2",
-            "1": None,
-            "2": "3",
-            "3": None,
-        }
-    )
+    families = principal_variation_families_from_selected_child({
+        "0": "2",
+        "1": None,
+        "2": "3",
+        "3": None,
+    })
 
     assert families["3"] == ("0", "2", "3")
     assert families["1"] == ("1",)

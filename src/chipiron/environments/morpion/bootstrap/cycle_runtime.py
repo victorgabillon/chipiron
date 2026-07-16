@@ -395,34 +395,24 @@ def resolve_runtime_restore_path(
         RUNTIME_CHECKPOINT_METADATA_KEY
     )
     if isinstance(metadata_runtime_checkpoint, str):
-        candidates.append(
-            (
-                "run_state.metadata.runtime_checkpoint_path",
-                paths.resolve_work_dir_path(metadata_runtime_checkpoint),
-            )
-        )
+        candidates.append((
+            "run_state.metadata.runtime_checkpoint_path",
+            paths.resolve_work_dir_path(metadata_runtime_checkpoint),
+        ))
     if run_state.generation > 0:
-        candidates.append(
-            (
-                "canonical search_checkpoints path for latest generation",
-                paths.runtime_checkpoint_path_for_generation(run_state.generation),
-            )
-        )
-        candidates.append(
-            (
-                "canonical sharded search_checkpoints path for latest generation",
-                paths.sharded_runtime_checkpoint_path_for_generation(
-                    run_state.generation
-                ),
-            )
-        )
+        candidates.append((
+            "canonical search_checkpoints path for latest generation",
+            paths.runtime_checkpoint_path_for_generation(run_state.generation),
+        ))
+        candidates.append((
+            "canonical sharded search_checkpoints path for latest generation",
+            paths.sharded_runtime_checkpoint_path_for_generation(run_state.generation),
+        ))
     if not run_state.latest_model_bundle_paths:
-        candidates.append(
-            (
-                "run_state.latest_tree_snapshot_path",
-                paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
-            )
-        )
+        candidates.append((
+            "run_state.latest_tree_snapshot_path",
+            paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+        ))
 
     seen_paths: set[Path] = set()
     first_incompatible_error: IncompatibleMorpionResumeArtifactError | None = None

@@ -160,12 +160,10 @@ class FakeMorpionSearchRunner:
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
         _ = reevaluate_tree
-        self.load_calls.append(
-            (
-                None if tree_snapshot_path is None else str(tree_snapshot_path),
-                None if model_bundle_path is None else str(model_bundle_path),
-            )
-        )
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
         self.runtime_config_calls.append(effective_runtime_config)
 
     def grow(self, max_growth_steps: int) -> None:

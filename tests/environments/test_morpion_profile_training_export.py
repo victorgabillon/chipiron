@@ -73,24 +73,22 @@ def test_time_call_returns_result_and_elapsed() -> None:
 
 def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> None:
     """CLI parsing should accept the standalone training export script shape."""
-    args = profile_module.build_parser().parse_args(
-        [
-            "--mode",
-            "load",
-            "--work-dir",
-            str(tmp_path),
-            "--checkpoint",
-            str(tmp_path / "generation_000001.json"),
-            "--output",
-            str(tmp_path / "training_export.json"),
-            "--profile-output",
-            str(tmp_path / "training_export.prof"),
-            "--top",
-            "12",
-            "--dump-json",
-            "--full-save",
-        ]
-    )
+    args = profile_module.build_parser().parse_args([
+        "--mode",
+        "load",
+        "--work-dir",
+        str(tmp_path),
+        "--checkpoint",
+        str(tmp_path / "generation_000001.json"),
+        "--output",
+        str(tmp_path / "training_export.json"),
+        "--profile-output",
+        str(tmp_path / "training_export.prof"),
+        "--top",
+        "12",
+        "--dump-json",
+        "--full-save",
+    ])
 
     assert args.mode == "load"
     assert args.work_dir == tmp_path
@@ -121,22 +119,20 @@ def test_profile_script_smoke_load_mode_without_json_dump(
     runner.save_checkpoint(checkpoint_path)
 
     profile_output = tmp_path / "morpion_training_export.prof"
-    exit_code = profile_module.main(
-        [
-            "--mode",
-            "load",
-            "--work-dir",
-            str(tmp_path),
-            "--checkpoint",
-            str(checkpoint_path),
-            "--profile-output",
-            str(profile_output),
-            "--build-only",
-            "--no-dump-json",
-            "--top",
-            "5",
-        ]
-    )
+    exit_code = profile_module.main([
+        "--mode",
+        "load",
+        "--work-dir",
+        str(tmp_path),
+        "--checkpoint",
+        str(checkpoint_path),
+        "--profile-output",
+        str(profile_output),
+        "--build-only",
+        "--no-dump-json",
+        "--top",
+        "5",
+    ])
 
     captured = capsys.readouterr()
 

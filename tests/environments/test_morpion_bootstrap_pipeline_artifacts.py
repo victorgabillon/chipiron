@@ -423,15 +423,13 @@ def test_pipeline_external_seed_active_model_roundtrip(tmp_path: Path) -> None:
 
 def test_pipeline_active_model_old_schema_defaults_to_local_training() -> None:
     """Older active-model artifacts should remain valid."""
-    active_model = pipeline_artifacts_module.pipeline_active_model_from_dict(
-        {
-            "generation": 3,
-            "evaluator_name": "linear",
-            "model_bundle_path": "models/generation_000003/linear",
-            "updated_at_utc": "2026-04-28T12:00:00Z",
-            "metadata": {"selection_policy": "lowest_final_loss"},
-        }
-    )
+    active_model = pipeline_artifacts_module.pipeline_active_model_from_dict({
+        "generation": 3,
+        "evaluator_name": "linear",
+        "model_bundle_path": "models/generation_000003/linear",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"selection_policy": "lowest_final_loss"},
+    })
 
     assert active_model.source == "local_training"
     assert active_model.source_generation == 3
@@ -474,14 +472,12 @@ def test_pipeline_training_status_roundtrip(tmp_path: Path) -> None:
 
 def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() -> None:
     """Older training-status payloads should load safely with empty evaluator results."""
-    loaded = pipeline_training_status_from_dict(
-        {
-            "generation": 1,
-            "status": "done",
-            "updated_at_utc": "2026-04-28T12:00:00Z",
-            "metadata": {"source": "old-format"},
-        }
-    )
+    loaded = pipeline_training_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"source": "old-format"},
+    })
 
     assert loaded.generation == 1
     assert loaded.status == "done"
@@ -493,20 +489,18 @@ def test_pipeline_training_status_old_evaluator_result_defaults_validation_field
     None
 ):
     """Old evaluator results without validation metrics should still deserialize."""
-    loaded = pipeline_training_status_from_dict(
-        {
-            "generation": 1,
-            "status": "done",
-            "updated_at_utc": "2026-04-28T12:00:00Z",
-            "evaluator_results": {
-                "linear": {
-                    "final_loss": 0.75,
-                    "elapsed_s": 1.25,
-                    "model_bundle_path": "models/generation_000001/linear",
-                }
-            },
-        }
-    )
+    loaded = pipeline_training_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "evaluator_results": {
+            "linear": {
+                "final_loss": 0.75,
+                "elapsed_s": 1.25,
+                "model_bundle_path": "models/generation_000001/linear",
+            }
+        },
+    })
 
     result = loaded.evaluator_results["linear"]
     assert result.final_loss == 0.75
@@ -559,14 +553,12 @@ def test_pipeline_dataset_status_roundtrip(tmp_path: Path) -> None:
 
 def test_pipeline_dataset_status_from_old_payload_defaults_optional_statuses() -> None:
     """Older dataset-status payloads should load safely without record/frontier fields."""
-    loaded = pipeline_dataset_status_from_dict(
-        {
-            "generation": 1,
-            "status": "done",
-            "updated_at_utc": "2026-04-28T12:00:00Z",
-            "metadata": {"source": "old-format"},
-        }
-    )
+    loaded = pipeline_dataset_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"source": "old-format"},
+    })
 
     assert loaded.generation == 1
     assert loaded.status == "done"

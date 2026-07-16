@@ -189,37 +189,32 @@ def _average_ms(total_s: float, count: int) -> float:
 
 def _format_training_export_profile(profile: MorpionTrainingExportProfile) -> str:
     """Format one stable aggregate training-export profile log line."""
-    return " ".join(
+    return " ".join((
+        f"node_count={profile.node_count}",
+        f"state_ref_count={profile.state_ref_count}",
+        f"payload_build_s={_metric_value(profile.payload_build_s)}",
+        f"node_traversal_s={_metric_value(profile.node_traversal_s)}",
         (
-            f"node_count={profile.node_count}",
-            f"state_ref_count={profile.state_ref_count}",
-            f"payload_build_s={_metric_value(profile.payload_build_s)}",
-            f"node_traversal_s={_metric_value(profile.node_traversal_s)}",
-            (
-                "state_ref_serialization_s="
-                f"{_metric_value(profile.state_ref_serialization_s)}"
-            ),
-            f"node_payload_total_s={_metric_value(profile.node_payload_total_s)}",
-            f"node_metadata_total_s={_metric_value(profile.node_metadata_total_s)}",
-            f"node_value_total_s={_metric_value(profile.node_value_total_s)}",
-            f"node_children_total_s={_metric_value(profile.node_children_total_s)}",
-            (
-                "node_state_access_total_s="
-                f"{_metric_value(profile.node_state_access_total_s)}"
-            ),
-            (
-                "state_ref_conversion_total_s="
-                f"{_metric_value(profile.state_ref_conversion_total_s)}"
-            ),
-            (
-                "checkpoint_backed_state_handles="
-                f"{profile.checkpoint_backed_state_handles}"
-            ),
-            f"reusable_checkpoint_payloads={profile.reusable_checkpoint_payloads}",
-            f"plain_or_materialized_states={profile.plain_or_materialized_states}",
-            f"state_access_calls={profile.state_access_calls}",
-        )
-    )
+            "state_ref_serialization_s="
+            f"{_metric_value(profile.state_ref_serialization_s)}"
+        ),
+        f"node_payload_total_s={_metric_value(profile.node_payload_total_s)}",
+        f"node_metadata_total_s={_metric_value(profile.node_metadata_total_s)}",
+        f"node_value_total_s={_metric_value(profile.node_value_total_s)}",
+        f"node_children_total_s={_metric_value(profile.node_children_total_s)}",
+        (
+            "node_state_access_total_s="
+            f"{_metric_value(profile.node_state_access_total_s)}"
+        ),
+        (
+            "state_ref_conversion_total_s="
+            f"{_metric_value(profile.state_ref_conversion_total_s)}"
+        ),
+        (f"checkpoint_backed_state_handles={profile.checkpoint_backed_state_handles}"),
+        f"reusable_checkpoint_payloads={profile.reusable_checkpoint_payloads}",
+        f"plain_or_materialized_states={profile.plain_or_materialized_states}",
+        f"state_access_calls={profile.state_access_calls}",
+    ))
 
 
 def _format_training_export_profile_rates(profile: MorpionTrainingExportProfile) -> str:
@@ -236,15 +231,13 @@ def _format_training_export_profile_rates(profile: MorpionTrainingExportProfile)
         profile.state_ref_conversion_total_s,
         profile.state_ref_count,
     )
-    return " ".join(
-        (
-            f"state_ref_avg_ms={state_ref_avg_ms:.6f}",
-            f"state_access_avg_ms={node_state_access_avg_ms:.6f}",
-            f"node_state_access_avg_ms={node_state_access_avg_ms:.6f}",
-            f"conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
-            f"state_ref_conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
-        )
-    )
+    return " ".join((
+        f"state_ref_avg_ms={state_ref_avg_ms:.6f}",
+        f"state_access_avg_ms={node_state_access_avg_ms:.6f}",
+        f"node_state_access_avg_ms={node_state_access_avg_ms:.6f}",
+        f"conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
+        f"state_ref_conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
+    ))
 
 
 def log_training_export_profile(profile: MorpionTrainingExportProfile) -> None:

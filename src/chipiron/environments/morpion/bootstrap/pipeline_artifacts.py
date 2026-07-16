@@ -36,18 +36,20 @@ MorpionPipelineTrainingStatus = Literal[
 MorpionPipelineStageName = Literal["dataset", "training"]
 MorpionPipelineActiveModelSource = Literal["local_training", "external_seed"]
 
-_DATASET_STATUSES: frozenset[str] = frozenset(
-    {
-        "not_started",
-        "exporting_tree",
-        "extracting_rows",
-        "done",
-        "failed",
-    }
-)
-_TRAINING_STATUSES: frozenset[str] = frozenset(
-    {"not_started", "training", "selecting", "done", "failed"}
-)
+_DATASET_STATUSES: frozenset[str] = frozenset({
+    "not_started",
+    "exporting_tree",
+    "extracting_rows",
+    "done",
+    "failed",
+})
+_TRAINING_STATUSES: frozenset[str] = frozenset({
+    "not_started",
+    "training",
+    "selecting",
+    "done",
+    "failed",
+})
 _STAGE_NAMES: frozenset[str] = frozenset({"dataset", "training"})
 _ACTIVE_MODEL_SOURCES: frozenset[str] = frozenset({"local_training", "external_seed"})
 

@@ -52,14 +52,10 @@ def _format_text_table(
         " ".join(value.rjust(widths[column]) for column, value in enumerate(row))
         for row in rows
     )
-    return "\n".join(
-        (
-            " ".join(
-                header.rjust(widths[column]) for column, header in enumerate(headers)
-            ),
-            *formatted_rows,
-        )
-    )
+    return "\n".join((
+        " ".join(header.rjust(widths[column]) for column, header in enumerate(headers)),
+        *formatted_rows,
+    ))
 
 
 def resolve_selected_int(

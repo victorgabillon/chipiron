@@ -400,65 +400,53 @@ def make_toy_model(config: ToyRunConfig, feature_dim: int) -> nn.Module:
 def built_in_toy_tree(case: ToyCaseName) -> ToyTree:
     """Build one of the controlled toy tree cases."""
     if case == "A_stable_terminal_wins":
-        return _make_tree(
-            (
-                ToyNode(0, None, (1, 2), (1.0, 0.0, 0.0)),
-                ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
-                ToyNode(2, 0, (), (0.0, 0.0, 0.0)),
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, (1, 2), (1.0, 0.0, 0.0)),
+            ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
+            ToyNode(2, 0, (), (0.0, 0.0, 0.0)),
+        ))
     if case == "B_optimistic_frontier_poison":
-        return _make_tree(
-            (
-                ToyNode(0, None, (1, 2), (1.0, 0.0, 0.0)),
-                ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
-                ToyNode(2, 0, (), (0.0, 0.0, 1.0)),
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, (1, 2), (1.0, 0.0, 0.0)),
+            ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
+            ToyNode(2, 0, (), (0.0, 0.0, 1.0)),
+        ))
     if case == "C_many_frontier_outliers":
         frontier_nodes = tuple(
             ToyNode(node_id, 0, (), (0.0, float(node_id) / 20.0, 1.0))
             for node_id in range(2, 18)
         )
-        return _make_tree(
-            (
-                ToyNode(0, None, tuple(range(1, 18)), (1.0, 0.0, 0.0)),
-                ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
-                *frontier_nodes,
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, tuple(range(1, 18)), (1.0, 0.0, 0.0)),
+            ToyNode(1, 0, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
+            *frontier_nodes,
+        ))
     if case == "D_deep_terminal_vs_frontier":
-        return _make_tree(
-            (
-                ToyNode(0, None, (1, 4), (1.0, 0.0, 0.0)),
-                ToyNode(1, 0, (2,), (0.0, 0.25, 0.0)),
-                ToyNode(2, 1, (3,), (0.0, 0.5, 0.0)),
-                ToyNode(3, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
-                ToyNode(4, 0, (), (0.0, 0.1, 1.0)),
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, (1, 4), (1.0, 0.0, 0.0)),
+            ToyNode(1, 0, (2,), (0.0, 0.25, 0.0)),
+            ToyNode(2, 1, (3,), (0.0, 0.5, 0.0)),
+            ToyNode(3, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
+            ToyNode(4, 0, (), (0.0, 0.1, 1.0)),
+        ))
     if case == "E_two_level_mixed":
-        return _make_tree(
-            (
-                ToyNode(0, None, (1, 2, 3), (1.0, 0.0, 0.0)),
-                ToyNode(1, 0, (4, 5), (0.0, 0.2, 0.0)),
-                ToyNode(2, 0, (6, 7), (0.0, 0.4, 0.0)),
-                ToyNode(3, 0, (), (0.0, 0.1, 1.0)),
-                ToyNode(4, 1, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
-                ToyNode(5, 1, (), (0.0, 0.0, 1.0)),
-                ToyNode(6, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=-1.0),
-                ToyNode(7, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=0.5),
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, (1, 2, 3), (1.0, 0.0, 0.0)),
+            ToyNode(1, 0, (4, 5), (0.0, 0.2, 0.0)),
+            ToyNode(2, 0, (6, 7), (0.0, 0.4, 0.0)),
+            ToyNode(3, 0, (), (0.0, 0.1, 1.0)),
+            ToyNode(4, 1, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=1.0),
+            ToyNode(5, 1, (), (0.0, 0.0, 1.0)),
+            ToyNode(6, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=-1.0),
+            ToyNode(7, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=0.5),
+        ))
     if case == "F_linear_compositional_vicious_circle":
-        return _make_tree(
-            (
-                ToyNode(0, None, (1, 2), (0.0, 1.0, 0.0)),
-                ToyNode(1, 0, (), (1.0, 0.0, 0.0), is_terminal=True, exact_value=1.0),
-                ToyNode(2, 0, (3,), (0.0, 0.0, 1.0)),
-                ToyNode(3, 2, (), (0.0, 1.0, 1.0)),
-            )
-        )
+        return _make_tree((
+            ToyNode(0, None, (1, 2), (0.0, 1.0, 0.0)),
+            ToyNode(1, 0, (), (1.0, 0.0, 0.0), is_terminal=True, exact_value=1.0),
+            ToyNode(2, 0, (3,), (0.0, 0.0, 1.0)),
+            ToyNode(3, 2, (), (0.0, 1.0, 1.0)),
+        ))
     raise ValueError(f"Unknown toy tree case: {case!r}.")
 
 
@@ -985,23 +973,21 @@ def compare_strategies(
     for strategy_name, config in strategies:
         result = run_toy_tree_sanity(config)
         final_metric = result.metrics[-1]
-        comparison.append(
-            {
-                "strategy": strategy_name,
-                "final_root_target": final_metric.root_target,
-                "final_root_prediction": final_metric.root_prediction_after,
-                "max_target_drift": max(
-                    metric.max_abs_target_drift_all for metric in result.metrics
-                ),
-                "max_prediction_drift": max(
-                    metric.max_abs_prediction_drift_all for metric in result.metrics
-                ),
-                "diverged": any(metric.diverged for metric in result.metrics),
-                "root_argmax_history_short": _short_history(
-                    metric.argmax_child_id_at_root for metric in result.metrics
-                ),
-            }
-        )
+        comparison.append({
+            "strategy": strategy_name,
+            "final_root_target": final_metric.root_target,
+            "final_root_prediction": final_metric.root_prediction_after,
+            "max_target_drift": max(
+                metric.max_abs_target_drift_all for metric in result.metrics
+            ),
+            "max_prediction_drift": max(
+                metric.max_abs_prediction_drift_all for metric in result.metrics
+            ),
+            "diverged": any(metric.diverged for metric in result.metrics),
+            "root_argmax_history_short": _short_history(
+                metric.argmax_child_id_at_root for metric in result.metrics
+            ),
+        })
     _print_comparison(comparison)
     return tuple(comparison)
 

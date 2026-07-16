@@ -691,23 +691,21 @@ def test_old_run_state_without_frontier_field_still_loads_safely(
     """Legacy run-state payloads should still load cleanly without frontier status."""
     path = tmp_path / "run_state.json"
     path.write_text(
-        json.dumps(
-            {
-                "generation": 3,
-                "cycle_index": 17,
-                "tree_size_at_last_save": 42,
-                "last_save_unix_s": 1234.5,
-                "latest_record_status": {
-                    "variant": "5T",
-                    "initial_pattern": "greek_cross",
-                    "initial_point_count": 36,
-                    "current_best_moves_since_start": 18,
-                    "current_best_total_points": 54,
-                    "current_best_is_exact": True,
-                    "current_best_source": "snapshot_exact_node",
-                },
-            }
-        ),
+        json.dumps({
+            "generation": 3,
+            "cycle_index": 17,
+            "tree_size_at_last_save": 42,
+            "last_save_unix_s": 1234.5,
+            "latest_record_status": {
+                "variant": "5T",
+                "initial_pattern": "greek_cross",
+                "initial_point_count": 36,
+                "current_best_moves_since_start": 18,
+                "current_best_total_points": 54,
+                "current_best_is_exact": True,
+                "current_best_source": "snapshot_exact_node",
+            },
+        }),
         encoding="utf-8",
     )
 

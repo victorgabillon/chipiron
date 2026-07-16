@@ -282,36 +282,30 @@ def _write_manifest_with_sharded_snapshot(
         encoding="utf-8",
     )
     snapshot_path.write_text(
-        json.dumps(
-            {
-                "generation": generation,
-                "root_node_id": snapshot.root_node_id,
-                "node_count": len(snapshot.nodes),
-                "new_node_count": len(snapshot.nodes),
-                "node_shard_path": node_shard_path.relative_to(root).as_posix(),
-                "update_shard_path": update_shard_path.relative_to(root).as_posix(),
-            }
-        ),
+        json.dumps({
+            "generation": generation,
+            "root_node_id": snapshot.root_node_id,
+            "node_count": len(snapshot.nodes),
+            "new_node_count": len(snapshot.nodes),
+            "node_shard_path": node_shard_path.relative_to(root).as_posix(),
+            "update_shard_path": update_shard_path.relative_to(root).as_posix(),
+        }),
         encoding="utf-8",
     )
     (root / "manifest.json").write_text(
-        json.dumps(
-            {
-                "latest_generation": generation,
-                "generation_manifests": {str(generation): snapshot_path.name},
-                "node_index_path": "node_index.json",
-            }
-        ),
+        json.dumps({
+            "latest_generation": generation,
+            "generation_manifests": {str(generation): snapshot_path.name},
+            "node_index_path": "node_index.json",
+        }),
         encoding="utf-8",
     )
     (root / "node_index.json").write_text(
-        json.dumps(
-            {
-                "node_id_to_creation_generation": {
-                    node.node_id: generation for node in snapshot.nodes
-                }
+        json.dumps({
+            "node_id_to_creation_generation": {
+                node.node_id: generation for node in snapshot.nodes
             }
-        ),
+        }),
         encoding="utf-8",
     )
     save_pipeline_manifest(

@@ -130,7 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _time_call(function: Callable[[], _T]) -> tuple[_T, float]:
+def _time_call[T](function: Callable[[], _T]) -> tuple[_T, float]:
     """Return the function result plus wall-clock elapsed seconds."""
     started_at = perf_counter()
     result = function()
@@ -221,12 +221,7 @@ def _load_runner_for_mode(
 
     bootstrap_paths.ensure_directories()
     print(
-        "[profile] mode=grow work_dir=%s target_nodes=%s growth_steps_per_batch=%s"
-        % (
-            bootstrap_paths.work_dir,
-            args.target_nodes,
-            args.growth_steps_per_batch,
-        )
+        f"[profile] mode=grow work_dir={bootstrap_paths.work_dir} target_nodes={args.target_nodes} growth_steps_per_batch={args.growth_steps_per_batch}"
     )
     runner.load_or_create(
         tree_snapshot_path=None,
@@ -261,8 +256,7 @@ def _grow_runner_until_target(
         tree = getattr(runtime, "tree", None)
         branch_count = getattr(tree, "branch_count", None)
         print(
-            "[grow] nodes=%s branches=%s elapsed_s=%.6f"
-            % (
+            "[grow] nodes={} branches={} elapsed_s={:.6f}".format(
                 current_node_count,
                 branch_count if isinstance(branch_count, int) else "unknown",
                 perf_counter() - started_at,
@@ -292,8 +286,7 @@ def _profile_checkpoint_save(
     runtime_tree = getattr(runtime, "tree", None)
     runtime_branch_count = getattr(runtime_tree, "branch_count", None)
     print(
-        "[profile] runtime nodes=%s branches=%s"
-        % (
+        "[profile] runtime nodes={} branches={}".format(
             runner.current_tree_size(),
             runtime_branch_count
             if isinstance(runtime_branch_count, int)
@@ -361,19 +354,7 @@ def _profile_checkpoint_save(
         else:
             print(f"[profile] phase=payload_to_jsonable elapsed_s={jsonable_s:.6f}")
         print(
-            "[profile] phase=checkpoint_write elapsed_s=%.6f format=%s encoder=%s json_encode_s=%.6f compress_s=%s write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s output=%s"
-            % (
-                write_elapsed_s,
-                write_stats.file_format,
-                write_stats.encoder,
-                write_stats.json_encode_s,
-                _format_optional_number(write_stats.compress_s),
-                _format_optional_number(write_stats.write_s),
-                write_stats.compressed_bytes,
-                write_stats.uncompressed_bytes,
-                _format_optional_number(write_stats.compression_ratio),
-                write_stats.output_path,
-            )
+            f"[profile] phase=checkpoint_write elapsed_s={write_elapsed_s:.6f} format={write_stats.file_format} encoder={write_stats.encoder} json_encode_s={write_stats.json_encode_s:.6f} compress_s={_format_optional_number(write_stats.compress_s)} write_s={_format_optional_number(write_stats.write_s)} bytes={write_stats.compressed_bytes} uncompressed_bytes={write_stats.uncompressed_bytes} compression_ratio={_format_optional_number(write_stats.compression_ratio)} output={write_stats.output_path}"
         )
     else:
         rss_after_asdict_mb = None
@@ -389,14 +370,7 @@ def _profile_checkpoint_save(
     rss_after_total_mb = restore_memory_logging_module.current_rss_mb()
     print(f"[profile] phase=total elapsed_s={total_s:.6f}")
     print(
-        "[profile-memory] rss_before_mb=%s rss_after_payload_build_mb=%s rss_after_asdict_mb=%s rss_after_json_dump_mb=%s rss_after_total_mb=%s"
-        % (
-            _format_optional_number(rss_before_mb),
-            _format_optional_number(rss_after_payload_build_mb),
-            _format_optional_number(rss_after_asdict_mb),
-            _format_optional_number(rss_after_json_dump_mb),
-            _format_optional_number(rss_after_total_mb),
-        )
+        f"[profile-memory] rss_before_mb={_format_optional_number(rss_before_mb)} rss_after_payload_build_mb={_format_optional_number(rss_after_payload_build_mb)} rss_after_asdict_mb={_format_optional_number(rss_after_asdict_mb)} rss_after_json_dump_mb={_format_optional_number(rss_after_json_dump_mb)} rss_after_total_mb={_format_optional_number(rss_after_total_mb)}"
     )
 
     profiler.dump_stats(str(profile_output))
@@ -433,8 +407,7 @@ def _profile_checkpoint_save(
         prefix="checkpoint",
     )
     print(
-        "[profile-checkpoint] nodes=%s branches=%s anchors=%s deltas=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s"
-        % (
+        "[profile-checkpoint] nodes={} branches={} anchors={} deltas={} checkpoint_selector_state_present={} checkpoint_selector_state_type={} checkpoint_selector_state_version={}".format(
             node_count,
             runtime_branch_count
             if isinstance(runtime_branch_count, int)

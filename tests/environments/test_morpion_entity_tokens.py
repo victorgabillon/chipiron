@@ -51,6 +51,7 @@ from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+from coral.neural_networks.nn_model_type import NNModelType
 from valanga.evaluations import Certainty
 
 from chipiron.environments.morpion.bootstrap.runtime.runner import (
@@ -76,6 +77,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MorpionEntityTokenType,
     MorpionRegressorArgs,
     build_morpion_regressor,
+    canonical_segment,
     load_morpion_model_bundle,
     save_morpion_model_bundle,
 )
@@ -207,6 +209,37 @@ def test_entity_token_converter_contract() -> None:
     assert torch.all(tensor[0, 1:4] == 0.0)
 
 
+def test_entity_token_model_kind_matches_coral() -> None:
+    """Chipiron's dependency-light model-kind literal should match Coral's enum."""
+    assert (
+        NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
+        == MORPION_ENTITY_TOKEN_MODEL_KIND
+    )
+
+
+def test_canonical_segment_preserves_geometric_direction() -> None:
+    """Canonicalization should preserve ascending-diagonal semantics."""
+    diag_up = ((0, 0), (1, 1))
+    reversed_diag_up = ((1, 1), (0, 0))
+
+    canonical = canonical_segment(diag_up)
+
+    assert canonical_segment(reversed_diag_up) == canonical
+    assert _direction_index_for_segment(canonical) == 2
+    assert _direction_index_for_segment(canonical_segment(reversed_diag_up)) == 2
+
+
+def test_canonical_segment_preserves_down_diagonal_direction() -> None:
+    """Canonicalization should preserve descending-diagonal semantics."""
+    diag_down = ((0, 1), (1, 0))
+    reversed_diag_down = ((1, 0), (0, 1))
+
+    canonical = canonical_segment(diag_down)
+
+    assert canonical_segment(reversed_diag_down) == canonical
+    assert _direction_index_for_segment(canonical) == 3
+
+
 def test_entity_token_layout_indices_and_truncation() -> None:
     """Layout maps should identify only surviving DOT, EDGE, and MOVE rows."""
     state = _make_one_step_state()
@@ -221,6 +254,14 @@ def test_entity_token_layout_indices_and_truncation() -> None:
     for index in layout.edge_index_by_segment.values():
         assert 0 <= index < layout.tensor.shape[0]
         assert layout.tensor[index, MorpionEntityTokenType.EDGE.value] == 1.0
+    segment, segment_index = next(iter(layout.edge_index_by_segment.items()))
+    reversed_segment = segment[1], segment[0]
+    assert canonical_segment(segment) == segment
+    assert canonical_segment(reversed_segment) == segment
+    assert (
+        layout.edge_index_by_segment[canonical_segment(reversed_segment)]
+        == segment_index
+    )
     for index in layout.move_index_by_action.values():
         assert 0 <= index < layout.tensor.shape[0]
         assert layout.tensor[index, MorpionEntityTokenType.MOVE.value] == 1.0

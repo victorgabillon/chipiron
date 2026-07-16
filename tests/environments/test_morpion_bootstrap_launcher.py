@@ -380,32 +380,33 @@ def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
 
 def test_launcher_args_default_checkpoint_logging_is_concise(tmp_path: Path) -> None:
     """Launcher CLI should keep checkpoint debug logs disabled by default."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        ["--work-dir", str(tmp_path)]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
 
     assert launcher_args.verbose_checkpoint_logs is False
 
 
 def test_launcher_args_can_enable_verbose_checkpoint_logs(tmp_path: Path) -> None:
     """Launcher CLI should expose a checkpoint-debug flag for restore/build logs."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        ["--work-dir", str(tmp_path), "--verbose-checkpoint-logs"]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--verbose-checkpoint-logs",
+    ])
 
     assert launcher_args.verbose_checkpoint_logs is True
 
 
 def test_launcher_args_parse_training_export_mode(tmp_path: Path) -> None:
     """Launcher CLI should expose the training export mode selector."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--training-export-mode",
-            "sharded",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-export-mode",
+        "sharded",
+    ])
 
     assert launcher_args.bootstrap_args.training_export_mode == "sharded"
     assert launcher_args.training_export_mode_explicit is True
@@ -413,14 +414,12 @@ def test_launcher_args_parse_training_export_mode(tmp_path: Path) -> None:
 
 def test_launcher_args_parse_training_evaluator_names(tmp_path: Path) -> None:
     """Launcher CLI should expose a comma-separated training evaluator subset."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--training-evaluator-names",
-            "linear_5, mlp_5",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-evaluator-names",
+        "linear_5, mlp_5",
+    ])
 
     assert launcher_args.bootstrap_args.training_evaluator_names == (
         "linear_5",
@@ -430,19 +429,17 @@ def test_launcher_args_parse_training_evaluator_names(tmp_path: Path) -> None:
 
 def test_launcher_args_parse_training_debug_controls(tmp_path: Path) -> None:
     """Launcher CLI should expose fast training-stage debug controls."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--training-max-rows",
-            "10000",
-            "--training-row-chunk-size",
-            "2048",
-            "--evaluator-diagnostics-max-rows",
-            "25",
-            "--skip-evaluator-diagnostics",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-max-rows",
+        "10000",
+        "--training-row-chunk-size",
+        "2048",
+        "--evaluator-diagnostics-max-rows",
+        "25",
+        "--skip-evaluator-diagnostics",
+    ])
 
     assert launcher_args.bootstrap_args.training_max_rows == 10_000
     assert launcher_args.bootstrap_args.training_row_chunk_size == 2048
@@ -454,50 +451,46 @@ def test_launcher_args_default_evaluator_diagnostics_max_rows(
     tmp_path: Path,
 ) -> None:
     """Evaluator diagnostics should be bounded by default."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
 
     assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 60
 
 
 def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
     """Launcher CLI should expose opt-in growth memory profiling controls."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--growth-memory-profile",
-            "--growth-memory-profile-top-n",
-            "7",
-            "--growth-memory-profile-sample-nodes",
-            "123",
-            "--growth-memory-profile-recursive",
-            "--growth-memory-profile-recursive-max-objects",
-            "456",
-            "--growth-memory-profile-recursive-max-depth",
-            "256",
-            "--growth-memory-profile-recursive-context-node-cap",
-            "321",
-            "--growth-memory-profile-recursive-events",
-            "after_checkpoint_load,before_growth",
-            "--growth-memory-profile-recursive-complete-map",
-            "--diagnostic-stop-after-growth",
-            "--growth-state-eviction-policy",
-            "cold_expanded",
-            "--growth-state-eviction-recent-window",
-            "7",
-            "--growth-state-rematerialization-cache-size",
-            "11",
-            "--growth-state-eviction-scan-interval-steps",
-            "13",
-            "--growth-state-eviction-scan-node-limit",
-            "17",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-memory-profile",
+        "--growth-memory-profile-top-n",
+        "7",
+        "--growth-memory-profile-sample-nodes",
+        "123",
+        "--growth-memory-profile-recursive",
+        "--growth-memory-profile-recursive-max-objects",
+        "456",
+        "--growth-memory-profile-recursive-max-depth",
+        "256",
+        "--growth-memory-profile-recursive-context-node-cap",
+        "321",
+        "--growth-memory-profile-recursive-events",
+        "after_checkpoint_load,before_growth",
+        "--growth-memory-profile-recursive-complete-map",
+        "--diagnostic-stop-after-growth",
+        "--growth-state-eviction-policy",
+        "cold_expanded",
+        "--growth-state-eviction-recent-window",
+        "7",
+        "--growth-state-rematerialization-cache-size",
+        "11",
+        "--growth-state-eviction-scan-interval-steps",
+        "13",
+        "--growth-state-eviction-scan-node-limit",
+        "17",
+    ])
 
     assert launcher_args.bootstrap_args.growth_memory_profile is True
     assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 7
@@ -537,12 +530,10 @@ def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
 
 def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
     """Growth memory profiling should be disabled by default."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
 
     assert launcher_args.bootstrap_args.growth_memory_profile is False
     assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 20
@@ -585,20 +576,18 @@ def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
 
 def test_launcher_args_parse_growth_loop_controls(tmp_path: Path) -> None:
     """Launcher CLI should expose explicit bounded growth-loop controls."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--growth-additional-branch-budget",
-            "500000",
-            "--growth-save-and-exit",
-            "--growth-skip-training-export",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--growth-additional-branch-budget",
+        "500000",
+        "--growth-save-and-exit",
+        "--growth-skip-training-export",
+    ])
 
     assert launcher_args.bootstrap_args.growth_additional_branch_budget == 500000
     assert launcher_args.bootstrap_args.growth_save_and_exit is True
@@ -610,14 +599,12 @@ def test_launcher_args_reject_non_positive_additional_branch_budget(
 ) -> None:
     """Additional branch budgets must be positive."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--growth-additional-branch-budget",
-                "0",
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-additional-branch-budget",
+            "0",
+        ])
 
 
 def test_launcher_args_reject_additional_budget_with_explicit_absolute_limit(
@@ -625,16 +612,14 @@ def test_launcher_args_reject_additional_budget_with_explicit_absolute_limit(
 ) -> None:
     """Users should choose either relative or absolute branch budget mode."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--growth-additional-branch-budget",
-                "500",
-                "--tree-branch-limit",
-                "1000",
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-additional-branch-budget",
+            "500",
+            "--tree-branch-limit",
+            "1000",
+        ])
 
 
 def test_launcher_args_reject_save_and_exit_with_diagnostic_stop(
@@ -642,28 +627,24 @@ def test_launcher_args_reject_save_and_exit_with_diagnostic_stop(
 ) -> None:
     """Grow-save-exit conflicts with the diagnostic no-save path."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--growth-save-and-exit",
-                "--diagnostic-stop-after-growth",
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-save-and-exit",
+            "--diagnostic-stop-after-growth",
+        ])
 
 
 def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
     tmp_path: Path,
 ) -> None:
     """CLI should expose the C4d frontier-cold state eviction policy."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--growth-state-eviction-policy",
-            "frontier_cold",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-state-eviction-policy",
+        "frontier_cold",
+    ])
 
     assert launcher_args.bootstrap_args.growth_state_eviction_policy == "frontier_cold"
 
@@ -672,16 +653,14 @@ def test_launcher_args_parse_growth_state_eviction_delta_payload_options(
     tmp_path: Path,
 ) -> None:
     """CLI should expose the C5 bounded delta live-eviction payload controls."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--growth-state-eviction-payload-mode",
-            "delta_when_safe",
-            "--growth-state-eviction-delta-chain-max-depth",
-            "7",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-state-eviction-payload-mode",
+        "delta_when_safe",
+        "--growth-state-eviction-delta-chain-max-depth",
+        "7",
+    ])
 
     assert (
         launcher_args.bootstrap_args.growth_state_eviction_payload_mode
@@ -694,14 +673,12 @@ def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(
     tmp_path: Path,
 ) -> None:
     """Launcher CLI should preserve an explicit uncapped recursive max depth."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--growth-memory-profile-recursive-max-depth",
-            "none",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-memory-profile-recursive-max-depth",
+        "none",
+    ])
 
     assert (
         launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
@@ -718,14 +695,12 @@ def test_launcher_args_reject_invalid_growth_memory_profile_recursive_max_depth(
 ) -> None:
     """Launcher CLI should fail clearly for invalid recursive max depth values."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--growth-memory-profile-recursive-max-depth",
-                "invalid",
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-memory-profile-recursive-max-depth",
+            "invalid",
+        ])
 
     captured = capsys.readouterr()
     assert "expected 'none' or a non-negative integer" in captured.err
@@ -735,16 +710,14 @@ def test_launcher_args_parse_candidate_checkpoint_load_headroom(
     tmp_path: Path,
 ) -> None:
     """Launcher CLI should expose candidate checkpoint load forecast controls."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--candidate-checkpoint-load-headroom-factor",
-            "42",
-            "--candidate-checkpoint-load-min-headroom-mb",
-            "1234",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--candidate-checkpoint-load-headroom-factor",
+        "42",
+        "--candidate-checkpoint-load-min-headroom-mb",
+        "1234",
+    ])
 
     assert launcher_args.bootstrap_args.candidate_checkpoint_load_headroom_factor == 42
     assert (
@@ -755,14 +728,12 @@ def test_launcher_args_parse_candidate_checkpoint_load_headroom(
 
 def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:
     """Launcher CLI should expose the artifact-pipeline available-RAM guard."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--min-available-ram-mb",
-            "5000",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--min-available-ram-mb",
+        "5000",
+    ])
 
     assert launcher_args.bootstrap_args.min_available_ram_mb == 5000
     assert launcher_args.min_available_ram_mb_explicit is True
@@ -877,34 +848,32 @@ def test_launcher_cli_main_parses_and_dispatches(
         _fake_run,
     )
 
-    exit_code = launcher_module.main(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--evaluator-family",
-            CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
-            "--max-cycles",
-            "2",
-            "--dashboard",
-            "--max-growth-steps-per-cycle",
-            "12",
-            "--save-after-seconds",
-            "22.5",
-            "--save-after-tree-growth-factor",
-            "1.5",
-            "--max-rows",
-            "33",
-            "--no-use-backed-up-value",
-            "--evaluator-update-policy",
-            "reevaluate_all",
-            "--pipeline-mode",
-            "single_process",
-            "--training-export-mode",
-            "both",
-            "--tree-branch-limit",
-            "48",
-        ]
-    )
+    exit_code = launcher_module.main([
+        "--work-dir",
+        str(tmp_path),
+        "--evaluator-family",
+        CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        "--max-cycles",
+        "2",
+        "--dashboard",
+        "--max-growth-steps-per-cycle",
+        "12",
+        "--save-after-seconds",
+        "22.5",
+        "--save-after-tree-growth-factor",
+        "1.5",
+        "--max-rows",
+        "33",
+        "--no-use-backed-up-value",
+        "--evaluator-update-policy",
+        "reevaluate_all",
+        "--pipeline-mode",
+        "single_process",
+        "--training-export-mode",
+        "both",
+        "--tree-branch-limit",
+        "48",
+    ])
 
     assert exit_code == 0
     assert len(captured_args) == 1
@@ -928,9 +897,10 @@ def test_launcher_cli_main_parses_and_dispatches(
 
 def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
     """CLI defaults should preserve current attach-only single-process behavior."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        ["--work-dir", str(tmp_path)]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
 
     assert (
         launcher_args.bootstrap_args.evaluator_update_policy
@@ -949,20 +919,18 @@ def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
 
 def test_launcher_args_from_cli_parses_rollout_flags(tmp_path: Path) -> None:
     """CLI rollout flags should populate persisted bootstrap search config."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--rollout-after-opening",
-            "--rollout-max-extra-steps",
-            "none",
-            "--rollout-action-selector-kind",
-            "random_openable",
-            "--rollout-random-seed",
-            "7",
-            "--rollout-stop-on-existing-node",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "none",
+        "--rollout-action-selector-kind",
+        "random_openable",
+        "--rollout-random-seed",
+        "7",
+        "--rollout-stop-on-existing-node",
+    ])
 
     rollout = launcher_args.bootstrap_args.search.rollout
     assert rollout.enabled is True
@@ -984,15 +952,13 @@ def test_launcher_args_from_cli_accepts_traversing_rollout_selectors(
     action_selector_kind: str,
 ) -> None:
     """CLI rollout selector choices should include traversal-capable selectors."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--rollout-after-opening",
-            "--rollout-action-selector-kind",
-            action_selector_kind,
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-action-selector-kind",
+        action_selector_kind,
+    ])
 
     assert (
         launcher_args.bootstrap_args.search.rollout.action_selector_kind
@@ -1002,15 +968,13 @@ def test_launcher_args_from_cli_accepts_traversing_rollout_selectors(
 
 def test_launcher_args_from_cli_parses_bounded_rollout_limit(tmp_path: Path) -> None:
     """Numeric rollout max-extra-steps values should parse as integers."""
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--rollout-after-opening",
-            "--rollout-max-extra-steps",
-            "5",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "5",
+    ])
 
     assert launcher_args.bootstrap_args.search.rollout.max_extra_steps == 5
 
@@ -1020,14 +984,12 @@ def test_launcher_args_from_cli_rejects_negative_rollout_limit(
 ) -> None:
     """Negative rollout max-extra-steps should fail parser validation."""
     with pytest.raises(SystemExit):
-        launcher_module.launcher_args_from_cli(
-            [
-                "--work-dir",
-                str(tmp_path),
-                "--rollout-max-extra-steps",
-                "-1",
-            ]
-        )
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--rollout-max-extra-steps",
+            "-1",
+        ])
 
 
 @pytest.mark.parametrize("persisted_training_export_mode", ["flat", "both"])
@@ -1048,9 +1010,10 @@ def test_resume_uses_persisted_training_export_mode_when_cli_omits_it(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        ["--work-dir", str(tmp_path)]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
     assert (
@@ -1079,14 +1042,12 @@ def test_resume_explicit_training_export_mode_override_hits_compatibility_check(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
 
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--training-export-mode",
-            "sharded",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-export-mode",
+        "sharded",
+    ])
 
     with pytest.raises(
         IncompatibleStageBootstrapConfigError, match="training_export_mode"
@@ -1107,17 +1068,15 @@ def test_growth_stage_adopts_rollout_enabled_on_existing_config(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--rollout-after-opening",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
@@ -1145,24 +1104,22 @@ def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--rollout-after-opening",
-            "--rollout-max-extra-steps",
-            "50",
-            "--rollout-action-selector-kind",
-            "random_legal_prefer_openable",
-            "--rollout-random-seed",
-            "123",
-            "--rollout-stop-on-existing-node",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "50",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+        "--rollout-random-seed",
+        "123",
+        "--rollout-stop-on-existing-node",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
     rollout = startup_status.bootstrap_config.search.rollout
@@ -1192,16 +1149,14 @@ def test_non_growth_stage_without_rollout_flags_inherits_persisted_rollout(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
@@ -1224,23 +1179,21 @@ def test_non_growth_stage_with_matching_rollout_flags_is_accepted(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--rollout-after-opening",
-            "--rollout-max-extra-steps",
-            "none",
-            "--rollout-action-selector-kind",
-            "random_legal_prefer_openable",
-            "--rollout-random-seed",
-            "0",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "none",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+        "--rollout-random-seed",
+        "0",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
@@ -1266,19 +1219,17 @@ def test_non_growth_stage_with_explicit_rollout_selector_mismatch_is_rejected(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "dataset_worker",
-            "--rollout-after-opening",
-            "--rollout-action-selector-kind",
-            "random_legal_prefer_openable",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--rollout-after-opening",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+    ])
 
     with pytest.raises(
         IncompatibleStageBootstrapConfigError,
@@ -1301,19 +1252,17 @@ def test_growth_rollout_adoption_does_not_allow_dataset_drift(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--max-rows",
-            "33",
-            "--rollout-after-opening",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--max-rows",
+        "33",
+        "--rollout-after-opening",
+    ])
 
     with pytest.raises(IncompatibleStageBootstrapConfigError, match="max_rows"):
         launcher_module._collect_launcher_startup_status(launcher_args)
@@ -1333,17 +1282,15 @@ def test_growth_adopted_rollout_config_reaches_runner_args(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--rollout-after-opening",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+    ])
     created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
 
     def _fake_runner_constructor(
@@ -1380,16 +1327,14 @@ def test_growth_resume_keeps_persisted_tree_branch_limit_without_cli_override(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
     summary = launcher_module._render_launcher_startup_summary(
@@ -1417,18 +1362,16 @@ def test_growth_resume_allows_explicit_tree_branch_limit_override(
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "growth",
-            "--tree-branch-limit",
-            "128",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--tree-branch-limit",
+        "128",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
     summary = launcher_module._render_launcher_startup_summary(
@@ -1705,19 +1648,17 @@ def test_launcher_allows_append_only_evaluator_catalog_extension(
         bootstrap_config_from_args(persisted_args),
         paths.bootstrap_config_path,
     )
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "training_worker",
-            "--evaluator-family",
-            CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
-            "--allow-evaluator-catalog-extension",
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "training_worker",
+        "--evaluator-family",
+        CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+        "--allow-evaluator-catalog-extension",
+    ])
 
     startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
 
@@ -1743,18 +1684,16 @@ def test_launcher_requires_opt_in_for_evaluator_catalog_extension(
         bootstrap_config_from_args(persisted_args),
         paths.bootstrap_config_path,
     )
-    launcher_args = launcher_module.launcher_args_from_cli(
-        [
-            "--work-dir",
-            str(tmp_path),
-            "--pipeline-mode",
-            "artifact_pipeline",
-            "--pipeline-stage",
-            "training_worker",
-            "--evaluator-family",
-            CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
-        ]
-    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "training_worker",
+        "--evaluator-family",
+        CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+    ])
 
     with pytest.raises(ValueError, match="allow-evaluator-catalog-extension"):
         launcher_module._collect_launcher_startup_status(launcher_args)

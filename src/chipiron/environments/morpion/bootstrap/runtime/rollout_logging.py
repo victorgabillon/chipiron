@@ -290,29 +290,23 @@ def _format_rollout_execution(
     openable_actions = _numeric_path_values(path_reports, "end_openable_action_count")
     fragments: list[str] = []
     if path_count <= 5:
-        fragments.extend(
-            (
-                f"start_depths={_format_list_token(_path_values(path_reports, 'start_depth'))}",
-                f"end_depths={_format_list_token(_path_values(path_reports, 'end_depth'))}",
-                f"depth_deltas={_format_list_token(depth_delta_values)}",
-                f"end_node_ids={_format_list_token(_path_values(path_reports, 'end_node_id'))}",
-            )
-        )
+        fragments.extend((
+            f"start_depths={_format_list_token(_path_values(path_reports, 'start_depth'))}",
+            f"end_depths={_format_list_token(_path_values(path_reports, 'end_depth'))}",
+            f"depth_deltas={_format_list_token(depth_delta_values)}",
+            f"end_node_ids={_format_list_token(_path_values(path_reports, 'end_node_id'))}",
+        ))
     else:
-        fragments.extend(
-            (
-                f"start_depth={_format_numeric_summary_or_none(start_depths)}",
-                f"end_depth={_format_numeric_summary_or_none(end_depths)}",
-                f"depth_delta={_format_numeric_summary_or_none(depth_deltas)}",
-            )
-        )
-    fragments.extend(
-        (
-            f"stops={_format_stop_counts(stop_counts)}",
-            f"end_terminal={_rollout_terminal_count(path_reports)}/{path_count}",
-            f"end_legal_actions={_format_numeric_summary_or_none(legal_actions)}",
-        )
-    )
+        fragments.extend((
+            f"start_depth={_format_numeric_summary_or_none(start_depths)}",
+            f"end_depth={_format_numeric_summary_or_none(end_depths)}",
+            f"depth_delta={_format_numeric_summary_or_none(depth_deltas)}",
+        ))
+    fragments.extend((
+        f"stops={_format_stop_counts(stop_counts)}",
+        f"end_terminal={_rollout_terminal_count(path_reports)}/{path_count}",
+        f"end_legal_actions={_format_numeric_summary_or_none(legal_actions)}",
+    ))
     if openable_actions:
         fragments.append(
             f"end_openable_actions={_format_numeric_summary(openable_actions)}"

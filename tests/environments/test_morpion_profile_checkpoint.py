@@ -79,26 +79,24 @@ def test_time_call_returns_result_and_elapsed() -> None:
 
 def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> None:
     """CLI parsing should accept the standalone script's supported arguments."""
-    args = profile_module.build_parser().parse_args(
-        [
-            "--mode",
-            "load",
-            "--work-dir",
-            str(tmp_path),
-            "--checkpoint",
-            str(tmp_path / "generation_000001.json"),
-            "--output",
-            str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
-            "--profile-output",
-            str(tmp_path / "checkpoint.prof"),
-            "--top",
-            "12",
-            "--dump-json",
-            "--checkpoint-format",
-            "json-zst",
-            "--profile-full-save",
-        ]
-    )
+    args = profile_module.build_parser().parse_args([
+        "--mode",
+        "load",
+        "--work-dir",
+        str(tmp_path),
+        "--checkpoint",
+        str(tmp_path / "generation_000001.json"),
+        "--output",
+        str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
+        "--profile-output",
+        str(tmp_path / "checkpoint.prof"),
+        "--top",
+        "12",
+        "--dump-json",
+        "--checkpoint-format",
+        "json-zst",
+        "--profile-full-save",
+    ])
 
     assert args.mode == "load"
     assert args.work_dir == tmp_path
@@ -117,24 +115,22 @@ def test_profile_script_smoke_grow_mode_without_json_dump(
     _prepend_runtime_source_paths(monkeypatch)
     profile_output = tmp_path / "morpion_checkpoint.prof"
 
-    exit_code = profile_module.main(
-        [
-            "--mode",
-            "grow",
-            "--work-dir",
-            str(tmp_path),
-            "--target-nodes",
-            "20",
-            "--growth-steps-per-batch",
-            "5",
-            "--profile-output",
-            str(profile_output),
-            "--profile-build-only",
-            "--no-dump-json",
-            "--top",
-            "5",
-        ]
-    )
+    exit_code = profile_module.main([
+        "--mode",
+        "grow",
+        "--work-dir",
+        str(tmp_path),
+        "--target-nodes",
+        "20",
+        "--growth-steps-per-batch",
+        "5",
+        "--profile-output",
+        str(profile_output),
+        "--profile-build-only",
+        "--no-dump-json",
+        "--top",
+        "5",
+    ])
 
     captured = capsys.readouterr()
 
@@ -195,18 +191,16 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         ),
     )
 
-    args = profile_module.build_parser().parse_args(
-        [
-            "--mode",
-            "grow",
-            "--work-dir",
-            str(tmp_path),
-            "--output",
-            str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
-            "--dump-json",
-            "--profile-build-only",
-        ]
-    )
+    args = profile_module.build_parser().parse_args([
+        "--mode",
+        "grow",
+        "--work-dir",
+        str(tmp_path),
+        "--output",
+        str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
+        "--dump-json",
+        "--profile-build-only",
+    ])
     modules = {
         "checkpoint_io_module": fake_checkpoint_io_module,
         "restore_memory_logging_module": fake_restore_memory_logging_module,

@@ -992,19 +992,17 @@ def build_disk_usage_summary(work_dir: str | Path) -> DiskUsageSummary:
         DiskUsageRow("tree_exports", recursive_path_num_bytes(paths.tree_snapshot_dir)),
         DiskUsageRow(
             "history_logs_status",
-            _combined_file_group_num_bytes(
-                (
-                    paths.history_jsonl_path,
-                    paths.latest_status_path,
-                    paths.run_state_path,
-                    paths.bootstrap_config_path,
-                    paths.control_path,
-                    paths.launcher_pid_path,
-                    paths.launcher_process_state_path,
-                    paths.launcher_stdout_log_path,
-                    paths.launcher_stderr_log_path,
-                )
-            ),
+            _combined_file_group_num_bytes((
+                paths.history_jsonl_path,
+                paths.latest_status_path,
+                paths.run_state_path,
+                paths.bootstrap_config_path,
+                paths.control_path,
+                paths.launcher_pid_path,
+                paths.launcher_process_state_path,
+                paths.launcher_stdout_log_path,
+                paths.launcher_stderr_log_path,
+            )),
         ),
     )
     breakdown_rows = tuple(

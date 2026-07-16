@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
+import anemone.checkpoints.io as checkpoint_io_module
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
     default_checkpoint_file_suffix,
@@ -13,10 +14,13 @@ from anemone.checkpoints import (
     resolve_latest_generation_checkpoint_path,
     write_checkpoint_json_payload,
 )
-import anemone.checkpoints.io as checkpoint_io_module
+
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     prune_generation_files,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_checkpoint_json_payload_roundtrip_supports_plain_and_compressed(

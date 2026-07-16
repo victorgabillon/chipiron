@@ -162,23 +162,21 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
         parts.append(f"cache={metrics.cache}")
     if metrics.runtime_checkpoint_format is not None:
         parts.append(f"runtime_checkpoint_format={metrics.runtime_checkpoint_format}")
-    parts.extend(
-        [
-            f"payload_build_s={_metric_value(metrics.payload_build_s)}",
-            f"jsonable_s={_metric_value(metrics.jsonable_s)}",
-            f"json_encode_s={_metric_value(metrics.json_encode_s)}",
-            f"compress_s={_metric_value(metrics.compress_s)}",
-            f"write_s={_metric_value(metrics.write_s)}",
-            f"json_load_s={_metric_value(metrics.json_load_s)}",
-            f"payload_decode_s={_metric_value(metrics.payload_decode_s)}",
-            f"runtime_rebuild_s={_metric_value(metrics.runtime_rebuild_s)}",
-            f"total_s={_metric_value(metrics.total_s)}",
-            f"uncompressed_bytes={_metric_value(metrics.uncompressed_bytes)}",
-            f"compression_ratio={_metric_value(metrics.compression_ratio)}",
-            f"rss_before_mb={_metric_value(metrics.rss_before_mb)}",
-            f"rss_after_mb={_metric_value(metrics.rss_after_mb)}",
-        ]
-    )
+    parts.extend([
+        f"payload_build_s={_metric_value(metrics.payload_build_s)}",
+        f"jsonable_s={_metric_value(metrics.jsonable_s)}",
+        f"json_encode_s={_metric_value(metrics.json_encode_s)}",
+        f"compress_s={_metric_value(metrics.compress_s)}",
+        f"write_s={_metric_value(metrics.write_s)}",
+        f"json_load_s={_metric_value(metrics.json_load_s)}",
+        f"payload_decode_s={_metric_value(metrics.payload_decode_s)}",
+        f"runtime_rebuild_s={_metric_value(metrics.runtime_rebuild_s)}",
+        f"total_s={_metric_value(metrics.total_s)}",
+        f"uncompressed_bytes={_metric_value(metrics.uncompressed_bytes)}",
+        f"compression_ratio={_metric_value(metrics.compression_ratio)}",
+        f"rss_before_mb={_metric_value(metrics.rss_before_mb)}",
+        f"rss_after_mb={_metric_value(metrics.rss_after_mb)}",
+    ])
     LOGGER.info("[checkpoint-metrics] %s", " ".join(parts))
 
 

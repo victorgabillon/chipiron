@@ -212,22 +212,20 @@ def _exclusive_components(context: RecursiveProfileContext) -> tuple[ProfileRoot
         roots.append(("selector_linoo_state", context.selector))
     if context.checkpoint_roots:
         roots.append(("checkpoint_state_roots", context.checkpoint_roots))
-    roots.extend(
-        [
-            ("algorithm_node_shells", nodes),
-            ("tree_node_shells", tree_nodes),
-            ("tree_node_parent_links", parent_links),
-            ("tree_node_child_links", child_links),
-            ("tree_node_unopened_links", unopened_links),
-            ("state_handles", state_handles),
-            ("node_eval_shells", node_evaluations),
-            ("node_eval_values", eval_values),
-            ("node_eval_runtime_states", eval_runtime_states),
-            ("node_eval_policy_objective", eval_misc),
-            ("branch_keys_ordering_keys", branch_keys),
-            ("state_representations", state_representations),
-        ]
-    )
+    roots.extend([
+        ("algorithm_node_shells", nodes),
+        ("tree_node_shells", tree_nodes),
+        ("tree_node_parent_links", parent_links),
+        ("tree_node_child_links", child_links),
+        ("tree_node_unopened_links", unopened_links),
+        ("state_handles", state_handles),
+        ("node_eval_shells", node_evaluations),
+        ("node_eval_values", eval_values),
+        ("node_eval_runtime_states", eval_runtime_states),
+        ("node_eval_policy_objective", eval_misc),
+        ("branch_keys_ordering_keys", branch_keys),
+        ("state_representations", state_representations),
+    ])
     if context.evaluator_roots:
         roots.append(("evaluator_model_runtime", context.evaluator_roots))
     if context.runtime is not None:

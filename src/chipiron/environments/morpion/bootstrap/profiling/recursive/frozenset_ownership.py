@@ -250,14 +250,12 @@ def _finalize_frozenset_ownership_histogram(
     morpion_state_field_refs = Counter[str]()
 
     base_ignored_referrer_ids = set(ignored_referrer_ids)
-    base_ignored_referrer_ids.update(
-        {
-            id(accumulator),
-            id(accumulator.len_bucket_counts),
-            id(accumulator.sampled_frozensets),
-            id(base_ignored_referrer_ids),
-        }
-    )
+    base_ignored_referrer_ids.update({
+        id(accumulator),
+        id(accumulator.len_bucket_counts),
+        id(accumulator.sampled_frozensets),
+        id(base_ignored_referrer_ids),
+    })
 
     for frozen_set in accumulator.sampled_frozensets:
         iteration_ignored_referrer_ids = set(base_ignored_referrer_ids)

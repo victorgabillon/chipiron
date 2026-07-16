@@ -203,7 +203,6 @@ __all__ = [
     "effective_runtime_config_sha256",
     "effective_runtime_config_to_dict",
     "entity_token_transformer_small_morpion_evaluator_spec",
-    "entity_token_transformer_small_morpion_evaluator_spec",
     "evaluator_loss_series_by_name",
     "evaluator_metrics_from_dict",
     "evaluator_metrics_to_dict",

@@ -305,27 +305,25 @@ def test_launcher_parser_accepts_memory_diagnostics_flags(
         launcher = importlib.import_module(
             "chipiron.environments.morpion.bootstrap.launcher"
         )
-        parsed = launcher.launcher_args_from_cli(
-            [
-                "--work-dir",
-                "/tmp/morpion-memory",
-                "--memory-diagnostics",
-                "--memory-diagnostics-gc-growth",
-                "--memory-diagnostics-tracemalloc",
-                "--memory-diagnostics-torch-tensors",
-                "--memory-diagnostics-referrers",
-                "--memory-diagnostics-referrer-type-pattern",
-                "example.Payload",
-                "--memory-diagnostics-referrer-type-pattern",
-                "example.OtherPayload",
-                "--memory-diagnostics-referrer-max-objects-per-type",
-                "3",
-                "--memory-diagnostics-referrer-max-depth",
-                "4",
-                "--memory-diagnostics-top-n",
-                "7",
-            ]
-        )
+        parsed = launcher.launcher_args_from_cli([
+            "--work-dir",
+            "/tmp/morpion-memory",
+            "--memory-diagnostics",
+            "--memory-diagnostics-gc-growth",
+            "--memory-diagnostics-tracemalloc",
+            "--memory-diagnostics-torch-tensors",
+            "--memory-diagnostics-referrers",
+            "--memory-diagnostics-referrer-type-pattern",
+            "example.Payload",
+            "--memory-diagnostics-referrer-type-pattern",
+            "example.OtherPayload",
+            "--memory-diagnostics-referrer-max-objects-per-type",
+            "3",
+            "--memory-diagnostics-referrer-max-depth",
+            "4",
+            "--memory-diagnostics-top-n",
+            "7",
+        ])
     finally:
         sys.modules.pop("chipiron.environments.morpion.bootstrap.launcher", None)
 

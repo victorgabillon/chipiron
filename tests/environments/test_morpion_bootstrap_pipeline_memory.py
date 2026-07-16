@@ -31,14 +31,12 @@ from chipiron.environments.morpion.bootstrap.pipeline_memory import (
 
 def test_available_ram_mb_parses_meminfo_text() -> None:
     """MemAvailable should be parsed from Linux /proc/meminfo-style content."""
-    meminfo = "\n".join(
-        (
-            "MemTotal:       32768000 kB",
-            "MemFree:         1024000 kB",
-            "MemAvailable:    5120000 kB",
-            "Buffers:          128000 kB",
-        )
-    )
+    meminfo = "\n".join((
+        "MemTotal:       32768000 kB",
+        "MemFree:         1024000 kB",
+        "MemAvailable:    5120000 kB",
+        "Buffers:          128000 kB",
+    ))
 
     assert _available_ram_mb_from_meminfo_text(meminfo) == 5000.0
 
