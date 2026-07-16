@@ -9,16 +9,17 @@ from typing import cast
 from coral.chi_nn import ChiNN
 from torch import Tensor, nn
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+    is_morpion_entity_token_model_kind,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
     MORPION_FEATURE_SCHEMA,
     MorpionFeatureSubset,
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    is_morpion_entity_token_transformer_model_kind,
 )
 
 MORPION_INPUT_DIM = full_morpion_feature_subset().dimension
@@ -32,20 +33,20 @@ class MorpionRegressorArgs:
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
     feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
-    graph_max_tokens: int = 1536
-    graph_input_feature_dim: int = MORPION_GRAPH_TOKEN_FEATURE_DIM
-    graph_d_model: int = 64
-    graph_n_head: int = 4
-    graph_n_layer: int = 2
-    graph_dim_feedforward: int = 256
-    graph_dropout_ratio: float = 0.0
-    graph_pooling: str = "value_token"
-    graph_output_tanh: bool = False
+    entity_max_tokens: int = 1536
+    entity_input_feature_dim: int = MORPION_ENTITY_TOKEN_FEATURE_DIM
+    entity_d_model: int = 64
+    entity_n_head: int = 4
+    entity_n_layer: int = 2
+    entity_dim_feedforward: int = 256
+    entity_dropout_ratio: float = 0.0
+    entity_pooling: str = "value_token"
+    entity_output_tanh: bool = False
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
-        if is_morpion_entity_token_transformer_model_kind(self.model_kind):
-            _validate_graph_transformer_args(self)
+        if is_morpion_entity_token_model_kind(self.model_kind):
+            _validate_entity_token_transformer_value_net_args(self)
         subset = resolve_morpion_feature_subset(
             feature_subset_name=self.feature_subset_name,
             feature_names=None if not self.feature_names else self.feature_names,
@@ -64,8 +65,8 @@ class MorpionRegressorArgs:
     @property
     def input_dim(self) -> int:
         """Return the model input width."""
-        if is_morpion_entity_token_transformer_model_kind(self.model_kind):
-            return self.graph_input_feature_dim
+        if is_morpion_entity_token_model_kind(self.model_kind):
+            return self.entity_input_feature_dim
         return self.feature_subset.dimension
 
 
@@ -89,82 +90,87 @@ class MissingMorpionHiddenDimError(MissingMorpionHiddenSizesError):
     """Backward-compatible alias for older callers expecting the old error name."""
 
 
-class InvalidMorpionGraphRegressorArgsError(ValueError):
-    """Raised when graph-transformer regressor args are invalid."""
+class InvalidMorpionEntityTokenRegressorArgsError(ValueError):
+    """Raised when entity-token regressor args are invalid."""
 
     @classmethod
     def invalid_input_feature_dim(
         cls,
         expected_dim: int,
-    ) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph input feature dimension error."""
+    ) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity input feature dimension error."""
         return cls(
-            f"graph_input_feature_dim must equal {expected_dim} for graph_tokens_v1."
+            "entity_input_feature_dim must equal "
+            f"{expected_dim} for {MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION}."
         )
 
     @classmethod
-    def invalid_max_tokens(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph max-token-count error."""
-        return cls("graph_max_tokens must be >= 2.")
+    def invalid_max_tokens(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity max-token-count error."""
+        return cls("entity_max_tokens must be >= 1.")
 
     @classmethod
-    def invalid_d_model(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph transformer width error."""
-        return cls("graph_d_model must be > 0.")
+    def invalid_d_model(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity transformer width error."""
+        return cls("entity_d_model must be > 0.")
 
     @classmethod
-    def invalid_n_head(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph attention head count error."""
-        return cls("graph_n_head must be > 0.")
+    def invalid_n_head(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity attention head count error."""
+        return cls("entity_n_head must be > 0.")
 
     @classmethod
-    def incompatible_attention_width(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the incompatible graph attention width error."""
-        return cls("graph_d_model must be divisible by graph_n_head.")
+    def incompatible_attention_width(
+        cls,
+    ) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the incompatible entity attention width error."""
+        return cls("entity_d_model must be divisible by entity_n_head.")
 
     @classmethod
-    def invalid_n_layer(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph transformer layer count error."""
-        return cls("graph_n_layer must be >= 0.")
+    def invalid_n_layer(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity transformer layer count error."""
+        return cls("entity_n_layer must be >= 0.")
 
     @classmethod
-    def invalid_dim_feedforward(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph feedforward width error."""
-        return cls("graph_dim_feedforward must be > 0.")
+    def invalid_dim_feedforward(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity feedforward width error."""
+        return cls("entity_dim_feedforward must be > 0.")
 
     @classmethod
-    def invalid_dropout_ratio(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph dropout ratio error."""
-        return cls("graph_dropout_ratio must be >= 0.")
+    def invalid_dropout_ratio(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity dropout ratio error."""
+        return cls("entity_dropout_ratio must be >= 0.")
 
     @classmethod
-    def invalid_pooling(cls) -> InvalidMorpionGraphRegressorArgsError:
-        """Return the invalid graph pooling mode error."""
-        return cls("graph_pooling must be one of {'value_token', 'masked_mean'}.")
+    def invalid_pooling(cls) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid entity pooling mode error."""
+        return cls("entity_pooling must be one of {'value_token', 'masked_mean'}.")
 
 
-def _validate_graph_transformer_args(args: MorpionRegressorArgs) -> None:
-    """Validate graph-token model args for the v1 Morpion token schema."""
-    if args.graph_input_feature_dim != MORPION_GRAPH_TOKEN_FEATURE_DIM:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_input_feature_dim(
-            MORPION_GRAPH_TOKEN_FEATURE_DIM
+def _validate_entity_token_transformer_value_net_args(
+    args: MorpionRegressorArgs,
+) -> None:
+    """Validate entity-token model args for the v1 Morpion token schema."""
+    if args.entity_input_feature_dim != MORPION_ENTITY_TOKEN_FEATURE_DIM:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_input_feature_dim(
+            MORPION_ENTITY_TOKEN_FEATURE_DIM
         )
-    if args.graph_max_tokens < 2:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_max_tokens()
-    if args.graph_d_model <= 0:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_d_model()
-    if args.graph_n_head <= 0:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_n_head()
-    if args.graph_d_model % args.graph_n_head != 0:
-        raise InvalidMorpionGraphRegressorArgsError.incompatible_attention_width()
-    if args.graph_n_layer < 0:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_n_layer()
-    if args.graph_dim_feedforward <= 0:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_dim_feedforward()
-    if args.graph_dropout_ratio < 0.0:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_dropout_ratio()
-    if args.graph_pooling not in {"value_token", "masked_mean"}:
-        raise InvalidMorpionGraphRegressorArgsError.invalid_pooling()
+    if args.entity_max_tokens < 1:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_max_tokens()
+    if args.entity_d_model <= 0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_d_model()
+    if args.entity_n_head <= 0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_n_head()
+    if args.entity_d_model % args.entity_n_head != 0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.incompatible_attention_width()
+    if args.entity_n_layer < 0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_n_layer()
+    if args.entity_dim_feedforward <= 0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_dim_feedforward()
+    if args.entity_dropout_ratio < 0.0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_dropout_ratio()
+    if args.entity_pooling not in {"value_token", "masked_mean"}:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_pooling()
 
 
 def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
@@ -178,16 +184,14 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
         layers: list[nn.Module] = []
         previous_dim = args.input_dim
         for hidden_size in args.hidden_sizes:
-            layers.extend(
-                [
-                    nn.Linear(previous_dim, hidden_size),
-                    nn.ReLU(),
-                ]
-            )
+            layers.extend([
+                nn.Linear(previous_dim, hidden_size),
+                nn.ReLU(),
+            ])
             previous_dim = hidden_size
         layers.append(nn.Linear(previous_dim, 1))
         return nn.Sequential(*layers)
-    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
+    if is_morpion_entity_token_model_kind(args.model_kind):
         from coral.neural_networks.models.entity_token_transformer_value_net import (  # pylint: disable=import-outside-toplevel
             EntityTokenTransformerValueNet,
             EntityTokenTransformerValueNetArgs,
@@ -195,14 +199,17 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
 
         return EntityTokenTransformerValueNet(
             EntityTokenTransformerValueNetArgs(
-                input_feature_dim=args.graph_input_feature_dim,
-                d_model=args.graph_d_model,
-                n_head=args.graph_n_head,
-                n_layer=args.graph_n_layer,
-                dim_feedforward=args.graph_dim_feedforward,
-                dropout_ratio=args.graph_dropout_ratio,
-                pooling=args.graph_pooling,  # type: ignore[arg-type]
-                output_tanh=args.graph_output_tanh,
+                input_feature_dim=args.entity_input_feature_dim,
+                d_model=args.entity_d_model,
+                n_head=args.entity_n_head,
+                n_layer=args.entity_n_layer,
+                dim_feedforward=args.entity_dim_feedforward,
+                dropout_ratio=args.entity_dropout_ratio,
+                pooling=args.entity_pooling,  # type: ignore[arg-type]
+                output_tanh=args.entity_output_tanh,
+                use_value_token=True,
+                use_validity_feature=True,
+                validity_feature_index=-1,
             )
         )
     raise UnsupportedMorpionModelKindError(args.model_kind)

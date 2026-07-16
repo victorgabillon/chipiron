@@ -1,4 +1,4 @@
-"""Packed graph-token tensor cache for Morpion streaming training."""
+"""Packed entity-token tensor cache for Morpion streaming training."""
 
 from __future__ import annotations
 
@@ -15,55 +15,57 @@ from chipiron.environments.morpion.learning import (
     iter_morpion_supervised_row_chunks_from_path,
 )
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
-    process_morpion_supervised_row_to_graph_tensors,
+    process_morpion_supervised_row_to_entity_token_tensors,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    MorpionGraphTokenConverter,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+    MorpionEntityTokenConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.learning.supervised import TensorSupervisedBatch
 
-GRAPH_TOKEN_CACHE_DIR_NAME: Final[str] = "tensor_cache"
-GRAPH_TOKEN_CACHE_FORMAT: Final[str] = "morpion_graph_tokens_v1"
-GRAPH_TOKEN_CACHE_PACKED_INPUT_KEY: Final[str] = "packed_input_tensor"
-GRAPH_TOKEN_CACHE_LENGTHS_KEY: Final[str] = "token_lengths"
-GRAPH_TOKEN_CACHE_TARGET_KEY: Final[str] = "target_tensor"
+ENTITY_TOKEN_CACHE_DIR_NAME: Final[str] = "tensor_cache"
+MORPION_ENTITY_TOKEN_CACHE_FORMAT: Final[str] = "morpion_entity_token_cache_v1"
+ENTITY_TOKEN_CACHE_PACKED_INPUT_KEY: Final[str] = "packed_input_tensor"
+ENTITY_TOKEN_CACHE_LENGTHS_KEY: Final[str] = "token_lengths"
+ENTITY_TOKEN_CACHE_TARGET_KEY: Final[str] = "target_tensor"
 
 
-class InvalidMorpionGraphTokenCacheError(ValueError):
-    """Raised when one graph-token cache cannot be used safely."""
+class InvalidMorpionEntityTokenCacheError(ValueError):
+    """Raised when one entity-token cache cannot be used safely."""
 
     @classmethod
     def missing_or_stale(
         cls,
         rows_path: str | os.PathLike[str],
-    ) -> InvalidMorpionGraphTokenCacheError:
+    ) -> InvalidMorpionEntityTokenCacheError:
         """Return the missing or stale cache error."""
         return cls(
-            f"Graph-token cache is missing or stale for rows artifact: {rows_path!r}."
+            f"Entity-token cache is missing or stale for rows artifact: {rows_path!r}."
         )
 
 
 @dataclass(frozen=True, slots=True)
-class GraphTokenCachePaths:
-    """Paths for one persisted Morpion graph-token cache."""
+class MorpionEntityTokenCachePaths:
+    """Paths for one persisted Morpion entity-token cache."""
 
     tensor_path: Path
     manifest_path: Path
 
 
 @dataclass(frozen=True, slots=True)
-class GraphTokenCacheManifest:
-    """Manifest describing one persisted Morpion graph-token cache."""
+class MorpionEntityTokenCacheManifest:
+    """Manifest describing one persisted Morpion entity-token cache."""
 
     format: str
     source_rows_path: str
     source_rows_size: int
     source_rows_mtime_ns: int
     row_count: int
-    graph_max_tokens: int
-    graph_token_feature_dim: int
+    input_representation: str
+    entity_max_tokens: int
+    input_feature_dim: int
     packed_input_shape: tuple[int, int]
     token_lengths_shape: tuple[int]
     target_shape: tuple[int, int]
@@ -76,7 +78,7 @@ class GraphTokenCacheManifest:
     def from_json_payload(
         cls,
         payload: dict[str, object],
-    ) -> GraphTokenCacheManifest:
+    ) -> MorpionEntityTokenCacheManifest:
         """Build one cache manifest from a decoded JSON payload."""
         return cls(
             format=_required_str(payload, "format"),
@@ -84,10 +86,11 @@ class GraphTokenCacheManifest:
             source_rows_size=_required_int(payload, "source_rows_size"),
             source_rows_mtime_ns=_required_int(payload, "source_rows_mtime_ns"),
             row_count=_required_int(payload, "row_count"),
-            graph_max_tokens=_required_int(payload, "graph_max_tokens"),
-            graph_token_feature_dim=_required_int(
+            input_representation=_required_str(payload, "input_representation"),
+            entity_max_tokens=_required_int(payload, "entity_max_tokens"),
+            input_feature_dim=_required_int(
                 payload,
-                "graph_token_feature_dim",
+                "input_feature_dim",
             ),
             packed_input_shape=_required_shape_2(payload, "packed_input_shape"),
             token_lengths_shape=_required_shape_1(payload, "token_lengths_shape"),
@@ -104,11 +107,11 @@ class GraphTokenCacheManifest:
 
 
 @dataclass(frozen=True, slots=True)
-class GraphTokenCache:
-    """Loaded Morpion graph-token cache and cache timing metadata."""
+class MorpionEntityTokenCache:
+    """Loaded Morpion entity-token cache and cache timing metadata."""
 
-    paths: GraphTokenCachePaths
-    manifest: GraphTokenCacheManifest
+    paths: MorpionEntityTokenCachePaths
+    manifest: MorpionEntityTokenCacheManifest
     packed_input_tensor: torch.Tensor
     token_lengths: torch.Tensor
     token_offsets: torch.Tensor
@@ -118,46 +121,46 @@ class GraphTokenCache:
     load_seconds: float
 
 
-def default_graph_token_cache_paths(
+def default_entity_token_cache_paths(
     rows_path: str | os.PathLike[str],
     *,
-    graph_max_tokens: int,
+    entity_max_tokens: int,
     max_rows: int | None = None,
-) -> GraphTokenCachePaths:
-    """Return default graph-token cache paths beside one rows artifact."""
+) -> MorpionEntityTokenCachePaths:
+    """Return default entity-token cache paths beside one rows artifact."""
     source = Path(rows_path)
     row_limit_tag = "all" if max_rows is None else f"max_rows_{max_rows}"
     cache_stem = (
-        f"{source.stem}.graph_tokens.max_tokens_{graph_max_tokens}.{row_limit_tag}"
+        f"{source.stem}.entity_tokens.max_tokens_{entity_max_tokens}.{row_limit_tag}"
     )
-    cache_dir = source.parent / GRAPH_TOKEN_CACHE_DIR_NAME
-    return GraphTokenCachePaths(
+    cache_dir = source.parent / ENTITY_TOKEN_CACHE_DIR_NAME
+    return MorpionEntityTokenCachePaths(
         tensor_path=cache_dir / f"{cache_stem}.pt",
         manifest_path=cache_dir / f"{cache_stem}.manifest.json",
     )
 
 
-def load_or_materialize_graph_token_cache(
+def load_or_materialize_entity_token_cache(
     *,
     rows_path: str | os.PathLike[str],
     row_chunk_size: int,
     max_rows: int | None,
-    graph_max_tokens: int,
-) -> GraphTokenCache:
-    """Load a valid graph-token cache or rebuild it from Morpion rows."""
-    paths = default_graph_token_cache_paths(
+    entity_max_tokens: int,
+) -> MorpionEntityTokenCache:
+    """Load a valid entity-token cache or rebuild it from Morpion rows."""
+    paths = default_entity_token_cache_paths(
         rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
         max_rows=max_rows,
     )
     started_at = perf_counter()
-    loaded = _try_load_valid_graph_token_cache(
+    loaded = _try_load_valid_entity_token_cache(
         paths=paths,
         rows_path=rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
     )
     if loaded is not None:
-        return GraphTokenCache(
+        return MorpionEntityTokenCache(
             paths=paths,
             manifest=loaded.manifest,
             packed_input_tensor=loaded.packed_input_tensor,
@@ -169,15 +172,15 @@ def load_or_materialize_graph_token_cache(
             load_seconds=perf_counter() - started_at,
         )
     materialize_started_at = perf_counter()
-    packed_input_tensor, token_lengths, target_tensor = _materialize_graph_tokens(
+    packed_input_tensor, token_lengths, target_tensor = _materialize_entity_tokens(
         rows_path=rows_path,
         row_chunk_size=row_chunk_size,
         max_rows=max_rows,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
     )
-    manifest = _graph_token_cache_manifest(
+    manifest = _entity_token_cache_manifest(
         rows_path=rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
         packed_input_tensor=packed_input_tensor,
         token_lengths=token_lengths,
         target_tensor=target_tensor,
@@ -185,15 +188,15 @@ def load_or_materialize_graph_token_cache(
     paths.tensor_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
-            GRAPH_TOKEN_CACHE_PACKED_INPUT_KEY: packed_input_tensor,
-            GRAPH_TOKEN_CACHE_LENGTHS_KEY: token_lengths,
-            GRAPH_TOKEN_CACHE_TARGET_KEY: target_tensor,
+            ENTITY_TOKEN_CACHE_PACKED_INPUT_KEY: packed_input_tensor,
+            ENTITY_TOKEN_CACHE_LENGTHS_KEY: token_lengths,
+            ENTITY_TOKEN_CACHE_TARGET_KEY: target_tensor,
         },
         paths.tensor_path,
     )
     with open(paths.manifest_path, "w", encoding="utf-8") as handle:
         json.dump(manifest.to_json_payload(), handle, indent=2, sort_keys=True)
-    return GraphTokenCache(
+    return MorpionEntityTokenCache(
         paths=paths,
         manifest=manifest,
         packed_input_tensor=packed_input_tensor,
@@ -206,49 +209,49 @@ def load_or_materialize_graph_token_cache(
     )
 
 
-def graph_token_cache_is_valid(
+def entity_token_cache_is_valid(
     *,
     rows_path: str | os.PathLike[str],
-    graph_max_tokens: int,
+    entity_max_tokens: int,
     max_rows: int | None = None,
 ) -> bool:
-    """Return whether the default graph-token cache matches the rows source."""
-    paths = default_graph_token_cache_paths(
+    """Return whether the default entity-token cache matches the rows source."""
+    paths = default_entity_token_cache_paths(
         rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
         max_rows=max_rows,
     )
     return (
-        _try_load_valid_graph_token_cache(
+        _try_load_valid_entity_token_cache(
             paths=paths,
             rows_path=rows_path,
-            graph_max_tokens=graph_max_tokens,
+            entity_max_tokens=entity_max_tokens,
         )
         is not None
     )
 
 
-def load_graph_token_cache(
+def load_entity_token_cache(
     *,
     rows_path: str | os.PathLike[str],
-    graph_max_tokens: int,
+    entity_max_tokens: int,
     max_rows: int | None = None,
-) -> GraphTokenCache:
-    """Load one existing valid Morpion graph-token cache."""
-    paths = default_graph_token_cache_paths(
+) -> MorpionEntityTokenCache:
+    """Load one existing valid Morpion entity-token cache."""
+    paths = default_entity_token_cache_paths(
         rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
         max_rows=max_rows,
     )
     started_at = perf_counter()
-    loaded = _try_load_valid_graph_token_cache(
+    loaded = _try_load_valid_entity_token_cache(
         paths=paths,
         rows_path=rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
     )
     if loaded is None:
-        raise InvalidMorpionGraphTokenCacheError.missing_or_stale(rows_path)
-    return GraphTokenCache(
+        raise InvalidMorpionEntityTokenCacheError.missing_or_stale(rows_path)
+    return MorpionEntityTokenCache(
         paths=paths,
         manifest=loaded.manifest,
         packed_input_tensor=loaded.packed_input_tensor,
@@ -261,16 +264,16 @@ def load_graph_token_cache(
     )
 
 
-def graph_cache_batch(
+def entity_token_cache_batch(
     *,
-    cache: GraphTokenCache,
+    cache: MorpionEntityTokenCache,
     row_indices: tuple[int, ...],
 ) -> TensorSupervisedBatch:
-    """Build one padded graph-token batch from packed cached tensors."""
+    """Build one padded entity-token batch from packed cached tensors."""
     if not row_indices:
         return TensorSupervisedBatch(
             input_tensor=torch.empty(
-                (0, 0, cache.manifest.graph_token_feature_dim),
+                (0, 0, cache.manifest.input_feature_dim),
                 dtype=torch.float32,
             ),
             target_tensor=torch.empty((0, 1), dtype=torch.float32),
@@ -279,7 +282,7 @@ def graph_cache_batch(
     lengths = [int(cache.token_lengths[row_index].item()) for row_index in row_indices]
     max_token_count = max(lengths)
     input_tensor = torch.zeros(
-        (len(row_indices), max_token_count, cache.manifest.graph_token_feature_dim),
+        (len(row_indices), max_token_count, cache.manifest.input_feature_dim),
         dtype=cache.packed_input_tensor.dtype,
     )
     for batch_index, row_index in enumerate(row_indices):
@@ -299,33 +302,33 @@ def graph_cache_batch(
 
 
 @dataclass(frozen=True, slots=True)
-class _LoadedGraphTokenCache:
-    manifest: GraphTokenCacheManifest
+class _LoadedMorpionEntityTokenCache:
+    manifest: MorpionEntityTokenCacheManifest
     packed_input_tensor: torch.Tensor
     token_lengths: torch.Tensor
     target_tensor: torch.Tensor
 
 
-def _try_load_valid_graph_token_cache(
+def _try_load_valid_entity_token_cache(
     *,
-    paths: GraphTokenCachePaths,
+    paths: MorpionEntityTokenCachePaths,
     rows_path: str | os.PathLike[str],
-    graph_max_tokens: int,
-) -> _LoadedGraphTokenCache | None:
-    """Load a graph-token cache when it matches its source rows and args."""
-    manifest = _read_graph_token_cache_manifest(paths.manifest_path)
+    entity_max_tokens: int,
+) -> _LoadedMorpionEntityTokenCache | None:
+    """Load a entity-token cache when it matches its source rows and args."""
+    manifest = _read_entity_token_cache_manifest(paths.manifest_path)
     if manifest is None or not _manifest_matches_rows(
         manifest,
         rows_path=rows_path,
-        graph_max_tokens=graph_max_tokens,
+        entity_max_tokens=entity_max_tokens,
     ):
         return None
-    payload = _read_graph_token_cache_payload(paths.tensor_path)
+    payload = _read_entity_token_cache_payload(paths.tensor_path)
     if payload is None:
         return None
-    packed_input_tensor = payload[GRAPH_TOKEN_CACHE_PACKED_INPUT_KEY]
-    token_lengths = payload[GRAPH_TOKEN_CACHE_LENGTHS_KEY]
-    target_tensor = payload[GRAPH_TOKEN_CACHE_TARGET_KEY]
+    packed_input_tensor = payload[ENTITY_TOKEN_CACHE_PACKED_INPUT_KEY]
+    token_lengths = payload[ENTITY_TOKEN_CACHE_LENGTHS_KEY]
+    target_tensor = payload[ENTITY_TOKEN_CACHE_TARGET_KEY]
     if not _tensors_match_manifest(
         manifest=manifest,
         packed_input_tensor=packed_input_tensor,
@@ -333,7 +336,7 @@ def _try_load_valid_graph_token_cache(
         target_tensor=target_tensor,
     ):
         return None
-    return _LoadedGraphTokenCache(
+    return _LoadedMorpionEntityTokenCache(
         manifest=manifest,
         packed_input_tensor=packed_input_tensor,
         token_lengths=token_lengths,
@@ -341,20 +344,20 @@ def _try_load_valid_graph_token_cache(
     )
 
 
-def _read_graph_token_cache_manifest(
+def _read_entity_token_cache_manifest(
     manifest_path: Path,
-) -> GraphTokenCacheManifest | None:
+) -> MorpionEntityTokenCacheManifest | None:
     """Read a cache manifest, returning ``None`` when it is unusable."""
     try:
         with open(manifest_path, encoding="utf-8") as handle:
             payload = json.load(handle)
         if not isinstance(payload, dict):
             return None
-        return GraphTokenCacheManifest.from_json_payload(
+        return MorpionEntityTokenCacheManifest.from_json_payload(
             cast("dict[str, object]", payload)
         )
     except (
-        InvalidMorpionGraphTokenCacheError,
+        InvalidMorpionEntityTokenCacheError,
         OSError,
         TypeError,
         ValueError,
@@ -363,7 +366,7 @@ def _read_graph_token_cache_manifest(
         return None
 
 
-def _read_graph_token_cache_payload(
+def _read_entity_token_cache_payload(
     tensor_path: Path,
 ) -> dict[str, torch.Tensor] | None:
     """Read cache tensors, returning ``None`` when the payload is unusable."""
@@ -373,9 +376,9 @@ def _read_graph_token_cache_payload(
         return None
     if not isinstance(payload, dict):
         return None
-    packed_input_tensor = payload.get(GRAPH_TOKEN_CACHE_PACKED_INPUT_KEY)
-    token_lengths = payload.get(GRAPH_TOKEN_CACHE_LENGTHS_KEY)
-    target_tensor = payload.get(GRAPH_TOKEN_CACHE_TARGET_KEY)
+    packed_input_tensor = payload.get(ENTITY_TOKEN_CACHE_PACKED_INPUT_KEY)
+    token_lengths = payload.get(ENTITY_TOKEN_CACHE_LENGTHS_KEY)
+    target_tensor = payload.get(ENTITY_TOKEN_CACHE_TARGET_KEY)
     if (
         not isinstance(packed_input_tensor, torch.Tensor)
         or not isinstance(token_lengths, torch.Tensor)
@@ -383,9 +386,9 @@ def _read_graph_token_cache_payload(
     ):
         return None
     return {
-        GRAPH_TOKEN_CACHE_PACKED_INPUT_KEY: packed_input_tensor,
-        GRAPH_TOKEN_CACHE_LENGTHS_KEY: token_lengths,
-        GRAPH_TOKEN_CACHE_TARGET_KEY: target_tensor,
+        ENTITY_TOKEN_CACHE_PACKED_INPUT_KEY: packed_input_tensor,
+        ENTITY_TOKEN_CACHE_LENGTHS_KEY: token_lengths,
+        ENTITY_TOKEN_CACHE_TARGET_KEY: target_tensor,
     }
 
 
@@ -397,18 +400,18 @@ def _torch_load_cpu(path: Path) -> object:
         return torch.load(path, map_location="cpu")
 
 
-def _materialize_graph_tokens(
+def _materialize_entity_tokens(
     *,
     rows_path: str | os.PathLike[str],
     row_chunk_size: int,
     max_rows: int | None,
-    graph_max_tokens: int,
+    entity_max_tokens: int,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Materialize packed graph tokens and targets from row chunks."""
+    """Materialize packed entity tokens and targets from row chunks."""
     dynamics = MorpionDynamics()
-    graph_converter = MorpionGraphTokenConverter(
+    entity_converter = MorpionEntityTokenConverter(
         dynamics=dynamics,
-        max_tokens=graph_max_tokens,
+        max_tokens=entity_max_tokens,
     )
     token_tensors: list[torch.Tensor] = []
     token_lengths: list[int] = []
@@ -419,10 +422,10 @@ def _materialize_graph_tokens(
         max_rows=max_rows,
     ):
         for row in rows:
-            sample = process_morpion_supervised_row_to_graph_tensors(
+            sample = process_morpion_supervised_row_to_entity_token_tensors(
                 row,
                 dynamics=dynamics,
-                converter=graph_converter,
+                converter=entity_converter,
             )
             input_tensor = sample.input_tensor.detach().cpu()
             target_tensor = sample.target_tensor.detach().cpu()
@@ -431,7 +434,7 @@ def _materialize_graph_tokens(
             target_tensors.append(target_tensor)
     if not token_tensors:
         return (
-            torch.empty((0, MORPION_GRAPH_TOKEN_FEATURE_DIM), dtype=torch.float32),
+            torch.empty((0, MORPION_ENTITY_TOKEN_FEATURE_DIM), dtype=torch.float32),
             torch.empty((0,), dtype=torch.long),
             torch.empty((0, 1), dtype=torch.float32),
         )
@@ -442,25 +445,26 @@ def _materialize_graph_tokens(
     )
 
 
-def _graph_token_cache_manifest(
+def _entity_token_cache_manifest(
     *,
     rows_path: str | os.PathLike[str],
-    graph_max_tokens: int,
+    entity_max_tokens: int,
     packed_input_tensor: torch.Tensor,
     token_lengths: torch.Tensor,
     target_tensor: torch.Tensor,
-) -> GraphTokenCacheManifest:
-    """Build one manifest for cached graph-token tensors."""
+) -> MorpionEntityTokenCacheManifest:
+    """Build one manifest for cached entity-token tensors."""
     source = Path(rows_path).resolve()
     source_stat = source.stat()
-    return GraphTokenCacheManifest(
-        format=GRAPH_TOKEN_CACHE_FORMAT,
+    return MorpionEntityTokenCacheManifest(
+        format=MORPION_ENTITY_TOKEN_CACHE_FORMAT,
         source_rows_path=str(source),
         source_rows_size=source_stat.st_size,
         source_rows_mtime_ns=source_stat.st_mtime_ns,
         row_count=int(token_lengths.shape[0]),
-        graph_max_tokens=graph_max_tokens,
-        graph_token_feature_dim=MORPION_GRAPH_TOKEN_FEATURE_DIM,
+        input_representation=MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+        entity_max_tokens=entity_max_tokens,
+        input_feature_dim=MORPION_ENTITY_TOKEN_FEATURE_DIM,
         packed_input_shape=(
             int(packed_input_tensor.shape[0]),
             int(packed_input_tensor.shape[1]),
@@ -475,25 +479,26 @@ def _graph_token_cache_manifest(
 
 
 def _manifest_matches_rows(
-    manifest: GraphTokenCacheManifest,
+    manifest: MorpionEntityTokenCacheManifest,
     *,
     rows_path: str | os.PathLike[str],
-    graph_max_tokens: int,
+    entity_max_tokens: int,
 ) -> bool:
-    """Return whether one manifest still matches its source and graph args."""
+    """Return whether one manifest still matches its source and entity-token args."""
     source = Path(rows_path).resolve()
     try:
         source_stat = source.stat()
     except OSError:
         return False
     return (
-        manifest.format == GRAPH_TOKEN_CACHE_FORMAT
+        manifest.format == MORPION_ENTITY_TOKEN_CACHE_FORMAT
+        and manifest.input_representation == MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
         and manifest.source_rows_path == str(source)
         and manifest.source_rows_size == source_stat.st_size
         and manifest.source_rows_mtime_ns == source_stat.st_mtime_ns
-        and manifest.graph_max_tokens == graph_max_tokens
-        and manifest.graph_token_feature_dim == MORPION_GRAPH_TOKEN_FEATURE_DIM
-        and manifest.packed_input_shape[1] == MORPION_GRAPH_TOKEN_FEATURE_DIM
+        and manifest.entity_max_tokens == entity_max_tokens
+        and manifest.input_feature_dim == MORPION_ENTITY_TOKEN_FEATURE_DIM
+        and manifest.packed_input_shape[1] == MORPION_ENTITY_TOKEN_FEATURE_DIM
         and manifest.token_lengths_shape == (manifest.row_count,)
         and manifest.target_shape == (manifest.row_count, 1)
         and manifest.input_dtype == str(torch.float32)
@@ -504,7 +509,7 @@ def _manifest_matches_rows(
 
 def _tensors_match_manifest(
     *,
-    manifest: GraphTokenCacheManifest,
+    manifest: MorpionEntityTokenCacheManifest,
     packed_input_tensor: torch.Tensor,
     token_lengths: torch.Tensor,
     target_tensor: torch.Tensor,
@@ -535,19 +540,17 @@ def _token_offsets(token_lengths: torch.Tensor) -> torch.Tensor:
     """Return start offsets into the packed token tensor for each row."""
     if token_lengths.numel() == 0:
         return torch.empty((0,), dtype=torch.long)
-    return torch.cat(
-        (
-            torch.zeros((1,), dtype=torch.long),
-            torch.cumsum(token_lengths[:-1], dim=0),
-        )
-    )
+    return torch.cat((
+        torch.zeros((1,), dtype=torch.long),
+        torch.cumsum(token_lengths[:-1], dim=0),
+    ))
 
 
 def _required_str(payload: dict[str, object], key: str) -> str:
     """Return one required JSON string."""
     value = payload.get(key)
     if not isinstance(value, str) or not value:
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return value
 
 
@@ -555,7 +558,7 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     """Return one required JSON integer."""
     value = payload.get(key)
     if isinstance(value, bool) or not isinstance(value, int):
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return value
 
 
@@ -563,7 +566,7 @@ def _required_float(payload: dict[str, object], key: str) -> float:
     """Return one required JSON finite number as float."""
     value = payload.get(key)
     if isinstance(value, bool) or not isinstance(value, int | float):
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return float(value)
 
 
@@ -573,7 +576,7 @@ def _required_int_sequence(payload: dict[str, object], key: str) -> tuple[int, .
     if not isinstance(value, list) or not all(
         isinstance(item, int) and not isinstance(item, bool) for item in value
     ):
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return tuple(value)
 
 
@@ -581,7 +584,7 @@ def _required_shape_1(payload: dict[str, object], key: str) -> tuple[int]:
     """Return one required length-one JSON shape tuple."""
     value = _required_int_sequence(payload, key)
     if len(value) != 1:
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return (value[0],)
 
 
@@ -589,20 +592,20 @@ def _required_shape_2(payload: dict[str, object], key: str) -> tuple[int, int]:
     """Return one required length-two JSON shape tuple."""
     value = _required_int_sequence(payload, key)
     if len(value) != 2:
-        raise InvalidMorpionGraphTokenCacheError
+        raise InvalidMorpionEntityTokenCacheError
     return (value[0], value[1])
 
 
 __all__ = [
-    "GRAPH_TOKEN_CACHE_DIR_NAME",
-    "GRAPH_TOKEN_CACHE_FORMAT",
-    "GraphTokenCache",
-    "GraphTokenCacheManifest",
-    "GraphTokenCachePaths",
-    "InvalidMorpionGraphTokenCacheError",
-    "default_graph_token_cache_paths",
-    "graph_cache_batch",
-    "graph_token_cache_is_valid",
-    "load_graph_token_cache",
-    "load_or_materialize_graph_token_cache",
+    "ENTITY_TOKEN_CACHE_DIR_NAME",
+    "MORPION_ENTITY_TOKEN_CACHE_FORMAT",
+    "InvalidMorpionEntityTokenCacheError",
+    "MorpionEntityTokenCache",
+    "MorpionEntityTokenCacheManifest",
+    "MorpionEntityTokenCachePaths",
+    "default_entity_token_cache_paths",
+    "entity_token_cache_batch",
+    "entity_token_cache_is_valid",
+    "load_entity_token_cache",
+    "load_or_materialize_entity_token_cache",
 ]

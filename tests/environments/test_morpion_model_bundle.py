@@ -66,8 +66,8 @@ from chipiron.environments.morpion.players.evaluators.datasets import (
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
     MORPION_FEATURE_SCHEMA,
-    MORPION_GRAPH_MODEL_KIND,
     MORPION_INPUT_DIM,
     MORPION_MANIFEST_FILE_NAME,
     MORPION_MODEL_ARGS_FILE_NAME,
@@ -320,7 +320,7 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     dataset = MorpionSupervisedDataset(
         MorpionSupervisedDatasetArgs(file_name=dataset_file)
     )
-    sample_input = dataset[0].get_input_layer()
+    sample_input = dataset[0].get_input_layer().to(next(model.parameters()).device)
     output = model(sample_input)
     assert output.shape == (1, 1)
 
@@ -399,8 +399,9 @@ def test_training_metrics_use_full_validation_mean_not_last_minibatch(
     with torch.no_grad():
         for index in validation_indices:
             sample = dataset[index]
-            sample_input = sample.get_input_layer()
-            target = sample.get_target_value()
+            device = next(model.parameters()).device
+            sample_input = sample.get_input_layer().to(device)
+            target = sample.get_target_value().to(device)
             prediction = model(sample_input)
             validation_errors.append(float(torch.square(prediction - target).item()))
     expected_validation_loss = sum(validation_errors) / len(validation_errors)
@@ -457,7 +458,7 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert metrics["flat_tensor_cache_used"] == "true"
     assert metrics["flat_tensor_cache_rebuilt"] == "true"
     assert isinstance(metrics["flat_tensor_cache_path"], str)
-    assert metrics["graph_token_cache_used"] == "false"
+    assert metrics["entity_token_cache_used"] == "false"
     assert isinstance(metrics["timing_flat_tensor_cache_materialize_s"], float)
     assert isinstance(metrics["timing_flat_tensor_cache_load_s"], float)
     assert isinstance(metrics["timing_train_chunk_load_s"], float)
@@ -478,22 +479,22 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert flat_cache_metadata["row_count"] == 8
 
 
-def test_train_morpion_graph_regressor_streaming_tiny_jsonl(
+def test_train_morpion_entity_token_regressor_streaming_tiny_jsonl(
     tmp_path: Path,
 ) -> None:
-    """Streaming graph-token training should use the packed graph cache."""
+    """Streaming entity-token training should use the packed entity-token cache."""
     json_rows_path = _build_rows_file(
         tmp_path,
         target_values=(-1.0, -0.5, 0.0, 0.25, 0.5, 0.75),
     )
     rows = load_morpion_supervised_rows(json_rows_path)
-    jsonl_rows_path = tmp_path / "morpion_graph_supervised_rows.jsonl"
+    jsonl_rows_path = tmp_path / "morpion_entity_token_supervised_rows.jsonl"
     write_stats = save_morpion_supervised_rows_streaming(
         rows=rows.rows,
         metadata=rows.metadata,
         path=jsonl_rows_path,
     )
-    output_dir = tmp_path / "streaming_graph_trained_bundle"
+    output_dir = tmp_path / "streaming_entity_token_trained_bundle"
 
     _model, metrics = train_morpion_regressor_streaming(
         MorpionStreamingTrainingArgs(
@@ -505,12 +506,12 @@ def test_train_morpion_graph_regressor_streaming_tiny_jsonl(
                 learning_rate=1e-3,
                 shuffle=False,
                 validation_fraction=0.25,
-                model_kind=MORPION_GRAPH_MODEL_KIND,
-                graph_max_tokens=128,
-                graph_d_model=16,
-                graph_n_head=4,
-                graph_n_layer=1,
-                graph_dim_feedforward=32,
+                model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+                entity_max_tokens=128,
+                entity_d_model=16,
+                entity_n_head=4,
+                entity_n_layer=1,
+                entity_dim_feedforward=32,
             ),
             row_chunk_size=2,
             max_rows=4,
@@ -521,11 +522,11 @@ def test_train_morpion_graph_regressor_streaming_tiny_jsonl(
     assert output_dir.is_dir()
     assert metrics["num_samples"] == 4.0
     assert metrics["flat_tensor_cache_used"] == "false"
-    assert metrics["graph_token_cache_used"] == "true"
-    assert metrics["graph_token_cache_rebuilt"] == "true"
-    assert isinstance(metrics["graph_token_cache_path"], str)
-    assert isinstance(metrics["timing_graph_token_cache_materialize_s"], float)
-    assert metrics["timing_graph_token_cache_materialize_s"] >= 0.0
+    assert metrics["entity_token_cache_used"] == "true"
+    assert metrics["entity_token_cache_rebuilt"] == "true"
+    assert isinstance(metrics["entity_token_cache_path"], str)
+    assert isinstance(metrics["timing_entity_token_cache_materialize_s"], float)
+    assert metrics["timing_entity_token_cache_materialize_s"] >= 0.0
     assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
     assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
     assert isinstance(metrics["timing_train_forward_s"], float)
@@ -538,14 +539,14 @@ def test_train_morpion_graph_regressor_streaming_tiny_jsonl(
     with open(output_dir / MORPION_MANIFEST_FILE_NAME, encoding="utf-8") as handle:
         manifest_payload = json.load(handle)
     manifest_metadata = cast("dict[str, object]", manifest_payload["metadata"])
-    graph_cache_metadata = cast(
+    entity_token_cache_metadata = cast(
         "dict[str, object]",
-        manifest_metadata["graph_token_cache"],
+        manifest_metadata["entity_token_cache"],
     )
-    assert graph_cache_metadata["used"] is True
-    assert graph_cache_metadata["rebuilt"] is True
-    assert graph_cache_metadata["row_count"] == 4
-    assert graph_cache_metadata["graph_max_tokens"] == 128
+    assert entity_token_cache_metadata["used"] is True
+    assert entity_token_cache_metadata["rebuilt"] is True
+    assert entity_token_cache_metadata["row_count"] == 4
+    assert entity_token_cache_metadata["entity_max_tokens"] == 128
 
 
 def test_training_metrics_small_dataset_does_not_require_validation(
@@ -672,13 +673,11 @@ def test_load_bundle_accepts_legacy_hidden_dim_payload(tmp_path: Path) -> None:
 
     args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
     args_path.write_text(
-        json.dumps(
-            {
-                "model_kind": "mlp",
-                "input_dim": MORPION_INPUT_DIM,
-                "hidden_dim": 8,
-            }
-        ),
+        json.dumps({
+            "model_kind": "mlp",
+            "input_dim": MORPION_INPUT_DIM,
+            "hidden_dim": 8,
+        }),
         encoding="utf-8",
     )
 
@@ -691,13 +690,11 @@ def test_load_bundle_accepts_legacy_hidden_dim_payload(tmp_path: Path) -> None:
         model_args=MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8,)),
     )
     args_path.write_text(
-        json.dumps(
-            {
-                "model_kind": "mlp",
-                "input_dim": MORPION_INPUT_DIM,
-                "hidden_dim": 8,
-            }
-        ),
+        json.dumps({
+            "model_kind": "mlp",
+            "input_dim": MORPION_INPUT_DIM,
+            "hidden_dim": 8,
+        }),
         encoding="utf-8",
     )
 

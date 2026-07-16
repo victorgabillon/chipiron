@@ -71,8 +71,8 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressor,
@@ -121,25 +121,25 @@ def _constant_regressor(value: float) -> MorpionRegressor:
     return model
 
 
-class _GraphOnlyDiagnosticModel(torch.nn.Module):
-    """Fake graph-family model that rejects the old flat diagnostics path."""
+class _EntityTokenOnlyDiagnosticModel(torch.nn.Module):
+    """Fake entity-token model that rejects the flat diagnostics path."""
 
     args: MorpionRegressorArgs
 
     def __init__(self) -> None:
         super().__init__()
         self.args = MorpionRegressorArgs(
-            model_kind=MORPION_GRAPH_MODEL_KIND,
-            graph_max_tokens=128,
-            graph_d_model=16,
-            graph_n_head=4,
-            graph_n_layer=1,
-            graph_dim_feedforward=32,
+            model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+            entity_max_tokens=128,
+            entity_d_model=16,
+            entity_n_head=4,
+            entity_n_layer=1,
+            entity_dim_feedforward=32,
         )
         self.input_shape: tuple[int, ...] | None = None
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Return fixed predictions only for graph-token batches."""
+        """Return fixed predictions only for entity-token batches."""
         self.input_shape = tuple(input_tensor.shape)
         if input_tensor.ndim != 3:
             raise ValueError
@@ -229,13 +229,13 @@ def test_worst_examples_are_sorted_by_after_training_abs_error() -> None:
     assert diagnostics.mae_before is not None
 
 
-def test_diagnostics_predict_graph_family_with_adapter_path() -> None:
-    """Graph-family diagnostics should not call the model with flat feature tensors."""
-    model = _GraphOnlyDiagnosticModel()
+def test_diagnostics_predict_entity_token_family_with_adapter_path() -> None:
+    """Entity-token diagnostics should not call models with flat feature tensors."""
+    model = _EntityTokenOnlyDiagnosticModel()
 
     diagnostics = build_evaluator_training_diagnostics(
         generation=7,
-        evaluator_name="graph_transformer_small",
+        evaluator_name="entity_token_transformer_small",
         rows=_rows_bundle((1.0, -3.0, 0.5)),
         created_at="2026-04-24T09:30:00Z",
         model_after=cast("MorpionRegressor", model),

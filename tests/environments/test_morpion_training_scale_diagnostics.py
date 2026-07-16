@@ -15,8 +15,8 @@ from chipiron.environments.morpion.learning import (
     load_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressorArgs,
@@ -61,8 +61,8 @@ def test_tensor_scale_stats_handles_empty_tensor() -> None:
     assert stats.abs_max is None
 
 
-def test_graph_output_tanh_defaults_to_false() -> None:
-    """Morpion graph/entity-token value regression should default to no tanh."""
+def test_entity_output_tanh_defaults_to_false() -> None:
+    """Morpion entity-token value regression should default to no tanh."""
     training_args = MorpionTrainingArgs(
         dataset_file="/tmp/morpion_rows.jsonl",
         output_dir="/tmp/morpion_model",
@@ -72,13 +72,13 @@ def test_graph_output_tanh_defaults_to_false() -> None:
     explicit_training_args = MorpionTrainingArgs(
         dataset_file="/tmp/morpion_rows.jsonl",
         output_dir="/tmp/morpion_model",
-        graph_output_tanh=True,
+        entity_output_tanh=True,
     )
 
-    assert training_args.graph_output_tanh is False
-    assert model_args.graph_output_tanh is False
-    assert entity_spec.graph_output_tanh is False
-    assert explicit_training_args.graph_output_tanh is True
+    assert training_args.entity_output_tanh is False
+    assert model_args.entity_output_tanh is False
+    assert entity_spec.entity_output_tanh is False
+    assert explicit_training_args.entity_output_tanh is True
 
 
 def test_flat_cached_streaming_training_reports_scale_metrics(
@@ -114,19 +114,19 @@ def test_flat_cached_streaming_training_reports_scale_metrics(
     assert metrics["target_zero_prediction_mse"] == pytest.approx(750.0)
 
 
-def test_graph_cached_streaming_training_reports_scale_metrics(
+def test_entity_token_cached_streaming_training_reports_scale_metrics(
     tmp_path: Path,
 ) -> None:
-    """Graph cached streaming training should expose target/prediction scale."""
+    """Entity-token cached training should expose target/prediction scale."""
     rows_path = _build_jsonl_rows_file(
         tmp_path,
         target_values=(10.0, 20.0, 30.0, 40.0),
     )
-    output_dir = tmp_path / "graph_scale_bundle"
+    output_dir = tmp_path / "entity_token_scale_bundle"
 
     _model, metrics = train_morpion_regressor_streaming(
         MorpionStreamingTrainingArgs(
-            training_args=_small_graph_training_args(
+            training_args=_small_entity_token_training_args(
                 dataset_file=rows_path,
                 output_dir=output_dir,
                 num_epochs=0,
@@ -137,32 +137,32 @@ def test_graph_cached_streaming_training_reports_scale_metrics(
 
     _assert_scale_metric_keys(metrics)
     assert metrics["cached_global_shuffle"] == "true"
-    assert metrics["graph_token_cache_used"] == "true"
+    assert metrics["entity_token_cache_used"] == "true"
     assert metrics["target_mean"] == pytest.approx(25.0)
 
 
-def test_graph_output_tanh_warning_for_large_targets(
+def test_entity_output_tanh_warning_for_large_targets(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Explicit tanh should warn when targets are far outside [-1, 1]."""
     rows_path = _build_jsonl_rows_file(tmp_path, target_values=(20.0, 30.0))
-    output_dir = tmp_path / "graph_tanh_warning_bundle"
+    output_dir = tmp_path / "entity_token_tanh_warning_bundle"
     caplog.set_level(logging.WARNING)
 
     train_morpion_regressor_streaming(
         MorpionStreamingTrainingArgs(
-            training_args=_small_graph_training_args(
+            training_args=_small_entity_token_training_args(
                 dataset_file=rows_path,
                 output_dir=output_dir,
                 num_epochs=0,
-                graph_output_tanh=True,
+                entity_output_tanh=True,
             ),
             row_chunk_size=2,
         )
     )
 
-    assert "graph_output_tanh=true" in caplog.text
+    assert "entity_output_tanh=true" in caplog.text
     assert "outputs may be constrained" in caplog.text
 
 
@@ -181,14 +181,14 @@ def _assert_scale_metric_keys(metrics: dict[str, float | str | None]) -> None:
         assert key in metrics
 
 
-def _small_graph_training_args(
+def _small_entity_token_training_args(
     *,
     dataset_file: Path,
     output_dir: Path,
     num_epochs: int,
-    graph_output_tanh: bool = False,
+    entity_output_tanh: bool = False,
 ) -> MorpionTrainingArgs:
-    """Return one tiny graph-token training config for scale tests."""
+    """Return one tiny entity-token training config for scale tests."""
     return MorpionTrainingArgs(
         dataset_file=dataset_file,
         output_dir=output_dir,
@@ -197,13 +197,13 @@ def _small_graph_training_args(
         learning_rate=1e-3,
         shuffle=False,
         validation_fraction=0.25,
-        model_kind=MORPION_GRAPH_MODEL_KIND,
-        graph_max_tokens=128,
-        graph_d_model=16,
-        graph_n_head=4,
-        graph_n_layer=1,
-        graph_dim_feedforward=32,
-        graph_output_tanh=graph_output_tanh,
+        model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+        entity_max_tokens=128,
+        entity_d_model=16,
+        entity_n_head=4,
+        entity_n_layer=1,
+        entity_dim_feedforward=32,
+        entity_output_tanh=entity_output_tanh,
         device="cpu",
     )
 

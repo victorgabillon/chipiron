@@ -13,8 +13,8 @@ from chipiron.environments.morpion.learning import (
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     is_flat_morpion_training_model_kind,
@@ -136,11 +136,11 @@ def test_flat_feature_subset_selection_uses_canonical_indices() -> None:
     torch.testing.assert_close(selected, input_tensor[:, (0, 3, 4)])
 
 
-def test_flat_cache_model_kind_predicate_keeps_graph_path_uncached() -> None:
+def test_flat_cache_model_kind_predicate_keeps_entity_token_path_uncached() -> None:
     """Only flat handcrafted-feature model kinds should use the tensor cache."""
     assert is_flat_morpion_training_model_kind("linear")
     assert is_flat_morpion_training_model_kind("mlp")
-    assert not is_flat_morpion_training_model_kind(MORPION_GRAPH_MODEL_KIND)
+    assert not is_flat_morpion_training_model_kind(MORPION_ENTITY_TOKEN_MODEL_KIND)
 
 
 def _build_jsonl_rows_file(

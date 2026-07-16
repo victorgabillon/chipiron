@@ -10,12 +10,12 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    is_morpion_entity_token_model_kind,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    is_morpion_entity_token_transformer_model_kind,
 )
 
 from .bootstrap_errors import InvalidReevaluationBlendAlphaError
@@ -302,6 +302,18 @@ class MalformedMorpionBootstrapConfigError(TypeError):
         )
 
     @classmethod
+    def unexpected_fields(
+        cls,
+        section_name: str,
+        fields: set[str],
+    ) -> MalformedMorpionBootstrapConfigError:
+        """Return one unexpected-fields error."""
+        return cls(
+            f"Morpion bootstrap config field `{section_name}` has unexpected fields "
+            f"{sorted(fields)!r}."
+        )
+
+    @classmethod
     def invalid_required_str(
         cls,
         field_name: str,
@@ -398,41 +410,35 @@ class IncompatibleStageBootstrapConfigError(ValueError):
 # intentionally mutable between relaunches. They affect how much search work a
 # process does and when it checkpoints, but not the persisted experiment
 # protocol used by dataset/training/reevaluation.
-GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
-    {
-        "max_growth_steps_per_cycle",
-        "tree_branch_limit",
-        "reevaluation_blend_alpha",
-        "min_available_ram_mb",
-        "candidate_checkpoint_load_headroom_factor",
-        "candidate_checkpoint_load_min_headroom_mb",
-        "save_after_seconds",
-        "save_after_tree_growth_factor",
-        "growth_additional_branch_budget",
-        "growth_save_and_exit",
-        "growth_skip_training_export",
-    }
-)
+GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset({
+    "max_growth_steps_per_cycle",
+    "tree_branch_limit",
+    "reevaluation_blend_alpha",
+    "min_available_ram_mb",
+    "candidate_checkpoint_load_headroom_factor",
+    "candidate_checkpoint_load_min_headroom_mb",
+    "save_after_seconds",
+    "save_after_tree_growth_factor",
+    "growth_additional_branch_budget",
+    "growth_save_and_exit",
+    "growth_skip_training_export",
+})
 
-GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS = frozenset(
-    {
-        "rollout_after_opening",
-        "rollout_max_extra_steps",
-        "rollout_action_selector_kind",
-        "rollout_random_seed",
-        "rollout_stop_on_existing_node",
-    }
-)
+GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS = frozenset({
+    "rollout_after_opening",
+    "rollout_max_extra_steps",
+    "rollout_action_selector_kind",
+    "rollout_random_seed",
+    "rollout_stop_on_existing_node",
+})
 
-GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS = frozenset(
-    {
-        "search.rollout.enabled",
-        "search.rollout.max_extra_steps",
-        "search.rollout.action_selector_kind",
-        "search.rollout.random_seed",
-        "search.rollout.stop_on_existing_node",
-    }
-)
+GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS = frozenset({
+    "search.rollout.enabled",
+    "search.rollout.max_extra_steps",
+    "search.rollout.action_selector_kind",
+    "search.rollout.random_seed",
+    "search.rollout.stop_on_existing_node",
+})
 
 STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS: dict[str, frozenset[str]] = {
     "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
@@ -1216,6 +1222,30 @@ def _evaluator_spec_from_config_payload(
     """Deserialize one evaluator spec from JSON-friendly data."""
     section_name = f"evaluators.evaluators.{evaluator_name}"
     spec_mapping = _require_section_mapping(spec_payload, section_name=section_name)
+    allowed_fields = {
+        "name",
+        "model_type",
+        "hidden_sizes",
+        "num_epochs",
+        "batch_size",
+        "learning_rate",
+        "feature_subset_name",
+        "feature_names",
+        "entity_max_tokens",
+        "entity_input_feature_dim",
+        "entity_d_model",
+        "entity_n_head",
+        "entity_n_layer",
+        "entity_dim_feedforward",
+        "entity_dropout_ratio",
+        "entity_pooling",
+        "entity_output_tanh",
+    }
+    unexpected_fields = set(spec_mapping) - allowed_fields
+    if unexpected_fields:
+        raise MalformedMorpionBootstrapConfigError.unexpected_fields(
+            section_name, unexpected_fields
+        )
 
     return MorpionEvaluatorSpec(
         name=_required_str(
@@ -1253,44 +1283,44 @@ def _evaluator_spec_from_config_payload(
             spec_mapping.get("feature_names"),
             field_name=f"{section_name}.feature_names",
         ),
-        graph_max_tokens=_coerce_int(
-            spec_mapping.get("graph_max_tokens", 1536),
-            field_name=f"{section_name}.graph_max_tokens",
+        entity_max_tokens=_coerce_int(
+            spec_mapping.get("entity_max_tokens", 1536),
+            field_name=f"{section_name}.entity_max_tokens",
         ),
-        graph_input_feature_dim=_coerce_int(
+        entity_input_feature_dim=_coerce_int(
             spec_mapping.get(
-                "graph_input_feature_dim",
-                MORPION_GRAPH_TOKEN_FEATURE_DIM,
+                "entity_input_feature_dim",
+                MORPION_ENTITY_TOKEN_FEATURE_DIM,
             ),
-            field_name=f"{section_name}.graph_input_feature_dim",
+            field_name=f"{section_name}.entity_input_feature_dim",
         ),
-        graph_d_model=_coerce_int(
-            spec_mapping.get("graph_d_model", 64),
-            field_name=f"{section_name}.graph_d_model",
+        entity_d_model=_coerce_int(
+            spec_mapping.get("entity_d_model", 64),
+            field_name=f"{section_name}.entity_d_model",
         ),
-        graph_n_head=_coerce_int(
-            spec_mapping.get("graph_n_head", 4),
-            field_name=f"{section_name}.graph_n_head",
+        entity_n_head=_coerce_int(
+            spec_mapping.get("entity_n_head", 4),
+            field_name=f"{section_name}.entity_n_head",
         ),
-        graph_n_layer=_coerce_int(
-            spec_mapping.get("graph_n_layer", 2),
-            field_name=f"{section_name}.graph_n_layer",
+        entity_n_layer=_coerce_int(
+            spec_mapping.get("entity_n_layer", 2),
+            field_name=f"{section_name}.entity_n_layer",
         ),
-        graph_dim_feedforward=_coerce_int(
-            spec_mapping.get("graph_dim_feedforward", 256),
-            field_name=f"{section_name}.graph_dim_feedforward",
+        entity_dim_feedforward=_coerce_int(
+            spec_mapping.get("entity_dim_feedforward", 256),
+            field_name=f"{section_name}.entity_dim_feedforward",
         ),
-        graph_dropout_ratio=_coerce_float(
-            spec_mapping.get("graph_dropout_ratio", 0.0),
-            field_name=f"{section_name}.graph_dropout_ratio",
+        entity_dropout_ratio=_coerce_float(
+            spec_mapping.get("entity_dropout_ratio", 0.0),
+            field_name=f"{section_name}.entity_dropout_ratio",
         ),
-        graph_pooling=_required_str(
-            spec_mapping.get("graph_pooling", "value_token"),
-            field_name=f"{section_name}.graph_pooling",
+        entity_pooling=_required_str(
+            spec_mapping.get("entity_pooling", "value_token"),
+            field_name=f"{section_name}.entity_pooling",
         ),
-        graph_output_tanh=_required_bool(
-            spec_mapping.get("graph_output_tanh", False),
-            field_name=f"{section_name}.graph_output_tanh",
+        entity_output_tanh=_required_bool(
+            spec_mapping.get("entity_output_tanh", False),
+            field_name=f"{section_name}.entity_output_tanh",
         ),
     )
 
@@ -1317,42 +1347,44 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "feature_subset_name": spec.feature_subset_name,
         "feature_names": list(spec.feature_names),
     }
-    if is_morpion_entity_token_transformer_model_kind(
+    if is_morpion_entity_token_model_kind(
         spec.model_type
-    ) or _has_non_default_graph_evaluator_settings(spec):
-        payload.update(_graph_evaluator_settings_to_dict(spec))
+    ) or _has_non_default_entity_token_evaluator_settings(spec):
+        payload.update(_entity_token_evaluator_settings_to_dict(spec))
     return payload
 
 
-def _has_non_default_graph_evaluator_settings(spec: MorpionEvaluatorSpec) -> bool:
-    """Return whether graph settings differ from dataclass defaults."""
+def _has_non_default_entity_token_evaluator_settings(
+    spec: MorpionEvaluatorSpec,
+) -> bool:
+    """Return whether entity-token settings differ from dataclass defaults."""
     return (
-        spec.graph_max_tokens != 1536
-        or spec.graph_input_feature_dim != MORPION_GRAPH_TOKEN_FEATURE_DIM
-        or spec.graph_d_model != 64
-        or spec.graph_n_head != 4
-        or spec.graph_n_layer != 2
-        or spec.graph_dim_feedforward != 256
-        or spec.graph_dropout_ratio != 0.0
-        or spec.graph_pooling != "value_token"
-        or spec.graph_output_tanh is not False
+        spec.entity_max_tokens != 1536
+        or spec.entity_input_feature_dim != MORPION_ENTITY_TOKEN_FEATURE_DIM
+        or spec.entity_d_model != 64
+        or spec.entity_n_head != 4
+        or spec.entity_n_layer != 2
+        or spec.entity_dim_feedforward != 256
+        or spec.entity_dropout_ratio != 0.0
+        or spec.entity_pooling != "value_token"
+        or spec.entity_output_tanh is not False
     )
 
 
-def _graph_evaluator_settings_to_dict(
+def _entity_token_evaluator_settings_to_dict(
     spec: MorpionEvaluatorSpec,
 ) -> dict[str, object]:
-    """Serialize graph-specific evaluator settings."""
+    """Serialize entity-token-specific evaluator settings."""
     return {
-        "graph_max_tokens": spec.graph_max_tokens,
-        "graph_input_feature_dim": spec.graph_input_feature_dim,
-        "graph_d_model": spec.graph_d_model,
-        "graph_n_head": spec.graph_n_head,
-        "graph_n_layer": spec.graph_n_layer,
-        "graph_dim_feedforward": spec.graph_dim_feedforward,
-        "graph_dropout_ratio": spec.graph_dropout_ratio,
-        "graph_pooling": spec.graph_pooling,
-        "graph_output_tanh": spec.graph_output_tanh,
+        "entity_max_tokens": spec.entity_max_tokens,
+        "entity_input_feature_dim": spec.entity_input_feature_dim,
+        "entity_d_model": spec.entity_d_model,
+        "entity_n_head": spec.entity_n_head,
+        "entity_n_layer": spec.entity_n_layer,
+        "entity_dim_feedforward": spec.entity_dim_feedforward,
+        "entity_dropout_ratio": spec.entity_dropout_ratio,
+        "entity_pooling": spec.entity_pooling,
+        "entity_output_tanh": spec.entity_output_tanh,
     }
 
 

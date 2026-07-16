@@ -15,13 +15,13 @@ from chipiron.environments.morpion.learning import (
     decode_morpion_state_ref_payload,
     load_morpion_supervised_rows,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MorpionEntityTokenConverter,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MorpionGraphTokenConverter,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
@@ -60,12 +60,12 @@ class MorpionSupervisedDatasetArgs:
 
 
 MorpionSupervisedSample = TensorSupervisedBatch
-MorpionGraphSupervisedSample = TensorSupervisedBatch
+MorpionEntityTokenSupervisedSample = TensorSupervisedBatch
 
 
 @dataclass(frozen=True, slots=True)
-class MorpionGraphSupervisedDatasetArgs:
-    """Arguments for loading Morpion rows as graph-token samples."""
+class MorpionEntityTokenSupervisedDatasetArgs:
+    """Arguments for loading Morpion rows as entity-token samples."""
 
     file_name: str | os.PathLike[str]
     max_tokens: int = 1536
@@ -95,22 +95,24 @@ def process_morpion_supervised_row_to_tensors(
     )
 
 
-def process_morpion_supervised_row_to_graph_tensors(
+def process_morpion_supervised_row_to_entity_token_tensors(
     row: MorpionSupervisedRow,
     *,
     dynamics: MorpionDynamics | None = None,
-    converter: MorpionGraphTokenConverter | None = None,
-) -> MorpionGraphSupervisedSample:
-    """Convert one raw Morpion supervised row into graph-token tensors."""
+    converter: MorpionEntityTokenConverter | None = None,
+) -> MorpionEntityTokenSupervisedSample:
+    """Convert one raw Morpion supervised row into entity-token tensors."""
     dyn = dynamics if dynamics is not None else MorpionDynamics()
-    graph_converter = (
-        converter if converter is not None else MorpionGraphTokenConverter(dynamics=dyn)
+    entity_converter = (
+        converter
+        if converter is not None
+        else MorpionEntityTokenConverter(dynamics=dyn)
     )
     atom_state = decode_morpion_state_ref_payload(row.state_ref_payload)
     chipiron_state = dyn.wrap_atomheart_state(atom_state)
-    input_tensor = graph_converter.state_to_tensor(chipiron_state)
+    input_tensor = entity_converter.state_to_tensor(chipiron_state)
     target_tensor = torch.tensor([row.target_value], dtype=torch.float32)
-    return MorpionGraphSupervisedSample(
+    return MorpionEntityTokenSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
         is_batch=False,
@@ -162,26 +164,26 @@ class MorpionSupervisedDataset(Dataset[MorpionSupervisedSample]):
         return self._converter.feature_names()
 
 
-class MorpionGraphSupervisedDataset(Dataset[MorpionGraphSupervisedSample]):
-    """Eager in-memory dataset for graph-token Morpion regression rows."""
+class MorpionEntityTokenSupervisedDataset(Dataset[MorpionEntityTokenSupervisedSample]):
+    """Eager in-memory dataset for entity-token Morpion regression rows."""
 
-    args: MorpionGraphSupervisedDatasetArgs
+    args: MorpionEntityTokenSupervisedDatasetArgs
     _dynamics: MorpionDynamics
-    _converter: MorpionGraphTokenConverter
+    _converter: MorpionEntityTokenConverter
     _rows_bundle: MorpionSupervisedRows
-    _samples: tuple[MorpionGraphSupervisedSample, ...]
+    _samples: tuple[MorpionEntityTokenSupervisedSample, ...]
 
-    def __init__(self, args: MorpionGraphSupervisedDatasetArgs) -> None:
+    def __init__(self, args: MorpionEntityTokenSupervisedDatasetArgs) -> None:
         """Load and eagerly preprocess one persisted Morpion row file."""
         self.args = args
         self._dynamics = MorpionDynamics()
-        self._converter = MorpionGraphTokenConverter(
+        self._converter = MorpionEntityTokenConverter(
             dynamics=self._dynamics,
             max_tokens=args.max_tokens,
         )
         self._rows_bundle = load_morpion_supervised_rows(os.fspath(args.file_name))
         self._samples = tuple(
-            process_morpion_supervised_row_to_graph_tensors(
+            process_morpion_supervised_row_to_entity_token_tensors(
                 row,
                 dynamics=self._dynamics,
                 converter=self._converter,
@@ -193,26 +195,26 @@ class MorpionGraphSupervisedDataset(Dataset[MorpionGraphSupervisedSample]):
         """Return the number of eagerly preprocessed Morpion samples."""
         return len(self._samples)
 
-    def __getitem__(self, index: int) -> MorpionGraphSupervisedSample:
-        """Return one preprocessed graph-token Morpion sample."""
+    def __getitem__(self, index: int) -> MorpionEntityTokenSupervisedSample:
+        """Return one preprocessed entity-token Morpion sample."""
         return self._samples[index]
 
     @property
     def input_dim(self) -> int:
-        """Return the graph-token feature dimension."""
+        """Return the entity-token feature dimension."""
         return self._converter.input_dim
 
     def feature_names(self) -> tuple[str, ...]:
-        """Return the graph-token feature ordering."""
+        """Return the entity-token feature ordering."""
         return self._converter.feature_names()
 
 
-def collate_morpion_graph_supervised_samples(
-    samples: Sequence[MorpionGraphSupervisedSample],
-) -> MorpionGraphSupervisedSample:
-    """Pad variable-length graph-token samples into one batch."""
+def collate_morpion_entity_token_supervised_samples(
+    samples: Sequence[MorpionEntityTokenSupervisedSample],
+) -> MorpionEntityTokenSupervisedSample:
+    """Pad variable-length entity-token samples into one batch."""
     if not samples:
-        return MorpionGraphSupervisedSample(
+        return MorpionEntityTokenSupervisedSample(
             input_tensor=torch.empty((0, 0, 0), dtype=torch.float32),
             target_tensor=torch.empty((0, 1), dtype=torch.float32),
             is_batch=True,
@@ -229,7 +231,7 @@ def collate_morpion_graph_supervised_samples(
         token_count = sample.input_tensor.shape[0]
         input_tensor[index, :token_count, :] = sample.input_tensor
         target_tensor[index, :] = sample.target_tensor.reshape(1)
-    return MorpionGraphSupervisedSample(
+    return MorpionEntityTokenSupervisedSample(
         input_tensor=input_tensor,
         target_tensor=target_tensor,
         is_batch=True,
@@ -261,14 +263,14 @@ def load_morpion_supervised_dataset(
 
 
 __all__ = [
-    "MorpionGraphSupervisedDataset",
-    "MorpionGraphSupervisedDatasetArgs",
-    "MorpionGraphSupervisedSample",
+    "MorpionEntityTokenSupervisedDataset",
+    "MorpionEntityTokenSupervisedDatasetArgs",
+    "MorpionEntityTokenSupervisedSample",
     "MorpionSupervisedDataset",
     "MorpionSupervisedDatasetArgs",
-    "collate_morpion_graph_supervised_samples",
+    "collate_morpion_entity_token_supervised_samples",
     "collate_morpion_supervised_samples",
     "load_morpion_supervised_dataset",
-    "process_morpion_supervised_row_to_graph_tensors",
+    "process_morpion_supervised_row_to_entity_token_tensors",
     "process_morpion_supervised_row_to_tensors",
 ]

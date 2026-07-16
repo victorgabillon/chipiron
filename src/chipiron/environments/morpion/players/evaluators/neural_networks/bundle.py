@@ -12,6 +12,12 @@ import torch
 
 from chipiron.learning.torch_runtime import state_dict_on_cpu
 
+from .entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_FEATURE_NAMES,
+    MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+    is_morpion_entity_token_model_kind,
+)
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
     MORPION_CANONICAL_FEATURE_NAMES,
@@ -19,12 +25,6 @@ from .feature_schema import (
     MorpionFeatureSubset,
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
-)
-from .graph_tokens import (
-    MORPION_GRAPH_INPUT_REPRESENTATION,
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    MORPION_GRAPH_TOKEN_FEATURE_NAMES,
-    is_morpion_entity_token_transformer_model_kind,
 )
 from .model import (
     MORPION_INPUT_DIM,
@@ -82,6 +82,18 @@ class InvalidMorpionModelBundleError(ValueError):
         """Return the invalid-model-kind error."""
         return cls(
             f"Invalid Morpion model args in {path!s}: `model_kind` must be a string."
+        )
+
+    @classmethod
+    def unexpected_model_args_fields(
+        cls,
+        path: Path,
+        fields: set[str],
+    ) -> InvalidMorpionModelBundleError:
+        """Return the unexpected-model-args-fields error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: unexpected fields "
+            f"{sorted(fields)!r}."
         )
 
     @classmethod
@@ -257,8 +269,8 @@ def save_morpion_model_bundle(
     manifest = MorpionModelManifest(
         input_dim=model_args.input_dim,
         input_representation=(
-            MORPION_GRAPH_INPUT_REPRESENTATION
-            if is_morpion_entity_token_transformer_model_kind(model_args.model_kind)
+            MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
+            if is_morpion_entity_token_model_kind(model_args.model_kind)
             else "handcrafted_features"
         ),
         model_kind=model_args.model_kind,
@@ -301,18 +313,16 @@ def _bundle_metadata(
     model_args: MorpionRegressorArgs,
     metadata: dict[str, object] | None,
 ) -> dict[str, object]:
-    """Return manifest metadata augmented with graph-token schema details."""
+    """Return manifest metadata augmented with entity-token schema details."""
     bundle_metadata = dict(metadata) if metadata is not None else {}
-    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
-        bundle_metadata.update(
-            {
-                "graph_token_feature_names": list(MORPION_GRAPH_TOKEN_FEATURE_NAMES),
-                "graph_max_tokens": model_args.graph_max_tokens,
-                "graph_d_model": model_args.graph_d_model,
-                "graph_n_head": model_args.graph_n_head,
-                "graph_n_layer": model_args.graph_n_layer,
-            }
-        )
+    if is_morpion_entity_token_model_kind(model_args.model_kind):
+        bundle_metadata.update({
+            "entity_token_feature_names": list(MORPION_ENTITY_TOKEN_FEATURE_NAMES),
+            "entity_max_tokens": model_args.entity_max_tokens,
+            "entity_d_model": model_args.entity_d_model,
+            "entity_n_head": model_args.entity_n_head,
+            "entity_n_layer": model_args.entity_n_layer,
+        })
     return bundle_metadata
 
 
@@ -323,13 +333,42 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     if not _is_str_key_mapping(raw):
         raise InvalidMorpionModelBundleError.invalid_model_args_mapping(path)
     data = cast("Mapping[str, object]", raw)
+    allowed_fields = {
+        "model_kind",
+        "input_dim",
+        "input_representation",
+        "feature_subset_name",
+        "feature_names",
+        "hidden_dim",
+        "hidden_sizes",
+        "entity_max_tokens",
+        "entity_input_feature_dim",
+        "entity_d_model",
+        "entity_n_head",
+        "entity_n_layer",
+        "entity_dim_feedforward",
+        "entity_dropout_ratio",
+        "entity_pooling",
+        "entity_output_tanh",
+    }
+    unexpected_fields = set(data) - allowed_fields
+    if unexpected_fields:
+        raise InvalidMorpionModelBundleError.unexpected_model_args_fields(
+            path, unexpected_fields
+        )
     model_kind = data.get("model_kind", "linear")
     input_dim = data.get("input_dim", MORPION_INPUT_DIM)
     if not isinstance(model_kind, str):
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
+    if is_morpion_entity_token_model_kind(model_kind):
+        input_representation = data.get("input_representation")
+        if input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
+            raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+                str(input_representation)
+            )
     feature_subset = (
         full_morpion_feature_subset()
-        if is_morpion_entity_token_transformer_model_kind(model_kind)
+        if is_morpion_entity_token_model_kind(model_kind)
         else _load_feature_subset(
             data,
             path,
@@ -341,17 +380,17 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
         hidden_sizes=_load_hidden_sizes(data, path),
-        graph_max_tokens=_coerce_int(data.get("graph_max_tokens", 1536)),
-        graph_input_feature_dim=_coerce_int(
-            data.get("graph_input_feature_dim", MORPION_GRAPH_TOKEN_FEATURE_DIM)
+        entity_max_tokens=_coerce_int(data.get("entity_max_tokens", 1536)),
+        entity_input_feature_dim=_coerce_int(
+            data.get("entity_input_feature_dim", MORPION_ENTITY_TOKEN_FEATURE_DIM)
         ),
-        graph_d_model=_coerce_int(data.get("graph_d_model", 64)),
-        graph_n_head=_coerce_int(data.get("graph_n_head", 4)),
-        graph_n_layer=_coerce_int(data.get("graph_n_layer", 2)),
-        graph_dim_feedforward=_coerce_int(data.get("graph_dim_feedforward", 256)),
-        graph_dropout_ratio=_coerce_float(data.get("graph_dropout_ratio", 0.0)),
-        graph_pooling=str(data.get("graph_pooling", "value_token")),
-        graph_output_tanh=_coerce_bool(data.get("graph_output_tanh", False)),
+        entity_d_model=_coerce_int(data.get("entity_d_model", 64)),
+        entity_n_head=_coerce_int(data.get("entity_n_head", 4)),
+        entity_n_layer=_coerce_int(data.get("entity_n_layer", 2)),
+        entity_dim_feedforward=_coerce_int(data.get("entity_dim_feedforward", 256)),
+        entity_dropout_ratio=_coerce_float(data.get("entity_dropout_ratio", 0.0)),
+        entity_pooling=str(data.get("entity_pooling", "value_token")),
+        entity_output_tanh=_coerce_bool(data.get("entity_output_tanh", False)),
     )
 
 
@@ -374,7 +413,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
     input_representation = str(data.get("input_representation", "handcrafted_features"))
     feature_subset = (
         full_morpion_feature_subset()
-        if is_morpion_entity_token_transformer_model_kind(model_kind)
+        if is_morpion_entity_token_model_kind(model_kind)
         else _load_feature_subset(data, path, input_dim=input_dim)
     )
     return MorpionModelManifest(
@@ -412,19 +451,19 @@ def _validate_manifest_compatibility(
     """Validate that the loaded Morpion manifest matches current code."""
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
-    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
-        if not is_morpion_entity_token_transformer_model_kind(manifest.model_kind):
+    if is_morpion_entity_token_model_kind(model_args.model_kind):
+        if not is_morpion_entity_token_model_kind(manifest.model_kind):
             raise IncompatibleMorpionModelBundleError.wrong_input_dim(
                 expected_input_dim=model_args.input_dim,
                 actual_input_dim=manifest.input_dim,
             )
-        if manifest.input_representation != MORPION_GRAPH_INPUT_REPRESENTATION:
+        if manifest.input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
             raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
                 manifest.input_representation
             )
-        if manifest.input_dim != model_args.graph_input_feature_dim:
+        if manifest.input_dim != model_args.entity_input_feature_dim:
             raise IncompatibleMorpionModelBundleError.wrong_input_dim(
-                expected_input_dim=model_args.graph_input_feature_dim,
+                expected_input_dim=model_args.entity_input_feature_dim,
                 actual_input_dim=manifest.input_dim,
             )
         return
@@ -446,6 +485,20 @@ def _validate_manifest_compatibility(
 
 def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
     """Serialize Morpion regressor args into JSON-friendly data."""
+    if is_morpion_entity_token_model_kind(model_args.model_kind):
+        return {
+            "model_kind": model_args.model_kind,
+            "input_representation": MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+            "entity_max_tokens": model_args.entity_max_tokens,
+            "entity_input_feature_dim": model_args.entity_input_feature_dim,
+            "entity_d_model": model_args.entity_d_model,
+            "entity_n_head": model_args.entity_n_head,
+            "entity_n_layer": model_args.entity_n_layer,
+            "entity_dim_feedforward": model_args.entity_dim_feedforward,
+            "entity_dropout_ratio": model_args.entity_dropout_ratio,
+            "entity_pooling": model_args.entity_pooling,
+            "entity_output_tanh": model_args.entity_output_tanh,
+        }
     data: dict[str, object] = {
         "model_kind": model_args.model_kind,
         "input_dim": model_args.input_dim,
@@ -455,20 +508,6 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
         if model_args.hidden_sizes is None
         else list(model_args.hidden_sizes),
     }
-    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
-        data.update(
-            {
-                "graph_max_tokens": model_args.graph_max_tokens,
-                "graph_input_feature_dim": model_args.graph_input_feature_dim,
-                "graph_d_model": model_args.graph_d_model,
-                "graph_n_head": model_args.graph_n_head,
-                "graph_n_layer": model_args.graph_n_layer,
-                "graph_dim_feedforward": model_args.graph_dim_feedforward,
-                "graph_dropout_ratio": model_args.graph_dropout_ratio,
-                "graph_pooling": model_args.graph_pooling,
-                "graph_output_tanh": model_args.graph_output_tanh,
-            }
-        )
     return data
 
 

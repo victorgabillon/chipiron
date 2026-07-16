@@ -87,9 +87,9 @@ from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator im
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     load_morpion_model_bundle,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MorpionGraphTokenConverter,
-    is_morpion_entity_token_transformer_model_kind,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MorpionEntityTokenConverter,
+    is_morpion_entity_token_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
@@ -315,10 +315,10 @@ def load_morpion_evaluator_from_model_bundle(
     model.eval()
     over_detector = MorpionOverEventDetector()
     input_converter: MorpionStateToTensorConverter
-    if is_morpion_entity_token_transformer_model_kind(model_args.model_kind):
-        input_converter = MorpionGraphTokenConverter(
+    if is_morpion_entity_token_model_kind(model_args.model_kind):
+        input_converter = MorpionEntityTokenConverter(
             dynamics=MorpionDynamics(),
-            max_tokens=model_args.graph_max_tokens,
+            max_tokens=model_args.entity_max_tokens,
         )
     else:
         input_converter = MorpionFeatureTensorConverter(
@@ -1442,36 +1442,34 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def profile_state_eviction_runtime(self) -> Mapping[str, object]:
         """Return experimental state-eviction counters for memory diagnostics."""
         snapshot = self._state_eviction_metrics.snapshot()
-        snapshot.update(
-            {
-                "state_eviction_recent_window": (
-                    self._args.growth_state_eviction_recent_window
-                ),
-                "state_rematerialization_cache_size": (
-                    self._args.growth_state_rematerialization_cache_size
-                ),
-                "state_eviction_scan_interval_steps": (
-                    self._args.growth_state_eviction_scan_interval_steps
-                ),
-                "state_eviction_scan_node_limit": (
-                    self._args.growth_state_eviction_scan_node_limit
-                ),
-                "state_eviction_payload_mode": (
-                    self._args.growth_state_eviction_payload_mode
-                ),
-                "state_eviction_delta_chain_max_depth": (
-                    self._args.growth_state_eviction_delta_chain_max_depth
-                ),
-                "recent_selected_count": len(self._growth_eviction_recent_node_id_set),
-                "selected_step_tracked_count": len(
-                    self._growth_eviction_selected_step_by_node_id
-                ),
-                "state_eviction_scan_cursor": self._growth_eviction_scan_cursor,
-                "state_resolver_current_phase": (
-                    self._live_compact_state_resolver.current_phase
-                ),
-            }
-        )
+        snapshot.update({
+            "state_eviction_recent_window": (
+                self._args.growth_state_eviction_recent_window
+            ),
+            "state_rematerialization_cache_size": (
+                self._args.growth_state_rematerialization_cache_size
+            ),
+            "state_eviction_scan_interval_steps": (
+                self._args.growth_state_eviction_scan_interval_steps
+            ),
+            "state_eviction_scan_node_limit": (
+                self._args.growth_state_eviction_scan_node_limit
+            ),
+            "state_eviction_payload_mode": (
+                self._args.growth_state_eviction_payload_mode
+            ),
+            "state_eviction_delta_chain_max_depth": (
+                self._args.growth_state_eviction_delta_chain_max_depth
+            ),
+            "recent_selected_count": len(self._growth_eviction_recent_node_id_set),
+            "selected_step_tracked_count": len(
+                self._growth_eviction_selected_step_by_node_id
+            ),
+            "state_eviction_scan_cursor": self._growth_eviction_scan_cursor,
+            "state_resolver_current_phase": (
+                self._live_compact_state_resolver.current_phase
+            ),
+        })
         return snapshot
 
     def latest_checkpoint_metrics(self) -> Mapping[str, object] | None:

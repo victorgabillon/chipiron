@@ -12,13 +12,13 @@ from chipiron.environments.morpion.learning import (
     iter_morpion_supervised_row_chunks_from_path,
 )
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
-    collate_morpion_graph_supervised_samples,
-    process_morpion_supervised_row_to_graph_tensors,
+    collate_morpion_entity_token_supervised_samples,
+    process_morpion_supervised_row_to_entity_token_tensors,
     process_morpion_supervised_row_to_tensors,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MorpionGraphTokenConverter,
-    is_morpion_entity_token_transformer_model_kind,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MorpionEntityTokenConverter,
+    is_morpion_entity_token_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
@@ -69,21 +69,19 @@ def rows_to_sample_batch(
 ) -> TensorSupervisedBatch:
     """Convert Morpion supervised rows into one tensor batch."""
     dynamics = MorpionDynamics()
-    if is_morpion_entity_token_transformer_model_kind(args.model_kind):
-        graph_converter = MorpionGraphTokenConverter(
+    if is_morpion_entity_token_model_kind(args.model_kind):
+        entity_converter = MorpionEntityTokenConverter(
             dynamics=dynamics,
-            max_tokens=args.graph_max_tokens,
+            max_tokens=args.entity_max_tokens,
         )
-        return collate_morpion_graph_supervised_samples(
-            [
-                process_morpion_supervised_row_to_graph_tensors(
-                    row,
-                    dynamics=dynamics,
-                    converter=graph_converter,
-                )
-                for row in rows
-            ]
-        )
+        return collate_morpion_entity_token_supervised_samples([
+            process_morpion_supervised_row_to_entity_token_tensors(
+                row,
+                dynamics=dynamics,
+                converter=entity_converter,
+            )
+            for row in rows
+        ])
     feature_converter = MorpionFeatureTensorConverter(
         dynamics=dynamics,
         feature_subset=args.feature_subset,

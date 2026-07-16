@@ -104,8 +104,8 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
-    MORPION_GRAPH_MODEL_KIND,
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -177,12 +177,10 @@ class FakeMorpionSearchRunner:
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
         _ = effective_runtime_config, reevaluate_tree
-        self.load_calls.append(
-            (
-                None if tree_snapshot_path is None else str(tree_snapshot_path),
-                None if model_bundle_path is None else str(model_bundle_path),
-            )
-        )
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -487,15 +485,13 @@ def test_bootstrap_config_normalizes_legacy_expanded_state_eviction_policy(
     config = bootstrap_config_from_args(args)
 
     payload = bootstrap_config_to_dict(config)
-    loaded = bootstrap_config_from_dict(
-        {
-            **payload,
-            "runtime": {
-                **payload["runtime"],
-                "growth_state_eviction_policy": "expanded",
-            },
-        }
-    )
+    loaded = bootstrap_config_from_dict({
+        **payload,
+        "runtime": {
+            **payload["runtime"],
+            "growth_state_eviction_policy": "expanded",
+        },
+    })
 
     assert payload["runtime"]["growth_state_eviction_policy"] == "cold_expanded"
     assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
@@ -1343,8 +1339,8 @@ def test_bootstrap_config_roundtrip_preserves_evaluator_feature_subset(
     assert loaded.evaluators.evaluators["linear"].feature_names == feature_names
 
 
-def test_linear_evaluator_serialization_omits_graph_defaults() -> None:
-    """Existing linear/MLP configs should not grow graph-only default fields."""
+def test_linear_evaluator_serialization_omits_entity_token_defaults() -> None:
+    """Existing linear/MLP configs should not grow entity-token default fields."""
     payload = bootstrap_config_to_dict(_make_config())
     evaluator_payloads = cast(
         "dict[str, dict[str, object]]",
@@ -1353,37 +1349,37 @@ def test_linear_evaluator_serialization_omits_graph_defaults() -> None:
 
     assert evaluator_payloads
     for spec_payload in evaluator_payloads.values():
-        assert "graph_max_tokens" not in spec_payload
-        assert "graph_d_model" not in spec_payload
-        assert "graph_pooling" not in spec_payload
+        assert "entity_max_tokens" not in spec_payload
+        assert "entity_d_model" not in spec_payload
+        assert "entity_pooling" not in spec_payload
 
 
-def test_bootstrap_config_roundtrip_preserves_graph_evaluator_fields(
+def test_bootstrap_config_roundtrip_preserves_entity_token_evaluator_fields(
     tmp_path: Path,
 ) -> None:
-    """Persisted graph evaluator settings should survive config roundtrips."""
+    """Persisted entity-token settings should survive config roundtrips."""
     config = MorpionBootstrapConfig(
         experiment=_make_config().experiment,
         runtime=_make_config().runtime,
         dataset=_make_config().dataset,
         evaluators=MorpionEvaluatorsConfig(
             evaluators={
-                "graph": MorpionEvaluatorSpec(
-                    name="graph",
-                    model_type=MORPION_GRAPH_MODEL_KIND,
+                "entity_token": MorpionEvaluatorSpec(
+                    name="entity_token",
+                    model_type=MORPION_ENTITY_TOKEN_MODEL_KIND,
                     hidden_sizes=None,
                     num_epochs=1,
                     batch_size=2,
                     learning_rate=1e-3,
-                    graph_max_tokens=321,
-                    graph_input_feature_dim=MORPION_GRAPH_TOKEN_FEATURE_DIM,
-                    graph_d_model=32,
-                    graph_n_head=4,
-                    graph_n_layer=1,
-                    graph_dim_feedforward=64,
-                    graph_dropout_ratio=0.1,
-                    graph_pooling="masked_mean",
-                    graph_output_tanh=False,
+                    entity_max_tokens=321,
+                    entity_input_feature_dim=MORPION_ENTITY_TOKEN_FEATURE_DIM,
+                    entity_d_model=32,
+                    entity_n_head=4,
+                    entity_n_layer=1,
+                    entity_dim_feedforward=64,
+                    entity_dropout_ratio=0.1,
+                    entity_pooling="masked_mean",
+                    entity_output_tanh=False,
                 )
             }
         ),
@@ -1392,41 +1388,58 @@ def test_bootstrap_config_roundtrip_preserves_graph_evaluator_fields(
 
     save_bootstrap_config(config, config_path)
     loaded = load_bootstrap_config(config_path)
-    loaded_spec = loaded.evaluators.evaluators["graph"]
+    loaded_spec = loaded.evaluators.evaluators["entity_token"]
     payload = bootstrap_config_to_dict(config)
-    graph_payload = cast(
+    entity_token_payload = cast(
         "dict[str, object]",
         cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
-            "graph"
+            "entity_token"
         ],
     )
 
     assert loaded == config
-    assert graph_payload["graph_max_tokens"] == 321
-    assert graph_payload["graph_d_model"] == 32
-    assert graph_payload["graph_pooling"] == "masked_mean"
-    assert loaded_spec.model_type == MORPION_GRAPH_MODEL_KIND
-    assert loaded_spec.graph_max_tokens == 321
-    assert loaded_spec.graph_d_model == 32
-    assert loaded_spec.graph_n_head == 4
-    assert loaded_spec.graph_n_layer == 1
-    assert loaded_spec.graph_dim_feedforward == 64
-    assert loaded_spec.graph_dropout_ratio == 0.1
-    assert loaded_spec.graph_pooling == "masked_mean"
-    assert loaded_spec.graph_output_tanh is False
+    assert entity_token_payload["entity_max_tokens"] == 321
+    assert entity_token_payload["entity_d_model"] == 32
+    assert entity_token_payload["entity_pooling"] == "masked_mean"
+    assert loaded_spec.model_type == MORPION_ENTITY_TOKEN_MODEL_KIND
+    assert loaded_spec.entity_max_tokens == 321
+    assert loaded_spec.entity_d_model == 32
+    assert loaded_spec.entity_n_head == 4
+    assert loaded_spec.entity_n_layer == 1
+    assert loaded_spec.entity_dim_feedforward == 64
+    assert loaded_spec.entity_dropout_ratio == 0.1
+    assert loaded_spec.entity_pooling == "masked_mean"
+    assert loaded_spec.entity_output_tanh is False
 
 
-def test_bootstrap_config_missing_graph_output_tanh_defaults_false() -> None:
-    """Missing graph output tanh config should parse to the regression default."""
+def test_bootstrap_config_rejects_removed_evaluator_fields() -> None:
+    """Bootstrap parsing should reject fields from the removed token schema."""
+    payload = bootstrap_config_to_dict(_make_config())
+    evaluator_payloads = cast(
+        "dict[str, dict[str, object]]",
+        cast("dict[str, object]", payload["evaluators"])["evaluators"],
+    )
+    first_evaluator = next(iter(evaluator_payloads.values()))
+    first_evaluator["graph" + "_max_tokens"] = 1536
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match="valid Morpion evaluator mapping",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_missing_entity_output_tanh_defaults_false() -> None:
+    """Missing entity output tanh should parse to the regression default."""
     config = MorpionBootstrapConfig(
         experiment=_make_config().experiment,
         runtime=_make_config().runtime,
         dataset=_make_config().dataset,
         evaluators=MorpionEvaluatorsConfig(
             evaluators={
-                "graph": MorpionEvaluatorSpec(
-                    name="graph",
-                    model_type=MORPION_GRAPH_MODEL_KIND,
+                "entity_token": MorpionEvaluatorSpec(
+                    name="entity_token",
+                    model_type=MORPION_ENTITY_TOKEN_MODEL_KIND,
                     hidden_sizes=None,
                     num_epochs=1,
                     batch_size=2,
@@ -1436,17 +1449,17 @@ def test_bootstrap_config_missing_graph_output_tanh_defaults_false() -> None:
         ),
     )
     payload = bootstrap_config_to_dict(config)
-    graph_payload = cast(
+    entity_token_payload = cast(
         "dict[str, object]",
         cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
-            "graph"
+            "entity_token"
         ],
     )
-    graph_payload.pop("graph_output_tanh", None)
+    entity_token_payload.pop("entity_output_tanh", None)
 
     loaded = bootstrap_config_from_dict(payload)
 
-    assert loaded.evaluators.evaluators["graph"].graph_output_tanh is False
+    assert loaded.evaluators.evaluators["entity_token"].entity_output_tanh is False
 
 
 def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:

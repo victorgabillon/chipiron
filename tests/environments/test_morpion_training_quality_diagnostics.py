@@ -6,7 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
-    MORPION_GRAPH_MODEL_KIND,
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
     MORPION_MANIFEST_FILE_NAME,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
@@ -51,19 +51,19 @@ def test_flat_cached_training_reports_quality_metrics_and_metadata(
     _assert_manifest_quality_metadata(output_dir)
 
 
-def test_graph_cached_training_reports_quality_metrics_and_metadata(
+def test_entity_token_cached_training_reports_quality_metrics_and_metadata(
     tmp_path: Path,
 ) -> None:
-    """Graph cached streaming training should report sampled quality diagnostics."""
+    """Entity-token cached training should report sampled quality diagnostics."""
     rows_path = _build_jsonl_rows_file(
         tmp_path,
         target_values=(10.0, 20.0, 30.0, 40.0),
     )
-    output_dir = tmp_path / "graph_quality_bundle"
+    output_dir = tmp_path / "entity_token_quality_bundle"
 
     _model, metrics = train_morpion_regressor_streaming(
         MorpionStreamingTrainingArgs(
-            training_args=_small_graph_training_args(
+            training_args=_small_entity_token_training_args(
                 dataset_file=rows_path,
                 output_dir=output_dir,
                 num_epochs=0,
@@ -73,7 +73,7 @@ def test_graph_cached_training_reports_quality_metrics_and_metadata(
     )
 
     _assert_quality_metric_keys(metrics)
-    assert metrics["graph_token_cache_used"] == "true"
+    assert metrics["entity_token_cache_used"] == "true"
     _assert_manifest_quality_metadata(output_dir)
 
 
@@ -104,13 +104,13 @@ def _assert_manifest_quality_metadata(output_dir: Path) -> None:
     assert "mse" in regression_quality["validation"]
 
 
-def _small_graph_training_args(
+def _small_entity_token_training_args(
     *,
     dataset_file: Path,
     output_dir: Path,
     num_epochs: int,
 ) -> MorpionTrainingArgs:
-    """Return one tiny graph-token training config for quality tests."""
+    """Return one tiny entity-token training config for quality tests."""
     return MorpionTrainingArgs(
         dataset_file=dataset_file,
         output_dir=output_dir,
@@ -119,11 +119,11 @@ def _small_graph_training_args(
         learning_rate=1e-3,
         shuffle=False,
         validation_fraction=0.25,
-        model_kind=MORPION_GRAPH_MODEL_KIND,
-        graph_max_tokens=128,
-        graph_d_model=16,
-        graph_n_head=4,
-        graph_n_layer=1,
-        graph_dim_feedforward=32,
+        model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+        entity_max_tokens=128,
+        entity_d_model=16,
+        entity_n_head=4,
+        entity_n_layer=1,
+        entity_dim_feedforward=32,
         device="cpu",
     )

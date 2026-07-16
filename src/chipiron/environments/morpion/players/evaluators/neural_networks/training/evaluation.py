@@ -9,8 +9,8 @@ import torch
 from torch.utils.data import DataLoader, Subset
 
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
-    MorpionGraphSupervisedDataset,
-    MorpionGraphSupervisedSample,
+    MorpionEntityTokenSupervisedDataset,
+    MorpionEntityTokenSupervisedSample,
     MorpionSupervisedDataset,
     MorpionSupervisedSample,
 )
@@ -35,9 +35,9 @@ if TYPE_CHECKING:
 
 type MorpionRegressionDataset = (
     MorpionSupervisedDataset
-    | MorpionGraphSupervisedDataset
+    | MorpionEntityTokenSupervisedDataset
     | Subset[MorpionSupervisedSample]
-    | Subset[MorpionGraphSupervisedSample]
+    | Subset[MorpionEntityTokenSupervisedSample]
 )
 
 

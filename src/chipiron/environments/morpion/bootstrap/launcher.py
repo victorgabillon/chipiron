@@ -35,7 +35,6 @@ from .control import (
 )
 from .evaluator_family import (
     CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
-    CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
 )
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
@@ -764,83 +763,81 @@ def _render_launcher_startup_summary(
     )
     latest_runtime_checkpoint_path = _latest_runtime_checkpoint_path(startup_status)
     latest_training_artifact_path = _latest_training_artifact_path(startup_status)
-    return "\n".join(
+    return "\n".join((
+        "=== Morpion Bootstrap Launcher ===",
+        f"work dir: {startup_status.paths.work_dir}",
+        f"mode: {startup_status.run_mode}",
+        f"bootstrap config: {_render_config_state(startup_status.config_exists)}",
+        f"control file: {_render_presence(startup_status.control_exists)}",
+        f"run state: {_render_presence(startup_status.run_state_exists)}",
+        f"history: {_render_presence(startup_status.history_exists)}",
+        f"latest status: {_render_presence(startup_status.latest_status_exists)}",
+        f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
+        f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
         (
-            "=== Morpion Bootstrap Launcher ===",
-            f"work dir: {startup_status.paths.work_dir}",
-            f"mode: {startup_status.run_mode}",
-            f"bootstrap config: {_render_config_state(startup_status.config_exists)}",
-            f"control file: {_render_presence(startup_status.control_exists)}",
-            f"run state: {_render_presence(startup_status.run_state_exists)}",
-            f"history: {_render_presence(startup_status.history_exists)}",
-            f"latest status: {_render_presence(startup_status.latest_status_exists)}",
-            f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
-            f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
-            (
-                "training export mode: "
-                f"{startup_status.bootstrap_config.training_export_mode} "
-                f"({_render_training_export_mode_note(startup_status.bootstrap_config.training_export_mode)})"
-            ),
-            (
-                "runtime checkpoint format: "
-                f"{startup_status.resolved_bootstrap_args.runtime_checkpoint_format} "
-                f"({_render_runtime_checkpoint_format_note(startup_status.resolved_bootstrap_args.runtime_checkpoint_format)})"
-            ),
-            (
-                "growth state eviction policy: "
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_policy}"
-            ),
-            (
-                "growth state eviction recent window: "
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_recent_window}"
-            ),
-            (
-                "growth state rematerialization cache size: "
-                f"{startup_status.resolved_bootstrap_args.growth_state_rematerialization_cache_size}"
-            ),
-            (
-                "growth state eviction scan: interval="
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_interval_steps} "
-                "node_limit="
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit}"
-            ),
-            (
-                "growth state eviction payload mode: "
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_payload_mode}"
-            ),
-            (
-                "growth state eviction delta chain max depth: "
-                f"{startup_status.resolved_bootstrap_args.growth_state_eviction_delta_chain_max_depth}"
-            ),
-            f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
-            f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
-            f"evaluator family preset: {_render_evaluator_family_line(startup_status)}",
-            f"configured evaluators: {evaluators}",
-            f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
-            "tree_branch_limit: "
-            f"{resolved_tree_branch_limit} "
-            f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
-            "rollout: "
-            f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
-            f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
-            f"action_selector_kind={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
-            f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
-            f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}",
-            "dashboard: "
-            f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}",
-            "paths:",
-            f"  config: {startup_status.paths.bootstrap_config_path}",
-            f"  control: {startup_status.paths.control_path}",
-            f"  run state: {startup_status.paths.run_state_path}",
-            f"  history: {startup_status.paths.history_jsonl_path}",
-            f"  latest status: {startup_status.paths.latest_status_path}",
-            f"  runtime checkpoints: {startup_status.paths.runtime_checkpoint_dir}",
-            f"  tree snapshots: {startup_status.paths.tree_snapshot_dir}",
-            f"  sharded tree snapshots: {startup_status.paths.sharded_tree_snapshot_dir}",
-            f"  rows: {startup_status.paths.rows_dir}",
-            f"  models: {startup_status.paths.model_dir}",
-        )
-    )
+            "training export mode: "
+            f"{startup_status.bootstrap_config.training_export_mode} "
+            f"({_render_training_export_mode_note(startup_status.bootstrap_config.training_export_mode)})"
+        ),
+        (
+            "runtime checkpoint format: "
+            f"{startup_status.resolved_bootstrap_args.runtime_checkpoint_format} "
+            f"({_render_runtime_checkpoint_format_note(startup_status.resolved_bootstrap_args.runtime_checkpoint_format)})"
+        ),
+        (
+            "growth state eviction policy: "
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_policy}"
+        ),
+        (
+            "growth state eviction recent window: "
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_recent_window}"
+        ),
+        (
+            "growth state rematerialization cache size: "
+            f"{startup_status.resolved_bootstrap_args.growth_state_rematerialization_cache_size}"
+        ),
+        (
+            "growth state eviction scan: interval="
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_interval_steps} "
+            "node_limit="
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_scan_node_limit}"
+        ),
+        (
+            "growth state eviction payload mode: "
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_payload_mode}"
+        ),
+        (
+            "growth state eviction delta chain max depth: "
+            f"{startup_status.resolved_bootstrap_args.growth_state_eviction_delta_chain_max_depth}"
+        ),
+        f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
+        f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
+        f"evaluator family preset: {_render_evaluator_family_line(startup_status)}",
+        f"configured evaluators: {evaluators}",
+        f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
+        "tree_branch_limit: "
+        f"{resolved_tree_branch_limit} "
+        f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
+        "rollout: "
+        f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
+        f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
+        f"action_selector_kind={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
+        f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
+        f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}",
+        "dashboard: "
+        f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}",
+        "paths:",
+        f"  config: {startup_status.paths.bootstrap_config_path}",
+        f"  control: {startup_status.paths.control_path}",
+        f"  run state: {startup_status.paths.run_state_path}",
+        f"  history: {startup_status.paths.history_jsonl_path}",
+        f"  latest status: {startup_status.paths.latest_status_path}",
+        f"  runtime checkpoints: {startup_status.paths.runtime_checkpoint_dir}",
+        f"  tree snapshots: {startup_status.paths.tree_snapshot_dir}",
+        f"  sharded tree snapshots: {startup_status.paths.sharded_tree_snapshot_dir}",
+        f"  rows: {startup_status.paths.rows_dir}",
+        f"  models: {startup_status.paths.model_dir}",
+    ))
 
 
 def _render_training_export_mode_note(training_export_mode: str) -> str:
@@ -928,8 +925,6 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
             "to the canonical 8-model Morpion family unless explicit "
             "evaluators_config is supplied programmatically. Available presets "
             f"include {CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET!r} and "
-            f"{CANONICAL_LINEAR_MLP_GRAPH_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r} "
-            "and "
             f"{CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET!r}."
         ),
     )
@@ -1461,12 +1456,10 @@ def launcher_args_from_cli(
     candidate_checkpoint_load_headroom_explicit = any(
         argument == "--candidate-checkpoint-load-headroom-factor"
         or argument == "--candidate-checkpoint-load-min-headroom-mb"
-        or argument.startswith(
-            (
-                "--candidate-checkpoint-load-headroom-factor=",
-                "--candidate-checkpoint-load-min-headroom-mb=",
-            )
-        )
+        or argument.startswith((
+            "--candidate-checkpoint-load-headroom-factor=",
+            "--candidate-checkpoint-load-min-headroom-mb=",
+        ))
         for argument in argv_list
     )
     recursive_max_depth_explicit = any(

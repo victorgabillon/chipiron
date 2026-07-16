@@ -41,8 +41,9 @@ phases and delta-candidate rejection logs suppressed.
 The launcher default remains `canonical_8_linear_mlp_subsets`, the existing
 canonical linear/MLP evaluator family.
 
-Use `--evaluator-family canonical_linear_mlp_graph_small` to opt in to the same
-canonical linear/MLP evaluators plus one small `graph_transformer` evaluator.
+Use `--evaluator-family canonical_linear_mlp_entity_transformer_small` to opt in
+to the same canonical linear/MLP evaluators plus one small
+`entity_token_transformer_value_net` evaluator.
 
 ### Persistence defaults
 
@@ -421,11 +422,13 @@ from pathlib import Path
 
 from chipiron.environments.morpion.bootstrap.dashboard.app import run_dashboard_app
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--work-dir", required=True)
     args = parser.parse_args()
     run_dashboard_app(Path(args.work_dir))
+
 
 if __name__ == "__main__":
     main()

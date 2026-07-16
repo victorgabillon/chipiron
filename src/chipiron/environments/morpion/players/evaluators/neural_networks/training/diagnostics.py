@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import torch
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    is_morpion_entity_token_model_kind,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_TOKEN_FEATURE_DIM,
-    is_morpion_entity_token_transformer_model_kind,
 )
 from chipiron.learning.torch_runtime import module_device
 
@@ -125,14 +125,12 @@ def predict_morpion_rows_for_diagnostics(
             ) from exc
 
 
-def diagnostic_adapter_kind(model_kind: object) -> Literal["flat", "graph_tokens"]:
+def diagnostic_adapter_kind(model_kind: object) -> Literal["flat", "entity_tokens"]:
     """Return the Morpion diagnostics adapter family for one model kind."""
     if model_kind in {"linear", "mlp"}:
         return "flat"
-    if isinstance(model_kind, str) and is_morpion_entity_token_transformer_model_kind(
-        model_kind
-    ):
-        return "graph_tokens"
+    if isinstance(model_kind, str) and is_morpion_entity_token_model_kind(model_kind):
+        return "entity_tokens"
     raise UnsupportedMorpionDiagnosticInputFormatError(model_kind)
 
 
@@ -163,21 +161,21 @@ def diagnostic_training_args(
         hidden_sizes=cast(
             "tuple[int, ...] | None", getattr(model_args, "hidden_sizes", None)
         ),
-        graph_max_tokens=int(getattr(model_args, "graph_max_tokens", 1536)),
-        graph_input_feature_dim=int(
+        entity_max_tokens=int(getattr(model_args, "entity_max_tokens", 1536)),
+        entity_input_feature_dim=int(
             getattr(
                 model_args,
-                "graph_input_feature_dim",
-                MORPION_GRAPH_TOKEN_FEATURE_DIM,
+                "entity_input_feature_dim",
+                MORPION_ENTITY_TOKEN_FEATURE_DIM,
             )
         ),
-        graph_d_model=int(getattr(model_args, "graph_d_model", 64)),
-        graph_n_head=int(getattr(model_args, "graph_n_head", 4)),
-        graph_n_layer=int(getattr(model_args, "graph_n_layer", 2)),
-        graph_dim_feedforward=int(getattr(model_args, "graph_dim_feedforward", 256)),
-        graph_dropout_ratio=float(getattr(model_args, "graph_dropout_ratio", 0.0)),
-        graph_pooling=str(getattr(model_args, "graph_pooling", "value_token")),
-        graph_output_tanh=bool(getattr(model_args, "graph_output_tanh", False)),
+        entity_d_model=int(getattr(model_args, "entity_d_model", 64)),
+        entity_n_head=int(getattr(model_args, "entity_n_head", 4)),
+        entity_n_layer=int(getattr(model_args, "entity_n_layer", 2)),
+        entity_dim_feedforward=int(getattr(model_args, "entity_dim_feedforward", 256)),
+        entity_dropout_ratio=float(getattr(model_args, "entity_dropout_ratio", 0.0)),
+        entity_pooling=str(getattr(model_args, "entity_pooling", "value_token")),
+        entity_output_tanh=bool(getattr(model_args, "entity_output_tanh", False)),
         device="auto",
     )
 

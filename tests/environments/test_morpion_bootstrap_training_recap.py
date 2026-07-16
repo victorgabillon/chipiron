@@ -68,8 +68,8 @@ def test_collect_latest_training_recap_extracts_nested_metrics_and_flags(
         json.dumps({
             "metadata": {
                 "cached_global_shuffle": "true",
-                "graph_token_cache": {"used": True},
-                "graph_token_cache_used": "true",
+                "entity_token_cache": {"used": True},
+                "entity_token_cache_used": "true",
                 "regression_quality": {
                     "validation": {
                         "r2_vs_mean_baseline": 0.5123,
@@ -81,7 +81,7 @@ def test_collect_latest_training_recap_extracts_nested_metrics_and_flags(
         encoding="utf-8",
     )
     (model_dir / "morpion_regressor_args.json").write_text(
-        json.dumps({"graph_output_tanh": False}),
+        json.dumps({"entity_output_tanh": False}),
         encoding="utf-8",
     )
 
@@ -92,8 +92,8 @@ def test_collect_latest_training_recap_extracts_nested_metrics_and_flags(
     assert recap.validation_loss == 22.77
     assert recap.validation_quality_r2_vs_mean_baseline == 0.5123
     assert recap.validation_quality_pearson_correlation == 0.7319
-    assert recap.graph_output_tanh is False
-    assert recap.graph_token_cache_used is True
+    assert recap.entity_output_tanh is False
+    assert recap.entity_token_cache_used is True
     assert recap.cached_global_shuffle is True
 
 

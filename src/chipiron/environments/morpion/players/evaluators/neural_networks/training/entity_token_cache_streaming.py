@@ -1,4 +1,4 @@
-"""Streaming training loops backed by cached Morpion graph-token tensors."""
+"""Streaming training loops backed by cached Morpion entity-token tensors."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from .cached_index_schedule import (
     shuffled_epoch_train_indices,
     split_indices_for_streaming_policy,
 )
-from .graph_token_cache import GraphTokenCache, graph_cache_batch
+from .entity_token_cache import MorpionEntityTokenCache, entity_token_cache_batch
 from .streaming import StreamingEpochStats
 
 if TYPE_CHECKING:
@@ -38,20 +38,20 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-def train_graph_cache_streaming_epoch(
+def train_entity_token_cache_streaming_epoch(
     *,
     model: MorpionRegressor,
     optimizer: torch.optim.Optimizer,
     criterion: torch.nn.Module,
     args: MorpionTrainingArgs,
-    cache: GraphTokenCache,
+    cache: MorpionEntityTokenCache,
     row_chunk_size: int,
     max_rows: int | None,
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
 ) -> StreamingEpochStats:
-    """Train one streaming epoch over a cached graph-token artifact."""
+    """Train one streaming epoch over a cached entity-token artifact."""
     epoch_started_at = perf_counter()
     epoch_timings = PhaseDurations()
     model.train()
@@ -75,7 +75,7 @@ def train_graph_cache_streaming_epoch(
             epoch_index=epoch_index,
         )
     LOGGER.info(
-        "[train-schedule] mode=graph_cache epoch=%s train_indices=%s "
+        "[train-schedule] mode=entity_token_cache epoch=%s train_indices=%s "
         "validation_indices=%s shuffle=%s global_shuffle=%s split_policy=%s",
         epoch_index + 1,
         len(schedule.train_indices),
@@ -95,7 +95,9 @@ def train_graph_cache_streaming_epoch(
             break
         batch_count += 1
         with epoch_timings.time_phase("row_to_sample_batch"):
-            sample_batch = graph_cache_batch(cache=cache, row_indices=row_indices)
+            sample_batch = entity_token_cache_batch(
+                cache=cache, row_indices=row_indices
+            )
         batch_stats = train_regression_batch(
             model=model,
             optimizer=optimizer,
@@ -133,17 +135,17 @@ def train_graph_cache_streaming_epoch(
     )
 
 
-def evaluate_graph_cache_streaming_metrics(
+def evaluate_entity_token_cache_streaming_metrics(
     *,
     model: MorpionRegressor,
     args: MorpionTrainingArgs,
-    cache: GraphTokenCache,
+    cache: MorpionEntityTokenCache,
     row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
 ) -> RegressionEvaluationStats:
-    """Compute streaming metrics for one split from cached graph tokens."""
+    """Compute streaming metrics for one split from cached entity tokens."""
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     squared_error_sum = 0.0
@@ -169,7 +171,7 @@ def evaluate_graph_cache_streaming_metrics(
             except StopIteration:
                 break
             with timings.time_phase("row_to_sample_batch"):
-                sample_batch = graph_cache_batch(
+                sample_batch = entity_token_cache_batch(
                     cache=cache,
                     row_indices=row_indices,
                 )
@@ -203,7 +205,7 @@ def evaluate_graph_cache_streaming_metrics(
     )
 
 
-def _cache_row_limit(*, cache: GraphTokenCache, max_rows: int | None) -> int:
+def _cache_row_limit(*, cache: MorpionEntityTokenCache, max_rows: int | None) -> int:
     """Return the effective cache row limit for one streaming pass."""
     if max_rows is None:
         return cache.manifest.row_count
@@ -247,6 +249,6 @@ def _report_cached_progress(
 
 
 __all__ = [
-    "evaluate_graph_cache_streaming_metrics",
-    "train_graph_cache_streaming_epoch",
+    "evaluate_entity_token_cache_streaming_metrics",
+    "train_entity_token_cache_streaming_epoch",
 ]

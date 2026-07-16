@@ -49,8 +49,8 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.learning import MorpionSupervisedRow
-from chipiron.environments.morpion.players.evaluators.neural_networks.graph_tokens import (
-    MORPION_GRAPH_MODEL_KIND,
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressor,
@@ -128,7 +128,7 @@ class _ShapeMismatchDiagnosticModel(torch.nn.Module):
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Raise a shape-related ValueError like a model input adapter would."""
         raise ValueError(  # noqa: TRY003
-            f"expected graph-token input shape, got {tuple(input_tensor.shape)}"
+            f"expected entity-token input shape, got {tuple(input_tensor.shape)}"
         )
 
 
@@ -169,16 +169,16 @@ def test_safe_diagnostics_returns_skip_for_input_shape_value_error() -> None:
     assert result.detail is not None
 
 
-def test_graph_token_diagnostics_do_not_crash() -> None:
-    """Graph-token diagnostics should either predict or skip without traceback."""
+def test_entity_token_diagnostics_do_not_crash() -> None:
+    """Entity-token diagnostics should either predict or skip without traceback."""
     model = build_morpion_regressor(
         MorpionRegressorArgs(
-            model_kind=MORPION_GRAPH_MODEL_KIND,
-            graph_max_tokens=128,
-            graph_d_model=16,
-            graph_n_head=4,
-            graph_n_layer=1,
-            graph_dim_feedforward=32,
+            model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+            entity_max_tokens=128,
+            entity_d_model=16,
+            entity_n_head=4,
+            entity_n_layer=1,
+            entity_dim_feedforward=32,
         )
     )
 

@@ -1,10 +1,11 @@
-"""Graph-token tensor conversion for Morpion neural evaluators."""
+"""Entity-token tensor conversion for Morpion neural evaluators."""
 # pyright: reportMissingImports=false
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
 import torch
@@ -20,50 +21,40 @@ from chipiron.environments.morpion.types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from atomheart.games.morpion.state import Point, Segment
 
-try:
-    from coral.neural_networks.nn_model_type import NNModelType
-except ModuleNotFoundError:
-    _morpion_entity_token_transformer_model_kind = "entity_token_transformer_value_net"
-else:
-    _morpion_entity_token_transformer_model_kind = (
-        NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
-    )
-MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND: Final[str] = (
-    _morpion_entity_token_transformer_model_kind
+from coral.neural_networks.nn_model_type import NNModelType
+
+MORPION_ENTITY_TOKEN_MODEL_KIND: Final[str] = (
+    NNModelType.ENTITY_TOKEN_TRANSFORMER_VALUE_NET.value
 )
-MORPION_GRAPH_MODEL_KIND: Final[str] = "graph_transformer"
-MORPION_GRAPH_INPUT_REPRESENTATION: Final[str] = "graph_tokens_v1"
+MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION: Final[str] = "morpion_entity_tokens_v1"
 
 
-def is_morpion_entity_token_transformer_model_kind(model_kind: str) -> bool:
+def is_morpion_entity_token_model_kind(model_kind: str) -> bool:
     """Return whether a model kind consumes Morpion entity-token tensors."""
-    return model_kind in {
-        MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND,
-        MORPION_GRAPH_MODEL_KIND,
-    }
+    return model_kind == MORPION_ENTITY_TOKEN_MODEL_KIND
 
 
-class MorpionGraphTokenType(IntEnum):
-    """Token types used by the first Morpion graph-token representation."""
+class MorpionEntityTokenType(IntEnum):
+    """Entity types used by the first clean Morpion token representation."""
 
-    VALUE = 0
-    GLOBAL = 1
-    DOT = 2
-    EDGE = 3
-    MOVE = 4
+    GLOBAL = 0
+    DOT = 1
+    EDGE = 2
+    MOVE = 3
 
 
-MORPION_GRAPH_DIRECTIONS: Final[tuple[str, ...]] = (
+MORPION_ENTITY_TOKEN_DIRECTIONS: Final[tuple[str, ...]] = (
     "horizontal",
     "vertical",
     "diag_up",
     "diag_down",
 )
 
-MORPION_GRAPH_TOKEN_FEATURE_NAMES: Final[tuple[str, ...]] = (
-    "type_value",
+MORPION_ENTITY_TOKEN_FEATURE_NAMES: Final[tuple[str, ...]] = (
     "type_global",
     "type_dot",
     "type_edge",
@@ -90,18 +81,38 @@ MORPION_GRAPH_TOKEN_FEATURE_NAMES: Final[tuple[str, ...]] = (
     "used_unit_segment_count",
     "validity",
 )
-MORPION_GRAPH_TOKEN_FEATURE_DIM: Final[int] = len(MORPION_GRAPH_TOKEN_FEATURE_NAMES)
+MORPION_ENTITY_TOKEN_FEATURE_DIM: Final[int] = len(MORPION_ENTITY_TOKEN_FEATURE_NAMES)
 
-_VALIDITY_INDEX: Final[int] = MORPION_GRAPH_TOKEN_FEATURE_DIM - 1
+_VALIDITY_INDEX: Final[int] = MORPION_ENTITY_TOKEN_FEATURE_DIM - 1
 
 
-class InvalidMorpionGraphTokenConverterError(ValueError):
-    """Raised when graph-token conversion is configured invalidly."""
+class InvalidMorpionEntityTokenConverterError(ValueError):
+    """Raised when entity-token conversion is configured invalidly."""
 
     @classmethod
-    def invalid_max_tokens(cls) -> InvalidMorpionGraphTokenConverterError:
+    def invalid_max_tokens(cls) -> InvalidMorpionEntityTokenConverterError:
         """Return the invalid max-token-count error."""
-        return cls("Morpion graph token conversion requires max_tokens >= 2.")
+        return cls("Morpion entity-token conversion requires max_tokens >= 1.")
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionEntityTokenLayout:
+    """One entity tensor and stable indices for every surviving entity."""
+
+    tensor: Tensor
+    dot_index_by_point: Mapping[Point, int]
+    edge_index_by_segment: Mapping[Segment, int]
+    move_index_by_action: Mapping[MorpionAction, int]
+
+
+@dataclass(frozen=True, slots=True)
+class _MorpionEntityTokenRecord:
+    """A token row and its optional game-entity identity."""
+
+    row: list[float]
+    point: Point | None = None
+    segment: Segment | None = None
+    action: MorpionAction | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,82 +140,111 @@ class _CoordinateNormalizer:
 
 
 @dataclass(frozen=True, slots=True)
-class MorpionGraphTokenConverter:
-    """Convert Morpion states into variable-length graph-token tensors."""
+class MorpionEntityTokenConverter:
+    """Convert Morpion states into variable-length entity-token tensors."""
 
     dynamics: MorpionDynamics = field(default_factory=MorpionDynamics)
     max_tokens: int = 1536
 
     def feature_names(self) -> tuple[str, ...]:
-        """Return the ordered graph-token feature names."""
-        return MORPION_GRAPH_TOKEN_FEATURE_NAMES
+        """Return the ordered entity-token feature names."""
+        return MORPION_ENTITY_TOKEN_FEATURE_NAMES
 
     @property
     def input_dim(self) -> int:
-        """Return the graph-token feature width."""
-        return MORPION_GRAPH_TOKEN_FEATURE_DIM
+        """Return the entity-token feature width."""
+        return MORPION_ENTITY_TOKEN_FEATURE_DIM
 
     def state_to_tensor(self, state: MorpionState) -> Tensor:
-        """Return a ``T x F`` float32 tensor of real graph tokens for ``state``."""
-        if self.max_tokens < 2:
-            raise InvalidMorpionGraphTokenConverterError.invalid_max_tokens()
+        """Return a ``T x F`` float32 tensor of real entity tokens for ``state``."""
+        return self.state_to_layout(state).tensor
+
+    def state_to_layout(self, state: MorpionState) -> MorpionEntityTokenLayout:
+        """Return tokens and stable tensor indices for every surviving entity."""
+        if self.max_tokens < 1:
+            raise InvalidMorpionEntityTokenConverterError.invalid_max_tokens()
 
         normalizer = _normalizer_for_state(state)
         actions = self.dynamics.all_legal_actions(state)
         candidate_points = _candidate_points_from_actions(actions)
-        rows: list[list[float]] = [
-            _value_token(),
-            _global_token(state=state, legal_action_count=len(actions)),
+        records: list[_MorpionEntityTokenRecord] = [
+            _MorpionEntityTokenRecord(
+                row=_global_token(state=state, legal_action_count=len(actions))
+            )
         ]
-        rows.extend(
-            _dot_token(
+        records.extend(
+            _MorpionEntityTokenRecord(
+                row=_dot_token(
+                    point=point,
+                    state=state,
+                    candidate=point in candidate_points,
+                    normalizer=normalizer,
+                ),
                 point=point,
-                state=state,
-                candidate=point in candidate_points,
-                normalizer=normalizer,
             )
             for point in sorted(state.points)
         )
-        rows.extend(
-            _dot_token(
+        records.extend(
+            _MorpionEntityTokenRecord(
+                row=_dot_token(
+                    point=point,
+                    state=state,
+                    candidate=True,
+                    normalizer=normalizer,
+                ),
                 point=point,
-                state=state,
-                candidate=True,
-                normalizer=normalizer,
             )
             for point in sorted(candidate_points - state.points)
         )
-        rows.extend(
-            _edge_token(segment=segment, normalizer=normalizer)
+        records.extend(
+            _MorpionEntityTokenRecord(
+                row=_edge_token(segment=segment, normalizer=normalizer),
+                segment=segment,
+            )
             for segment in sorted(state.used_unit_segments, key=_segment_sort_key)
         )
-        rows.extend(
-            _move_token(action=action, normalizer=normalizer)
+        records.extend(
+            _MorpionEntityTokenRecord(
+                row=_move_token(action=action, normalizer=normalizer),
+                action=action,
+            )
             for action in sorted(actions, key=_action_sort_key)
         )
 
         # TODO: replace deterministic tail truncation with priority-aware truncation.
-        if len(rows) > self.max_tokens:
-            rows = rows[: self.max_tokens]
-        return torch.tensor(rows, dtype=torch.float32)
+        surviving_records = records[: self.max_tokens]
+        dot_index_by_point: dict[Point, int] = {}
+        edge_index_by_segment: dict[Segment, int] = {}
+        move_index_by_action: dict[MorpionAction, int] = {}
+        for index, record in enumerate(surviving_records):
+            if record.point is not None:
+                dot_index_by_point[record.point] = index
+            if record.segment is not None:
+                edge_index_by_segment[record.segment] = index
+            if record.action is not None:
+                move_index_by_action[record.action] = index
+
+        return MorpionEntityTokenLayout(
+            tensor=torch.tensor(
+                [record.row for record in surviving_records], dtype=torch.float32
+            ),
+            dot_index_by_point=MappingProxyType(dot_index_by_point),
+            edge_index_by_segment=MappingProxyType(edge_index_by_segment),
+            move_index_by_action=MappingProxyType(move_index_by_action),
+        )
 
 
-def _blank_token(token_type: MorpionGraphTokenType) -> list[float]:
+def _blank_token(token_type: MorpionEntityTokenType) -> list[float]:
     """Return one zero-filled token row with type and validity set."""
-    row = [0.0] * MORPION_GRAPH_TOKEN_FEATURE_DIM
+    row = [0.0] * MORPION_ENTITY_TOKEN_FEATURE_DIM
     row[token_type.value] = 1.0
     row[_VALIDITY_INDEX] = 1.0
     return row
 
 
-def _value_token() -> list[float]:
-    """Return the value token consumed by value-token pooling."""
-    return _blank_token(MorpionGraphTokenType.VALUE)
-
-
 def _global_token(*, state: MorpionState, legal_action_count: int) -> list[float]:
     """Return one global-context token."""
-    row = _blank_token(MorpionGraphTokenType.GLOBAL)
+    row = _blank_token(MorpionEntityTokenType.GLOBAL)
     row[_feature_index("num_points")] = float(len(state.points))
     row[_feature_index("moves")] = float(state.moves)
     row[_feature_index("legal_action_count")] = float(legal_action_count)
@@ -222,14 +262,14 @@ def _dot_token(
     normalizer: _CoordinateNormalizer,
 ) -> list[float]:
     """Return one occupied or candidate dot token."""
-    row = _blank_token(MorpionGraphTokenType.DOT)
+    row = _blank_token(MorpionEntityTokenType.DOT)
     x_rel, y_rel = normalizer.point(point)
     row[_feature_index("x_rel")] = x_rel
     row[_feature_index("y_rel")] = y_rel
     row[_feature_index("occupied")] = 1.0 if point in state.points else 0.0
     row[_feature_index("candidate")] = 1.0 if candidate else 0.0
     dir_usage = state.dir_usage
-    for dir_index, name in enumerate(MORPION_GRAPH_DIRECTIONS):
+    for dir_index, name in enumerate(MORPION_ENTITY_TOKEN_DIRECTIONS):
         row[_feature_index(f"degree_{name}")] = float(
             dir_usage.get((point, dir_index), 0)
         )
@@ -242,14 +282,14 @@ def _edge_token(
     normalizer: _CoordinateNormalizer,
 ) -> list[float]:
     """Return one drawn unit-edge token."""
-    row = _blank_token(MorpionGraphTokenType.EDGE)
+    row = _blank_token(MorpionEntityTokenType.EDGE)
     x_rel, y_rel = normalizer.segment_center(segment)
     row[_feature_index("x_rel")] = x_rel
     row[_feature_index("y_rel")] = y_rel
     row[_feature_index("drawn")] = 1.0
     dir_index = _direction_index_for_segment(segment)
     if dir_index is not None:
-        row[_feature_index(f"dir_{MORPION_GRAPH_DIRECTIONS[dir_index]}")] = 1.0
+        row[_feature_index(f"dir_{MORPION_ENTITY_TOKEN_DIRECTIONS[dir_index]}")] = 1.0
     return row
 
 
@@ -263,11 +303,11 @@ def _move_token(
     # relation-aware encoding.
     dir_index, _x0, _y0, missing_index = action
     point = _missing_point_from_action(action)
-    row = _blank_token(MorpionGraphTokenType.MOVE)
+    row = _blank_token(MorpionEntityTokenType.MOVE)
     x_rel, y_rel = normalizer.point(point)
     row[_feature_index("x_rel")] = x_rel
     row[_feature_index("y_rel")] = y_rel
-    row[_feature_index(f"dir_{MORPION_GRAPH_DIRECTIONS[dir_index]}")] = 1.0
+    row[_feature_index(f"dir_{MORPION_ENTITY_TOKEN_DIRECTIONS[dir_index]}")] = 1.0
     row[_feature_index("candidate")] = 1.0
     row[_feature_index("is_new_dot_for_move")] = 1.0
     row[_feature_index("missing_index_in_5_window")] = float(missing_index)
@@ -338,18 +378,18 @@ def _normalizer_for_state(state: MorpionState) -> _CoordinateNormalizer:
 
 
 def _feature_index(name: str) -> int:
-    """Return the index of one graph-token feature name."""
-    return MORPION_GRAPH_TOKEN_FEATURE_NAMES.index(name)
+    """Return the index of one entity-token feature name."""
+    return MORPION_ENTITY_TOKEN_FEATURE_NAMES.index(name)
 
 
 __all__ = [
-    "MORPION_ENTITY_TOKEN_TRANSFORMER_MODEL_KIND",
-    "MORPION_GRAPH_DIRECTIONS",
-    "MORPION_GRAPH_INPUT_REPRESENTATION",
-    "MORPION_GRAPH_MODEL_KIND",
-    "MORPION_GRAPH_TOKEN_FEATURE_DIM",
-    "MORPION_GRAPH_TOKEN_FEATURE_NAMES",
-    "MorpionGraphTokenConverter",
-    "MorpionGraphTokenType",
-    "is_morpion_entity_token_transformer_model_kind",
+    "MORPION_ENTITY_TOKEN_DIRECTIONS",
+    "MORPION_ENTITY_TOKEN_FEATURE_DIM",
+    "MORPION_ENTITY_TOKEN_FEATURE_NAMES",
+    "MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION",
+    "MORPION_ENTITY_TOKEN_MODEL_KIND",
+    "MorpionEntityTokenConverter",
+    "MorpionEntityTokenLayout",
+    "MorpionEntityTokenType",
+    "is_morpion_entity_token_model_kind",
 ]

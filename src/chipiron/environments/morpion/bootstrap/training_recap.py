@@ -35,8 +35,8 @@ class MorpionTrainingRecap:
     validation_loss: float | None
     validation_quality_r2_vs_mean_baseline: float | None
     validation_quality_pearson_correlation: float | None
-    graph_output_tanh: bool | None
-    graph_token_cache_used: bool | None
+    entity_output_tanh: bool | None
+    entity_token_cache_used: bool | None
     cached_global_shuffle: bool | None
     model_bundle_path: Path | None
     source_path: Path | None
@@ -53,8 +53,8 @@ class MorpionEvaluatorTrainingRecap:
     validation_loss: float | None
     validation_quality_r2_vs_mean_baseline: float | None
     validation_quality_pearson_correlation: float | None
-    graph_output_tanh: bool | None
-    graph_token_cache_used: bool | None
+    entity_output_tanh: bool | None
+    entity_token_cache_used: bool | None
     cached_global_shuffle: bool | None
     model_bundle_path: Path | None
 
@@ -150,8 +150,8 @@ def render_training_recap(recap: MorpionTrainingRecap | None) -> str:
         f"{_format_float(recap.validation_quality_pearson_correlation)}",
     ]
     flag_parts = [
-        _format_flag("graph_output_tanh", recap.graph_output_tanh),
-        _format_flag("graph_token_cache_used", recap.graph_token_cache_used),
+        _format_flag("entity_output_tanh", recap.entity_output_tanh),
+        _format_flag("entity_token_cache_used", recap.entity_token_cache_used),
         _format_flag("cached_global_shuffle", recap.cached_global_shuffle),
     ]
     rendered_flags = [part for part in flag_parts if part is not None]
@@ -182,7 +182,7 @@ def render_training_recap_table(table: MorpionTrainingRecapTable | None) -> str:
     lines = [
         header,
         "  evaluator                         train_loss  val_loss  "
-        "r2      pearson  tanh   graph_cache  shuffle",
+        "r2      pearson  tanh   entity_token_cache  shuffle",
     ]
     for row in table.rows:
         marker = "*" if row.evaluator_name == table.selected_evaluator_name else " "
@@ -192,8 +192,8 @@ def render_training_recap_table(table: MorpionTrainingRecapTable | None) -> str:
             f"{_format_float(row.validation_loss):>9} "
             f"{_format_float(row.validation_quality_r2_vs_mean_baseline):>7} "
             f"{_format_float(row.validation_quality_pearson_correlation):>8} "
-            f"{_format_bool(row.graph_output_tanh):>6} "
-            f"{_format_bool(row.graph_token_cache_used):>11} "
+            f"{_format_bool(row.entity_output_tanh):>6} "
+            f"{_format_bool(row.entity_token_cache_used):>11} "
             f"{_format_bool(row.cached_global_shuffle):>8}"
         )
 
@@ -234,8 +234,8 @@ def render_training_recap_table_operator(
         flags = " ".join(
             part
             for part in (
-                f"tanh={_format_bool(row.graph_output_tanh)}",
-                f"cache={_format_bool(row.graph_token_cache_used)}",
+                f"tanh={_format_bool(row.entity_output_tanh)}",
+                f"cache={_format_bool(row.entity_token_cache_used)}",
                 f"shuffle={_format_bool(row.cached_global_shuffle)}",
             )
             if part is not None
@@ -300,8 +300,8 @@ def recap_to_dict(recap: MorpionTrainingRecap | None) -> dict[str, object] | Non
         "validation_quality_pearson_correlation": (
             recap.validation_quality_pearson_correlation
         ),
-        "graph_output_tanh": recap.graph_output_tanh,
-        "graph_token_cache_used": recap.graph_token_cache_used,
+        "entity_output_tanh": recap.entity_output_tanh,
+        "entity_token_cache_used": recap.entity_token_cache_used,
         "cached_global_shuffle": recap.cached_global_shuffle,
         "model_bundle_path": _path_to_str(recap.model_bundle_path),
         "source_path": _path_to_str(recap.source_path),
@@ -333,8 +333,8 @@ def recap_table_to_dict(
                 "validation_quality_pearson_correlation": (
                     row.validation_quality_pearson_correlation
                 ),
-                "graph_output_tanh": row.graph_output_tanh,
-                "graph_token_cache_used": row.graph_token_cache_used,
+                "entity_output_tanh": row.entity_output_tanh,
+                "entity_token_cache_used": row.entity_token_cache_used,
                 "cached_global_shuffle": row.cached_global_shuffle,
                 "model_bundle_path": _path_to_str(row.model_bundle_path),
             }
@@ -565,8 +565,8 @@ def _recap_table_from_single(
         validation_quality_pearson_correlation=(
             recap.validation_quality_pearson_correlation
         ),
-        graph_output_tanh=recap.graph_output_tanh,
-        graph_token_cache_used=recap.graph_token_cache_used,
+        entity_output_tanh=recap.entity_output_tanh,
+        entity_token_cache_used=recap.entity_token_cache_used,
         cached_global_shuffle=recap.cached_global_shuffle,
         model_bundle_path=recap.model_bundle_path,
     )
@@ -593,8 +593,8 @@ def _single_recap_from_table(table: MorpionTrainingRecapTable) -> MorpionTrainin
             validation_loss=None,
             validation_quality_r2_vs_mean_baseline=None,
             validation_quality_pearson_correlation=None,
-            graph_output_tanh=None,
-            graph_token_cache_used=None,
+            entity_output_tanh=None,
+            entity_token_cache_used=None,
             cached_global_shuffle=None,
             model_bundle_path=None,
             source_path=table.source_path,
@@ -612,8 +612,8 @@ def _single_recap_from_table(table: MorpionTrainingRecapTable) -> MorpionTrainin
         validation_quality_pearson_correlation=(
             selected_row.validation_quality_pearson_correlation
         ),
-        graph_output_tanh=selected_row.graph_output_tanh,
-        graph_token_cache_used=selected_row.graph_token_cache_used,
+        entity_output_tanh=selected_row.entity_output_tanh,
+        entity_token_cache_used=selected_row.entity_token_cache_used,
         cached_global_shuffle=selected_row.cached_global_shuffle,
         model_bundle_path=selected_row.model_bundle_path,
         source_path=table.source_path,
@@ -658,9 +658,9 @@ def _row_from_evaluator_result(
             "pearson_correlation",
             "validation_quality_pearson_correlation",
         ),
-        graph_output_tanh=_coerce_bool(_find_first(sources, "graph_output_tanh")),
-        graph_token_cache_used=_coerce_bool(
-            _find_first(sources, "graph_token_cache_used")
+        entity_output_tanh=_coerce_bool(_find_first(sources, "entity_output_tanh")),
+        entity_token_cache_used=_coerce_bool(
+            _find_first(sources, "entity_token_cache_used")
         ),
         cached_global_shuffle=_coerce_bool(
             _find_first(sources, "cached_global_shuffle")
@@ -733,9 +733,9 @@ def _recap_from_training_status(
             "pearson_correlation",
             "validation_quality_pearson_correlation",
         ),
-        graph_output_tanh=_coerce_bool(_find_first(sources, "graph_output_tanh")),
-        graph_token_cache_used=_coerce_bool(
-            _find_first(sources, "graph_token_cache_used")
+        entity_output_tanh=_coerce_bool(_find_first(sources, "entity_output_tanh")),
+        entity_token_cache_used=_coerce_bool(
+            _find_first(sources, "entity_token_cache_used")
         ),
         cached_global_shuffle=_coerce_bool(
             _find_first(sources, "cached_global_shuffle")
@@ -776,9 +776,9 @@ def _recap_from_model_manifest(
             "pearson_correlation",
             "validation_quality_pearson_correlation",
         ),
-        graph_output_tanh=_coerce_bool(_find_first(sources, "graph_output_tanh")),
-        graph_token_cache_used=_coerce_bool(
-            _find_first(sources, "graph_token_cache_used")
+        entity_output_tanh=_coerce_bool(_find_first(sources, "entity_output_tanh")),
+        entity_token_cache_used=_coerce_bool(
+            _find_first(sources, "entity_token_cache_used")
         ),
         cached_global_shuffle=_coerce_bool(
             _find_first(sources, "cached_global_shuffle")
@@ -818,9 +818,9 @@ def _recap_from_debug_training_manifest(
             "pearson_correlation",
             "validation_quality_pearson_correlation",
         ),
-        graph_output_tanh=_coerce_bool(find_key(payload, "graph_output_tanh")),
-        graph_token_cache_used=_coerce_bool(
-            find_key(payload, "graph_token_cache_used")
+        entity_output_tanh=_coerce_bool(find_key(payload, "entity_output_tanh")),
+        entity_token_cache_used=_coerce_bool(
+            find_key(payload, "entity_token_cache_used")
         ),
         cached_global_shuffle=_coerce_bool(find_key(payload, "cached_global_shuffle")),
         model_bundle_path=model_path,
@@ -857,8 +857,8 @@ def _recap_from_training_log(
             validation_loss=_coerce_float(values.get("validation_loss")),
             validation_quality_r2_vs_mean_baseline=None,
             validation_quality_pearson_correlation=None,
-            graph_output_tanh=None,
-            graph_token_cache_used=None,
+            entity_output_tanh=None,
+            entity_token_cache_used=None,
             cached_global_shuffle=None,
             model_bundle_path=None,
             source_path=_relative_to_work_dir(training_log_path, work_dir),
