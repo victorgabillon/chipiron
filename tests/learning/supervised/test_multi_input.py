@@ -8,9 +8,6 @@ import pytest
 import torch
 from torch import nn
 
-from chipiron.environments.morpion.players.evaluators.neural_networks.training.service import (
-    prediction_scale_stats_for_cached_batches,
-)
 from chipiron.learning.supervised import (
     TensorSupervisedBatch,
     evaluate_regression_batch,
@@ -42,7 +39,6 @@ class TwoInputRegressor(nn.Module):
         self.auxiliary_scale = nn.Parameter(torch.tensor(1.0))
         self.received_primary: torch.Tensor | None = None
         self.received_auxiliary: torch.Tensor | None = None
-        self.received_auxiliary_rows: list[torch.Tensor] = []
 
     def forward(
         self,
@@ -52,7 +48,6 @@ class TwoInputRegressor(nn.Module):
         """Predict using both positional inputs."""
         self.received_primary = primary
         self.received_auxiliary = auxiliary
-        self.received_auxiliary_rows.append(auxiliary.detach().cpu())
         auxiliary_value = (
             auxiliary.to(dtype=primary.dtype)
             .reshape(primary.shape[0], -1)
@@ -155,10 +150,13 @@ def test_multi_input_batch_moves_all_inputs_to_cuda() -> None:
 def test_one_input_training_remains_supported() -> None:
     """The generic train helper should retain one-input behavior."""
     model = OneInputRegressor()
+    with torch.no_grad():
+        model.linear.weight.fill_(0.5)
+        model.linear.bias.zero_()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     batch = TensorSupervisedBatch(
-        input_tensor=torch.randn(4, 3),
-        target_tensor=torch.randn(4, 1),
+        input_tensor=torch.ones((4, 3)),
+        target_tensor=torch.zeros((4, 1)),
         is_batch=True,
     )
     before = model.linear.weight.detach().clone()
@@ -180,6 +178,9 @@ def test_one_input_training_remains_supported() -> None:
 def test_two_input_training_forwards_every_tensor() -> None:
     """The train helper should forward and differentiate through both inputs."""
     model = TwoInputRegressor()
+    with torch.no_grad():
+        model.primary_projection.weight.fill_(0.25)
+        model.primary_projection.bias.zero_()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     batch = _two_input_batch()
 
@@ -262,51 +263,13 @@ def test_auxiliary_input_affects_evaluation_prediction() -> None:
     assert one_metrics.squared_error_sum > zero_metrics.squared_error_sum
 
 
-def test_cached_prediction_scale_diagnostics_forwards_every_tensor() -> None:
-    """Cached scale diagnostics should preserve auxiliary rows and device."""
-    model = TwoInputRegressor()
-    with torch.no_grad():
-        model.primary_projection.weight.zero_()
-        model.primary_projection.bias.zero_()
-    primary = torch.zeros((4, 3))
-    auxiliary = torch.arange(4, dtype=torch.long).reshape(4, 1, 1).expand(-1, 2, 3)
-    targets = torch.zeros((4, 1))
-
-    def build_batch(indices: tuple[int, ...]) -> TensorSupervisedBatch:
-        index_tensor = torch.tensor(indices, dtype=torch.long)
-        return TensorSupervisedBatch(
-            input_tensor=primary[index_tensor],
-            target_tensor=targets[index_tensor],
-            auxiliary_input_tensors=(auxiliary[index_tensor],),
-        )
-
-    stats = prediction_scale_stats_for_cached_batches(
-        model=model,
-        batch_builder=build_batch,
-        row_count=4,
-        batch_size=2,
-        device=torch.device("cpu"),
-    )
-
-    received_rows = torch.cat(model.received_auxiliary_rows)[:, 0, 0]
-    assert torch.equal(received_rows, torch.arange(4))
-    assert model.received_primary is not None
-    assert model.received_primary.device.type == "cpu"
-    assert model.received_auxiliary is not None
-    assert model.received_auxiliary.device.type == "cpu"
-    assert model.received_auxiliary.dtype == torch.long
-    assert stats.count == 4
-    assert stats.mean == pytest.approx(1.5)
-    assert stats.std is not None and math.isfinite(stats.std)
-
-
 def _two_input_batch() -> TensorSupervisedBatch:
     """Build one representative two-input regression batch."""
     return TensorSupervisedBatch(
-        input_tensor=torch.randn(4, 3),
-        target_tensor=torch.randn(4, 1),
+        input_tensor=torch.ones((4, 3)),
+        target_tensor=torch.zeros((4, 1)),
         is_batch=True,
         auxiliary_input_tensors=(
-            torch.randint(0, 4, (4, 2, 3), dtype=torch.long),
+            torch.ones((4, 2, 3), dtype=torch.long),
         ),
     )

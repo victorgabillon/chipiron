@@ -18,6 +18,10 @@ class SupervisedBatch(Protocol):
         """Return the model input tensor."""
         ...
 
+    def get_model_input_tensors(self) -> tuple[torch.Tensor, ...]:
+        """Return all positional tensors supplied to the model forward call."""
+        ...
+
     def get_target_value(self) -> torch.Tensor:
         """Return the supervised target tensor."""
         ...
@@ -50,10 +54,7 @@ def move_supervised_batch_to_device(
     device: torch.device,
 ) -> TensorSupervisedBatch:
     """Move one supervised batch to a concrete torch device."""
-    if isinstance(batch, TensorSupervisedBatch):
-        model_input_tensors = batch.get_model_input_tensors()
-    else:
-        model_input_tensors = (batch.get_input_layer(),)
+    model_input_tensors = batch.get_model_input_tensors()
     return TensorSupervisedBatch(
         input_tensor=model_input_tensors[0].to(device),
         target_tensor=batch.get_target_value().to(device),

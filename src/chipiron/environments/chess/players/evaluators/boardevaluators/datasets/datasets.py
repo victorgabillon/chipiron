@@ -240,6 +240,10 @@ class FenAndValueData:
         """Return the input layer tensor."""
         return self.fen_tensor
 
+    def get_model_input_tensors(self) -> tuple[torch.Tensor, ...]:
+        """Return all positional tensors supplied to the model forward call."""
+        return (self.fen_tensor,)
+
     def get_target_value(self) -> torch.Tensor:
         """Return the target value tensor."""
         return self.value_tensor

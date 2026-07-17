@@ -30,6 +30,7 @@ def test_common_train_regression_batch_accepts_fen_and_value_data() -> None:
         value_tensor=torch.tensor([-0.5], dtype=torch.float32),
     )
     batch = datasets.custom_collate_fn_fen_and_value([sample_1, sample_2])
+    model_inputs = batch.get_model_input_tensors()
 
     model = nn.Linear(5, 1)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -46,6 +47,8 @@ def test_common_train_regression_batch_accepts_fen_and_value_data() -> None:
     )
     after = list(model.parameters())
 
+    assert len(model_inputs) == 1
+    assert model_inputs[0] is batch.get_input_layer()
     assert stats.target_count == 2
     assert stats.squared_error_sum >= 0.0
     assert any(

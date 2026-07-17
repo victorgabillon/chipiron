@@ -29,10 +29,46 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training i
 from chipiron.environments.morpion.players.evaluators.neural_networks.training.scale_diagnostics import (
     tensor_scale_stats,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.training.service import (
+    prediction_scale_stats_for_cached_batches,
+)
+from chipiron.learning.supervised import TensorSupervisedBatch
 from tests.environments.test_morpion_model_bundle import _build_rows_file
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+class _TwoInputScaleRegressor(torch.nn.Module):
+    """Small two-input model for cached scale diagnostic coverage."""
+
+    def __init__(self) -> None:
+        """Initialize deterministic projections and call observations."""
+        super().__init__()
+        self.primary_projection = torch.nn.Linear(3, 1)
+        self.auxiliary_scale = torch.nn.Parameter(torch.tensor(1.0))
+        self.received_primary: torch.Tensor | None = None
+        self.received_auxiliary: torch.Tensor | None = None
+        self.received_auxiliary_rows: list[torch.Tensor] = []
+        with torch.no_grad():
+            self.primary_projection.weight.zero_()
+            self.primary_projection.bias.zero_()
+
+    def forward(
+        self,
+        primary: torch.Tensor,
+        auxiliary: torch.Tensor,
+    ) -> torch.Tensor:
+        """Predict using both cached positional inputs."""
+        self.received_primary = primary
+        self.received_auxiliary = auxiliary
+        self.received_auxiliary_rows.append(auxiliary.detach().cpu())
+        auxiliary_value = (
+            auxiliary.to(dtype=primary.dtype)
+            .reshape(primary.shape[0], -1)
+            .mean(dim=1, keepdim=True)
+        )
+        return self.primary_projection(primary) + self.auxiliary_scale * auxiliary_value
 
 
 def test_tensor_scale_stats_reports_scalar_distribution() -> None:
@@ -79,6 +115,42 @@ def test_entity_output_tanh_defaults_to_false() -> None:
     assert model_args.entity_output_tanh is False
     assert entity_spec.entity_output_tanh is False
     assert explicit_training_args.entity_output_tanh is True
+
+
+def test_cached_prediction_scale_diagnostics_forwards_every_tensor() -> None:
+    """Cached scale diagnostics should preserve auxiliary rows and device."""
+    model = _TwoInputScaleRegressor()
+    primary = torch.zeros((4, 3))
+    auxiliary = torch.arange(4, dtype=torch.long).reshape(4, 1, 1).expand(-1, 2, 3)
+    targets = torch.zeros((4, 1))
+
+    def build_batch(indices: tuple[int, ...]) -> TensorSupervisedBatch:
+        index_tensor = torch.tensor(indices, dtype=torch.long)
+        return TensorSupervisedBatch(
+            input_tensor=primary[index_tensor],
+            target_tensor=targets[index_tensor],
+            auxiliary_input_tensors=(auxiliary[index_tensor],),
+        )
+
+    stats = prediction_scale_stats_for_cached_batches(
+        model=model,
+        batch_builder=build_batch,
+        row_count=4,
+        batch_size=2,
+        device=torch.device("cpu"),
+    )
+
+    received_rows = torch.cat(model.received_auxiliary_rows)[:, 0, 0]
+    assert torch.equal(received_rows, torch.arange(4))
+    assert model.received_primary is not None
+    assert model.received_primary.device.type == "cpu"
+    assert model.received_auxiliary is not None
+    assert model.received_auxiliary.device.type == "cpu"
+    assert model.received_auxiliary.dtype == torch.long
+    assert stats.count == 4
+    assert stats.mean == pytest.approx(1.5)
+    assert stats.std is not None
+    assert torch.isfinite(torch.tensor(stats.std))
 
 
 def test_flat_cached_streaming_training_reports_scale_metrics(
