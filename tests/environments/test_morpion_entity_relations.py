@@ -328,6 +328,8 @@ def test_relational_collation_empty_and_invalid_samples() -> None:
         (),
         (torch.empty((0, 3), dtype=torch.long),) * 2,
         (torch.empty((2, 2), dtype=torch.long),),
+        (torch.tensor([[0.9, 1.2, 3.7]]),),
+        (torch.tensor([[False, True, True]]),),
     ):
         with pytest.raises(ValueError):
             collate_morpion_relational_entity_token_supervised_samples(
@@ -338,6 +340,17 @@ def test_relational_collation_empty_and_invalid_samples() -> None:
                     ),
                 )
             )
+
+    integer_sample = MorpionRelationalEntityTokenSupervisedSample(
+        **base,
+        auxiliary_input_tensors=(
+            torch.tensor([[0, 1, 1]], dtype=torch.int32),
+        ),
+    )
+    integer_batch = collate_morpion_relational_entity_token_supervised_samples(
+        (integer_sample,)
+    )
+    assert integer_batch.auxiliary_input_tensors[0].dtype == torch.long
 
 
 def test_relational_row_conversion_and_eager_dataset(tmp_path: Path) -> None:

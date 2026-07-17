@@ -662,11 +662,57 @@ def _tensors_match_manifest(
         and bool(torch.any(loaded.relation_lengths < 0).item())
     ):
         return False
-    return (
-        int(loaded.token_lengths.sum().item()) == manifest.packed_input_shape[0]
-        and int(loaded.relation_lengths.sum().item())
-        == manifest.packed_relation_shape[0]
+    if (
+        int(loaded.token_lengths.sum().item()) != manifest.packed_input_shape[0]
+        or int(loaded.relation_lengths.sum().item())
+        != manifest.packed_relation_shape[0]
+    ):
+        return False
+    return _packed_relations_match_row_entities(
+        packed_relation_triples=loaded.packed_relation_triples,
+        relation_lengths=loaded.relation_lengths,
+        token_lengths=loaded.token_lengths,
+        entity_max_tokens=manifest.entity_max_tokens,
     )
+
+
+def _packed_relations_match_row_entities(
+    *,
+    packed_relation_triples: torch.Tensor,
+    relation_lengths: torch.Tensor,
+    token_lengths: torch.Tensor,
+    entity_max_tokens: int,
+) -> bool:
+    """Validate every packed relation against its own row's entity count."""
+    if token_lengths.numel() != relation_lengths.numel():
+        return False
+    if token_lengths.numel() > 0 and (
+        bool(torch.any(token_lengths < 1).item())
+        or bool(torch.any(token_lengths > entity_max_tokens).item())
+    ):
+        return False
+
+    relation_offsets = _packed_offsets(relation_lengths)
+    for row_index in range(int(token_lengths.shape[0])):
+        relation_count = int(relation_lengths[row_index].item())
+        if relation_count == 0:
+            continue
+        token_count = int(token_lengths[row_index].item())
+        relation_start = int(relation_offsets[row_index].item())
+        row_relations = packed_relation_triples[
+            relation_start : relation_start + relation_count
+        ]
+        entity_indices = row_relations[:, :2]
+        relation_types = row_relations[:, 2]
+        if (
+            int(entity_indices.min().item()) < 0
+            or int(entity_indices.max().item()) >= token_count
+            or int(relation_types.min().item()) < 1
+            or int(relation_types.max().item())
+            >= MORPION_ENTITY_RELATION_TYPE_COUNT
+        ):
+            return False
+    return True
 
 
 def _packed_offsets(lengths: torch.Tensor) -> torch.Tensor:

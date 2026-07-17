@@ -104,6 +104,13 @@ class _InvalidMorpionRelationalSupervisedSampleError(ValueError):
         """Return an invalid relation tensor shape error."""
         return cls("Morpion relation tensors must have shape [R, 3].")
 
+    @classmethod
+    def invalid_relation_dtype(
+        cls,
+    ) -> _InvalidMorpionRelationalSupervisedSampleError:
+        """Return an invalid relation tensor dtype error."""
+        return cls("Morpion relation tensors must use an integer dtype.")
+
 
 def process_morpion_supervised_row_to_tensors(
     row: MorpionSupervisedRow,
@@ -374,6 +381,12 @@ def collate_morpion_relational_entity_token_supervised_samples(
         relation_tensor = sample.auxiliary_input_tensors[0]
         if relation_tensor.ndim != 2 or relation_tensor.shape[1] != 3:
             raise _InvalidMorpionRelationalSupervisedSampleError.invalid_relation_shape()
+        if (
+            relation_tensor.dtype == torch.bool
+            or relation_tensor.is_floating_point()
+            or relation_tensor.is_complex()
+        ):
+            raise _InvalidMorpionRelationalSupervisedSampleError.invalid_relation_dtype()
         relation_tensors.append(relation_tensor)
 
     batch_size = len(samples)

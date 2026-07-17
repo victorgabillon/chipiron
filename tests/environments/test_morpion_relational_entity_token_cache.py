@@ -291,3 +291,68 @@ def test_relational_cache_rejects_incompatible_manifest_schema(
     assert rebuilt.rebuilt is True
     assert rebuilt.manifest.relation_schema == MORPION_ENTITY_RELATION_SCHEMA
 
+
+@pytest.mark.parametrize(
+    "corruption",
+    (
+        "zero_relation_type",
+        "relation_type_too_large",
+        "negative_source",
+        "source_beyond_row_tokens",
+        "zero_token_length",
+        "token_length_above_cap",
+    ),
+)
+def test_relational_cache_rejects_invalid_packed_relation_values(
+    tmp_path: Path,
+    corruption: str,
+) -> None:
+    """Packed relations must remain valid for their own entity-token row."""
+    entity_max_tokens = 128
+    rows_path, _rows = _build_jsonl_rows_file(
+        tmp_path,
+        target_values=(0.25, -0.5),
+    )
+    cache = load_or_materialize_relational_entity_token_cache(
+        rows_path=rows_path,
+        row_chunk_size=1,
+        max_rows=None,
+        entity_max_tokens=entity_max_tokens,
+    )
+    payload = torch.load(
+        cache.paths.tensor_path,
+        map_location="cpu",
+        weights_only=True,
+    )
+    packed_relations = payload["packed_relation_triples"]
+    token_lengths = payload["token_lengths"]
+    assert packed_relations.shape[0] > 0
+    assert token_lengths.shape[0] == 2
+
+    if corruption == "zero_relation_type":
+        packed_relations[0, 2] = 0
+    elif corruption == "relation_type_too_large":
+        packed_relations[0, 2] = MORPION_ENTITY_RELATION_TYPE_COUNT
+    elif corruption == "negative_source":
+        packed_relations[0, 0] = -1
+    elif corruption == "source_beyond_row_tokens":
+        packed_relations[0, 0] = token_lengths[0]
+    elif corruption == "zero_token_length":
+        token_lengths[0] = 0
+    elif corruption == "token_length_above_cap":
+        token_lengths[0] = entity_max_tokens + 1
+    else:
+        pytest.fail(f"Unhandled cache corruption: {corruption}")
+    torch.save(payload, cache.paths.tensor_path)
+
+    assert not relational_entity_token_cache_is_valid(
+        rows_path=rows_path,
+        entity_max_tokens=entity_max_tokens,
+    )
+    rebuilt = load_or_materialize_relational_entity_token_cache(
+        rows_path=rows_path,
+        row_chunk_size=1,
+        max_rows=None,
+        entity_max_tokens=entity_max_tokens,
+    )
+    assert rebuilt.rebuilt is True
