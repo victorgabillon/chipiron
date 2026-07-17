@@ -13,8 +13,14 @@ from chipiron.environments.morpion.learning import (
 )
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
     collate_morpion_entity_token_supervised_samples,
+    collate_morpion_relational_entity_token_supervised_samples,
     process_morpion_supervised_row_to_entity_token_tensors,
+    process_morpion_supervised_row_to_relational_entity_token_tensors,
     process_morpion_supervised_row_to_tensors,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    MorpionRelationalEntityTokenConverter,
+    is_relational_entity_token_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MorpionEntityTokenConverter,
@@ -69,6 +75,19 @@ def rows_to_sample_batch(
 ) -> TensorSupervisedBatch:
     """Convert Morpion supervised rows into one tensor batch."""
     dynamics = MorpionDynamics()
+    if is_relational_entity_token_model_kind(args.model_kind):
+        relational_converter = MorpionRelationalEntityTokenConverter(
+            dynamics=dynamics,
+            max_tokens=args.entity_max_tokens,
+        )
+        return collate_morpion_relational_entity_token_supervised_samples([
+            process_morpion_supervised_row_to_relational_entity_token_tensors(
+                row,
+                dynamics=dynamics,
+                converter=relational_converter,
+            )
+            for row in rows
+        ])
     if is_morpion_entity_token_model_kind(args.model_kind):
         entity_converter = MorpionEntityTokenConverter(
             dynamics=dynamics,

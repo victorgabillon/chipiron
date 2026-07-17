@@ -51,6 +51,9 @@ class MorpionTrainingArgs:
     entity_dropout_ratio: float = 0.0
     entity_pooling: str = "value_token"
     entity_output_tanh: bool = False
+    entity_use_validity_feature: bool = True
+    entity_relation_schema: str | None = None
+    entity_relation_type_count: int | None = None
     validation_fraction: float = 0.2
     validation_seed: int = 0
     device: str = "auto"
@@ -69,6 +72,11 @@ class MorpionTrainingArgs:
         )
         object.__setattr__(self, "feature_subset_name", subset.name)
         object.__setattr__(self, "feature_names", subset.feature_names)
+        from .model_args import (  # pylint: disable=import-outside-toplevel
+            morpion_regressor_args_from_training_args,
+        )
+
+        morpion_regressor_args_from_training_args(self)
 
     @property
     def feature_subset(self) -> MorpionFeatureSubset:

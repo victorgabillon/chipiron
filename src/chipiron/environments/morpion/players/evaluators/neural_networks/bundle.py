@@ -12,6 +12,11 @@ import torch
 
 from chipiron.learning.torch_runtime import state_dict_on_cpu
 
+from .entity_relations import (
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
+    is_relational_entity_token_model_kind,
+)
 from .entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     MORPION_ENTITY_TOKEN_FEATURE_NAMES,
@@ -28,6 +33,7 @@ from .feature_schema import (
 )
 from .model import (
     MORPION_INPUT_DIM,
+    InvalidMorpionEntityTokenRegressorArgsError,
     MorpionRegressor,
     MorpionRegressorArgs,
     build_morpion_regressor,
@@ -42,6 +48,13 @@ MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME = "param.json"
 def _empty_metadata() -> dict[str, Any]:
     """Return a typed empty metadata mapping."""
     return {}
+
+
+def _uses_entity_token_input(model_kind: str) -> bool:
+    """Return whether a model consumes the clean Morpion entity tokens."""
+    return is_morpion_entity_token_model_kind(
+        model_kind
+    ) or is_relational_entity_token_model_kind(model_kind)
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +72,8 @@ class MorpionModelManifest:
         default_factory=lambda: MORPION_CANONICAL_FEATURE_NAMES
     )
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
+    entity_relation_schema: str | None = None
+    entity_relation_type_count: int | None = None
 
 
 class InvalidMorpionModelBundleError(ValueError):
@@ -197,6 +212,23 @@ class InvalidMorpionModelBundleError(ValueError):
         """Return the invalid-bool-value error."""
         return cls(f"Expected a bool value, got {type(value).__name__}.")
 
+    @classmethod
+    def invalid_optional_str_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid optional-string error."""
+        return cls(f"Expected a string or null, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_entity_model_args(
+        cls,
+        path: Path,
+        detail: str,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid entity-model-args bundle error."""
+        return cls(f"Invalid Morpion entity model args in {path!s}: {detail}")
+
 
 class IncompatibleMorpionModelBundleError(ValueError):
     """Raised when a Morpion model bundle is incompatible with current code."""
@@ -243,6 +275,48 @@ class IncompatibleMorpionModelBundleError(ValueError):
             f"{expected_feature_names!r}, got {actual_feature_names!r}."
         )
 
+    @classmethod
+    def wrong_model_kind(
+        cls,
+        *,
+        expected_model_kind: str,
+        actual_model_kind: str,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-model-kind error."""
+        return cls(
+            f"Expected model_kind={expected_model_kind!r}, got "
+            f"{actual_model_kind!r}."
+        )
+
+    @classmethod
+    def wrong_relation_schema(
+        cls,
+        relation_schema: str | None,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible relation-schema error."""
+        return cls(
+            f"Expected entity_relation_schema={MORPION_ENTITY_RELATION_SCHEMA!r}, "
+            f"got {relation_schema!r}."
+        )
+
+    @classmethod
+    def wrong_relation_type_count(
+        cls,
+        relation_type_count: int | None,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible relation-count error."""
+        return cls(
+            "Expected entity_relation_type_count="
+            f"{MORPION_ENTITY_RELATION_TYPE_COUNT}, got {relation_type_count!r}."
+        )
+
+    @classmethod
+    def unexpected_relation_metadata(
+        cls,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the unexpected relation-metadata error."""
+        return cls("Relation metadata is only valid for the relational model kind.")
+
 
 def save_morpion_model_bundle(
     model: MorpionRegressor,
@@ -270,12 +344,22 @@ def save_morpion_model_bundle(
         input_dim=model_args.input_dim,
         input_representation=(
             MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
-            if is_morpion_entity_token_model_kind(model_args.model_kind)
+            if _uses_entity_token_input(model_args.model_kind)
             else "handcrafted_features"
         ),
         model_kind=model_args.model_kind,
         feature_subset_name=model_args.feature_subset_name,
         feature_names=model_args.feature_names,
+        entity_relation_schema=(
+            model_args.entity_relation_schema
+            if is_relational_entity_token_model_kind(model_args.model_kind)
+            else None
+        ),
+        entity_relation_type_count=(
+            model_args.entity_relation_type_count
+            if is_relational_entity_token_model_kind(model_args.model_kind)
+            else None
+        ),
         metadata=_bundle_metadata(model_args, metadata),
     )
     with open(manifest_path, "w", encoding="utf-8") as handle:
@@ -291,7 +375,13 @@ def load_morpion_model_bundle(
     manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
     weights_path = bundle_dir / MORPION_MODEL_WEIGHTS_FILE_NAME
 
-    model_args = _load_model_args(args_path)
+    try:
+        model_args = _load_model_args(args_path)
+    except InvalidMorpionEntityTokenRegressorArgsError as exc:
+        raise InvalidMorpionModelBundleError.invalid_entity_model_args(
+            args_path,
+            str(exc),
+        ) from exc
     manifest = _load_manifest(manifest_path)
     _validate_manifest_compatibility(manifest, model_args)
 
@@ -315,13 +405,19 @@ def _bundle_metadata(
 ) -> dict[str, object]:
     """Return manifest metadata augmented with entity-token schema details."""
     bundle_metadata = dict(metadata) if metadata is not None else {}
-    if is_morpion_entity_token_model_kind(model_args.model_kind):
+    if _uses_entity_token_input(model_args.model_kind):
         bundle_metadata.update({
             "entity_token_feature_names": list(MORPION_ENTITY_TOKEN_FEATURE_NAMES),
             "entity_max_tokens": model_args.entity_max_tokens,
             "entity_d_model": model_args.entity_d_model,
             "entity_n_head": model_args.entity_n_head,
             "entity_n_layer": model_args.entity_n_layer,
+        })
+    if is_relational_entity_token_model_kind(model_args.model_kind):
+        bundle_metadata.update({
+            "entity_use_validity_feature": model_args.entity_use_validity_feature,
+            "entity_relation_schema": model_args.entity_relation_schema,
+            "entity_relation_type_count": model_args.entity_relation_type_count,
         })
     return bundle_metadata
 
@@ -350,6 +446,9 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         "entity_dropout_ratio",
         "entity_pooling",
         "entity_output_tanh",
+        "entity_use_validity_feature",
+        "entity_relation_schema",
+        "entity_relation_type_count",
     }
     unexpected_fields = set(data) - allowed_fields
     if unexpected_fields:
@@ -360,7 +459,7 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     input_dim = data.get("input_dim", MORPION_INPUT_DIM)
     if not isinstance(model_kind, str):
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
-    if is_morpion_entity_token_model_kind(model_kind):
+    if _uses_entity_token_input(model_kind):
         input_representation = data.get("input_representation")
         if input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
             raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
@@ -368,7 +467,7 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
             )
     feature_subset = (
         full_morpion_feature_subset()
-        if is_morpion_entity_token_model_kind(model_kind)
+        if _uses_entity_token_input(model_kind)
         else _load_feature_subset(
             data,
             path,
@@ -391,6 +490,15 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         entity_dropout_ratio=_coerce_float(data.get("entity_dropout_ratio", 0.0)),
         entity_pooling=str(data.get("entity_pooling", "value_token")),
         entity_output_tanh=_coerce_bool(data.get("entity_output_tanh", False)),
+        entity_use_validity_feature=_coerce_bool(
+            data.get("entity_use_validity_feature", True)
+        ),
+        entity_relation_schema=_coerce_optional_str(
+            data.get("entity_relation_schema")
+        ),
+        entity_relation_type_count=_coerce_optional_int(
+            data.get("entity_relation_type_count")
+        ),
     )
 
 
@@ -413,7 +521,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
     input_representation = str(data.get("input_representation", "handcrafted_features"))
     feature_subset = (
         full_morpion_feature_subset()
-        if is_morpion_entity_token_model_kind(model_kind)
+        if _uses_entity_token_input(model_kind)
         else _load_feature_subset(data, path, input_dim=input_dim)
     )
     return MorpionModelManifest(
@@ -425,6 +533,12 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
         model_kind=model_kind,
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
+        entity_relation_schema=_coerce_optional_str(
+            data.get("entity_relation_schema")
+        ),
+        entity_relation_type_count=_coerce_optional_int(
+            data.get("entity_relation_type_count")
+        ),
         metadata=metadata_dict,
     )
 
@@ -440,6 +554,8 @@ def _manifest_to_dict(manifest: MorpionModelManifest) -> dict[str, object]:
         "model_kind": manifest.model_kind,
         "feature_subset_name": manifest.feature_subset_name,
         "feature_names": list(manifest.feature_names),
+        "entity_relation_schema": manifest.entity_relation_schema,
+        "entity_relation_type_count": manifest.entity_relation_type_count,
         "metadata": dict(manifest.metadata),
     }
 
@@ -451,11 +567,11 @@ def _validate_manifest_compatibility(
     """Validate that the loaded Morpion manifest matches current code."""
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
-    if is_morpion_entity_token_model_kind(model_args.model_kind):
-        if not is_morpion_entity_token_model_kind(manifest.model_kind):
-            raise IncompatibleMorpionModelBundleError.wrong_input_dim(
-                expected_input_dim=model_args.input_dim,
-                actual_input_dim=manifest.input_dim,
+    if _uses_entity_token_input(model_args.model_kind):
+        if manifest.model_kind != model_args.model_kind:
+            raise IncompatibleMorpionModelBundleError.wrong_model_kind(
+                expected_model_kind=model_args.model_kind,
+                actual_model_kind=manifest.model_kind,
             )
         if manifest.input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
             raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
@@ -466,7 +582,40 @@ def _validate_manifest_compatibility(
                 expected_input_dim=model_args.entity_input_feature_dim,
                 actual_input_dim=manifest.input_dim,
             )
+        if is_relational_entity_token_model_kind(model_args.model_kind):
+            if manifest.entity_relation_schema != MORPION_ENTITY_RELATION_SCHEMA:
+                raise IncompatibleMorpionModelBundleError.wrong_relation_schema(
+                    manifest.entity_relation_schema
+                )
+            if (
+                manifest.entity_relation_type_count
+                != MORPION_ENTITY_RELATION_TYPE_COUNT
+            ):
+                raise IncompatibleMorpionModelBundleError.wrong_relation_type_count(
+                    manifest.entity_relation_type_count
+                )
+            if model_args.entity_relation_schema != manifest.entity_relation_schema:
+                raise IncompatibleMorpionModelBundleError.wrong_relation_schema(
+                    model_args.entity_relation_schema
+                )
+            if (
+                model_args.entity_relation_type_count
+                != manifest.entity_relation_type_count
+            ):
+                raise IncompatibleMorpionModelBundleError.wrong_relation_type_count(
+                    model_args.entity_relation_type_count
+                )
+        elif (
+            manifest.entity_relation_schema is not None
+            or manifest.entity_relation_type_count is not None
+        ):
+            raise IncompatibleMorpionModelBundleError.unexpected_relation_metadata()
         return
+    if (
+        manifest.entity_relation_schema is not None
+        or manifest.entity_relation_type_count is not None
+    ):
+        raise IncompatibleMorpionModelBundleError.unexpected_relation_metadata()
     if manifest.feature_schema != MORPION_FEATURE_SCHEMA:
         raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
             manifest.feature_schema
@@ -485,8 +634,8 @@ def _validate_manifest_compatibility(
 
 def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
     """Serialize Morpion regressor args into JSON-friendly data."""
-    if is_morpion_entity_token_model_kind(model_args.model_kind):
-        return {
+    if _uses_entity_token_input(model_args.model_kind):
+        data: dict[str, object] = {
             "model_kind": model_args.model_kind,
             "input_representation": MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
             "entity_max_tokens": model_args.entity_max_tokens,
@@ -499,6 +648,13 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
             "entity_pooling": model_args.entity_pooling,
             "entity_output_tanh": model_args.entity_output_tanh,
         }
+        if is_relational_entity_token_model_kind(model_args.model_kind):
+            data.update({
+                "entity_use_validity_feature": model_args.entity_use_validity_feature,
+                "entity_relation_schema": model_args.entity_relation_schema,
+                "entity_relation_type_count": model_args.entity_relation_type_count,
+            })
+        return data
     data: dict[str, object] = {
         "model_kind": model_args.model_kind,
         "input_dim": model_args.input_dim,
@@ -577,6 +733,22 @@ def _coerce_int(value: object) -> int:
     if isinstance(value, str):
         return int(value)
     raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+
+
+def _coerce_optional_int(value: object) -> int | None:
+    """Return one optional JSON-loaded integer-like payload."""
+    if value is None:
+        return None
+    return _coerce_int(value)
+
+
+def _coerce_optional_str(value: object) -> str | None:
+    """Return one optional JSON-loaded string payload."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    raise InvalidMorpionModelBundleError.invalid_optional_str_value(value)
 
 
 def _coerce_float(value: object) -> float:

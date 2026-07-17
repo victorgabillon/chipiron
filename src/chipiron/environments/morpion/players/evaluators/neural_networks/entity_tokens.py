@@ -155,6 +155,13 @@ class MorpionEntityTokenConverter:
         """Return a ``T x F`` float32 tensor of real entity tokens for ``state``."""
         return self.state_to_layout(state).tensor
 
+    def state_to_model_input_tensors(
+        self,
+        state: MorpionState,
+    ) -> tuple[Tensor, ...]:
+        """Return the ordinary model's single positional input tensor."""
+        return (self.state_to_tensor(state),)
+
     def state_to_layout(self, state: MorpionState) -> MorpionEntityTokenLayout:
         """Return tokens and stable tensor indices for every surviving entity."""
         if self.max_tokens < 1:

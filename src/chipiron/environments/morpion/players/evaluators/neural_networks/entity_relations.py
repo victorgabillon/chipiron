@@ -26,6 +26,14 @@ if TYPE_CHECKING:
 
 MORPION_ENTITY_RELATION_SCHEMA: Final[str] = "morpion_entity_relations_v1"
 MORPION_ENTITY_RELATION_TYPE_COUNT: Final[int] = 16
+MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND: Final[str] = (
+    "relation_biased_entity_token_transformer_value_net"
+)
+
+
+def is_relational_entity_token_model_kind(model_kind: str) -> bool:
+    """Return whether a model consumes entity tokens and relation triples."""
+    return model_kind == MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND
 
 
 class MorpionEntityRelationType(IntEnum):
@@ -284,7 +292,9 @@ def _validate_generated_relation_triples(
 __all__ = [
     "MORPION_ENTITY_RELATION_SCHEMA",
     "MORPION_ENTITY_RELATION_TYPE_COUNT",
+    "MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND",
     "MorpionEntityRelationType",
     "MorpionRelationalEntityTokenConverter",
     "MorpionRelationalEntityTokens",
+    "is_relational_entity_token_model_kind",
 ]

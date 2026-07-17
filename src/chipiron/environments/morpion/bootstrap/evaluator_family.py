@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
+    MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     MORPION_ENTITY_TOKEN_MODEL_KIND,
@@ -17,6 +22,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 
 CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_subsets"
+CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[
+    str
+] = "canonical_linear_mlp_entity_and_relational_transformers_small"
 CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[
     str
 ] = "canonical_linear_mlp_entity_transformer_small"
@@ -106,6 +114,32 @@ def entity_token_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorS
     )
 
 
+def entity_token_relational_transformer_small_morpion_evaluator_spec() -> (
+    MorpionEvaluatorSpec
+):
+    """Return the canonical small relational entity-token evaluator spec."""
+    return MorpionEvaluatorSpec(
+        name="entity_token_relational_transformer_small",
+        model_type=MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+        hidden_sizes=None,
+        num_epochs=5,
+        batch_size=8,
+        learning_rate=1e-3,
+        entity_max_tokens=1536,
+        entity_input_feature_dim=MORPION_ENTITY_TOKEN_FEATURE_DIM,
+        entity_d_model=64,
+        entity_n_head=4,
+        entity_n_layer=2,
+        entity_dim_feedforward=256,
+        entity_dropout_ratio=0.0,
+        entity_pooling="value_token",
+        entity_output_tanh=False,
+        entity_use_validity_feature=True,
+        entity_relation_schema=MORPION_ENTITY_RELATION_SCHEMA,
+        entity_relation_type_count=MORPION_ENTITY_RELATION_TYPE_COUNT,
+    )
+
+
 def canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config() -> (
     MorpionEvaluatorsConfig
 ):
@@ -113,6 +147,21 @@ def canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_confi
     evaluators = dict(canonical_morpion_evaluator_specs())
     entity_spec = entity_token_transformer_small_morpion_evaluator_spec()
     evaluators[entity_spec.name] = entity_spec
+    return MorpionEvaluatorsConfig(evaluators=evaluators)
+
+
+def canonical_linear_mlp_entity_and_relational_transformers_small_morpion_evaluator_family_config() -> (
+    MorpionEvaluatorsConfig
+):
+    """Return baselines plus ordinary and relational entity-token models."""
+    evaluators = dict(canonical_morpion_evaluator_specs())
+
+    ordinary_spec = entity_token_transformer_small_morpion_evaluator_spec()
+    relational_spec = entity_token_relational_transformer_small_morpion_evaluator_spec()
+
+    evaluators[ordinary_spec.name] = ordinary_spec
+    evaluators[relational_spec.name] = relational_spec
+
     return MorpionEvaluatorsConfig(evaluators=evaluators)
 
 
@@ -125,6 +174,11 @@ def morpion_evaluators_config_from_preset(preset_name: str) -> MorpionEvaluators
         == CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
     ):
         return canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    if (
+        preset_name
+        == CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
+    ):
+        return canonical_linear_mlp_entity_and_relational_transformers_small_morpion_evaluator_family_config()
     raise UnknownMorpionEvaluatorFamilyPresetError(preset_name)
 
 
@@ -142,13 +196,16 @@ def _canonical_family_specs() -> tuple[_CanonicalFamilySpec, ...]:
 
 
 __all__ = [
+    "CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
     "UnknownMorpionEvaluatorFamilyPresetError",
+    "canonical_linear_mlp_entity_and_relational_transformers_small_morpion_evaluator_family_config",
     "canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
+    "entity_token_relational_transformer_small_morpion_evaluator_spec",
     "entity_token_transformer_small_morpion_evaluator_spec",
     "morpion_evaluators_config_from_preset",
 ]

@@ -14,15 +14,19 @@ from torch.utils.data import DataLoader, Subset
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
     MorpionEntityTokenSupervisedDataset,
     MorpionEntityTokenSupervisedDatasetArgs,
-    MorpionEntityTokenSupervisedSample,
+    MorpionRelationalEntityTokenSupervisedDataset,
+    MorpionRelationalEntityTokenSupervisedDatasetArgs,
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
-    MorpionSupervisedSample,
     collate_morpion_entity_token_supervised_samples,
+    collate_morpion_relational_entity_token_supervised_samples,
     collate_morpion_supervised_samples,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
     save_morpion_model_bundle,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    is_relational_entity_token_model_kind,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     is_morpion_entity_token_model_kind,
@@ -58,7 +62,9 @@ from .entity_token_cache import (
 )
 from .entity_token_cache_streaming import (
     evaluate_entity_token_cache_streaming_metrics,
+    evaluate_relational_entity_token_cache_streaming_metrics,
     train_entity_token_cache_streaming_epoch,
+    train_relational_entity_token_cache_streaming_epoch,
 )
 from .evaluation import evaluate_regression_metrics, evaluate_streaming_metrics
 from .flat_cache_streaming import (
@@ -85,6 +91,11 @@ from .quality_diagnostics import (
     SplitQualityDiagnostics,
     cached_split_regression_quality_diagnostics,
 )
+from .relational_entity_token_cache import (
+    MorpionRelationalEntityTokenCache,
+    load_or_materialize_relational_entity_token_cache,
+    relational_entity_token_cache_batch,
+)
 from .scale_diagnostics import (
     TensorScaleStats,
     target_scale_metadata,
@@ -110,9 +121,21 @@ def train_morpion_regressor(
     timings = PhaseDurations()
     train_timings = PhaseDurations()
     collate_fn: Callable[[Any], Any] | None
-    dataset: MorpionSupervisedDataset | MorpionEntityTokenSupervisedDataset
+    dataset: (
+        MorpionSupervisedDataset
+        | MorpionEntityTokenSupervisedDataset
+        | MorpionRelationalEntityTokenSupervisedDataset
+    )
     with timings.time_phase("dataset_load"):
-        if is_morpion_entity_token_model_kind(args.model_kind):
+        if is_relational_entity_token_model_kind(args.model_kind):
+            dataset = MorpionRelationalEntityTokenSupervisedDataset(
+                MorpionRelationalEntityTokenSupervisedDatasetArgs(
+                    file_name=os.fspath(args.dataset_file),
+                    max_tokens=args.entity_max_tokens,
+                )
+            )
+            collate_fn = collate_morpion_relational_entity_token_supervised_samples
+        elif is_morpion_entity_token_model_kind(args.model_kind):
             dataset = MorpionEntityTokenSupervisedDataset(
                 MorpionEntityTokenSupervisedDatasetArgs(
                     file_name=os.fspath(args.dataset_file),
@@ -315,6 +338,12 @@ def train_morpion_regressor(
         "parameter_count": float(parameter_count(model)),
         "timing": timing_metadata,
     }
+    if is_relational_entity_token_model_kind(args.model_kind):
+        training_metadata.update({
+            "entity_use_validity_feature": args.entity_use_validity_feature,
+            "entity_relation_schema": args.entity_relation_schema,
+            "entity_relation_type_count": args.entity_relation_type_count,
+        })
     bundle_metadata = {
         **training_metadata,
         **metrics,
@@ -373,8 +402,10 @@ def train_morpion_regressor_streaming(
     split_policy = streaming_split_policy(training_args.validation_fraction)
     flat_cache: FlatTensorCache | None = None
     entity_token_cache: MorpionEntityTokenCache | None = None
+    relational_entity_token_cache: MorpionRelationalEntityTokenCache | None = None
     flat_tensor_cache_metadata: dict[str, object] = {"used": False}
     entity_token_cache_metadata: dict[str, object] = {"used": False}
+    relational_entity_token_cache_metadata: dict[str, object] = {"used": False}
     if is_flat_morpion_training_model_kind(training_args.model_kind):
         flat_cache = load_or_materialize_flat_tensor_cache(
             rows_path=training_args.dataset_file,
@@ -399,6 +430,47 @@ def train_morpion_regressor_streaming(
             flat_cache.materialize_seconds,
             flat_cache.load_seconds,
             flat_cache.paths.tensor_path,
+        )
+    elif is_relational_entity_token_model_kind(training_args.model_kind):
+        relational_entity_token_cache = (
+            load_or_materialize_relational_entity_token_cache(
+                rows_path=training_args.dataset_file,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                entity_max_tokens=training_args.entity_max_tokens,
+            )
+        )
+        relational_entity_token_cache_metadata = {
+            "used": True,
+            "rebuilt": relational_entity_token_cache.rebuilt,
+            "path": os.fspath(relational_entity_token_cache.paths.tensor_path),
+            "manifest_path": os.fspath(
+                relational_entity_token_cache.paths.manifest_path
+            ),
+            "row_count": relational_entity_token_cache.manifest.row_count,
+            "entity_max_tokens": (
+                relational_entity_token_cache.manifest.entity_max_tokens
+            ),
+            "input_feature_dim": (
+                relational_entity_token_cache.manifest.input_feature_dim
+            ),
+            "relation_schema": (
+                relational_entity_token_cache.manifest.relation_schema
+            ),
+            "relation_type_count": (
+                relational_entity_token_cache.manifest.relation_type_count
+            ),
+            "materialize_s": relational_entity_token_cache.materialize_seconds,
+            "load_s": relational_entity_token_cache.load_seconds,
+        }
+        LOGGER.info(
+            "[train-cache] kind=relational_entity_token rows=%s rebuilt=%s "
+            "materialize_s=%.3f load_s=%.3f path=%s",
+            relational_entity_token_cache.manifest.row_count,
+            relational_entity_token_cache.rebuilt,
+            relational_entity_token_cache.materialize_seconds,
+            relational_entity_token_cache.load_seconds,
+            relational_entity_token_cache.paths.tensor_path,
         )
     elif is_morpion_entity_token_model_kind(training_args.model_kind):
         entity_token_cache = load_or_materialize_entity_token_cache(
@@ -436,21 +508,29 @@ def train_morpion_regressor_streaming(
     cached_prediction_batch_builder = _cached_prediction_batch_builder(
         flat_cache=flat_cache,
         entity_token_cache=entity_token_cache,
+        relational_entity_token_cache=relational_entity_token_cache,
         training_args=training_args,
     )
     cached_row_count = _cached_row_count(
-        flat_cache=flat_cache, entity_token_cache=entity_token_cache
+        flat_cache=flat_cache,
+        entity_token_cache=entity_token_cache,
+        relational_entity_token_cache=relational_entity_token_cache,
     )
     cached_target_tensor = _cached_target_tensor(
         flat_cache=flat_cache,
         entity_token_cache=entity_token_cache,
+        relational_entity_token_cache=relational_entity_token_cache,
     )
     cached_training_schedule = _cached_training_schedule_metadata(
         cached_row_count=cached_row_count,
         max_rows=args.max_rows,
         validation_fraction=training_args.validation_fraction,
         shuffle=training_args.shuffle,
-        cache_used=flat_cache is not None or entity_token_cache is not None,
+        cache_used=(
+            flat_cache is not None
+            or entity_token_cache is not None
+            or relational_entity_token_cache is not None
+        ),
     )
     target_stats: TensorScaleStats | None = None
     if cached_target_tensor is not None:
@@ -499,6 +579,19 @@ def train_morpion_regressor_streaming(
                 criterion=criterion,
                 args=training_args,
                 cache=entity_token_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                epoch_index=epoch_index,
+                progress_callback=args.progress_callback,
+                device=device,
+            )
+        elif relational_entity_token_cache is not None:
+            epoch_stats = train_relational_entity_token_cache_streaming_epoch(
+                model=model,
+                optimizer=optimizer,
+                criterion=criterion,
+                args=training_args,
+                cache=relational_entity_token_cache,
                 row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 epoch_index=epoch_index,
@@ -565,6 +658,16 @@ def train_morpion_regressor_streaming(
                 split="train",
                 device=device,
             )
+        elif relational_entity_token_cache is not None:
+            train_stats = evaluate_relational_entity_token_cache_streaming_metrics(
+                model=model,
+                args=training_args,
+                cache=relational_entity_token_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="train",
+                device=device,
+            )
         else:
             train_stats = evaluate_streaming_metrics(
                 model=model,
@@ -605,6 +708,18 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
+            )
+        elif relational_entity_token_cache is not None:
+            validation_stats = (
+                evaluate_relational_entity_token_cache_streaming_metrics(
+                    model=model,
+                    args=training_args,
+                    cache=relational_entity_token_cache,
+                    row_chunk_size=args.row_chunk_size,
+                    max_rows=args.max_rows,
+                    split="validation",
+                    device=device,
+                )
             )
         else:
             validation_stats = evaluate_streaming_metrics(
@@ -686,6 +801,9 @@ def train_morpion_regressor_streaming(
         "entity_token_cache_used": "true"
         if entity_token_cache is not None
         else "false",
+        "relational_entity_token_cache_used": "true"
+        if relational_entity_token_cache is not None
+        else "false",
         "cached_global_shuffle": (
             "true"
             if cached_training_schedule.get("global_shuffle") is True
@@ -709,6 +827,21 @@ def train_morpion_regressor_streaming(
                 entity_token_cache.materialize_seconds
             ),
             "timing_entity_token_cache_load_s": entity_token_cache.load_seconds,
+        })
+    if relational_entity_token_cache is not None:
+        metrics.update({
+            "relational_entity_token_cache_rebuilt": (
+                "true" if relational_entity_token_cache.rebuilt else "false"
+            ),
+            "relational_entity_token_cache_path": os.fspath(
+                relational_entity_token_cache.paths.tensor_path
+            ),
+            "timing_relational_entity_token_cache_materialize_s": (
+                relational_entity_token_cache.materialize_seconds
+            ),
+            "timing_relational_entity_token_cache_load_s": (
+                relational_entity_token_cache.load_seconds
+            ),
         })
     _add_target_scale_metrics(metrics, target_scale)
     _add_prediction_scale_metrics(
@@ -793,6 +926,7 @@ def train_morpion_regressor_streaming(
         "parameter_count": float(parameter_count(model)),
         "flat_tensor_cache": flat_tensor_cache_metadata,
         "entity_token_cache": entity_token_cache_metadata,
+        "relational_entity_token_cache": relational_entity_token_cache_metadata,
         "cached_training_schedule": cached_training_schedule,
         "target_scale": target_scale,
         "prediction_scale_before_training": prediction_scale_before_training,
@@ -800,6 +934,14 @@ def train_morpion_regressor_streaming(
         "regression_quality": regression_quality,
         "timing": timing_metadata,
     }
+    if is_relational_entity_token_model_kind(training_args.model_kind):
+        training_metadata.update({
+            "entity_use_validity_feature": (
+                training_args.entity_use_validity_feature
+            ),
+            "entity_relation_schema": training_args.entity_relation_schema,
+            "entity_relation_type_count": training_args.entity_relation_type_count,
+        })
     bundle_metadata = {
         **training_metadata,
         **metrics,
@@ -841,6 +983,7 @@ def _cached_prediction_batch_builder(
     flat_cache: FlatTensorCache | None,
     entity_token_cache: MorpionEntityTokenCache | None,
     training_args: MorpionTrainingArgs,
+    relational_entity_token_cache: MorpionRelationalEntityTokenCache | None = None,
 ) -> Callable[[tuple[int, ...]], TensorSupervisedBatch] | None:
     """Return a small-batch builder for cache-backed prediction diagnostics."""
     if flat_cache is not None:
@@ -863,6 +1006,17 @@ def _cached_prediction_batch_builder(
             )
 
         return build_entity_token_batch
+    if relational_entity_token_cache is not None:
+
+        def build_relational_entity_token_batch(
+            row_indices: tuple[int, ...],
+        ) -> TensorSupervisedBatch:
+            return relational_entity_token_cache_batch(
+                cache=relational_entity_token_cache,
+                row_indices=row_indices,
+            )
+
+        return build_relational_entity_token_batch
     return None
 
 
@@ -870,12 +1024,15 @@ def _cached_row_count(
     *,
     flat_cache: FlatTensorCache | None,
     entity_token_cache: MorpionEntityTokenCache | None,
+    relational_entity_token_cache: MorpionRelationalEntityTokenCache | None = None,
 ) -> int:
     """Return row count for whichever streaming cache is active."""
     if flat_cache is not None:
         return flat_cache.manifest.row_count
     if entity_token_cache is not None:
         return entity_token_cache.manifest.row_count
+    if relational_entity_token_cache is not None:
+        return relational_entity_token_cache.manifest.row_count
     return 0
 
 
@@ -883,12 +1040,15 @@ def _cached_target_tensor(
     *,
     flat_cache: FlatTensorCache | None,
     entity_token_cache: MorpionEntityTokenCache | None,
+    relational_entity_token_cache: MorpionRelationalEntityTokenCache | None = None,
 ) -> torch.Tensor | None:
     """Return target tensor for whichever streaming cache is active."""
     if flat_cache is not None:
         return flat_cache.target_tensor
     if entity_token_cache is not None:
         return entity_token_cache.target_tensor
+    if relational_entity_token_cache is not None:
+        return relational_entity_token_cache.target_tensor
     return None
 
 
@@ -1185,20 +1345,21 @@ def _optional_metric_float(value: object) -> float | None:
 
 
 def _split_train_validation_dataset(
-    dataset: MorpionSupervisedDataset | MorpionEntityTokenSupervisedDataset,
+    dataset: (
+        MorpionSupervisedDataset
+        | MorpionEntityTokenSupervisedDataset
+        | MorpionRelationalEntityTokenSupervisedDataset
+    ),
     *,
     validation_fraction: float,
     validation_seed: int,
-) -> tuple[
-    Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample],
-    Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample],
-]:
+) -> tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]:
     """Return deterministic train/validation subsets for one supervised dataset."""
     sample_count = len(dataset)
     indices = list(range(sample_count))
     if sample_count < 2 or validation_fraction <= 0.0:
         return cast(
-            "tuple[Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample]]",
+            "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]",
             (Subset(dataset, indices), Subset(dataset, [])),
         )
 
@@ -1209,6 +1370,6 @@ def _split_train_validation_dataset(
     validation_indices = indices[:validation_count]
     train_indices = indices[validation_count:]
     return cast(
-        "tuple[Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionSupervisedSample] | Subset[MorpionEntityTokenSupervisedSample]]",
+        "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]",
         (Subset(dataset, train_indices), Subset(dataset, validation_indices)),
     )

@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import torch
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    is_relational_entity_token_model_kind,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     is_morpion_entity_token_model_kind,
@@ -126,10 +129,16 @@ def predict_morpion_rows_for_diagnostics(
             ) from exc
 
 
-def diagnostic_adapter_kind(model_kind: object) -> Literal["flat", "entity_tokens"]:
+def diagnostic_adapter_kind(
+    model_kind: object,
+) -> Literal["flat", "entity_tokens", "relational_entity_tokens"]:
     """Return the Morpion diagnostics adapter family for one model kind."""
     if model_kind in {"linear", "mlp"}:
         return "flat"
+    if isinstance(model_kind, str) and is_relational_entity_token_model_kind(
+        model_kind
+    ):
+        return "relational_entity_tokens"
     if isinstance(model_kind, str) and is_morpion_entity_token_model_kind(model_kind):
         return "entity_tokens"
     raise UnsupportedMorpionDiagnosticInputFormatError(model_kind)
@@ -177,6 +186,15 @@ def diagnostic_training_args(
         entity_dropout_ratio=float(getattr(model_args, "entity_dropout_ratio", 0.0)),
         entity_pooling=str(getattr(model_args, "entity_pooling", "value_token")),
         entity_output_tanh=bool(getattr(model_args, "entity_output_tanh", False)),
+        entity_use_validity_feature=bool(
+            getattr(model_args, "entity_use_validity_feature", True)
+        ),
+        entity_relation_schema=cast(
+            "str | None", getattr(model_args, "entity_relation_schema", None)
+        ),
+        entity_relation_type_count=cast(
+            "int | None", getattr(model_args, "entity_relation_type_count", None)
+        ),
         device="auto",
     )
 

@@ -39,4 +39,7 @@ def morpion_regressor_args_from_training_args(
         entity_dropout_ratio=args.entity_dropout_ratio,
         entity_pooling=args.entity_pooling,
         entity_output_tanh=args.entity_output_tanh,
+        entity_use_validity_feature=args.entity_use_validity_feature,
+        entity_relation_schema=args.entity_relation_schema,
+        entity_relation_type_count=args.entity_relation_type_count,
     )

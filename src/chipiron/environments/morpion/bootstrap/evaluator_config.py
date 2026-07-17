@@ -12,6 +12,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
+    MorpionRegressorArgs,
+)
 
 from .bootstrap_errors import (
     EmptyMorpionEvaluatorsConfigError,
@@ -45,6 +48,9 @@ class MorpionEvaluatorSpec:
     entity_dropout_ratio: float = 0.0
     entity_pooling: str = "value_token"
     entity_output_tanh: bool = False
+    entity_use_validity_feature: bool = True
+    entity_relation_schema: str | None = None
+    entity_relation_type_count: int | None = None
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
@@ -54,6 +60,24 @@ class MorpionEvaluatorSpec:
         )
         object.__setattr__(self, "feature_subset_name", subset.name)
         object.__setattr__(self, "feature_names", subset.feature_names)
+        MorpionRegressorArgs(
+            model_kind=self.model_type,
+            feature_subset_name=subset.name,
+            feature_names=subset.feature_names,
+            hidden_sizes=self.hidden_sizes,
+            entity_max_tokens=self.entity_max_tokens,
+            entity_input_feature_dim=self.entity_input_feature_dim,
+            entity_d_model=self.entity_d_model,
+            entity_n_head=self.entity_n_head,
+            entity_n_layer=self.entity_n_layer,
+            entity_dim_feedforward=self.entity_dim_feedforward,
+            entity_dropout_ratio=self.entity_dropout_ratio,
+            entity_pooling=self.entity_pooling,
+            entity_output_tanh=self.entity_output_tanh,
+            entity_use_validity_feature=self.entity_use_validity_feature,
+            entity_relation_schema=self.entity_relation_schema,
+            entity_relation_type_count=self.entity_relation_type_count,
+        )
 
     @property
     def feature_subset(self) -> MorpionFeatureSubset:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from chipiron.environments.morpion.bootstrap import (
+    CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     ConflictingMorpionEvaluatorConfigurationError,
@@ -21,6 +22,10 @@ from chipiron.environments.morpion.bootstrap import (
 )
 from chipiron.environments.morpion.bootstrap.cycle_training import (
     morpion_training_args_from_evaluator_spec,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MORPION_ENTITY_TOKEN_MODEL_KIND,
@@ -118,6 +123,23 @@ def test_entity_transformer_small_family_preset_resolves() -> None:
     entity_spec = resolved.evaluators["entity_token_transformer_small"]
     assert entity_spec.name == "entity_token_transformer_small"
     assert entity_spec.model_type == MORPION_ENTITY_TOKEN_MODEL_KIND
+
+
+def test_comparison_preset_contains_both_entity_transformers() -> None:
+    """The comparison preset should align ordinary and relational model sizes."""
+    config = morpion_evaluators_config_from_preset(
+        CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+
+    ordinary = config.evaluators["entity_token_transformer_small"]
+    relational = config.evaluators["entity_token_relational_transformer_small"]
+
+    assert ordinary.entity_d_model == relational.entity_d_model
+    assert ordinary.entity_n_head == relational.entity_n_head
+    assert ordinary.entity_n_layer == relational.entity_n_layer
+    assert ordinary.entity_dim_feedforward == relational.entity_dim_feedforward
+    assert relational.entity_relation_schema == MORPION_ENTITY_RELATION_SCHEMA
+    assert relational.entity_relation_type_count == MORPION_ENTITY_RELATION_TYPE_COUNT
 
 
 def test_entity_token_transformer_small_spec_uses_laptop_safe_defaults() -> None:

@@ -10,6 +10,9 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
+    is_relational_entity_token_model_kind,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     is_morpion_entity_token_model_kind,
@@ -1240,6 +1243,9 @@ def _evaluator_spec_from_config_payload(
         "entity_dropout_ratio",
         "entity_pooling",
         "entity_output_tanh",
+        "entity_use_validity_feature",
+        "entity_relation_schema",
+        "entity_relation_type_count",
     }
     unexpected_fields = set(spec_mapping) - allowed_fields
     if unexpected_fields:
@@ -1322,6 +1328,18 @@ def _evaluator_spec_from_config_payload(
             spec_mapping.get("entity_output_tanh", False),
             field_name=f"{section_name}.entity_output_tanh",
         ),
+        entity_use_validity_feature=_required_bool(
+            spec_mapping.get("entity_use_validity_feature", True),
+            field_name=f"{section_name}.entity_use_validity_feature",
+        ),
+        entity_relation_schema=_optional_str(
+            spec_mapping.get("entity_relation_schema"),
+            field_name=f"{section_name}.entity_relation_schema",
+        ),
+        entity_relation_type_count=_optional_int(
+            spec_mapping.get("entity_relation_type_count"),
+            field_name=f"{section_name}.entity_relation_type_count",
+        ),
     )
 
 
@@ -1347,9 +1365,11 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "feature_subset_name": spec.feature_subset_name,
         "feature_names": list(spec.feature_names),
     }
-    if is_morpion_entity_token_model_kind(
-        spec.model_type
-    ) or _has_non_default_entity_token_evaluator_settings(spec):
+    if (
+        is_morpion_entity_token_model_kind(spec.model_type)
+        or is_relational_entity_token_model_kind(spec.model_type)
+        or _has_non_default_entity_token_evaluator_settings(spec)
+    ):
         payload.update(_entity_token_evaluator_settings_to_dict(spec))
     return payload
 
@@ -1368,6 +1388,9 @@ def _has_non_default_entity_token_evaluator_settings(
         or spec.entity_dropout_ratio != 0.0
         or spec.entity_pooling != "value_token"
         or spec.entity_output_tanh is not False
+        or spec.entity_use_validity_feature is not True
+        or spec.entity_relation_schema is not None
+        or spec.entity_relation_type_count is not None
     )
 
 
@@ -1375,7 +1398,7 @@ def _entity_token_evaluator_settings_to_dict(
     spec: MorpionEvaluatorSpec,
 ) -> dict[str, object]:
     """Serialize entity-token-specific evaluator settings."""
-    return {
+    settings: dict[str, object] = {
         "entity_max_tokens": spec.entity_max_tokens,
         "entity_input_feature_dim": spec.entity_input_feature_dim,
         "entity_d_model": spec.entity_d_model,
@@ -1386,6 +1409,13 @@ def _entity_token_evaluator_settings_to_dict(
         "entity_pooling": spec.entity_pooling,
         "entity_output_tanh": spec.entity_output_tanh,
     }
+    if is_relational_entity_token_model_kind(spec.model_type):
+        settings.update({
+            "entity_use_validity_feature": spec.entity_use_validity_feature,
+            "entity_relation_schema": spec.entity_relation_schema,
+            "entity_relation_type_count": spec.entity_relation_type_count,
+        })
+    return settings
 
 
 def _is_str_key_mapping(value: object) -> bool:
@@ -1408,6 +1438,13 @@ def _required_str(value: object, *, field_name: str) -> str:
     if isinstance(value, str):
         return value
     raise MalformedMorpionBootstrapConfigError.invalid_required_str(field_name)
+
+
+def _optional_str(value: object, *, field_name: str) -> str | None:
+    """Return one optional string field or raise."""
+    if value is None:
+        return None
+    return _required_str(value, field_name=field_name)
 
 
 def _required_non_empty_str(value: object, *, field_name: str) -> str:

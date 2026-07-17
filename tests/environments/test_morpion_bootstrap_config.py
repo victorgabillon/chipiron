@@ -104,8 +104,11 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     MORPION_ENTITY_TOKEN_MODEL_KIND,
+    MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
 )
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
@@ -1410,6 +1413,80 @@ def test_bootstrap_config_roundtrip_preserves_entity_token_evaluator_fields(
     assert loaded_spec.entity_dropout_ratio == 0.1
     assert loaded_spec.entity_pooling == "masked_mean"
     assert loaded_spec.entity_output_tanh is False
+
+
+def test_bootstrap_config_roundtrip_preserves_relational_evaluator_fields(
+    tmp_path: Path,
+) -> None:
+    """Persisted relational settings should remain explicit and validated."""
+    base = _make_config()
+    relational_spec = MorpionEvaluatorSpec(
+        name="entity_token_relational_transformer_small",
+        model_type=MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+        hidden_sizes=None,
+        num_epochs=1,
+        batch_size=2,
+        learning_rate=1e-3,
+        entity_relation_schema=MORPION_ENTITY_RELATION_SCHEMA,
+        entity_relation_type_count=MORPION_ENTITY_RELATION_TYPE_COUNT,
+    )
+    config = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={relational_spec.name: relational_spec}
+        ),
+    )
+    config_path = tmp_path / "relational_bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+    payload = bootstrap_config_to_dict(config)
+    relational_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][  # type: ignore[index]
+            relational_spec.name
+        ],
+    )
+
+    assert loaded == config
+    assert (
+        relational_payload["entity_relation_schema"]
+        == MORPION_ENTITY_RELATION_SCHEMA
+    )
+    assert (
+        relational_payload["entity_relation_type_count"]
+        == MORPION_ENTITY_RELATION_TYPE_COUNT
+    )
+    assert relational_payload["entity_use_validity_feature"] is True
+
+
+@pytest.mark.parametrize(
+    "override",
+    (
+        {"entity_relation_schema": None},
+        {"entity_relation_type_count": None},
+        {"entity_use_validity_feature": False},
+    ),
+)
+def test_relational_evaluator_spec_rejects_missing_schema(
+    override: dict[str, object],
+) -> None:
+    """Relational evaluator specs should reject incomplete runtime metadata."""
+    kwargs: dict[str, object] = {
+        "name": "relational",
+        "model_type": MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+        "hidden_sizes": None,
+        "num_epochs": 1,
+        "batch_size": 2,
+        "learning_rate": 1e-3,
+        "entity_relation_schema": MORPION_ENTITY_RELATION_SCHEMA,
+        "entity_relation_type_count": MORPION_ENTITY_RELATION_TYPE_COUNT,
+    }
+    kwargs.update(override)
+    with pytest.raises(ValueError):
+        MorpionEvaluatorSpec(**kwargs)  # type: ignore[arg-type]
 
 
 def test_bootstrap_config_rejects_removed_evaluator_fields() -> None:

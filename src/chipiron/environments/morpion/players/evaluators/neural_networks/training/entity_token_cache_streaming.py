@@ -11,6 +11,7 @@ import torch
 
 from chipiron.learning.supervised import (
     RegressionEvaluationStats,
+    TensorSupervisedBatch,
     evaluate_regression_batch,
     infer_batch_sample_count,
     train_regression_batch,
@@ -24,6 +25,10 @@ from .cached_index_schedule import (
     split_indices_for_streaming_policy,
 )
 from .entity_token_cache import MorpionEntityTokenCache, entity_token_cache_batch
+from .relational_entity_token_cache import (
+    MorpionRelationalEntityTokenCache,
+    relational_entity_token_cache_batch,
+)
 from .streaming import StreamingEpochStats
 
 if TYPE_CHECKING:
@@ -52,11 +57,79 @@ def train_entity_token_cache_streaming_epoch(
     device: torch.device,
 ) -> StreamingEpochStats:
     """Train one streaming epoch over a cached entity-token artifact."""
+    return _train_packed_cache_streaming_epoch(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        args=args,
+        row_count=cache.manifest.row_count,
+        batch_builder=lambda row_indices: entity_token_cache_batch(
+            cache=cache,
+            row_indices=row_indices,
+        ),
+        cache_mode="entity_token_cache",
+        row_chunk_size=row_chunk_size,
+        max_rows=max_rows,
+        epoch_index=epoch_index,
+        progress_callback=progress_callback,
+        device=device,
+    )
+
+
+def train_relational_entity_token_cache_streaming_epoch(
+    *,
+    model: MorpionRegressor,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+    args: MorpionTrainingArgs,
+    cache: MorpionRelationalEntityTokenCache,
+    row_chunk_size: int,
+    max_rows: int | None,
+    epoch_index: int,
+    progress_callback: Callable[[int, int, int, int], None] | None,
+    device: torch.device,
+) -> StreamingEpochStats:
+    """Train one streaming epoch over a cached relational artifact."""
+    return _train_packed_cache_streaming_epoch(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        args=args,
+        row_count=cache.manifest.row_count,
+        batch_builder=lambda row_indices: relational_entity_token_cache_batch(
+            cache=cache,
+            row_indices=row_indices,
+        ),
+        cache_mode="relational_entity_token_cache",
+        row_chunk_size=row_chunk_size,
+        max_rows=max_rows,
+        epoch_index=epoch_index,
+        progress_callback=progress_callback,
+        device=device,
+    )
+
+
+def _train_packed_cache_streaming_epoch(
+    *,
+    model: MorpionRegressor,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+    args: MorpionTrainingArgs,
+    row_count: int,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    cache_mode: str,
+    row_chunk_size: int,
+    max_rows: int | None,
+    epoch_index: int,
+    progress_callback: Callable[[int, int, int, int], None] | None,
+    device: torch.device,
+) -> StreamingEpochStats:
+    """Train one epoch using a packed cache batch builder."""
     epoch_started_at = perf_counter()
     epoch_timings = PhaseDurations()
     model.train()
     with epoch_timings.time_phase("chunk_load"):
-        row_limit = _cache_row_limit(cache=cache, max_rows=max_rows)
+        row_limit = _cache_row_limit(row_count=row_count, max_rows=max_rows)
     chunk_count = _pseudo_chunk_count(
         row_count=row_limit, row_chunk_size=row_chunk_size
     )
@@ -75,8 +148,9 @@ def train_entity_token_cache_streaming_epoch(
             epoch_index=epoch_index,
         )
     LOGGER.info(
-        "[train-schedule] mode=entity_token_cache epoch=%s train_indices=%s "
+        "[train-schedule] mode=%s epoch=%s train_indices=%s "
         "validation_indices=%s shuffle=%s global_shuffle=%s split_policy=%s",
+        cache_mode,
         epoch_index + 1,
         len(schedule.train_indices),
         len(schedule.validation_indices),
@@ -95,9 +169,7 @@ def train_entity_token_cache_streaming_epoch(
             break
         batch_count += 1
         with epoch_timings.time_phase("row_to_sample_batch"):
-            sample_batch = entity_token_cache_batch(
-                cache=cache, row_indices=row_indices
-            )
+            sample_batch = batch_builder(row_indices)
         batch_stats = train_regression_batch(
             model=model,
             optimizer=optimizer,
@@ -146,13 +218,66 @@ def evaluate_entity_token_cache_streaming_metrics(
     device: torch.device,
 ) -> RegressionEvaluationStats:
     """Compute streaming metrics for one split from cached entity tokens."""
+    return _evaluate_packed_cache_streaming_metrics(
+        model=model,
+        args=args,
+        row_count=cache.manifest.row_count,
+        batch_builder=lambda row_indices: entity_token_cache_batch(
+            cache=cache,
+            row_indices=row_indices,
+        ),
+        row_chunk_size=row_chunk_size,
+        max_rows=max_rows,
+        split=split,
+        device=device,
+    )
+
+
+def evaluate_relational_entity_token_cache_streaming_metrics(
+    *,
+    model: MorpionRegressor,
+    args: MorpionTrainingArgs,
+    cache: MorpionRelationalEntityTokenCache,
+    row_chunk_size: int,
+    max_rows: int | None,
+    split: Literal["train", "validation"],
+    device: torch.device,
+) -> RegressionEvaluationStats:
+    """Compute streaming metrics from cached relational entity tokens."""
+    return _evaluate_packed_cache_streaming_metrics(
+        model=model,
+        args=args,
+        row_count=cache.manifest.row_count,
+        batch_builder=lambda row_indices: relational_entity_token_cache_batch(
+            cache=cache,
+            row_indices=row_indices,
+        ),
+        row_chunk_size=row_chunk_size,
+        max_rows=max_rows,
+        split=split,
+        device=device,
+    )
+
+
+def _evaluate_packed_cache_streaming_metrics(
+    *,
+    model: MorpionRegressor,
+    args: MorpionTrainingArgs,
+    row_count: int,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    row_chunk_size: int,
+    max_rows: int | None,
+    split: Literal["train", "validation"],
+    device: torch.device,
+) -> RegressionEvaluationStats:
+    """Compute streaming metrics using a packed cache batch builder."""
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     squared_error_sum = 0.0
     absolute_error_sum = 0.0
     sample_count = 0
     target_count = 0
-    row_limit = _cache_row_limit(cache=cache, max_rows=max_rows)
+    row_limit = _cache_row_limit(row_count=row_count, max_rows=max_rows)
     model.eval()
     with torch.no_grad():
         with timings.time_phase("chunk_load"):
@@ -171,10 +296,7 @@ def evaluate_entity_token_cache_streaming_metrics(
             except StopIteration:
                 break
             with timings.time_phase("row_to_sample_batch"):
-                sample_batch = entity_token_cache_batch(
-                    cache=cache,
-                    row_indices=row_indices,
-                )
+                sample_batch = batch_builder(row_indices)
             sample_count += infer_batch_sample_count(sample_batch)
             batch_metrics = evaluate_regression_batch(
                 model=model,
@@ -205,11 +327,11 @@ def evaluate_entity_token_cache_streaming_metrics(
     )
 
 
-def _cache_row_limit(*, cache: MorpionEntityTokenCache, max_rows: int | None) -> int:
+def _cache_row_limit(*, row_count: int, max_rows: int | None) -> int:
     """Return the effective cache row limit for one streaming pass."""
     if max_rows is None:
-        return cache.manifest.row_count
-    return min(cache.manifest.row_count, max_rows)
+        return row_count
+    return min(row_count, max_rows)
 
 
 def _pseudo_chunk_count(*, row_count: int, row_chunk_size: int) -> int:
@@ -250,5 +372,7 @@ def _report_cached_progress(
 
 __all__ = [
     "evaluate_entity_token_cache_streaming_metrics",
+    "evaluate_relational_entity_token_cache_streaming_metrics",
     "train_entity_token_cache_streaming_epoch",
+    "train_relational_entity_token_cache_streaming_epoch",
 ]

@@ -49,6 +49,13 @@ class MorpionFeatureTensorConverter:
         values = [feature_dict[name] for name in self.feature_names()]
         return torch.tensor(values, dtype=torch.float32)
 
+    def state_to_model_input_tensors(
+        self,
+        state: MorpionState,
+    ) -> tuple[Tensor, ...]:
+        """Return the flat model's single positional input tensor."""
+        return (self.state_to_tensor(state),)
+
 
 def morpion_input_dim(feature_subset: MorpionFeatureSubset | None = None) -> int:
     """Return the handcrafted Morpion tensor input dimension."""
