@@ -73,12 +73,6 @@ MORPION_COMPARISON_SCHEMA: Final[str] = "morpion_evaluator_comparison_v1"
 PAIRWISE_ERROR_TIE_TOLERANCE: Final[float] = 1e-12
 WORST_ROW_LIMIT: Final[int] = 100
 _CACHE_ROW_CHUNK_SIZE: Final[int] = 2_048
-_OUTPUT_FILE_NAMES: Final[tuple[str, ...]] = (
-    "summary.json",
-    "predictions.jsonl",
-    "predictions.csv",
-    "worst_rows.json",
-)
 
 
 class MorpionComparisonDiagnosticsError(RuntimeError):
@@ -165,6 +159,17 @@ class InvalidMorpionComparisonInputError(MorpionComparisonDiagnosticsError):
     ) -> InvalidMorpionComparisonInputError:
         """Return an error when the requested output path is not a directory."""
         return cls(f"Morpion comparison output path is not a directory: {path!s}.")
+
+    @classmethod
+    def output_directory_not_empty(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionComparisonInputError:
+        """Return an error when safe output replacement was not authorized."""
+        return cls(
+            f"Morpion comparison output directory is not empty: {path!s}. "
+            "Pass --overwrite to replace it as a complete artifact set."
+        )
 
 
 class MorpionComparisonBundleLoadError(MorpionComparisonDiagnosticsError):
@@ -302,6 +307,7 @@ class MorpionComparisonDiagnosticsArgs:
     validation_fraction: float = 0.2
     batch_size: int = 64
     device: str = "auto"
+    overwrite: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -482,6 +488,8 @@ def build_morpion_comparison_diagnostics(
 def save_morpion_comparison_diagnostics(
     diagnostics: MorpionComparisonDiagnostics,
     output_dir: Path,
+    *,
+    overwrite: bool = False,
 ) -> None:
     """Write all comparison artifacts from a complete in-memory result."""
     target_dir = output_dir.resolve()
@@ -504,8 +512,18 @@ def save_morpion_comparison_diagnostics(
             raise InvalidMorpionComparisonInputError.invalid_output_directory(
                 target_dir
             )
-        for file_name in _OUTPUT_FILE_NAMES:
-            (staging_dir / file_name).replace(target_dir / file_name)
+        if not any(target_dir.iterdir()):
+            target_dir.rmdir()
+            staging_dir.replace(target_dir)
+            return
+        if not overwrite:
+            raise InvalidMorpionComparisonInputError.output_directory_not_empty(
+                target_dir
+            )
+        _replace_complete_output_directory(
+            staging_dir=staging_dir,
+            target_dir=target_dir,
+        )
     finally:
         if staging_dir.exists():
             shutil.rmtree(staging_dir)
@@ -731,45 +749,51 @@ def _evaluate_one_evaluator(
     predictions: list[float] = []
     targets: list[float] = []
     model = evaluator.model.to(device)
-    model.eval()
-    with torch.no_grad():
-        for batch_indices in index_batches(row_indices, batch_size=batch_size):
-            sample_batch = batch_builder(batch_indices)
-            device_batch = move_supervised_batch_to_device(
-                cast("SupervisedBatch", sample_batch),
-                device,
-            )
-            batch_output = model(*device_batch.get_model_input_tensors())
-            flat_output = batch_output.detach().cpu().reshape(-1)
-            flat_targets = device_batch.get_target_value().detach().cpu().reshape(-1)
-            if flat_output.numel() != len(batch_indices):
-                raise MorpionComparisonEvaluationError.prediction_count_mismatch(
-                    evaluator_name=evaluator.name,
-                    expected=len(batch_indices),
-                    actual=int(flat_output.numel()),
+    try:
+        model.eval()
+        with torch.inference_mode():
+            for batch_indices in index_batches(row_indices, batch_size=batch_size):
+                sample_batch = batch_builder(batch_indices)
+                device_batch = move_supervised_batch_to_device(
+                    cast("SupervisedBatch", sample_batch),
+                    device,
                 )
-            if flat_targets.numel() != len(batch_indices):
-                raise MorpionComparisonEvaluationError.target_count_mismatch(
-                    evaluator_name=evaluator.name,
-                    expected=len(batch_indices),
-                    actual=int(flat_targets.numel()),
+                batch_output = model(*device_batch.get_model_input_tensors())
+                flat_output = batch_output.detach().cpu().reshape(-1)
+                flat_targets = (
+                    device_batch.get_target_value().detach().cpu().reshape(-1)
                 )
-            for position, row_index in enumerate(batch_indices):
-                prediction = float(flat_output[position].item())
-                target = float(flat_targets[position].item())
-                if not math.isfinite(prediction):
-                    raise MorpionComparisonEvaluationError.non_finite_prediction(
+                if flat_output.numel() != len(batch_indices):
+                    raise MorpionComparisonEvaluationError.prediction_count_mismatch(
                         evaluator_name=evaluator.name,
-                        row_index=row_index,
+                        expected=len(batch_indices),
+                        actual=int(flat_output.numel()),
                     )
-                if not math.isfinite(target):
-                    raise MorpionComparisonEvaluationError.non_finite_target(
+                if flat_targets.numel() != len(batch_indices):
+                    raise MorpionComparisonEvaluationError.target_count_mismatch(
                         evaluator_name=evaluator.name,
-                        row_index=row_index,
+                        expected=len(batch_indices),
+                        actual=int(flat_targets.numel()),
                     )
-                predictions.append(prediction)
-                targets.append(target)
-    model.to("cpu")
+                for position, row_index in enumerate(batch_indices):
+                    prediction = float(flat_output[position].item())
+                    target = float(flat_targets[position].item())
+                    if not math.isfinite(prediction):
+                        raise MorpionComparisonEvaluationError.non_finite_prediction(
+                            evaluator_name=evaluator.name,
+                            row_index=row_index,
+                        )
+                    if not math.isfinite(target):
+                        raise MorpionComparisonEvaluationError.non_finite_target(
+                            evaluator_name=evaluator.name,
+                            row_index=row_index,
+                        )
+                    predictions.append(prediction)
+                    targets.append(target)
+    finally:
+        model.to("cpu")
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
     return _EvaluationResult(
         predictions=tuple(predictions),
         targets=tuple(targets),
@@ -1290,6 +1314,28 @@ def _write_predictions_csv(
             writer.writerow(row)
 
 
+def _replace_complete_output_directory(
+    *,
+    staging_dir: Path,
+    target_dir: Path,
+) -> None:
+    """Swap one complete staged artifact directory with rollback on failure."""
+    backup_dir = Path(
+        tempfile.mkdtemp(
+            prefix=f".{target_dir.name}.backup.",
+            dir=target_dir.parent,
+        )
+    )
+    backup_dir.rmdir()
+    target_dir.replace(backup_dir)
+    try:
+        staging_dir.replace(target_dir)
+    except Exception:
+        backup_dir.replace(target_dir)
+        raise
+    shutil.rmtree(backup_dir)
+
+
 def _parse_bundle_argument(value: str) -> MorpionComparisonBundle:
     """Parse one exact repeatable ``NAME=PATH`` CLI argument."""
     if value.count("=") != 1:
@@ -1321,6 +1367,11 @@ def _argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--validation-fraction", type=float, default=0.2)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default="auto")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Atomically replace an existing non-empty output directory.",
+    )
     return parser
 
 
@@ -1375,10 +1426,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         validation_fraction=namespace.validation_fraction,
         batch_size=namespace.batch_size,
         device=namespace.device,
+        overwrite=namespace.overwrite,
     )
     try:
         diagnostics = build_morpion_comparison_diagnostics(comparison_args)
-        save_morpion_comparison_diagnostics(diagnostics, comparison_args.output_dir)
+        save_morpion_comparison_diagnostics(
+            diagnostics,
+            comparison_args.output_dir,
+            overwrite=comparison_args.overwrite,
+        )
     except MorpionComparisonDiagnosticsError as exc:
         print(f"Morpion comparison diagnostics failed: {exc}", file=sys.stderr)
         return 2

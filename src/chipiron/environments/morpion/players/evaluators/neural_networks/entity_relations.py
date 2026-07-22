@@ -4,25 +4,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final
 
 import torch
 
+from chipiron.environments.morpion.action_geometry import (
+    morpion_action_new_point,
+    morpion_action_points,
+    morpion_action_segments,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MorpionEntityTokenConverter,
     canonical_segment,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
-    DIRECTIONS,
-)
-from chipiron.environments.morpion.types import (
-    MorpionAction,
-    MorpionDynamics,
-    MorpionState,
-)
+from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 if TYPE_CHECKING:
-    from atomheart.games.morpion.state import Point, Segment
+    from atomheart.games.morpion.state import Point
 
 MORPION_ENTITY_RELATION_SCHEMA: Final[str] = "morpion_entity_relations_v1"
 MORPION_ENTITY_RELATION_TYPE_COUNT: Final[int] = 16
@@ -127,7 +125,7 @@ class MorpionRelationalEntityTokenConverter:
         move_indices_by_new_dot: dict[Point, list[int]] = {}
 
         for action, move_index in entity_layout.move_index_by_action.items():
-            points = _points_for_action(action)
+            points = morpion_action_points(action)
             for slot, point in enumerate(points):
                 dot_index = entity_layout.dot_index_by_point.get(point)
                 if dot_index is None:
@@ -145,7 +143,7 @@ class MorpionRelationalEntityTokenConverter:
                     _DOT_TO_MOVE_RELATIONS[slot],
                 )
 
-            for segment in _segments_for_action(action):
+            for segment in morpion_action_segments(action):
                 edge_index = entity_layout.edge_index_by_segment.get(
                     canonical_segment(segment)
                 )
@@ -164,7 +162,7 @@ class MorpionRelationalEntityTokenConverter:
                     MorpionEntityRelationType.EDGE_IN_MOVE_WINDOW,
                 )
 
-            missing_point = _missing_point_for_action(action)
+            missing_point = morpion_action_new_point(action)
             move_indices_by_new_dot.setdefault(missing_point, []).append(move_index)
 
         for segment, edge_index in entity_layout.edge_index_by_segment.items():
@@ -228,37 +226,6 @@ def _add_relation(
 ) -> None:
     """Add one active directed relation triple."""
     relations.add((source_index, destination_index, int(relation_type)))
-
-
-def _points_for_action(
-    action: MorpionAction,
-) -> tuple[Point, Point, Point, Point, Point]:
-    """Return the five ordered lattice points in one action window."""
-    direction_index, x0, y0, _missing_index = action
-    dx, dy = DIRECTIONS[direction_index]
-    return cast(
-        "tuple[Point, Point, Point, Point, Point]",
-        tuple((x0 + slot * dx, y0 + slot * dy) for slot in range(5)),
-    )
-
-
-def _segments_for_action(
-    action: MorpionAction,
-) -> tuple[Segment, Segment, Segment, Segment]:
-    """Return the four canonical unit segments in one action window."""
-    points = _points_for_action(action)
-    return cast(
-        "tuple[Segment, Segment, Segment, Segment]",
-        tuple(
-            canonical_segment((points[index], points[index + 1]))
-            for index in range(4)
-        ),
-    )
-
-
-def _missing_point_for_action(action: MorpionAction) -> Point:
-    """Return the absent or new point represented by one action."""
-    return _points_for_action(action)[action[3]]
 
 
 def _validate_generated_relation_triples(

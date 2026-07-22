@@ -11,9 +11,7 @@ from typing import TYPE_CHECKING, Final
 import torch
 from torch import Tensor
 
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
-    DIRECTIONS,
-)
+from chipiron.environments.morpion.action_geometry import morpion_action_new_point
 from chipiron.environments.morpion.types import (
     MorpionAction,
     MorpionDynamics,
@@ -355,9 +353,7 @@ def canonical_segment(segment: Segment) -> Segment:
 
 def _missing_point_from_action(action: MorpionAction) -> Point:
     """Return the absent point represented by one raw Morpion action."""
-    dir_index, x0, y0, missing_index = action
-    dx, dy = DIRECTIONS[dir_index]
-    return (x0 + missing_index * dx, y0 + missing_index * dy)
+    return morpion_action_new_point(action)
 
 
 def _direction_index_for_segment(segment: Segment) -> int | None:
