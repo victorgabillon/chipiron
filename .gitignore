@@ -126,3 +126,9 @@ src/chipiron/scripts/profiling/benchmark_reports/**
 *.flat_features.*.manifest.json
 *.graph_tokens.*.pt
 *.graph_tokens.*.manifest.json
+
+# Local Morpion research outputs (root-only; keep small test fixtures visible)
+/morpion_runs/
+/comparisons/
+/action_supervision/
+.pyright/

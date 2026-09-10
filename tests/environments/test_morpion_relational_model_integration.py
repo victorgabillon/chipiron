@@ -61,7 +61,11 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training.s
     prediction_scale_stats_for_cached_batches,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
-from chipiron.learning.supervised import TensorSupervisedBatch, train_regression_batch
+from chipiron.learning.supervised import (
+    SupervisedBatch,
+    TensorSupervisedBatch,
+    train_regression_batch,
+)
 from tests.environments.test_morpion_entity_token_cache import (
     _build_jsonl_rows_file,
 )
@@ -106,16 +110,16 @@ def test_relational_model_kind_preset_and_parameter_contract() -> None:
     )
     assert training_args.model_kind == MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND
     assert training_args.entity_relation_schema == MORPION_ENTITY_RELATION_SCHEMA
-    assert training_args.entity_relation_type_count == MORPION_ENTITY_RELATION_TYPE_COUNT
+    assert (
+        training_args.entity_relation_type_count == MORPION_ENTITY_RELATION_TYPE_COUNT
+    )
 
     ordinary = build_morpion_regressor(
         MorpionRegressorArgs(model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND)
     )
     relational = build_morpion_regressor(_relational_model_args())
     ordinary_count = sum(parameter.numel() for parameter in ordinary.parameters())
-    relational_count = sum(
-        parameter.numel() for parameter in relational.parameters()
-    )
+    relational_count = sum(parameter.numel() for parameter in relational.parameters())
 
     assert ordinary_count == 105_985
     assert relational_count == 106_049
@@ -154,9 +158,9 @@ def test_real_relational_forward_batch_empty_relations_and_truncation() -> None:
     torch.manual_seed(0)
     model = build_morpion_regressor(_relational_model_args()).eval()
     state = _make_one_step_state()
-    relational = MorpionRelationalEntityTokenConverter(
-        max_tokens=128
-    ).state_to_tensors(state)
+    relational = MorpionRelationalEntityTokenConverter(max_tokens=128).state_to_tensors(
+        state
+    )
 
     with torch.no_grad():
         single_output = model(
@@ -169,9 +173,7 @@ def test_real_relational_forward_batch_empty_relations_and_truncation() -> None:
         target_tensor=torch.tensor([0.0]),
         is_batch=False,
     )
-    batch = collate_morpion_relational_entity_token_supervised_samples(
-        (sample, sample)
-    )
+    batch = collate_morpion_relational_entity_token_supervised_samples((sample, sample))
     with torch.no_grad():
         batch_output = model(*batch.get_model_input_tensors())
 
@@ -206,9 +208,9 @@ def test_real_relational_backward_reaches_active_bias_rows() -> None:
     """Two relation-biased layers should differentiate active relation rows."""
     torch.manual_seed(0)
     model = build_morpion_regressor(_relational_model_args())
-    relational = MorpionRelationalEntityTokenConverter(
-        max_tokens=128
-    ).state_to_tensors(_make_one_step_state())
+    relational = MorpionRelationalEntityTokenConverter(max_tokens=128).state_to_tensors(
+        _make_one_step_state()
+    )
     prediction = model(relational.token_tensor, relational.relation_triples)
 
     prediction.square().mean().backward()
@@ -248,7 +250,7 @@ def test_eager_and_cached_training_steps_reach_relation_bias(tmp_path: Path) -> 
         model=direct_model,
         optimizer=torch.optim.SGD(direct_model.parameters(), lr=0.05),
         criterion=torch.nn.MSELoss(),
-        batch=direct_batch,
+        batch=cast("SupervisedBatch", direct_batch),
         device=torch.device("cpu"),
     )
 
@@ -271,7 +273,7 @@ def test_eager_and_cached_training_steps_reach_relation_bias(tmp_path: Path) -> 
         model=cached_model,
         optimizer=torch.optim.SGD(cached_model.parameters(), lr=0.05),
         criterion=torch.nn.MSELoss(),
-        batch=cached_batch,
+        batch=cast("SupervisedBatch", cached_batch),
         device=torch.device("cpu"),
     )
 
@@ -359,7 +361,9 @@ def test_relational_cached_streaming_diagnostics_and_dispatch(tmp_path: Path) ->
     assert scale_stats.std is not None and math.isfinite(scale_stats.std)
 
 
-def test_relational_direct_row_diagnostics_use_two_input_adapter(tmp_path: Path) -> None:
+def test_relational_direct_row_diagnostics_use_two_input_adapter(
+    tmp_path: Path,
+) -> None:
     """Direct diagnostic prediction should select relational row conversion."""
     rows_path = _build_rows_file(tmp_path, target_values=(0.25, -0.5))
     rows = load_morpion_supervised_rows(rows_path).rows
@@ -381,9 +385,9 @@ def test_relational_bundle_roundtrip_and_runtime_evaluation(tmp_path: Path) -> N
     args = _small_relational_model_args()
     model = build_morpion_regressor(args).eval()
     state = _make_one_step_state()
-    relational = MorpionRelationalEntityTokenConverter(
-        max_tokens=128
-    ).state_to_tensors(state)
+    relational = MorpionRelationalEntityTokenConverter(max_tokens=128).state_to_tensors(
+        state
+    )
     with torch.no_grad():
         before = model(relational.token_tensor, relational.relation_triples)
     bundle_dir = tmp_path / "relational_bundle"
@@ -481,9 +485,9 @@ def test_ordinary_bundle_retains_one_input_and_null_relation_metadata(
     )
 
     loaded, _loaded_args, manifest = load_morpion_model_bundle(bundle_dir)
-    inputs = MorpionEntityTokenConverter(
-        max_tokens=128
-    ).state_to_model_input_tensors(_make_one_step_state())
+    inputs = MorpionEntityTokenConverter(max_tokens=128).state_to_model_input_tensors(
+        _make_one_step_state()
+    )
 
     assert manifest.entity_relation_schema is None
     assert manifest.entity_relation_type_count is None
@@ -495,9 +499,9 @@ def test_ordinary_bundle_retains_one_input_and_null_relation_metadata(
 def test_relational_model_inputs_move_to_cuda_without_dtype_change() -> None:
     """CUDA execution should keep relation triples integral and colocated."""
     model = build_morpion_regressor(_small_relational_model_args()).to("cuda")
-    relational = MorpionRelationalEntityTokenConverter(
-        max_tokens=128
-    ).state_to_tensors(_make_one_step_state())
+    relational = MorpionRelationalEntityTokenConverter(max_tokens=128).state_to_tensors(
+        _make_one_step_state()
+    )
     tokens = relational.token_tensor.to("cuda")
     relations = relational.relation_triples.to("cuda")
 

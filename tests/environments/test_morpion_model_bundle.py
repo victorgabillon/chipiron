@@ -454,7 +454,9 @@ def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
     assert (output_dir / MORPION_MODEL_ARGS_FILE_NAME).is_file()
     assert (output_dir / MORPION_MANIFEST_FILE_NAME).is_file()
     assert metrics["num_samples"] == 8.0
+    assert isinstance(metrics["num_train_samples"], float)
     assert metrics["num_train_samples"] > 0.0
+    assert isinstance(metrics["num_validation_samples"], float)
     assert metrics["num_validation_samples"] > 0.0
     assert metrics["split_policy"] == "index_modulo_4"
     assert metrics["final_loss"] is not None

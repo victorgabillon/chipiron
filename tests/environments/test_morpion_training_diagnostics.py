@@ -95,6 +95,7 @@ def _constant_linear_regressor(value: float) -> MorpionRegressor:
     """Return one linear regressor with deterministic constant predictions."""
     model = MorpionRegressor(MorpionRegressorArgs(model_kind="linear"))
     linear = model.net
+    assert isinstance(linear, torch.nn.Linear)
     with torch.no_grad():
         linear.weight.zero_()
         linear.bias.fill_(value)

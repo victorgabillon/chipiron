@@ -127,12 +127,13 @@ def test_move_dot_slot_relations_follow_action_window_order() -> None:
             move_index,
             int(MorpionEntityRelationType.DOT_SLOT_0_OF_MOVE) + slot,
         ) in relations
-    assert len(
-        {
+    assert (
+        len({
             int(MorpionEntityRelationType.MOVE_TO_DOT_SLOT_0) + slot
             for slot in range(5)
-        }
-    ) == 5
+        })
+        == 5
+    )
 
 
 def test_move_edge_relations_use_canonical_segment_identity() -> None:
@@ -295,9 +296,10 @@ def test_relational_collation_pads_tokens_relations_and_targets() -> None:
         is_batch=False,
     )
 
-    batch = collate_morpion_relational_entity_token_supervised_samples(
-        (sample_a, sample_b)
-    )
+    batch = collate_morpion_relational_entity_token_supervised_samples((
+        sample_a,
+        sample_b,
+    ))
     relations = batch.auxiliary_input_tensors[0]
 
     assert batch.input_tensor.shape == (2, 4, MORPION_ENTITY_TOKEN_FEATURE_DIM)
@@ -319,11 +321,8 @@ def test_relational_collation_empty_and_invalid_samples() -> None:
     assert empty.auxiliary_input_tensors[0].shape == (0, 0, 3)
     assert empty.target_tensor.shape == (0, 1)
 
-    base = {
-        "input_tensor": torch.ones((2, MORPION_ENTITY_TOKEN_FEATURE_DIM)),
-        "target_tensor": torch.tensor([0.0]),
-        "is_batch": False,
-    }
+    input_tensor = torch.ones((2, MORPION_ENTITY_TOKEN_FEATURE_DIM))
+    target_tensor = torch.tensor([0.0])
     for auxiliaries in (
         (),
         (torch.empty((0, 3), dtype=torch.long),) * 2,
@@ -332,24 +331,24 @@ def test_relational_collation_empty_and_invalid_samples() -> None:
         (torch.tensor([[False, True, True]]),),
     ):
         with pytest.raises(ValueError):
-            collate_morpion_relational_entity_token_supervised_samples(
-                (
-                    MorpionRelationalEntityTokenSupervisedSample(
-                        **base,
-                        auxiliary_input_tensors=auxiliaries,
-                    ),
-                )
-            )
+            collate_morpion_relational_entity_token_supervised_samples((
+                MorpionRelationalEntityTokenSupervisedSample(
+                    input_tensor=input_tensor,
+                    target_tensor=target_tensor,
+                    is_batch=False,
+                    auxiliary_input_tensors=auxiliaries,
+                ),
+            ))
 
     integer_sample = MorpionRelationalEntityTokenSupervisedSample(
-        **base,
-        auxiliary_input_tensors=(
-            torch.tensor([[0, 1, 1]], dtype=torch.int32),
-        ),
+        input_tensor=input_tensor,
+        target_tensor=target_tensor,
+        is_batch=False,
+        auxiliary_input_tensors=(torch.tensor([[0, 1, 1]], dtype=torch.int32),),
     )
-    integer_batch = collate_morpion_relational_entity_token_supervised_samples(
-        (integer_sample,)
-    )
+    integer_batch = collate_morpion_relational_entity_token_supervised_samples((
+        integer_sample,
+    ))
     assert integer_batch.auxiliary_input_tensors[0].dtype == torch.long
 
 

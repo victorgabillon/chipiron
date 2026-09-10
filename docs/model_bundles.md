@@ -62,3 +62,10 @@ package_ref = ModelBundleRef(
 )
 package_bundle = resolve_model_bundle(package_ref)
 ```
+
+## Morpion Transformer research
+
+See [the consolidated research notes](research/morpion_transformer.md) for the
+retained value architecture, optional promoted MOVE-token feature and postponed
+policy work. Cleanup preserves existing token/relation schemas, bundle formats
+and production defaults.
