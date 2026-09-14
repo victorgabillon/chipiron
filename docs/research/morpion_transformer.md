@@ -561,3 +561,100 @@ independent generalization or gameplay strength. The selected larger-data model
 trades worse original-subset fit for better expanded-holdout fit; the latter
 comparison was performed after seeing the regression. No new labels, search
 data, policy head, automatic merge, or additional sweep was introduced.
+
+## Evaluator-family benchmark
+
+Prepared on September 14, 2026; **full benchmark training awaits a user launch**.
+The final net evaluator-v1 changes are integrated directly on the cleanup line
+in `integrate/morpion-evaluator-benchmark-v1`, with Coral's inference/scaling fix
+in `integrate/morpion-evaluator-v1`. Experimental branch history is not merged.
+The original dirty Chipiron and Coral workspaces remain untouched.
+
+The authoritative source/split plan is `experiment.json` in
+`evaluator_v1/final_100k_20epochs_3seeds_20260913_v1`. It selects the first 100,000
+rows of `rows/generation_000038.jsonl`; indices congruent to 4 modulo 5 form the
+20,000-row internal holdout and the other 80,000 rows train every model. Dataset
+SHA-256 is `12457bc921c0b32f04eb8a751d9a0ccfb3959fd9d93527c6b0b94419ef0bd8c2`.
+The old diagnostic indices 4, 9, ..., 49,999 are a nested 10,000-row subset of
+this holdout, never additional training data. Raw `target_value` is unchanged;
+there is no target standardization, terminal override in metric computation,
+new search, label generation, augmentation or architecture selection.
+
+Discovery uses `canonical_morpion_evaluator_specs()` and `MorpionRegressor`'s
+existing builders, rather than adding model variants:
+
+| Preset | Model implementation / hidden widths | Representation | Parameters |
+| --- | --- | --- | ---: |
+| `linear_5` | `linear`: `torch.nn.Linear` | `handcrafted_5_core` | 6 |
+| `mlp_5` | `mlp`: Linear/ReLU, (5, 10, 10) | `handcrafted_5_core` | 211 |
+| `linear_10` | `linear`: `torch.nn.Linear` | `handcrafted_10_core` | 11 |
+| `mlp_10` | `mlp`: Linear/ReLU, (10, 10, 10) | `handcrafted_10_core` | 341 |
+| `linear_20` | `linear`: `torch.nn.Linear` | `handcrafted_20_core` | 21 |
+| `mlp_20` | `mlp`: Linear/ReLU, (20, 10, 10) | `handcrafted_20_core` | 751 |
+| `linear_41` | `linear`: `torch.nn.Linear` | `handcrafted_41` | 42 |
+| `mlp_41` | `mlp`: Linear/ReLU, (41, 10, 10) | `handcrafted_41` | 2,263 |
+| `transformer_v1` | `relation_biased_entity_token_transformer_value_net` | 25 ordered entity features, 16 relations | 106,049 |
+
+All are trainable. The full 41-feature Linear/MLP pair is predeclared for the
+main comparison; existing smaller feature subsets are supplementary. The
+ordinary `entity_token_transformer_value_net` / Coral
+`EntityTokenTransformerValueNet` (105,985 parameters at the existing small
+preset) is also supported, but is not scheduled: this task compares the frozen
+selected Transformer with simple value baselines, without reopening Transformer
+architecture comparisons. Arbitrary hidden-width options and Coral's generic
+MLP class are not additional established Morpion presets.
+
+All eight flat presets retain their canonical **Adam, LR 0.001, batch 64,
+zero weight decay, constant LR, MSE** recipe and default initialization. Their
+existing global shuffle uses `seed + epoch`; only epochs change from 5 to the
+required 20. Seeds are 0, 1 and 2. Transformer v1 retains width 64, four heads,
+depth 2, FFN 256, zero dropout, shared projection, VALUE readout and relation
+scale 0.25; its existing AdamW recipe is unchanged (LR 0.001, decay 0.01, 5%
+warmup/cosine/minimum ratio 0.01, batch 8, 20 epochs).
+
+The final Transformer `seed_0`, `seed_1`, and `seed_2` bundles and `validation.pt`
+predictions are reused after checking source/config identities, all 100,000
+targets, all holdout indices, 200,000 completed optimizer steps, checkpoint/bundle
+weights and 24 normal-loader prediction rows per seed. Selected production seed
+0 remains fixed. Existing MSEs are 34.923115, 34.877495 and 33.486862 (mean
+34.429157; ensemble 32.446564). **Linear/MLP comparison metrics and scientific
+conclusions are pending**, rather than inferred from unmatched historical runs.
+
+The external coordinator saves per-seed MSE, MAE, R², Pearson, prediction/target
+means and population SDs, signed bias, parameter/bundle sizes, training time,
+available peak CUDA allocation and epoch curves. It reports seed means and
+population SDs, seed 0, best/worst seeds, arithmetic ensembles, both holdouts,
+small residual slices, and common batch-one CPU/CUDA median/p95 latency. Primary
+paired comparisons average individual-seed squared errors per state and include
+each seed separately; deterministic 2,000-replicate **paired holdout bootstrap
+intervals** are descriptive, not independent population confidence intervals.
+Transformer epoch 1/5/10 metrics and historical peak memory were not recorded;
+no retraining is done to obtain them.
+
+The bounded pilot estimates about one minute per Linear seed and 1.5–1.7 minutes
+per MLP seed: roughly 31 minutes total training, or 50 minutes with a 50% margin
+and reporting allowance. **USER ACTION REQUIRED** under the 15-minute rule.
+No complete benchmark has been launched by Codex. Each invocation resumes
+completed optimizer steps and finished models, verifies immutable identities,
+and maintains a cumulative 12-hour active-time cap.
+
+Artifacts and the single resumable user command are external:
+
+```bash
+bash /home/pompote/oldata/victor/morpion_runs/generic_linoo_fresh_with_bigrun_models_v1/evaluator_benchmark_v1/run_benchmark.sh
+```
+
+The output directory is that same `evaluator_benchmark_v1` directory. Paste its
+`report.md` back after `BENCHMARK COMPLETE`; retain `summary.json` and
+`seed_metrics.csv` for the detailed audit. The one-off coordinator and tests
+are in its `tools/` subdirectory, not the production package or Git. Source
+snapshots and verification records accompany the run. After results are
+reviewed, replace the pending comparison above with the concise main metrics
+and measured accuracy/cost conclusion.
+
+All rows belong to one historical generation provenance group. This comparison
+addresses fit/generalization within the existing dataset distribution; it does
+not establish better gameplay, independent-search generalization, or policy
+quality. Recipe and representation differences are explicit, so it is a
+comparison of established evaluator families, not an isolated causal estimate
+of attention architecture alone.
