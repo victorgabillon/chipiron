@@ -20,8 +20,12 @@ from .entity_relations import (
 from .entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
     MORPION_ENTITY_TOKEN_FEATURE_NAMES,
-    MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
     is_morpion_entity_token_model_kind,
+    morpion_entity_token_feature_names,
+    morpion_entity_token_input_representation,
+    validate_morpion_edge_token_mode,
+    validate_morpion_global_geometry_features,
+    validate_morpion_latent_window_move_features,
 )
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
@@ -30,6 +34,10 @@ from .feature_schema import (
     MorpionFeatureSubset,
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
+)
+from .latent_window_features import (
+    MORPION_CORRECTED_BLOCKING_PROXY_VERSION,
+    MORPION_LATENT_WINDOW_PROXY_VERSION,
 )
 from .model import (
     MORPION_INPUT_DIM,
@@ -284,8 +292,7 @@ class IncompatibleMorpionModelBundleError(ValueError):
     ) -> IncompatibleMorpionModelBundleError:
         """Return the incompatible-model-kind error."""
         return cls(
-            f"Expected model_kind={expected_model_kind!r}, got "
-            f"{actual_model_kind!r}."
+            f"Expected model_kind={expected_model_kind!r}, got {actual_model_kind!r}."
         )
 
     @classmethod
@@ -343,7 +350,11 @@ def save_morpion_model_bundle(
     manifest = MorpionModelManifest(
         input_dim=model_args.input_dim,
         input_representation=(
-            MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
+            morpion_entity_token_input_representation(
+                model_args.global_geometry_features,
+                model_args.edge_token_mode,
+                model_args.latent_window_move_features,
+            )
             if _uses_entity_token_input(model_args.model_kind)
             else "handcrafted_features"
         ),
@@ -405,19 +416,79 @@ def _bundle_metadata(
 ) -> dict[str, object]:
     """Return manifest metadata augmented with entity-token schema details."""
     bundle_metadata = dict(metadata) if metadata is not None else {}
+    bundle_metadata.update({
+        "target_transform_enabled": model_args.target_transform_enabled,
+        "target_mean": model_args.target_mean,
+        "target_standard_deviation": model_args.target_standard_deviation,
+        "loss_target_scale": (
+            "standardized" if model_args.target_transform_enabled else "original"
+        ),
+        "reported_metric_scale": "original",
+        "public_output_scale": "original",
+    })
     if _uses_entity_token_input(model_args.model_kind):
+        feature_names = morpion_entity_token_feature_names(
+            model_args.global_geometry_features,
+            model_args.latent_window_move_features,
+        )
         bundle_metadata.update({
-            "entity_token_feature_names": list(MORPION_ENTITY_TOKEN_FEATURE_NAMES),
+            "entity_token_feature_names": list(feature_names),
             "entity_max_tokens": model_args.entity_max_tokens,
             "entity_d_model": model_args.entity_d_model,
             "entity_n_head": model_args.entity_n_head,
             "entity_n_layer": model_args.entity_n_layer,
         })
+        if model_args.global_geometry_features == "normalization_extent":
+            bundle_metadata.update({
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+                "global_geometry_features": model_args.global_geometry_features,
+                "global_geometry_feature_names": ["normalization_extent"],
+                "entity_input_feature_dim": model_args.entity_input_feature_dim,
+                "entity_validity_feature_index": (
+                    model_args.entity_validity_feature_index
+                ),
+            })
+        if model_args.edge_token_mode != "drawn_only":
+            bundle_metadata.update({
+                "edge_token_mode": model_args.edge_token_mode,
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+            })
+        if model_args.latent_window_move_features != "none":
+            bundle_metadata.update({
+                "latent_window_move_features": (model_args.latent_window_move_features),
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+                "entity_input_feature_dim": model_args.entity_input_feature_dim,
+                "latent_window_proxy_definition_version": (
+                    MORPION_CORRECTED_BLOCKING_PROXY_VERSION
+                    if model_args.latent_window_move_features
+                    == "promoted_and_blocked_corrected"
+                    else MORPION_LATENT_WINDOW_PROXY_VERSION
+                ),
+            })
     if is_relational_entity_token_model_kind(model_args.model_kind):
         bundle_metadata.update({
             "entity_use_validity_feature": model_args.entity_use_validity_feature,
             "entity_relation_schema": model_args.entity_relation_schema,
             "entity_relation_type_count": model_args.entity_relation_type_count,
+            "relation_bias_scale": model_args.relation_bias_scale,
         })
     return bundle_metadata
 
@@ -438,7 +509,11 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         "hidden_dim",
         "hidden_sizes",
         "entity_max_tokens",
+        "global_geometry_features",
+        "edge_token_mode",
+        "latent_window_move_features",
         "entity_input_feature_dim",
+        "entity_validity_feature_index",
         "entity_d_model",
         "entity_n_head",
         "entity_n_layer",
@@ -449,6 +524,10 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         "entity_use_validity_feature",
         "entity_relation_schema",
         "entity_relation_type_count",
+        "relation_bias_scale",
+        "target_transform_enabled",
+        "target_mean",
+        "target_standard_deviation",
     }
     unexpected_fields = set(data) - allowed_fields
     if unexpected_fields:
@@ -460,11 +539,29 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     if not isinstance(model_kind, str):
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
     if _uses_entity_token_input(model_kind):
+        global_geometry_features = validate_morpion_global_geometry_features(
+            str(data.get("global_geometry_features", "none"))
+        )
+        edge_token_mode = validate_morpion_edge_token_mode(
+            str(data.get("edge_token_mode", "drawn_only"))
+        )
+        latent_window_move_features = validate_morpion_latent_window_move_features(
+            str(data.get("latent_window_move_features", "none"))
+        )
         input_representation = data.get("input_representation")
-        if input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
+        expected_representation = morpion_entity_token_input_representation(
+            global_geometry_features,
+            edge_token_mode,
+            latent_window_move_features,
+        )
+        if input_representation != expected_representation:
             raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
                 str(input_representation)
             )
+    else:
+        global_geometry_features = "none"
+        edge_token_mode = "drawn_only"
+        latent_window_move_features = "none"
     feature_subset = (
         full_morpion_feature_subset()
         if _uses_entity_token_input(model_kind)
@@ -480,8 +577,17 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         feature_names=feature_subset.feature_names,
         hidden_sizes=_load_hidden_sizes(data, path),
         entity_max_tokens=_coerce_int(data.get("entity_max_tokens", 1536)),
+        global_geometry_features=global_geometry_features,
+        edge_token_mode=edge_token_mode,
+        latent_window_move_features=latent_window_move_features,
         entity_input_feature_dim=_coerce_int(
             data.get("entity_input_feature_dim", MORPION_ENTITY_TOKEN_FEATURE_DIM)
+        ),
+        entity_validity_feature_index=_coerce_int(
+            data.get(
+                "entity_validity_feature_index",
+                MORPION_ENTITY_TOKEN_FEATURE_NAMES.index("validity"),
+            )
         ),
         entity_d_model=_coerce_int(data.get("entity_d_model", 64)),
         entity_n_head=_coerce_int(data.get("entity_n_head", 4)),
@@ -493,11 +599,17 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
         entity_use_validity_feature=_coerce_bool(
             data.get("entity_use_validity_feature", True)
         ),
-        entity_relation_schema=_coerce_optional_str(
-            data.get("entity_relation_schema")
-        ),
+        entity_relation_schema=_coerce_optional_str(data.get("entity_relation_schema")),
         entity_relation_type_count=_coerce_optional_int(
             data.get("entity_relation_type_count")
+        ),
+        relation_bias_scale=_coerce_float(data.get("relation_bias_scale", 1.0)),
+        target_transform_enabled=_coerce_bool(
+            data.get("target_transform_enabled", False)
+        ),
+        target_mean=_coerce_float(data.get("target_mean", 0.0)),
+        target_standard_deviation=_coerce_float(
+            data.get("target_standard_deviation", 1.0)
         ),
     )
 
@@ -533,9 +645,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
         model_kind=model_kind,
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
-        entity_relation_schema=_coerce_optional_str(
-            data.get("entity_relation_schema")
-        ),
+        entity_relation_schema=_coerce_optional_str(data.get("entity_relation_schema")),
         entity_relation_type_count=_coerce_optional_int(
             data.get("entity_relation_type_count")
         ),
@@ -573,7 +683,12 @@ def _validate_manifest_compatibility(
                 expected_model_kind=model_args.model_kind,
                 actual_model_kind=manifest.model_kind,
             )
-        if manifest.input_representation != MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION:
+        expected_representation = morpion_entity_token_input_representation(
+            model_args.global_geometry_features,
+            model_args.edge_token_mode,
+            model_args.latent_window_move_features,
+        )
+        if manifest.input_representation != expected_representation:
             raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
                 manifest.input_representation
             )
@@ -634,10 +749,25 @@ def _validate_manifest_compatibility(
 
 def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
     """Serialize Morpion regressor args into JSON-friendly data."""
+    target_transform_data: dict[str, object] = {}
+    if (
+        model_args.target_transform_enabled
+        or model_args.target_mean != 0.0
+        or model_args.target_standard_deviation != 1.0
+    ):
+        target_transform_data.update({
+            "target_transform_enabled": model_args.target_transform_enabled,
+            "target_mean": model_args.target_mean,
+            "target_standard_deviation": model_args.target_standard_deviation,
+        })
     if _uses_entity_token_input(model_args.model_kind):
         data: dict[str, object] = {
             "model_kind": model_args.model_kind,
-            "input_representation": MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+            "input_representation": morpion_entity_token_input_representation(
+                model_args.global_geometry_features,
+                model_args.edge_token_mode,
+                model_args.latent_window_move_features,
+            ),
             "entity_max_tokens": model_args.entity_max_tokens,
             "entity_input_feature_dim": model_args.entity_input_feature_dim,
             "entity_d_model": model_args.entity_d_model,
@@ -647,12 +777,25 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
             "entity_dropout_ratio": model_args.entity_dropout_ratio,
             "entity_pooling": model_args.entity_pooling,
             "entity_output_tanh": model_args.entity_output_tanh,
+            **target_transform_data,
         }
+        if model_args.global_geometry_features == "normalization_extent":
+            data.update({
+                "global_geometry_features": model_args.global_geometry_features,
+                "entity_validity_feature_index": (
+                    model_args.entity_validity_feature_index
+                ),
+            })
+        if model_args.edge_token_mode != "drawn_only":
+            data["edge_token_mode"] = model_args.edge_token_mode
+        if model_args.latent_window_move_features != "none":
+            data["latent_window_move_features"] = model_args.latent_window_move_features
         if is_relational_entity_token_model_kind(model_args.model_kind):
             data.update({
                 "entity_use_validity_feature": model_args.entity_use_validity_feature,
                 "entity_relation_schema": model_args.entity_relation_schema,
                 "entity_relation_type_count": model_args.entity_relation_type_count,
+                "relation_bias_scale": model_args.relation_bias_scale,
             })
         return data
     data: dict[str, object] = {
@@ -663,6 +806,7 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
         "hidden_sizes": None
         if model_args.hidden_sizes is None
         else list(model_args.hidden_sizes),
+        **target_transform_data,
     }
     return data
 

@@ -21,6 +21,9 @@ from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator im
     MorpionMasterEvaluator,
     build_morpion_master_evaluator,
 )
+from chipiron.environments.morpion.players.evaluators.neural_evaluator_args import (
+    MorpionNeuralEvaluatorArgs,
+)
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from chipiron.environments.types import GameKind
 from chipiron.players import Player
@@ -82,6 +85,15 @@ def build_morpion_game_player(
     ) -> MorpionMasterEvaluator:
         del value_oracle
         del terminal_oracle
+        if isinstance(evaluator_args.board_evaluator, MorpionNeuralEvaluatorArgs):
+            from chipiron.environments.morpion.players.evaluators.neural_evaluator import (
+                load_morpion_evaluator_from_model_bundle,
+            )
+
+            neural = evaluator_args.board_evaluator
+            return load_morpion_evaluator_from_model_bundle(
+                neural.model_bundle, device=neural.device
+            )
         return build_morpion_master_evaluator(
             evaluation_scale=evaluator_args.evaluation_scale,
         )

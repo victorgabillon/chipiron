@@ -6,12 +6,18 @@ from typing import Any
 
 __all__ = [
     "MorpionMasterEvaluator",
+    "MorpionNeuralEvaluatorArgs",
     "MorpionOverEventDetector",
+    "MorpionRegressorMasterEvaluator",
     "MorpionStateEvaluator",
     "build_morpion_master_evaluator",
+    "load_morpion_evaluator_from_model_bundle",
 ]
 
 _EXPORT_MODULES = {
+    "MorpionNeuralEvaluatorArgs": ".neural_evaluator_args",
+    "MorpionRegressorMasterEvaluator": ".neural_evaluator",
+    "load_morpion_evaluator_from_model_bundle": ".neural_evaluator",
     "MorpionMasterEvaluator": ".morpion_state_evaluator",
     "MorpionOverEventDetector": ".morpion_state_evaluator",
     "MorpionStateEvaluator": ".morpion_state_evaluator",

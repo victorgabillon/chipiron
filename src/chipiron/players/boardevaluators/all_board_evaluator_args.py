@@ -9,6 +9,9 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.board_evalua
 from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
 )
+from chipiron.environments.morpion.players.evaluators.neural_evaluator_args import (
+    MorpionNeuralEvaluatorArgs,
+)
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
@@ -45,4 +48,5 @@ AllBoardEvaluatorArgs = (
     | NeuralNetBoardEvalArgs
     | StockfishBoardEvalArgs
     | TableBaseArgs
+    | MorpionNeuralEvaluatorArgs
 )

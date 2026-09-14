@@ -69,3 +69,30 @@ See [the consolidated research notes](research/morpion_transformer.md) for the
 retained value architecture, optional promoted MOVE-token feature and postponed
 policy work. Cleanup preserves existing token/relation schemas, bundle formats
 and production defaults.
+
+
+## Morpion evaluator v1
+
+Morpion bundles contain their model arguments, representation manifest and
+weights. Load them through normal evaluator infrastructure:
+
+```python
+from chipiron.environments.morpion.players.evaluators import (
+    load_morpion_evaluator_from_model_bundle,
+)
+
+evaluator = load_morpion_evaluator_from_model_bundle("/path/to/bundle", device="cpu")
+value = evaluator.evaluate(state)
+```
+
+The normal Morpion tree-player `board_evaluator` configuration accepts
+`type: morpion_neural`, `model_bundle: /path/to/bundle`, and optional `device`
+(default `cpu`). This serializes as `MorpionNeuralEvaluatorArgs`; the manifest
+selects baseline or promoted conversion and any legacy target scaling.
+Terminal positions retain the exact Morpion terminal score.
+
+The explicit `morpion_evaluator_v1_model_args()` preset defines the selected
+106,049-parameter, depth-2, width-64 relational Transformer with scale 0.25.
+It does not change legacy defaults. The selected trained artifact, validation
+tradeoff and existing CLI parser limitation are documented in
+[the Morpion research note](research/morpion_transformer.md#evaluator-v1-goal--checkpoint-7-integrated-and-verified).

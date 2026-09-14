@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -16,8 +17,15 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_rel
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     MORPION_ENTITY_TOKEN_FEATURE_DIM,
-    MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+    MORPION_ENTITY_TOKEN_FEATURE_NAMES,
+    MorpionEdgeTokenMode,
+    MorpionGlobalGeometryFeatures,
+    MorpionLatentWindowMoveFeatures,
     is_morpion_entity_token_model_kind,
+    morpion_entity_token_feature_names,
+    validate_morpion_edge_token_mode,
+    validate_morpion_global_geometry_features,
+    validate_morpion_latent_window_move_features,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
@@ -25,6 +33,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.target_transform import (
+    MorpionTargetTransform,
 )
 
 MORPION_INPUT_DIM = full_morpion_feature_subset().dimension
@@ -39,7 +50,13 @@ class MorpionRegressorArgs:
     feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
     entity_max_tokens: int = 1536
+    global_geometry_features: MorpionGlobalGeometryFeatures = "none"
+    edge_token_mode: MorpionEdgeTokenMode = "drawn_only"
+    latent_window_move_features: MorpionLatentWindowMoveFeatures = "none"
     entity_input_feature_dim: int = MORPION_ENTITY_TOKEN_FEATURE_DIM
+    entity_validity_feature_index: int = MORPION_ENTITY_TOKEN_FEATURE_NAMES.index(
+        "validity"
+    )
     entity_d_model: int = 64
     entity_n_head: int = 4
     entity_n_layer: int = 2
@@ -50,9 +67,16 @@ class MorpionRegressorArgs:
     entity_use_validity_feature: bool = True
     entity_relation_schema: str | None = None
     entity_relation_type_count: int | None = None
+    relation_bias_scale: float = 1.0
+    target_transform_enabled: bool = False
+    target_mean: float = 0.0
+    target_standard_deviation: float = 1.0
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
+        validate_morpion_global_geometry_features(self.global_geometry_features)
+        validate_morpion_edge_token_mode(self.edge_token_mode)
+        validate_morpion_latent_window_move_features(self.latent_window_move_features)
         if is_morpion_entity_token_model_kind(
             self.model_kind
         ) or is_relational_entity_token_model_kind(self.model_kind):
@@ -62,6 +86,7 @@ class MorpionRegressorArgs:
         elif (
             self.entity_relation_schema is not None
             or self.entity_relation_type_count is not None
+            or self.relation_bias_scale != 1.0
         ):
             raise InvalidMorpionEntityTokenRegressorArgsError.unexpected_relation_metadata()
         subset = resolve_morpion_feature_subset(
@@ -70,6 +95,7 @@ class MorpionRegressorArgs:
         )
         object.__setattr__(self, "feature_subset_name", subset.name)
         object.__setattr__(self, "feature_names", subset.feature_names)
+        _ = self.target_transform
 
     @property
     def feature_subset(self) -> MorpionFeatureSubset:
@@ -87,6 +113,15 @@ class MorpionRegressorArgs:
         ) or is_relational_entity_token_model_kind(self.model_kind):
             return self.entity_input_feature_dim
         return self.feature_subset.dimension
+
+    @property
+    def target_transform(self) -> MorpionTargetTransform:
+        """Return the validated target transform persisted with this model."""
+        return MorpionTargetTransform(
+            enabled=self.target_transform_enabled,
+            mean=self.target_mean,
+            standard_deviation=self.target_standard_deviation,
+        )
 
 
 class UnsupportedMorpionModelKindError(ValueError):
@@ -120,7 +155,7 @@ class InvalidMorpionEntityTokenRegressorArgsError(ValueError):
         """Return the invalid entity input feature dimension error."""
         return cls(
             "entity_input_feature_dim must equal "
-            f"{expected_dim} for {MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION}."
+            f"{expected_dim} for the configured entity-token representation."
         )
 
     @classmethod
@@ -173,6 +208,17 @@ class InvalidMorpionEntityTokenRegressorArgsError(ValueError):
         return cls("entity_use_validity_feature must be true.")
 
     @classmethod
+    def invalid_validity_feature_index(
+        cls,
+        expected_index: int,
+    ) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return an invalid validity-column configuration error."""
+        return cls(
+            "entity_validity_feature_index must equal "
+            f"{expected_index} for the configured entity-token representation."
+        )
+
+    @classmethod
     def invalid_relation_schema(
         cls,
     ) -> InvalidMorpionEntityTokenRegressorArgsError:
@@ -193,6 +239,13 @@ class InvalidMorpionEntityTokenRegressorArgsError(ValueError):
         )
 
     @classmethod
+    def invalid_relation_bias_scale(
+        cls,
+    ) -> InvalidMorpionEntityTokenRegressorArgsError:
+        """Return the invalid relation-logit bias scale error."""
+        return cls("relation_bias_scale must be finite and >= 0.")
+
+    @classmethod
     def unexpected_relation_metadata(
         cls,
     ) -> InvalidMorpionEntityTokenRegressorArgsError:
@@ -203,10 +256,19 @@ class InvalidMorpionEntityTokenRegressorArgsError(ValueError):
 def _validate_entity_token_transformer_value_net_args(
     args: MorpionRegressorArgs,
 ) -> None:
-    """Validate entity-token model args for the v1 Morpion token schema."""
-    if args.entity_input_feature_dim != MORPION_ENTITY_TOKEN_FEATURE_DIM:
+    """Validate entity-token model args against its persisted token schema."""
+    expected_names = morpion_entity_token_feature_names(
+        args.global_geometry_features,
+        args.latent_window_move_features,
+    )
+    if args.entity_input_feature_dim != len(expected_names):
         raise InvalidMorpionEntityTokenRegressorArgsError.invalid_input_feature_dim(
-            MORPION_ENTITY_TOKEN_FEATURE_DIM
+            len(expected_names)
+        )
+    expected_validity_index = expected_names.index("validity")
+    if args.entity_validity_feature_index != expected_validity_index:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_validity_feature_index(
+            expected_validity_index
         )
     if args.entity_max_tokens < 1:
         raise InvalidMorpionEntityTokenRegressorArgsError.invalid_max_tokens()
@@ -236,6 +298,35 @@ def _validate_relational_entity_token_transformer_value_net_args(
         raise InvalidMorpionEntityTokenRegressorArgsError.invalid_relation_schema()
     if args.entity_relation_type_count != MORPION_ENTITY_RELATION_TYPE_COUNT:
         raise InvalidMorpionEntityTokenRegressorArgsError.invalid_relation_type_count()
+    if not math.isfinite(args.relation_bias_scale) or args.relation_bias_scale < 0.0:
+        raise InvalidMorpionEntityTokenRegressorArgsError.invalid_relation_bias_scale()
+
+
+def morpion_evaluator_v1_model_args() -> MorpionRegressorArgs:
+    """Return the selected value architecture without changing legacy defaults."""
+    return MorpionRegressorArgs(
+        model_kind="relation_biased_entity_token_transformer_value_net",
+        entity_max_tokens=1536,
+        global_geometry_features="none",
+        edge_token_mode="drawn_only",
+        latent_window_move_features="none",
+        entity_input_feature_dim=25,
+        entity_validity_feature_index=24,
+        entity_d_model=64,
+        entity_n_head=4,
+        entity_n_layer=2,
+        entity_dim_feedforward=256,
+        entity_dropout_ratio=0.0,
+        entity_pooling="value_token",
+        entity_output_tanh=False,
+        entity_use_validity_feature=True,
+        entity_relation_schema=MORPION_ENTITY_RELATION_SCHEMA,
+        entity_relation_type_count=MORPION_ENTITY_RELATION_TYPE_COUNT,
+        relation_bias_scale=0.25,
+        target_transform_enabled=False,
+        target_mean=0.0,
+        target_standard_deviation=1.0,
+    )
 
 
 def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
@@ -280,12 +371,13 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
             "output_tanh": args.entity_output_tanh,
             "use_value_token": True,
             "use_validity_feature": args.entity_use_validity_feature,
-            "validity_feature_index": -1,
+            "validity_feature_index": args.entity_validity_feature_index,
         }
         if is_relational_entity_token_model_kind(args.model_kind):
             model_type_args = RelationBiasedEntityTokenTransformerValueNetArgs(
                 **common_args,  # type: ignore[arg-type]
                 num_relation_types=cast("int", args.entity_relation_type_count),
+                relation_bias_scale=args.relation_bias_scale,
             )
         else:
             model_type_args = EntityTokenTransformerValueNetArgs(
@@ -300,25 +392,39 @@ class MorpionRegressor(ChiNN):
 
     args: MorpionRegressorArgs
     net: nn.Module
+    target_transform: MorpionTargetTransform
 
     def __init__(self, args: MorpionRegressorArgs) -> None:
         """Build a Morpion regressor from explicit args."""
         super().__init__()
         self.args = args
+        self.target_transform = args.target_transform
         self.net = _build_model_module(args)
 
-    def forward(
+    def forward_normalized(
         self,
         input_tensor: Tensor,
         *auxiliary_input_tensors: Tensor,
     ) -> Tensor:
-        """Forward every positional model input to the Coral model."""
+        """Return the internal network output in its training target scale."""
         if input_tensor.ndim == 1:
             input_tensor = input_tensor.unsqueeze(0)
         return cast(
             "Tensor",
             self.net(input_tensor, *auxiliary_input_tensors),
         )
+
+    def forward(
+        self,
+        input_tensor: Tensor,
+        *auxiliary_input_tensors: Tensor,
+    ) -> Tensor:
+        """Return public predictions in the original Morpion target scale."""
+        normalized = self.forward_normalized(
+            input_tensor,
+            *auxiliary_input_tensors,
+        )
+        return self.target_transform.denormalize(normalized)
 
     def init_weights(self) -> None:
         """Keep PyTorch's default initialization for the first Morpion model."""
@@ -349,6 +455,8 @@ __all__ = [
     "MissingMorpionHiddenSizesError",
     "MorpionRegressor",
     "MorpionRegressorArgs",
+    "MorpionTargetTransform",
     "UnsupportedMorpionModelKindError",
     "build_morpion_regressor",
+    "morpion_evaluator_v1_model_args",
 ]

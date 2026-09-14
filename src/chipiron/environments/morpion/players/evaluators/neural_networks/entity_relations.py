@@ -1,4 +1,6 @@
 """Sparse structural relations for clean Morpion entity-token inputs."""
+# ruff: noqa: TC001
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -14,8 +16,15 @@ from chipiron.environments.morpion.action_geometry import (
     morpion_action_segments,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
+    MorpionEdgeTokenMode,
     MorpionEntityTokenConverter,
+    MorpionEntityTokenLayout,
+    MorpionGlobalGeometryFeatures,
+    MorpionLatentWindowMoveFeatures,
     canonical_segment,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.latent_window_features import (
+    MorpionLatentWindowInstrumentation,
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
@@ -96,6 +105,13 @@ class _InvalidGeneratedMorpionRelationsError(ValueError):
         """Return an invalid active relation type error."""
         return cls("Morpion active relation types must be in the range [1, 15].")
 
+    @classmethod
+    def missing_prospective_entity(
+        cls, entity: str
+    ) -> _InvalidGeneratedMorpionRelationsError:
+        """Return an unresolved prospective edge or endpoint error."""
+        return cls(f"Prospective-edge relations require a token for {entity}.")
+
 
 @dataclass(frozen=True, slots=True)
 class MorpionRelationalEntityTokens:
@@ -111,18 +127,45 @@ class MorpionRelationalEntityTokenConverter:
 
     dynamics: MorpionDynamics = field(default_factory=MorpionDynamics)
     max_tokens: int = 1536
+    global_geometry_features: MorpionGlobalGeometryFeatures = "none"
+    edge_token_mode: MorpionEdgeTokenMode = "drawn_only"
+    latent_window_move_features: MorpionLatentWindowMoveFeatures = "none"
+    latent_window_instrumentation: MorpionLatentWindowInstrumentation | None = field(
+        default=None, compare=False, repr=False
+    )
+    use_scalar_latent_window_reference: bool = field(
+        default=False, compare=False, repr=False
+    )
 
     def state_to_tensors(
         self,
         state: MorpionState,
     ) -> MorpionRelationalEntityTokens:
         """Return clean entity tokens and deterministic sparse relations."""
+        _layout, relational = self.state_to_layout_and_tensors(state)
+        return relational
+
+    def state_to_layout_and_tensors(
+        self,
+        state: MorpionState,
+    ) -> tuple[MorpionEntityTokenLayout, MorpionRelationalEntityTokens]:
+        """Return the shared entity layout and its relations with one conversion."""
         entity_layout = MorpionEntityTokenConverter(
             dynamics=self.dynamics,
             max_tokens=self.max_tokens,
+            global_geometry_features=self.global_geometry_features,
+            edge_token_mode=self.edge_token_mode,
+            latent_window_move_features=self.latent_window_move_features,
+            latent_window_instrumentation=self.latent_window_instrumentation,
+            use_scalar_latent_window_reference=(
+                self.use_scalar_latent_window_reference
+            ),
         ).state_to_layout(state)
         relations: set[tuple[int, int, int]] = set()
         move_indices_by_new_dot: dict[Point, list[int]] = {}
+        drawn_segments = frozenset(
+            canonical_segment(segment) for segment in state.used_unit_segments
+        )
 
         for action, move_index in entity_layout.move_index_by_action.items():
             points = morpion_action_points(action)
@@ -144,10 +187,20 @@ class MorpionRelationalEntityTokenConverter:
                 )
 
             for segment in morpion_action_segments(action):
-                edge_index = entity_layout.edge_index_by_segment.get(
-                    canonical_segment(segment)
-                )
+                canonical = canonical_segment(segment)
+                if (
+                    self.edge_token_mode == "drawn_and_prospective"
+                    and canonical in drawn_segments
+                ):
+                    raise _InvalidGeneratedMorpionRelationsError.missing_prospective_entity(  # noqa: TRY003
+                        f"free legal-move segment {canonical!r}"
+                    )
+                edge_index = entity_layout.edge_index_by_segment.get(canonical)
                 if edge_index is None:
+                    if self.edge_token_mode == "drawn_and_prospective":
+                        raise _InvalidGeneratedMorpionRelationsError.missing_prospective_entity(  # noqa: TRY003
+                            f"legal-move segment {canonical_segment(segment)!r}"
+                        )
                     continue
                 _add_relation(
                     relations,
@@ -169,6 +222,13 @@ class MorpionRelationalEntityTokenConverter:
             for point in segment:
                 dot_index = entity_layout.dot_index_by_point.get(point)
                 if dot_index is None:
+                    if (
+                        self.edge_token_mode == "drawn_and_prospective"
+                        and canonical_segment(segment) not in drawn_segments
+                    ):
+                        raise _InvalidGeneratedMorpionRelationsError.missing_prospective_entity(  # noqa: TRY003
+                            f"endpoint {point!r}"
+                        )
                     continue
                 _add_relation(
                     relations,
@@ -204,9 +264,8 @@ class MorpionRelationalEntityTokenConverter:
             relation_triples,
             token_count=int(entity_layout.tensor.shape[0]),
         )
-        return MorpionRelationalEntityTokens(
-            token_tensor=entity_layout.tensor,
-            relation_triples=relation_triples,
+        return entity_layout, MorpionRelationalEntityTokens(
+            token_tensor=entity_layout.tensor, relation_triples=relation_triples
         )
 
     def state_to_model_input_tensors(
