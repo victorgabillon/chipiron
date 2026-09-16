@@ -148,6 +148,7 @@ def morpion_training_args_from_evaluator_spec(
         entity_use_validity_feature=spec.entity_use_validity_feature,
         entity_relation_schema=spec.entity_relation_schema,
         entity_relation_type_count=spec.entity_relation_type_count,
+        relation_bias_scale=spec.relation_bias_scale,
         validation_fraction=validation_fraction,
         validation_seed=validation_seed,
         device=device,

@@ -1246,6 +1246,7 @@ def _evaluator_spec_from_config_payload(
         "entity_use_validity_feature",
         "entity_relation_schema",
         "entity_relation_type_count",
+        "relation_bias_scale",
     }
     unexpected_fields = set(spec_mapping) - allowed_fields
     if unexpected_fields:
@@ -1340,6 +1341,10 @@ def _evaluator_spec_from_config_payload(
             spec_mapping.get("entity_relation_type_count"),
             field_name=f"{section_name}.entity_relation_type_count",
         ),
+        relation_bias_scale=_coerce_float(
+            spec_mapping.get("relation_bias_scale", 1.0),
+            field_name=f"{section_name}.relation_bias_scale",
+        ),
     )
 
 
@@ -1391,6 +1396,7 @@ def _has_non_default_entity_token_evaluator_settings(
         or spec.entity_use_validity_feature is not True
         or spec.entity_relation_schema is not None
         or spec.entity_relation_type_count is not None
+        or spec.relation_bias_scale != 1.0
     )
 
 
@@ -1415,6 +1421,8 @@ def _entity_token_evaluator_settings_to_dict(
             "entity_relation_schema": spec.entity_relation_schema,
             "entity_relation_type_count": spec.entity_relation_type_count,
         })
+    if spec.relation_bias_scale != 1.0:
+        settings["relation_bias_scale"] = spec.relation_bias_scale
     return settings
 
 

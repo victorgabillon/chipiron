@@ -54,6 +54,7 @@ class MorpionTrainingArgs:
     entity_use_validity_feature: bool = True
     entity_relation_schema: str | None = None
     entity_relation_type_count: int | None = None
+    relation_bias_scale: float = 1.0
     validation_fraction: float = 0.2
     validation_seed: int = 0
     device: str = "auto"

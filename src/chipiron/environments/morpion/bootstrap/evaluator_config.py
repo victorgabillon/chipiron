@@ -51,6 +51,7 @@ class MorpionEvaluatorSpec:
     entity_use_validity_feature: bool = True
     entity_relation_schema: str | None = None
     entity_relation_type_count: int | None = None
+    relation_bias_scale: float = 1.0
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""
@@ -77,6 +78,7 @@ class MorpionEvaluatorSpec:
             entity_use_validity_feature=self.entity_use_validity_feature,
             entity_relation_schema=self.entity_relation_schema,
             entity_relation_type_count=self.entity_relation_type_count,
+            relation_bias_scale=self.relation_bias_scale,
         )
 
     @property

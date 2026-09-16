@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Final
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
@@ -20,6 +20,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 )
 
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+
+CANONICAL_VALUE_V1_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_value_v1"
+CANONICAL_8_LINEAR_MLP_TRANSFORMER_V1_PRESET: Final[str] = (
+    "canonical_8_linear_mlp_transformer_v1"
+)
+CANONICAL_MORPION_NEURAL_EVALUATOR: Final[str] = "transformer_v1"
 
 CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_subsets"
 CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[
@@ -140,6 +146,34 @@ def entity_token_relational_transformer_small_morpion_evaluator_spec() -> (
     )
 
 
+def transformer_v1_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
+    """Use the frozen v1 architecture with the established online training cadence.
+
+    The bootstrap keeps five-epoch Adam training. The selected external seed
+    bundle was trained separately with the documented 20-epoch AdamW recipe.
+    """
+    return replace(
+        entity_token_relational_transformer_small_morpion_evaluator_spec(),
+        name=CANONICAL_MORPION_NEURAL_EVALUATOR,
+        relation_bias_scale=0.25,
+    )
+
+
+def canonical_value_v1_morpion_evaluator_family_config(
+    *, preserve_legacy_subsets: bool = False
+) -> MorpionEvaluatorsConfig:
+    """Expose v1 and its two baselines, optionally preserving the historical catalog."""
+    baselines = canonical_morpion_evaluator_specs()
+    evaluators = (
+        baselines
+        if preserve_legacy_subsets
+        else {name: baselines[name] for name in ("linear_41", "mlp_41")}
+    )
+    transformer = transformer_v1_morpion_evaluator_spec()
+    evaluators[transformer.name] = transformer
+    return MorpionEvaluatorsConfig(evaluators=evaluators)
+
+
 def canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config() -> (
     MorpionEvaluatorsConfig
 ):
@@ -167,6 +201,12 @@ def canonical_linear_mlp_entity_and_relational_transformers_small_morpion_evalua
 
 def morpion_evaluators_config_from_preset(preset_name: str) -> MorpionEvaluatorsConfig:
     """Resolve a named Morpion evaluator-family preset into explicit specs."""
+    if preset_name == CANONICAL_VALUE_V1_MORPION_EVALUATOR_FAMILY_PRESET:
+        return canonical_value_v1_morpion_evaluator_family_config()
+    if preset_name == CANONICAL_8_LINEAR_MLP_TRANSFORMER_V1_PRESET:
+        return canonical_value_v1_morpion_evaluator_family_config(
+            preserve_legacy_subsets=True
+        )
     if preset_name == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET:
         return canonical_morpion_evaluator_family_config()
     if (
@@ -196,16 +236,21 @@ def _canonical_family_specs() -> tuple[_CanonicalFamilySpec, ...]:
 
 
 __all__ = [
+    "CANONICAL_8_LINEAR_MLP_TRANSFORMER_V1_PRESET",
     "CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
+    "CANONICAL_MORPION_NEURAL_EVALUATOR",
+    "CANONICAL_VALUE_V1_MORPION_EVALUATOR_FAMILY_PRESET",
     "UnknownMorpionEvaluatorFamilyPresetError",
     "canonical_linear_mlp_entity_and_relational_transformers_small_morpion_evaluator_family_config",
     "canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
+    "canonical_value_v1_morpion_evaluator_family_config",
     "entity_token_relational_transformer_small_morpion_evaluator_spec",
     "entity_token_transformer_small_morpion_evaluator_spec",
     "morpion_evaluators_config_from_preset",
+    "transformer_v1_morpion_evaluator_spec",
 ]

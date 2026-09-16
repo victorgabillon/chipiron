@@ -11,6 +11,14 @@
 
 set -u
 
+# Optional foreground hosting for the same four worker loops. The supervisor
+# stops whole process groups, so a terminal server cannot escape the time cap.
+MORPION_CLUSTER_HEADLESS="${MORPION_CLUSTER_HEADLESS:-0}"
+MORPION_CLUSTER_MAX_SECONDS="${MORPION_CLUSTER_MAX_SECONDS:-42900}"
+MORPION_CLUSTER_STOP_GRACE_SECONDS="${MORPION_CLUSTER_STOP_GRACE_SECONDS:-60}"
+CLUSTER_PIDS=()
+CLUSTER_STOPPED=0
+
 # Run identity and local source roots.
 # MORPION_WORK_DIR is the self-contained run directory. Change it when starting
 # a different production run; keep it off old runs unless intentionally
@@ -134,9 +142,47 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_DIR="$MORPION_WORK_DIR/logs"
 MODEL_PARAM_PATH="$MORPION_WORK_DIR/models/generation_$(printf "%06d" "$MORPION_SEED_ACTIVE_MODEL_GENERATION")/$MORPION_SEED_ACTIVE_MODEL_EVALUATOR/param.pt"
 
-if ! command -v gnome-terminal >/dev/null 2>&1; then
+if [[ "$MORPION_CLUSTER_HEADLESS" != "1" ]] && ! command -v gnome-terminal >/dev/null 2>&1; then
   echo "gnome-terminal is required but was not found in PATH." >&2
   exit 1
+fi
+
+stop_headless_workers() {
+  local pid deadline alive
+  if [[ "$CLUSTER_STOPPED" == "1" ]]; then return; fi
+  CLUSTER_STOPPED=1
+  trap '' INT TERM
+  echo "[CLUSTER] stopping worker groups; recovering later uses persisted checkpoints"
+  for pid in "${CLUSTER_PIDS[@]}"; do kill -TERM -- "-$pid" 2>/dev/null || true; done
+  deadline=$((SECONDS + MORPION_CLUSTER_STOP_GRACE_SECONDS))
+  while (( SECONDS < deadline )); do
+    alive=0
+    for pid in "${CLUSTER_PIDS[@]}"; do
+      if kill -0 -- "-$pid" 2>/dev/null; then alive=1; fi
+    done
+    if [[ "$alive" == "0" ]]; then break; fi
+    sleep 1
+  done
+  for pid in "${CLUSTER_PIDS[@]}"; do kill -KILL -- "-$pid" 2>/dev/null || true; done
+  for pid in "${CLUSTER_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
+}
+
+if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
+  if [[ ! "$MORPION_CLUSTER_MAX_SECONDS" =~ ^[1-9][0-9]*$ ||
+        ! "$MORPION_CLUSTER_STOP_GRACE_SECONDS" =~ ^[1-9][0-9]*$ ]] ||
+      (( MORPION_CLUSTER_MAX_SECONDS + MORPION_CLUSTER_STOP_GRACE_SECONDS > 43200 )); then
+    echo "Headless active time plus stop grace must be positive and at most 43200 seconds." >&2
+    exit 1
+  fi
+  command -v setsid >/dev/null || exit 1
+  command -v flock >/dev/null || exit 1
+  mkdir -p "$MORPION_WORK_DIR"
+  exec 9>"$MORPION_WORK_DIR/.cluster.lock"
+  flock -n 9 || { echo "Cluster already running in $MORPION_WORK_DIR" >&2; exit 1; }
+  CLUSTER_DEADLINE=$((SECONDS + MORPION_CLUSTER_MAX_SECONDS))
+  trap 'stop_headless_workers; exit 130' INT
+  trap 'stop_headless_workers; exit 143' TERM
+  trap stop_headless_workers EXIT
 fi
 
 should_launch_worker() {
@@ -289,6 +335,8 @@ launch_worker_terminal() {
   local log_name="$5"
   local startup_message="$6"
   local command
+  local worker_stop_trap='echo; echo "worker stopped; terminal kept open"; exec bash'
+  if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then worker_stop_trap='exit 143'; fi
   command=$(cat <<EOF
 cd "$REPO_ROOT" &&
 export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
@@ -298,7 +346,7 @@ export MORPION_COLOR_RAW_LOGS="$MORPION_COLOR_RAW_LOGS" &&
 export MORPION_GROWTH_WORKER_MAX_CYCLES="$MORPION_GROWTH_WORKER_MAX_CYCLES" &&
 export MORPION_GROWTH_SHOW_RECAP="$MORPION_GROWTH_SHOW_RECAP" &&
 mkdir -p "$LOG_DIR" &&
-trap 'echo; echo "[$worker_name] stopped; terminal kept open"; exec bash' INT TERM &&
+trap '$worker_stop_trap' INT TERM &&
 printf '%b\n' "$startup_message" &&
 echo "[$worker_name] python_bin=$PYTHON_BIN" &&
 which python &&
@@ -351,9 +399,13 @@ done
 EOF
 )
 
-  gnome-terminal \
-    --title="$worker_name" \
-    -- bash -lc "$command"
+  if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
+    setsid bash -lc "$command" &
+    CLUSTER_PIDS+=("$!")
+    echo "[CLUSTER] $worker_name process_group=$!"
+  else
+    gnome-terminal --title="$worker_name" -- bash -lc "$command"
+  fi
 }
 
 launch_status_terminal() {
@@ -426,6 +478,23 @@ if should_launch_worker reevaluation; then
   launch_worker_terminal "REEVALUATION" "$REEVALUATION_SLEEP_SECONDS" "CUDA_VISIBLE_DEVICES=1 " "$REEVALUATION_ARGS" "reevaluation.log" "[REEVALUATION] work_dir=$MORPION_WORK_DIR\n[REEVALUATION] anemone_repo_root=$ANEMONE_REPO_ROOT\n[REEVALUATION] coral_repo_root=$CORAL_REPO_ROOT\n[REEVALUATION] atomheart_repo_root=$ATOMHEART_REPO_ROOT\n[REEVALUATION] training_export_mode=$TRAINING_EXPORT_MODE\n[REEVALUATION] min_available_ram_mb=${MORPION_MIN_AVAILABLE_RAM_MB:-disabled}\n[REEVALUATION] rollout: enabled=$MORPION_ROLLOUT_AFTER_OPENING max_extra_steps=$MORPION_ROLLOUT_MAX_EXTRA_STEPS action_selector=$MORPION_ROLLOUT_ACTION_SELECTOR_KIND random_seed=$MORPION_ROLLOUT_RANDOM_SEED stop_on_existing_node=$MORPION_ROLLOUT_STOP_ON_EXISTING_NODE"
 fi
 
-if [[ "$MORPION_CLUSTER_OPEN_STATUS" == "1" ]]; then
+if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
+  echo "[CLUSTER] logs=$LOG_DIR active_limit=${MORPION_CLUSTER_MAX_SECONDS}s stop_grace=${MORPION_CLUSTER_STOP_GRACE_SECONDS}s"
+  next_status=$SECONDS
+  while (( SECONDS < CLUSTER_DEADLINE )); do
+    alive=0
+    for pid in "${CLUSTER_PIDS[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then alive=1; fi
+    done
+    if [[ "$alive" == "0" ]]; then break; fi
+    if (( SECONDS >= next_status )); then
+      echo "[CLUSTER] remaining_seconds=$((CLUSTER_DEADLINE - SECONDS)); worker logs in $LOG_DIR"
+      next_status=$((SECONDS + 30))
+    fi
+    sleep 1
+  done
+  stop_headless_workers
+  echo "[CLUSTER] stopped; inspect run_state.json, pipeline/, and logs/ for final progress"
+elif [[ "$MORPION_CLUSTER_OPEN_STATUS" == "1" ]]; then
   launch_status_terminal
 fi

@@ -23,8 +23,9 @@ state-value readout. The existing conservative representation is
 `global_geometry_features="none"`, `edge_token_mode="drawn_only"` and
 `latent_window_move_features="none"`.
 
-**Research preference is not a default change.** Existing public argument and
-bootstrap-preset defaults remain unchanged, including `relation_bias_scale=1.0`.
+**Canonical selection is explicit.** The canonical preset below selects scale
+0.25; existing public argument and legacy bootstrap-preset defaults retain
+`relation_bias_scale=1.0`.
 The ordinary entity-token Transformer and handcrafted-feature evaluators also
 remain supported.
 
@@ -562,99 +563,132 @@ trades worse original-subset fit for better expanded-holdout fit; the latter
 comparison was performed after seeing the regression. No new labels, search
 data, policy head, automatic merge, or additional sweep was introduced.
 
-## Evaluator-family benchmark
+## Canonical evaluator families — completed benchmark
 
-Prepared on September 14, 2026; **full benchmark training awaits a user launch**.
-The final net evaluator-v1 changes are integrated directly on the cleanup line
-in `integrate/morpion-evaluator-benchmark-v1`, with Coral's inference/scaling fix
-in `integrate/morpion-evaluator-v1`. Experimental branch history is not merged.
-The original dirty Chipiron and Coral workspaces remain untouched.
+The completed common 20k internal holdout selects Transformer-v1 as the
+canonical neural evaluator. The predeclared production bundle remains seed 0.
 
-The authoritative source/split plan is `experiment.json` in
-`evaluator_v1/final_100k_20epochs_3seeds_20260913_v1`. It selects the first 100,000
-rows of `rows/generation_000038.jsonl`; indices congruent to 4 modulo 5 form the
-20,000-row internal holdout and the other 80,000 rows train every model. Dataset
-SHA-256 is `12457bc921c0b32f04eb8a751d9a0ccfb3959fd9d93527c6b0b94419ef0bd8c2`.
-The old diagnostic indices 4, 9, ..., 49,999 are a nested 10,000-row subset of
-this holdout, never additional training data. Raw `target_value` is unchanged;
-there is no target standardization, terminal override in metric computation,
-new search, label generation, augmentation or architecture selection.
+| Evaluator | Main 20k MSE | Old nested 10k MSE | Role / configuration tag |
+| --- | ---: | ---: | --- |
+| Linear-41 | 53.20 | 40.62 | minimal baseline / `linear_41` |
+| MLP-41 | 37.97 | 33.26 | strong simple baseline / `mlp_41` |
+| Transformer-v1 | 34.43 | 34.32 | canonical neural evaluator / `transformer_v1` |
 
-Discovery uses `canonical_morpion_evaluator_specs()` and `MorpionRegressor`'s
-existing builders, rather than adding model variants:
+Numbers average seeds 0, 1 and 2. Transformer-v1 improves primary MSE by 9.34%
+versus MLP-41 and 35.28% versus Linear-41, winning all three matched comparisons.
+MLP-41 remains slightly better on the older nested subset. All rows come from
+one historical provenance group: the first 100k rows of generation 38, with
+indices congruent to 4 modulo 5 reserved for validation (80k train / 20k holdout).
+The old 10k subset uses holdout indices below 50k. Dataset SHA-256 is
+`12457bc921c0b32f04eb8a751d9a0ccfb3959fd9d93527c6b0b94419ef0bd8c2`.
+This establishes neither independent-search generalization nor gameplay/search
+strength. Representations and training recipes differ; this is a comparison of
+established evaluator families, not attention architecture alone.
 
-| Preset | Model implementation / hidden widths | Representation | Parameters |
-| --- | --- | --- | ---: |
-| `linear_5` | `linear`: `torch.nn.Linear` | `handcrafted_5_core` | 6 |
-| `mlp_5` | `mlp`: Linear/ReLU, (5, 10, 10) | `handcrafted_5_core` | 211 |
-| `linear_10` | `linear`: `torch.nn.Linear` | `handcrafted_10_core` | 11 |
-| `mlp_10` | `mlp`: Linear/ReLU, (10, 10, 10) | `handcrafted_10_core` | 341 |
-| `linear_20` | `linear`: `torch.nn.Linear` | `handcrafted_20_core` | 21 |
-| `mlp_20` | `mlp`: Linear/ReLU, (20, 10, 10) | `handcrafted_20_core` | 751 |
-| `linear_41` | `linear`: `torch.nn.Linear` | `handcrafted_41` | 42 |
-| `mlp_41` | `mlp`: Linear/ReLU, (41, 10, 10) | `handcrafted_41` | 2,263 |
-| `transformer_v1` | `relation_biased_entity_token_transformer_value_net` | 25 ordered entity features, 16 relations | 106,049 |
+Exact retained configurations:
 
-All are trainable. The full 41-feature Linear/MLP pair is predeclared for the
-main comparison; existing smaller feature subsets are supplementary. The
-ordinary `entity_token_transformer_value_net` / Coral
-`EntityTokenTransformerValueNet` (105,985 parameters at the existing small
-preset) is also supported, but is not scheduled: this task compares the frozen
-selected Transformer with simple value baselines, without reopening Transformer
-architecture comparisons. Arbitrary hidden-width options and Coral's generic
-MLP class are not additional established Morpion presets.
+* Linear-41: ordered `handcrafted_41` raw features, affine 41 → 1, 42 parameters.
+* MLP-41: the same inputs, 41 → 41 → 10 → 10 → 1, ReLU hidden activations,
+  2,263 parameters. Both flat models use raw scalar targets, no input/target
+  normalization or output tanh. The benchmark uses Adam, LR 0.001, batch 64,
+  20 epochs, zero weight decay, constant LR and epoch shuffle seed + epoch.
+* Transformer-v1: `morpion_entity_tokens_v1`, 25 ordered features on GLOBAL,
+  DOT, EDGE and legal MOVE tokens; shared projection, width 64, four heads,
+  two layers, FFN 256, zero dropout, VALUE-token readout; 16 typed relations
+  (`morpion_entity_relations_v1`), relation scale 0.25, 106,049 parameters.
+  Optional global geometry and latent-window features are disabled; drawn edges
+  only. Raw targets, no output tanh. Its seed bundle uses AdamW, LR 0.001,
+  weight decay 0.01, batch 8, 20 epochs, 5% warmup then cosine decay to 0.01
+  of peak LR. It does not consume the full handcrafted 41-vector, although its
+  GLOBAL token includes four overlapping board-level counts.
 
-All eight flat presets retain their canonical **Adam, LR 0.001, batch 64,
-zero weight decay, constant LR, MSE** recipe and default initialization. Their
-existing global shuffle uses `seed + epoch`; only epochs change from 5 to the
-required 20. Seeds are 0, 1 and 2. Transformer v1 retains width 64, four heads,
-depth 2, FFN 256, zero dropout, shared projection, VALUE readout and relation
-scale 0.25; its existing AdamW recipe is unchanged (LR 0.001, decay 0.01, 5%
-warmup/cosine/minimum ratio 0.01, batch 8, 20 epochs).
+All use the existing Morpion model bundle (`param.pt`, `param.json`,
+`morpion_regressor_args.json` and `morpion_manifest.json`) and normal
+`morpion_neural` loading with a configured
+`model_bundle` path. Inference needs no training recipe or experiment directory.
+Flat bundles retain feature schema `morpion_handcrafted_v1` and input
+representation `handcrafted_features`; Transformer bundles additionally
+record entity representation/relation schemas and inference scaling. Existing
+ordinary-Transformer and promoted-feature bundles remain readable intentionally.
+Weights, caches, predictions, reports and benchmark tools remain external under
+`morpion_runs/.../evaluator_benchmark_v1`.
 
-The final Transformer `seed_0`, `seed_1`, and `seed_2` bundles and `validation.pt`
-predictions are reused after checking source/config identities, all 100,000
-targets, all holdout indices, 200,000 completed optimizer steps, checkpoint/bundle
-weights and 24 normal-loader prediction rows per seed. Selected production seed
-0 remains fixed. Existing MSEs are 34.923115, 34.877495 and 33.486862 (mean
-34.429157; ensemble 32.446564). **Linear/MLP comparison metrics and scientific
-conclusions are pending**, rather than inferred from unmatched historical runs.
+The ordinary `canonical_value_v1` bootstrap preset contains exactly these three
+roles. `CANONICAL_MORPION_NEURAL_EVALUATOR` names `transformer_v1`;
+`transformer_v1_morpion_evaluator_spec()` supplies its reusable architecture.
+Legacy preset/default meanings remain unchanged. Select a preset with the
+ordinary bootstrap launcher's `--evaluator-family` option, and use the existing
+`control.json` `force_evaluator` setting to select the active value family.
 
-The external coordinator saves per-seed MSE, MAE, R², Pearson, prediction/target
-means and population SDs, signed bias, parameter/bundle sizes, training time,
-available peak CUDA allocation and epoch curves. It reports seed means and
-population SDs, seed 0, best/worst seeds, arithmetic ensembles, both holdouts,
-small residual slices, and common batch-one CPU/CUDA median/p95 latency. Primary
-paired comparisons average individual-seed squared errors per state and include
-each seed separately; deterministic 2,000-replicate **paired holdout bootstrap
-intervals** are descriptive, not independent population confidence intervals.
-Transformer epoch 1/5/10 metrics and historical peak memory were not recorded;
-no retraining is done to obtain them.
+## Prepared value-only generic bootstrap baseline
 
-The bounded pilot estimates about one minute per Linear seed and 1.5–1.7 minutes
-per MLP seed: roughly 31 minutes total training, or 50 minutes with a 50% margin
-and reporting allowance. **USER ACTION REQUIRED** under the 15-minute rule.
-No complete benchmark has been launched by Codex. Each invocation resumes
-completed optimizer steps and finished models, verifies immutable identities,
-and maintains a cumulative 12-hour active-time cap.
+The existing `scripts/launch_morpion_gnome_cluster.sh` still runs four worker
+roles: growth, dataset, training and reevaluation. Optional
+`MORPION_CLUSTER_HEADLESS=1` hosts those same worker loops in the foreground;
+`MORPION_CLUSTER_MAX_SECONDS` plus `MORPION_CLUSTER_STOP_GRACE_SECONDS` must fit
+within 12 hours. The supervisor logs remaining time every 30 seconds, locks the
+workspace against duplicate clusters, and terminates whole worker process groups
+on interruption or deadline. Each worker retains its existing log and restart
+loop. The GUI hosting mode remains available.
 
-Artifacts and the single resumable user command are external:
+The prepared external `generic_transformer_v1_bootstrap_v1` workspace starts
+fresh from the 36-point Greek cross, variant 5T, using a copied selected seed-0
+bundle as generation 0 (`external_seed`). No historical tree or rows are copied.
+Its initial model was trained on the historical 80k training rows described above.
+The full source/config/bundle manifest and preferred launch command live beside
+that workspace. Historical generic artifacts remain untouched.
+The historical growth log confirms `alternating_by_step`: the local Anemone
+checkout contains that uncommitted selector implementation. Preparation copies
+and SHA-verifies its source outside Git and uses that fixed snapshot, rather
+than Anemone's committed `inverse_depth` default. The original dependency
+workspace is preserved, and its commit plus patch are recorded in the manifest.
 
-```bash
-bash /home/pompote/oldata/victor/morpion_runs/generic_linoo_fresh_with_bigrun_models_v1/evaluator_benchmark_v1/run_benchmark.sh
-```
+The saved historical configuration retains its eight Linear/MLP subset models.
+Only the old ordinary Transformer entry is replaced with `transformer_v1`, using
+`canonical_8_linear_mlp_transformer_v1`. Existing `force_evaluator` keeps that
+family active instead of allowing automatic minimum-validation-MSE selection.
+Flat specs, dataset generation, four worker roles, Linoo `alternating_by_step` depth selection, all-child
+opening, unlimited random-legal-prefer-openable rollouts (seed 0), branch limit
+1,200,000, ten growth steps per cycle, twenty cycles per growth invocation,
+checkpoint cadence and `future_only` reevaluation policy are preserved.
+Worker restarts continue until the bounded horizon; this is not a fixed number
+of generations. Initial source paths, fresh local generation numbering, family
+selection and bounded foreground hosting are explicit preparation differences.
 
-The output directory is that same `evaluator_benchmark_v1` directory. Paste its
-`report.md` back after `BENCHMARK COMPLETE`; retain `summary.json` and
-`seed_metrics.csv` for the detailed audit. The one-off coordinator and tests
-are in its `tools/` subdirectory, not the production package or Git. Source
-snapshots and verification records accompany the run. After results are
-reviewed, replace the pending comparison above with the concise main metrics
-and measured accuracy/cost conclusion.
+**Online training preserves the historical bootstrap recipe:** all nine models
+are freshly initialized and trained for five epochs with Adam LR 0.001 (batch
+64 flat / 8 Transformer), rather than warm-starting or repeating the seed
+bundle's 20-epoch AdamW recipe. Relation scale 0.25 now survives the full
+bootstrap-spec → training-args → model-args path. Validation/shuffle seed remains
+0; the historical online model initialization does not explicitly seed Torch,
+so this pipeline is not bitwise reproducible. Changing that would be a separate
+protocol change. The existing worker device assignment is retained (training
+GPU 0, reevaluation GPU 1 visibility, which falls back to CPU on this laptop).
 
-All rows belong to one historical generation provenance group. This comparison
-addresses fit/generalization within the existing dataset distribution; it does
-not establish better gameplay, independent-search generalization, or policy
-quality. Recipe and representation differences are explicit, so it is a
-comparison of established evaluator families, not an isolated causal estimate
-of attention architecture alone.
+Inspect existing run-state, history, generation/training manifests and worker
+logs for tree size, throughput, training/validation losses, selected generations,
+reevaluation progress, continuation values and resource summaries. A time-cap
+stop uses the latest completed atomic checkpoints; it does not promise a final
+checkpoint of an in-progress cycle. No new measurement framework is introduced.
+
+The first long run remains a user launch. It establishes the value-only search
+baseline. A future actor/policy experiment must retain this value evaluator and
+search budget and measure the actor's incremental benefit; no actor is added here.
+
+Preparation verification (September 16): 165 focused evaluator/configuration/
+launcher checks pass. Nine retained baseline, promoted and final bundles produce
+bit-identical predictions on eight states each before/after integration. The
+actual bootstrap CLI attaches the selected seed bundle and completes one search
+step (146 nodes / 145 branches); separate dataset, all-nine-family training and
+16-node reevaluation checks complete, with the newly trained active Transformer
+retaining scale 0.25. These bounded checks establish wiring, not search strength.
+Ruff, formatting and whitespace checks pass. Pyright reproduces the same 19
+inherited training diagnostics; new tests and exports have zero diagnostics.
+
+Against the already integrated clean baseline `6c5b9298`, the neural subtree
+remains **31 Python files**, with **10,436 → 10,438 lines**. Neural test/support
+files are **27 → 28** and named test functions **369 → 372** (parameterized
+cases are separate). One further launcher test file covers process shutdown and
+the 12-hour limit. Existing source files are retained; this pass adds reusable
+presets/config plumbing, launcher supervision, tests and documentation. All
+run-specific preparation and smoke artifacts stay outside the repository.
