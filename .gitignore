@@ -26,6 +26,7 @@ build/
 dist/
 
 # Local environment configuration
+.env
 .env.local
 
 # Local zips / ad-hoc bundles

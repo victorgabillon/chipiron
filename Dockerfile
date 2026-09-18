@@ -73,8 +73,8 @@ COPY . .
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Copy .env file to use consistent paths
-COPY .env .env
+# Use reviewed public defaults; never bake local .env values into an image.
+COPY .env.example .env
 
 RUN make init-no-syzygy
 
