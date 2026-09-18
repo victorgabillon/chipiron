@@ -145,8 +145,8 @@ def check_tox_config(
     lint = tox_env.get("lint", {})
     lint_commands = lint.get("commands", []) if isinstance(lint, dict) else []
     required_lint_commands = [
-        ["python", "-m", "ruff", "format", "--check", "src/chipiron"],
-        ["python", "-m", "ruff", "check", "src/chipiron"],
+        ["python", "-m", "ruff", "format", "--check", "."],
+        ["python", "-m", "ruff", "check", "."],
         ["python", "-m", "pylint", "src/chipiron"],
     ]
     errors.extend(

@@ -1,5 +1,5 @@
-# filepath: /home/victor/chipiron/Dockerfile
-FROM ubuntu:25.04
+# Keep the interpreter aligned with tox/CI and use the Debian package archive.
+FROM python:3.13-bookworm
 
 WORKDIR /app
 
@@ -26,11 +26,8 @@ ENV STOCKFISH_BINARY_PATH=external_data/stockfish/stockfish/stockfish-ubuntu-x86
 # 1. Installer Python + pip et dépendances
 RUN set -xe \
     && apt-get update \
-    && apt-get install -y python3-full python3-pip libegl1 python3-opencv python3-tk wget curl \
+    && apt-get install -y libegl1 tk-dev wget curl \
     libxcb-cursor0 libxcb-xinerama0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-
-# 2. Supprimer EXTERNALLY-MANAGED si besoin
-RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 # 3. Créer l'environnement virtuel
 RUN python3 -m venv .venv

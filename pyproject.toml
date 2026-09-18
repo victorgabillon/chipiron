@@ -417,14 +417,14 @@ commands = [
     "ruff",
     "format",
     "--check",
-    "src/chipiron",
+    ".",
   ],
   [
     "python",
     "-m",
     "ruff",
     "check",
-    "src/chipiron",
+    ".",
   ],
   [
     "python",
