@@ -15,14 +15,12 @@ TEST_OUTPUT_DIR = Path("/tmp/chipiron-test-output")
 if str(TESTS_ROOT) not in sys.path:
     sys.path.insert(0, str(TESTS_ROOT))
 
-for path in (
-    REPO_ROOT / "src",
-    REPO_ROOT.parent / "atomheart" / "src",
-    REPO_ROOT.parent / "anemone" / "src",
-    REPO_ROOT.parent / "coral" / "src",
-):
-    if path.exists() and str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+# Test this checkout; sibling development must be explicitly installed or put
+# on PYTHONPATH. Silently preferring adjacent dirty repositories hides release
+# incompatibilities and makes the same command mean different things in CI.
+source_path = REPO_ROOT / "src"
+if str(source_path) not in sys.path:
+    sys.path.insert(0, str(source_path))
 
 
 def _patch_valanga_compat() -> None:
