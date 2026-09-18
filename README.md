@@ -8,7 +8,22 @@
 
 # Chipiron
 
-Chipiron is a Python library that plays chess
+Chipiron is a Python framework for game-playing agents, generic tree search and
+learned state evaluators. It supports chess, Morpion Solitaire (5T), checkers and
+integer reduction. Game-specific code lives under `src/chipiron/environments/`;
+Morpion's evaluator/training/bootstrap implementation is under its `morpion/`
+subdirectory.
+
+The proposed canonical line is **`maintenance/chipiron-canonicalization`**, intended
+to become `main` after review. GitHub's current `main` is historical until that PR
+is merged. The integration preserves all `generic-game` history and the cleaned
+September evaluator work; see the [ancestry and audit](docs/maintenance/canonicalization.md).
+
+Store new experiments, models, datasets and run logs outside this checkout, using
+configuration-driven paths. See [artifact policy](docs/maintenance/artifacts.md),
+[dependency provenance](docs/maintenance/reproducibility.md), and the
+[small maintenance backlog](docs/maintenance_backlog.md). The dependency document
+also records the unpublished Coral prerequisite that currently blocks release.
 
 ## Acknowledgments
 
@@ -48,6 +63,8 @@ Chipiron integrates and builds upon other personal repositories:
 ```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
+git switch maintenance/chipiron-canonicalization  # until its reviewed merge into main
+cp .env.example .env  # optional local path overrides; never commit this file
 make init
 python3 -m chipiron.scripts.main_chipiron
 ```
@@ -205,7 +222,9 @@ xdg-open _build/html/index.html
 
 ## Testing
 
-The canonical quality gate is tox:
+The canonical quality gate is tox. It builds/installs the package, selects tests
+without the `integration` or `external_data` markers, checks repository-wide Ruff
+format/lint, and runs the existing Pylint/mypy/Pyright checks:
 
 ```bash
 tox
@@ -237,10 +256,10 @@ development extras into your active Python 3.13 environment:
 python -m pip install -e '.[test,lint,typecheck,dev]'
 ```
 
-Then you can run pytest directly:
+Then you can run the normal fast test selection directly:
 
 ```bash
-python -m pytest
+python -m pytest -m "not integration and not external_data"
 ```
 
 Ruff does not auto-fix in the default quality gates. To rewrite files

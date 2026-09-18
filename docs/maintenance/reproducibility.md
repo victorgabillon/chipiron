@@ -54,3 +54,12 @@ commit. Once Coral is published, update its exact dependency to that validated
 release (or a reachable immutable revision for research), rerun clean installation
 and the complete quality gate, and update this status. Local passing tests alone
 do not satisfy that release gate.
+
+The clean-package test run also exposes an Anemone mismatch: the declared
+`algorhino-anemone==0.2.21` wheel lacks `anemone.checkpoints.build_atoms`, which
+existing checkpoint tests import. The local Anemone checkout contains that API
+at reachable commit `7950881f436d3b1ca3dba1d3ed733bb3a43bfd14`, but additionally has
+uncommitted selector changes. Do not confuse its version string with the published
+wheel. Resolve and validate the dependency set explicitly before merging; do not
+silently copy those selector changes into a maintenance release. The local audit
+records this checkout's dirty status and source hashes.

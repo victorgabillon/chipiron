@@ -67,3 +67,21 @@ The GitHub audit found no rulesets and no protection on `main`. Recommended manu
 settings: require a PR, require the canonical CI test check, prohibit force pushes
 and deletion, and optionally require the branch to be up to date. Repository
 administration and merging remain Victor's actions.
+
+## Conservative legacy-file decisions
+
+`src/chipiron/todo` is replaced by the concise maintenance backlog, with speculative
+architecture wishes left out. Useful `Notes.md` operations move into
+`docs/maintenance/development.md` with current paths/toolchain. The two uncollected
+`tust_*` scripts are removed: they execute games at import time, change directory
+relative to an obsolete layout, and rely on missing reference-game paths or old
+script arguments. They are not renamed into automatically executed test campaigns.
+Their content remains in Git history. Empty package markers and the ambiguous
+opening-book/color/communication stubs remain for import compatibility; stale
+Sphinx-generated API pages are a documented follow-up, not a production-code
+restoration plan.
+
+The explicitly requested fetch pruned stale **local remote-tracking references**
+for branches already absent on GitHub. No local branch or actual remote branch
+was deleted. Every pruned tip remains contained in another current branch/tag;
+the forensic snapshot retains the complete before/after reference lists.
