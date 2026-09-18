@@ -132,3 +132,16 @@ src/chipiron/scripts/profiling/benchmark_reports/**
 /comparisons/
 /action_supervision/
 .pyright/
+
+# Generated profiles and historical replay serializations
+*.prof
+*.pstats
+src/chipiron/scripts/replay_game/*.obj
+src/chipiron/scripts/evaluate_models/evaluation_report.yaml
+tests/scripts/evaluate_models/test_evaluation_report.yaml
+tests/**/test_outputs/**
+tests/**/tests_outputs/**
+
+# Local virtual environments and subprocess coverage fragments
+.venv/
+.coverage.*
