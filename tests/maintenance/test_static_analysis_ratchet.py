@@ -58,6 +58,25 @@ def test_line_shifts_pass_but_new_scopes_and_duplicate_debt_fail(
     assert not added and sum(removed.values()) == 1
 
 
+def test_json_error_containing_note_text_is_not_a_configuration_note(
+    ratchet: ModuleType, tmp_path: Path
+) -> None:
+    """Mypy error messages may contain note-like text from literal source values."""
+    (tmp_path / "module.py").write_text('value: int = "value: note: text"\n')
+    raw = json.dumps({
+        "file": "module.py",
+        "line": 1,
+        "message": 'Incompatible type Literal["value: note: text"]',
+        "code": "assignment",
+        "severity": "error",
+    })
+    parsed = ratchet.parse_diagnostics(
+        "mypy", "pyproject.toml: note: unused section(s)\n" + raw, tmp_path
+    )
+    assert len(parsed) == 1
+    assert parsed[0]["rule"] == "assignment"
+
+
 @pytest.mark.parametrize("tool", ["pyright", "pylint"])
 def test_other_analyzer_reports_keep_rule_message_and_location(
     ratchet: ModuleType, tmp_path: Path, tool: str

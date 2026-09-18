@@ -59,7 +59,9 @@ def parse_diagnostics(tool: str, output: str, root: Path) -> list[dict[str, Any]
         for line in output.splitlines():
             if not line.strip():
                 continue
-            if re.fullmatch(r".+: note: .+", line):
+            if not line.lstrip().startswith("{") and re.fullmatch(
+                r".+: note: .+", line
+            ):
                 print(f"mypy configuration note: {line}")
                 continue
             records.append(json.loads(line))
