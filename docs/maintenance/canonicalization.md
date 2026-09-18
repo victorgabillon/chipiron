@@ -68,6 +68,10 @@ settings: require a PR, require the canonical CI test check, prohibit force push
 and deletion, and optionally require the branch to be up to date. Repository
 administration and merging remain Victor's actions.
 
+The [verification record](verification.md) lists before/after checks, the exact
+local dependency context, and clean-install blockers that must be resolved before
+canonicalization can be considered ready.
+
 ## Conservative legacy-file decisions
 
 `src/chipiron/todo` is replaced by the concise maintenance backlog, with speculative
