@@ -65,7 +65,8 @@ These local source overrides are not embedded in CI or production defaults.
   legacy parameter YAML. Installing the wheel separately and importing outside
   the checkout succeeds with the explicit sibling overrides; the canonical
   Transformer constructs with 25 features, relation scale 0.25 and 106,049
-  parameters. No historical training dataset or model weights are bundled.
+  parameters. No external Morpion training datasets or model bundles were added;
+  the deliberately retained legacy chess parameters and test fixtures remain.
 - The declared Coral 0.1.14 wheel fails canonical model construction with an
   unsupported `relation_bias_scale` argument. With published Anemone 0.2.21,
   the fast test attempt fails collection on missing
