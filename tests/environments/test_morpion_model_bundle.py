@@ -1,57 +1,18 @@
 """Tests for Morpion model definition, bundle IO, and minimal training."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
 import json
 import random
-import sys
-from pathlib import Path
-from types import ModuleType
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 import torch
-from torch.utils.data import DataLoader
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-_MORPION_EVALUATORS_PACKAGE_ROOT = (
-    _REPO_ROOT
-    / "src"
-    / "chipiron"
-    / "environments"
-    / "morpion"
-    / "players"
-    / "evaluators"
-)
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
-    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
-    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
-
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
-
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+from torch.utils.data import DataLoader
 
 from chipiron.environments.morpion.learning import (
     load_morpion_supervised_rows,
@@ -90,6 +51,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training i
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _feature_subset(width: int) -> MorpionFeatureSubset:

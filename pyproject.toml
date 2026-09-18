@@ -38,8 +38,8 @@ dependencies = [
   "rich",
   "valanga==0.2.5",
   "atomheart==0.2.11",
-  "algorhino-coral==0.1.14",
-  "algorhino-anemone==0.2.21",
+  "algorhino-coral==0.1.15",
+  "algorhino-anemone==0.2.22",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
@@ -332,7 +332,7 @@ reportMissingModuleSource = false
 
 [tool.tox]
 min_version = "4.56.1"
-env_list = ["tooling", "py313", "lint", "typecheck"]
+env_list = ["tooling", "py313", "ruff", "static"]
 isolated_build = true
 
 
@@ -354,6 +354,7 @@ commands = [["python", "scripts/check_toolchain_versions.py"]]
 deps = ["build==1.5.0"]
 description = "Build + install package, run tests"
 extras = ["test"]
+set_env = { CHIPIRON_TEST_INSTALLED = "1", PYTHONPATH = "", QT_QPA_PLATFORM = "offscreen" }
 changedir = "{toxinidir}"
 commands_pre = [
   [
@@ -384,14 +385,13 @@ commands_pre = [
   [
     "python",
     "-c",
-    "import glob, subprocess; subprocess.check_call(['pip','install', glob.glob(r'{toxinidir}/dist/*.tar.gz')[0]])",
+    "import glob, subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'uninstall', '-y', 'chipiron']); subprocess.check_call([sys.executable, '-m', 'pip', 'install', glob.glob(r'{toxinidir}/dist/*.whl')[0]])",
   ],
 ]
 commands = [
   [
     "python",
-    "-c",
-    "import chipiron; print(chipiron.__file__)",
+    "scripts/check_installed_distribution.py",
   ],
   [
     "pytest",
@@ -461,3 +461,19 @@ commands = [
 ]
 
 #################### END TOX ####################
+
+# The strict lint/typecheck developer commands above remain available.
+[tool.tox.env.ruff]
+package = "skip"
+deps = ["ruff==0.15.20"]
+commands = [
+  ["python", "-m", "ruff", "format", "--check", "."],
+  ["python", "-m", "ruff", "check", "."],
+]
+
+[tool.tox.env.static]
+description = "show inherited static debt and reject new diagnostic identities"
+package = "editable"
+extras = ["lint", "typecheck"]
+pass_env = ["CI", "STATIC_ANALYSIS_BASE_REF"]
+commands = [["python", "scripts/static_analysis_ratchet.py", "--mypy-strict", "--output", "{envtmpdir}/static-analysis"]]

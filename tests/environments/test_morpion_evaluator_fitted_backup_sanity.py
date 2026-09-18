@@ -1,5 +1,4 @@
 """Tests for fixed-tree Morpion fitted-backup sanity checks."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -15,44 +14,6 @@ import torch
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
-_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
-_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
-_MORPION_PLAYERS_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "players"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-_MORPION_EVALUATORS_PACKAGE_ROOT = (
-    _REPO_ROOT
-    / "src"
-    / "chipiron"
-    / "environments"
-    / "morpion"
-    / "players"
-    / "evaluators"
-)
-_MORPION_NN_PACKAGE_ROOT = _MORPION_EVALUATORS_PACKAGE_ROOT / "neural_networks"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments" not in sys.modules:
-    _environments_stub = ModuleType("chipiron.environments")
-    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments"] = _environments_stub
-
-if "chipiron.environments.morpion" not in sys.modules:
-    _morpion_stub = ModuleType("chipiron.environments.morpion")
-    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion"] = _morpion_stub
-
-if "chipiron.environments.morpion.bootstrap" not in sys.modules:
-    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
-    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
 if "chipiron.environments.morpion.bootstrap.bootstrap_loop" not in sys.modules:
     _bootstrap_loop_stub = ModuleType(
@@ -326,27 +287,6 @@ if "chipiron.environments.morpion.types" not in sys.modules:
     _types_stub.MorpionDynamics = _MorpionDynamics
     sys.modules["chipiron.environments.morpion.types"] = _types_stub
 
-if "chipiron.environments.morpion.players" not in sys.modules:
-    _players_stub = ModuleType("chipiron.environments.morpion.players")
-    _players_stub.__path__ = [str(_MORPION_PLAYERS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players"] = _players_stub
-
-if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
-    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
-    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
-
-if (
-    "chipiron.environments.morpion.players.evaluators.neural_networks"
-    not in sys.modules
-):
-    _nn_stub = ModuleType(
-        "chipiron.environments.morpion.players.evaluators.neural_networks"
-    )
-    _nn_stub.__path__ = [str(_MORPION_NN_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players.evaluators.neural_networks"] = (
-        _nn_stub
-    )
 
 if (
     "chipiron.environments.morpion.players.evaluators.neural_networks.model"
@@ -452,15 +392,6 @@ if (
         "chipiron.environments.morpion.players.evaluators.neural_networks.training"
     ] = _train_stub
 
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import (
     TrainingNodeSnapshot,

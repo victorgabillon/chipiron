@@ -19,7 +19,10 @@ if str(TESTS_ROOT) not in sys.path:
 # on PYTHONPATH. Silently preferring adjacent dirty repositories hides release
 # incompatibilities and makes the same command mean different things in CI.
 source_path = REPO_ROOT / "src"
-if str(source_path) not in sys.path:
+if (
+    os.environ.get("CHIPIRON_TEST_INSTALLED") != "1"
+    and str(source_path) not in sys.path
+):
     sys.path.insert(0, str(source_path))
 
 

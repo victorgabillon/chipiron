@@ -1,52 +1,13 @@
 """Tests for Morpion entity-token evaluator support."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
 import json
 import math
-import sys
-from pathlib import Path
-from types import ModuleType
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 import torch
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-_MORPION_EVALUATORS_PACKAGE_ROOT = (
-    _REPO_ROOT
-    / "src"
-    / "chipiron"
-    / "environments"
-    / "morpion"
-    / "players"
-    / "evaluators"
-)
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
-    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
-    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
-
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
-
 from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
 from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
@@ -95,6 +56,9 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from tests.environments.morpion_training_snapshot_helpers import (
     make_training_node_snapshot,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _make_standard_state() -> MorpionState:

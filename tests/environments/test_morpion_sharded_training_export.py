@@ -1,50 +1,29 @@
-"""Tests for additive sharded Morpion training export persistence."""
 # ruff: noqa: E402
+"""Tests for additive sharded Morpion training export persistence."""
 
 from __future__ import annotations
 
 import json
 import logging
-import sys
 from dataclasses import dataclass, field
-from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from _pytest.logging import LogCaptureFixture
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
     checkpoint_payload_to_jsonable,
 )
 
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
-
 
 def _state_access_regression_error(node_id: str) -> AssertionError:
     """Return the stable old-node state-access regression error."""
     return AssertionError(f"state accessed for old node {node_id}")
 
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
 
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,

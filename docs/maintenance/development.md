@@ -6,6 +6,13 @@ Normal checks are `python -m tox`; the fast test selection is
 Integration installation scripts may download engines/datasets and are separate
 from the ordinary offline unit-test gate.
 
+The default tox environments are `tooling`, `py313`, `ruff` and `static`.
+`py313` validates the installed wheel with published dependencies and no sibling
+source overrides. `ruff` is strict; `static` prints inherited Pylint/mypy/Pyright
+debt and rejects new diagnostics using the
+[reviewed baseline](static_analysis_baseline/README.md). The strict developer
+commands `tox -e lint,typecheck` remain available and can fail on inherited debt.
+
 For MLflow, select an external SQLite database explicitly:
 
 ```bash

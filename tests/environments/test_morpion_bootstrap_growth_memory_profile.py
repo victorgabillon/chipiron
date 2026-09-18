@@ -1,5 +1,5 @@
+# ruff: noqa: D102, D105, D107, ANN201, ANN204, TRY003
 """Tests for opt-in Morpion growth runtime memory profiling."""
-# ruff: noqa: E402, D102, D105, D107, ANN201, ANN204, TRY003
 
 from __future__ import annotations
 
@@ -8,35 +8,8 @@ import importlib
 import logging
 import math
 import sys
-from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
-_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
-_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments" not in sys.modules:
-    _environments_stub = ModuleType("chipiron.environments")
-    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments"] = _environments_stub
-
-if "chipiron.environments.morpion" not in sys.modules:
-    _morpion_stub = ModuleType("chipiron.environments.morpion")
-    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion"] = _morpion_stub
-
-if "chipiron.environments.morpion.bootstrap" not in sys.modules:
-    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
-    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,

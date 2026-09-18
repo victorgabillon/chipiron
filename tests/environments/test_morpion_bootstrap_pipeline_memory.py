@@ -1,24 +1,15 @@
 """Tests for Morpion artifact-pipeline memory guard helpers."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
 import logging
-import sys
-from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
 
 import chipiron.environments.morpion.bootstrap.pipeline_memory as pipeline_memory_module
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (

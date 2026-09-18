@@ -1,5 +1,4 @@
 """Tests for Morpion bootstrap memory diagnostics."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -8,26 +7,9 @@ import importlib
 import logging
 import sys
 import weakref
-from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_BOOTSTRAP_PACKAGE_ROOT = (
-    _CHIPIRON_PACKAGE_ROOT / "environments" / "morpion" / "bootstrap"
-)
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments.morpion.bootstrap" not in sys.modules:
-    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
-    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
 from chipiron.environments.morpion.bootstrap.profiling.memory_diagnostics import (
     MemoryDiagnostics,

@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
@@ -44,4 +46,5 @@ jobs:
         env:
           PIP_NO_CACHE_DIR: "1"
           QT_QPA_PLATFORM: offscreen
+          STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m tox

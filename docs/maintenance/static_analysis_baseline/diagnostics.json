@@ -1,0 +1,1894 @@
+{
+  "schema": 1,
+  "source": "src/chipiron",
+  "source_commit": "fea2ff42e8c88f4fea22b764c44bb3cf8c8bae47",
+  "tools": {
+    "mypy": "2.1.0",
+    "pyright": "1.1.411",
+    "pylint": "4.0.6"
+  },
+  "policy_sha256": "9628e82406dc827a05183ebf31e914b8b2b438c42baa8d6e42b5c56e58715e02",
+  "diagnostics": [
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/integer_reduction/players/wiring/integer_reduction_wiring.py",
+      "rule": "operator",
+      "scope": "build_integer_reduction_game_player",
+      "source": "player = Player(",
+      "message": "\"object\" not callable",
+      "line": 146
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/bootstrap/evaluator_diagnostics.py",
+      "rule": "return-value",
+      "scope": "_predict_rows",
+      "source": "return result.predictions",
+      "message": "Incompatible return value type (got \"list[float]\", expected \"list[float | None]\")",
+      "line": 439
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/bootstrap/training_recap.py",
+      "rule": "no-any-return",
+      "scope": "_read_json_file",
+      "source": "return json.loads(path.read_text(encoding=\"utf-8\"))",
+      "message": "Returning Any from function declared to return \"object | None\"",
+      "line": 945
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/bootstrap/training_recap.py",
+      "rule": "no-any-return",
+      "scope": "find_key",
+      "source": "return obj[key]",
+      "message": "Returning Any from function declared to return \"object | None\"",
+      "line": 350
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/bundle.py",
+      "rule": "no-redef",
+      "scope": "_model_args_to_dict",
+      "source": "data: dict[str, object] = {",
+      "message": "Name \"data\" already defined on line 764",
+      "line": 801
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py",
+      "rule": "assignment",
+      "scope": "_build_model_module",
+      "source": "model_type_args = EntityTokenTransformerValueNetArgs(",
+      "message": "Incompatible types in assignment (expression has type \"EntityTokenTransformerValueNetArgs\", variable has type \"RelationBiasedEntityTokenTransformerValueNetArgs\")",
+      "line": 383
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py",
+      "rule": "arg-type",
+      "scope": "_predict_from_sample_batch",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, module_device(model))",
+      "message": "Argument 1 to \"move_supervised_batch_to_device\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 212
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py",
+      "rule": "arg-type",
+      "scope": "diagnostic_training_args",
+      "source": "model_kind=model_kind,",
+      "message": "Argument \"model_kind\" to \"MorpionTrainingArgs\" has incompatible type \"Any | None\"; expected \"str\"",
+      "line": 168
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "_evaluate_packed_cache_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"evaluate_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 303
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "_evaluate_packed_cache_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument 1 to \"infer_batch_sample_count\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 300
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "_train_packed_cache_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"train_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 177
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py",
+      "rule": "arg-type",
+      "scope": "evaluate_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"evaluate_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 99
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py",
+      "rule": "arg-type",
+      "scope": "evaluate_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument 1 to \"infer_batch_sample_count\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 96
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "evaluate_flat_cache_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"evaluate_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 184
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "evaluate_flat_cache_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument 1 to \"infer_batch_sample_count\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 181
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "arg-type",
+      "scope": "train_flat_cache_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"train_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 107
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py",
+      "rule": "arg-type",
+      "scope": "cached_split_regression_quality_diagnostics",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, device)",
+      "message": "Argument 1 to \"move_supervised_batch_to_device\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 55
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "arg-type",
+      "scope": "prediction_scale_stats_for_cached_batches",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, device)",
+      "message": "Argument 1 to \"move_supervised_batch_to_device\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 1184
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "redundant-cast",
+      "scope": "_split_train_validation_dataset",
+      "source": "return cast(",
+      "message": "Redundant cast to \"tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]\"",
+      "line": 1355
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "redundant-cast",
+      "scope": "_split_train_validation_dataset",
+      "source": "return cast(",
+      "message": "Redundant cast to \"tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]\"",
+      "line": 1366
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py",
+      "rule": "arg-type",
+      "scope": "train_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument \"batch\" to \"train_regression_batch\" has incompatible type \"TensorSupervisedBatch\"; expected \"SupervisedBatch\"",
+      "line": 106
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/value_training.py",
+      "rule": "no-untyped-call",
+      "scope": "train_entity_value",
+      "source": "loss.backward()",
+      "message": "Call to untyped function \"backward\" in typed context",
+      "line": 354
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/environments/morpion/players/wiring/morpion_wiring.py",
+      "rule": "operator",
+      "scope": "build_morpion_game_player",
+      "source": "player = Player(",
+      "message": "\"object\" not callable",
+      "line": 157
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "operator",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "player_one_factory_args = players.PlayerFactoryArgs(",
+      "message": "\"object\" not callable",
+      "line": 64
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "unreachable",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "player_two_factory_args = players.PlayerFactoryArgs(",
+      "message": "Statement is unreachable",
+      "line": 71
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory",
+      "source": "args_player_one: players.PlayerArgs",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 17
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory",
+      "source": "args_player_two: players.PlayerArgs | None",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 18
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory.__init__",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 25
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory.__init__",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 26
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": ") -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 46
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "valid-type",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "participant_factory_args_by_index: tuple[players.PlayerFactoryArgs, ...]",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 68
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager.py",
+      "rule": "attr-defined",
+      "scope": "GameManager.terminate_processes",
+      "source": "player.close()",
+      "message": "players_m.PlayerHandle? has no attribute \"close\"",
+      "line": 469
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager.py",
+      "rule": "valid-type",
+      "scope": "GameManager",
+      "source": "players: list[players_m.PlayerHandle]",
+      "message": "Variable \"chipiron.players.PlayerHandle\" is not valid as a type",
+      "line": 83
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager.py",
+      "rule": "valid-type",
+      "scope": "GameManager.__init__",
+      "source": "players: list[players_m.PlayerHandle],",
+      "message": "Variable \"chipiron.players.PlayerHandle\" is not valid as a type",
+      "line": 106
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "attr-defined",
+      "scope": "GameManagerFactory.create",
+      "source": "if player_factory_args.player_args.is_human():",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 234
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "attr-defined",
+      "scope": "GameManagerFactory.create",
+      "source": "role: player_factory_args.player_args.name",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 249
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": ") -> MutableRoleAssignment[PlayerFactoryArgs]:",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 278
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": "assignments: MutableRoleAssignment[PlayerFactoryArgs] = {}",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 280
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 277
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory.create",
+      "source": "generic_player: players_m.PlayerHandle",
+      "message": "Variable \"chipiron.players.PlayerHandle\" is not valid as a type",
+      "line": 238
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory.create",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 119
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "valid-type",
+      "scope": "GameManagerFactory.create",
+      "source": "players: list[players_m.PlayerHandle] = []",
+      "message": "Variable \"chipiron.players.PlayerHandle\" is not valid as a type",
+      "line": 226
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_args.py",
+      "rule": "valid-type",
+      "scope": "MatchArgs",
+      "source": "player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 23
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_args.py",
+      "rule": "valid-type",
+      "scope": "MatchArgs",
+      "source": "player_two: PlayerConfigTag | PlayerArgs | None = PlayerConfigTag.RECUR_ZIPF_BASE_3",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 24
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "arg-type",
+      "scope": "create_match_manager_from_args",
+      "source": "assert isinstance(match_args.player_one, players.PlayerArgs)",
+      "message": "Argument 2 to \"isinstance\" has incompatible type \"object\"; expected \"_ClassInfo\"",
+      "line": 203
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "arg-type",
+      "scope": "create_match_manager_from_args",
+      "source": "assert isinstance(match_args.player_two, players.PlayerArgs)",
+      "message": "Argument 2 to \"isinstance\" has incompatible type \"object\"; expected \"_ClassInfo\"",
+      "line": 210
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "attr-defined",
+      "scope": "_participant_ids_from_inputs",
+      "source": "return (args_player_one.name,)",
+      "message": "players.PlayerArgs? has no attribute \"name\"",
+      "line": 60
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "attr-defined",
+      "scope": "create_match_manager",
+      "source": "can_oracle: bool = args_player_one.name not in [\"Stockfish\"] and (",
+      "message": "players.PlayerArgs? has no attribute \"name\"",
+      "line": 110
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "attr-defined",
+      "scope": "create_match_manager_from_args",
+      "source": "player_one_args.name != \"Command_Line_Human.yaml\"",
+      "message": "players.PlayerArgs? has no attribute \"name\"",
+      "line": 221
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "unreachable",
+      "scope": "_participant_ids_from_inputs",
+      "source": "return (args_player_one.name, args_player_two.name)",
+      "message": "Statement is unreachable",
+      "line": 61
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "unreachable",
+      "scope": "create_match_manager",
+      "source": "args_player_two is None or args_player_two.name not in [\"Stockfish\"]",
+      "message": "Right operand of \"or\" is never evaluated",
+      "line": 111
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "_participant_ids_from_inputs",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 55
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "_participant_ids_from_inputs",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 56
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "create_match_manager",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 66
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "create_match_manager",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 67
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "create_match_manager_from_args",
+      "source": "player_one_args: players.PlayerArgs = match_args.player_one",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 205
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "valid-type",
+      "scope": "create_match_manager_from_args",
+      "source": "player_two_args: players.PlayerArgs | None",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 206
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "attr-defined",
+      "scope": "MatchManager.play_one_match",
+      "source": "player_factory_args.player_args.is_human()",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 142
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "valid-type",
+      "scope": "MatchManager._as_role_assignment",
+      "source": ") -> MutableRoleAssignment[PlayerFactoryArgs]:",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 221
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "valid-type",
+      "scope": "MatchManager._as_role_assignment",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 220
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "valid-type",
+      "scope": "MatchManager.play_one_game",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 180
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "valid-type",
+      "scope": "MatchManager.play_one_match",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs]",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 104
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "arg-type",
+      "scope": "generate_inputs",
+      "source": "make_partial_dataclass_with_optional_paths(cls=PlayerArgs),",
+      "message": "Argument \"cls\" to \"make_partial_dataclass_with_optional_paths\" has incompatible type \"object\"; expected \"type[Any]\"",
+      "line": 203
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "attr-defined",
+      "scope": "generate_inputs",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "\"object\" has no attribute \"ONE_MATCH\"",
+      "line": 279
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "attr-defined",
+      "scope": "generate_inputs",
+      "source": "script_type = scripts.ScriptType.TREE_VISUALIZATION",
+      "message": "\"object\" has no attribute \"TREE_VISUALIZATION\"",
+      "line": 283
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "unreachable",
+      "scope": "generate_inputs",
+      "source": "gui_args.match_args.player_one = player_one_overwrite",
+      "message": "Statement is unreachable",
+      "line": 264
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "unreachable",
+      "scope": "generate_inputs",
+      "source": "gui_args.match_args.player_two = player_two_overwrite",
+      "message": "Statement is unreachable",
+      "line": 277
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "valid-type",
+      "scope": "_player_overwrite_from_participant",
+      "source": ") -> PlayerArgs | None:",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 163
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "valid-type",
+      "scope": "_player_overwrite_from_participant",
+      "source": "partial_op_player_args: Callable[..., PlayerArgs],",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 160
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "valid-type",
+      "scope": "generate_inputs",
+      "source": "\"Callable[..., PlayerArgs]\",",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 202
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "valid-type",
+      "scope": "generate_inputs",
+      "source": ") -> tuple[scripts.ScriptType, IsDataclass | None, str]:",
+      "message": "Variable \"chipiron.scripts.ScriptType\" is not valid as a type",
+      "line": 183
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/gui_launcher/script_gui.py",
+      "rule": "valid-type",
+      "scope": "script_gui",
+      "source": "def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:",
+      "message": "Variable \"chipiron.scripts.ScriptType\" is not valid as a type",
+      "line": 17
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py",
+      "rule": "has-type",
+      "scope": "LearnNNFromScratchScript.update_dataset_value_with_evaluating_player",
+      "source": "self.player.select_move(",
+      "message": "Cannot determine type of \"player\"",
+      "line": 304
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py",
+      "rule": "operator",
+      "scope": "LearnNNFromScratchScriptArgs",
+      "source": "default_factory=lambda: PlayerArgs(",
+      "message": "\"object\" not callable",
+      "line": 91
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py",
+      "rule": "unreachable",
+      "scope": "LearnNNFromScratchScript.__init__",
+      "source": "chess_args = self.args.evaluating_player_args",
+      "message": "Statement is unreachable",
+      "line": 236
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py",
+      "rule": "valid-type",
+      "scope": "LearnNNFromScratchScriptArgs",
+      "source": "evaluating_player_args: PlayerArgs | PlayerConfigTag = field(",
+      "message": "Variable \"chipiron.players.PlayerArgs\" is not valid as a type",
+      "line": 90
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py",
+      "rule": "call-overload",
+      "scope": "safe_nn_architecture_save",
+      "source": "asdict(",
+      "message": "No overload variant of \"asdict\" matches argument types \"object\", \"Callable[[Iterable[tuple[Any, Any]]], dict[Any, Any]]\"",
+      "line": 83
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py",
+      "rule": "arg-type",
+      "scope": "LearnNNScript.saving_things_to_file",
+      "source": "_OptimizerSchedulerCheckpointState(",
+      "message": "Argument 1 to \"safe_nn_trainer_save\" has incompatible type \"_OptimizerSchedulerCheckpointState\"; expected \"OptimizerSchedulerHolder\"",
+      "line": 501
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py",
+      "rule": "name-defined",
+      "scope": "LearnNNScript",
+      "source": "criterion: nn.Module",
+      "message": "Name \"nn.Module\" is not defined",
+      "line": 148
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "attr-defined",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "\"object\" has no attribute \"ONE_MATCH\"",
+      "line": 181
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "attr-defined",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "\"object\" has no attribute \"ONE_MATCH\"",
+      "line": 191
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "attr-defined",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.TREE_VISUALIZATION",
+      "message": "\"object\" has no attribute \"TREE_VISUALIZATION\"",
+      "line": 196
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "valid-type",
+      "scope": "script_gui",
+      "source": "def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:",
+      "message": "Variable \"chipiron.scripts.ScriptType\" is not valid as a type",
+      "line": 34
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "valid-type",
+      "scope": "script_gui",
+      "source": "script_type: scripts.ScriptType",
+      "message": "Variable \"chipiron.scripts.ScriptType\" is not valid as a type",
+      "line": 155
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "attr-defined",
+      "scope": "format_player_label",
+      "source": "name: str = player.player_args.name",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 16
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "attr-defined",
+      "scope": "format_player_label",
+      "source": "sel = player.player_args.main_move_selector",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 19
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "attr-defined",
+      "scope": "make_participants_info_payload",
+      "source": "is_human=participant_factory_args_by_role[role].player_args.is_human(),",
+      "message": "PlayerFactoryArgs? has no attribute \"player_args\"",
+      "line": 46
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "valid-type",
+      "scope": "format_player_label",
+      "source": "def format_player_label(player: PlayerFactoryArgs) -> str:",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 14
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "valid-type",
+      "scope": "make_participants_info_payload",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 30
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "valid-type",
+      "scope": "make_players_info_payload",
+      "source": "participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 54
+    },
+    {
+      "tool": "mypy",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "valid-type",
+      "scope": "make_players_info_payload",
+      "source": "role_assignments: dict[GameRole, PlayerFactoryArgs] = {",
+      "message": "Variable \"chipiron.players.PlayerFactoryArgs\" is not valid as a type",
+      "line": 57
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/bootstrap/config.py",
+      "rule": "W0621",
+      "scope": "MalformedMorpionBootstrapConfigError.unexpected_fields",
+      "source": "fields: set[str],",
+      "message": "Redefining name 'fields' from outer scope (line 9)",
+      "line": 311
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/bootstrap/pipeline/training_selection.py",
+      "rule": "W0404",
+      "scope": "<module>",
+      "source": "from collections.abc import Mapping",
+      "message": "Reimport 'Mapping' (imported line 5)",
+      "line": 18
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_evaluator.py",
+      "rule": "E1111",
+      "scope": "MorpionRegressorMasterEvaluator.evaluate",
+      "source": "model_inputs = self.input_converter.state_to_model_input_tensors(morpion_state)",
+      "message": "Assigning result of a function call, where the function has no return",
+      "line": 78
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_evaluator.py",
+      "rule": "E1133",
+      "scope": "MorpionRegressorMasterEvaluator.evaluate",
+      "source": "for tensor in model_inputs",
+      "message": "Non-iterable value model_inputs is used in an iterating context",
+      "line": 82
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache.py",
+      "rule": "R0916",
+      "scope": "_tensors_match_manifest",
+      "source": "packed_input_tensor.device.type != \"cpu\"",
+      "message": "Too many boolean expressions in if statement (9/5)",
+      "line": 519
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "W0613",
+      "scope": "_evaluate_packed_cache_streaming_metrics",
+      "source": "row_chunk_size: int,",
+      "message": "Unused argument 'row_chunk_size'",
+      "line": 268
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "W0613",
+      "scope": "evaluate_flat_cache_streaming_metrics",
+      "source": "row_chunk_size: int,",
+      "message": "Unused argument 'row_chunk_size'",
+      "line": 145
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relational_entity_token_cache.py",
+      "rule": "R0916",
+      "scope": "_tensors_match_manifest",
+      "source": "str(loaded.packed_input_tensor.dtype) != manifest.input_dtype",
+      "message": "Too many boolean expressions in if statement (10/5)",
+      "line": 632
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/value_training.py",
+      "rule": "W0231",
+      "scope": "EpochRowSampler.__init__",
+      "source": "def __init__(self, indices: tuple[int, ...], seed: int) -> None:",
+      "message": "__init__ method from base class 'Sampler' is not called",
+      "line": 132
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/value_training.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from typing import TYPE_CHECKING, Any, cast",
+      "message": "Unused Any imported from typing",
+      "line": 17
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 12
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 15
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 18
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 21
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 24
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 27
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 30
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 33
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused OptimizerSchedulerHolder imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as OptimizerSchedulerHolder",
+      "line": 12
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused ReadableWeightsModule imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as ReadableWeightsModule",
+      "line": 15
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused get_folder_training_copies_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_folder_training_copies_path_from",
+      "line": 18
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused get_optimizer_file_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_optimizer_file_path_from",
+      "line": 21
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused get_scheduler_file_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_scheduler_file_path_from",
+      "line": 24
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_architecture_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_architecture_save",
+      "line": 27
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_param_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_param_save",
+      "line": 30
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_trainer_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_trainer_save",
+      "line": 33
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 15
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 18
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Import alias does not rename original package",
+      "line": 21
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 24
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 27
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 30
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 33
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 36
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "C0414",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Import alias does not rename original package",
+      "line": 39
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_architecture_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_architecture_save",
+      "line": 15
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_param_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_param_save",
+      "line": 18
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (",
+      "message": "Unused safe_nn_trainer_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_trainer_save",
+      "line": 21
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused GameInputArgs imported from chipiron.scripts.learn_nn_supervised.training_args as GameInputArgs",
+      "line": 24
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused NNTrainerArgs imported from chipiron.scripts.learn_nn_supervised.training_args as NNTrainerArgs",
+      "line": 27
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused NNTrainerConfigError imported from chipiron.scripts.learn_nn_supervised.training_args as NNTrainerConfigError",
+      "line": 30
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused OptimizerType imported from chipiron.scripts.learn_nn_supervised.training_args as OptimizerType",
+      "line": 33
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused SupervisedTrainingArgs imported from chipiron.scripts.learn_nn_supervised.training_args as SupervisedTrainingArgs",
+      "line": 36
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/learningprocesses/nn_trainer/factory.py",
+      "rule": "W0611",
+      "scope": "<module>",
+      "source": "from chipiron.scripts.learn_nn_supervised.training_args import (",
+      "message": "Unused SupervisedTrainingConfigError imported from chipiron.scripts.learn_nn_supervised.training_args as SupervisedTrainingConfigError",
+      "line": 39
+    },
+    {
+      "tool": "pylint",
+      "file": "src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py",
+      "rule": "E0601",
+      "scope": "LearnNNScript",
+      "source": "criterion: nn.Module",
+      "message": "Using variable 'nn' before assignment",
+      "line": 148
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/integer_reduction/players/wiring/integer_reduction_wiring.py",
+      "rule": "reportCallIssue",
+      "scope": "build_integer_reduction_game_player",
+      "source": "player = Player(",
+      "message": "Object of type \"object\" is not callable Attribute \"__call__\" is unknown",
+      "line": 146
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/bootstrap/evaluator_diagnostics.py",
+      "rule": "reportReturnType",
+      "scope": "_predict_rows",
+      "source": "return result.predictions",
+      "message": "Type \"list[float]\" is not assignable to return type \"list[float | None]\" \"list[float]\" is not assignable to \"list[float | None]\" Type parameter \"_T@list\" is invariant, but \"float\" is not the same as \"float | None\" Consider switching from \"list\" to \"Sequence\" which is covariant",
+      "line": 439
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/bootstrap/training_recap.py",
+      "rule": "reportUnnecessaryComparison",
+      "scope": "render_training_recap_table_operator",
+      "source": "if part is not None",
+      "message": "Condition will always evaluate to True since the types \"str\" and \"None\" have no overlap",
+      "line": 241
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py",
+      "rule": "reportArgumentType",
+      "scope": "_predict_from_sample_batch",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, module_device(model))",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"move_supervised_batch_to_device\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 212
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py",
+      "rule": "reportArgumentType",
+      "scope": "diagnostic_training_args",
+      "source": "model_kind=model_kind,",
+      "message": "Argument of type \"Any | None\" cannot be assigned to parameter \"model_kind\" of type \"str\" in function \"__init__\" Type \"Any | None\" is not assignable to type \"str\" \"None\" is not assignable to \"str\"",
+      "line": 168
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "_evaluate_packed_cache_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"evaluate_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 303
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "_evaluate_packed_cache_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"infer_batch_sample_count\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 300
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "_train_packed_cache_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"train_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 177
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py",
+      "rule": "reportArgumentType",
+      "scope": "evaluate_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"evaluate_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 99
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py",
+      "rule": "reportArgumentType",
+      "scope": "evaluate_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"infer_batch_sample_count\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 96
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "evaluate_flat_cache_streaming_metrics",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"evaluate_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 184
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "evaluate_flat_cache_streaming_metrics",
+      "source": "sample_count += infer_batch_sample_count(sample_batch)",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"infer_batch_sample_count\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 181
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "train_flat_cache_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"train_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 107
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py",
+      "rule": "reportArgumentType",
+      "scope": "cached_split_regression_quality_diagnostics",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, device)",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"move_supervised_batch_to_device\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 55
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportArgumentType",
+      "scope": "prediction_scale_stats_for_cached_batches",
+      "source": "device_batch = move_supervised_batch_to_device(sample_batch, device)",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"move_supervised_batch_to_device\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 1184
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportArgumentType",
+      "scope": "train_morpion_regressor",
+      "source": "metadata=bundle_metadata,",
+      "message": "Argument of type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" cannot be assigned to parameter \"metadata\" of type \"dict[str, object] | None\" in function \"save_morpion_model_bundle\" Type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to type \"dict[str, object] | None\" \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"dict[str, object]\" Type parameter \"_VT@dict\" is invariant, but \"str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None\" is not the same as \"object\" Consider switching from \"dict\" to \"Mapping\" which is covariant in the value type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"None\"",
+      "line": 356
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportArgumentType",
+      "scope": "train_morpion_regressor",
+      "source": "update_saved_manifest_metadata(args.output_dir, bundle_metadata)",
+      "message": "Argument of type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" cannot be assigned to parameter \"metadata\" of type \"dict[str, object]\" in function \"update_saved_manifest_metadata\" \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"dict[str, object]\" Type parameter \"_VT@dict\" is invariant, but \"str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None\" is not the same as \"object\" Consider switching from \"dict\" to \"Mapping\" which is covariant in the value type",
+      "line": 367
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportArgumentType",
+      "scope": "train_morpion_regressor_streaming",
+      "source": "metadata=bundle_metadata,",
+      "message": "Argument of type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" cannot be assigned to parameter \"metadata\" of type \"dict[str, object] | None\" in function \"save_morpion_model_bundle\" Type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to type \"dict[str, object] | None\" \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"dict[str, object]\" Type parameter \"_VT@dict\" is invariant, but \"str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None\" is not the same as \"object\" Consider switching from \"dict\" to \"Mapping\" which is covariant in the value type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"None\"",
+      "line": 948
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportArgumentType",
+      "scope": "train_morpion_regressor_streaming",
+      "source": "update_saved_manifest_metadata(training_args.output_dir, bundle_metadata)",
+      "message": "Argument of type \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" cannot be assigned to parameter \"metadata\" of type \"dict[str, object]\" in function \"update_saved_manifest_metadata\" \"dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]\" is not assignable to \"dict[str, object]\" Type parameter \"_VT@dict\" is invariant, but \"str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None\" is not the same as \"object\" Consider switching from \"dict\" to \"Mapping\" which is covariant in the value type",
+      "line": 959
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportUnnecessaryCast",
+      "scope": "_split_train_validation_dataset",
+      "source": "return cast(",
+      "message": "Unnecessary \"cast\" call; type is already \"tuple[Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionEntityTokenSupervisedSample]]\"",
+      "line": 1355
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py",
+      "rule": "reportUnnecessaryCast",
+      "scope": "_split_train_validation_dataset",
+      "source": "return cast(",
+      "message": "Unnecessary \"cast\" call; type is already \"tuple[Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionEntityTokenSupervisedSample]]\"",
+      "line": 1366
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py",
+      "rule": "reportArgumentType",
+      "scope": "train_streaming_epoch",
+      "source": "batch=sample_batch,",
+      "message": "Argument of type \"TensorSupervisedBatch\" cannot be assigned to parameter \"batch\" of type \"SupervisedBatch\" in function \"train_regression_batch\" \"TensorSupervisedBatch\" is incompatible with protocol \"SupervisedBatch\" \"is_batch\" is not read-only in protocol \"is_batch\" is writable in protocol",
+      "line": 106
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/environments/morpion/players/wiring/morpion_wiring.py",
+      "rule": "reportCallIssue",
+      "scope": "build_morpion_game_player",
+      "source": "player = Player(",
+      "message": "Object of type \"object\" is not callable Attribute \"__call__\" is unknown",
+      "line": 157
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportCallIssue",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "player_one_factory_args = players.PlayerFactoryArgs(",
+      "message": "Object of type \"object\" is not callable Attribute \"__call__\" is unknown",
+      "line": 64
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportCallIssue",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "player_two_factory_args = players.PlayerFactoryArgs(",
+      "message": "Object of type \"object\" is not callable Attribute \"__call__\" is unknown",
+      "line": 71
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory",
+      "source": "args_player_one: players.PlayerArgs",
+      "message": "Expected class but received \"object\"",
+      "line": 17
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory",
+      "source": "args_player_two: players.PlayerArgs | None",
+      "message": "Expected class but received \"object\"",
+      "line": 18
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory.__init__",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Expected class but received \"object\"",
+      "line": 25
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory.__init__",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Expected class but received \"object\"",
+      "line": 26
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": ") -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:",
+      "message": "Expected class but received \"object\"",
+      "line": 46
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_args_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameArgsFactory.generate_game_args",
+      "source": "participant_factory_args_by_index: tuple[players.PlayerFactoryArgs, ...]",
+      "message": "Expected class but received \"object\"",
+      "line": 68
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManager",
+      "source": "players: list[players_m.PlayerHandle]",
+      "message": "Expected class but received \"object\"",
+      "line": 83
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManager.__init__",
+      "source": "players: list[players_m.PlayerHandle],",
+      "message": "Expected class but received \"object\"",
+      "line": 106
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": ") -> MutableRoleAssignment[PlayerFactoryArgs]:",
+      "message": "Expected class but received \"object\"",
+      "line": 278
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": "assignments: MutableRoleAssignment[PlayerFactoryArgs] = {}",
+      "message": "Expected class but received \"object\"",
+      "line": 280
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory._assignment_for_environment_roles",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 277
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory.create",
+      "source": "generic_player: players_m.PlayerHandle",
+      "message": "Expected class but received \"object\"",
+      "line": 238
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory.create",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 119
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/game/game_manager_factory.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "GameManagerFactory.create",
+      "source": "players: list[players_m.PlayerHandle] = []",
+      "message": "Expected class but received \"object\"",
+      "line": 226
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_args.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchArgs",
+      "source": "player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3",
+      "message": "Expected class but received \"object\"",
+      "line": 23
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_args.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchArgs",
+      "source": "player_two: PlayerConfigTag | PlayerArgs | None = PlayerConfigTag.RECUR_ZIPF_BASE_3",
+      "message": "Expected class but received \"object\"",
+      "line": 24
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportArgumentType",
+      "scope": "create_match_manager_from_args",
+      "source": "assert isinstance(match_args.player_one, players.PlayerArgs)",
+      "message": "Argument of type \"object\" cannot be assigned to parameter \"class_or_tuple\" of type \"_ClassInfo\" in function \"isinstance\" Type \"object\" is not assignable to type \"_ClassInfo\" \"object\" is not assignable to \"type\" \"object\" is not assignable to \"UnionType\" \"object\" is not assignable to \"tuple[_ClassInfo, ...]\"",
+      "line": 203
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportArgumentType",
+      "scope": "create_match_manager_from_args",
+      "source": "assert isinstance(match_args.player_two, players.PlayerArgs)",
+      "message": "Argument of type \"object\" cannot be assigned to parameter \"class_or_tuple\" of type \"_ClassInfo\" in function \"isinstance\" Type \"object\" is not assignable to type \"_ClassInfo\" \"object\" is not assignable to \"type\" \"object\" is not assignable to \"UnionType\" \"object\" is not assignable to \"tuple[_ClassInfo, ...]\"",
+      "line": 210
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "_participant_ids_from_inputs",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Expected class but received \"object\"",
+      "line": 55
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "_participant_ids_from_inputs",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Expected class but received \"object\"",
+      "line": 56
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "create_match_manager",
+      "source": "args_player_one: players.PlayerArgs,",
+      "message": "Expected class but received \"object\"",
+      "line": 66
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "create_match_manager",
+      "source": "args_player_two: players.PlayerArgs | None,",
+      "message": "Expected class but received \"object\"",
+      "line": 67
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "create_match_manager_from_args",
+      "source": "player_one_args: players.PlayerArgs = match_args.player_one",
+      "message": "Expected class but received \"object\"",
+      "line": 205
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_factories.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "create_match_manager_from_args",
+      "source": "player_two_args: players.PlayerArgs | None",
+      "message": "Expected class but received \"object\"",
+      "line": 206
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchManager._as_role_assignment",
+      "source": ") -> MutableRoleAssignment[PlayerFactoryArgs]:",
+      "message": "Expected class but received \"object\"",
+      "line": 221
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchManager._as_role_assignment",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 220
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchManager.play_one_game",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 180
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/games/domain/match/match_manager.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "MatchManager.play_one_match",
+      "source": "participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs]",
+      "message": "Expected class but received \"object\"",
+      "line": 104
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/learning/torch_runtime.py",
+      "rule": "reportUnnecessaryComparison",
+      "scope": "_validate_cuda_device",
+      "source": "if device.index is not None and not 0 <= device.index < cuda_device_count:",
+      "message": "Condition will always evaluate to True since the types \"int\" and \"None\" have no overlap",
+      "line": 138
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportArgumentType",
+      "scope": "generate_inputs",
+      "source": "make_partial_dataclass_with_optional_paths(cls=PlayerArgs),",
+      "message": "Argument of type \"object\" cannot be assigned to parameter \"cls\" of type \"type[Any]\" in function \"make_partial_dataclass_with_optional_paths\" \"object\" is not assignable to \"type[Any]\"",
+      "line": 203
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportAttributeAccessIssue",
+      "scope": "generate_inputs",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "Cannot access attribute \"ONE_MATCH\" for class \"object\" Attribute \"ONE_MATCH\" is unknown",
+      "line": 279
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportAttributeAccessIssue",
+      "scope": "generate_inputs",
+      "source": "script_type = scripts.ScriptType.TREE_VISUALIZATION",
+      "message": "Cannot access attribute \"TREE_VISUALIZATION\" for class \"object\" Attribute \"TREE_VISUALIZATION\" is unknown",
+      "line": 283
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "_player_overwrite_from_participant",
+      "source": ") -> PlayerArgs | None:",
+      "message": "Expected class but received \"object\"",
+      "line": 163
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "_player_overwrite_from_participant",
+      "source": "partial_op_player_args: Callable[..., PlayerArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 160
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/builders.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "generate_inputs",
+      "source": ") -> tuple[scripts.ScriptType, IsDataclass | None, str]:",
+      "message": "Expected class but received \"object\"",
+      "line": 183
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/gui_launcher/script_gui.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "script_gui",
+      "source": "def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:",
+      "message": "Expected class but received \"object\"",
+      "line": 17
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py",
+      "rule": "reportCallIssue",
+      "scope": "LearnNNFromScratchScriptArgs",
+      "source": "default_factory=lambda: PlayerArgs(",
+      "message": "Object of type \"object\" is not callable Attribute \"__call__\" is unknown",
+      "line": 91
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py",
+      "rule": "reportArgumentType",
+      "scope": "safe_nn_architecture_save",
+      "source": "nn_architecture_args,",
+      "message": "Argument of type \"object\" cannot be assigned to parameter \"obj\" of type \"DataclassInstance\" in function \"asdict\" \"object\" is incompatible with protocol \"DataclassInstance\" \"__dataclass_fields__\" is not present",
+      "line": 84
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py",
+      "rule": "reportArgumentType",
+      "scope": "LearnNNScript.saving_things_to_file",
+      "source": "_OptimizerSchedulerCheckpointState(",
+      "message": "Argument of type \"_OptimizerSchedulerCheckpointState\" cannot be assigned to parameter \"training_state\" of type \"OptimizerSchedulerHolder\" in function \"safe_nn_trainer_save\" \"_OptimizerSchedulerCheckpointState\" is incompatible with protocol \"OptimizerSchedulerHolder\" \"optimizer\" is not read-only in protocol \"optimizer\" is writable in protocol \"scheduler\" is not read-only in protocol \"scheduler\" is writable in protocol",
+      "line": 501
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "reportAttributeAccessIssue",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "Cannot access attribute \"ONE_MATCH\" for class \"object\" Attribute \"ONE_MATCH\" is unknown",
+      "line": 181
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "reportAttributeAccessIssue",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.ONE_MATCH",
+      "message": "Cannot access attribute \"ONE_MATCH\" for class \"object\" Attribute \"ONE_MATCH\" is unknown",
+      "line": 191
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "reportAttributeAccessIssue",
+      "scope": "script_gui",
+      "source": "script_type = scripts.ScriptType.TREE_VISUALIZATION",
+      "message": "Cannot access attribute \"TREE_VISUALIZATION\" for class \"object\" Attribute \"TREE_VISUALIZATION\" is unknown",
+      "line": 196
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "script_gui",
+      "source": "def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:",
+      "message": "Expected class but received \"object\"",
+      "line": 34
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/scripts/script_gui/script_gui.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "script_gui",
+      "source": "script_type: scripts.ScriptType",
+      "message": "Expected class but received \"object\"",
+      "line": 155
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "format_player_label",
+      "source": "def format_player_label(player: PlayerFactoryArgs) -> str:",
+      "message": "Expected class but received \"object\"",
+      "line": 14
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "make_participants_info_payload",
+      "source": "participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 30
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "make_players_info_payload",
+      "source": "participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],",
+      "message": "Expected class but received \"object\"",
+      "line": 54
+    },
+    {
+      "tool": "pyright",
+      "file": "src/chipiron/utils/communication/player_ui_info.py",
+      "rule": "reportGeneralTypeIssues",
+      "scope": "make_players_info_payload",
+      "source": "role_assignments: dict[GameRole, PlayerFactoryArgs] = {",
+      "message": "Expected class but received \"object\"",
+      "line": 57
+    }
+  ]
+}

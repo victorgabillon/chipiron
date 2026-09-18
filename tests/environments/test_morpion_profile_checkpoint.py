@@ -5,17 +5,17 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
-import pytest
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
     default_checkpoint_file_suffix,
 )
 
+if TYPE_CHECKING:
+    import pytest
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
-_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
 _SCRIPT_PATH = _REPO_ROOT / "scripts" / "profile_morpion_checkpoint.py"
 
 _SPEC = importlib.util.spec_from_file_location(
@@ -26,23 +26,6 @@ assert _SPEC is not None
 assert _SPEC.loader is not None
 profile_module = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(profile_module)
-
-
-def _prepend_runtime_source_paths(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Expose sibling source trees for smoke tests without poisoning sys.modules."""
-    required_roots = (
-        _REPO_ROOT / "src",
-        _ATOMHEART_PACKAGE_ROOT.parent,
-        _ANEMONE_PACKAGE_ROOT.parent,
-    )
-    missing_roots = [path for path in required_roots if not path.is_dir()]
-    if missing_roots:
-        pytest.skip(
-            "Standalone profiler smoke test requires sibling source trees: "
-            + ", ".join(str(path) for path in missing_roots)
-        )
-    for path in required_roots:
-        monkeypatch.syspath_prepend(str(path))
 
 
 def test_resolve_latest_runtime_checkpoint_picks_highest_generation(
@@ -112,7 +95,6 @@ def test_profile_script_smoke_grow_mode_without_json_dump(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A tiny grow-mode profiling run should complete and emit a .prof file."""
-    _prepend_runtime_source_paths(monkeypatch)
     profile_output = tmp_path / "morpion_checkpoint.prof"
 
     exit_code = profile_module.main([

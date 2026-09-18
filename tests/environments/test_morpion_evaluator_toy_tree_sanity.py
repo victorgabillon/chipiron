@@ -1,11 +1,7 @@
 """Tests for the Morpion bootstrap toy-tree sanity laboratory."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 import pytest
@@ -13,32 +9,8 @@ import torch
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
-_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
-_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
-_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "chipiron.environments" not in sys.modules:
-    _environments_stub = ModuleType("chipiron.environments")
-    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments"] = _environments_stub
-
-if "chipiron.environments.morpion" not in sys.modules:
-    _morpion_stub = ModuleType("chipiron.environments.morpion")
-    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion"] = _morpion_stub
-
-if "chipiron.environments.morpion.bootstrap" not in sys.modules:
-    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
-    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
-    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
 
 from chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity import (
     ToyRunConfig,

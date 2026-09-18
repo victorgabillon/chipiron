@@ -8,11 +8,6 @@ from pathlib import Path
 
 TESTS_ROOT = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(os.path.join(TESTS_ROOT, "../.."))
-ANEMONE_SRC = os.path.abspath(os.path.join(REPO_ROOT, "../anemone/src"))
-
-SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__), "../../src/chipiron/scripts/main_chipiron.py"
-)
 
 
 def run_with_live_output(cmd: list[str], env: dict[str, str]) -> tuple[int, str]:
@@ -76,7 +71,8 @@ def test_main_chipiron_one_match_executes(tmp_path: Path) -> None:
 
     cmd = [
         sys.executable,
-        SCRIPT_PATH,
+        "-m",
+        "chipiron.scripts.main_chipiron",
         "--script_name",
         "one_match",
         "--config_file_name",
@@ -86,14 +82,6 @@ def test_main_chipiron_one_match_executes(tmp_path: Path) -> None:
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["MPLBACKEND"] = "Agg"
-    env["PYTHONPATH"] = os.pathsep.join(
-        path
-        for path in (
-            ANEMONE_SRC,
-            env.get("PYTHONPATH"),
-        )
-        if path
-    )
 
     returncode, output = run_with_live_output(cmd, env)
 

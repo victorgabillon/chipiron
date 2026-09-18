@@ -36,7 +36,7 @@ revisioned URIs and explicit weights. Record an immutable model revision plus
 bundle-file hashes in the experiment manifest; keep the convenient example
 references unchanged during maintenance. New weights/data remain outside Git.
 
-## September integration dependency gate
+## September integration dependency gate (initial audit)
 
 The validated local Coral evaluator-v1 implementation is commit
 `40e4e76088f93764bedd01d19a16563f00ef20cb`. On September 18, PyPI's latest
@@ -63,3 +63,8 @@ uncommitted selector changes. Do not confuse its version string with the publish
 wheel. Resolve and validate the dependency set explicitly before merging; do not
 silently copy those selector changes into a maintenance release. The local audit
 records this checkout's dirty status and source hashes.
+
+The authorized dependency-unblock follow-up is recorded in
+[PR #52 dependency audit](pr52_dependency_unblock.md). It supersedes the initial
+publication restriction above and distinguishes published checkpoint/model APIs
+from the separately excluded selector behavior.

@@ -120,7 +120,7 @@ def check_tox_config(
             f"[tool.tox].min_version must match tox=={tox_version} from dev extra."
         )
 
-    expected_envs = ["tooling", "py313", "lint", "typecheck"]
+    expected_envs = ["tooling", "py313", "ruff", "static"]
     if tox.get("env_list") != expected_envs:
         errors.append(f"[tool.tox].env_list must be {expected_envs!r}.")
 
@@ -154,6 +154,31 @@ def check_tox_config(
         for command in required_lint_commands
         if command not in lint_commands
     )
+
+    ruff = tox_env.get("ruff", {})
+    if ruff.get("deps") != [f"ruff=={pins.get('ruff')}"]:
+        errors.append("The strict Ruff environment must use the pinned Ruff version.")
+    errors.extend(
+        f"The strict Ruff environment is missing {command!r}."
+        for command in required_lint_commands[:2]
+        if command not in ruff.get("commands", [])
+    )
+    static = tox_env.get("static", {})
+    expected_static = [
+        [
+            "python",
+            "scripts/static_analysis_ratchet.py",
+            "--mypy-strict",
+            "--output",
+            "{envtmpdir}/static-analysis",
+        ]
+    ]
+    if static.get("commands") != expected_static:
+        errors.append(
+            "The static environment must run the read-only no-regression ratchet."
+        )
+    if py313.get("set_env", {}).get("CHIPIRON_TEST_INSTALLED") != "1":
+        errors.append("The test environment must validate the installed distribution.")
 
     typecheck = tox_env.get("typecheck", {})
     typecheck_commands = (

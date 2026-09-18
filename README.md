@@ -222,9 +222,13 @@ xdg-open _build/html/index.html
 
 ## Testing
 
-The canonical quality gate is tox. It builds/installs the package, selects tests
-without the `integration` or `external_data` markers, checks repository-wide Ruff
-format/lint, and runs the existing Pylint/mypy/Pyright checks:
+The canonical quality gate is tox. It builds and installs the wheel with published
+dependencies, verifies installed import paths and evaluator/checkpoint contracts,
+selects tests without the `integration` or `external_data` markers, and checks
+repository-wide Ruff format/lint. Pylint, mypy and Pyright report inherited debt;
+the [static-analysis ratchet](docs/maintenance/static_analysis_baseline/README.md)
+fails on new diagnostics or baseline growth. A ratchet pass does not mean zero
+static-analysis errors.
 
 ```bash
 tox
@@ -241,6 +245,9 @@ Useful focused runs:
 ```bash
 tox -e tooling
 tox -e py313
+tox -e ruff
+tox -e static
+# Optional strict reports, which still fail on inherited debt:
 tox -e lint
 tox -e typecheck
 ```
