@@ -15,7 +15,7 @@ SCRIPT_PATH = os.path.join(
 )
 
 
-def run_with_live_output(cmd, env):
+def run_with_live_output(cmd: list[str], env: dict[str, str]) -> tuple[int, str]:
     # Merge stderr into stdout so ordering is preserved
     """Run with live output."""
     p = subprocess.Popen(

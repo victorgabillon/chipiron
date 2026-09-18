@@ -42,6 +42,8 @@ from chipiron.players.communications.player_message import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from chipiron.games.domain.game.final_game_result import GameReport
 
 PayloadT = TypeVar("PayloadT")
@@ -58,7 +60,8 @@ class ActionSet:
 
     actions: tuple[str, ...]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over fixture actions in their declared order."""
         return iter(self.actions)
 
     def get_all(self) -> tuple[str, ...]:
@@ -86,11 +89,13 @@ class CounterDynamics:
     VALID_ACTION = "advance"
 
     def legal_actions(self, state: CounterState) -> ActionSet:
+        """Return legal actions for the synthetic state."""
         if state.is_game_over():
             return ActionSet(())
         return ActionSet((self.VALID_ACTION,))
 
     def step(self, state: CounterState, action: str) -> Transition[CounterState]:
+        """Advance the fixture by one validated action."""
         normalized_action = self.action_from_name(state, action)
         next_state = CounterState(
             turn=other_color(state.turn),
@@ -107,13 +112,16 @@ class CounterDynamics:
         )
 
     def action_name(self, state: CounterState, action: str) -> str:
+        """Encode an action using the fixture protocol."""
         _ = state
         return self.action_from_name(state, action)
 
     def action_from_name(self, state: CounterState, name: str) -> str:
+        """Validate and decode an action name."""
         _ = state
         if name != self.VALID_ACTION:
-            raise ValueError(f"Unknown counter action: {name!r}")
+            message = f"Unknown counter action: {name!r}"
+            raise ValueError(message)
         return name
 
 
@@ -121,19 +129,23 @@ class CounterRules:
     """Minimal rules adapter exposing a terminal winner for the tiny game."""
 
     def outcome(self, state: CounterState) -> GameOutcome | None:
+        """Provide outcome for the deterministic test fixture."""
         if not state.is_game_over():
             return None
         return GameOutcome(kind=OutcomeKind.WIN, winner=state.last_actor)
 
     def pretty_result(self, state: CounterState, outcome: GameOutcome) -> str:
+        """Provide pretty result for the deterministic test fixture."""
         _ = state
         return f"{outcome.winner} wins"
 
     def assessment(self, state: CounterState) -> None:
+        """Provide assessment for the deterministic test fixture."""
         _ = state
         return
 
     def pretty_assessment(self, state: CounterState, assessment: object) -> str:
+        """Provide pretty assessment for the deterministic test fixture."""
         _ = state
         _ = assessment
         return "no assessment"
@@ -143,13 +155,16 @@ class NoOpStateEvaluator:
     """Minimal evaluator satisfying the GameManager dependency surface."""
 
     def __init__(self) -> None:
+        """Initialize the deterministic test fixture."""
         self.external_evaluations: list[tuple[Color, float]] = []
 
     def evaluate(self, state: CounterState) -> tuple[None, float]:
+        """Provide evaluate for the deterministic test fixture."""
         _ = state
         return None, 0.0
 
     def add_evaluation(self, player_color: Color, evaluation: float) -> None:
+        """Provide add evaluation for the deterministic test fixture."""
         self.external_evaluations.append((player_color, evaluation))
 
 
@@ -165,6 +180,7 @@ class SimpleGuiEncoder:
         state: CounterState,
         seed: int | None,
     ) -> UpdStateGeneric:
+        """Provide make state payload for the deterministic test fixture."""
         return UpdStateGeneric(
             state_tag=state.tag,
             action_name_history=(f"remaining:{state.remaining_moves}",),
@@ -180,6 +196,7 @@ class SimpleGuiEncoder:
         *,
         status: PlayingStatus,
     ) -> UpdGameStatus:
+        """Provide make status payload for the deterministic test fixture."""
         return UpdGameStatus(status=status)
 
 
@@ -196,6 +213,7 @@ class SimplePlayerRequestEncoder:
         seed: int,
         scope: Scope,
     ) -> PlayerRequest[str]:
+        """Provide make move request for the deterministic test fixture."""
         return PlayerRequest(
             schema_version=1,
             scope=scope,
@@ -216,6 +234,7 @@ class CloseableHandle:
     closed_count: int = 0
 
     def close(self) -> None:
+        """Provide close for the deterministic test fixture."""
         self.closed_count += 1
 
 
@@ -350,7 +369,8 @@ def wait_for_gui_payload[PayloadT](
         payload = update.payload
         if isinstance(payload, payload_type):
             return payload
-    raise AssertionError(f"Timed out waiting for GUI payload {payload_type.__name__}")
+    message = f"Timed out waiting for GUI payload {payload_type.__name__}"
+    raise AssertionError(message)
 
 
 def start_orchestrator_thread(harness: RuntimeHarness) -> OrchestratorRun:
@@ -377,13 +397,13 @@ def wait_for_thread_result(run: OrchestratorRun, *, timeout: float = 1.0) -> Gam
     """Wait for a background orchestrator run to finish and return its report."""
     run.thread.join(timeout)
     if run.thread.is_alive():
-        raise AssertionError("Timed out waiting for the orchestrator thread to finish.")
+        message = "Timed out waiting for the orchestrator thread to finish."
+        raise AssertionError(message)
     if run.errors:
         raise run.errors[0]
     if not run.results:
-        raise AssertionError(
-            "The orchestrator thread finished without producing a report."
-        )
+        message = "The orchestrator thread finished without producing a report."
+        raise AssertionError(message)
     return run.results[0]
 
 

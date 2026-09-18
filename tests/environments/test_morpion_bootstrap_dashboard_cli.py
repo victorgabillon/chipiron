@@ -1,3 +1,4 @@
+# ruff: noqa: E402 - dependencies must be checked/stubbed before imports
 """Tests for the local Morpion bootstrap dashboard CLI and plots."""
 
 from __future__ import annotations
@@ -45,7 +46,9 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+)
 
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArtifacts,

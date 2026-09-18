@@ -1,3 +1,5 @@
+"""Regression tests for chess copy stack search dynamics repetition."""
+
 from typing import TYPE_CHECKING
 
 import pytest

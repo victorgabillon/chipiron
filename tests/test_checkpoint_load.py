@@ -22,6 +22,8 @@ from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import pytest
+
 
 def test_checkpoint_json_payload_roundtrip_supports_plain_and_compressed(
     tmp_path: Path,
@@ -49,7 +51,7 @@ def test_checkpoint_json_payload_roundtrip_supports_plain_and_compressed(
 
 def test_checkpoint_zstd_write_avoids_streaming_writer(
     tmp_path: Path,
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Compressed writes should encode once and compress once, without stream writes."""
 
@@ -58,7 +60,8 @@ def test_checkpoint_zstd_write_avoids_streaming_writer(
             return b"zstd:" + data
 
         def stream_writer(self, _handle: object) -> object:
-            raise AssertionError("stream_writer should not be used")
+            message = "stream_writer should not be used"
+            raise AssertionError(message)
 
     fake_zstandard = SimpleNamespace(
         ZstdCompressor=lambda: _FakeZstdCompressor(),

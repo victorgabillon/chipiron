@@ -1,3 +1,5 @@
+"""Regression tests for oracle field schema."""
+
 import sys
 
 import pytest
@@ -8,6 +10,7 @@ import pytest
     reason="Project runtime/parsing checks require Python >= 3.12.",
 )
 def test_chess_player_config_uses_oracle_fields() -> None:
+    """Verify chess player config uses oracle fields."""
     pytest.importorskip("parsley")
 
     from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs

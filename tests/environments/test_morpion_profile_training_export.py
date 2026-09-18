@@ -99,7 +99,7 @@ def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> Non
 
 def test_profile_script_smoke_load_mode_without_json_dump(
     tmp_path: Path,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A tiny load-mode training export profiling run should emit a .prof file."""

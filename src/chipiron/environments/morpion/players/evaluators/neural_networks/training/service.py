@@ -454,9 +454,7 @@ def train_morpion_regressor_streaming(
             "input_feature_dim": (
                 relational_entity_token_cache.manifest.input_feature_dim
             ),
-            "relation_schema": (
-                relational_entity_token_cache.manifest.relation_schema
-            ),
+            "relation_schema": (relational_entity_token_cache.manifest.relation_schema),
             "relation_type_count": (
                 relational_entity_token_cache.manifest.relation_type_count
             ),
@@ -710,16 +708,14 @@ def train_morpion_regressor_streaming(
                 device=device,
             )
         elif relational_entity_token_cache is not None:
-            validation_stats = (
-                evaluate_relational_entity_token_cache_streaming_metrics(
-                    model=model,
-                    args=training_args,
-                    cache=relational_entity_token_cache,
-                    row_chunk_size=args.row_chunk_size,
-                    max_rows=args.max_rows,
-                    split="validation",
-                    device=device,
-                )
+            validation_stats = evaluate_relational_entity_token_cache_streaming_metrics(
+                model=model,
+                args=training_args,
+                cache=relational_entity_token_cache,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+                split="validation",
+                device=device,
             )
         else:
             validation_stats = evaluate_streaming_metrics(
@@ -936,9 +932,7 @@ def train_morpion_regressor_streaming(
     }
     if is_relational_entity_token_model_kind(training_args.model_kind):
         training_metadata.update({
-            "entity_use_validity_feature": (
-                training_args.entity_use_validity_feature
-            ),
+            "entity_use_validity_feature": (training_args.entity_use_validity_feature),
             "entity_relation_schema": training_args.entity_relation_schema,
             "entity_relation_type_count": training_args.entity_relation_type_count,
         })

@@ -1,6 +1,4 @@
-"""
-Tests to ensure that all paths defined in `chipiron.utils.path_variables` are absolute paths, which is important for consistent behavior across different working directories and environments.
-"""
+"""Verify runtime paths stay absolute across working directories."""
 
 from pathlib import Path
 from urllib.parse import urlparse
@@ -48,6 +46,7 @@ def _sqlite_path_from_uri(uri: str) -> Path:
 
 
 def test_external_paths_are_absolute() -> None:
+    """Verify external paths are absolute."""
     paths = [
         EXTERNAL_DATA_DIR,
         LICHESS_PGN_DIR,
@@ -62,11 +61,13 @@ def test_external_paths_are_absolute() -> None:
 
 
 def test_mlflow_uris_are_defined() -> None:
+    """Verify mlflow uris are defined."""
     assert isinstance(ML_FLOW_URI_PATH, str) and ML_FLOW_URI_PATH
     assert isinstance(ML_FLOW_URI_PATH_TEST, str) and ML_FLOW_URI_PATH_TEST
 
 
 def test_mlflow_sqlite_paths_are_absolute_when_sqlite() -> None:
+    """Verify mlflow sqlite paths are absolute when sqlite."""
     for uri in [ML_FLOW_URI_PATH, ML_FLOW_URI_PATH_TEST]:
         if _is_sqlite_uri(uri):
             db_path = _sqlite_path_from_uri(uri)

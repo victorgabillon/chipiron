@@ -58,12 +58,10 @@ def test_default_relational_cache_paths_include_token_and_row_limits(
         / "generation_000035.relational_entity_tokens.max_tokens_1536.all.pt"
     )
     assert all_paths.manifest_path.name == (
-        "generation_000035.relational_entity_tokens."
-        "max_tokens_1536.all.manifest.json"
+        "generation_000035.relational_entity_tokens.max_tokens_1536.all.manifest.json"
     )
     assert limited_paths.tensor_path.name == (
-        "generation_000035.relational_entity_tokens."
-        "max_tokens_1536.max_rows_10000.pt"
+        "generation_000035.relational_entity_tokens.max_tokens_1536.max_rows_10000.pt"
     )
 
 
@@ -92,8 +90,7 @@ def test_relational_cache_materializes_reuses_and_packs(tmp_path: Path) -> None:
     assert cached_again.manifest.row_count == 3
     assert cached_again.manifest.relation_schema == MORPION_ENTITY_RELATION_SCHEMA
     assert (
-        cached_again.manifest.relation_type_count
-        == MORPION_ENTITY_RELATION_TYPE_COUNT
+        cached_again.manifest.relation_type_count == MORPION_ENTITY_RELATION_TYPE_COUNT
     )
     assert relational_entity_token_cache_is_valid(
         rows_path=rows_path,

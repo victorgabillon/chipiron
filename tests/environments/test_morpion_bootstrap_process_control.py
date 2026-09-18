@@ -1,3 +1,4 @@
+# ruff: noqa: E402 - dependencies must be checked/stubbed before imports
 """Tests for Morpion launcher process-control helpers."""
 
 from __future__ import annotations
@@ -44,7 +45,9 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 import chipiron.environments.morpion.bootstrap.process_control as process_control_module
-from chipiron.environments.morpion.bootstrap import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap import (
+    MorpionBootstrapPaths,
+)
 
 
 def test_launcher_command_for_work_dir_uses_current_python(tmp_path: Path) -> None:

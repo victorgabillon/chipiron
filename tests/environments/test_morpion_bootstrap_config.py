@@ -1452,8 +1452,7 @@ def test_bootstrap_config_roundtrip_preserves_relational_evaluator_fields(
 
     assert loaded == config
     assert (
-        relational_payload["entity_relation_schema"]
-        == MORPION_ENTITY_RELATION_SCHEMA
+        relational_payload["entity_relation_schema"] == MORPION_ENTITY_RELATION_SCHEMA
     )
     assert (
         relational_payload["entity_relation_type_count"]

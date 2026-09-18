@@ -8,7 +8,7 @@ monthly download functionality.
 import tempfile
 from io import StringIO
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import chess
 import chess.pgn
@@ -278,7 +278,7 @@ class TestDatasetGeneration:
 
     @patch("chipiron.scripts.generate_datasets.monthly_pgn_pipeline.open_month_pgn")
     def test_generate_board_dataset_multi_months_basic(
-        self, mock_open_month_pgn
+        self, mock_open_month_pgn: MagicMock
     ) -> None:
         """Test basic multi-month dataset generation."""
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -389,7 +389,7 @@ def test_randomness(log_level: int = logging.ERROR) -> None:
     chipiron_logger.info("time: %s", end_time - start_time)
 
 
-def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
+def test_same_game_with_or_without_rust(log_level: int = logging.ERROR) -> None:
     """Test that running the same match with and without Rust boards produces identical results.
 
     Args:

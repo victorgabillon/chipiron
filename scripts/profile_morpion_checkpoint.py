@@ -187,7 +187,8 @@ def _print_module_paths(modules: dict[str, Any]) -> None:
 def _require_output_path(args: argparse.Namespace) -> Path:
     """Return the required output path for dump modes or fail clearly."""
     if args.output is None:
-        raise ValueError("--output is required when --dump-json is enabled.")
+        message = "--output is required when --dump-json is enabled."
+        raise ValueError(message)
     return checkpoint_output_path(
         args.output,
         file_format=checkpoint_format_from_cli_name(args.checkpoint_format),
@@ -217,7 +218,8 @@ def _load_runner_for_mode(
         return runner, checkpoint_path
 
     if args.checkpoint is not None:
-        raise ValueError("--checkpoint is only valid in --mode load.")
+        message = "--checkpoint is only valid in --mode load."
+        raise ValueError(message)
 
     bootstrap_paths.ensure_directories()
     print(
@@ -243,9 +245,11 @@ def _grow_runner_until_target(
 ) -> None:
     """Grow the live runtime in batches until reaching the target node count."""
     if target_nodes < 1:
-        raise ValueError("--target-nodes must be >= 1.")
+        message = "--target-nodes must be >= 1."
+        raise ValueError(message)
     if growth_steps_per_batch < 1:
-        raise ValueError("--growth-steps-per-batch must be >= 1.")
+        message = "--growth-steps-per-batch must be >= 1."
+        raise ValueError(message)
 
     started_at = perf_counter()
     previous_node_count = runner.current_tree_size()
@@ -263,9 +267,10 @@ def _grow_runner_until_target(
             )
         )
         if current_node_count <= previous_node_count:
-            raise RuntimeError(
+            message = (
                 "Grow mode stopped increasing node count before reaching target_nodes."
             )
+            raise RuntimeError(message)
         previous_node_count = current_node_count
 
 

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pytest
 
 import anemone.checkpoints.build as checkpoint_build_module
 import anemone.checkpoints.build_atoms as checkpoint_build_atoms_module
@@ -104,7 +108,7 @@ def test_checkpoint_build_branch_collection_matches_reference_order() -> None:
 
 
 def test_checkpoint_build_atom_serialization_cache_reuses_hashable_atoms(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Repeated equal hashable atoms should hit the build-local serialization cache."""
     serialize_call_count = 0
@@ -151,7 +155,7 @@ def test_checkpoint_build_parent_branch_cache_preserves_stable_order() -> None:
 
 
 def test_checkpoint_build_value_serialization_cache_reuses_value_identity(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Repeated serialization of the same Value object should hit the build-local cache."""
     validation_call_count = 0
@@ -196,7 +200,9 @@ def test_checkpoint_build_value_serialization_cache_reuses_value_identity(
     assert context.metrics.serialize_value_cache_misses == 1
 
 
-def test_checkpoint_build_detail_log_includes_new_metrics(monkeypatch) -> None:
+def test_checkpoint_build_detail_log_includes_new_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Detailed checkpoint build logging should expose the new additive metrics."""
     messages: list[str] = []
 

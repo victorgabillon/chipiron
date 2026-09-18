@@ -367,9 +367,7 @@ def collate_morpion_relational_entity_token_supervised_samples(
                 (0, 0, MORPION_ENTITY_TOKEN_FEATURE_DIM),
                 dtype=torch.float32,
             ),
-            auxiliary_input_tensors=(
-                torch.empty((0, 0, 3), dtype=torch.long),
-            ),
+            auxiliary_input_tensors=(torch.empty((0, 0, 3), dtype=torch.long),),
             target_tensor=torch.empty((0, 1), dtype=torch.float32),
             is_batch=True,
         )

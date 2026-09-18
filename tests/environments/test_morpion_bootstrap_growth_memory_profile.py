@@ -131,6 +131,9 @@ recursive_runner_profile_module = importlib.import_module(
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import pytest
     from _pytest.logging import LogCaptureFixture
 
 
@@ -1079,13 +1082,13 @@ def test_exclusive_deep_size_respects_shared_seen_across_roots() -> None:
 
 
 def test_deep_size_catches_recursion_error_from_attribute_iteration(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Recursive sizing should convert attribute-iteration recursion failures to stats."""
     root = RecursionDictObject()
     original_iter = deep_size_module.iter_object_attribute_values
 
-    def raising_iter(value: object):
+    def raising_iter(value: object) -> Iterator[object]:
         if value is root:
             raise RecursionError("boom")
         yield from original_iter(value)
@@ -1922,7 +1925,7 @@ def test_checkpoint_state_roots_detail_histogram_supports_dense_store() -> None:
 
 
 def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Frozenset ownership histogram should bucket sizes and attribute state fields."""
     points = frozenset()
@@ -1992,7 +1995,7 @@ def test_frozenset_ownership_histogram_tracks_state_fields_by_identity(
 
 
 def test_frozenset_ownership_histogram_attributes_morpion_state_dict_owners(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Frozenset ownership should resolve MorpionState __dict__ referrers."""
     points = frozenset({1, 2})
@@ -2030,7 +2033,9 @@ def test_frozenset_ownership_histogram_attributes_morpion_state_dict_owners(
     assert dict(histogram["top_referrer_types"])["dict"] == 3
 
 
-def test_frozenset_ownership_histogram_respects_sample_cap(monkeypatch) -> None:
+def test_frozenset_ownership_histogram_respects_sample_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Frozenset ownership histogram should bound referrer scans to the sample cap."""
     scanned_ids: list[int] = []
     frozensets = [frozenset({index}) for index in range(4)]
@@ -2053,7 +2058,9 @@ def test_frozenset_ownership_histogram_respects_sample_cap(monkeypatch) -> None:
     assert scanned_ids == [id(frozensets[0]), id(frozensets[1])]
 
 
-def test_gc_shallow_size_summary_skips_reverse_referrer_scan(monkeypatch) -> None:
+def test_gc_shallow_size_summary_skips_reverse_referrer_scan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Default shallow summary should not call gc.get_referrers."""
 
     def fail_get_referrers(*_args: object) -> list[object]:
@@ -2072,7 +2079,7 @@ def test_gc_shallow_size_summary_skips_reverse_referrer_scan(monkeypatch) -> Non
 
 
 def test_gc_shallow_size_summary_attributes_fake_morpion_state_fields(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Default shallow summary should attribute MorpionState frozenset fields directly."""
     points = frozenset()
@@ -2273,7 +2280,7 @@ def test_known_path_checkpoint_store_discovery_finds_direct_resolver() -> None:
 
 
 def test_build_recursive_profile_context_direct_checkpoint_store_skips_handles(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     caplog: LogCaptureFixture,
 ) -> None:
     """Direct checkpoint store discovery should avoid scanning node handles."""
@@ -2300,7 +2307,7 @@ def test_build_recursive_profile_context_direct_checkpoint_store_skips_handles(
 
 
 def test_build_recursive_profile_context_caps_handle_fallback_scan(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     caplog: LogCaptureFixture,
 ) -> None:
     """Fallback checkpoint store discovery should inspect only a capped handle set."""
@@ -2340,7 +2347,7 @@ def test_build_recursive_profile_context_caps_handle_fallback_scan(
 
 
 def test_build_recursive_profile_context_known_paths_do_not_walk_runtime(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     caplog: LogCaptureFixture,
 ) -> None:
     """Context building should complete without recursively walking runner/runtime."""
@@ -2369,7 +2376,7 @@ def test_build_recursive_profile_context_known_paths_do_not_walk_runtime(
 
 
 def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     caplog: LogCaptureFixture,
 ) -> None:
     """Recursive profile should log capped components instead of crashing on recursion."""
@@ -2378,7 +2385,7 @@ def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
     runner._runtime = sentinel_runtime
     original_iter = deep_size_module.iter_object_attribute_values
 
-    def raising_iter(value: object):
+    def raising_iter(value: object) -> Iterator[object]:
         if value is sentinel_runtime:
             raise RecursionError("runtime recursion")
         yield from original_iter(value)

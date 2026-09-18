@@ -26,6 +26,7 @@ class RoleCycleCanaryGame:
     """Minimal game-like fixture with a fixed actor cycle and one action."""
 
     def __init__(self, *, roles: tuple[str, ...], total_steps: int) -> None:
+        """Initialize the deterministic test fixture."""
         self.roles = roles
         self.total_steps = total_steps
 
@@ -50,9 +51,11 @@ class RoleCycleCanaryGame:
     def step(self, state: CanaryState, action: CanaryAction) -> CanaryState:
         """Advance the deterministic actor cycle by one step."""
         if action != "advance":
-            raise ValueError(f"Unsupported canary action: {action!r}")
+            message = f"Unsupported canary action: {action!r}"
+            raise ValueError(message)
         if state.is_terminal():
-            raise ValueError("Cannot advance a terminal canary state.")
+            message = "Cannot advance a terminal canary state."
+            raise ValueError(message)
 
         actor = self.current_actor(state)
         next_remaining = state.remaining_steps - 1

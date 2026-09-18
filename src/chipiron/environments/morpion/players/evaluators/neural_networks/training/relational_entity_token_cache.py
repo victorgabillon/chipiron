@@ -108,19 +108,13 @@ class MorpionRelationalEntityTokenCacheManifest:
             input_feature_dim=_required_int(payload, "input_feature_dim"),
             packed_input_shape=_required_shape_2(payload, "packed_input_shape"),
             token_lengths_shape=_required_shape_1(payload, "token_lengths_shape"),
-            packed_relation_shape=_required_shape_2(
-                payload, "packed_relation_shape"
-            ),
-            relation_lengths_shape=_required_shape_1(
-                payload, "relation_lengths_shape"
-            ),
+            packed_relation_shape=_required_shape_2(payload, "packed_relation_shape"),
+            relation_lengths_shape=_required_shape_1(payload, "relation_lengths_shape"),
             target_shape=_required_shape_2(payload, "target_shape"),
             input_dtype=_required_str(payload, "input_dtype"),
             token_lengths_dtype=_required_str(payload, "token_lengths_dtype"),
             relation_dtype=_required_str(payload, "relation_dtype"),
-            relation_lengths_dtype=_required_str(
-                payload, "relation_lengths_dtype"
-            ),
+            relation_lengths_dtype=_required_str(payload, "relation_lengths_dtype"),
             target_dtype=_required_str(payload, "target_dtype"),
             created_at_unix_s=_required_float(payload, "created_at_unix_s"),
         )
@@ -298,9 +292,7 @@ def load_relational_entity_token_cache(
         entity_max_tokens=entity_max_tokens,
     )
     if loaded is None:
-        raise InvalidMorpionRelationalEntityTokenCacheError.missing_or_stale(
-            rows_path
-        )
+        raise InvalidMorpionRelationalEntityTokenCacheError.missing_or_stale(rows_path)
     return _cache_from_loaded(
         paths=paths,
         loaded=loaded,
@@ -320,9 +312,7 @@ def relational_entity_token_cache_batch(
                 (0, 0, cache.manifest.input_feature_dim),
                 dtype=torch.float32,
             ),
-            auxiliary_input_tensors=(
-                torch.empty((0, 0, 3), dtype=torch.long),
-            ),
+            auxiliary_input_tensors=(torch.empty((0, 0, 3), dtype=torch.long),),
             target_tensor=torch.empty((0, 1), dtype=torch.float32),
             is_batch=True,
         )
@@ -512,9 +502,14 @@ def _materialize_relational_entity_tokens(
                 converter=converter,
             )
             tokens = sample.input_tensor.detach().cpu()
-            relations = sample.auxiliary_input_tensors[0].detach().to(
-                device="cpu",
-                dtype=torch.int32,
+            relations = (
+                sample
+                .auxiliary_input_tensors[0]
+                .detach()
+                .to(
+                    device="cpu",
+                    dtype=torch.int32,
+                )
             )
             token_tensors.append(tokens)
             token_lengths.append(int(tokens.shape[0]))
@@ -590,8 +585,7 @@ def _manifest_matches_rows(
         return False
     return (
         manifest.format == MORPION_RELATIONAL_ENTITY_TOKEN_CACHE_FORMAT
-        and manifest.input_representation
-        == MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
+        and manifest.input_representation == MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
         and manifest.relation_schema == MORPION_ENTITY_RELATION_SCHEMA
         and manifest.relation_type_count == MORPION_ENTITY_RELATION_TYPE_COUNT
         and manifest.source_rows_path == str(source)
@@ -642,8 +636,7 @@ def _tensors_match_manifest(
         or str(loaded.target_tensor.dtype) != manifest.target_dtype
         or _shape_2(loaded.packed_input_tensor) != manifest.packed_input_shape
         or _shape_1(loaded.token_lengths) != manifest.token_lengths_shape
-        or _shape_2(loaded.packed_relation_triples)
-        != manifest.packed_relation_shape
+        or _shape_2(loaded.packed_relation_triples) != manifest.packed_relation_shape
         or _shape_1(loaded.relation_lengths) != manifest.relation_lengths_shape
         or _shape_2(loaded.target_tensor) != manifest.target_shape
     ):
@@ -652,14 +645,12 @@ def _tensors_match_manifest(
         return False
     if loaded.relation_lengths.numel() != manifest.row_count:
         return False
-    if (
-        loaded.token_lengths.numel() > 0
-        and bool(torch.any(loaded.token_lengths < 0).item())
+    if loaded.token_lengths.numel() > 0 and bool(
+        torch.any(loaded.token_lengths < 0).item()
     ):
         return False
-    if (
-        loaded.relation_lengths.numel() > 0
-        and bool(torch.any(loaded.relation_lengths < 0).item())
+    if loaded.relation_lengths.numel() > 0 and bool(
+        torch.any(loaded.relation_lengths < 0).item()
     ):
         return False
     if (
@@ -708,8 +699,7 @@ def _packed_relations_match_row_entities(
             int(entity_indices.min().item()) < 0
             or int(entity_indices.max().item()) >= token_count
             or int(relation_types.min().item()) < 1
-            or int(relation_types.max().item())
-            >= MORPION_ENTITY_RELATION_TYPE_COUNT
+            or int(relation_types.max().item()) >= MORPION_ENTITY_RELATION_TYPE_COUNT
         ):
             return False
     return True
@@ -719,12 +709,10 @@ def _packed_offsets(lengths: torch.Tensor) -> torch.Tensor:
     """Return packed tensor start offsets for every row length."""
     if lengths.numel() == 0:
         return torch.empty((0,), dtype=torch.long)
-    return torch.cat(
-        (
-            torch.zeros((1,), dtype=torch.long),
-            torch.cumsum(lengths[:-1], dim=0),
-        )
-    )
+    return torch.cat((
+        torch.zeros((1,), dtype=torch.long),
+        torch.cumsum(lengths[:-1], dim=0),
+    ))
 
 
 def _shape_1(tensor: torch.Tensor) -> tuple[int]:

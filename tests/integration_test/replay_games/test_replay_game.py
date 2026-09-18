@@ -26,7 +26,7 @@ configs_base = [
 ]
 
 
-def test_replay_match(configs=configs_base) -> None:
+def test_replay_match(configs: list[PartialOpReplayScriptArgs] = configs_base) -> None:
     """Test replay match."""
     for config in configs:
         chipiron_logger.info(f"Running the SCRIPT with config {config}")

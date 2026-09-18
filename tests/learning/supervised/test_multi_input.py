@@ -49,7 +49,8 @@ class TwoInputRegressor(nn.Module):
         self.received_primary = primary
         self.received_auxiliary = auxiliary
         auxiliary_value = (
-            auxiliary.to(dtype=primary.dtype)
+            auxiliary
+            .to(dtype=primary.dtype)
             .reshape(primary.shape[0], -1)
             .mean(dim=1, keepdim=True)
         )
@@ -134,9 +135,7 @@ def test_multi_input_batch_moves_all_inputs_to_cuda() -> None:
         input_tensor=torch.randn(2, 3),
         target_tensor=torch.randn(2, 1),
         is_batch=True,
-        auxiliary_input_tensors=(
-            torch.randint(0, 4, (2, 5, 3), dtype=torch.long),
-        ),
+        auxiliary_input_tensors=(torch.randint(0, 4, (2, 5, 3), dtype=torch.long),),
     )
 
     moved = move_supervised_batch_to_device(batch, torch.device("cuda"))
@@ -269,7 +268,5 @@ def _two_input_batch() -> TensorSupervisedBatch:
         input_tensor=torch.ones((4, 3)),
         target_tensor=torch.zeros((4, 1)),
         is_batch=True,
-        auxiliary_input_tensors=(
-            torch.ones((4, 2, 3), dtype=torch.long),
-        ),
+        auxiliary_input_tensors=(torch.ones((4, 2, 3), dtype=torch.long),),
     )

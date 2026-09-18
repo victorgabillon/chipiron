@@ -1,3 +1,5 @@
+"""Regression tests for checkers recur zipf player smoke."""
+
 import sys
 
 import pytest
@@ -13,6 +15,7 @@ pytestmark = pytest.mark.skipif(
     reason="Checkers runtime imports require Python >= 3.12 in this repository.",
 )
 def test_checkers_tree_piececount_player_produces_parseable_legal_action_name() -> None:
+    """Verify checkers tree piececount player produces parseable legal action name."""
     pytest.importorskip("atomheart")
     pytest.importorskip("valanga")
     pytest.importorskip("anemone")

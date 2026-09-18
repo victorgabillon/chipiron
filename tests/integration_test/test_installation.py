@@ -1,3 +1,4 @@
+# ruff: noqa: TRY300, TRY301 - integration runner reports and rethrows command failures
 #!/usr/bin/env python3
 """Chipiron Integration Test Script.
 
@@ -942,7 +943,7 @@ except Exception as e:
         elif self.temp_dir and self.keep_temp:
             chipiron_logger.info("Keeping temporary directory: %s", self.temp_dir)
 
-    def run_full_test_suite(self):
+    def run_full_test_suite(self) -> dict[Any, Any]:
         """Run the complete integration test suite."""
         chipiron_logger.info("🔬 Starting Chipiron Integration Test Suite")
         try:

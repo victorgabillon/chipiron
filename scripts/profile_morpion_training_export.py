@@ -147,7 +147,8 @@ def _print_module_paths(modules: dict[str, Any]) -> None:
 def _require_output_path(args: argparse.Namespace) -> Path:
     """Return the required output path for JSON write mode or fail clearly."""
     if args.output is None:
-        raise ValueError("--output is required when --dump-json is enabled.")
+        message = "--output is required when --dump-json is enabled."
+        raise ValueError(message)
     return Path(args.output)
 
 
@@ -257,7 +258,8 @@ def _profile_training_export(
 def _write_json_dump(dumped_json: str | None, output_path: Path) -> int:
     """Write the dumped JSON text and return the byte count."""
     if dumped_json is None:
-        raise ValueError("Dumped JSON is required before json_write.")
+        message = "Dumped JSON is required before json_write."
+        raise ValueError(message)
     encoded_json = dumped_json.encode("utf-8")
     output_path.write_bytes(encoded_json)
     return len(encoded_json)

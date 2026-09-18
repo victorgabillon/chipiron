@@ -64,7 +64,8 @@ class _TwoInputScaleRegressor(torch.nn.Module):
         self.received_auxiliary = auxiliary
         self.received_auxiliary_rows.append(auxiliary.detach().cpu())
         auxiliary_value = (
-            auxiliary.to(dtype=primary.dtype)
+            auxiliary
+            .to(dtype=primary.dtype)
             .reshape(primary.shape[0], -1)
             .mean(dim=1, keepdim=True)
         )
