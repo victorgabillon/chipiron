@@ -16,6 +16,15 @@ _SCRIPT = (
 )
 
 
+def _process_has_exited(pid: int) -> bool:
+    """Read procfs atomically enough to tolerate a concurrently reaped process."""
+    try:
+        status = Path(f"/proc/{pid}/stat").read_text()
+    except (FileNotFoundError, ProcessLookupError):
+        return True
+    return status.rsplit(") ", 1)[1].startswith("Z")
+
+
 @pytest.mark.parametrize("interrupt", [False, True])
 def test_headless_cluster_stops_all_four_worker_groups(
     tmp_path: Path, *, interrupt: bool
@@ -69,16 +78,11 @@ time.sleep(60)
         assert process.returncode == (143 if interrupt else 0), output
         for stage in stages:
             for pid in json.loads((tmp_path / f"{stage}.json").read_text()).values():
-                stat = Path(f"/proc/{pid}/stat")
                 # SIGKILL delivery is asynchronous for grandchildren we cannot waitpid.
                 exit_deadline = time.monotonic() + 1
-                while stat.exists() and time.monotonic() < exit_deadline:
-                    if stat.read_text().split(") ")[1].startswith("Z"):
-                        break
+                while not _process_has_exited(pid) and time.monotonic() < exit_deadline:
                     time.sleep(0.01)
-                assert not stat.exists() or stat.read_text().split(") ")[1].startswith(
-                    "Z"
-                ), (pid, output)
+                assert _process_has_exited(pid), (pid, output)
     finally:
         if process.poll() is None:
             process.send_signal(signal.SIGTERM)

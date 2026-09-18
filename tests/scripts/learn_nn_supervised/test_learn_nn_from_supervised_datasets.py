@@ -198,3 +198,15 @@ def _install_learning_script_observability_stubs(
     monkeypatch.setitem(sys.modules, "mlflow.models", mlflow_models_module)
     monkeypatch.setitem(sys.modules, "mlflow.models.signature", mlflow_signature_module)
     monkeypatch.setitem(sys.modules, "torchinfo", torchinfo_module)
+
+    # Another test may have imported the learning module before these stubs.
+    # Patch its bound globals as well as sys.modules, and restore them afterwards.
+    module = sys.modules.get(
+        "chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets"
+    )
+    if module is not None:
+        monkeypatch.setattr(module, "mlflow", mlflow_module)
+        monkeypatch.setattr(module, "summary", torchinfo_module.summary)
+        monkeypatch.setattr(
+            module, "infer_signature", mlflow_signature_module.infer_signature
+        )
