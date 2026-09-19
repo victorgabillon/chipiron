@@ -32,6 +32,14 @@ selection-step checkpoint state and alternating diagnostics are not part of
 this checkpoint API release. Previously committed main refactors remain as
 required by the instruction to start from current main.
 
+The full package-only run also exposed a public argument-parser incompatibility:
+Parsley cannot call the `LinooDepthSelectionPolicy` type-alias object. A separate
+0.2.23 release narrows its fix to string annotations at the public argument and
+constructor boundary, followed by the same membership validation expressed
+as a typed predicate. Both supported policies and the inverse-depth default remain unchanged.
+The source preview passes the affected application/parser tests. The unrelated
+alternating implementation, default and checkpoint step changes remain excluded.
+
 ## Compatibility blocker exposed by installed packages
 
 Chipiron inherits the default from `LinooArgs`. Clean Anemone uses
@@ -44,6 +52,11 @@ which hid this distinction. Those overrides are removed, with every existing
 assertion preserved. Canonical tox now builds/installs the wheel, checks package
 import origins, and uses `CHIPIRON_TEST_INSTALLED=1` without sibling PYTHONPATH.
 Focused unit-test mocks remain ordinary scoped mocks.
+
+The installed test selection also exposed missing one-match input YAML files in
+the wheel. Package-data and sdist metadata now include the three existing configs,
+including the neutral GUI launcher config. Their contents and the existing
+launcher assertions are unchanged; the installation smoke resolves that resource.
 
 Do not change the selector default, relax assertions, or import dirty siblings
 merely to turn CI green. Resolving this blocker requires an explicit separate

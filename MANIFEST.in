@@ -4,6 +4,7 @@
     recursive-include src/chipiron/data/players *.yaml *.pt
     recursive-include src/chipiron/data/settings *.yaml
     recursive-include src/chipiron/data/starting_boards *.text
+    recursive-include src/chipiron/scripts/one_match/inputs *.yaml
     recursive-include tests/data/trees *.yaml
 
 

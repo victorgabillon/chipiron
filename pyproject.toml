@@ -92,6 +92,7 @@ chipiron = [
   "data/players/**/*.pt",
   "data/settings/*.yaml",
   "data/starting_boards/*.text",
+  "scripts/one_match/inputs/*/*.yaml",
   "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.yaml", # think about removing this for cleanliness at some point
   "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.pt",
   "tests/data/trees/**/*.yaml",

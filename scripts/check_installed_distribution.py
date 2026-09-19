@@ -48,6 +48,11 @@ def main() -> None:
         build_morpion_regressor,
         morpion_evaluator_v1_model_args,
     )
+    from chipiron.utils.small_tools import resolve_package_path
+
+    resolve_package_path(
+        "package://scripts/one_match/inputs/gui_launcher/exp_options.yaml"
+    )
 
     branch = ("morpion", 3, -4)
     assert (
