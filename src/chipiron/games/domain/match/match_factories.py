@@ -1,4 +1,4 @@
-"""Document the module contains functions for creating match managers in the Chipiron game framework."""
+"""Assemble match managers from configured participants and validated plans."""
 
 import multiprocessing
 import uuid
@@ -23,7 +23,10 @@ from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
     EnvDeps,
+    IntegerReductionEnvironmentDeps,
+    MorpionEnvironmentDeps,
 )
+from chipiron.environments.environment import make_environment
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
@@ -32,6 +35,10 @@ from chipiron.games.domain.game.game_tag import GameConfigTag
 from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
+from chipiron.games.domain.match.match_role_schedule import (
+    ValidatedMatchPlan,
+    build_validated_match_plan,
+)
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import MyPath
@@ -44,10 +51,20 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
+def _participant_ids_from_inputs(
+    args_player_one: players.PlayerArgs,
+    args_player_two: players.PlayerArgs | None,
+) -> tuple[str, ...]:
+    """Build the ordered participant identifiers from configured inputs."""
+    if args_player_two is None:
+        return (args_player_one.name,)
+    return (args_player_one.name, args_player_two.name)
+
+
 def create_match_manager(
     args_match: MatchSettingsArgs,
     args_player_one: players.PlayerArgs,
-    args_player_two: players.PlayerArgs,
+    args_player_two: players.PlayerArgs | None,
     args_game: GameArgs,
     implementation_args: ImplementationArgs,
     universal_behavior: bool = False,
@@ -55,13 +72,16 @@ def create_match_manager(
     output_folder_path: MyPath | None = None,
     gui: bool = False,
 ) -> MatchManager:
-    """Create a match manager for running matches between two players.
+    """Create a match manager from configured participants and a validated plan.
+
+    Topology and schedule validation are owned by validated match-plan assembly
+    at this boundary. Downstream factories consume the resulting plan directly.
 
     Args:
         implementation_args: (ImplementationArgs) the implementation args
         args_match (MatchSettingsArgs): The match settings arguments.
-        args_player_one (players.PlayerArgs): The arguments for player one.
-        args_player_two (players.PlayerArgs): The arguments for player two.
+        args_player_one (players.PlayerArgs): The first configured participant.
+        args_player_two (players.PlayerArgs | None): The optional second configured participant.
         args_game (GameArgs): The game arguments.
         seed (int | None, optional): The seed for random number generation. Defaults to None.
         output_folder_path (path | None, optional): The output folder path. Defaults to None.
@@ -85,12 +105,11 @@ def create_match_manager(
         else None
     )
 
-    player_one_name: str = args_player_one.name
-    player_two_name: str = args_player_two.name
+    participant_ids = _participant_ids_from_inputs(args_player_one, args_player_two)
 
-    can_oracle: bool = args_player_one.name not in [
-        "Stockfish"
-    ] and args_player_two.name not in ["Stockfish"]
+    can_oracle: bool = args_player_one.name not in ["Stockfish"] and (
+        args_player_two is None or args_player_two.name not in ["Stockfish"]
+    )
     game_board_evaluator = create_game_board_evaluator_for_game_kind(
         game_kind=args_game.game_kind,
         gui=gui,
@@ -115,8 +134,19 @@ def create_match_manager(
         )
     elif args_game.game_kind == GameKind.CHECKERS:
         env_deps = CheckersEnvironmentDeps()
+    elif args_game.game_kind == GameKind.INTEGER_REDUCTION:
+        env_deps = IntegerReductionEnvironmentDeps()
+    elif args_game.game_kind == GameKind.MORPION:
+        env_deps = MorpionEnvironmentDeps()
     else:
         raise ValueError
+
+    environment = make_environment(game_kind=args_game.game_kind, deps=env_deps)
+    match_plan: ValidatedMatchPlan = build_validated_match_plan(
+        participant_ids=participant_ids,
+        environment_roles=environment.roles,
+        schedule=args_match.schedule,
+    )
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         env_deps=env_deps,
@@ -131,20 +161,18 @@ def create_match_manager(
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
-        player_one_name=player_one_name, player_two_name=player_two_name
+        match_plan=match_plan
     )
 
     game_args_factory = GameArgsFactory(
-        args_match=args_match,
         args_player_one=args_player_one,
         args_player_two=args_player_two,
         seed_=seed,
         args_game=args_game,
+        match_plan=match_plan,
     )
 
     return MatchManager(
-        player_one_id=player_one_name,
-        player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
         game_args_factory=game_args_factory,
         match_results_factory=match_results_factory,
@@ -173,10 +201,14 @@ def create_match_manager_from_args(
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
 
     assert isinstance(match_args.player_one, players.PlayerArgs)
-    assert isinstance(match_args.player_two, players.PlayerArgs)
 
     player_one_args: players.PlayerArgs = match_args.player_one
-    player_two_args: players.PlayerArgs = match_args.player_two
+    player_two_args: players.PlayerArgs | None
+    if match_args.player_two is None:
+        player_two_args = None
+    else:
+        assert isinstance(match_args.player_two, players.PlayerArgs)
+        player_two_args = match_args.player_two
 
     assert isinstance(match_args.match_setting, MatchSettingsArgs)
     game_args: GameArgs
@@ -189,10 +221,11 @@ def create_match_manager_from_args(
         player_one_args.name != "Command_Line_Human.yaml"
         or not game_args.each_player_has_its_own_thread
     )
-    assert (
-        player_two_args.name != "Command_Line_Human.yaml"
-        or not game_args.each_player_has_its_own_thread
-    )
+    if player_two_args is not None:
+        assert (
+            player_two_args.name != "Command_Line_Human.yaml"
+            or not game_args.each_player_has_its_own_thread
+        )
 
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)

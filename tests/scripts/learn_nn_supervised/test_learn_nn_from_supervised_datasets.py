@@ -1,37 +1,16 @@
+"""Tests for the supervised chess neural-network learning script."""
+
+import inspect
+import sys
 import textwrap
+import types
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-pytest.importorskip("parsley")
 pytest.importorskip("torch")
-pytest.importorskip("PySide6")
 import torch
-from parsley import make_partial_dataclass_with_optional_paths
-
-from chipiron import scripts
-from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
-    DataSetArgs,
-)
-from chipiron.environments.types import GameKind
-from chipiron.learningprocesses.nn_trainer.factory import GameInputArgs, NNTrainerArgs
-from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
-    ModelInputRepresentationType,
-)
-from chipiron.scripts.factory import create_script
-from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
-    LearnNNScriptArgs,
-)
-from chipiron.scripts.script_args import BaseScriptArgs
-
-PartialOpLearnNNScriptArgs = make_partial_dataclass_with_optional_paths(
-    cls=LearnNNScriptArgs
-)
-PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(cls=NNTrainerArgs)
-PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
-PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
-PartialOpGameInputArgs = make_partial_dataclass_with_optional_paths(cls=GameInputArgs)
 
 
 def create_tiny_model_bundle(
@@ -75,44 +54,159 @@ def create_tiny_model_bundle(
     return bundle_dir
 
 
-def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
+def _make_config(*, saving_root: Path) -> Any:
     """Build a local-only config for the supervised learning test."""
-    dataset_file = str((Path(__file__).parent / "small_dataset.pi").resolve())
-    bundle_dir = create_tiny_model_bundle(
-        tmp_path,
-        bundle_name="supervised_model_bundle",
-        input_representation=ModelInputRepresentationType.PIECE_DIFFERENCE.value,
+    from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
+        DataSetArgs,
     )
-    return PartialOpLearnNNScriptArgs(
-        nn_trainer_args=PartialOpNNTrainerArgs(
+    from chipiron.environments.types import GameKind
+    from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
+        ModelInputRepresentationType,
+    )
+    from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
+        LearnNNScriptArgs,
+    )
+    from chipiron.scripts.learn_nn_supervised.training_args import (
+        GameInputArgs,
+        SupervisedTrainingArgs,
+    )
+    from chipiron.scripts.script_args import BaseScriptArgs
+
+    dataset_file = str((Path(__file__).parent / "small_dataset.pi").resolve())
+    return LearnNNScriptArgs(
+        nn_trainer_args=SupervisedTrainingArgs(
             reuse_existing_model=False,
             specific_saving_folder=str(saving_root / "piece_difference"),
-            neural_network_architecture_args_path_to_yaml_file=str(
-                bundle_dir / "architecture.yaml"
-            ),
-            game_input=PartialOpGameInputArgs(
+            game_input=GameInputArgs(
                 game_kind=GameKind.CHESS,
                 representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
             ),
+            epochs_number=1,
+            saving_interval=10_000,
+            saving_intermediate_copy=False,
         ),
-        dataset_args=PartialOpDataSetArgs(
+        dataset_args=DataSetArgs(
             train_file_name=dataset_file,
             test_file_name=dataset_file,
         ),
-        base_script_args=PartialOpBaseScriptArgs(testing=True),
+        base_script_args=BaseScriptArgs(testing=True),
     )
 
 
-def test_learn_nn(tmp_path: Path) -> None:
+def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test learn nn."""
-    saving_root = tmp_path / "learn_nn_supervised_outputs"
-    saving_root.mkdir(parents=True, exist_ok=True)
-    config = _make_config(tmp_path=tmp_path, saving_root=saving_root)
-
-    script_object: scripts.IScript = create_script(
-        script_type=scripts.ScriptType.LEARN_NN,
-        extra_args=config,
-        should_parse_command_line_arguments=False,
+    pytest.importorskip("atomheart")
+    pytest.importorskip("coral")
+    _install_learning_script_observability_stubs(monkeypatch)
+    from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
+        LearnNNScript,
     )
-    script_object.run()
-    script_object.terminate()
+
+    original_is_available = torch.cuda.is_available
+    torch.cuda.is_available = lambda: False
+    saving_root = tmp_path / "learn_nn_supervised_outputs"
+    (saving_root / "piece_difference").mkdir(parents=True, exist_ok=True)
+    config = _make_config(saving_root=saving_root)
+
+    try:
+        script_object = LearnNNScript(base_script=_FakeBaseScript(config))
+        script_object.run()
+        script_object.terminate()
+    finally:
+        torch.cuda.is_available = original_is_available
+
+
+def test_supervised_learning_script_no_longer_uses_legacy_trainer_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The active supervised script should not construct NNPytorchTrainer."""
+    pytest.importorskip("atomheart")
+    pytest.importorskip("coral")
+    _install_learning_script_observability_stubs(monkeypatch)
+    from chipiron.scripts.learn_nn_supervised import learn_nn_from_supervised_datasets
+
+    source = inspect.getsource(learn_nn_from_supervised_datasets)
+
+    assert "create_nn_trainer" not in source
+    assert "NNPytorchTrainer" not in source
+
+
+class _FakeBaseScript:
+    """Tiny base-script adapter avoiding the parser/factory stack."""
+
+    def __init__(self, args: Any) -> None:
+        self.args = args
+        self.terminated = False
+
+    def initiate(self, experiment_output_folder: str | None = None) -> Any:
+        """Return prebuilt args and fill the experiment output path."""
+        if self.args.base_script_args.experiment_output_folder is None:
+            self.args.base_script_args.experiment_output_folder = (
+                experiment_output_folder
+            )
+        return self.args
+
+    def terminate(self) -> None:
+        """Mark termination for the test adapter."""
+        self.terminated = True
+
+
+class _NoopRun:
+    """No-op context manager matching mlflow.start_run."""
+
+    def __enter__(self) -> "_NoopRun":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        _ = exc_type, exc, traceback
+
+
+def _install_learning_script_observability_stubs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Install tiny mlflow and torchinfo stubs for dependency-light script import."""
+    mlflow_module = types.ModuleType("mlflow")
+    mlflow_pytorch_module = types.ModuleType("mlflow.pytorch")
+    mlflow_models_module = types.ModuleType("mlflow.models")
+    mlflow_signature_module = types.ModuleType("mlflow.models.signature")
+    torchinfo_module = types.ModuleType("torchinfo")
+
+    mlflow_module.set_tracking_uri = lambda uri: None
+    mlflow_module.log_metric = lambda *args, **kwargs: None
+    mlflow_module.log_params = lambda params: None
+    mlflow_module.log_artifact = lambda path: None
+    mlflow_module.start_run = lambda: _NoopRun()
+    mlflow_pytorch_module.log_model = lambda *args, **kwargs: None
+    mlflow_pytorch_module.get_default_conda_env = dict
+    mlflow_module.pytorch = mlflow_pytorch_module
+
+    class _ModelSignature:
+        """Placeholder signature type used by the supervised script."""
+
+    mlflow_signature_module.ModelSignature = _ModelSignature
+    mlflow_signature_module.infer_signature = lambda *args, **kwargs: _ModelSignature()
+    mlflow_models_module.signature = mlflow_signature_module
+    torchinfo_module.summary = lambda model: f"summary({type(model).__name__})"
+
+    monkeypatch.setitem(sys.modules, "mlflow", mlflow_module)
+    monkeypatch.setitem(sys.modules, "mlflow.pytorch", mlflow_pytorch_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models", mlflow_models_module)
+    monkeypatch.setitem(sys.modules, "mlflow.models.signature", mlflow_signature_module)
+    monkeypatch.setitem(sys.modules, "torchinfo", torchinfo_module)
+
+    # Another test may have imported the learning module before these stubs.
+    # Patch its bound globals as well as sys.modules, and restore them afterwards.
+    module = sys.modules.get(
+        "chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets"
+    )
+    if module is not None:
+        monkeypatch.setattr(module, "mlflow", mlflow_module)
+        monkeypatch.setattr(module, "summary", torchinfo_module.summary)
+        monkeypatch.setattr(
+            module, "infer_signature", mlflow_signature_module.infer_signature
+        )

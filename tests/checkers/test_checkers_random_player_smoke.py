@@ -1,3 +1,6 @@
+# ruff: noqa: E402 - dependencies must be checked/stubbed before imports
+"""Regression tests for checkers random player smoke."""
+
 import sys
 
 import pytest
@@ -10,7 +13,9 @@ pytestmark = pytest.mark.skipif(
 pytest.importorskip("atomheart")
 pytest.importorskip("valanga")
 
-from valanga import Color
+from valanga import (
+    Color,
+)
 
 from chipiron.environments.checkers.players.wiring.checkers_wiring import (
     BuildCheckersGamePlayerArgs,
@@ -21,11 +26,17 @@ from chipiron.environments.checkers.types import (
     CheckersRules,
     CheckersState,
 )
-from chipiron.players.move_selector.random_args import RandomSelectorArgs
-from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
+from chipiron.players.move_selector.random_args import (
+    RandomSelectorArgs,
+)
+from chipiron.players.player_args import (
+    PlayerArgs,
+    PlayerFactoryArgs,
+)
 
 
 def test_checkers_random_player_produces_parseable_legal_action_name() -> None:
+    """Verify checkers random player produces parseable legal action name."""
     player_args = PlayerArgs(
         name="random-checkers-smoke",
         main_move_selector=RandomSelectorArgs(),
@@ -36,7 +47,7 @@ def test_checkers_random_player_produces_parseable_legal_action_name() -> None:
     game_player = build_checkers_game_player(
         BuildCheckersGamePlayerArgs(
             player_factory_args=factory_args,
-            player_color=Color.WHITE,
+            player_role=Color.WHITE,
             implementation_args=object(),
             universal_behavior=True,
         )

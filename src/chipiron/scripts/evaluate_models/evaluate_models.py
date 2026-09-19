@@ -28,8 +28,11 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     load_chipiron_nn_args_from_bundle,
 )
-from chipiron.learningprocesses.nn_trainer.nn_trainer import (
-    compute_test_error_on_dataset,
+from chipiron.learning import module_device
+from chipiron.learning.supervised import (
+    RegressionBatchMetricSums,
+    SupervisedBatch,
+    evaluate_regression_batch,
 )
 from chipiron.models.model_bundle import (
     ModelBundleRef,
@@ -104,6 +107,80 @@ def compute_model_hash_key(
 def count_parameters(model: ChiNN) -> int:
     """Count the number of trainable parameters in a model."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def _compute_evaluation_loss_on_dataset(
+    *,
+    model: torch.nn.Module,
+    criterion: torch.nn.Module,
+    data_test: DataLoader[SupervisedBatch],
+) -> float:
+    """Compute scalar model loss over a supervised evaluation dataloader."""
+    model.eval()
+    squared_error_sum = 0.0
+    absolute_error_sum = 0.0
+    target_count = 0
+    device = module_device(model)
+    with torch.no_grad():
+        for sample in data_test:
+            batch_metrics = evaluate_regression_batch(
+                model=model,
+                batch=sample,
+                device=device,
+                timings=None,
+            )
+            squared_error_sum += batch_metrics.squared_error_sum
+            absolute_error_sum += batch_metrics.absolute_error_sum
+            target_count += batch_metrics.target_count
+    model.train()
+    return _scalar_loss_from_regression_metrics(
+        criterion=criterion,
+        metrics=RegressionBatchMetricSums(
+            squared_error_sum=squared_error_sum,
+            absolute_error_sum=absolute_error_sum,
+            target_count=target_count,
+        ),
+    )
+
+
+def _scalar_loss_from_regression_metrics(
+    *,
+    criterion: torch.nn.Module,
+    metrics: RegressionBatchMetricSums,
+) -> float:
+    """Convert regression sums back to the configured scalar criterion."""
+    if metrics.target_count == 0:
+        return 0.0
+    if isinstance(criterion, torch.nn.MSELoss):
+        if criterion.reduction == "sum":
+            return metrics.squared_error_sum
+        if criterion.reduction == "mean":
+            return metrics.squared_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("MSELoss")
+    if isinstance(criterion, torch.nn.L1Loss):
+        if criterion.reduction == "sum":
+            return metrics.absolute_error_sum
+        if criterion.reduction == "mean":
+            return metrics.absolute_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("L1Loss")
+    raise _unsupported_loss_reconstruction_error()
+
+
+def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
+    """Return a clear error for unreduced criterion reconstruction."""
+    return TypeError(
+        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
+    )
+
+
+def _unsupported_loss_reconstruction_error() -> TypeError:
+    """Return a clear error for unsupported criterion reconstruction."""
+    return TypeError(
+        "Model evaluation can only reconstruct scalar losses for MSELoss or "
+        "L1Loss from common regression metric sums."
+    )
 
 
 def evaluate_models(
@@ -232,11 +309,10 @@ def evaluate_models(
             )
             print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
 
-            evalu = compute_test_error_on_dataset(
-                net=nn_board_evaluator.net,
+            evalu = _compute_evaluation_loss_on_dataset(
+                model=nn_board_evaluator.net,
                 criterion=criterion,
                 data_test=data_loader_stockfish_boards_test,
-                number_of_tests=len(data_loader_stockfish_boards_test),
             )
             number_of_model_parameters: int = count_parameters(nn_board_evaluator.net)
             model_evaluation = ModelEvaluation(

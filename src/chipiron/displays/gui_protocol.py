@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from typing import Any, Never
 
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import Color, StateTag
+from valanga import StateTag
 from valanga.evaluations import Value
 
 from chipiron.core.request_context import RequestContext
+from chipiron.core.roles import GameRole, ParticipantId
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
@@ -81,10 +82,10 @@ class UpdStateGeneric:
 
 
 @dataclass(frozen=True, slots=True)
-class UpdPlayerProgress:
-    """Progress update for a specific player."""
+class UpdParticipantProgress:
+    """Progress update for a specific game role."""
 
-    player_color: Color
+    role: GameRole
     progress_percent: int | None
 
 
@@ -99,27 +100,45 @@ class UpdEvaluation:
 
 
 @dataclass(frozen=True, slots=True)
-class PlayerUiInfo:
-    """User-facing label and control hint for a player."""
+class ParticipantUiInfo:
+    """User-facing label and control hint for one role assignment."""
 
+    role: GameRole
+    role_label: str
     label: str
     is_human: bool
 
 
 @dataclass(frozen=True, slots=True)
-class UpdPlayersInfo:
-    """Update payload describing both players."""
+class UpdParticipantsInfo:
+    """Update payload describing every role-participant binding for the game."""
 
-    white: PlayerUiInfo
-    black: PlayerUiInfo
+    participants: Sequence[ParticipantUiInfo]
+
+    def participant_by_role(self, role: GameRole) -> ParticipantUiInfo:
+        """Return the participant entry for a specific role."""
+        for participant in self.participants:
+            if participant.role == role:
+                return participant
+        raise KeyError(role)
+
+
+@dataclass(frozen=True, slots=True)
+class ParticipantMatchStats:
+    """Aggregate result counts for one participant in the current match."""
+
+    participant_id: ParticipantId
+    wins: int
+    losses: int
+    draws: int
+    unknown: int
 
 
 @dataclass(frozen=True, slots=True)
 class UpdMatchResults:
     """Aggregate match results payload."""
 
-    wins_white: int
-    wins_black: int
+    participant_stats: Sequence[ParticipantMatchStats]
     draws: int
     games_played: int
     match_finished: bool
@@ -148,9 +167,9 @@ class UpdGameStatus:
 type UpdatePayload = (
     UpdStateChess
     | UpdStateGeneric
-    | UpdPlayerProgress
+    | UpdParticipantProgress
     | UpdEvaluation
-    | UpdPlayersInfo
+    | UpdParticipantsInfo
     | UpdMatchResults
     | UpdGameStatus
     | UpdNeedHumanAction

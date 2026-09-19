@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 sys.path.append("../../")
 
 _parsley_set_verbosity: Callable[[int], None] | None
-# Configure parsley_coco logging to reduce noise
+# Configure parsley logging to reduce noise.
 try:
     from parsley.logger import set_verbosity as _parsley_set_verbosity
 except ImportError:

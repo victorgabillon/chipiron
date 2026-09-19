@@ -53,6 +53,7 @@ def test_check_in_one(use_rusty_board: bool) -> None:
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_check_in_two(use_rusty_board: bool) -> None:
+    """Verify check in two."""
     if not MATE_IN_2_DB_SMALL.exists():
         pytest.skip(
             f"Missing external puzzle data: {MATE_IN_2_DB_SMALL}. "

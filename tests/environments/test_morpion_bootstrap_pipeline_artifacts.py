@@ -1,0 +1,890 @@
+"""Tests for Morpion bootstrap pipeline artifact contracts."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+import pytest
+from anemone.training_export import (
+    TrainingNodeSnapshot,
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+import chipiron.environments.morpion.bootstrap.cycle_dataset as cycle_dataset_module
+import chipiron.environments.morpion.bootstrap.pipeline_artifacts as pipeline_artifacts_module
+from chipiron.environments.morpion.bootstrap import (
+    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+    TRAINING_SKIPPED_REASON_METADATA_KEY,
+    InvalidMorpionPipelineArtifactError,
+    MissingMorpionPipelineArtifactError,
+    MorpionBootstrapArgs,
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRecordStatus,
+    MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatusArtifact,
+    MorpionPipelineEvaluatorTrainingResult,
+    MorpionPipelineGenerationManifest,
+    MorpionPipelineStageClaim,
+    MorpionPipelineTrainingStatusArtifact,
+    MorpionReevaluationCursor,
+    MorpionReevaluationPatch,
+    MorpionReevaluationPatchRow,
+    delete_reevaluation_cursor,
+    delete_reevaluation_patch,
+    load_pipeline_active_model,
+    load_pipeline_dataset_status_file,
+    load_pipeline_manifest,
+    load_pipeline_stage_claim,
+    load_pipeline_training_status_file,
+    load_reevaluation_cursor,
+    load_reevaluation_patch,
+    pipeline_dataset_status_from_dict,
+    pipeline_manifest_from_dict,
+    pipeline_training_status_from_dict,
+    reevaluation_cursor_from_dict,
+    reevaluation_cursor_to_dict,
+    reevaluation_patch_from_dict,
+    reevaluation_patch_row_from_dict,
+    reevaluation_patch_row_to_dict,
+    reevaluation_patch_to_dict,
+    run_morpion_bootstrap_loop,
+    save_pipeline_active_model,
+    save_pipeline_manifest,
+    save_pipeline_stage_claim,
+    save_reevaluation_cursor,
+    save_reevaluation_patch,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
+from chipiron.environments.morpion.learning import MorpionSupervisedRows
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *,
+    target_value: float,
+    root_node_id: str,
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for pipeline tests."""
+    node = make_training_node_snapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=True,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-pipeline-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the Morpion bootstrap protocol."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Accept restore inputs without side effects."""
+        _ = (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        _ = max_growth_steps
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(self, output_path: str | Path) -> None:
+        """Write one real training snapshot to the requested path."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        save_training_tree_snapshot(snapshot, output_path)
+
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded export mirroring the flat training snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
+        )
+        return manifest_path
+
+    def save_checkpoint(self, output_path: str | Path) -> None:
+        """Write one checkpoint placeholder so save-branch manifests can point to it."""
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text('{"checkpoint": true}\n', encoding="utf-8")
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
+
+
+def _empty_rows_bundle(*, generation: int = 1) -> MorpionSupervisedRows:
+    """Return one explicit empty rows bundle for pipeline tests."""
+    return MorpionSupervisedRows(
+        rows=(),
+        metadata={"bootstrap_generation": generation, "num_rows": 0},
+    )
+
+
+def test_pipeline_manifest_roundtrip(tmp_path: Path) -> None:
+    """One saved manifest should round-trip through JSON unchanged."""
+    manifest = MorpionPipelineGenerationManifest(
+        generation=3,
+        created_at_utc="2026-04-28T12:00:00Z",
+        runtime_checkpoint_path="search_checkpoints/generation_000003.json",
+        tree_snapshot_path="tree_exports/generation_000003.json",
+        rows_path="rows/generation_000003.json",
+        model_bundle_paths={"linear": "models/generation_000003/linear"},
+        selected_evaluator_name="linear",
+        dataset_status="done",
+        training_status="done",
+        metadata={"pipeline_mode": "single_process"},
+    )
+    path = tmp_path / "pipeline" / "generation_000003" / "manifest.json"
+
+    save_pipeline_manifest(manifest, path)
+    loaded = load_pipeline_manifest(path)
+    text = path.read_text(encoding="utf-8")
+
+    assert loaded == manifest
+    assert path.is_file()
+    assert text.startswith("{\n  ")
+    assert text.endswith("}\n")
+
+
+def test_pipeline_manifest_default_statuses() -> None:
+    """Minimal manifests should default to not-started stage statuses."""
+    manifest = MorpionPipelineGenerationManifest(
+        generation=0,
+        created_at_utc="2026-04-28T12:00:00Z",
+    )
+
+    assert manifest.dataset_status == "not_started"
+    assert manifest.training_status == "not_started"
+
+
+@pytest.mark.parametrize(
+    ("payload", "match"),
+    [
+        ({"generation": -1, "created_at_utc": "2026-04-28T12:00:00Z"}, ">= 0"),
+        ({"generation": True, "created_at_utc": "2026-04-28T12:00:00Z"}, "integer"),
+        (
+            {
+                "generation": 1,
+                "created_at_utc": "2026-04-28T12:00:00Z",
+                "model_bundle_paths": [],
+            },
+            "model_bundle_paths",
+        ),
+        (
+            {
+                "generation": 1,
+                "created_at_utc": "2026-04-28T12:00:00Z",
+                "model_bundle_paths": {"linear": 123},
+            },
+            "model_bundle_paths",
+        ),
+        (
+            {
+                "generation": 1,
+                "created_at_utc": "2026-04-28T12:00:00Z",
+                "dataset_status": "unknown",
+            },
+            "dataset_status",
+        ),
+        (
+            {
+                "generation": 1,
+                "created_at_utc": "2026-04-28T12:00:00Z",
+                "training_status": "unknown",
+            },
+            "training_status",
+        ),
+    ],
+)
+def test_invalid_manifest_rejects(payload: dict[str, object], match: str) -> None:
+    """Malformed manifest payloads should fail loudly."""
+    with pytest.raises(InvalidMorpionPipelineArtifactError, match=match):
+        pipeline_manifest_from_dict(payload)
+
+
+def test_pipeline_active_model_roundtrip(tmp_path: Path) -> None:
+    """One saved active-model record should round-trip through JSON unchanged."""
+    active_model = MorpionPipelineActiveModel(
+        generation=3,
+        evaluator_name="linear",
+        model_bundle_path="models/generation_000003/linear",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        metadata={"selection_policy": "lowest_final_loss"},
+    )
+    path = tmp_path / "pipeline" / "active_model.json"
+
+    save_pipeline_active_model(active_model, path)
+
+    assert load_pipeline_active_model(path) == active_model
+
+
+def test_pipeline_external_seed_active_model_roundtrip(tmp_path: Path) -> None:
+    """Active-model provenance should preserve external seed metadata."""
+    active_model = MorpionPipelineActiveModel(
+        generation=430,
+        evaluator_name="mlp_41",
+        model_bundle_path="models/generation_000430/mlp_41",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        source="external_seed",
+        source_generation=430,
+        local_trained_generation=None,
+    )
+    path = tmp_path / "pipeline" / "active_model.json"
+
+    save_pipeline_active_model(active_model, path)
+
+    loaded = load_pipeline_active_model(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert loaded == active_model
+    assert payload["source"] == "external_seed"
+    assert payload["source_generation"] == 430
+    assert payload["local_trained_generation"] is None
+
+
+def test_pipeline_active_model_old_schema_defaults_to_local_training() -> None:
+    """Older active-model artifacts should remain valid."""
+    active_model = pipeline_artifacts_module.pipeline_active_model_from_dict({
+        "generation": 3,
+        "evaluator_name": "linear",
+        "model_bundle_path": "models/generation_000003/linear",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"selection_policy": "lowest_final_loss"},
+    })
+
+    assert active_model.source == "local_training"
+    assert active_model.source_generation == 3
+    assert active_model.local_trained_generation == 3
+    assert active_model.source_was_inferred is True
+
+
+def test_pipeline_training_status_roundtrip(tmp_path: Path) -> None:
+    """One saved training-status artifact should round-trip through JSON unchanged."""
+    training_status = MorpionPipelineTrainingStatusArtifact(
+        generation=3,
+        status="done",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        selected_evaluator_name="linear",
+        selection_policy="lowest_final_loss",
+        evaluator_results={
+            "linear": MorpionPipelineEvaluatorTrainingResult(
+                final_loss=1.25,
+                elapsed_s=0.75,
+                model_bundle_path="models/generation_000003/linear",
+            )
+        },
+        metadata={"source": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000003" / "training_status.json"
+
+    pipeline_artifacts_module.save_pipeline_training_status_file(
+        generation=training_status.generation,
+        training_status=training_status.status,
+        updated_at_utc=training_status.updated_at_utc,
+        metadata=training_status.metadata,
+        selected_evaluator_name=training_status.selected_evaluator_name,
+        selection_policy=training_status.selection_policy,
+        evaluator_results=training_status.evaluator_results,
+        path=path,
+    )
+
+    assert load_pipeline_training_status_file(path) == training_status
+
+
+def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() -> None:
+    """Older training-status payloads should load safely with empty evaluator results."""
+    loaded = pipeline_training_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"source": "old-format"},
+    })
+
+    assert loaded.generation == 1
+    assert loaded.status == "done"
+    assert loaded.evaluator_results == {}
+    assert loaded.selected_evaluator_name is None
+
+
+def test_pipeline_training_status_old_evaluator_result_defaults_validation_fields() -> (
+    None
+):
+    """Old evaluator results without validation metrics should still deserialize."""
+    loaded = pipeline_training_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "evaluator_results": {
+            "linear": {
+                "final_loss": 0.75,
+                "elapsed_s": 1.25,
+                "model_bundle_path": "models/generation_000001/linear",
+            }
+        },
+    })
+
+    result = loaded.evaluator_results["linear"]
+    assert result.final_loss == 0.75
+    assert result.validation_loss is None
+    assert result.train_loss is None
+
+
+def test_pipeline_dataset_status_roundtrip(tmp_path: Path) -> None:
+    """One saved dataset-status artifact should round-trip through JSON unchanged."""
+    dataset_status = MorpionPipelineDatasetStatusArtifact(
+        generation=3,
+        status="done",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=18,
+            current_best_total_points=54,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+        frontier_status=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=19,
+            current_best_total_points=55,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
+        metadata={"source": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000003" / "dataset_status.json"
+
+    pipeline_artifacts_module.save_pipeline_dataset_status_file(
+        generation=dataset_status.generation,
+        dataset_status=dataset_status.status,
+        updated_at_utc=dataset_status.updated_at_utc,
+        metadata=dataset_status.metadata,
+        record_status=dataset_status.record_status,
+        frontier_status=dataset_status.frontier_status,
+        path=path,
+    )
+
+    assert load_pipeline_dataset_status_file(path) == dataset_status
+
+
+def test_pipeline_dataset_status_from_old_payload_defaults_optional_statuses() -> None:
+    """Older dataset-status payloads should load safely without record/frontier fields."""
+    loaded = pipeline_dataset_status_from_dict({
+        "generation": 1,
+        "status": "done",
+        "updated_at_utc": "2026-04-28T12:00:00Z",
+        "metadata": {"source": "old-format"},
+    })
+
+    assert loaded.generation == 1
+    assert loaded.status == "done"
+    assert loaded.record_status is None
+    assert loaded.frontier_status is None
+
+
+def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
+    """Pipeline path helpers should resolve stable generation-scoped artifact paths."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+
+    assert paths.pipeline_dir == tmp_path.resolve() / "pipeline"
+    assert (
+        paths.pipeline_generation_dir_for_generation(1)
+        == tmp_path.resolve() / "pipeline" / "generation_000001"
+    )
+    assert (
+        paths.pipeline_manifest_path_for_generation(1)
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "manifest.json"
+    )
+    assert (
+        paths.pipeline_dataset_status_path_for_generation(1)
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "dataset_status.json"
+    )
+    assert (
+        paths.pipeline_training_status_path_for_generation(1)
+        == tmp_path.resolve()
+        / "pipeline"
+        / "generation_000001"
+        / "training_status.json"
+    )
+    assert (
+        paths.pipeline_dataset_claim_path_for_generation(1)
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "dataset_claim.json"
+    )
+    assert (
+        paths.pipeline_training_claim_path_for_generation(1)
+        == tmp_path.resolve() / "pipeline" / "generation_000001" / "training_claim.json"
+    )
+    assert (
+        paths.pipeline_active_model_path
+        == tmp_path.resolve() / "pipeline" / "active_model.json"
+    )
+    assert (
+        paths.pipeline_reevaluation_patch_path
+        == tmp_path.resolve() / "pipeline" / "reevaluation_patch.json"
+    )
+    assert (
+        paths.pipeline_reevaluation_cursor_path
+        == tmp_path.resolve() / "pipeline" / "reevaluation_cursor.json"
+    )
+    assert paths.pipeline_dir.is_dir()
+
+
+def test_pipeline_stage_claim_roundtrip(tmp_path: Path) -> None:
+    """One saved stage claim should round-trip through JSON unchanged."""
+    claim = MorpionPipelineStageClaim(
+        generation=1,
+        stage="dataset",
+        claim_id="claim-1",
+        claimed_at_utc="2026-04-28T12:00:00Z",
+        expires_at_utc="2026-04-28T13:00:00Z",
+        owner="worker-a",
+        metadata={"entrypoint": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000001" / "dataset_claim.json"
+
+    save_pipeline_stage_claim(claim, path)
+
+    assert load_pipeline_stage_claim(path) == claim
+
+
+def test_reevaluation_patch_row_roundtrip() -> None:
+    """One reevaluation patch row should round-trip through dict form unchanged."""
+    row = MorpionReevaluationPatchRow(
+        node_id="node-1",
+        direct_value=0.25,
+        backed_up_value=0.5,
+        is_exact=True,
+        is_terminal=False,
+        metadata={"depth": 3},
+    )
+
+    assert reevaluation_patch_row_from_dict(reevaluation_patch_row_to_dict(row)) == row
+
+
+def test_reevaluation_patch_roundtrip(tmp_path: Path) -> None:
+    """One reevaluation patch should round-trip through JSON unchanged."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    row_1 = MorpionReevaluationPatchRow(
+        node_id="node-1",
+        direct_value=0.25,
+        backed_up_value=0.5,
+        is_exact=True,
+        is_terminal=False,
+        metadata={"depth": 3},
+    )
+    row_2 = MorpionReevaluationPatchRow(
+        node_id="node-2",
+        direct_value=-0.75,
+        backed_up_value=None,
+        is_exact=None,
+        is_terminal=None,
+        metadata={"depth": 4},
+    )
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-1",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        rows=(row_1, row_2),
+        tree_generation=7,
+        start_cursor="node-000000",
+        end_cursor="node-009999",
+        metadata={"max_nodes": 10000},
+    )
+
+    save_reevaluation_patch(patch, paths.pipeline_reevaluation_patch_path)
+
+    assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == patch
+    assert paths.pipeline_reevaluation_patch_path.is_file()
+
+    delete_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+
+
+def test_empty_reevaluation_patch_rows_allowed() -> None:
+    """Reevaluation patches should allow explicit empty row batches."""
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-1",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        rows=(),
+    )
+
+    loaded = reevaluation_patch_from_dict(reevaluation_patch_to_dict(patch))
+
+    assert loaded == patch
+    assert loaded.rows == ()
+
+
+def test_reevaluation_cursor_roundtrip(tmp_path: Path) -> None:
+    """One reevaluation cursor should round-trip through JSON unchanged."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    cursor = MorpionReevaluationCursor(
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        next_node_cursor="node-010000",
+        updated_at_utc="2026-04-28T12:05:00Z",
+        tree_generation=7,
+        completed_full_pass_count=1,
+        last_patch_id="patch-1",
+        metadata={"policy": "all_nodes"},
+    )
+
+    assert reevaluation_cursor_from_dict(reevaluation_cursor_to_dict(cursor)) == cursor
+
+    save_reevaluation_cursor(cursor, paths.pipeline_reevaluation_cursor_path)
+
+    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == cursor
+    assert paths.pipeline_reevaluation_cursor_path.is_file()
+
+    delete_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+
+    assert not paths.pipeline_reevaluation_cursor_path.exists()
+
+
+def test_invalid_reevaluation_patch_json(tmp_path: Path) -> None:
+    """Malformed reevaluation patch JSON should fail loudly."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    paths.pipeline_reevaluation_patch_path.write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(
+        InvalidMorpionPipelineArtifactError,
+        match=r"reevaluation patch artifact .* not valid JSON",
+    ):
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+
+def test_missing_reevaluation_patch(tmp_path: Path) -> None:
+    """Missing reevaluation patch artifacts should fail loudly."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    with pytest.raises(
+        MissingMorpionPipelineArtifactError,
+        match="reevaluation patch artifact does not exist",
+    ):
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+
+@pytest.mark.parametrize(
+    ("builder", "match"),
+    [
+        (
+            lambda: MorpionReevaluationPatchRow(node_id="node-1", direct_value=True),
+            "direct_value",
+        ),
+        (
+            lambda: MorpionReevaluationPatchRow(
+                node_id="node-1",
+                direct_value=float("inf"),
+            ),
+            "direct_value",
+        ),
+        (
+            lambda: MorpionReevaluationPatchRow(node_id="", direct_value=0.25),
+            "node_id",
+        ),
+        (
+            lambda: MorpionReevaluationPatch(
+                patch_id="patch-1",
+                created_at_utc="2026-04-28T12:00:00Z",
+                evaluator_generation=3,
+                evaluator_name="default",
+                model_bundle_path="models/generation_000003/default",
+                rows="not rows",
+            ),
+            "rows",
+        ),
+        (
+            lambda: MorpionReevaluationCursor(
+                evaluator_generation=3,
+                evaluator_name="default",
+                model_bundle_path="models/generation_000003/default",
+                next_node_cursor=None,
+                updated_at_utc="2026-04-28T12:05:00Z",
+                completed_full_pass_count=-1,
+            ),
+            "completed_full_pass_count",
+        ),
+    ],
+)
+def test_invalid_reevaluation_artifacts_reject(
+    builder: Callable[[], object],
+    match: str,
+) -> None:
+    """Malformed reevaluation artifacts should fail with field-specific errors."""
+    with pytest.raises(InvalidMorpionPipelineArtifactError, match=match):
+        builder()
+
+
+def test_package_root_reexports_reevaluation_artifacts() -> None:
+    """Package root should re-export the reevaluation artifact public API."""
+    assert (
+        MorpionReevaluationPatch is pipeline_artifacts_module.MorpionReevaluationPatch
+    )
+    assert save_reevaluation_patch is pipeline_artifacts_module.save_reevaluation_patch
+    assert (
+        load_reevaluation_cursor is pipeline_artifacts_module.load_reevaluation_cursor
+    )
+
+
+def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -> None:
+    """Saved single-process training cycles should mirror pipeline artifacts."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    run_morpion_bootstrap_loop(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            max_growth_steps_per_cycle=5,
+            save_after_tree_growth_factor=1.0,
+            save_after_seconds=0.0,
+            num_epochs=1,
+            batch_size=1,
+            shuffle=False,
+        ),
+        runner,
+        max_cycles=1,
+    )
+
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    dataset_status_payload = json.loads(
+        paths.pipeline_dataset_status_path_for_generation(1).read_text(encoding="utf-8")
+    )
+    training_status_payload = json.loads(
+        paths.pipeline_training_status_path_for_generation(1).read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest.dataset_status == "done"
+    assert manifest.training_status == "done"
+    assert manifest.tree_snapshot_path == str(
+        paths.sharded_tree_snapshot_path_for_generation(1).relative_to(paths.work_dir)
+    )
+    assert manifest.rows_path == "rows/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == str(
+        paths.runtime_checkpoint_path_for_generation(1).relative_to(paths.work_dir)
+    )
+    assert manifest.selected_evaluator_name is not None
+    assert (
+        manifest.model_bundle_paths[manifest.selected_evaluator_name]
+        == active_model.model_bundle_path
+    )
+    assert active_model.generation == 1
+    assert active_model.evaluator_name == manifest.selected_evaluator_name
+    assert dataset_status_payload["status"] == "done"
+    assert training_status_payload["status"] == "done"
+    assert (
+        training_status_payload["selected_evaluator_name"]
+        == manifest.selected_evaluator_name
+    )
+    assert training_status_payload["selection_policy"] == "lowest_final_loss"
+    assert set(training_status_payload["evaluator_results"]) == set(
+        manifest.model_bundle_paths
+    )
+    assert (
+        training_status_payload["evaluator_results"][manifest.selected_evaluator_name][
+            "model_bundle_path"
+        ]
+        == manifest.model_bundle_paths[manifest.selected_evaluator_name]
+    )
+
+
+def test_empty_dataset_save_writes_manifest_without_active_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty saved datasets should produce a done/not-started manifest only."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+    monkeypatch.setattr(
+        cycle_dataset_module,
+        "training_tree_snapshot_to_morpion_supervised_rows",
+        lambda *args, **kwargs: _empty_rows_bundle(generation=1),
+    )
+
+    run_morpion_bootstrap_loop(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            max_growth_steps_per_cycle=5,
+            save_after_tree_growth_factor=1.0,
+            save_after_seconds=0.0,
+        ),
+        runner,
+        max_cycles=1,
+    )
+
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    dataset_status_payload = json.loads(
+        paths.pipeline_dataset_status_path_for_generation(1).read_text(encoding="utf-8")
+    )
+    training_status_payload = json.loads(
+        paths.pipeline_training_status_path_for_generation(1).read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest.dataset_status == "done"
+    assert manifest.training_status == "not_started"
+    assert manifest.selected_evaluator_name is None
+    assert manifest.model_bundle_paths == {}
+    assert manifest.metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    )
+    assert dataset_status_payload["status"] == "done"
+    assert training_status_payload["status"] == "not_started"
+    assert not paths.pipeline_active_model_path.exists()

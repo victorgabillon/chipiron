@@ -1,72 +1,77 @@
-"""Document the module contains the classes for match results."""
+"""Match result aggregation with participant-based reporting."""
 
-from dataclasses import dataclass
-from typing import Protocol
+from __future__ import annotations
 
-from atomheart.games.chess.move import MoveUci
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Protocol
 
-from chipiron.games.domain.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from atomheart.games.chess.move import MoveUci
+
+    from chipiron.core.roles import ParticipantId
 
 
 class MatchResultsError(ValueError):
     """Base error for match result handling."""
 
 
-class InvalidMatchResultError(MatchResultsError):
-    """Raised when a match result is not supported."""
+class IncompleteRoleResultError(MatchResultsError):
+    """Raised when a role result payload cannot be aggregated."""
 
-    def __init__(self, game_result: FinalGameResult) -> None:
-        """Initialize the error with the unsupported result."""
-        super().__init__(f"Unsupported game result: {game_result}")
-
-
-class UnknownWhitePlayerError(MatchResultsError):
-    """Raised when the white player's identity is unknown."""
-
-    def __init__(self, white_player_name_id: str) -> None:
-        """Initialize the error with the unknown player id."""
-        super().__init__(f"Unknown white player id: {white_player_name_id}")
+    def __init__(self, missing_role: str) -> None:
+        """Initialize the error with the missing role label."""
+        super().__init__(f"Missing role result for role: {missing_role}")
 
 
-@dataclass
+def make_participant_stats() -> dict[ParticipantId, ParticipantResultStats]:
+    """Build the default participant stats mapping."""
+    return {}
+
+
+@dataclass(slots=True)
+class ParticipantResultStats:
+    """Aggregate win/loss/draw counts for a participant across a match."""
+
+    wins: int = 0
+    losses: int = 0
+    draws: int = 0
+    unknown: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class SimpleResults:
-    """Represents the simple results of a match."""
+    """Compact match summary with ordered participant stats."""
 
-    player_one_wins: int
-    player_two_wins: int
+    participant_order: tuple[ParticipantId, ...]
+    stats_by_participant: Mapping[ParticipantId, ParticipantResultStats]
     draws: int
+    games_played: int
+
+    @property
+    def wins_by_participant(self) -> dict[ParticipantId, int]:
+        """Return per-participant win totals."""
+        return {
+            participant_id: self.stats_by_participant[participant_id].wins
+            for participant_id in self.participant_order
+        }
 
 
 class IMatchResults(Protocol):
     """Interface for match results."""
 
-    def add_result_one_game(
-        self, white_player_name_id: str, game_result: FinalGameResult
-    ) -> None:
-        """Add the result of one game to the match results.
-
-        Args:
-            white_player_name_id (str): The ID of the white player.
-            game_result (FinalGameResult): The result of the game.
-
-        """
+    def add_result_one_game(self, *, game_report: GameReport) -> None:
+        """Add the result of one game to the match results."""
 
     def get_simple_result(self) -> SimpleResults:
-        """Return the simple results of the match.
-
-        Returns:
-            SimpleResults: The simple results of the match.
-
-        """
+        """Return the simple results of the match."""
         ...
 
     def __str__(self) -> str:
-        """Return a string representation of the match results.
-
-        Returns:
-            str: A string representation of the match results.
-
-        """
+        """Return a string representation of the match results."""
         ...
 
     def finish(self) -> None:
@@ -75,129 +80,83 @@ class IMatchResults(Protocol):
 
 @dataclass
 class MatchResults:
-    """Represents the results of a match between two players."""
+    """Represents match results for one or more ordered participants."""
 
-    player_one_name_id: str
-    player_two_name_id: str
+    participant_ids: tuple[ParticipantId, ...]
     number_of_games: int = 0
-    player_one_is_white_white_wins: int = 0
-    player_one_is_white_black_wins: int = 0
-    player_one_is_white_draws: int = 0
-    player_two_is_white_white_wins: int = 0
-    player_two_is_white_black_wins: int = 0
-    player_two_is_white_draws: int = 0
+    draw_games: int = 0
+    stats_by_participant: dict[ParticipantId, ParticipantResultStats] = field(
+        default_factory=make_participant_stats
+    )
     match_finished: bool = False
 
-    def get_player_one_wins(self) -> int:
-        """Return the number of wins for player one.
+    def __post_init__(self) -> None:
+        """Initialize the ordered participant registry."""
+        for participant_id in self.participant_ids:
+            self._ensure_participant(participant_id)
 
-        Returns:
-            int: The number of wins for player one.
-
-        """
-        return self.player_one_is_white_white_wins + self.player_two_is_white_black_wins
-
-    def get_player_two_wins(self) -> int:
-        """Return the number of wins for player two.
-
-        Returns:
-            int: The number of wins for player two.
-
-        """
-        return self.player_one_is_white_black_wins + self.player_two_is_white_white_wins
-
-    def get_draws(self) -> int:
-        """Return the number of draws.
-
-        Returns:
-            int: The number of draws.
-
-        """
-        return self.player_one_is_white_draws + self.player_two_is_white_draws
+    def _ensure_participant(self, participant_id: ParticipantId) -> None:
+        """Ensure a participant has an entry in the ordered registry."""
+        if participant_id not in self.stats_by_participant:
+            self.stats_by_participant[participant_id] = ParticipantResultStats()
 
     def get_simple_result(self) -> SimpleResults:
-        """Return the simple results of the match.
-
-        Returns:
-            SimpleResults: The simple results of the match.
-
-        """
-        simple_result: SimpleResults = SimpleResults(
-            player_one_wins=self.get_player_one_wins(),
-            player_two_wins=self.get_player_two_wins(),
-            draws=self.get_draws(),
+        """Return the compact match summary."""
+        return SimpleResults(
+            participant_order=self.participant_ids,
+            stats_by_participant=self.stats_by_participant,
+            draws=self.draw_games,
+            games_played=self.number_of_games,
         )
-        return simple_result
 
-    def add_result_one_game(
-        self, white_player_name_id: str, game_result: FinalGameResult
-    ) -> None:
-        """Add the result of one game to the match results.
-
-        Args:
-            white_player_name_id (str): The ID of the white player.
-            game_result (FinalGameResult): The result of the game.
-
-        """
+    def add_result_one_game(self, *, game_report: GameReport) -> None:
+        """Aggregate one role-aware game report."""
         self.number_of_games += 1
-        if white_player_name_id == self.player_one_name_id:
-            if game_result == FinalGameResult.WIN_FOR_WHITE:
-                self.player_one_is_white_white_wins += 1
-            elif game_result == FinalGameResult.WIN_FOR_BLACK:
-                self.player_one_is_white_black_wins += 1
-            elif game_result == FinalGameResult.DRAW:
-                self.player_one_is_white_draws += 1
-        elif white_player_name_id == self.player_two_name_id:
-            if game_result == FinalGameResult.WIN_FOR_WHITE:
-                self.player_two_is_white_white_wins += 1
-            elif game_result == FinalGameResult.WIN_FOR_BLACK:
-                self.player_two_is_white_black_wins += 1
-            elif game_result == FinalGameResult.DRAW:
-                self.player_two_is_white_draws += 1
+        normalized_result_by_role = dict(game_report.result_by_role)
+        if game_report.result_by_role and all(
+            outcome is RoleOutcome.DRAW
+            for outcome in normalized_result_by_role.values()
+        ):
+            self.draw_games += 1
+
+        for role_label, participant_id in game_report.participant_id_by_role.items():
+            self._ensure_participant(participant_id)
+            if role_label not in normalized_result_by_role:
+                raise IncompleteRoleResultError(role_label)
+            participant_stats = self.stats_by_participant[participant_id]
+            outcome = normalized_result_by_role[role_label]
+            if outcome is RoleOutcome.WIN:
+                participant_stats.wins += 1
+            elif outcome is RoleOutcome.LOSS:
+                participant_stats.losses += 1
+            elif outcome is RoleOutcome.DRAW:
+                participant_stats.draws += 1
             else:
-                raise InvalidMatchResultError(game_result)
-        else:
-            raise UnknownWhitePlayerError(white_player_name_id)
+                participant_stats.unknown += 1
 
     def finish(self) -> None:
         """Finishes the match and marks it as finished."""
         self.match_finished = True
 
     def __str__(self) -> str:
-        """Return a string representation of the match results.
-
-        Returns:
-            str: A string representation of the match results.
-
-        """
-        str_ = (
-            "Main result: "
-            + self.player_one_name_id
-            + " wins "
-            + str(self.get_player_one_wins())
-            + " "
+        """Return a readable representation of the aggregated participant stats."""
+        summary = self.get_simple_result()
+        header = "Main result: " + ", ".join(
+            f"{participant_id} wins {summary.stats_by_participant[participant_id].wins}"
+            for participant_id in summary.participant_order
         )
-        str_ += self.player_two_name_id + " wins " + str(self.get_player_two_wins())
-        str_ += " draws " + str(self.get_draws()) + "\n"
-
-        str_ += self.player_one_name_id + " with white: "
-        str_ += "Wins " + str(self.player_one_is_white_white_wins)
-        str_ += ", Losses " + str(self.player_one_is_white_black_wins)
-        str_ += ", Draws " + str(self.player_one_is_white_draws)
-        str_ += "\n           with black: "
-        str_ += "Wins " + str(self.player_two_is_white_black_wins)
-        str_ += ", Losses " + str(self.player_two_is_white_white_wins)
-        str_ += ", Draws " + str(self.player_two_is_white_draws) + "\n"
-
-        str_ += self.player_two_name_id + " with white: "
-        str_ += "Wins " + str(self.player_two_is_white_white_wins)
-        str_ += ", Losses " + str(self.player_two_is_white_black_wins)
-        str_ += ", Draws " + str(self.player_two_is_white_draws)
-        str_ += "\n           with black: "
-        str_ += "Wins " + str(self.player_one_is_white_black_wins)
-        str_ += ", Losses " + str(self.player_one_is_white_white_wins)
-        str_ += ", Draws " + str(self.player_one_is_white_draws)
-        return str_
+        header += f", draws {summary.draws}\n"
+        details = "\n".join(
+            (
+                f"{participant_id}: "
+                f"Wins {summary.stats_by_participant[participant_id].wins}, "
+                f"Losses {summary.stats_by_participant[participant_id].losses}, "
+                f"Draws {summary.stats_by_participant[participant_id].draws}, "
+                f"Unknown {summary.stats_by_participant[participant_id].unknown}"
+            )
+            for participant_id in summary.participant_order
+        )
+        return header + details
 
 
 @dataclass

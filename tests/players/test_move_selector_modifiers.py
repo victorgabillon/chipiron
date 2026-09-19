@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 def fake_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
     # use duck-typing for the test state
+    """Provide fake progress gain zeroing for the deterministic test fixture."""
     if hasattr(state, "is_zeroing") and state.is_zeroing(branch_key):
         return 1.0
     return 0.0
@@ -83,6 +84,7 @@ class FakeSearchDynamics(SearchDynamics[FakeTurnState, Any]):
     __anemone_search_dynamics__ = True
 
     def action_from_name(self, state: FakeTurnState, name: BranchName) -> BranchKey:
+        """Validate and decode an action name."""
         return state.name_to_key[name]
 
     def step(
@@ -92,6 +94,7 @@ class FakeSearchDynamics(SearchDynamics[FakeTurnState, Any]):
         *,
         depth: int = 0,
     ) -> Transition[FakeTurnState]:
+        """Advance the fixture by one validated action."""
         _ = depth
         return Transition(
             next_state=state,

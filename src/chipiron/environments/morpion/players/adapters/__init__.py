@@ -1,0 +1,1 @@
+"""Morpion player adapters."""

@@ -35,4 +35,19 @@ class CheckersEnvironmentDeps:
     forced_capture: bool = True
 
 
-EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps
+@dataclass(frozen=True)
+class IntegerReductionEnvironmentDeps:
+    """Dependencies required to build integer-reduction environments."""
+
+
+@dataclass(frozen=True)
+class MorpionEnvironmentDeps:
+    """Dependencies required to build Morpion environments."""
+
+
+EnvDeps = (
+    ChessEnvironmentDeps
+    | CheckersEnvironmentDeps
+    | IntegerReductionEnvironmentDeps
+    | MorpionEnvironmentDeps
+)

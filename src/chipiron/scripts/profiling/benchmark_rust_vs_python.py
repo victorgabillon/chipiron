@@ -63,13 +63,13 @@ try:
     from chipiron.players.player_ids import PlayerConfigTag
     from chipiron.scripts.chipiron_args import ImplementationArgs
 
-    # Configure parsley_coco logging to reduce noise during benchmarking
+    # Configure parsley logging to reduce noise during benchmarking.
     try:
         from parsley.logger import set_verbosity
 
         set_verbosity(logging.WARNING)
     except ImportError:
-        # parsley_coco might not be available in all environments
+        # parsley might not be available in all environments.
         pass
 except ImportError as e:
     print(f"Error importing chipiron modules: {e}")

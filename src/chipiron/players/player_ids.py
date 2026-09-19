@@ -11,7 +11,7 @@ Methods:
 Dependencies:
     - enum
     - importlib.resources
-    - parsley_coco
+    - parsley
     - chipiron.players.PlayerArgs
     - chipiron.utils.path
 
@@ -19,8 +19,6 @@ Dependencies:
 
 from enum import StrEnum
 from importlib.resources import as_file, files
-
-import parsley
 
 from chipiron.players.player_args import PlayerArgs
 from chipiron.utils import MyPath
@@ -47,6 +45,10 @@ class PlayerConfigTag(StrEnum):
     RANDOM = "Random"
     STOCKFISH = "Stockfish"
     CHECKERS_TREE_PIECECOUNT = "CheckersTreePieceCount"
+    INTEGER_REDUCTION_TREE_BASIC = "IntegerReductionTreeBasic"
+    INTEGER_REDUCTION_TREE_BASIC_DEBUG = "IntegerReductionTreeBasicDebug"
+    MORPION_TREE_BASIC = "MorpionTreeBasic"
+    MORPION_UNIFORM_DEPTH_2_DEBUG = "MorpionUniformDepth2Debug"
 
     def is_human(self) -> bool:
         """Check if the player is human.
@@ -70,6 +72,16 @@ class PlayerConfigTag(StrEnum):
         elif self is PlayerConfigTag.CHECKERS_TREE_PIECECOUNT:
             subpath = f"data/players/player_config/checkers/{self.value}.yaml"
         elif self in {
+            PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC,
+            PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC_DEBUG,
+        }:
+            subpath = f"data/players/player_config/integer_reduction/{self.value}.yaml"
+        elif self in {
+            PlayerConfigTag.MORPION_TREE_BASIC,
+            PlayerConfigTag.MORPION_UNIFORM_DEPTH_2_DEBUG,
+        }:
+            subpath = f"data/players/player_config/morpion/{self.value}.yaml"
+        elif self in {
             PlayerConfigTag.RANDOM,
             PlayerConfigTag.GUI_HUMAN,
             PlayerConfigTag.COMMAND_LINE_HUMAN,
@@ -92,6 +104,8 @@ class PlayerConfigTag(StrEnum):
             PlayerArgs: The player arguments as a dataclass.
 
         """
+        import parsley
+
         player_args: PlayerArgs = parsley.resolve_yaml_file_to_base_dataclass(
             yaml_path=str(self.get_yaml_file_path()),
             base_cls=PlayerArgs,

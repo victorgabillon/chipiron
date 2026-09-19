@@ -1,9 +1,12 @@
+"""Regression tests for oracle yaml schema guard."""
+
 from pathlib import Path
 
 PLAYER_CONFIG_ROOT = Path("src/chipiron/data/players/player_config")
 
 
 def test_no_legacy_syzygy_keys_in_player_yaml_configs() -> None:
+    """Verify no legacy syzygy keys in player yaml configs."""
     yaml_files = sorted(PLAYER_CONFIG_ROOT.rglob("*.yaml"))
     assert yaml_files, "Expected player YAML configs to exist"
 

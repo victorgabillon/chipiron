@@ -29,7 +29,7 @@ class BuildChessGamePlayerArgs:
     """Buildchessgameplayerargs implementation."""
 
     player_factory_args: ChessPlayerFactoryArgs
-    player_color: Color
+    player_role: Color
     implementation_args: ImplementationArgs
     universal_behavior: bool
     syzygy_table: AnySyzygyTable | None = None
@@ -55,7 +55,7 @@ def build_chess_game_player(
         )
     return create_game_player(
         player_factory_args=args.player_factory_args,
-        player_color=args.player_color,
+        player_color=args.player_role,
         policy_oracle=policy_oracle,
         value_oracle=value_oracle,
         terminal_oracle=terminal_oracle,

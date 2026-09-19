@@ -4,10 +4,26 @@ chipiron.scripts.learn\_nn\_supervised package
 Submodules
 ----------
 
+chipiron.scripts.learn\_nn\_supervised.checkpoint\_helpers module
+-----------------------------------------------------------------
+
+.. automodule:: chipiron.scripts.learn_nn_supervised.checkpoint_helpers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 chipiron.scripts.learn\_nn\_supervised.learn\_nn\_from\_supervised\_datasets module
 -----------------------------------------------------------------------------------
 
 .. automodule:: chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+chipiron.scripts.learn\_nn\_supervised.training\_args module
+------------------------------------------------------------
+
+.. automodule:: chipiron.scripts.learn_nn_supervised.training_args
    :members:
    :undoc-members:
    :show-inheritance:

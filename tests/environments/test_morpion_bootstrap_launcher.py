@@ -1,0 +1,1801 @@
+"""Tests for the canonical Morpion bootstrap launcher."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import replace
+from typing import TYPE_CHECKING, cast
+
+import pytest
+from anemone.training_export import (
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+from chipiron.environments.morpion.bootstrap import (
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+    AnemoneMorpionSearchRunnerArgs,
+    IncompatibleStageBootstrapConfigError,
+    MorpionBootstrapArgs,
+    MorpionBootstrapControl,
+    MorpionBootstrapLauncherArgs,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRolloutConfig,
+    MorpionBootstrapRunState,
+    MorpionBootstrapRuntimeControl,
+    MorpionBootstrapSearchConfig,
+    MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
+    initialize_bootstrap_run_state,
+    run_morpion_bootstrap_experiment,
+    save_bootstrap_config,
+    save_bootstrap_control,
+    save_bootstrap_run_state,
+)
+from chipiron.environments.morpion.bootstrap.config import (
+    bootstrap_config_from_args,
+    load_bootstrap_config,
+)
+from chipiron.environments.morpion.bootstrap.evaluator_family import (
+    CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+    canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config,
+    canonical_morpion_evaluator_family_config,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *,
+    target_value: float,
+    root_node_id: str,
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for launcher tests."""
+    node = make_training_node_snapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=True,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-launcher-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the Morpion bootstrap protocol."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Accept launcher loop restore inputs without side effects."""
+        del (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        del max_growth_steps
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(self, output_path: str | Path) -> None:
+        """Write one real training snapshot to ``output_path``."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        save_training_tree_snapshot(snapshot, output_path)
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one representative two-evaluator bootstrap config."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp": MorpionEvaluatorSpec(
+                name="mlp",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
+def _single_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one small single-evaluator config for real launcher loop tests."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            )
+        }
+    )
+
+
+def _make_launcher_args(
+    work_dir: Path,
+    *,
+    evaluators_config: MorpionEvaluatorsConfig | None = None,
+    evaluator_family_preset: str | None = None,
+    tree_branch_limit: int = 96,
+    max_cycles: int | None = 1,
+    open_dashboard: bool = False,
+    print_startup_summary: bool = False,
+    print_dashboard_hint: bool = False,
+) -> MorpionBootstrapLauncherArgs:
+    """Build representative launcher args for tests."""
+    bootstrap_args = MorpionBootstrapArgs(
+        work_dir=work_dir,
+        training_export_mode="flat",
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.5,
+        save_after_seconds=10.0,
+        max_rows=17,
+        use_backed_up_value=False,
+        tree_branch_limit=tree_branch_limit,
+        batch_size=1,
+        num_epochs=1,
+        learning_rate=1e-3,
+        shuffle=False,
+        evaluators_config=evaluators_config,
+        evaluator_family_preset=evaluator_family_preset,
+    )
+    return MorpionBootstrapLauncherArgs(
+        bootstrap_args=bootstrap_args,
+        max_cycles=max_cycles,
+        open_dashboard=open_dashboard,
+        print_startup_summary=print_startup_summary,
+        print_dashboard_hint=print_dashboard_hint,
+    )
+
+
+def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> None:
+    """Fresh launcher summary should show a new run and canonical paths."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_multi_evaluator_config(),
+        max_cycles=0,
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert "mode: fresh run" in summary
+    assert "bootstrap config: absent; will be written from launcher args" in summary
+    assert "run state: absent" in summary
+    assert "history: absent" in summary
+    assert "training export mode: flat (legacy compatibility/debug)" in summary
+    assert (
+        "runtime checkpoint format: json-zst (default; legacy .json checkpoints still load)"
+        in summary
+    )
+    assert "action_selector_kind=random_legal_prefer_openable" in summary
+    assert "latest runtime checkpoint: none" in summary
+    assert "latest training artifact: none" in summary
+    assert f"work dir: {tmp_path.resolve()}" in summary
+    assert (
+        f"config: {MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path}"
+        in summary
+    )
+
+
+def test_startup_summary_renders_traversing_rollout_selector(
+    tmp_path: Path,
+) -> None:
+    """Startup summary should show the explicit rollout action selector kind."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=0,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(
+                    enabled=True,
+                    action_selector_kind="random_legal_prefer_openable",
+                )
+            ),
+        ),
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert "action_selector_kind=random_legal_prefer_openable" in summary
+
+
+def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
+    """Resume summary should surface persisted artifacts and latest indices."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_multi_evaluator_config(),
+        max_cycles=0,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(
+        bootstrap_config_from_args(launcher_args.bootstrap_args),
+        paths.bootstrap_config_path,
+    )
+    save_bootstrap_control(
+        MorpionBootstrapControl(
+            force_evaluator="linear",
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
+        ),
+        paths.control_path,
+    )
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=3,
+            cycle_index=7,
+            latest_tree_snapshot_path="tree_exports/generation_000003.json",
+            latest_rows_path="rows/generation_000003.json",
+            latest_model_bundle_paths={"linear": "models/generation_000003/linear"},
+            active_evaluator_name="linear",
+            tree_size_at_last_save=42,
+            last_save_unix_s=123.0,
+            latest_runtime_checkpoint_path="search_checkpoints/generation_000003.json.zst",
+        ),
+        paths.run_state_path,
+    )
+    paths.history_jsonl_path.write_text("", encoding="utf-8")
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=True,
+    )
+
+    assert "mode: resume" in summary
+    assert "bootstrap config: present" in summary
+    assert "control file: present" in summary
+    assert "history: present" in summary
+    assert "latest generation: 3" in summary
+    assert "latest cycle: 7" in summary
+    assert "training export mode: flat (legacy compatibility/debug)" in summary
+    assert (
+        "latest runtime checkpoint: search_checkpoints/generation_000003.json.zst"
+        in summary
+    )
+    assert "latest training artifact: tree_exports/generation_000003.json" in summary
+    assert "forced evaluator control: linear" in summary
+    assert "tree_branch_limit: 64 (baseline 96, control override 64)" in summary
+
+
+def test_launcher_args_default_checkpoint_logging_is_concise(tmp_path: Path) -> None:
+    """Launcher CLI should keep checkpoint debug logs disabled by default."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
+
+    assert launcher_args.verbose_checkpoint_logs is False
+
+
+def test_launcher_args_can_enable_verbose_checkpoint_logs(tmp_path: Path) -> None:
+    """Launcher CLI should expose a checkpoint-debug flag for restore/build logs."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--verbose-checkpoint-logs",
+    ])
+
+    assert launcher_args.verbose_checkpoint_logs is True
+
+
+def test_launcher_args_parse_training_export_mode(tmp_path: Path) -> None:
+    """Launcher CLI should expose the training export mode selector."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-export-mode",
+        "sharded",
+    ])
+
+    assert launcher_args.bootstrap_args.training_export_mode == "sharded"
+    assert launcher_args.training_export_mode_explicit is True
+
+
+def test_launcher_args_parse_training_evaluator_names(tmp_path: Path) -> None:
+    """Launcher CLI should expose a comma-separated training evaluator subset."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-evaluator-names",
+        "linear_5, mlp_5",
+    ])
+
+    assert launcher_args.bootstrap_args.training_evaluator_names == (
+        "linear_5",
+        "mlp_5",
+    )
+
+
+def test_launcher_args_parse_training_debug_controls(tmp_path: Path) -> None:
+    """Launcher CLI should expose fast training-stage debug controls."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-max-rows",
+        "10000",
+        "--training-row-chunk-size",
+        "2048",
+        "--evaluator-diagnostics-max-rows",
+        "25",
+        "--skip-evaluator-diagnostics",
+    ])
+
+    assert launcher_args.bootstrap_args.training_max_rows == 10_000
+    assert launcher_args.bootstrap_args.training_row_chunk_size == 2048
+    assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 25
+    assert launcher_args.bootstrap_args.skip_evaluator_diagnostics is True
+
+
+def test_launcher_args_default_evaluator_diagnostics_max_rows(
+    tmp_path: Path,
+) -> None:
+    """Evaluator diagnostics should be bounded by default."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
+
+    assert launcher_args.bootstrap_args.evaluator_diagnostics_max_rows == 60
+
+
+def test_launcher_args_parse_growth_memory_profile(tmp_path: Path) -> None:
+    """Launcher CLI should expose opt-in growth memory profiling controls."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-memory-profile",
+        "--growth-memory-profile-top-n",
+        "7",
+        "--growth-memory-profile-sample-nodes",
+        "123",
+        "--growth-memory-profile-recursive",
+        "--growth-memory-profile-recursive-max-objects",
+        "456",
+        "--growth-memory-profile-recursive-max-depth",
+        "256",
+        "--growth-memory-profile-recursive-context-node-cap",
+        "321",
+        "--growth-memory-profile-recursive-events",
+        "after_checkpoint_load,before_growth",
+        "--growth-memory-profile-recursive-complete-map",
+        "--diagnostic-stop-after-growth",
+        "--growth-state-eviction-policy",
+        "cold_expanded",
+        "--growth-state-eviction-recent-window",
+        "7",
+        "--growth-state-rematerialization-cache-size",
+        "11",
+        "--growth-state-eviction-scan-interval-steps",
+        "13",
+        "--growth-state-eviction-scan-node-limit",
+        "17",
+    ])
+
+    assert launcher_args.bootstrap_args.growth_memory_profile is True
+    assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 7
+    assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 123
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive is True
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects == 456
+    )
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth == 256
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is True
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
+        == 321
+    )
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_events == (
+        "after_checkpoint_load",
+        "before_growth",
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map
+        is True
+    )
+    assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is True
+    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "cold_expanded"
+    assert launcher_args.bootstrap_args.growth_state_eviction_recent_window == 7
+    assert launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 11
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 13
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 17
+    assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    )
+
+
+def test_launcher_args_default_growth_memory_profile(tmp_path: Path) -> None:
+    """Growth memory profiling should be disabled by default."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
+
+    assert launcher_args.bootstrap_args.growth_memory_profile is False
+    assert launcher_args.bootstrap_args.growth_memory_profile_top_n == 20
+    assert launcher_args.bootstrap_args.growth_memory_profile_sample_nodes == 2000
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive is False
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_objects is None
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is False
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_context_node_cap
+        is None
+    )
+    assert launcher_args.bootstrap_args.growth_memory_profile_recursive_events == (
+        "after_checkpoint_load",
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_complete_map
+        is False
+    )
+    assert launcher_args.bootstrap_args.diagnostic_stop_after_growth is False
+    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "none"
+    assert launcher_args.bootstrap_args.growth_state_eviction_recent_window == 1000
+    assert (
+        launcher_args.bootstrap_args.growth_state_rematerialization_cache_size == 10000
+    )
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_interval_steps == 100
+    assert launcher_args.bootstrap_args.growth_state_eviction_scan_node_limit == 5000
+    assert launcher_args.bootstrap_args.growth_state_eviction_payload_mode == "anchor"
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 32
+    )
+
+
+def test_launcher_args_parse_growth_loop_controls(tmp_path: Path) -> None:
+    """Launcher CLI should expose explicit bounded growth-loop controls."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--growth-additional-branch-budget",
+        "500000",
+        "--growth-save-and-exit",
+        "--growth-skip-training-export",
+    ])
+
+    assert launcher_args.bootstrap_args.growth_additional_branch_budget == 500000
+    assert launcher_args.bootstrap_args.growth_save_and_exit is True
+    assert launcher_args.bootstrap_args.growth_skip_training_export is True
+
+
+def test_launcher_args_reject_non_positive_additional_branch_budget(
+    tmp_path: Path,
+) -> None:
+    """Additional branch budgets must be positive."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-additional-branch-budget",
+            "0",
+        ])
+
+
+def test_launcher_args_reject_additional_budget_with_explicit_absolute_limit(
+    tmp_path: Path,
+) -> None:
+    """Users should choose either relative or absolute branch budget mode."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-additional-branch-budget",
+            "500",
+            "--tree-branch-limit",
+            "1000",
+        ])
+
+
+def test_launcher_args_reject_save_and_exit_with_diagnostic_stop(
+    tmp_path: Path,
+) -> None:
+    """Grow-save-exit conflicts with the diagnostic no-save path."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-save-and-exit",
+            "--diagnostic-stop-after-growth",
+        ])
+
+
+def test_launcher_args_parse_frontier_cold_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """CLI should expose the C4d frontier-cold state eviction policy."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-state-eviction-policy",
+        "frontier_cold",
+    ])
+
+    assert launcher_args.bootstrap_args.growth_state_eviction_policy == "frontier_cold"
+
+
+def test_launcher_args_parse_growth_state_eviction_delta_payload_options(
+    tmp_path: Path,
+) -> None:
+    """CLI should expose the C5 bounded delta live-eviction payload controls."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-state-eviction-payload-mode",
+        "delta_when_safe",
+        "--growth-state-eviction-delta-chain-max-depth",
+        "7",
+    ])
+
+    assert (
+        launcher_args.bootstrap_args.growth_state_eviction_payload_mode
+        == "delta_when_safe"
+    )
+    assert launcher_args.bootstrap_args.growth_state_eviction_delta_chain_max_depth == 7
+
+
+def test_launcher_args_parse_growth_memory_profile_recursive_max_depth_none(
+    tmp_path: Path,
+) -> None:
+    """Launcher CLI should preserve an explicit uncapped recursive max depth."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--growth-memory-profile-recursive-max-depth",
+        "none",
+    ])
+
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth is None
+    )
+    assert (
+        launcher_args.bootstrap_args.growth_memory_profile_recursive_max_depth_explicit
+        is True
+    )
+
+
+def test_launcher_args_reject_invalid_growth_memory_profile_recursive_max_depth(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Launcher CLI should fail clearly for invalid recursive max depth values."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--growth-memory-profile-recursive-max-depth",
+            "invalid",
+        ])
+
+    captured = capsys.readouterr()
+    assert "expected 'none' or a non-negative integer" in captured.err
+
+
+def test_launcher_args_parse_candidate_checkpoint_load_headroom(
+    tmp_path: Path,
+) -> None:
+    """Launcher CLI should expose candidate checkpoint load forecast controls."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--candidate-checkpoint-load-headroom-factor",
+        "42",
+        "--candidate-checkpoint-load-min-headroom-mb",
+        "1234",
+    ])
+
+    assert launcher_args.bootstrap_args.candidate_checkpoint_load_headroom_factor == 42
+    assert (
+        launcher_args.bootstrap_args.candidate_checkpoint_load_min_headroom_mb == 1234
+    )
+    assert launcher_args.candidate_checkpoint_load_headroom_explicit is True
+
+
+def test_launcher_args_parse_available_ram_guard(tmp_path: Path) -> None:
+    """Launcher CLI should expose the artifact-pipeline available-RAM guard."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--min-available-ram-mb",
+        "5000",
+    ])
+
+    assert launcher_args.bootstrap_args.min_available_ram_mb == 5000
+    assert launcher_args.min_available_ram_mb_explicit is True
+
+
+def test_launcher_configures_checkpoint_logger_level() -> None:
+    """Launcher logging config should toggle checkpoint-internals verbosity."""
+    received_levels: list[int] = []
+
+    def _fake_set_checkpoint_logger_level(level: int) -> None:
+        received_levels.append(level)
+
+    original_loader = launcher_module._load_checkpoint_logger_level_setter
+    try:
+        launcher_module._load_checkpoint_logger_level_setter = lambda: (
+            _fake_set_checkpoint_logger_level
+        )
+
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=False
+        )
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=True
+        )
+    finally:
+        launcher_module._load_checkpoint_logger_level_setter = original_loader
+
+    assert received_levels == [logging.INFO, logging.DEBUG]
+
+
+def test_launcher_checkpoint_logging_noops_when_setter_unavailable(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Old installed Anemone should not crash launcher import-time logging config."""
+    original_loader = launcher_module._load_checkpoint_logger_level_setter
+    caplog.set_level(logging.WARNING)
+    try:
+        launcher_module._load_checkpoint_logger_level_setter = lambda: None
+
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=False
+        )
+    finally:
+        launcher_module._load_checkpoint_logger_level_setter = original_loader
+
+    assert "checkpoint_log_config_skipped" in caplog.text
+
+
+def test_launcher_creates_artifacts_and_returns_final_run_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canonical launcher should create bootstrap artifacts and return run state."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+    )
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> FakeMorpionSearchRunner:
+        created_runner_args.append(runner_args)
+        return FakeMorpionSearchRunner(tree_sizes=(3,), target_values=(1.0,))
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+
+    run_state = run_morpion_bootstrap_experiment(launcher_args)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    assert created_runner_args
+    assert paths.bootstrap_config_path.is_file()
+    assert paths.run_state_path.is_file()
+    assert paths.history_jsonl_path.is_file()
+    assert isinstance(run_state, MorpionBootstrapRunState)
+    assert run_state.generation == 1
+    assert run_state.cycle_index == 0
+
+
+def test_dashboard_hint_includes_exact_command(tmp_path: Path) -> None:
+    """Dashboard hint should point operators at the supported dashboard command."""
+    hint = launcher_module._render_dashboard_hint(
+        tmp_path.resolve(),
+        requested_open=True,
+    )
+
+    assert "Dashboard requested" in hint
+    assert "python -m chipiron.environments.morpion.bootstrap.dashboard.app" in hint
+    assert str(tmp_path.resolve()) in hint
+
+
+def test_launcher_cli_main_parses_and_dispatches(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """CLI main should parse launcher args and dispatch the canonical entrypoint."""
+    captured_args: list[MorpionBootstrapLauncherArgs] = []
+
+    def _fake_run(
+        launcher_args: MorpionBootstrapLauncherArgs,
+    ) -> MorpionBootstrapRunState:
+        captured_args.append(launcher_args)
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_bootstrap_experiment",
+        _fake_run,
+    )
+
+    exit_code = launcher_module.main([
+        "--work-dir",
+        str(tmp_path),
+        "--evaluator-family",
+        CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        "--max-cycles",
+        "2",
+        "--dashboard",
+        "--max-growth-steps-per-cycle",
+        "12",
+        "--save-after-seconds",
+        "22.5",
+        "--save-after-tree-growth-factor",
+        "1.5",
+        "--max-rows",
+        "33",
+        "--no-use-backed-up-value",
+        "--evaluator-update-policy",
+        "reevaluate_all",
+        "--pipeline-mode",
+        "single_process",
+        "--training-export-mode",
+        "both",
+        "--tree-branch-limit",
+        "48",
+    ])
+
+    assert exit_code == 0
+    assert len(captured_args) == 1
+    launcher_args = captured_args[0]
+    assert launcher_args.max_cycles == 2
+    assert launcher_args.open_dashboard is True
+    assert (
+        launcher_args.bootstrap_args.evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+    assert launcher_args.bootstrap_args.max_growth_steps_per_cycle == 12
+    assert launcher_args.bootstrap_args.save_after_seconds == 22.5
+    assert launcher_args.bootstrap_args.save_after_tree_growth_factor == 1.5
+    assert launcher_args.bootstrap_args.max_rows == 33
+    assert launcher_args.bootstrap_args.use_backed_up_value is False
+    assert launcher_args.bootstrap_args.evaluator_update_policy == "reevaluate_all"
+    assert launcher_args.bootstrap_args.pipeline_mode == "single_process"
+    assert launcher_args.bootstrap_args.training_export_mode == "both"
+    assert launcher_args.bootstrap_args.tree_branch_limit == 48
+
+
+def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
+    """CLI defaults should preserve current attach-only single-process behavior."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
+
+    assert (
+        launcher_args.bootstrap_args.evaluator_update_policy
+        == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    )
+    assert launcher_args.bootstrap_args.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+    assert (
+        launcher_args.bootstrap_args.training_export_mode
+        == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    )
+    assert launcher_args.bootstrap_args.training_export_mode == "sharded"
+    assert launcher_args.training_export_mode_explicit is False
+    assert launcher_args.bootstrap_args.search.rollout.enabled is False
+    assert launcher_args.bootstrap_args.search.rollout.max_extra_steps is None
+
+
+def test_launcher_args_from_cli_parses_rollout_flags(tmp_path: Path) -> None:
+    """CLI rollout flags should populate persisted bootstrap search config."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "none",
+        "--rollout-action-selector-kind",
+        "random_openable",
+        "--rollout-random-seed",
+        "7",
+        "--rollout-stop-on-existing-node",
+    ])
+
+    rollout = launcher_args.bootstrap_args.search.rollout
+    assert rollout.enabled is True
+    assert rollout.max_extra_steps is None
+    assert rollout.action_selector_kind == "random_openable"
+    assert rollout.random_seed == 7
+    assert rollout.stop_on_existing_node is True
+
+
+@pytest.mark.parametrize(
+    "action_selector_kind",
+    [
+        "first_legal_prefer_openable",
+        "random_legal_prefer_openable",
+    ],
+)
+def test_launcher_args_from_cli_accepts_traversing_rollout_selectors(
+    tmp_path: Path,
+    action_selector_kind: str,
+) -> None:
+    """CLI rollout selector choices should include traversal-capable selectors."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-action-selector-kind",
+        action_selector_kind,
+    ])
+
+    assert (
+        launcher_args.bootstrap_args.search.rollout.action_selector_kind
+        == action_selector_kind
+    )
+
+
+def test_launcher_args_from_cli_parses_bounded_rollout_limit(tmp_path: Path) -> None:
+    """Numeric rollout max-extra-steps values should parse as integers."""
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "5",
+    ])
+
+    assert launcher_args.bootstrap_args.search.rollout.max_extra_steps == 5
+
+
+def test_launcher_args_from_cli_rejects_negative_rollout_limit(
+    tmp_path: Path,
+) -> None:
+    """Negative rollout max-extra-steps should fail parser validation."""
+    with pytest.raises(SystemExit):
+        launcher_module.launcher_args_from_cli([
+            "--work-dir",
+            str(tmp_path),
+            "--rollout-max-extra-steps",
+            "-1",
+        ])
+
+
+@pytest.mark.parametrize("persisted_training_export_mode", ["flat", "both"])
+def test_resume_uses_persisted_training_export_mode_when_cli_omits_it(
+    tmp_path: Path,
+    persisted_training_export_mode: str,
+) -> None:
+    """Resume should keep the persisted export mode unless CLI explicitly overrides it."""
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            ),
+            training_export_mode=cast("object", persisted_training_export_mode),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+    ])
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert (
+        startup_status.bootstrap_config.training_export_mode
+        == persisted_training_export_mode
+    )
+    assert (
+        startup_status.resolved_bootstrap_args.training_export_mode
+        == persisted_training_export_mode
+    )
+
+
+def test_resume_explicit_training_export_mode_override_hits_compatibility_check(
+    tmp_path: Path,
+) -> None:
+    """Explicit CLI export-mode overrides should still follow config compatibility rules."""
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            ),
+            training_export_mode="flat",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--training-export-mode",
+        "sharded",
+    ])
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError, match="training_export_mode"
+    ):
+        launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_growth_stage_adopts_rollout_enabled_on_existing_config(
+    tmp_path: Path,
+) -> None:
+    """Growth relaunches should persist explicitly requested rollout enablement."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.bootstrap_config.search.rollout.enabled is True
+    assert startup_status.resolved_bootstrap_args.search.rollout.enabled is True
+    assert (
+        load_bootstrap_config(paths.bootstrap_config_path).search.rollout.enabled
+        is True
+    )
+
+
+def test_growth_stage_adopts_rollout_hyperparameters_on_existing_config(
+    tmp_path: Path,
+) -> None:
+    """Growth relaunches should persist explicitly requested rollout hyperparams."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "50",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+        "--rollout-random-seed",
+        "123",
+        "--rollout-stop-on-existing-node",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    rollout = startup_status.bootstrap_config.search.rollout
+    saved_rollout = load_bootstrap_config(paths.bootstrap_config_path).search.rollout
+
+    assert rollout.enabled is True
+    assert rollout.max_extra_steps == 50
+    assert rollout.action_selector_kind == "random_legal_prefer_openable"
+    assert rollout.random_seed == 123
+    assert rollout.stop_on_existing_node is True
+    assert saved_rollout == rollout
+
+
+def test_non_growth_stage_without_rollout_flags_inherits_persisted_rollout(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should inherit persisted rollout when flags are omitted."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.resolved_bootstrap_args.search == persisted_config.search
+
+
+def test_non_growth_stage_with_matching_rollout_flags_is_accepted(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers may pass rollout flags when they match persisted config."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--rollout-after-opening",
+        "--rollout-max-extra-steps",
+        "none",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+        "--rollout-random-seed",
+        "0",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.bootstrap_config.search == persisted_config.search
+
+
+def test_non_growth_stage_with_explicit_rollout_selector_mismatch_is_rejected(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should reject explicit selector drift."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(
+                    enabled=True,
+                    action_selector_kind="random_openable",
+                )
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "dataset_worker",
+        "--rollout-after-opening",
+        "--rollout-action-selector-kind",
+        "random_legal_prefer_openable",
+    ])
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError,
+        match="rollout_action_selector_kind",
+    ):
+        launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_growth_rollout_adoption_does_not_allow_dataset_drift(
+    tmp_path: Path,
+) -> None:
+    """Rollout adoption must not make unrelated config drift permissive."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            max_rows=17,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--max-rows",
+        "33",
+        "--rollout-after-opening",
+    ])
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="max_rows"):
+        launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_growth_adopted_rollout_config_reaches_runner_args(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runner construction should use rollout config adopted during startup."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--rollout-after-opening",
+    ])
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        created_runner_args.append(runner_args)
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+
+    runner = launcher_module._build_launcher_runner(
+        launcher_module._collect_launcher_startup_status(launcher_args)
+    )
+
+    assert runner is not None
+    assert created_runner_args[0].search_args.opening_expansion.kind.value == "rollout"
+
+
+def test_growth_resume_keeps_persisted_tree_branch_limit_without_cli_override(
+    tmp_path: Path,
+) -> None:
+    """Resume startup should not let the CLI default lower a persisted limit."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            tree_branch_limit=1_200_000,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert startup_status.resolved_bootstrap_args.tree_branch_limit == 1_200_000
+    assert startup_status.bootstrap_config.runtime.tree_branch_limit == 1_200_000
+    assert "tree_branch_limit: 1200000" in summary
+    assert "tree_branch_limit: 128" not in summary
+
+
+def test_growth_resume_allows_explicit_tree_branch_limit_override(
+    tmp_path: Path,
+) -> None:
+    """Explicit growth CLI tree-branch-limit overrides should still be honored."""
+    persisted_config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            pipeline_mode="artifact_pipeline",
+            tree_branch_limit=1_200_000,
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "growth",
+        "--tree-branch-limit",
+        "128",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert startup_status.resolved_bootstrap_args.tree_branch_limit == 128
+    assert "tree_branch_limit: 128 (baseline 1200000" in summary
+
+
+def test_launcher_constructs_real_runner_in_normal_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canonical launcher should own real runner construction before loop dispatch."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        tree_branch_limit=40,
+        max_cycles=3,
+    )
+    sentinel_runner = object()
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        created_runner_args.append(runner_args)
+        return sentinel_runner
+
+    def _fake_loop(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int | None = None,
+    ) -> MorpionBootstrapRunState:
+        assert args == launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+        assert runner is sentinel_runner
+        assert max_cycles == 3
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _fake_loop)
+
+    run_state = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert run_state == initialize_bootstrap_run_state()
+    assert len(created_runner_args) == 1
+    stopping_criterion = created_runner_args[0].search_args.stopping_criterion
+    assert stopping_criterion.tree_branch_limit == 40
+
+
+def test_launcher_growth_save_and_exit_clamps_loop_to_one_cycle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Grow-save-exit should force one cycle even if max-cycles is larger."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=5,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            pipeline_mode="artifact_pipeline",
+            growth_save_and_exit=True,
+        ),
+        pipeline_stage="growth",
+    )
+    sentinel_runner = object()
+    captured_max_cycles: list[int] = []
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        lambda _runner_args: sentinel_runner,
+    )
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        del args
+        assert runner is sentinel_runner
+        captured_max_cycles.append(max_cycles)
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_pipeline_growth_stage",
+        _fake_growth_stage,
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert captured_max_cycles == [1]
+
+
+def test_launcher_growth_stage_respects_cli_max_cycles(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Artifact-pipeline growth should honor warm worker cycle counts."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+        max_cycles=20,
+    )
+    launcher_args = replace(
+        launcher_args,
+        bootstrap_args=replace(
+            launcher_args.bootstrap_args,
+            pipeline_mode="artifact_pipeline",
+        ),
+        pipeline_stage="growth",
+    )
+    sentinel_runner = object()
+    captured_max_cycles: list[int] = []
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        lambda _runner_args: sentinel_runner,
+    )
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        assert args.pipeline_mode == "artifact_pipeline"
+        assert runner is sentinel_runner
+        captured_max_cycles.append(max_cycles)
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_pipeline_growth_stage",
+        _fake_growth_stage,
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert captured_max_cycles == [20]
+
+
+def test_launcher_constructs_runner_with_persisted_rollout_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runner construction should wire persisted rollout config into SearchArgs."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=_single_evaluator_config(),
+    )
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            launcher_args.bootstrap_args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+    created_runner_args: list[AnemoneMorpionSearchRunnerArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        created_runner_args.append(runner_args)
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+
+    runner = launcher_module._build_launcher_runner(
+        launcher_module._collect_launcher_startup_status(launcher_args)
+    )
+
+    assert runner is not None
+    assert created_runner_args[0].search_args.opening_expansion.kind.value == "rollout"
+
+
+def test_startup_summary_renders_requested_evaluator_family_preset(
+    tmp_path: Path,
+) -> None:
+    """Startup summary should show the selected evaluator family preset when used."""
+    launcher_args = MorpionBootstrapLauncherArgs(
+        bootstrap_args=MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        ),
+        print_startup_summary=False,
+        print_dashboard_hint=False,
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert (
+        "evaluator family preset: "
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (explicit)" in summary
+    )
+
+
+def test_launcher_defaults_canonical_family_when_unset(tmp_path: Path) -> None:
+    """Launcher-only defaulting should inject the canonical evaluator family preset."""
+    launcher_args = _make_launcher_args(tmp_path, evaluators_config=None)
+
+    resolved_args = launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert launcher_args.bootstrap_args.evaluator_family_preset is None
+    assert (
+        resolved_args.evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+    assert startup_status.evaluator_family_source == "launcher_default"
+    assert (
+        startup_status.resolved_evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+    assert (
+        startup_status.bootstrap_config.evaluators
+        == canonical_morpion_evaluator_family_config()
+    )
+
+
+def test_launcher_preserves_explicit_evaluator_family_preset(tmp_path: Path) -> None:
+    """Explicit launcher preset should not be relabeled as a launcher default."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=None,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.evaluator_family_source == "explicit"
+    assert (
+        startup_status.resolved_evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+
+
+def test_launcher_allows_append_only_evaluator_catalog_extension(
+    tmp_path: Path,
+) -> None:
+    """Existing runs may explicitly adopt append-only evaluator family additions."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        pipeline_mode="artifact_pipeline",
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "training_worker",
+        "--evaluator-family",
+        CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+        "--allow-evaluator-catalog-extension",
+    ])
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    expected = (
+        canonical_linear_mlp_entity_transformer_small_morpion_evaluator_family_config()
+    )
+    assert startup_status.bootstrap_config.evaluators == expected
+    assert load_bootstrap_config(paths.bootstrap_config_path).evaluators == expected
+    assert "entity_token_transformer_small" in startup_status.resolved_evaluator_names
+
+
+def test_launcher_requires_opt_in_for_evaluator_catalog_extension(
+    tmp_path: Path,
+) -> None:
+    """Append-only evaluator additions should fail clearly without explicit opt-in."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        pipeline_mode="artifact_pipeline",
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    launcher_args = launcher_module.launcher_args_from_cli([
+        "--work-dir",
+        str(tmp_path),
+        "--pipeline-mode",
+        "artifact_pipeline",
+        "--pipeline-stage",
+        "training_worker",
+        "--evaluator-family",
+        CANONICAL_LINEAR_MLP_ENTITY_TRANSFORMER_SMALL_MORPION_EVALUATOR_FAMILY_PRESET,
+    ])
+
+    with pytest.raises(ValueError, match="allow-evaluator-catalog-extension"):
+        launcher_module._collect_launcher_startup_status(launcher_args)
+
+
+def test_launcher_explicit_evaluator_config_suppresses_default_family(
+    tmp_path: Path,
+) -> None:
+    """Explicit evaluator config should prevent launcher-family injection."""
+    explicit_config = _single_evaluator_config()
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=explicit_config,
+    )
+
+    resolved_args = launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert resolved_args.evaluator_family_preset is None
+    assert startup_status.evaluator_family_source == "explicit_config"
+    assert startup_status.resolved_evaluator_family_preset is None
+    assert startup_status.bootstrap_config.evaluators == explicit_config
+    assert "evaluator family preset: none (explicit evaluators_config)" in summary
+
+
+def test_launcher_loop_receives_resolved_canonical_family_by_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canonical launcher path should pass resolved default family args into the loop."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=None,
+        max_cycles=2,
+    )
+    captured_args: list[MorpionBootstrapArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        del runner_args
+        return object()
+
+    def _fake_loop(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int | None = None,
+    ) -> MorpionBootstrapRunState:
+        del runner
+        captured_args.append(args)
+        assert max_cycles == 2
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _fake_loop)
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured_args) == 1
+    assert (
+        captured_args[0].resolved_evaluators_config()
+        == canonical_morpion_evaluator_family_config()
+    )
+
+
+def test_startup_summary_marks_launcher_default_family(tmp_path: Path) -> None:
+    """Startup summary should make launcher-default family provenance obvious."""
+    launcher_args = _make_launcher_args(tmp_path, evaluators_config=None)
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert (
+        "evaluator family preset: "
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (launcher default)" in summary
+    )
+    assert (
+        "configured evaluators: linear_10, linear_20, linear_41, linear_5, "
+        "mlp_10, mlp_20, mlp_41, mlp_5" in summary
+    )
+
+
+def test_direct_bootstrap_args_keep_legacy_default_behavior(tmp_path: Path) -> None:
+    """Direct low-level bootstrap args should retain the old single-evaluator fallback."""
+    bootstrap_args = MorpionBootstrapArgs(work_dir=tmp_path)
+
+    assert bootstrap_args.evaluator_family_preset is None
+    assert tuple(bootstrap_args.resolved_evaluators_config().evaluators) == ("default",)
+
+
+def test_launcher_main_registers_and_marks_process_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Launcher main should register process ownership on entry and mark stopped on exit."""
+    calls: list[str] = []
+
+    def _fake_register(paths: MorpionBootstrapPaths) -> object:
+        calls.append(f"register:{paths.work_dir}")
+        return object()
+
+    def _fake_mark(
+        paths: MorpionBootstrapPaths,
+        *,
+        exit_code: int | None = None,
+        reason: str = "launcher_exit",
+    ) -> object:
+        calls.append(f"mark:{paths.work_dir}:{exit_code}:{reason}")
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module, "register_current_launcher_process", _fake_register
+    )
+    monkeypatch.setattr(
+        launcher_module, "mark_current_launcher_process_stopped", _fake_mark
+    )
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_bootstrap_experiment",
+        lambda launcher_args: initialize_bootstrap_run_state(),
+    )
+
+    exit_code = launcher_module.main(["--work-dir", str(tmp_path), "--max-cycles", "0"])
+
+    assert exit_code == 0
+    assert calls == [
+        f"register:{tmp_path.resolve()}",
+        f"mark:{tmp_path.resolve()}:0:launcher_exit",
+    ]

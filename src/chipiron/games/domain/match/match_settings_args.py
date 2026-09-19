@@ -4,19 +4,20 @@ from dataclasses import dataclass
 
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_tag import GameConfigTag
+from chipiron.games.domain.match.match_role_schedule import (
+    SoloMatchSchedule,
+    TwoRoleMatchSchedule,
+)
 
 
 @dataclass
 class MatchSettingsArgs:
     """Dataclass to store match settings arguments.
 
-    Args:
-        number_of_games_player_one_white (int): The number of games player one plays as white.
-        number_of_games_player_one_black (int): The number of games player one plays as black.
-        game_setting_file (path): The file path to the game setting file.
+    Match scheduling is expressed explicitly by topology-aware neutral schedule
+    objects rather than white/black-specific quota fields.
 
     """
 
-    number_of_games_player_one_white: int
-    number_of_games_player_one_black: int
+    schedule: SoloMatchSchedule | TwoRoleMatchSchedule
     game_args: GameConfigTag | GameArgs

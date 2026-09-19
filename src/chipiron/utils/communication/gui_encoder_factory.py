@@ -3,6 +3,12 @@
 from typing import cast
 
 from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
+from chipiron.environments.integer_reduction.integer_reduction_gui_encoder import (
+    IntegerReductionGuiEncoder,
+)
+from chipiron.environments.integer_reduction.types import IntegerReductionDynamics
+from chipiron.environments.morpion.morpion_gui_encoder import MorpionGuiEncoder
+from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.environments.types import GameKind
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
@@ -27,5 +33,15 @@ def make_gui_encoder[StateT](
             return cast("GuiEncoder[StateT]", ChessGuiEncoder())
         case GameKind.CHECKERS:
             raise GuiEncoderError(game_kind)
+        case GameKind.INTEGER_REDUCTION:
+            return cast(
+                "GuiEncoder[StateT]",
+                IntegerReductionGuiEncoder(dynamics=IntegerReductionDynamics()),
+            )
+        case GameKind.MORPION:
+            return cast(
+                "GuiEncoder[StateT]",
+                MorpionGuiEncoder(dynamics=MorpionDynamics()),
+            )
         case _:
             raise GuiEncoderError(game_kind)

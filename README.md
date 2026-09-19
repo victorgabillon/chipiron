@@ -8,7 +8,22 @@
 
 # Chipiron
 
-Chipiron is a Python library that plays chess
+Chipiron is a Python framework for game-playing agents, generic tree search and
+learned state evaluators. It supports chess, Morpion Solitaire (5T), checkers and
+integer reduction. Game-specific code lives under `src/chipiron/environments/`;
+Morpion's evaluator/training/bootstrap implementation is under its `morpion/`
+subdirectory.
+
+The proposed canonical line is **`maintenance/chipiron-canonicalization`**, intended
+to become `main` after review. GitHub's current `main` is historical until that PR
+is merged. The integration preserves all `generic-game` history and the cleaned
+September evaluator work; see the [ancestry and audit](docs/maintenance/canonicalization.md).
+
+Store new experiments, models, datasets and run logs outside this checkout, using
+configuration-driven paths. See [artifact policy](docs/maintenance/artifacts.md),
+[dependency provenance](docs/maintenance/reproducibility.md), and the
+[small maintenance backlog](docs/maintenance_backlog.md). The dependency document
+also records the unpublished Coral prerequisite that currently blocks release.
 
 ## Acknowledgments
 
@@ -32,8 +47,9 @@ Chipiron integrates and builds upon other personal repositories:
 - [shakmaty_python_binding](https://github.com/victorgabillon/shakmaty_python_binding):
   Python bindings for the Rust chess library [shakmaty](https://github.com/niklasf/shakmaty).
 
-- [parsley_coco](https://github.com/victorgabillon/parsley_coco):
-  A generic parsing library.
+- [parsley-coco](https://github.com/victorgabillon/parsley_coco):
+  A generic parsing library, installed from PyPI as `parsley-coco` and
+  imported in Python as `parsley`.
 
 - [chipiron-website](https://github.com/victorgabillon/chipiron-website):
   Source code for the website where you can play against Chipiron online.
@@ -47,6 +63,8 @@ Chipiron integrates and builds upon other personal repositories:
 ```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
+git switch maintenance/chipiron-canonicalization  # until its reviewed merge into main
+cp .env.example .env  # optional local path overrides; never commit this file
 make init
 python3 -m chipiron.scripts.main_chipiron
 ```
@@ -204,14 +222,77 @@ xdg-open _build/html/index.html
 
 ## Testing
 
-Run all tests with:
+The canonical quality gate is tox. It builds and installs the wheel with published
+dependencies, verifies installed import paths and evaluator/checkpoint contracts,
+selects tests without the `integration` or `external_data` markers, and checks
+repository-wide Ruff format/lint. Pylint, mypy and Pyright report inherited debt;
+the [static-analysis ratchet](docs/maintenance/static_analysis_baseline/README.md)
+fails on new diagnostics or baseline growth. A ratchet pass does not mean zero
+static-analysis errors.
+
 ```bash
 tox
 ```
-or
+
+If tox is not installed in your active Python 3.13 environment:
+
 ```bash
-pytest
+python -m pip install -e '.[dev]'
 ```
+
+Useful focused runs:
+
+```bash
+tox -e tooling
+tox -e py313
+tox -e ruff
+tox -e static
+# Optional strict reports, which still fail on inherited debt:
+tox -e lint
+tox -e typecheck
+```
+
+Tool versions for Ruff, Pylint, mypy, Pyright, tox, Black, build, and
+pre-commit are pinned in `pyproject.toml`. `tox -e tooling` checks that CI and
+pre-commit stay aligned with those pins.
+
+For local IDEs, pre-commit, or manual commands outside tox, install the same
+development extras into your active Python 3.13 environment:
+
+```bash
+python -m pip install -e '.[test,lint,typecheck,dev]'
+```
+
+Then you can run the normal fast test selection directly:
+
+```bash
+python -m pytest -m "not integration and not external_data"
+```
+
+Ruff does not auto-fix in the default quality gates. To rewrite files
+intentionally, run explicit fix commands:
+
+```bash
+python -m ruff check --fix src/chipiron tests
+python -m ruff format src/chipiron tests
+```
+
+### Coverage
+
+Some integration tests spawn subprocesses, including full Chipiron runs. To
+ensure coverage is collected from those processes, coverage is configured in
+`pyproject.toml` with `patch = ["subprocess"]`.
+
+The pytest defaults already enable coverage. To spell out the same command:
+
+```bash
+python -m pytest --cov=chipiron --cov-config=pyproject.toml --cov-report=term-missing
+```
+
+If coverage appears empty, ensure:
+
+- tests are not bypassing Python execution
+- subprocesses are standard Python processes
 
 ### Integration Testing
 
@@ -248,10 +329,10 @@ Please open issues or pull requests on GitHub.
 
 **Development Requirements:**
 
-For development and testing, additional dependencies are listed in `requirements_dev.txt`:
+For development and testing, use the extras declared in `pyproject.toml`:
 
 ```bash
-pip install -r requirements_dev.txt
+python -m pip install -e '.[test,lint,typecheck,dev]'
 ```
 
 This includes tools for:
@@ -261,9 +342,11 @@ This includes tools for:
 - Documentation building (sphinx)
 - Code formatting and development tools
 
-For the prehook to work pleas run
+The pre-commit hooks use the pinned Ruff from your active Python environment,
+so install the development extras before installing the hooks:
+
 ```bash
-pre-commit install # precommit is supposed to be pip-installed from requirements_dev.txt
+pre-commit install
 ```
 
 
@@ -278,4 +361,3 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 ## Contact
 
 For questions or support, please open an [issue](https://github.com/victorgabillon/chipiron/issues).
-

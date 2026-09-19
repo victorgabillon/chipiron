@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from valanga import Color, TurnState
+from valanga import TurnState
 
+from chipiron.core.roles import format_game_role
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdSetStatus,
@@ -57,8 +58,6 @@ class MatchOrchestrator:
         controller: MatchController,
     ) -> GameReport:
         """Run the match loop until terminal condition, then return GameReport."""
-        color_names = {Color.WHITE: "White", Color.BLACK: "Black"}
-
         game_manager.game.notify_display()
 
         if game_manager.game.is_play():
@@ -72,11 +71,11 @@ class MatchOrchestrator:
                 ply,
                 game_manager.game.playing_status.status,
             )
-            color_to_move = state.turn
+            role_to_move = state.turn
             chipiron_logger.info(
                 "%s (%s) to play now...",
-                color_names[color_to_move],
-                game_manager.player_color_to_id[color_to_move],
+                format_game_role(role_to_move),
+                game_manager.participant_id_by_role[role_to_move],
             )
 
             mail: MainMailboxMessage = self._mailbox.get()
@@ -112,11 +111,14 @@ class MatchOrchestrator:
         game_manager.terminate_processes()
         chipiron_logger.info("End play_one_game")
 
-        game_results = game_manager.simple_results()
+        resolved_result = game_manager.resolved_results()
         return GameReport(
-            final_game_result=game_results,
             action_history=list(game_manager.game.action_history),
             state_tag_history=game_manager.game.state_tag_history,
+            participant_id_by_role=game_manager.serializable_participant_id_by_role(),
+            result_by_role=resolved_result.to_serializable_result_by_role(),
+            winner_roles=resolved_result.to_serializable_winner_roles(),
+            result_reason=resolved_result.reason,
         )
 
     def _ignore_if_stale_scope(
@@ -178,14 +180,10 @@ class MatchOrchestrator:
                 return
 
             case EvProgress():
-                if message.payload.player_color == Color.WHITE:
-                    game_manager.progress_collector.progress_white(
-                        value=message.payload.progress_percent
-                    )
-                else:
-                    game_manager.progress_collector.progress_black(
-                        value=message.payload.progress_percent
-                    )
+                game_manager.progress_collector.progress(
+                    message.payload.player_role,
+                    message.payload.progress_percent,
+                )
 
             case _:
                 chipiron_logger.warning(  # type: ignore[unreachable]

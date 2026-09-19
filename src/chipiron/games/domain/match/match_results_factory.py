@@ -1,11 +1,4 @@
-"""Module to create a MatchResults object.
-
-This module provides a MatchResultsFactory class that is responsible for creating MatchResults objects.
-It also provides a way to subscribe to the MatchResults object and receive updates.
-
-Classes:
-- MatchResultsFactory: A factory class to create MatchResults objects and manage subscribers.
-"""
+"""Create match-results objects from validated match plans."""
 
 import queue
 
@@ -13,47 +6,41 @@ from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.match.match_results import IMatchResults, MatchResults
+from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
 
 
 class MatchResultsFactory:
-    """A factory class for creating MatchResults objects.
+    """Create match-results objects for one validated match plan."""
 
-    This class provides methods to create MatchResults objects and subscribe subscribers to receive match results.
-
-    Attributes:
-        player_one_name (str): The name of player one.
-        player_two_name (str): The name of player two.
-        subscriber_queues (list[queue.Queue[GuiUpdate]]): A list of GUI queues to receive match results.
-
-    """
-
-    player_one_name: str
-    player_two_name: str
+    match_plan: ValidatedMatchPlan
     subscriber_queues: list[queue.Queue[GuiUpdate]]
 
-    def __init__(self, player_one_name: str, player_two_name: str) -> None:
+    def __init__(self, match_plan: ValidatedMatchPlan) -> None:
         """Initialize the MatchResultsFactory.
 
         Args:
-            player_one_name (str): The name of player one.
-            player_two_name (str): The name of player two.
+            match_plan (ValidatedMatchPlan): The validated plan whose
+                participants and schedule this factory reports on.
 
         """
-        self.player_one_name = player_one_name
-        self.player_two_name = player_two_name
+        self.match_plan = match_plan
         self.subscriber_queues = []
 
+    @property
+    def participant_ids(self) -> tuple[str, ...]:
+        """Return the ordered participant identifiers for this validated plan."""
+        return self.match_plan.participant_ids
+
     def create(self) -> IMatchResults:
-        """Create a MatchResults object.
+        """Create a match-results object for the validated plan.
 
         Returns:
             IMatchResults: The created MatchResults object.
 
         """
         match_result: MatchResults = MatchResults(
-            player_one_name_id=self.player_one_name,
-            player_two_name_id=self.player_two_name,
+            participant_ids=self.participant_ids,
         )
         if self.subscriber_queues:
             return ObservableMatchResults(match_result)

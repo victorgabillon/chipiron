@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from valanga import StateTag
+from valanga import Color, StateTag
 
 from chipiron.environments.base import Environment
 from chipiron.environments.checkers.checkers_gui_encoder import CheckersGuiEncoder
@@ -72,6 +72,7 @@ def make_checkers_environment(
 
     return Environment(
         game_kind=GameKind.CHECKERS,
+        roles=(Color.WHITE, Color.BLACK),
         rules=rules,
         dynamics=CheckersDynamics(atom_rules),
         gui_encoder=CheckersGuiEncoder(rules=atom_rules),

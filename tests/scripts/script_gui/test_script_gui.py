@@ -7,43 +7,53 @@ from chipiron.scripts.gui_launcher import (
     ScriptGUIType,
     generate_inputs,
 )
+from chipiron.scripts.gui_launcher.models import ParticipantSelection
 
 args_chosen_by_user_list: list[ArgsChosenByUser] = [
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_white=PlayerConfigTag.GUI_HUMAN,
-        player_type_black=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-        strength_black=1,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+            ParticipantSelection(
+                player_tag=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                strength=1,
+            ),
+        ],
     ),
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_white=PlayerConfigTag.GUI_HUMAN,
-        player_type_black=PlayerConfigTag.UNIFORM,
-        strength_black=1,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+            ParticipantSelection(player_tag=PlayerConfigTag.UNIFORM, strength=1),
+        ],
     ),
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_white=PlayerConfigTag.GUI_HUMAN,
-        player_type_black=PlayerConfigTag.CHIPIRON,
-        strength_black=2,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+            ParticipantSelection(player_tag=PlayerConfigTag.CHIPIRON, strength=2),
+        ],
     ),
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_black=PlayerConfigTag.GUI_HUMAN,
-        player_type_white=PlayerConfigTag.CHIPIRON,
-        strength_white=2,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.CHIPIRON, strength=2),
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+        ],
     ),
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_black=PlayerConfigTag.GUI_HUMAN,
-        player_type_white=PlayerConfigTag.GUI_HUMAN,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+        ],
     ),
     ArgsChosenByUser(
         type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
-        player_type_black=PlayerConfigTag.CHIPIRON,
-        player_type_white=PlayerConfigTag.CHIPIRON,
-        strength_white=2,
-        strength_black=2,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.CHIPIRON, strength=2),
+            ParticipantSelection(player_tag=PlayerConfigTag.CHIPIRON, strength=2),
+        ],
     ),
 ]
 
@@ -55,7 +65,6 @@ def tust_script_gui() -> None:
             args_chosen_by_user=args_chosen_by_user
         )
 
-        # creating the script object from its name and arguments
         create_script(
             script_type=script_type,
             extra_args=gui_extra_args,

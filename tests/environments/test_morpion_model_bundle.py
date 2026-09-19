@@ -1,0 +1,676 @@
+"""Tests for Morpion model definition, bundle IO, and minimal training."""
+
+from __future__ import annotations
+
+import json
+import random
+from typing import TYPE_CHECKING, cast
+
+import pytest
+import torch
+from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+from torch.utils.data import DataLoader
+
+from chipiron.environments.morpion.learning import (
+    load_morpion_supervised_rows,
+    save_morpion_supervised_rows,
+    save_morpion_supervised_rows_streaming,
+    training_tree_snapshot_to_morpion_supervised_rows,
+)
+from chipiron.environments.morpion.players.evaluators.datasets import (
+    MorpionSupervisedDataset,
+    MorpionSupervisedDatasetArgs,
+    collate_morpion_supervised_samples,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
+    MORPION_FEATURE_SCHEMA,
+    MORPION_INPUT_DIM,
+    MORPION_MANIFEST_FILE_NAME,
+    MORPION_MODEL_ARGS_FILE_NAME,
+    MORPION_MODEL_WEIGHTS_FILE_NAME,
+    IncompatibleMorpionModelBundleError,
+    MorpionFeatureSubset,
+    MorpionRegressorArgs,
+    build_morpion_regressor,
+    load_morpion_model_bundle,
+    load_morpion_regressor_for_inference,
+    morpion_feature_subset_from_feature_names,
+    save_morpion_model_bundle,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
+    MorpionStreamingTrainingArgs,
+    MorpionTrainingArgs,
+    train_morpion_regressor,
+    train_morpion_regressor_streaming,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def _feature_subset(width: int) -> MorpionFeatureSubset:
+    """Return one deterministic explicit Morpion feature subset for tests."""
+    return morpion_feature_subset_from_feature_names(
+        f"handcrafted_{width}_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:width],
+    )
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_node(
+    *,
+    node_id: str,
+    payload: dict[str, object],
+    target_value: float,
+) -> TrainingNodeSnapshot:
+    """Build one export node that PR 5 will convert into a raw Morpion row."""
+    return make_training_node_snapshot(
+        node_id=node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=payload,
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=False,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=5,
+        metadata={"source": "model-bundle-test"},
+    )
+
+
+def _build_rows_file(
+    tmp_path: Path,
+    *,
+    target_values: tuple[float, ...] = (1.25, -0.5),
+) -> Path:
+    """Build and persist a raw Morpion supervised-row artifact for tests."""
+    payload = _make_morpion_payload()
+    nodes = tuple(
+        _make_training_node(
+            node_id=f"node-{index}",
+            payload=payload,
+            target_value=target_value,
+        )
+        for index, target_value in enumerate(target_values)
+    )
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="node-0" if nodes else None,
+        nodes=nodes,
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
+    path = tmp_path / "morpion_supervised_rows.json"
+    save_morpion_supervised_rows(rows, path)
+    return path
+
+
+def test_linear_model_builds_with_correct_output_shape() -> None:
+    """The default Morpion regressor should map batches to one scalar output."""
+    model = build_morpion_regressor()
+    dummy_batch = torch.randn(3, MORPION_INPUT_DIM)
+
+    batch_output = model(dummy_batch)
+    single_output = model(torch.randn(MORPION_INPUT_DIM))
+
+    assert batch_output.shape == (3, 1)
+    assert single_output.shape == (1, 1)
+
+
+def test_mlp_model_builds_with_multiple_hidden_layers() -> None:
+    """An MLP regressor should support multiple configured hidden layers."""
+    model = build_morpion_regressor(
+        MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8, 4))
+    )
+
+    output = model(torch.randn(2, MORPION_INPUT_DIM))
+
+    assert output.shape == (2, 1)
+
+
+def test_model_input_dimension_tracks_selected_feature_subset() -> None:
+    """Linear and MLP regressors should both derive width from the subset."""
+    for width in (5, 10, 20, 41):
+        subset = _feature_subset(width)
+        linear_model = build_morpion_regressor(
+            MorpionRegressorArgs(
+                model_kind="linear",
+                feature_subset_name=subset.name,
+                feature_names=subset.feature_names,
+            )
+        )
+        mlp_model = build_morpion_regressor(
+            MorpionRegressorArgs(
+                model_kind="mlp",
+                feature_subset_name=subset.name,
+                feature_names=subset.feature_names,
+                hidden_sizes=(8,),
+            )
+        )
+
+        assert linear_model(torch.randn(width)).shape == (1, 1)
+        assert mlp_model(torch.randn(2, width)).shape == (2, 1)
+
+
+def test_save_load_bundle_round_trip(tmp_path: Path) -> None:
+    """Saving and loading a Morpion bundle should preserve args, manifest, and weights."""
+    args = MorpionRegressorArgs(model_kind="linear")
+    model = build_morpion_regressor(args)
+    with torch.no_grad():
+        for parameter in model.parameters():
+            parameter.add_(0.25)
+
+    bundle_dir = tmp_path / "bundle"
+    save_morpion_model_bundle(model, bundle_dir, model_args=args, metadata={"epoch": 1})
+    loaded_model, loaded_args, loaded_manifest = load_morpion_model_bundle(bundle_dir)
+
+    assert loaded_args == args
+    assert loaded_manifest.game_kind == "morpion"
+    assert loaded_manifest.input_dim == MORPION_INPUT_DIM
+    assert loaded_manifest.feature_schema == MORPION_FEATURE_SCHEMA
+    assert loaded_manifest.feature_subset_name == args.feature_subset_name
+    assert loaded_manifest.feature_names == args.feature_names
+    assert loaded_manifest.metadata["epoch"] == 1
+
+    for original_parameter, loaded_parameter in zip(
+        model.parameters(), loaded_model.parameters(), strict=True
+    ):
+        torch.testing.assert_close(original_parameter, loaded_parameter)
+
+
+def test_reduced_subset_bundle_round_trip_persists_feature_metadata(
+    tmp_path: Path,
+) -> None:
+    """Reduced-width bundles should persist and reload the exact feature subset."""
+    subset = _feature_subset(10)
+    args = MorpionRegressorArgs(
+        model_kind="linear",
+        feature_subset_name=subset.name,
+        feature_names=subset.feature_names,
+    )
+    model = build_morpion_regressor(args)
+    bundle_dir = tmp_path / "bundle"
+
+    save_morpion_model_bundle(model, bundle_dir, model_args=args)
+    loaded_model, loaded_args, loaded_manifest = load_morpion_model_bundle(bundle_dir)
+
+    assert loaded_args.feature_subset_name == subset.name
+    assert loaded_args.feature_names == subset.feature_names
+    assert loaded_args.input_dim == subset.dimension
+    assert loaded_manifest.feature_subset_name == subset.name
+    assert loaded_manifest.feature_names == subset.feature_names
+    assert loaded_manifest.input_dim == subset.dimension
+    assert loaded_model(torch.randn(subset.dimension)).shape == (1, 1)
+
+
+def test_manifest_incompatibility_fails_clearly(tmp_path: Path) -> None:
+    """Loading should reject a Morpion bundle whose manifest no longer matches."""
+    args = MorpionRegressorArgs(model_kind="linear")
+    model = build_morpion_regressor(args)
+    bundle_dir = tmp_path / "bundle"
+    save_morpion_model_bundle(model, bundle_dir, model_args=args)
+
+    manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_data["feature_schema"] = "wrong_schema"
+    manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+
+    with pytest.raises(IncompatibleMorpionModelBundleError):
+        load_morpion_model_bundle(bundle_dir)
+
+
+def test_bundle_load_rejects_conflicting_known_subset_name_and_feature_names(
+    tmp_path: Path,
+) -> None:
+    """Bundle loading should reject known subset names paired with mismatched names."""
+    args = MorpionRegressorArgs(model_kind="linear")
+    model = build_morpion_regressor(args)
+    bundle_dir = tmp_path / "bundle"
+    save_morpion_model_bundle(model, bundle_dir, model_args=args)
+
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    args_data = json.loads(args_path.read_text(encoding="utf-8"))
+    args_data["feature_subset_name"] = "full"
+    args_data["feature_names"] = list(MORPION_CANONICAL_FEATURE_NAMES[:10])
+    args_data["input_dim"] = 10
+    args_path.write_text(json.dumps(args_data), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Known Morpion feature subset names"):
+        load_morpion_model_bundle(bundle_dir)
+
+
+def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
+    """The first Morpion training helper should train, save, and report metrics."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / "trained_bundle"
+
+    model, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            device="cpu",
+        )
+    )
+
+    assert output_dir.is_dir()
+    assert (output_dir / MORPION_MODEL_WEIGHTS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MODEL_ARGS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MANIFEST_FILE_NAME).is_file()
+    assert "final_loss" in metrics
+    assert metrics["num_samples"] == 2.0
+    assert metrics["num_epochs"] == 1.0
+
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
+    sample_input = dataset[0].get_input_layer().to(next(model.parameters()).device)
+    output = model(sample_input)
+    assert output.shape == (1, 1)
+
+
+def test_minimal_training_helper_records_cpu_device_metadata(tmp_path: Path) -> None:
+    """Training with an explicit CPU device should persist device metadata."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / "trained_cpu_bundle"
+
+    _model, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            device="cpu",
+        )
+    )
+
+    manifest_path = output_dir / MORPION_MANIFEST_FILE_NAME
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_metadata = cast("dict[str, object]", manifest_data["metadata"])
+
+    assert metrics["requested_device"] == "cpu"
+    assert metrics["resolved_device"] == "cpu"
+    assert metrics["model_device"] == "cpu"
+    assert isinstance(metrics["parameter_count"], float)
+    assert metrics["parameter_count"] > 0.0
+    assert isinstance(metrics["timing_total_s"], float)
+    assert metrics["timing_total_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert metrics["timing_train_forward_s"] >= 0.0
+    assert isinstance(metrics["timing_bundle_save_s"], float)
+    assert metrics["timing_bundle_save_s"] >= 0.0
+    assert manifest_metadata["requested_device"] == "cpu"
+    assert manifest_metadata["resolved_device"] == "cpu"
+    assert manifest_metadata["model_device"] == "cpu"
+    assert manifest_metadata["parameter_count"] == metrics["parameter_count"]
+    timing_metadata = cast("dict[str, object]", manifest_metadata["timing"])
+    assert isinstance(timing_metadata["total_s"], float)
+    assert isinstance(timing_metadata["bundle_save_s"], float)
+    train_timing = cast("dict[str, object]", timing_metadata["train"])
+    assert isinstance(train_timing["forward"], float)
+
+
+def test_training_metrics_use_full_validation_mean_not_last_minibatch(
+    tmp_path: Path,
+) -> None:
+    """Validation loss should be the full split mean, not the final validation batch."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(-1.0, 0.5, 2.0, 4.0))
+    output_dir = tmp_path / "trained_bundle"
+    validation_seed = 17
+
+    model, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=1,
+            num_epochs=0,
+            learning_rate=1e-3,
+            shuffle=False,
+            validation_fraction=0.5,
+            validation_seed=validation_seed,
+            device="cpu",
+        )
+    )
+
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
+    indices = list(range(len(dataset)))
+    random.Random(validation_seed).shuffle(indices)
+    validation_indices = indices[:2]
+    validation_errors: list[float] = []
+    with torch.no_grad():
+        for index in validation_indices:
+            sample = dataset[index]
+            device = next(model.parameters()).device
+            sample_input = sample.get_input_layer().to(device)
+            target = sample.get_target_value().to(device)
+            prediction = model(sample_input)
+            validation_errors.append(float(torch.square(prediction - target).item()))
+    expected_validation_loss = sum(validation_errors) / len(validation_errors)
+
+    assert metrics["num_train_samples"] == 2.0
+    assert metrics["num_validation_samples"] == 2.0
+    assert metrics["validation_loss"] == pytest.approx(expected_validation_loss)
+    assert metrics["validation_loss"] != pytest.approx(validation_errors[-1])
+    assert metrics["final_loss"] == metrics["validation_loss"]
+    assert metrics["loss_name"] == "mse"
+    assert "validation_mae" in metrics
+
+
+def test_train_morpion_regressor_streaming_tiny_jsonl(tmp_path: Path) -> None:
+    """Streaming JSONL training should run end-to-end on a tiny real dataset."""
+    json_rows_path = _build_rows_file(
+        tmp_path,
+        target_values=(-1.0, -0.5, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25),
+    )
+    rows = load_morpion_supervised_rows(json_rows_path)
+    jsonl_rows_path = tmp_path / "morpion_supervised_rows.jsonl"
+    write_stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=jsonl_rows_path,
+    )
+    output_dir = tmp_path / "streaming_trained_bundle"
+
+    _model, metrics = train_morpion_regressor_streaming(
+        MorpionStreamingTrainingArgs(
+            training_args=MorpionTrainingArgs(
+                dataset_file=jsonl_rows_path,
+                output_dir=output_dir,
+                batch_size=2,
+                num_epochs=1,
+                learning_rate=1e-3,
+                shuffle=False,
+                validation_fraction=0.25,
+                device="cpu",
+            ),
+            row_chunk_size=3,
+        )
+    )
+
+    assert write_stats.row_count == 8
+    assert output_dir.is_dir()
+    assert (output_dir / MORPION_MODEL_WEIGHTS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MODEL_ARGS_FILE_NAME).is_file()
+    assert (output_dir / MORPION_MANIFEST_FILE_NAME).is_file()
+    assert metrics["num_samples"] == 8.0
+    assert isinstance(metrics["num_train_samples"], float)
+    assert metrics["num_train_samples"] > 0.0
+    assert isinstance(metrics["num_validation_samples"], float)
+    assert metrics["num_validation_samples"] > 0.0
+    assert metrics["split_policy"] == "index_modulo_4"
+    assert metrics["final_loss"] is not None
+    assert metrics["flat_tensor_cache_used"] == "true"
+    assert metrics["flat_tensor_cache_rebuilt"] == "true"
+    assert isinstance(metrics["flat_tensor_cache_path"], str)
+    assert metrics["entity_token_cache_used"] == "false"
+    assert isinstance(metrics["timing_flat_tensor_cache_materialize_s"], float)
+    assert isinstance(metrics["timing_flat_tensor_cache_load_s"], float)
+    assert isinstance(metrics["timing_train_chunk_load_s"], float)
+    assert metrics["timing_train_chunk_load_s"] >= 0.0
+    assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
+    assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert metrics["timing_train_forward_s"] >= 0.0
+    with open(output_dir / MORPION_MANIFEST_FILE_NAME, encoding="utf-8") as handle:
+        manifest_payload = json.load(handle)
+    manifest_metadata = cast("dict[str, object]", manifest_payload["metadata"])
+    flat_cache_metadata = cast(
+        "dict[str, object]",
+        manifest_metadata["flat_tensor_cache"],
+    )
+    assert flat_cache_metadata["used"] is True
+    assert flat_cache_metadata["rebuilt"] is True
+    assert flat_cache_metadata["row_count"] == 8
+
+
+def test_train_morpion_entity_token_regressor_streaming_tiny_jsonl(
+    tmp_path: Path,
+) -> None:
+    """Streaming entity-token training should use the packed entity-token cache."""
+    json_rows_path = _build_rows_file(
+        tmp_path,
+        target_values=(-1.0, -0.5, 0.0, 0.25, 0.5, 0.75),
+    )
+    rows = load_morpion_supervised_rows(json_rows_path)
+    jsonl_rows_path = tmp_path / "morpion_entity_token_supervised_rows.jsonl"
+    write_stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows,
+        metadata=rows.metadata,
+        path=jsonl_rows_path,
+    )
+    output_dir = tmp_path / "streaming_entity_token_trained_bundle"
+
+    _model, metrics = train_morpion_regressor_streaming(
+        MorpionStreamingTrainingArgs(
+            training_args=MorpionTrainingArgs(
+                dataset_file=jsonl_rows_path,
+                output_dir=output_dir,
+                batch_size=2,
+                num_epochs=1,
+                learning_rate=1e-3,
+                shuffle=False,
+                validation_fraction=0.25,
+                model_kind=MORPION_ENTITY_TOKEN_MODEL_KIND,
+                entity_max_tokens=128,
+                entity_d_model=16,
+                entity_n_head=4,
+                entity_n_layer=1,
+                entity_dim_feedforward=32,
+                device="cpu",
+            ),
+            row_chunk_size=2,
+            max_rows=4,
+        )
+    )
+
+    assert write_stats.row_count == 6
+    assert output_dir.is_dir()
+    assert metrics["num_samples"] == 4.0
+    assert metrics["flat_tensor_cache_used"] == "false"
+    assert metrics["entity_token_cache_used"] == "true"
+    assert metrics["entity_token_cache_rebuilt"] == "true"
+    assert isinstance(metrics["entity_token_cache_path"], str)
+    assert isinstance(metrics["timing_entity_token_cache_materialize_s"], float)
+    assert metrics["timing_entity_token_cache_materialize_s"] >= 0.0
+    assert isinstance(metrics["timing_train_row_to_sample_batch_s"], float)
+    assert metrics["timing_train_row_to_sample_batch_s"] >= 0.0
+    assert isinstance(metrics["timing_train_forward_s"], float)
+    assert isinstance(metrics["timing_train_backward_s"], float)
+    assert isinstance(metrics["timing_train_metrics_row_to_sample_batch_s"], float)
+    assert isinstance(
+        metrics["timing_validation_metrics_row_to_sample_batch_s"],
+        float,
+    )
+    with open(output_dir / MORPION_MANIFEST_FILE_NAME, encoding="utf-8") as handle:
+        manifest_payload = json.load(handle)
+    manifest_metadata = cast("dict[str, object]", manifest_payload["metadata"])
+    entity_token_cache_metadata = cast(
+        "dict[str, object]",
+        manifest_metadata["entity_token_cache"],
+    )
+    assert entity_token_cache_metadata["used"] is True
+    assert entity_token_cache_metadata["rebuilt"] is True
+    assert entity_token_cache_metadata["row_count"] == 4
+    assert entity_token_cache_metadata["entity_max_tokens"] == 128
+
+
+def test_training_metrics_small_dataset_does_not_require_validation(
+    tmp_path: Path,
+) -> None:
+    """Single-row training should not crash and should fall back to train loss."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(0.25,))
+    output_dir = tmp_path / "tiny_trained_bundle"
+
+    _, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=0,
+            learning_rate=1e-3,
+            shuffle=False,
+            validation_fraction=0.5,
+            device="cpu",
+        )
+    )
+
+    assert metrics["num_train_samples"] == 1.0
+    assert metrics["num_validation_samples"] == 0.0
+    assert metrics["validation_loss"] is None
+    assert metrics["final_loss"] == metrics["train_loss"]
+
+
+def test_dataloader_batch_collation_shapes_are_stable(tmp_path: Path) -> None:
+    """Morpion DataLoader collation should batch samples as expected."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
+    data_loader = DataLoader(
+        dataset,
+        batch_size=2,
+        shuffle=False,
+        collate_fn=collate_morpion_supervised_samples,
+    )
+
+    batch = next(iter(data_loader))
+
+    assert batch.is_batch is True
+    assert batch.get_input_layer().shape == (2, MORPION_INPUT_DIM)
+    assert batch.get_target_value().shape == (2, 1)
+
+
+def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
+    """A saved trained Morpion bundle should load back for inference cleanly."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / "trained_bundle"
+    train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            device="cpu",
+        )
+    )
+
+    model = load_morpion_regressor_for_inference(output_dir)
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
+    sample_input = dataset[0].get_input_layer()
+    output = model(sample_input)
+
+    assert model.training is False
+    assert output.shape == (1, 1)
+
+
+@pytest.mark.parametrize(
+    ("model_kind", "hidden_sizes"),
+    (("linear", None), ("mlp", (8,))),
+)
+def test_reduced_subset_training_round_trip_supports_linear_and_mlp(
+    tmp_path: Path,
+    model_kind: str,
+    hidden_sizes: tuple[int, ...] | None,
+) -> None:
+    """Training, saving, loading, and inference should work for reduced subsets."""
+    subset = _feature_subset(10)
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / f"trained_bundle_{model_kind}"
+
+    train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            model_kind=model_kind,
+            hidden_sizes=hidden_sizes,
+            feature_subset_name=subset.name,
+            feature_names=subset.feature_names,
+            device="cpu",
+        )
+    )
+
+    loaded_model, loaded_args, loaded_manifest = load_morpion_model_bundle(output_dir)
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(
+            file_name=dataset_file,
+            feature_subset_name=subset.name,
+            feature_names=subset.feature_names,
+        )
+    )
+    sample_input = dataset[0].get_input_layer()
+    output = loaded_model(sample_input)
+
+    assert loaded_args.feature_names == subset.feature_names
+    assert loaded_manifest.feature_names == subset.feature_names
+    assert sample_input.shape == (subset.dimension,)
+    assert output.shape == (1, 1)
+
+
+def test_load_bundle_accepts_legacy_hidden_dim_payload(tmp_path: Path) -> None:
+    """Loading should migrate older saved model args that used `hidden_dim`."""
+    bundle_dir = tmp_path / "bundle"
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    args_path.write_text(
+        json.dumps({
+            "model_kind": "mlp",
+            "input_dim": MORPION_INPUT_DIM,
+            "hidden_dim": 8,
+        }),
+        encoding="utf-8",
+    )
+
+    model = build_morpion_regressor(
+        MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8,))
+    )
+    save_morpion_model_bundle(
+        model,
+        bundle_dir,
+        model_args=MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8,)),
+    )
+    args_path.write_text(
+        json.dumps({
+            "model_kind": "mlp",
+            "input_dim": MORPION_INPUT_DIM,
+            "hidden_dim": 8,
+        }),
+        encoding="utf-8",
+    )
+
+    _loaded_model, loaded_args, _loaded_manifest = load_morpion_model_bundle(bundle_dir)
+
+    assert loaded_args.hidden_sizes == (8,)

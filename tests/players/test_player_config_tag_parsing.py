@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from parsley import Parsley, create_parsley
 
+from chipiron.games.domain.match.match_role_schedule import TwoRoleMatchSchedule
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players.player_args import PlayerArgs
@@ -68,6 +69,9 @@ def test_match_config_tags_parse_to_match_args() -> None:
         args = parser.parse_arguments(extra_args=_MatchArgsContainer(match_args=tag))
         assert isinstance(args.match_args, MatchSettingsArgs), (
             f"{tag} did not resolve to MatchSettingsArgs"
+        )
+        assert isinstance(args.match_args.schedule, TwoRoleMatchSchedule), (
+            f"{tag} did not resolve to a TwoRoleMatchSchedule"
         )
 
 

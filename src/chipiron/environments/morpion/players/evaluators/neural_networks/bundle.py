@@ -1,0 +1,952 @@
+"""Save/load helpers for Morpion regressor bundles."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, cast
+
+import torch
+
+from chipiron.learning.torch_runtime import state_dict_on_cpu
+
+from .entity_relations import (
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
+    is_relational_entity_token_model_kind,
+)
+from .entity_tokens import (
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_FEATURE_NAMES,
+    is_morpion_entity_token_model_kind,
+    morpion_entity_token_feature_names,
+    morpion_entity_token_input_representation,
+    validate_morpion_edge_token_mode,
+    validate_morpion_global_geometry_features,
+    validate_morpion_latent_window_move_features,
+)
+from .feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_FEATURE_SCHEMA,
+    MorpionFeatureSubset,
+    full_morpion_feature_subset,
+    resolve_morpion_feature_subset,
+)
+from .latent_window_features import (
+    MORPION_CORRECTED_BLOCKING_PROXY_VERSION,
+    MORPION_LATENT_WINDOW_PROXY_VERSION,
+)
+from .model import (
+    MORPION_INPUT_DIM,
+    InvalidMorpionEntityTokenRegressorArgsError,
+    MorpionRegressor,
+    MorpionRegressorArgs,
+    build_morpion_regressor,
+)
+
+MORPION_MODEL_ARGS_FILE_NAME = "morpion_regressor_args.json"
+MORPION_MANIFEST_FILE_NAME = "morpion_manifest.json"
+MORPION_MODEL_WEIGHTS_FILE_NAME = "param.pt"
+MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME = "param.json"
+
+
+def _empty_metadata() -> dict[str, Any]:
+    """Return a typed empty metadata mapping."""
+    return {}
+
+
+def _uses_entity_token_input(model_kind: str) -> bool:
+    """Return whether a model consumes the clean Morpion entity tokens."""
+    return is_morpion_entity_token_model_kind(
+        model_kind
+    ) or is_relational_entity_token_model_kind(model_kind)
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionModelManifest:
+    """Sidecar manifest protecting Morpion model-bundle compatibility."""
+
+    game_kind: str = "morpion"
+    feature_schema: str = MORPION_FEATURE_SCHEMA
+    input_dim: int = MORPION_INPUT_DIM
+    input_representation: str = "handcrafted_features"
+    target_kind: str = "backup_value"
+    model_kind: str = "linear"
+    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
+    feature_names: tuple[str, ...] = field(
+        default_factory=lambda: MORPION_CANONICAL_FEATURE_NAMES
+    )
+    metadata: dict[str, Any] = field(default_factory=_empty_metadata)
+    entity_relation_schema: str | None = None
+    entity_relation_type_count: int | None = None
+
+
+class InvalidMorpionModelBundleError(ValueError):
+    """Raised when a Morpion model bundle is structurally malformed."""
+
+    @classmethod
+    def invalid_model_args_mapping(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-model-args-mapping error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: expected mapping with string keys."
+        )
+
+    @classmethod
+    def invalid_model_kind(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-model-kind error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: `model_kind` must be a string."
+        )
+
+    @classmethod
+    def unexpected_model_args_fields(
+        cls,
+        path: Path,
+        fields: set[str],
+    ) -> InvalidMorpionModelBundleError:
+        """Return the unexpected-model-args-fields error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: unexpected fields "
+            f"{sorted(fields)!r}."
+        )
+
+    @classmethod
+    def invalid_hidden_sizes(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-hidden-sizes error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: `hidden_sizes` must be a list "
+            "or tuple of integer-like values."
+        )
+
+    @classmethod
+    def invalid_feature_subset_name(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-feature-subset-name error."""
+        return cls(
+            f"Invalid Morpion model bundle metadata in {path!s}: `feature_subset_name` must be a string."
+        )
+
+    @classmethod
+    def invalid_feature_names(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-feature-names error."""
+        return cls(
+            f"Invalid Morpion model bundle metadata in {path!s}: `feature_names` must be a list or tuple of strings."
+        )
+
+    @classmethod
+    def missing_feature_subset_metadata(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the missing-feature-subset-metadata error."""
+        return cls(
+            "Invalid Morpion model bundle metadata in "
+            f"{path!s}: bundles whose input_dim differs from the canonical full "
+            "feature width must persist explicit feature subset metadata."
+        )
+
+    @classmethod
+    def inconsistent_input_dim(
+        cls,
+        path: Path,
+        *,
+        input_dim: int,
+        expected_input_dim: int,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the inconsistent-input-dimension error."""
+        return cls(
+            f"Invalid Morpion model bundle metadata in {path!s}: input_dim={input_dim} "
+            f"does not match the resolved feature subset width {expected_input_dim}."
+        )
+
+    @classmethod
+    def invalid_manifest_mapping(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-manifest-mapping error."""
+        return cls(
+            f"Invalid Morpion model manifest in {path!s}: expected mapping with string keys."
+        )
+
+    @classmethod
+    def invalid_manifest_metadata(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-manifest-metadata error."""
+        return cls(
+            f"Invalid Morpion model manifest in {path!s}: `metadata` must be a mapping."
+        )
+
+    @classmethod
+    def invalid_integer_like_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-integer-like-value error."""
+        return cls(f"Expected an integer-like value, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_float_like_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-float-like-value error."""
+        return cls(f"Expected a float-like value, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_bool_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-bool-value error."""
+        return cls(f"Expected a bool value, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_optional_str_value(
+        cls,
+        value: object,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid optional-string error."""
+        return cls(f"Expected a string or null, got {type(value).__name__}.")
+
+    @classmethod
+    def invalid_entity_model_args(
+        cls,
+        path: Path,
+        detail: str,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid entity-model-args bundle error."""
+        return cls(f"Invalid Morpion entity model args in {path!s}: {detail}")
+
+
+class IncompatibleMorpionModelBundleError(ValueError):
+    """Raised when a Morpion model bundle is incompatible with current code."""
+
+    @classmethod
+    def wrong_game_kind(
+        cls,
+        game_kind: str,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-game-kind error."""
+        return cls(f"Expected a Morpion model bundle, got game_kind={game_kind!r}.")
+
+    @classmethod
+    def wrong_feature_schema(
+        cls,
+        feature_schema: str,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-feature-schema error."""
+        return cls(
+            f"Expected feature_schema={MORPION_FEATURE_SCHEMA!r}, got "
+            f"{feature_schema!r}."
+        )
+
+    @classmethod
+    def wrong_input_dim(
+        cls,
+        *,
+        expected_input_dim: int,
+        actual_input_dim: int,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-input-dimension error."""
+        return cls(f"Expected input_dim={expected_input_dim}, got {actual_input_dim}.")
+
+    @classmethod
+    def wrong_feature_names(
+        cls,
+        *,
+        expected_feature_names: tuple[str, ...],
+        actual_feature_names: tuple[str, ...],
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-feature-names error."""
+        return cls(
+            "Expected feature_names="
+            f"{expected_feature_names!r}, got {actual_feature_names!r}."
+        )
+
+    @classmethod
+    def wrong_model_kind(
+        cls,
+        *,
+        expected_model_kind: str,
+        actual_model_kind: str,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible-model-kind error."""
+        return cls(
+            f"Expected model_kind={expected_model_kind!r}, got {actual_model_kind!r}."
+        )
+
+    @classmethod
+    def wrong_relation_schema(
+        cls,
+        relation_schema: str | None,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible relation-schema error."""
+        return cls(
+            f"Expected entity_relation_schema={MORPION_ENTITY_RELATION_SCHEMA!r}, "
+            f"got {relation_schema!r}."
+        )
+
+    @classmethod
+    def wrong_relation_type_count(
+        cls,
+        relation_type_count: int | None,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the incompatible relation-count error."""
+        return cls(
+            "Expected entity_relation_type_count="
+            f"{MORPION_ENTITY_RELATION_TYPE_COUNT}, got {relation_type_count!r}."
+        )
+
+    @classmethod
+    def unexpected_relation_metadata(
+        cls,
+    ) -> IncompatibleMorpionModelBundleError:
+        """Return the unexpected relation-metadata error."""
+        return cls("Relation metadata is only valid for the relational model kind.")
+
+
+def save_morpion_model_bundle(
+    model: MorpionRegressor,
+    output_dir: str | Path,
+    *,
+    model_args: MorpionRegressorArgs,
+    metadata: dict[str, object] | None = None,
+) -> None:
+    """Save one Morpion model bundle with weights, args, and manifest."""
+    bundle_dir = Path(output_dir)
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    weights_path = bundle_dir / MORPION_MODEL_WEIGHTS_FILE_NAME
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
+    readable_weights_path = bundle_dir / MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME
+
+    torch.save(state_dict_on_cpu(model), weights_path)
+    model.log_readable_model_weights_to_file(str(readable_weights_path))
+
+    with open(args_path, "w", encoding="utf-8") as handle:
+        json.dump(_model_args_to_dict(model_args), handle, indent=2, sort_keys=True)
+
+    manifest = MorpionModelManifest(
+        input_dim=model_args.input_dim,
+        input_representation=(
+            morpion_entity_token_input_representation(
+                model_args.global_geometry_features,
+                model_args.edge_token_mode,
+                model_args.latent_window_move_features,
+            )
+            if _uses_entity_token_input(model_args.model_kind)
+            else "handcrafted_features"
+        ),
+        model_kind=model_args.model_kind,
+        feature_subset_name=model_args.feature_subset_name,
+        feature_names=model_args.feature_names,
+        entity_relation_schema=(
+            model_args.entity_relation_schema
+            if is_relational_entity_token_model_kind(model_args.model_kind)
+            else None
+        ),
+        entity_relation_type_count=(
+            model_args.entity_relation_type_count
+            if is_relational_entity_token_model_kind(model_args.model_kind)
+            else None
+        ),
+        metadata=_bundle_metadata(model_args, metadata),
+    )
+    with open(manifest_path, "w", encoding="utf-8") as handle:
+        json.dump(_manifest_to_dict(manifest), handle, indent=2, sort_keys=True)
+
+
+def load_morpion_model_bundle(
+    input_dir: str | Path,
+) -> tuple[MorpionRegressor, MorpionRegressorArgs, MorpionModelManifest]:
+    """Load one Morpion model bundle and validate manifest compatibility."""
+    bundle_dir = Path(input_dir)
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
+    weights_path = bundle_dir / MORPION_MODEL_WEIGHTS_FILE_NAME
+
+    try:
+        model_args = _load_model_args(args_path)
+    except InvalidMorpionEntityTokenRegressorArgsError as exc:
+        raise InvalidMorpionModelBundleError.invalid_entity_model_args(
+            args_path,
+            str(exc),
+        ) from exc
+    manifest = _load_manifest(manifest_path)
+    _validate_manifest_compatibility(manifest, model_args)
+
+    model = build_morpion_regressor(model_args)
+    model.load_weights_from_file(str(weights_path))
+    return model, model_args, manifest
+
+
+def load_morpion_regressor_for_inference(
+    input_dir: str | Path,
+) -> MorpionRegressor:
+    """Load one Morpion regressor bundle and switch the model to eval mode."""
+    model, _, _ = load_morpion_model_bundle(input_dir)
+    model.eval()
+    return model
+
+
+def _bundle_metadata(
+    model_args: MorpionRegressorArgs,
+    metadata: dict[str, object] | None,
+) -> dict[str, object]:
+    """Return manifest metadata augmented with entity-token schema details."""
+    bundle_metadata = dict(metadata) if metadata is not None else {}
+    bundle_metadata.update({
+        "target_transform_enabled": model_args.target_transform_enabled,
+        "target_mean": model_args.target_mean,
+        "target_standard_deviation": model_args.target_standard_deviation,
+        "loss_target_scale": (
+            "standardized" if model_args.target_transform_enabled else "original"
+        ),
+        "reported_metric_scale": "original",
+        "public_output_scale": "original",
+    })
+    if _uses_entity_token_input(model_args.model_kind):
+        feature_names = morpion_entity_token_feature_names(
+            model_args.global_geometry_features,
+            model_args.latent_window_move_features,
+        )
+        bundle_metadata.update({
+            "entity_token_feature_names": list(feature_names),
+            "entity_max_tokens": model_args.entity_max_tokens,
+            "entity_d_model": model_args.entity_d_model,
+            "entity_n_head": model_args.entity_n_head,
+            "entity_n_layer": model_args.entity_n_layer,
+        })
+        if model_args.global_geometry_features == "normalization_extent":
+            bundle_metadata.update({
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+                "global_geometry_features": model_args.global_geometry_features,
+                "global_geometry_feature_names": ["normalization_extent"],
+                "entity_input_feature_dim": model_args.entity_input_feature_dim,
+                "entity_validity_feature_index": (
+                    model_args.entity_validity_feature_index
+                ),
+            })
+        if model_args.edge_token_mode != "drawn_only":
+            bundle_metadata.update({
+                "edge_token_mode": model_args.edge_token_mode,
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+            })
+        if model_args.latent_window_move_features != "none":
+            bundle_metadata.update({
+                "latent_window_move_features": (model_args.latent_window_move_features),
+                "entity_token_schema_identifier": (
+                    morpion_entity_token_input_representation(
+                        model_args.global_geometry_features,
+                        model_args.edge_token_mode,
+                        model_args.latent_window_move_features,
+                    )
+                ),
+                "entity_input_feature_dim": model_args.entity_input_feature_dim,
+                "latent_window_proxy_definition_version": (
+                    MORPION_CORRECTED_BLOCKING_PROXY_VERSION
+                    if model_args.latent_window_move_features
+                    == "promoted_and_blocked_corrected"
+                    else MORPION_LATENT_WINDOW_PROXY_VERSION
+                ),
+            })
+    if is_relational_entity_token_model_kind(model_args.model_kind):
+        bundle_metadata.update({
+            "entity_use_validity_feature": model_args.entity_use_validity_feature,
+            "entity_relation_schema": model_args.entity_relation_schema,
+            "entity_relation_type_count": model_args.entity_relation_type_count,
+            "relation_bias_scale": model_args.relation_bias_scale,
+        })
+    return bundle_metadata
+
+
+def _load_model_args(path: Path) -> MorpionRegressorArgs:
+    """Load Morpion regressor args from one JSON file."""
+    with open(path, encoding="utf-8") as handle:
+        raw = json.load(handle)
+    if not _is_str_key_mapping(raw):
+        raise InvalidMorpionModelBundleError.invalid_model_args_mapping(path)
+    data = cast("Mapping[str, object]", raw)
+    allowed_fields = {
+        "model_kind",
+        "input_dim",
+        "input_representation",
+        "feature_subset_name",
+        "feature_names",
+        "hidden_dim",
+        "hidden_sizes",
+        "entity_max_tokens",
+        "global_geometry_features",
+        "edge_token_mode",
+        "latent_window_move_features",
+        "entity_input_feature_dim",
+        "entity_validity_feature_index",
+        "entity_d_model",
+        "entity_n_head",
+        "entity_n_layer",
+        "entity_dim_feedforward",
+        "entity_dropout_ratio",
+        "entity_pooling",
+        "entity_output_tanh",
+        "entity_use_validity_feature",
+        "entity_relation_schema",
+        "entity_relation_type_count",
+        "relation_bias_scale",
+        "target_transform_enabled",
+        "target_mean",
+        "target_standard_deviation",
+    }
+    unexpected_fields = set(data) - allowed_fields
+    if unexpected_fields:
+        raise InvalidMorpionModelBundleError.unexpected_model_args_fields(
+            path, unexpected_fields
+        )
+    model_kind = data.get("model_kind", "linear")
+    input_dim = data.get("input_dim", MORPION_INPUT_DIM)
+    if not isinstance(model_kind, str):
+        raise InvalidMorpionModelBundleError.invalid_model_kind(path)
+    if _uses_entity_token_input(model_kind):
+        global_geometry_features = validate_morpion_global_geometry_features(
+            str(data.get("global_geometry_features", "none"))
+        )
+        edge_token_mode = validate_morpion_edge_token_mode(
+            str(data.get("edge_token_mode", "drawn_only"))
+        )
+        latent_window_move_features = validate_morpion_latent_window_move_features(
+            str(data.get("latent_window_move_features", "none"))
+        )
+        input_representation = data.get("input_representation")
+        expected_representation = morpion_entity_token_input_representation(
+            global_geometry_features,
+            edge_token_mode,
+            latent_window_move_features,
+        )
+        if input_representation != expected_representation:
+            raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+                str(input_representation)
+            )
+    else:
+        global_geometry_features = "none"
+        edge_token_mode = "drawn_only"
+        latent_window_move_features = "none"
+    feature_subset = (
+        full_morpion_feature_subset()
+        if _uses_entity_token_input(model_kind)
+        else _load_feature_subset(
+            data,
+            path,
+            input_dim=_coerce_int(input_dim),
+        )
+    )
+    return MorpionRegressorArgs(
+        model_kind=model_kind,
+        feature_subset_name=feature_subset.name,
+        feature_names=feature_subset.feature_names,
+        hidden_sizes=_load_hidden_sizes(data, path),
+        entity_max_tokens=_coerce_int(data.get("entity_max_tokens", 1536)),
+        global_geometry_features=global_geometry_features,
+        edge_token_mode=edge_token_mode,
+        latent_window_move_features=latent_window_move_features,
+        entity_input_feature_dim=_coerce_int(
+            data.get("entity_input_feature_dim", MORPION_ENTITY_TOKEN_FEATURE_DIM)
+        ),
+        entity_validity_feature_index=_coerce_int(
+            data.get(
+                "entity_validity_feature_index",
+                MORPION_ENTITY_TOKEN_FEATURE_NAMES.index("validity"),
+            )
+        ),
+        entity_d_model=_coerce_int(data.get("entity_d_model", 64)),
+        entity_n_head=_coerce_int(data.get("entity_n_head", 4)),
+        entity_n_layer=_coerce_int(data.get("entity_n_layer", 2)),
+        entity_dim_feedforward=_coerce_int(data.get("entity_dim_feedforward", 256)),
+        entity_dropout_ratio=_coerce_float(data.get("entity_dropout_ratio", 0.0)),
+        entity_pooling=str(data.get("entity_pooling", "value_token")),
+        entity_output_tanh=_coerce_bool(data.get("entity_output_tanh", False)),
+        entity_use_validity_feature=_coerce_bool(
+            data.get("entity_use_validity_feature", True)
+        ),
+        entity_relation_schema=_coerce_optional_str(data.get("entity_relation_schema")),
+        entity_relation_type_count=_coerce_optional_int(
+            data.get("entity_relation_type_count")
+        ),
+        relation_bias_scale=_coerce_float(data.get("relation_bias_scale", 1.0)),
+        target_transform_enabled=_coerce_bool(
+            data.get("target_transform_enabled", False)
+        ),
+        target_mean=_coerce_float(data.get("target_mean", 0.0)),
+        target_standard_deviation=_coerce_float(
+            data.get("target_standard_deviation", 1.0)
+        ),
+    )
+
+
+def _load_manifest(path: Path) -> MorpionModelManifest:
+    """Load the Morpion model manifest from one JSON file."""
+    with open(path, encoding="utf-8") as handle:
+        raw = json.load(handle)
+    if not _is_str_key_mapping(raw):
+        raise InvalidMorpionModelBundleError.invalid_manifest_mapping(path)
+    data = cast("Mapping[str, object]", raw)
+    metadata = data.get("metadata")
+    if metadata is None:
+        metadata_dict: dict[str, Any] = {}
+    elif isinstance(metadata, dict):
+        metadata_dict = dict(cast("dict[str, Any]", metadata))
+    else:
+        raise InvalidMorpionModelBundleError.invalid_manifest_metadata(path)
+    input_dim = _coerce_int(data.get("input_dim", MORPION_INPUT_DIM))
+    model_kind = str(data.get("model_kind", "linear"))
+    input_representation = str(data.get("input_representation", "handcrafted_features"))
+    feature_subset = (
+        full_morpion_feature_subset()
+        if _uses_entity_token_input(model_kind)
+        else _load_feature_subset(data, path, input_dim=input_dim)
+    )
+    return MorpionModelManifest(
+        game_kind=str(data.get("game_kind", "morpion")),
+        feature_schema=str(data.get("feature_schema", MORPION_FEATURE_SCHEMA)),
+        input_dim=input_dim,
+        input_representation=input_representation,
+        target_kind=str(data.get("target_kind", "backup_value")),
+        model_kind=model_kind,
+        feature_subset_name=feature_subset.name,
+        feature_names=feature_subset.feature_names,
+        entity_relation_schema=_coerce_optional_str(data.get("entity_relation_schema")),
+        entity_relation_type_count=_coerce_optional_int(
+            data.get("entity_relation_type_count")
+        ),
+        metadata=metadata_dict,
+    )
+
+
+def _manifest_to_dict(manifest: MorpionModelManifest) -> dict[str, object]:
+    """Serialize one Morpion model manifest into JSON-friendly data."""
+    return {
+        "game_kind": manifest.game_kind,
+        "feature_schema": manifest.feature_schema,
+        "input_dim": manifest.input_dim,
+        "input_representation": manifest.input_representation,
+        "target_kind": manifest.target_kind,
+        "model_kind": manifest.model_kind,
+        "feature_subset_name": manifest.feature_subset_name,
+        "feature_names": list(manifest.feature_names),
+        "entity_relation_schema": manifest.entity_relation_schema,
+        "entity_relation_type_count": manifest.entity_relation_type_count,
+        "metadata": dict(manifest.metadata),
+    }
+
+
+def _validate_manifest_compatibility(
+    manifest: MorpionModelManifest,
+    model_args: MorpionRegressorArgs,
+) -> None:
+    """Validate that the loaded Morpion manifest matches current code."""
+    if manifest.game_kind != "morpion":
+        raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
+    if _uses_entity_token_input(model_args.model_kind):
+        if manifest.model_kind != model_args.model_kind:
+            raise IncompatibleMorpionModelBundleError.wrong_model_kind(
+                expected_model_kind=model_args.model_kind,
+                actual_model_kind=manifest.model_kind,
+            )
+        expected_representation = morpion_entity_token_input_representation(
+            model_args.global_geometry_features,
+            model_args.edge_token_mode,
+            model_args.latent_window_move_features,
+        )
+        if manifest.input_representation != expected_representation:
+            raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+                manifest.input_representation
+            )
+        if manifest.input_dim != model_args.entity_input_feature_dim:
+            raise IncompatibleMorpionModelBundleError.wrong_input_dim(
+                expected_input_dim=model_args.entity_input_feature_dim,
+                actual_input_dim=manifest.input_dim,
+            )
+        if is_relational_entity_token_model_kind(model_args.model_kind):
+            if manifest.entity_relation_schema != MORPION_ENTITY_RELATION_SCHEMA:
+                raise IncompatibleMorpionModelBundleError.wrong_relation_schema(
+                    manifest.entity_relation_schema
+                )
+            if (
+                manifest.entity_relation_type_count
+                != MORPION_ENTITY_RELATION_TYPE_COUNT
+            ):
+                raise IncompatibleMorpionModelBundleError.wrong_relation_type_count(
+                    manifest.entity_relation_type_count
+                )
+            if model_args.entity_relation_schema != manifest.entity_relation_schema:
+                raise IncompatibleMorpionModelBundleError.wrong_relation_schema(
+                    model_args.entity_relation_schema
+                )
+            if (
+                model_args.entity_relation_type_count
+                != manifest.entity_relation_type_count
+            ):
+                raise IncompatibleMorpionModelBundleError.wrong_relation_type_count(
+                    model_args.entity_relation_type_count
+                )
+        elif (
+            manifest.entity_relation_schema is not None
+            or manifest.entity_relation_type_count is not None
+        ):
+            raise IncompatibleMorpionModelBundleError.unexpected_relation_metadata()
+        return
+    if (
+        manifest.entity_relation_schema is not None
+        or manifest.entity_relation_type_count is not None
+    ):
+        raise IncompatibleMorpionModelBundleError.unexpected_relation_metadata()
+    if manifest.feature_schema != MORPION_FEATURE_SCHEMA:
+        raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+            manifest.feature_schema
+        )
+    if manifest.input_dim != model_args.input_dim:
+        raise IncompatibleMorpionModelBundleError.wrong_input_dim(
+            expected_input_dim=model_args.input_dim,
+            actual_input_dim=manifest.input_dim,
+        )
+    if manifest.feature_names != model_args.feature_names:
+        raise IncompatibleMorpionModelBundleError.wrong_feature_names(
+            expected_feature_names=model_args.feature_names,
+            actual_feature_names=manifest.feature_names,
+        )
+
+
+def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
+    """Serialize Morpion regressor args into JSON-friendly data."""
+    target_transform_data: dict[str, object] = {}
+    if (
+        model_args.target_transform_enabled
+        or model_args.target_mean != 0.0
+        or model_args.target_standard_deviation != 1.0
+    ):
+        target_transform_data.update({
+            "target_transform_enabled": model_args.target_transform_enabled,
+            "target_mean": model_args.target_mean,
+            "target_standard_deviation": model_args.target_standard_deviation,
+        })
+    if _uses_entity_token_input(model_args.model_kind):
+        data: dict[str, object] = {
+            "model_kind": model_args.model_kind,
+            "input_representation": morpion_entity_token_input_representation(
+                model_args.global_geometry_features,
+                model_args.edge_token_mode,
+                model_args.latent_window_move_features,
+            ),
+            "entity_max_tokens": model_args.entity_max_tokens,
+            "entity_input_feature_dim": model_args.entity_input_feature_dim,
+            "entity_d_model": model_args.entity_d_model,
+            "entity_n_head": model_args.entity_n_head,
+            "entity_n_layer": model_args.entity_n_layer,
+            "entity_dim_feedforward": model_args.entity_dim_feedforward,
+            "entity_dropout_ratio": model_args.entity_dropout_ratio,
+            "entity_pooling": model_args.entity_pooling,
+            "entity_output_tanh": model_args.entity_output_tanh,
+            **target_transform_data,
+        }
+        if model_args.global_geometry_features == "normalization_extent":
+            data.update({
+                "global_geometry_features": model_args.global_geometry_features,
+                "entity_validity_feature_index": (
+                    model_args.entity_validity_feature_index
+                ),
+            })
+        if model_args.edge_token_mode != "drawn_only":
+            data["edge_token_mode"] = model_args.edge_token_mode
+        if model_args.latent_window_move_features != "none":
+            data["latent_window_move_features"] = model_args.latent_window_move_features
+        if is_relational_entity_token_model_kind(model_args.model_kind):
+            data.update({
+                "entity_use_validity_feature": model_args.entity_use_validity_feature,
+                "entity_relation_schema": model_args.entity_relation_schema,
+                "entity_relation_type_count": model_args.entity_relation_type_count,
+                "relation_bias_scale": model_args.relation_bias_scale,
+            })
+        return data
+    data: dict[str, object] = {
+        "model_kind": model_args.model_kind,
+        "input_dim": model_args.input_dim,
+        "feature_subset_name": model_args.feature_subset_name,
+        "feature_names": list(model_args.feature_names),
+        "hidden_sizes": None
+        if model_args.hidden_sizes is None
+        else list(model_args.hidden_sizes),
+        **target_transform_data,
+    }
+    return data
+
+
+def _load_feature_subset(
+    data: Mapping[str, object],
+    path: Path,
+    *,
+    input_dim: int,
+) -> MorpionFeatureSubset:
+    """Load one explicit or legacy Morpion feature subset payload."""
+    raw_feature_subset_name = data.get("feature_subset_name")
+    if raw_feature_subset_name is not None and not isinstance(
+        raw_feature_subset_name, str
+    ):
+        raise InvalidMorpionModelBundleError.invalid_feature_subset_name(path)
+
+    raw_feature_names = data.get("feature_names")
+    if raw_feature_names is None:
+        feature_names: tuple[str, ...] | None = None
+    elif not isinstance(raw_feature_names, list | tuple):
+        raise InvalidMorpionModelBundleError.invalid_feature_names(path)
+    else:
+        typed_feature_names = cast(
+            "list[object] | tuple[object, ...]",
+            raw_feature_names,
+        )
+        if not all(isinstance(item, str) for item in typed_feature_names):
+            raise InvalidMorpionModelBundleError.invalid_feature_names(path)
+        feature_names = tuple(cast("str", item) for item in typed_feature_names)
+
+    if raw_feature_subset_name is None and feature_names is None:
+        if input_dim != MORPION_INPUT_DIM:
+            raise InvalidMorpionModelBundleError.missing_feature_subset_metadata(path)
+        return full_morpion_feature_subset()
+
+    subset = resolve_morpion_feature_subset(
+        feature_subset_name=raw_feature_subset_name,
+        feature_names=feature_names,
+    )
+    if subset.dimension != input_dim:
+        raise InvalidMorpionModelBundleError.inconsistent_input_dim(
+            path,
+            input_dim=input_dim,
+            expected_input_dim=subset.dimension,
+        )
+    return subset
+
+
+def _is_str_key_mapping(obj: object) -> bool:
+    """Return whether ``obj`` is a mapping with string keys."""
+    if not isinstance(obj, Mapping):
+        return False
+    mapping = cast("Mapping[object, object]", obj)
+    return all(isinstance(key, str) for key in mapping)
+
+
+def _coerce_int(value: object) -> int:
+    """Return one JSON-loaded integer-like payload as ``int``."""
+    if isinstance(value, bool):
+        raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+    if isinstance(value, str):
+        return int(value)
+    raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+
+
+def _coerce_optional_int(value: object) -> int | None:
+    """Return one optional JSON-loaded integer-like payload."""
+    if value is None:
+        return None
+    return _coerce_int(value)
+
+
+def _coerce_optional_str(value: object) -> str | None:
+    """Return one optional JSON-loaded string payload."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    raise InvalidMorpionModelBundleError.invalid_optional_str_value(value)
+
+
+def _coerce_float(value: object) -> float:
+    """Return one JSON-loaded float-like payload as ``float``."""
+    if isinstance(value, bool):
+        raise InvalidMorpionModelBundleError.invalid_float_like_value(value)
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    raise InvalidMorpionModelBundleError.invalid_float_like_value(value)
+
+
+def _coerce_bool(value: object) -> bool:
+    """Return one JSON-loaded bool payload as ``bool``."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
+    raise InvalidMorpionModelBundleError.invalid_bool_value(value)
+
+
+def _load_hidden_sizes(
+    data: Mapping[str, object],
+    path: Path,
+) -> tuple[int, ...] | None:
+    """Load current or legacy hidden-layer settings from one args payload."""
+    hidden_sizes = data.get("hidden_sizes")
+    if hidden_sizes is None and "hidden_dim" in data:
+        hidden_dim = data.get("hidden_dim")
+        return None if hidden_dim is None else (_coerce_int(hidden_dim),)
+    if hidden_sizes is None:
+        return None
+    if not isinstance(hidden_sizes, list | tuple):
+        raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path)
+    typed_hidden_sizes = cast("list[object] | tuple[object, ...]", hidden_sizes)
+    try:
+        return tuple(_coerce_int(item) for item in typed_hidden_sizes)
+    except ValueError as exc:
+        raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path) from exc
+
+
+__all__ = [
+    "MORPION_MANIFEST_FILE_NAME",
+    "MORPION_MODEL_ARGS_FILE_NAME",
+    "MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME",
+    "MORPION_MODEL_WEIGHTS_FILE_NAME",
+    "IncompatibleMorpionModelBundleError",
+    "InvalidMorpionModelBundleError",
+    "MorpionModelManifest",
+    "load_morpion_model_bundle",
+    "load_morpion_regressor_for_inference",
+    "save_morpion_model_bundle",
+]
