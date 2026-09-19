@@ -14,9 +14,10 @@ The architecture, weight keys, relation definitions and legacy scale-1 default
 are preserved. Type-specific/D4/capacity experiments from the dirty original
 checkout are excluded. Exact-head CI passes: 77 tests, one CUDA-only skip,
 strict Ruff/format/build, Mypy/Pyright zero, and three inherited Pylint messages
-with no additions. Tag `v0.1.15` published through the existing trusted workflow. Both published
-dependency wheels install in a fresh environment without editable/source
-overrides; their packaged source hashes match the tested release wheels.
+with no additions. Tag `v0.1.15` published through the existing trusted workflow.
+Published dependency wheels install with Chipiron's declared dependencies in a
+fresh environment without editable/source overrides; their packaged source
+hashes match the tested release wheels.
 
 Anemone 0.2.22 is published at `8821d0c2b4711a279f1e29850a30e70db931fb90`
 ([PR #70](https://github.com/victorgabillon/anemone/pull/70), tag `v0.2.22`).
@@ -33,12 +34,26 @@ this checkpoint API release. Previously committed main refactors remain as
 required by the instruction to start from current main.
 
 The full package-only run also exposed a public argument-parser incompatibility:
-Parsley cannot call the `LinooDepthSelectionPolicy` type-alias object. A separate
-0.2.23 release narrows its fix to string annotations at the public argument and
+Parsley cannot call the `LinooDepthSelectionPolicy` type-alias object. Published
+Anemone 0.2.23 at `53cd6f7e2d8407dbb2b9c11fc1cff5c5e2ad9cff`
+([PR #71](https://github.com/victorgabillon/anemone/pull/71), tag `v0.2.23`)
+narrows its fix to string annotations at the public argument and
 constructor boundary, followed by the same membership validation expressed
-as a typed predicate. Both supported policies and the inverse-depth default remain unchanged.
-The source preview passes the affected application/parser tests. The unrelated
-alternating implementation, default and checkpoint step changes remain excluded.
+as a typed predicate. Both supported policies and the inverse-depth default
+remain unchanged; all 44 search methods match 0.2.22. All 679 tests, strict
+static checks and build gates pass, including exact-head GitHub CI and the
+trusted release workflow. The public wheel passes the parser/default/checkpoint
+contracts outside the checkout. Chipiron pins this release and Coral 0.1.15.
+The unrelated alternating implementation, default and checkpoint step changes
+remain excluded.
+
+The fresh package check also exposed an inherited Anemone metadata gap:
+`import anemone` eagerly imports Graphviz, although Anemone declares it only
+under its `debug` extra. This also exists in 0.2.21. Chipiron already declares
+`graphviz>=0.20.1`; installing that existing dependency from PyPI makes the
+public-package contracts pass. The Chipiron installation needs no undeclared
+dependency or source override. A bare Anemone-only install without that extra
+still has this limitation.
 
 ## Compatibility blocker exposed by installed packages
 

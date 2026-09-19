@@ -44,3 +44,9 @@ python scripts/static_analysis_ratchet.py --mypy-strict \
 The checker has regression tests for line movement, extra duplicate occurrences,
 changed scopes/messages, failed analyzers, malformed JSON, missing Git history,
 baseline growth and restoration of previously removed debt.
+
+The initial GitHub run reports the same 91 Mypy and 73 Pyright errors, but
+44 Pylint messages: `W0231` for Torch `Sampler.__init__` is absent with its
+newer Torch build. The local Torch 2.9.0 CPU environment still reports that
+message, so its baseline entry remains visible. CI reports one removed and
+zero new diagnostics; source debt is not silently expanded or suppressed.
