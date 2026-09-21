@@ -92,6 +92,13 @@ removals; passing the ratchet does not mean zero inherited analyzer debt.
 PR #52 remains a final review checkpoint. Require green CI on its current head
 before marking it ready. This task does not merge it or enable auto-merge.
 
+CI runs the same four tox environments in named toolchain/format, installed-test
+and static-analysis steps, each with a 15-minute timeout. The initial combined
+`python -m tox` passed on the branch run, but the slower PR run hit the maintenance
+limit while installing the static environment after all 1,291 tests had passed.
+Splitting the independent gates preserves all checks and makes the runtime limit
+apply separately to each validation; the existing overall job timeout remains.
+
 ## Preserved work and historical exception
 
 All 51 original dirty/untracked files and the five unique commits on

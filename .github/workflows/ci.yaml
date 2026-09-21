@@ -42,9 +42,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox==4.56.1 build==1.5.0
 
-      - name: Run tox
+      - name: Verify toolchain and formatting
+        timeout-minutes: 15
+        run: python -m tox -e tooling,ruff
+
+      - name: Test installed package
+        timeout-minutes: 15
+        env:
+          PIP_NO_CACHE_DIR: "1"
+          QT_QPA_PLATFORM: offscreen
+        run: python -m tox -e py313
+
+      - name: Check static-analysis ratchet
+        timeout-minutes: 15
         env:
           PIP_NO_CACHE_DIR: "1"
           QT_QPA_PLATFORM: offscreen
           STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python -m tox
+        run: python -m tox -e static
