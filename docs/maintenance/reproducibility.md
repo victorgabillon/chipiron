@@ -1,5 +1,7 @@
 # Dependency and result provenance
 
+> Historical record: see [the subsequent reconciliation](cross_repo_reconciliation.md) for the current published dependency and review state.
+
 Normal development dependencies are declared in `pyproject.toml`; there are no
 moving Git-branch Python dependencies there. Coral, Anemone, Atomheart and Valanga
 currently have exact PyPI versions. Parsley (`parsley-coco`) has a lower bound.

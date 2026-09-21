@@ -174,7 +174,10 @@ def _runner_args_with_tree_branch_limit(
             node_selector=ComposedNodeSelectorArgs(
                 type="Composed",
                 priority=NoPriorityCheckArgs(type="PriorityNoop"),
-                base=LinooArgs(type=NodeSelectorType.LINOO),
+                base=LinooArgs(
+                    type=NodeSelectorType.LINOO,
+                    depth_selection_policy="alternating_by_step",
+                ),
             ),
             opening_type=OpeningType.ALL_CHILDREN,
             recommender_rule=AlmostEqualLogistic(

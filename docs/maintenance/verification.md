@@ -1,5 +1,7 @@
 # Canonicalization verification — September 18, 2026
 
+> Historical record: see [the subsequent reconciliation](cross_repo_reconciliation.md) for the current published dependency and review state.
+
 The maintenance branch is reviewable, but **blocked before canonicalization**.
 Passing checks with explicit local dependencies do not establish that the
 published dependency set is releasable. See the

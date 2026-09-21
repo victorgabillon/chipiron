@@ -198,7 +198,10 @@ def default_search_args(
         node_selector=ComposedNodeSelectorArgs(
             type=NodeSelectorType.COMPOSED,
             priority=NoPriorityCheckArgs(type=NodeSelectorType.PRIORITY_NOOP),
-            base=LinooArgs(type=NodeSelectorType.LINOO),
+            base=LinooArgs(
+                type=NodeSelectorType.LINOO,
+                depth_selection_policy="alternating_by_step",
+            ),
         ),
         opening_type=OpeningType.ALL_CHILDREN,
         recommender_rule=AlmostEqualLogistic(

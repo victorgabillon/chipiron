@@ -1,5 +1,7 @@
 # PR #52 dependency unblock audit — 2026-09-18
 
+> Historical record: see [the subsequent reconciliation](cross_repo_reconciliation.md) for the current published dependency and review state.
+
 This follow-up addresses published dependency availability, installed-distribution
 validation and inherited static-analysis debt. It does not reopen the general
 canonicalization cleanup or change runtime/search/model source.
