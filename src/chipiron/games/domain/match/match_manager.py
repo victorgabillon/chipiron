@@ -1,13 +1,13 @@
-"""Module in charge of playing one match."""
+"""Run one validated match schedule."""
 
 import os
 import queue
 import time
 from typing import TYPE_CHECKING, Any
 
-from valanga import Color
 from valanga.game import ActionName, Seed
 
+from chipiron.core.roles import GameRole, MutableRoleAssignment
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game_args import GameArgs
@@ -33,11 +33,9 @@ if TYPE_CHECKING:
 
 
 class MatchManager:
-    """Object in charge of playing one match.
+    """Run the games described by a validated match schedule.
 
     Args:
-        player_one_id (str): The ID of player one.
-        player_two_id (str): The ID of player two.
         game_manager_factory (GameManagerFactory): The factory for creating game managers.
         game_args_factory (GameArgsFactory): The factory for creating game arguments.
         match_results_factory (MatchResultsFactory): The factory for creating match results.
@@ -47,26 +45,20 @@ class MatchManager:
 
     def __init__(
         self,
-        player_one_id: str,
-        player_two_id: str,
         game_manager_factory: GameManagerFactory,
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
         output_folder_path: MyPath | None = None,
     ) -> None:
-        """Initialize a MatchManager object.
+        """Initialize a MatchManager.
 
         Args:
-            player_one_id (str): The ID of player one.
-            player_two_id (str): The ID of player two.
             game_manager_factory (GameManagerFactory): The factory object for creating game managers.
             game_args_factory (GameArgsFactory): The factory object for creating game arguments.
             match_results_factory (MatchResultsFactory): The factory object for creating match results.
             output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
 
         """
-        self.player_one_id = player_one_id
-        self.player_two_id = player_two_id
         self.game_manager_factory = game_manager_factory
         self.output_folder_path = output_folder_path
         self.match_results_factory = match_results_factory
@@ -75,26 +67,22 @@ class MatchManager:
         self._last_game_kind: GameKind | None = None
         self.print_info()
 
+    @property
+    def participant_ids(self) -> tuple[str, ...]:
+        """Return the ordered participants for the validated match being played."""
+        return self.game_args_factory.participant_ids
+
     def print_info(self) -> None:
-        """Print the information about the players in the match.
-
-        This method prints the IDs of player one and player two.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        """
-        chipiron_logger.info("player one is %s", self.player_one_id)
-        chipiron_logger.info("player two is %s", self.player_two_id)
+        """Print the ordered participants configured for the validated match."""
+        for index, participant_id in enumerate(self.participant_ids, start=1):
+            chipiron_logger.info("participant %s is %s", index, participant_id)
 
     def play_one_match(self) -> MatchReport:
-        """Plays one match and returns the match report.
+        """Play the validated match schedule and return the match report.
 
-        This method plays a single match, which consists of multiple games. It generates game arguments,
-        plays each game, updates the match results, and saves the match report to a file.
+        This method iterates through the game arguments produced by the
+        validated-plan-driven game-args factory, plays each game, updates the
+        match results, and saves the match report to a file.
 
         Returns:
             MatchReport: The report of the match, including the move history and match results.
@@ -113,16 +101,16 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_factory_args: dict[Color, PlayerFactoryArgs]
+            participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs]
             game_seed: Seed | None
-            player_color_to_factory_args, args_game, game_seed = (
+            participant_factory_args_by_role, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
             )
 
             assert game_seed is not None
             # Play one game
             game_report: GameReport = self.play_one_game(
-                player_color_to_factory_args=player_color_to_factory_args,
+                participant_factory_args_by_role=participant_factory_args_by_role,
                 args_game=args_game,
                 game_number=game_number,
                 game_seed=game_seed,
@@ -145,17 +133,15 @@ class MatchManager:
                 )
 
             # Update the reporting of the ongoing match with the report of the finished game
-            match_results.add_result_one_game(
-                white_player_name_id=player_color_to_factory_args[
-                    Color.WHITE
-                ].player_args.name,
-                game_result=game_report.final_game_result,
-            )
+            match_results.add_result_one_game(game_report=game_report)
             match_move_history[game_number] = game_report.action_history
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if player_color_to_factory_args[Color.WHITE].player_args.is_human():
+            if any(
+                player_factory_args.player_args.is_human()
+                for player_factory_args in participant_factory_args_by_role.values()
+            ):
                 time.sleep(30)
 
             game_number += 1
@@ -191,7 +177,7 @@ class MatchManager:
 
     def play_one_game(
         self,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+        participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
@@ -199,7 +185,8 @@ class MatchManager:
         """Plays one game and returns the game report.
 
         Args:
-            player_color_to_factory_args (dict[Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
+            participant_factory_args_by_role (dict[GameRole, PlayerFactoryArgs]):
+                A dictionary mapping current game roles to participant args.
             args_game (GameArgs): The arguments for the game.
             game_number (int): The number of the game.
             game_seed (Seed): The seed for the game.
@@ -210,7 +197,9 @@ class MatchManager:
         """
         game_session: GameSession = self.game_manager_factory.create(
             args_game_manager=args_game,
-            player_color_to_factory_args=player_color_to_factory_args,
+            participant_factory_args_by_role=self._as_role_assignment(
+                participant_factory_args_by_role
+            ),
             game_seed=game_seed,
         )
 
@@ -225,6 +214,13 @@ class MatchManager:
         game_manager.print_to_file(idx=game_number, game_report=game_report)
 
         return game_report
+
+    def _as_role_assignment(
+        self,
+        participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],
+    ) -> MutableRoleAssignment[PlayerFactoryArgs]:
+        """Adapt the scheduled participant mapping into a mutable role assignment."""
+        return dict(participant_factory_args_by_role.items())
 
     def print_stats_to_file(self, match_results: IMatchResults) -> None:
         """Print the match statistics to a file.

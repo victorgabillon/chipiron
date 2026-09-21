@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 
 project = "chipiron"
-copyright = "2024, Victor Gabillon"
+copyright = "2024, Victor Gabillon"  # noqa: A001 - Sphinx configuration key
 author = "Victor Gabillon"
 
 # -- General configuration ---------------------------------------------------

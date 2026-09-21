@@ -26,6 +26,7 @@ build/
 dist/
 
 # Local environment configuration
+.env
 .env.local
 
 # Local zips / ad-hoc bundles
@@ -119,3 +120,29 @@ docs/_build/
 # Profiling reports
 chipiron/scripts/profiling/benchmark_reports/**
 src/chipiron/scripts/profiling/benchmark_reports/**
+
+# Morpion generated tensor caches
+**/tensor_cache/
+*.flat_features.*.pt
+*.flat_features.*.manifest.json
+*.graph_tokens.*.pt
+*.graph_tokens.*.manifest.json
+
+# Local Morpion research outputs (root-only; keep small test fixtures visible)
+/morpion_runs/
+/comparisons/
+/action_supervision/
+.pyright/
+
+# Generated profiles and historical replay serializations
+*.prof
+*.pstats
+src/chipiron/scripts/replay_game/*.obj
+src/chipiron/scripts/evaluate_models/evaluation_report.yaml
+tests/scripts/evaluate_models/test_evaluation_report.yaml
+tests/**/test_outputs/**
+tests/**/tests_outputs/**
+
+# Local virtual environments and subprocess coverage fragments
+.venv/
+.coverage.*

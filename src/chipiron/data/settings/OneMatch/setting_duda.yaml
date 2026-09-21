@@ -1,3 +1,5 @@
-number_of_games_player_one_white: 200
-number_of_games_player_one_black: 200
+schedule:
+  type: two_role_match_schedule
+  number_of_games_player_one_on_first_role: 200
+  number_of_games_player_one_on_second_role: 200
 game_args: setting_navo

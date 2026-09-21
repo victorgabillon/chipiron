@@ -1,3 +1,10 @@
+# Safe defaults also work when optional local .env has not been created.
+EXTERNAL_DATA_DIR?=external_data
+LICHESS_PGN_DIR?=$(EXTERNAL_DATA_DIR)/lichess_pgn
+SYZYGY_TABLES_DIR?=$(EXTERNAL_DATA_DIR)/syzygy-tables
+STOCKFISH_DIR?=$(EXTERNAL_DATA_DIR)/stockfish
+GUI_DIR?=$(EXTERNAL_DATA_DIR)/gui
+
 # Include environment variables from .env file
 ifneq (,$(wildcard ./.env))
     include .env

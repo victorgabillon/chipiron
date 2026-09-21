@@ -2,12 +2,12 @@
 
 from dataclasses import dataclass
 
-from valanga import Color
+from chipiron.core.roles import GameRole
 
 
 @dataclass(frozen=True, slots=True)
 class RequestContext:
-    """Correlates an action request and a player response."""
+    """Correlate an action request with the role expected to answer it."""
 
     request_id: int
-    color_to_play: Color
+    role_to_play: GameRole

@@ -1,0 +1,1696 @@
+"""Tests for dashboard-ready Morpion bootstrap history views."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from pytest import MonkeyPatch
+
+
+from anemone.training_export import (
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+from chipiron.environments.morpion.bootstrap import (
+    ActiveEvaluatorTimeSeriesPoint,
+    EvaluatorSelectionSummary,
+    MorpionBootstrapArtifacts,
+    MorpionBootstrapDashboardData,
+    MorpionBootstrapDatasetStatus,
+    MorpionBootstrapEvent,
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapHistoryRecorder,
+    MorpionBootstrapLatestStatus,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRecordStatus,
+    MorpionBootstrapRunState,
+    MorpionBootstrapRunView,
+    MorpionBootstrapTrainingStatus,
+    MorpionBootstrapTreeStatus,
+    MorpionEvaluatorMetrics,
+    MorpionPipelineEvaluatorTrainingResult,
+    MorpionRecordProgressSummary,
+    MorpionTreeNodeClassificationSummary,
+    TrainingTriggeredTimeSeriesPoint,
+    TreeDepthDistributionRow,
+    active_evaluator_series,
+    build_morpion_bootstrap_dashboard_data,
+    canonical_record_score_series,
+    certified_record_best_so_far_series,
+    evaluator_loss_series_by_name,
+    latest_tree_depth_distribution,
+    load_latest_linoo_selection_table_for_dashboard,
+    load_morpion_bootstrap_run_view,
+    load_pipeline_dataset_status_file,
+    record_total_points_series,
+    save_bootstrap_run_state,
+    save_pipeline_dataset_status_file,
+    save_pipeline_training_status_file,
+    summarize_bootstrap_run,
+    summarize_evaluator_selection,
+    summarize_record_progress,
+    summarize_tree_node_classification,
+    training_triggered_series,
+    tree_num_nodes_series,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
+    DiskUsageRow,
+    DiskUsageSummary,
+    _load_resolved_training_tree_snapshot,
+    _ResolvedTreeSnapshotReference,
+    build_current_certified_record_board_view,
+    build_disk_usage_summary,
+    format_num_bytes,
+    recursive_path_num_bytes,
+)
+from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
+    LinooSelectionTable,
+    LinooSelectionTableRow,
+    save_linoo_selection_table,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+
+def _make_event(
+    *,
+    cycle_index: int,
+    generation: int,
+    timestamp_utc: str,
+    training_triggered: bool,
+    tree_num_nodes: int,
+    record_score: int | None,
+    total_points: int | None,
+    active_evaluator_name: str | None,
+    dataset_num_rows: int | None = None,
+    evaluator_metrics: dict[str, MorpionEvaluatorMetrics] | None = None,
+) -> MorpionBootstrapEvent:
+    """Build one representative bootstrap event for history-view tests."""
+    metadata: dict[str, object] = {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+    }
+    if active_evaluator_name is not None:
+        metadata["active_evaluator_name"] = active_evaluator_name
+    return MorpionBootstrapEvent(
+        event_id=f"cycle_{cycle_index:06d}",
+        cycle_index=cycle_index,
+        generation=generation,
+        timestamp_utc=timestamp_utc,
+        tree=MorpionBootstrapTreeStatus(
+            num_nodes=tree_num_nodes,
+            min_depth_present=0,
+            max_depth_present=2,
+            depth_node_counts={0: 1, 1: max(tree_num_nodes - 5, 0), 2: 4},
+        ),
+        dataset=MorpionBootstrapDatasetStatus(
+            num_rows=dataset_num_rows,
+            num_samples=dataset_num_rows,
+        ),
+        training=MorpionBootstrapTrainingStatus(triggered=training_triggered),
+        record=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=record_score,
+            current_best_total_points=total_points,
+            current_best_is_exact=True if record_score is not None else None,
+            current_best_is_terminal=True if record_score is not None else None,
+            current_best_source="certified_terminal_leaf"
+            if record_score is not None
+            else None,
+        ),
+        frontier=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=record_score,
+            current_best_total_points=total_points,
+            current_best_is_exact=True if record_score is not None else None,
+            current_best_is_terminal=True if record_score is not None else None,
+            current_best_source="certified_terminal_leaf"
+            if record_score is not None
+            else None,
+        ),
+        artifacts=MorpionBootstrapArtifacts(
+            tree_snapshot_path=None,
+            rows_path=None,
+        ),
+        evaluators={} if evaluator_metrics is None else dict(evaluator_metrics),
+        metadata=metadata,
+    )
+
+
+def _make_run_state(
+    *,
+    tree_size_at_last_save: int = 25,
+    latest_tree_snapshot_path: str | None = "tree_exports/generation_000002.json",
+) -> MorpionBootstrapRunState:
+    """Build one representative run state for run-view loading tests."""
+    return MorpionBootstrapRunState(
+        generation=2,
+        cycle_index=3,
+        latest_tree_snapshot_path=latest_tree_snapshot_path,
+        latest_rows_path="rows/generation_000002.json",
+        latest_model_bundle_paths={"mlp": "models/generation_000002/mlp"},
+        active_evaluator_name="mlp",
+        tree_size_at_last_save=tree_size_at_last_save,
+        last_save_unix_s=200.0,
+        latest_record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=19,
+            current_best_total_points=55,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+    )
+
+
+def _make_morpion_payload(move_count: int) -> dict[str, object]:
+    """Build one real Morpion checkpoint payload after ``move_count`` moves."""
+    dynamics = MorpionDynamics()
+    state = morpion_initial_state()
+    for _ in range(move_count):
+        action = dynamics.all_legal_actions(state)[0]
+        state = dynamics.step(state, action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(state))
+
+
+@dataclass(slots=True)
+class _LiveNode:
+    """Small live-node stub exposing the fields used by sharded export builders."""
+
+    id: str
+    depth: int
+    state_payload: dict[str, object]
+    direct_value: float | None
+    backed_up_value: float | None
+    is_terminal: bool
+    is_exact: bool
+    visit_count: int | None
+    metadata: dict[str, object] = field(default_factory=dict)
+    parent_ids: tuple[str, ...] = ()
+    child_ids: tuple[str, ...] = ()
+    over_event_label: str | None = None
+
+    @property
+    def state(self) -> dict[str, object]:
+        """Return the state payload expected by the sharded export writer."""
+        return self.state_payload
+
+
+def _value_to_scalar(value: object | None) -> float | None:
+    """Return float scalars for the live-node stubs used in these tests."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
+
+
+def _write_small_sharded_snapshot(paths: MorpionBootstrapPaths) -> Path:
+    """Write one minimal sharded Morpion training export and return its manifest."""
+    return save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=(
+            _LiveNode(
+                id="root",
+                depth=0,
+                state_payload=_make_morpion_payload(0),
+                direct_value=0.25,
+                backed_up_value=0.5,
+                is_terminal=False,
+                is_exact=False,
+                visit_count=3,
+                child_ids=("leaf",),
+            ),
+            _LiveNode(
+                id="leaf",
+                depth=1,
+                state_payload=_make_morpion_payload(1),
+                direct_value=0.75,
+                backed_up_value=1.0,
+                is_terminal=True,
+                is_exact=True,
+                visit_count=2,
+                parent_ids=("root",),
+            ),
+        ),
+        root_node_id="root",
+        output_dir=paths.sharded_tree_snapshot_dir,
+        generation=1,
+        state_ref_dumper=lambda state: state,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )[0]
+
+
+def test_load_resolved_training_tree_snapshot_loads_flat_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard snapshot loading should preserve flat export support."""
+    snapshot_path = tmp_path / "tree_exports" / "generation_000001.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    save_training_tree_snapshot(
+        TrainingTreeSnapshot(
+            root_node_id="root",
+            nodes=(
+                make_training_node_snapshot(
+                    node_id="root",
+                    depth=0,
+                    state_ref_payload={"kind": "root"},
+                ),
+            ),
+        ),
+        snapshot_path,
+    )
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is not None
+    assert len(snapshot.nodes) == 1
+
+
+def test_load_resolved_training_tree_snapshot_loads_sharded_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard snapshot loading should support Morpion sharded exports."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot_path = _write_small_sharded_snapshot(paths)
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is not None
+    assert snapshot.root_node_id == "root"
+    assert tuple(node.node_id for node in snapshot.nodes) == ("root", "leaf")
+
+
+def test_load_resolved_training_tree_snapshot_tolerates_malformed_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Malformed tree artifacts should not crash dashboard data loading."""
+    snapshot_path = tmp_path / "tree_exports" / "generation_000001.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_text('{"not_nodes": []}\n', encoding="utf-8")
+
+    snapshot = _load_resolved_training_tree_snapshot(
+        _ResolvedTreeSnapshotReference(
+            snapshot_path=snapshot_path,
+            snapshot_source="test",
+        )
+    )
+
+    assert snapshot is None
+
+
+def test_dashboard_data_loads_run_state_sharded_tree_snapshot(
+    tmp_path: Path,
+) -> None:
+    """Dashboard summaries should load sharded snapshots referenced by run state."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot_path = _write_small_sharded_snapshot(paths)
+    save_bootstrap_run_state(
+        _make_run_state(
+            latest_tree_snapshot_path=str(snapshot_path.relative_to(paths.work_dir)),
+        ),
+        paths.run_state_path,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.run_summary.latest_tree_num_nodes == 2
+    assert dashboard_data.latest_tree_status is not None
+    assert dashboard_data.latest_tree_status.num_nodes == 2
+    assert dashboard_data.latest_tree_node_classification_summary is not None
+    assert dashboard_data.latest_tree_node_classification_summary.total_nodes == 2
+
+
+def test_load_run_view_from_artifacts(tmp_path: Path) -> None:
+    """The run-view loader should aggregate run-state, history, and latest status."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    first_event = _make_event(
+        cycle_index=0,
+        generation=1,
+        timestamp_utc="2026-04-11T08:00:00Z",
+        training_triggered=True,
+        tree_num_nodes=10,
+        record_score=12,
+        total_points=48,
+        active_evaluator_name="linear",
+        dataset_num_rows=10,
+    )
+    second_event = _make_event(
+        cycle_index=1,
+        generation=2,
+        timestamp_utc="2026-04-11T09:00:00Z",
+        training_triggered=False,
+        tree_num_nodes=15,
+        record_score=14,
+        total_points=50,
+        active_evaluator_name="mlp",
+        dataset_num_rows=None,
+    )
+    recorder.record(first_event)
+    recorder.record(second_event)
+    run_state = _make_run_state()
+    save_bootstrap_run_state(run_state, paths.run_state_path)
+
+    run_view = load_morpion_bootstrap_run_view(tmp_path)
+
+    assert run_view.work_dir == paths.work_dir
+    assert run_view.run_state == run_state
+    assert run_view.history == (first_event, second_event)
+    assert run_view.latest_status.latest_event == second_event
+    assert run_view.latest_status.latest_cycle_index == 1
+    assert run_view.latest_status.latest_generation == 2
+
+
+def test_run_summary_falls_back_to_run_state_tree_size_without_history() -> None:
+    """Run summary should use saved tree size when no event history exists."""
+    run_state = _make_run_state(tree_size_at_last_save=25)
+    run_view = MorpionBootstrapRunView(
+        work_dir=Path("/tmp/run"),
+        run_state=run_state,
+        latest_status=MorpionBootstrapLatestStatus(
+            work_dir="/tmp/run",
+            latest_generation=None,
+            latest_cycle_index=None,
+            latest_event=None,
+        ),
+        history=(),
+    )
+
+    summary = summarize_bootstrap_run(run_view)
+
+    assert summary.latest_cycle_index == run_state.cycle_index
+    assert summary.latest_generation == run_state.generation
+    assert summary.latest_active_evaluator_name == run_state.active_evaluator_name
+    assert summary.latest_tree_num_nodes == 25
+
+
+def test_empty_run_view_works(tmp_path: Path) -> None:
+    """An empty work directory should still load as a valid run view."""
+    run_view = load_morpion_bootstrap_run_view(tmp_path)
+
+    assert run_view.work_dir == tmp_path.resolve()
+    assert run_view.run_state is None
+    assert run_view.history == ()
+    assert run_view.latest_status.latest_event is None
+    assert run_view.latest_status.latest_cycle_index is None
+    assert run_view.latest_status.latest_generation is None
+
+
+def test_build_current_certified_record_board_view_renders_numbered_points(
+    tmp_path: Path,
+) -> None:
+    """Certified-record board view should render numbered post-start points."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot = TrainingTreeSnapshot(
+        nodes=(
+            make_training_node_snapshot(
+                node_id="certified-2",
+                parent_ids=(),
+                child_ids=(),
+                depth=2,
+                state_ref_payload=_make_morpion_payload(2),
+                direct_value_scalar=2.0,
+                backed_up_value_scalar=2.0,
+                is_terminal=True,
+                is_exact=True,
+                over_event_label=None,
+                visit_count=3,
+                metadata={"source": "history-view-test"},
+            ),
+        ),
+        root_node_id="certified-2",
+    )
+    save_training_tree_snapshot(
+        snapshot, paths.tree_snapshot_dir / "generation_000001.json"
+    )
+
+    board_view = build_current_certified_record_board_view(tmp_path)
+
+    assert board_view is not None
+    assert board_view.variant == "5T"
+    assert board_view.moves_since_start == 2
+    assert board_view.total_points == 38
+    assert board_view.is_exact is True
+    assert board_view.is_terminal is True
+    assert board_view.source == "certified_terminal_leaf"
+    assert ">1</text>" in board_view.board_svg
+    assert ">2</text>" in board_view.board_svg
+    assert "#0f766e" in board_view.board_svg
+    assert board_view.board_text is not None
+
+
+def test_summarize_tree_node_classification_counts_small_snapshot() -> None:
+    """Classification summary should count exact and terminal nodes correctly."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            make_training_node_snapshot(
+                node_id="root",
+                parent_ids=(),
+                child_ids=("a",),
+                depth=0,
+                state_ref_payload={"kind": "root"},
+                direct_value_scalar=0.0,
+                backed_up_value_scalar=0.0,
+                is_terminal=False,
+                is_exact=False,
+            ),
+            make_training_node_snapshot(
+                node_id="a",
+                parent_ids=("root",),
+                child_ids=(),
+                depth=1,
+                state_ref_payload={"kind": "a"},
+                direct_value_scalar=1.0,
+                backed_up_value_scalar=1.0,
+                is_terminal=True,
+                is_exact=True,
+            ),
+            make_training_node_snapshot(
+                node_id="b",
+                parent_ids=("root",),
+                child_ids=(),
+                depth=1,
+                state_ref_payload={"kind": "b"},
+                direct_value_scalar=0.5,
+                backed_up_value_scalar=0.5,
+                is_terminal=False,
+                is_exact=True,
+            ),
+            make_training_node_snapshot(
+                node_id="c",
+                parent_ids=("root",),
+                child_ids=(),
+                depth=1,
+                state_ref_payload={"kind": "c"},
+                direct_value_scalar=0.25,
+                backed_up_value_scalar=0.25,
+                is_terminal=True,
+                is_exact=False,
+            ),
+        ),
+    )
+
+    assert summarize_tree_node_classification(snapshot) == (
+        MorpionTreeNodeClassificationSummary(
+            total_nodes=4,
+            exact_nodes=2,
+            terminal_nodes=2,
+            exact_terminal_nodes=1,
+            non_exact_non_terminal_nodes=1,
+            unknown_classification_nodes=0,
+        )
+    )
+
+
+def test_format_num_bytes_is_human_readable() -> None:
+    """Byte formatting should stay compact and operator-friendly."""
+    assert format_num_bytes(None) == "unknown"
+    assert format_num_bytes(12) == "12 B"
+    assert format_num_bytes(1536) == "1.5 KB"
+    assert format_num_bytes(1048576) == "1.0 MB"
+
+
+def test_recursive_path_num_bytes_sums_directory_contents(tmp_path: Path) -> None:
+    """Recursive size helper should sum nested files and treat missing paths as zero."""
+    (tmp_path / "root.bin").write_bytes(b"abc")
+    nested_dir = tmp_path / "nested"
+    nested_dir.mkdir()
+    (nested_dir / "child.bin").write_bytes(b"defgh")
+
+    assert recursive_path_num_bytes(tmp_path) == 8
+    assert recursive_path_num_bytes(tmp_path / "missing") == 0
+
+
+def test_build_disk_usage_summary_collects_expected_breakdown(tmp_path: Path) -> None:
+    """Disk summary should report run totals and sort breakdown rows by size."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    (paths.model_dir / "weights.bin").write_bytes(b"abcdef")
+    (paths.rows_dir / "rows.json").write_bytes(b"1234")
+    (paths.runtime_checkpoint_dir / "generation_000001.json").write_bytes(b"12")
+    (paths.tree_snapshot_dir / "generation_000001.json").write_bytes(b"123")
+    paths.history_jsonl_path.write_bytes(b"12345")
+    paths.latest_status_path.write_bytes(b"12")
+
+    summary = build_disk_usage_summary(tmp_path)
+
+    assert isinstance(summary, DiskUsageSummary)
+    assert summary.run_dir_num_bytes == 22
+    assert summary.device_total_num_bytes is None or summary.device_total_num_bytes > 0
+    assert (
+        summary.run_dir_pct_of_device_total is None
+        or summary.run_dir_pct_of_device_total >= 0.0
+    )
+    assert summary.breakdown_rows[:5] == (
+        DiskUsageRow("history_logs_status", 7),
+        DiskUsageRow("models", 6),
+        DiskUsageRow("rows", 4),
+        DiskUsageRow("tree_exports", 3),
+        DiskUsageRow("search_checkpoints", 2),
+    )
+
+
+def test_build_disk_usage_summary_handles_missing_directories(tmp_path: Path) -> None:
+    """Disk summary should treat absent artifact folders as zero-sized."""
+    summary = build_disk_usage_summary(tmp_path)
+
+    assert summary.run_dir_num_bytes == 0
+    assert summary.breakdown_rows == (
+        DiskUsageRow("history_logs_status", 0),
+        DiskUsageRow("models", 0),
+        DiskUsageRow("rows", 0),
+        DiskUsageRow("search_checkpoints", 0),
+        DiskUsageRow("tree_exports", 0),
+    )
+
+
+def test_dashboard_data_includes_disk_usage_summary(tmp_path: Path) -> None:
+    """Dashboard data payload should include the derived disk-usage summary."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    (paths.rows_dir / "generation_000001.json").write_bytes(b"123")
+
+    data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert data.disk_usage_summary.run_dir_num_bytes == 3
+    assert any(
+        row == DiskUsageRow("rows", 3) for row in data.disk_usage_summary.breakdown_rows
+    )
+
+
+def test_run_summary_counts_train_vs_no_train_cycles() -> None:
+    """Run summary should report train and no-train counts separately."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+            dataset_num_rows=10,
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=1,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=12,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=2,
+            generation=2,
+            timestamp_utc="2026-04-11T10:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=15,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="mlp",
+            dataset_num_rows=12,
+        ),
+    )
+    run_view = MorpionBootstrapRunView(
+        work_dir=Path("/tmp/run"),
+        run_state=None,
+        latest_status=MorpionBootstrapLatestStatus(
+            work_dir="/tmp/run",
+            latest_generation=None,
+            latest_cycle_index=None,
+            latest_event=None,
+        ),
+        history=history,
+    )
+
+    summary = summarize_bootstrap_run(run_view)
+
+    assert summary.num_cycles == 3
+    assert summary.num_train_cycles == 2
+    assert summary.num_no_train_cycles == 1
+    assert summary.latest_cycle_index == 2
+    assert summary.latest_generation == 2
+    assert summary.latest_active_evaluator_name == "mlp"
+    assert summary.latest_tree_num_nodes == 15
+    assert summary.latest_record_score == 12
+    assert summary.latest_record_total_points == 48
+    assert summary.latest_timestamp_utc == "2026-04-11T10:00:00Z"
+
+
+def test_canonical_record_score_series_uses_moves_since_start() -> None:
+    """Canonical record series must expose moves-since-start, not total points."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=18,
+            total_points=54,
+            active_evaluator_name="linear",
+        ),
+    )
+
+    score_series = canonical_record_score_series(history)
+    total_points = record_total_points_series(history)
+
+    assert score_series[0].value == 18
+    assert total_points[0].value == 54
+
+
+def test_certified_record_best_so_far_series_stays_flat_between_improvements() -> None:
+    """Certified record progress should be plotted as best-so-far over time."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=None,
+            total_points=None,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=12,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=2,
+            generation=3,
+            timestamp_utc="2026-04-11T10:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=14,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="mlp",
+        ),
+        _make_event(
+            cycle_index=3,
+            generation=4,
+            timestamp_utc="2026-04-11T11:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=16,
+            record_score=14,
+            total_points=50,
+            active_evaluator_name="mlp",
+        ),
+    )
+
+    assert tuple(
+        point.value for point in certified_record_best_so_far_series(history)
+    ) == (None, 12, 12, 14)
+
+
+def test_certified_record_best_so_far_series_handles_no_certified_record() -> None:
+    """Runs with no certified record yet should keep the series empty-valued."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=None,
+            total_points=None,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=11,
+            record_score=None,
+            total_points=None,
+            active_evaluator_name="linear",
+        ),
+    )
+
+    assert tuple(
+        point.value for point in certified_record_best_so_far_series(history)
+    ) == (None, None)
+
+
+def test_evaluator_loss_series_groups_by_evaluator_name() -> None:
+    """Evaluator loss series should stay sparse and grouped by evaluator name."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+            evaluator_metrics={
+                "linear": MorpionEvaluatorMetrics(
+                    final_loss=0.5,
+                    num_epochs=1,
+                    num_samples=10,
+                )
+            },
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=12,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="mlp",
+            evaluator_metrics={
+                "mlp": MorpionEvaluatorMetrics(
+                    final_loss=0.3,
+                    num_epochs=1,
+                    num_samples=12,
+                )
+            },
+        ),
+        _make_event(
+            cycle_index=2,
+            generation=3,
+            timestamp_utc="2026-04-11T10:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=14,
+            record_score=14,
+            total_points=50,
+            active_evaluator_name="mlp",
+            evaluator_metrics={
+                "linear": MorpionEvaluatorMetrics(
+                    final_loss=0.25,
+                    num_epochs=1,
+                    num_samples=14,
+                ),
+                "mlp": MorpionEvaluatorMetrics(
+                    final_loss=0.2,
+                    num_epochs=1,
+                    num_samples=14,
+                ),
+            },
+        ),
+    )
+
+    loss_by_name = evaluator_loss_series_by_name(history)
+
+    assert set(loss_by_name) == {"linear", "mlp"}
+    assert tuple(point.cycle_index for point in loss_by_name["linear"]) == (0, 2)
+    assert tuple(point.value for point in loss_by_name["linear"]) == (0.5, 0.25)
+    assert tuple(point.cycle_index for point in loss_by_name["mlp"]) == (1, 2)
+    assert tuple(point.value for point in loss_by_name["mlp"]) == (0.3, 0.2)
+
+
+def test_active_evaluator_series_reads_event_metadata() -> None:
+    """Active evaluator series should come from event metadata."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=12,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="mlp",
+        ),
+    )
+
+    assert active_evaluator_series(history) == (
+        ActiveEvaluatorTimeSeriesPoint(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            active_evaluator_name="linear",
+        ),
+        ActiveEvaluatorTimeSeriesPoint(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            active_evaluator_name="mlp",
+        ),
+    )
+
+
+def test_evaluator_switch_summary_counts_changes_correctly() -> None:
+    """Switch summary should count changes between consecutive non-null names."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=1,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=11,
+            record_score=10,
+            total_points=46,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=2,
+            generation=2,
+            timestamp_utc="2026-04-11T10:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=12,
+            record_score=11,
+            total_points=47,
+            active_evaluator_name="mlp",
+        ),
+        _make_event(
+            cycle_index=3,
+            generation=2,
+            timestamp_utc="2026-04-11T11:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=13,
+            record_score=11,
+            total_points=47,
+            active_evaluator_name="mlp",
+        ),
+        _make_event(
+            cycle_index=4,
+            generation=3,
+            timestamp_utc="2026-04-11T12:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=14,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="linear",
+        ),
+    )
+
+    assert summarize_evaluator_selection(history) == EvaluatorSelectionSummary(
+        latest_active_evaluator_name="linear",
+        num_switches=2,
+        active_counts={"linear": 3, "mlp": 2},
+    )
+
+
+def test_record_progress_summary_uses_canonical_score() -> None:
+    """Record-progress summary must treat moves-since-start as the canonical score."""
+    history = (
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=10,
+            record_score=18,
+            total_points=54,
+            active_evaluator_name="linear",
+        ),
+        _make_event(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            training_triggered=True,
+            tree_num_nodes=12,
+            record_score=20,
+            total_points=56,
+            active_evaluator_name="mlp",
+        ),
+    )
+
+    assert summarize_record_progress(
+        certified_record_best_so_far_series(history),
+        record_total_points_series(history),
+    ) == MorpionRecordProgressSummary(
+        latest_score=20,
+        best_score=20,
+        first_cycle_reaching_best=1,
+        latest_total_points=56,
+        best_total_points=56,
+    )
+
+
+def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
+    """Dashboard payload builder should bundle summaries and all expected series."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    first_event = _make_event(
+        cycle_index=0,
+        generation=1,
+        timestamp_utc="2026-04-11T08:00:00Z",
+        training_triggered=True,
+        tree_num_nodes=10,
+        record_score=12,
+        total_points=48,
+        active_evaluator_name="linear",
+        dataset_num_rows=10,
+        evaluator_metrics={
+            "linear": MorpionEvaluatorMetrics(
+                final_loss=0.5,
+                num_epochs=1,
+                num_samples=10,
+            )
+        },
+    )
+    second_event = _make_event(
+        cycle_index=1,
+        generation=2,
+        timestamp_utc="2026-04-11T09:00:00Z",
+        training_triggered=False,
+        tree_num_nodes=15,
+        record_score=14,
+        total_points=50,
+        active_evaluator_name="mlp",
+        dataset_num_rows=None,
+    )
+    recorder.record(first_event)
+    recorder.record(second_event)
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+    save_pipeline_training_status_file(
+        generation=1,
+        training_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "test"},
+        selected_evaluator_name="linear",
+        selection_policy="lowest_final_loss",
+        evaluator_results={
+            "linear": MorpionPipelineEvaluatorTrainingResult(
+                final_loss=0.5,
+                elapsed_s=1.0,
+                model_bundle_path="models/generation_000001/linear",
+            )
+        },
+        path=paths.pipeline_training_status_path_for_generation(1),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert isinstance(dashboard_data, MorpionBootstrapDashboardData)
+    assert dashboard_data.run_summary.num_cycles == 2
+    assert dashboard_data.latest_tree_status is not None
+    assert dashboard_data.latest_tree_status.max_depth_present == 2
+    assert dashboard_data.latest_tree_node_classification_summary is None
+    assert dashboard_data.run_summary.latest_record_score == 14
+    assert (
+        dashboard_data.evaluator_selection_summary.latest_active_evaluator_name == "mlp"
+    )
+    assert dashboard_data.record_progress_summary.best_score == 14
+    assert len(dashboard_data.tree_num_nodes) == 2
+    assert len(dashboard_data.canonical_record_score) == 2
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        12,
+        14,
+    )
+    assert len(dashboard_data.record_total_points) == 2
+    assert len(dashboard_data.dataset_num_rows) == 2
+    assert set(dashboard_data.evaluator_loss_by_name) == {"linear"}
+    assert tuple(
+        point.value for point in dashboard_data.evaluator_loss_by_name["linear"]
+    ) == (0.5,)
+    assert len(dashboard_data.active_evaluator) == 2
+    assert dashboard_data.latest_tree_depth_distribution == (
+        TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
+        TreeDepthDistributionRow(depth=1, num_nodes=10, cumulative_nodes=11),
+        TreeDepthDistributionRow(depth=2, num_nodes=4, cumulative_nodes=15),
+    )
+    assert training_triggered_series((first_event, second_event)) == (
+        TrainingTriggeredTimeSeriesPoint(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            triggered=True,
+        ),
+        TrainingTriggeredTimeSeriesPoint(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            triggered=False,
+        ),
+    )
+    assert tuple(
+        point.value for point in tree_num_nodes_series((first_event, second_event))
+    ) == (
+        10,
+        15,
+    )
+
+
+def test_dashboard_linoo_selection_loader_tolerates_missing_artifact(
+    tmp_path: Path,
+) -> None:
+    """Dashboard Linoo loader should be graceful before growth writes the artifact."""
+    assert load_latest_linoo_selection_table_for_dashboard(tmp_path) is None
+
+
+def test_dashboard_data_exposes_latest_linoo_selection_table(tmp_path: Path) -> None:
+    """Dashboard data should expose the latest persisted Linoo selector table."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_linoo_selection_table(
+        LinooSelectionTable(
+            updated_at_utc="2026-04-11T09:00:00Z",
+            cycle_index=4,
+            generation=6,
+            step=7,
+            selected_depth=4,
+            selected_node_id=1550,
+            rows=(
+                LinooSelectionTableRow(
+                    depth=3,
+                    opened=12,
+                    frontier=50,
+                    deterministic_index=48,
+                    weight=0.25,
+                    probability=0.45,
+                    best_node=1234,
+                    best_value=0.42,
+                    selected=False,
+                ),
+                LinooSelectionTableRow(
+                    depth=4,
+                    opened=9,
+                    frontier=31,
+                    deterministic_index=45,
+                    weight=0.2,
+                    probability=0.36,
+                    best_node=1550,
+                    best_value=0.38,
+                    selected=True,
+                ),
+            ),
+        ),
+        paths.latest_linoo_selection_table_path,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    table = dashboard_data.latest_linoo_selection_table
+    assert table is not None
+    assert table.step == 7
+    assert table.selected_depth == 4
+    assert [row.depth for row in table.rows] == [3, 4]
+    assert [row.selected for row in table.rows] == [False, True]
+
+
+def test_dashboard_data_prefers_dataset_status_artifacts_for_record_and_frontier(
+    tmp_path: Path,
+) -> None:
+    """Dashboard data should prefer dataset-status artifacts over stale run-state values."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+    save_pipeline_dataset_status_file(
+        generation=1,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "artifact"},
+        record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=14,
+            current_best_total_points=50,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+        frontier_status=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=15,
+            current_best_total_points=51,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
+        path=paths.pipeline_dataset_status_path_for_generation(1),
+    )
+    save_pipeline_dataset_status_file(
+        generation=2,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T09:00:00Z",
+        metadata={"source": "artifact"},
+        record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=16,
+            current_best_total_points=52,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+        frontier_status=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=17,
+            current_best_total_points=53,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
+        path=paths.pipeline_dataset_status_path_for_generation(2),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+    latest_dataset_status = load_pipeline_dataset_status_file(
+        paths.pipeline_dataset_status_path_for_generation(2)
+    )
+
+    assert (
+        dashboard_data.latest_certified_record_status
+        == latest_dataset_status.record_status
+    )
+    assert (
+        dashboard_data.latest_frontier_status == latest_dataset_status.frontier_status
+    )
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        14,
+        16,
+    )
+    assert tuple(point.value for point in dashboard_data.record_total_points) == (
+        50,
+        52,
+    )
+    assert dashboard_data.dataset_num_rows == ()
+    assert dashboard_data.run_summary.latest_record_score == 16
+    assert dashboard_data.run_summary.latest_frontier_total_points == 53
+
+
+def test_dashboard_data_reads_dataset_rows_from_dataset_status_metadata(
+    tmp_path: Path,
+) -> None:
+    """Dashboard data should prefer artifact dataset row counts when available."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    recorder.record(
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=10,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name=None,
+            dataset_num_rows=10,
+        )
+    )
+    save_pipeline_dataset_status_file(
+        generation=1,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"dataset_rows": 980},
+        path=paths.pipeline_dataset_status_path_for_generation(1),
+    )
+    save_pipeline_dataset_status_file(
+        generation=2,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T09:00:00Z",
+        metadata={"dataset_rows": 990},
+        path=paths.pipeline_dataset_status_path_for_generation(2),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (980, 990)
+
+
+def test_dashboard_data_tolerates_dataset_status_without_dataset_rows(
+    tmp_path: Path,
+) -> None:
+    """Missing dataset_rows metadata should not crash and should still use artifact series when present elsewhere."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_dataset_status_file(
+        generation=1,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "old-format"},
+        path=paths.pipeline_dataset_status_path_for_generation(1),
+    )
+    save_pipeline_dataset_status_file(
+        generation=2,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T09:00:00Z",
+        metadata={"dataset_rows": 990},
+        path=paths.pipeline_dataset_status_path_for_generation(2),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (
+        None,
+        990,
+    )
+
+
+def test_dashboard_data_uses_latest_non_null_dataset_status_for_record_and_frontier(
+    tmp_path: Path,
+) -> None:
+    """Dashboard should ignore newer empty dataset artifacts when older ones have data."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+    save_pipeline_dataset_status_file(
+        generation=1,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "artifact"},
+        record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=14,
+            current_best_total_points=50,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+        frontier_status=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=15,
+            current_best_total_points=51,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
+        path=paths.pipeline_dataset_status_path_for_generation(1),
+    )
+    save_pipeline_dataset_status_file(
+        generation=2,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T09:00:00Z",
+        metadata={"source": "artifact-empty"},
+        path=paths.pipeline_dataset_status_path_for_generation(2),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.latest_certified_record_status is not None
+    assert dashboard_data.latest_certified_record_status.current_best_total_points == 50
+    assert dashboard_data.latest_frontier_status is not None
+    assert dashboard_data.latest_frontier_status.current_best_total_points == 51
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        14,
+    )
+    assert tuple(point.value for point in dashboard_data.record_total_points) == (50,)
+
+
+def test_dashboard_data_falls_back_to_history_without_dataset_status_artifacts(
+    tmp_path: Path,
+) -> None:
+    """Dashboard data should keep using history/run-state when dataset artifacts are absent."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    recorder.record(
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=10,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name=None,
+        )
+    )
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.latest_certified_record_status is not None
+    assert dashboard_data.latest_certified_record_status.current_best_total_points == 48
+    assert dashboard_data.latest_frontier_status is not None
+    assert dashboard_data.latest_frontier_status.current_best_total_points == 48
+    assert tuple(point.value for point in dashboard_data.certified_record_score) == (
+        12,
+    )
+    assert tuple(point.value for point in dashboard_data.record_total_points) == (48,)
+    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (None,)
+    assert dashboard_data.latest_tree_node_classification_summary is None
+
+
+def test_dashboard_data_falls_back_to_history_without_artifact_dataset_rows(
+    tmp_path: Path,
+) -> None:
+    """History should remain the dataset-row source when artifacts have no dataset_rows values."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    recorder.record(
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            training_triggered=False,
+            tree_num_nodes=10,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name=None,
+            dataset_num_rows=123,
+        )
+    )
+    save_pipeline_dataset_status_file(
+        generation=1,
+        dataset_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "artifact-without-rows"},
+        path=paths.pipeline_dataset_status_path_for_generation(1),
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert tuple(point.value for point in dashboard_data.dataset_num_rows) == (123,)
+
+
+def test_dashboard_data_tolerates_old_training_status_without_evaluator_results(
+    tmp_path: Path,
+) -> None:
+    """Dashboard data loading should skip old training status payloads safely."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_training_status_path_for_generation(1).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    paths.pipeline_training_status_path_for_generation(1).write_text(
+        json.dumps({
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-11T08:00:00Z",
+            "metadata": {"source": "old-format"},
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.evaluator_loss_by_name == {}
+
+
+def test_dashboard_loss_series_falls_back_to_old_final_loss(
+    tmp_path: Path,
+) -> None:
+    """Old training status payloads without validation_loss should plot final_loss."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_training_status_path_for_generation(1).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    paths.pipeline_training_status_path_for_generation(1).write_text(
+        json.dumps({
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-11T08:00:00Z",
+            "evaluator_results": {
+                "linear": {
+                    "final_loss": 0.625,
+                    "elapsed_s": 1.0,
+                    "model_bundle_path": "models/generation_000001/linear",
+                }
+            },
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert tuple(
+        point.value for point in dashboard_data.evaluator_loss_by_name["linear"]
+    ) == (0.625,)
+
+
+def test_dashboard_data_tolerates_snapshot_nodes_without_exact_terminal_flags(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Snapshot classification should not crash when old-format nodes miss flags."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot_path = paths.tree_snapshot_dir / "generation_000001.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_text("{}\n", encoding="utf-8")
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    class _OldFormatNode:
+        def __init__(self, *, depth: int) -> None:
+            self.depth = depth
+
+    class _OldFormatSnapshot:
+        nodes = (_OldFormatNode(depth=0), _OldFormatNode(depth=1))
+
+    def _fake_load_training_tree_snapshot(path: Path) -> object:
+        assert path == snapshot_path
+        return _OldFormatSnapshot()
+
+    monkeypatch.setattr(
+        "chipiron.environments.morpion.bootstrap.dashboard.history_view.load_training_tree_snapshot",
+        _fake_load_training_tree_snapshot,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.latest_tree_node_classification_summary == (
+        MorpionTreeNodeClassificationSummary(
+            total_nodes=2,
+            exact_nodes=0,
+            terminal_nodes=0,
+            exact_terminal_nodes=0,
+            non_exact_non_terminal_nodes=0,
+            unknown_classification_nodes=2,
+        )
+    )
+
+
+def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -> None:
+    """Depth distribution should fall back to the latest saved tree snapshot."""
+    snapshot_path = (
+        MorpionBootstrapPaths.from_work_dir(tmp_path).tree_snapshot_dir
+        / "generation_000001.json"
+    )
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    save_training_tree_snapshot(
+        TrainingTreeSnapshot(
+            root_node_id="root",
+            nodes=(
+                make_training_node_snapshot(
+                    node_id="root",
+                    parent_ids=(),
+                    child_ids=("child-1", "child-2"),
+                    depth=0,
+                    state_ref_payload={"kind": "root"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=False,
+                    is_exact=False,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+                make_training_node_snapshot(
+                    node_id="child-1",
+                    parent_ids=("root",),
+                    child_ids=("leaf",),
+                    depth=1,
+                    state_ref_payload={"kind": "child-1"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=False,
+                    is_exact=False,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+                make_training_node_snapshot(
+                    node_id="child-2",
+                    parent_ids=("root",),
+                    child_ids=(),
+                    depth=1,
+                    state_ref_payload={"kind": "child-2"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=False,
+                    is_exact=False,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+                make_training_node_snapshot(
+                    node_id="leaf",
+                    parent_ids=("child-1",),
+                    child_ids=(),
+                    depth=2,
+                    state_ref_payload={"kind": "leaf"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=True,
+                    is_exact=True,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+            ),
+            metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+        ),
+        snapshot_path,
+    )
+    run_view = MorpionBootstrapRunView(
+        work_dir=tmp_path,
+        run_state=MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path="tree_exports/generation_000001.json",
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=4,
+            last_save_unix_s=None,
+        ),
+        latest_status=MorpionBootstrapLatestStatus(
+            work_dir=str(tmp_path),
+            latest_generation=None,
+            latest_cycle_index=None,
+            latest_event=None,
+        ),
+        history=(
+            MorpionBootstrapEvent(
+                cycle_index=0,
+                generation=1,
+                timestamp_utc="2026-04-11T08:00:00Z",
+                tree=MorpionBootstrapTreeStatus(num_nodes=4),
+                dataset=MorpionBootstrapDatasetStatus(num_rows=None, num_samples=None),
+                training=MorpionBootstrapTrainingStatus(triggered=False),
+            ),
+        ),
+    )
+
+    assert latest_tree_depth_distribution(run_view) == (
+        TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
+        TreeDepthDistributionRow(depth=1, num_nodes=2, cumulative_nodes=3),
+        TreeDepthDistributionRow(depth=2, num_nodes=1, cumulative_nodes=4),
+    )
+
+
+def test_dashboard_data_falls_back_to_newest_tree_export_when_metadata_is_stale(
+    tmp_path: Path,
+) -> None:
+    """Dashboard tree data should fall back to the newest on-disk tree export."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
+    save_training_tree_snapshot(
+        TrainingTreeSnapshot(
+            root_node_id="root-2",
+            nodes=(
+                make_training_node_snapshot(
+                    node_id="root-2",
+                    parent_ids=(),
+                    child_ids=("leaf-2",),
+                    depth=0,
+                    state_ref_payload={"kind": "root-2"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=False,
+                    is_exact=False,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+                make_training_node_snapshot(
+                    node_id="leaf-2",
+                    parent_ids=("root-2",),
+                    child_ids=(),
+                    depth=1,
+                    state_ref_payload={"kind": "leaf-2"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=True,
+                    is_exact=True,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+            ),
+            metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+        ),
+        paths.tree_snapshot_path_for_generation(2),
+    )
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path="tree_exports/generation_000001.json",
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=1,
+            last_save_unix_s=None,
+        ),
+        paths.run_state_path,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.run_summary.latest_tree_num_nodes == 2
+    assert (
+        dashboard_data.latest_tree_snapshot_status_message
+        == "Tree snapshot metadata points to a missing file; using the newest tree export discovered on disk instead."
+    )
+    assert dashboard_data.latest_tree_depth_distribution == (
+        TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
+        TreeDepthDistributionRow(depth=1, num_nodes=1, cumulative_nodes=2),
+    )

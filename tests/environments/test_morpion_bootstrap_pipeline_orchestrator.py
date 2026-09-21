@@ -1,0 +1,1838 @@
+"""Tests for the Morpion Phase 6 artifact-pipeline orchestrator."""
+
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import cast
+
+import pytest
+from anemone.training_export import (
+    TrainingNodeSnapshot,
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+import chipiron.environments.morpion.bootstrap.pipeline_orchestrator as pipeline_orchestrator_module
+from chipiron.environments.morpion.bootstrap import (
+    MorpionBootstrapArgs,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
+    MorpionPipelineActiveModel,
+    MorpionPipelineGenerationManifest,
+    MorpionPipelineOrchestratorResult,
+    MorpionPipelineTrainingCursor,
+    MorpionPipelineWorkerResult,
+    claim_pipeline_stage,
+    dataset_stage_is_pending,
+    initialize_bootstrap_run_state,
+    list_pipeline_manifest_generations,
+    load_available_pipeline_manifests,
+    load_pipeline_active_model,
+    load_pipeline_manifest,
+    run_morpion_artifact_pipeline_once,
+    run_morpion_bootstrap_experiment,
+    run_next_pipeline_dataset_stage_once,
+    run_next_pipeline_training_stage_once,
+    save_pipeline_active_model,
+    save_pipeline_manifest,
+    save_pipeline_training_cursor,
+    select_next_claimable_dataset_generation,
+    select_next_claimable_training_generation,
+    select_next_dataset_generation,
+    select_next_training_generation,
+    training_stage_is_pending,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
+from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRow,
+    MorpionSupervisedRows,
+    save_morpion_supervised_rows,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the pipeline stage protocol."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Accept restore inputs without mutating external state."""
+        del (
+            tree_snapshot_path,
+            model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree,
+        )
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        del max_growth_steps
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(self, output_path: str | Path) -> None:
+        """Write one real training snapshot to ``output_path``."""
+        index = max(self._cycle_index, 0)
+        save_training_tree_snapshot(
+            _make_training_snapshot(
+                target_value=self._target_values[index],
+                root_node_id=f"node-{index}",
+            ),
+            output_path,
+        )
+
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded training export using the same deterministic snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
+        )
+        return manifest_path
+
+    def save_checkpoint(self, output_path: str | Path) -> None:
+        """Write one placeholder checkpoint so manifests can point to it."""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"checkpoint": true}\n', encoding="utf-8")
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *,
+    target_value: float,
+    root_node_id: str,
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for orchestrator tests."""
+    node = make_training_node_snapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=True,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-pipeline-orchestrator-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+def _make_rows() -> MorpionSupervisedRows:
+    """Build one minimal valid Morpion supervised-rows dataset."""
+    return MorpionSupervisedRows(
+        rows=(
+            MorpionSupervisedRow(
+                node_id="row-1",
+                state_ref_payload=_make_morpion_payload(),
+                target_value=1.0,
+                is_terminal=True,
+                is_exact=True,
+                depth=2,
+                visit_count=3,
+                direct_value=0.5,
+                metadata={"source": "pipeline-orchestrator-test"},
+            ),
+        ),
+        metadata={"bootstrap_generation": 1, "num_rows": 1},
+    )
+
+
+def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
+    """Build one small artifact-pipeline arg set for orchestrator tests."""
+    return MorpionBootstrapArgs(
+        work_dir=work_dir,
+        pipeline_mode="artifact_pipeline",
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        save_after_seconds=0.0,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+    )
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
+
+
+def _write_manifest(path: Path) -> None:
+    """Write one placeholder manifest file for discovery-only tests."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}\n", encoding="utf-8")
+
+
+def _dataset_manifest(
+    generation: int,
+    *,
+    tree_snapshot_path: str | None = "tree_exports/generation_000001.json",
+    dataset_status: str = "not_started",
+) -> MorpionPipelineGenerationManifest:
+    """Build one manifest with dataset-stage fields for selection tests."""
+    return MorpionPipelineGenerationManifest(
+        generation=generation,
+        created_at_utc="2026-04-28T12:00:00Z",
+        tree_snapshot_path=tree_snapshot_path,
+        dataset_status=dataset_status,
+    )
+
+
+def _training_manifest(
+    generation: int,
+    *,
+    rows_path: str | None = "rows/generation_000001.json",
+    dataset_status: str = "done",
+    training_status: str = "not_started",
+) -> MorpionPipelineGenerationManifest:
+    """Build one manifest with training-stage fields for selection tests."""
+    return MorpionPipelineGenerationManifest(
+        generation=generation,
+        created_at_utc="2026-04-28T12:00:00Z",
+        rows_path=rows_path,
+        dataset_status=dataset_status,
+        training_status=training_status,
+    )
+
+
+def test_list_pipeline_manifest_generations_ignores_malformed_entries(
+    tmp_path: Path,
+) -> None:
+    """Manifest discovery should only include exact generation directory names."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _write_manifest(paths.pipeline_manifest_path_for_generation(3))
+    _write_manifest(paths.pipeline_manifest_path_for_generation(1))
+    (paths.pipeline_dir / "generation_latest").mkdir(parents=True, exist_ok=True)
+    (paths.pipeline_dir / "generation_abc").mkdir(parents=True, exist_ok=True)
+    (paths.pipeline_dir / "generation_000001_extra").mkdir(parents=True, exist_ok=True)
+    (paths.pipeline_dir / "notes.txt").write_text("ignored\n", encoding="utf-8")
+
+    assert list_pipeline_manifest_generations(paths) == (1, 3)
+
+
+def test_load_available_pipeline_manifests_reads_discovered_manifests(
+    tmp_path: Path,
+) -> None:
+    """Manifest loader should return every discovered persisted manifest by generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=3,
+            created_at_utc="2026-04-28T12:03:00Z",
+            dataset_status="failed",
+        ),
+        paths.pipeline_manifest_path_for_generation(3),
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:01:00Z",
+            training_status="done",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    manifests = load_available_pipeline_manifests(paths)
+
+    assert tuple(manifests) == (1, 3)
+    assert manifests[1].generation == 1
+    assert manifests[1].training_status == "done"
+    assert manifests[3].generation == 3
+    assert manifests[3].dataset_status == "failed"
+
+
+def test_pending_stage_predicates_cover_dataset_and_training_cases() -> None:
+    """Pending predicates should track exactly the persisted manifest contract."""
+    assert dataset_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path="tree_exports/generation_000001.json",
+            dataset_status="not_started",
+        )
+    )
+    assert dataset_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path="tree_exports/generation_000001.json",
+            dataset_status="failed",
+        )
+    )
+    assert not dataset_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path=None,
+            dataset_status="not_started",
+        )
+    )
+
+    assert training_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            training_status="not_started",
+        )
+    )
+    assert training_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            training_status="failed",
+        )
+    )
+    assert not training_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="not_started",
+            training_status="not_started",
+        )
+    )
+    assert not training_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=None,
+            dataset_status="done",
+            training_status="not_started",
+        )
+    )
+    assert not training_stage_is_pending(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            training_status="done",
+        )
+    )
+
+
+def test_select_next_dataset_generation_returns_latest_pending() -> None:
+    """Dataset selection should prefer the highest pending generation."""
+    manifests = {
+        3: _dataset_manifest(3),
+        1: _dataset_manifest(1, dataset_status="done"),
+        2: _dataset_manifest(2),
+    }
+
+    assert select_next_dataset_generation(manifests) == 3
+
+
+def test_select_next_dataset_generation_returns_none_without_pending() -> None:
+    """Dataset selection should return None when no manifest is ready."""
+    manifests = {
+        1: _dataset_manifest(1, tree_snapshot_path=None),
+        2: _dataset_manifest(2, dataset_status="done"),
+        3: _dataset_manifest(3, dataset_status="exporting_tree"),
+    }
+
+    assert select_next_dataset_generation(manifests) is None
+
+
+def test_select_next_training_generation_returns_latest_pending() -> None:
+    """Training selection should prefer the highest pending generation."""
+    manifests = {
+        3: _training_manifest(3, training_status="failed"),
+        1: _training_manifest(1, training_status="done"),
+        2: _training_manifest(2, training_status="not_started"),
+    }
+
+    assert select_next_training_generation(manifests) == 3
+
+
+def test_select_next_training_generation_returns_none_without_pending() -> None:
+    """Training selection should return None when no manifest is ready."""
+    manifests = {
+        1: _training_manifest(1, dataset_status="not_started"),
+        2: _training_manifest(2, rows_path=None),
+        3: _training_manifest(3, training_status="done"),
+    }
+
+    assert select_next_training_generation(manifests) is None
+
+
+def test_select_next_claimable_dataset_generation_skips_active_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware dataset selection should skip the latest active claim."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {
+        1: _dataset_manifest(1),
+        2: _dataset_manifest(2),
+    }
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=2,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(2),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="dataset-claim-2",
+    )
+
+    selected = select_next_claimable_dataset_generation(
+        paths,
+        manifests,
+        now_unix_s=1001.0,
+    )
+
+    assert selected == 1
+
+
+def test_select_next_claimable_dataset_generation_allows_expired_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware dataset selection should treat expired claims as claimable."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {1: _dataset_manifest(1)}
+    claim_path = paths.pipeline_dataset_claim_path_for_generation(1)
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=claim_path,
+        now_unix_s=1000.0,
+        ttl_seconds=10.0,
+        claim_id="dataset-claim-1",
+    )
+
+    selected = select_next_claimable_dataset_generation(
+        paths,
+        manifests,
+        now_unix_s=1011.0,
+    )
+
+    assert selected == 1
+
+
+def test_select_next_claimable_training_generation_skips_active_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware training selection should skip the latest active claim."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {
+        1: _training_manifest(1),
+        2: _training_manifest(2),
+    }
+    claim_pipeline_stage(
+        stage="training",
+        generation=2,
+        claim_path=paths.pipeline_training_claim_path_for_generation(2),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="training-claim-2",
+    )
+
+    selected = select_next_claimable_training_generation(
+        paths,
+        manifests,
+        now_unix_s=1001.0,
+    )
+
+    assert selected == 1
+
+
+def test_dataset_selection_diagnostics_keep_ascending_lists_and_pick_latest_claimable(
+    tmp_path: Path,
+) -> None:
+    """Dataset diagnostics should report ascending lists while selecting the latest claimable generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {
+        1: _dataset_manifest(1),
+        2: _dataset_manifest(2),
+        3: _dataset_manifest(3, dataset_status="failed"),
+        4: _dataset_manifest(4, dataset_status="done"),
+    }
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=2,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(2),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="dataset-claim-2",
+    )
+
+    diagnostics = pipeline_orchestrator_module._build_dataset_selection_diagnostics(
+        paths,
+        manifests,
+        now_unix_s=1001.0,
+    )
+
+    assert diagnostics.pending_generations == (1, 2, 3)
+    assert diagnostics.claimable_generations == (1, 3)
+    assert diagnostics.selected_generation == 3
+    assert diagnostics.selected_manifest == manifests[3]
+
+
+def test_dataset_worker_returns_no_work(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Autonomous dataset worker should exit cleanly when no manifests exist."""
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="dataset",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+    assert "[pipeline] dataset_worker_start" in messages
+    assert "latest_dataset_generation=none" in messages
+    assert "dataset_selection_start latest_tree_generation=none" in messages
+    assert "dataset_worker_idle reason=no_claimable_generation" in messages
+    assert "dataset_worker_done action=idle generation=none" in messages
+
+
+def test_dataset_worker_logs_latest_completed_dataset_summary(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Autonomous dataset worker should report the latest completed dataset summary."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            metadata={
+                "dataset_rows": 12,
+                "dataset_completed_at_utc": "2026-04-28T12:03:00Z",
+            },
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.reason == "no_pending_work"
+    assert "dataset_skip generation=1 reason=dataset_already_exists" in messages
+    assert "latest_dataset_generation=1" in messages
+    assert "latest_dataset_rows=12" in messages
+
+
+def test_training_worker_returns_no_work(tmp_path: Path) -> None:
+    """Autonomous training worker should exit cleanly when no manifests exist."""
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+
+
+def test_dataset_worker_runs_latest_claimable_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous dataset worker should run one latest claimable generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [2]
+    assert result == MorpionPipelineWorkerResult(
+        stage="dataset",
+        generation=2,
+        ran_stage=True,
+        reason=None,
+    )
+
+
+def test_training_worker_runs_latest_claimable_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous training worker should run one latest claimable generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _training_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    save_pipeline_manifest(
+        _training_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [2]
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=2,
+        ran_stage=True,
+        reason=None,
+    )
+
+
+def test_training_worker_ignores_generations_older_than_cursor_started(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Training worker should not go back before the started cursor."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_started_generation=5),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (3, 4, 6):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [6]
+    assert result.generation == 6
+    assert "training_skip generation=3 reason=stale_generation" in messages
+    assert "training_skip generation=4 reason=stale_generation" in messages
+
+
+def test_training_worker_ignores_generations_older_than_active_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training worker should not select generations behind active_model."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=5,
+            evaluator_name="linear_5",
+            model_bundle_path="models/generation_000005/linear_5",
+            updated_at_utc="2026-04-28T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    for generation in (3, 4, 6):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [6]
+    assert result.generation == 6
+
+
+def test_training_worker_treats_newer_external_active_model_as_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """External seed source generation should not stale local training datasets."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    for generation in (1, 2, 25):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [25]
+    assert result.generation == 25
+    assert (
+        "active_model_source_generation=430 local_training_lower_bound=0 "
+        "source=external_seed"
+    ) in messages
+    assert "lower_bound_generation=430" not in messages
+
+
+def test_training_worker_infers_old_schema_external_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Old active-model JSON can still be recognized as an external seed."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_active_model_path.parent.mkdir(parents=True, exist_ok=True)
+    paths.pipeline_active_model_path.write_text(
+        json.dumps({
+            "evaluator_name": "mlp_41",
+            "generation": 430,
+            "metadata": {},
+            "model_bundle_path": "models/generation_000430/mlp_41",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+        }),
+        encoding="utf-8",
+    )
+    for generation in (1, 2, 25):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [25]
+    assert result.generation == 25
+
+
+def test_training_worker_uses_completed_cursor_as_local_lower_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A completed cursor should stale earlier local generations only."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_completed_generation=2),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (1, 2, 3):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [3]
+    assert result.generation == 3
+    assert "training_skip generation=1 reason=stale_generation" in messages
+    assert "training_skip generation=2 reason=stale_generation" in messages
+    assert "local_training_lower_bound=2" in messages
+
+
+def test_training_worker_returns_no_work_when_all_pending_generations_are_stale(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Training worker should be idle if every pending dataset is stale."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(latest_started_generation=10),
+        paths.pipeline_training_cursor_path,
+    )
+    for generation in (7, 8, 9):
+        save_pipeline_manifest(
+            _training_manifest(generation),
+            paths.pipeline_manifest_path_for_generation(generation),
+        )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path)
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+    assert "training_worker_idle reason=no_claimable_generation" in messages
+    assert "training_skip generation=7 reason=stale_generation" in messages
+
+
+def test_dataset_worker_skips_actively_claimed_latest_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Autonomous dataset worker should skip an active latest claim during selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    save_pipeline_manifest(
+        _dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=2,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(2),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="dataset-claim-2",
+    )
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=1001.0,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [1]
+    assert result.generation == 1
+    assert result.ran_stage is True
+    assert "dataset_skip generation=2 reason=active_claim_exists" in messages
+    assert (
+        "dataset_selection_done selected_generation=1 reason=latest_claimable"
+        in messages
+    )
+
+
+def test_training_worker_skips_actively_claimed_latest_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Autonomous training worker should skip an active latest claim during selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _training_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    save_pipeline_manifest(
+        _training_manifest(2), paths.pipeline_manifest_path_for_generation(2)
+    )
+    claim_pipeline_stage(
+        stage="training",
+        generation=2,
+        claim_path=paths.pipeline_training_claim_path_for_generation(2),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="training-claim-2",
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=1001.0,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [1]
+    assert result.generation == 1
+    assert result.ran_stage is True
+    assert (
+        "training_selection_start pending_generations=1,2 claimable_generations=1"
+        in messages
+    )
+    assert (
+        "training_selection_done selected_generation=1 reason=latest_claimable"
+        in messages
+    )
+
+
+def test_training_worker_recovers_stale_training_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Expired empty training state should become claimable again."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(37, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(37),
+    )
+    save_pipeline_manifest(
+        _training_manifest(38, training_status="training"),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    paths.pipeline_training_claim_path_for_generation(38).write_text(
+        json.dumps({
+            "claim_id": "claim-38",
+            "claimed_at_utc": "2026-07-08T13:03:32Z",
+            "expires_at_utc": "2026-07-08T14:03:32Z",
+            "generation": 38,
+            "metadata": {},
+            "owner": None,
+            "stage": "training",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    paths.pipeline_training_status_path_for_generation(38).write_text(
+        json.dumps({
+            "evaluator_results": {},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": None,
+            "selection_policy": None,
+            "status": "training",
+            "updated_at_utc": "2026-07-08T13:03:32Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=datetime(2026, 7, 8, 16, 0, tzinfo=UTC).timestamp(),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
+    assert 37 not in captured
+    assert result.generation == 38
+    assert (
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(38)
+        ).training_status
+        == "not_started"
+    )
+    assert not paths.pipeline_training_claim_path_for_generation(38).exists()
+    assert not paths.pipeline_training_status_path_for_generation(38).exists()
+    assert "training_stale_state_detected generation=38" in messages
+    assert "training_stale_state_recovered generation=38" in messages
+    assert "local_training_lower_bound=38 source=external_seed" in messages
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=true"
+    ) in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
+        in messages
+    )
+
+
+def test_training_worker_reclaims_manually_repaired_started_cursor_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A clean not-started cursor generation should be claimable without metadata."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _configure_manual_repaired_started_cursor_generation(paths)
+    assert not paths.pipeline_training_claim_path_for_generation(38).exists()
+    assert not paths.pipeline_training_status_path_for_generation(38).exists()
+    assert (
+        "auto_recovery"
+        not in load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(38)
+        ).metadata
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
+    assert 37 not in captured
+    assert result.generation == 38
+    assert (
+        "active_model_source_generation=430 local_training_lower_bound=38" in messages
+    )
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=false"
+    ) in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
+        in messages
+    )
+
+
+def test_training_worker_reclaims_started_cursor_without_auto_recovery_marker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The manual repair case must not depend on metadata.auto_recovery."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    _configure_manual_repaired_started_cursor_generation(paths)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(38))
+
+    assert "auto_recovery" not in manifest.metadata
+
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=datetime(2026, 7, 8, 16, 0, tzinfo=UTC).timestamp(),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert captured == [38]
+    assert result.generation == 38
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38 "
+        "cursor_started=38 cursor_completed=37 manifest_training_status=not_started "
+        "dataset_status=done auto_recovery=false"
+    ) in messages
+    assert (
+        "training_selection_start pending_generations=38 claimable_generations=38"
+        in messages
+    )
+
+
+def test_training_worker_does_not_reclaim_live_claim_at_started_cursor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A live claim at the started cursor remains protected from selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        replace(
+            _training_manifest(38),
+            metadata={"auto_recovery": {"reason": "test"}},
+        ),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    claim_pipeline_stage(
+        stage="training",
+        generation=38,
+        claim_path=paths.pipeline_training_claim_path_for_generation(38),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="training-claim-38",
+    )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=1001.0,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.ran_stage is False
+    assert result.reason == "no_pending_work"
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
+    assert (
+        "training_selection_start pending_generations=none claimable_generations=none"
+    ) in messages
+    assert (
+        "training_skip generation=38 reason=stale_generation "
+        "lower_bound_generation=38 manifest_training_status=not_started "
+        "dataset_status=done"
+    ) in messages
+
+
+def test_training_worker_does_not_reclaim_started_cursor_with_results(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Existing evaluator results at the started cursor remain protected."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        replace(
+            _training_manifest(38),
+            metadata={"auto_recovery": {"reason": "test"}},
+        ),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    paths.pipeline_training_status_path_for_generation(38).write_text(
+        json.dumps({
+            "evaluator_results": {"mlp_41": {"final_loss": 1.0}},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": "mlp_41",
+            "selection_policy": None,
+            "status": "training",
+            "updated_at_utc": "2026-07-08T13:03:32Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=datetime(2026, 7, 8, 16, 0, tzinfo=UTC).timestamp(),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.ran_stage is False
+    assert result.reason == "no_pending_work"
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
+    assert (
+        "training_selection_start pending_generations=none claimable_generations=none"
+    ) in messages
+    assert "training_skip generation=38 reason=stale_generation" in messages
+
+
+def test_training_worker_never_reclaims_completed_started_cursor_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Completed cursor-started generations must never be selected again."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(38, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+    paths.pipeline_training_status_path_for_generation(38).write_text(
+        json.dumps({
+            "evaluator_results": {"mlp_41": {"final_loss": 1.0}},
+            "generation": 38,
+            "metadata": {},
+            "selected_evaluator_name": "mlp_41",
+            "selection_policy": None,
+            "status": "done",
+            "updated_at_utc": "2026-07-08T13:03:32Z",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def _unexpected_training_stage(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _unexpected_training_stage,
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_training_stage_once(
+            _artifact_pipeline_args(tmp_path),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.ran_stage is False
+    assert result.reason == "no_pending_work"
+    assert (
+        "training_started_cursor_generation_reclaimable generation=38" not in messages
+    )
+    assert (
+        "training_selection_start pending_generations=none claimable_generations=none"
+    ) in messages
+
+
+def test_dataset_worker_allows_expired_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous dataset worker should treat expired claims as claimable."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(
+        _dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1)
+    )
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=10.0,
+        claim_id="dataset-claim-1",
+    )
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    result = run_next_pipeline_dataset_stage_once(
+        _artifact_pipeline_args(tmp_path),
+        now_unix_s=1011.0,
+    )
+
+    assert captured == [1]
+    assert result.generation == 1
+    assert result.ran_stage is True
+
+
+def _configure_manual_repaired_started_cursor_generation(
+    paths: MorpionBootstrapPaths,
+) -> None:
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=430,
+            evaluator_name="mlp_41",
+            model_bundle_path="models/generation_000430/mlp_41",
+            updated_at_utc="2026-04-28T12:00:00Z",
+            source="external_seed",
+            source_generation=430,
+            local_trained_generation=None,
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_pipeline_training_cursor(
+        MorpionPipelineTrainingCursor(
+            latest_started_generation=38,
+            latest_completed_generation=37,
+        ),
+        paths.pipeline_training_cursor_path,
+    )
+    save_pipeline_manifest(
+        _training_manifest(37, training_status="done"),
+        paths.pipeline_manifest_path_for_generation(37),
+    )
+    save_pipeline_manifest(
+        _training_manifest(38),
+        paths.pipeline_manifest_path_for_generation(38),
+    )
+
+
+def test_orchestrator_runs_full_sequential_pipeline_for_new_generation(
+    tmp_path: Path,
+) -> None:
+    """One orchestration pass should grow, extract rows, and train in order."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    args = _artifact_pipeline_args(tmp_path)
+
+    result = run_morpion_artifact_pipeline_once(args, runner, max_growth_cycles=1)
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+
+    assert result.growth_run_state is not None
+    assert result.dataset_generations == (1,)
+    assert result.training_generations == (1,)
+    assert manifest.dataset_status == "done"
+    assert manifest.training_status == "done"
+    assert paths.pipeline_active_model_path.is_file()
+    assert load_pipeline_active_model(paths.pipeline_active_model_path).generation == 1
+
+
+def test_orchestrator_trains_latest_pending_generation_monotonically(
+    tmp_path: Path,
+) -> None:
+    """The local orchestrator should not train older pending generations after newer ones."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+
+    snapshot_path = paths.tree_snapshot_path_for_generation(1)
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="node-1"),
+        snapshot_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path=paths.relative_to_work_dir(snapshot_path),
+            dataset_status="not_started",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    rows_path = paths.rows_path_for_generation(2)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=2,
+            created_at_utc="2026-04-28T12:05:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(2),
+    )
+
+    result = run_morpion_artifact_pipeline_once(
+        replace(_artifact_pipeline_args(tmp_path), training_export_mode="flat"),
+        FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,)),
+        max_growth_cycles=0,
+    )
+
+    assert result.growth_run_state is None
+    assert result.dataset_generations == (1,)
+    # Generation 1 becomes training-pending after dataset extraction, but generation 2
+    # is newer and makes generation 1 stale for training in this pass.
+    assert result.training_generations == (2,)
+    assert (
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(1)
+        ).training_status
+        == "not_started"
+    )
+    assert (
+        load_pipeline_manifest(
+            paths.pipeline_manifest_path_for_generation(2)
+        ).training_status
+        == "done"
+    )
+
+
+def test_single_process_loop_keeps_using_full_bootstrap_loop(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Single-process launcher mode should not dispatch through the orchestrator."""
+    sentinel_runner = object()
+    loop_calls: list[tuple[MorpionBootstrapArgs, object, int | None]] = []
+    launcher_args = launcher_module.MorpionBootstrapLauncherArgs(
+        bootstrap_args=MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            max_growth_steps_per_cycle=5,
+            batch_size=1,
+            num_epochs=1,
+            shuffle=False,
+        ),
+        max_cycles=2,
+        print_startup_summary=False,
+        print_dashboard_hint=False,
+    )
+    expected_args = launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+
+    def _fake_runner_constructor(runner_args: object) -> object:
+        del runner_args
+        return sentinel_runner
+
+    def _fake_loop(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int | None = None,
+    ) -> MorpionBootstrapRunState:
+        loop_calls.append((args, runner, max_cycles))
+        return initialize_bootstrap_run_state()
+
+    def _unexpected_orchestrator(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_growth_cycles: int = 1,
+    ) -> MorpionPipelineOrchestratorResult:
+        del args, runner, max_growth_cycles
+        raise AssertionError
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _fake_loop)
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_artifact_pipeline_once",
+        _unexpected_orchestrator,
+    )
+
+    result = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert result == initialize_bootstrap_run_state()
+    assert loop_calls == [(expected_args, sentinel_runner, 2)]
+
+
+def test_orchestrator_rejects_negative_max_growth_cycles(tmp_path: Path) -> None:
+    """Negative growth-cycle counts should fail clearly instead of silently skipping growth."""
+    with pytest.raises(ValueError, match="max_growth_cycles must be >= 0"):
+        run_morpion_artifact_pipeline_once(
+            _artifact_pipeline_args(tmp_path),
+            FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,)),
+            max_growth_cycles=-1,
+        )
+
+
+def test_package_root_reexports_pipeline_orchestrator_helpers() -> None:
+    """Package root should expose the shared pipeline orchestrator helpers."""
+    assert (
+        MorpionPipelineWorkerResult
+        is pipeline_orchestrator_module.MorpionPipelineWorkerResult
+    )
+    assert (
+        load_available_pipeline_manifests
+        is pipeline_orchestrator_module.load_available_pipeline_manifests
+    )
+    assert (
+        run_next_pipeline_dataset_stage_once
+        is pipeline_orchestrator_module.run_next_pipeline_dataset_stage_once
+    )
+    assert (
+        run_next_pipeline_training_stage_once
+        is pipeline_orchestrator_module.run_next_pipeline_training_stage_once
+    )
+    assert (
+        run_morpion_artifact_pipeline_once
+        is pipeline_orchestrator_module.run_morpion_artifact_pipeline_once
+    )
+
+
+def test_package_root_reexports_pending_work_selection_helpers() -> None:
+    """Package root should expose pending-work selection helpers."""
+    assert (
+        select_next_dataset_generation
+        is pipeline_orchestrator_module.select_next_dataset_generation
+    )
+    assert (
+        select_next_training_generation
+        is pipeline_orchestrator_module.select_next_training_generation
+    )
+    assert (
+        select_next_claimable_dataset_generation
+        is pipeline_orchestrator_module.select_next_claimable_dataset_generation
+    )
+    assert (
+        select_next_claimable_training_generation
+        is pipeline_orchestrator_module.select_next_claimable_training_generation
+    )

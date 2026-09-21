@@ -1,0 +1,200 @@
+"""Tests for the Morpion supervised PyTorch dataset layer."""
+
+from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, cast
+
+import pytest
+import torch
+from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+from chipiron.environments.morpion.learning import (
+    MalformedMorpionSupervisedRowsError,
+    save_morpion_supervised_rows,
+    training_tree_snapshot_to_morpion_supervised_rows,
+)
+from chipiron.environments.morpion.players.evaluators.datasets import (
+    MorpionSupervisedDataset,
+    MorpionSupervisedDatasetArgs,
+    load_morpion_supervised_dataset,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    morpion_feature_names,
+    morpion_input_dim,
+    morpion_state_to_tensor,
+)
+from chipiron.environments.morpion.types import MorpionDynamics
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_node(
+    *,
+    node_id: str,
+    payload: dict[str, object],
+    target_value: float,
+) -> TrainingNodeSnapshot:
+    """Build one export node that PR 5 will convert into a raw Morpion row."""
+    return make_training_node_snapshot(
+        node_id=node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=payload,
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=False,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=5,
+        metadata={"source": "dataset-test"},
+    )
+
+
+def _build_rows_file(
+    tmp_path: Path,
+    *,
+    target_values: tuple[float, ...] = (1.25, -0.5),
+) -> tuple[Path, tuple[TrainingNodeSnapshot, ...]]:
+    """Build and persist a raw Morpion supervised-row artifact for tests."""
+    payload = _make_morpion_payload()
+    nodes = tuple(
+        _make_training_node(
+            node_id=f"node-{index}",
+            payload=payload,
+            target_value=target_value,
+        )
+        for index, target_value in enumerate(target_values)
+    )
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="node-0" if nodes else None,
+        nodes=nodes,
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
+    path = tmp_path / "morpion_supervised_rows.json"
+    save_morpion_supervised_rows(rows, path)
+    return path, nodes
+
+
+def test_dataset_loads_persisted_rows_and_exposes_correct_length(
+    tmp_path: Path,
+) -> None:
+    """The dataset should eagerly load the persisted raw-row artifact."""
+    path, _ = _build_rows_file(tmp_path)
+
+    dataset = load_morpion_supervised_dataset(
+        MorpionSupervisedDatasetArgs(file_name=path)
+    )
+
+    assert isinstance(dataset, MorpionSupervisedDataset)
+    assert len(dataset) == 2
+
+
+def test_one_sample_has_correct_tensor_types_and_shapes(tmp_path: Path) -> None:
+    """One dataset sample should expose float32 tensors with stable shapes."""
+    path, _ = _build_rows_file(tmp_path)
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+
+    sample = dataset[0]
+    input_tensor = sample.get_input_layer()
+    target_tensor = sample.get_target_value()
+
+    assert isinstance(input_tensor, torch.Tensor)
+    assert isinstance(target_tensor, torch.Tensor)
+    assert sample.is_batch is False
+    assert input_tensor.dtype == torch.float32
+    assert target_tensor.dtype == torch.float32
+    assert input_tensor.ndim == 1
+    assert input_tensor.shape == (morpion_input_dim(),)
+    assert target_tensor.shape == (1,)
+
+
+def test_input_tensor_matches_morpion_converter_directly(tmp_path: Path) -> None:
+    """Dataset inputs should match the direct Morpion tensor-conversion path."""
+    path, nodes = _build_rows_file(tmp_path, target_values=(1.25,))
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+    sample_input = dataset[0].get_input_layer()
+
+    dynamics = MorpionDynamics()
+    atom_state = MorpionStateCheckpointCodec().load_state_ref(
+        nodes[0].state_ref_payload
+    )
+    chipiron_state = dynamics.wrap_atomheart_state(atom_state)
+    expected_input = morpion_state_to_tensor(chipiron_state, dynamics=dynamics)
+
+    torch.testing.assert_close(sample_input, expected_input)
+
+
+def test_target_tensor_matches_row_target_value(tmp_path: Path) -> None:
+    """Dataset targets should preserve the persisted raw row target value."""
+    path, _ = _build_rows_file(tmp_path, target_values=(1.25,))
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+
+    target_tensor = dataset[0].get_target_value()
+
+    torch.testing.assert_close(target_tensor, torch.tensor([1.25], dtype=torch.float32))
+
+
+def test_feature_names_helper_is_stable(tmp_path: Path) -> None:
+    """Dataset feature metadata should match the Morpion converter source of truth."""
+    path, _ = _build_rows_file(tmp_path)
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+
+    assert dataset.feature_names() == morpion_feature_names()
+    assert len(dataset.feature_names()) == dataset.input_dim
+
+
+def test_repeated_indexing_is_deterministic(tmp_path: Path) -> None:
+    """Repeated indexing should return equal tensors for the same sample."""
+    path, _ = _build_rows_file(tmp_path, target_values=(1.25,))
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+
+    first_sample = dataset[0]
+    second_sample = dataset[0]
+    first_input = first_sample.get_input_layer()
+    first_target = first_sample.get_target_value()
+    second_input = second_sample.get_input_layer()
+    second_target = second_sample.get_target_value()
+
+    torch.testing.assert_close(first_input, second_input)
+    torch.testing.assert_close(first_target, second_target)
+
+
+def test_dataset_preserves_row_order(tmp_path: Path) -> None:
+    """Distinct target values should come back in persisted row order."""
+    path, _ = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=path))
+
+    first_target = dataset[0].get_target_value()
+    second_target = dataset[1].get_target_value()
+
+    torch.testing.assert_close(first_target, torch.tensor([1.25], dtype=torch.float32))
+    torch.testing.assert_close(second_target, torch.tensor([-0.5], dtype=torch.float32))
+
+
+def test_malformed_persisted_rows_fail_loudly(tmp_path: Path) -> None:
+    """Malformed persisted raw rows should raise through the dataset loader path."""
+    path = tmp_path / "malformed_rows.json"
+    path.write_text(json.dumps({"rows": {}}), encoding="utf-8")
+
+    with pytest.raises(MalformedMorpionSupervisedRowsError):
+        load_morpion_supervised_dataset(MorpionSupervisedDatasetArgs(file_name=path))

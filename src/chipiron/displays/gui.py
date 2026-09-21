@@ -5,11 +5,11 @@
 It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
 
-import math
 import os
 import queue
 import time
 import typing
+from dataclasses import dataclass
 
 from atomheart.games.chess.board import BoardFactory
 from PySide6 import QtGui
@@ -27,24 +27,27 @@ from PySide6.QtWidgets import (
 from valanga import Color, StateTag
 from valanga.evaluations import Value
 
+from chipiron.core.roles import GameRole
+from chipiron.displays.action_history_table import build_action_history_table
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdSetStatus,
     GuiCommand,
     GuiUpdate,
     HumanActionChosen,
-    PlayerUiInfo,
+    ParticipantUiInfo,
     Scope,
     UpdEvaluation,
     UpdGameStatus,
     UpdMatchResults,
     UpdNeedHumanAction,
     UpdNoHumanActionPending,
-    UpdPlayerProgress,
-    UpdPlayersInfo,
+    UpdParticipantProgress,
+    UpdParticipantsInfo,
     UpdStateGeneric,
 )
 from chipiron.displays.svg_adapter_factory import make_svg_adapter
+from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
@@ -53,7 +56,13 @@ from chipiron.utils.path_variables import GUI_DIR
 if typing.TYPE_CHECKING:
     from chipiron.core.request_context import RequestContext
     from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
-    from chipiron.environments.types import GameKind
+
+
+class _MorpionLegalActionsToggleAdapter(typing.Protocol):
+    """Adapter protocol for Morpion legal-action view toggling."""
+
+    def set_show_all_legal_actions(self, show_all: bool) -> None:
+        """Choose whether to render all or unique Morpion legal actions."""
 
 
 class GuiUpdateError(AssertionError):
@@ -62,6 +71,16 @@ class GuiUpdateError(AssertionError):
     def __init__(self, payload: object) -> None:
         """Initialize the error with the unhandled payload."""
         super().__init__(f"Unhandled GuiUpdate payload: {payload!r}")
+
+
+@dataclass(slots=True)
+class ParticipantRowWidgets:
+    """Widgets used to display one participant row in the side panel."""
+
+    button: QPushButton
+    progress: QProgressBar
+    role: GameRole | None = None
+    is_human: bool = False
 
 
 def format_state_eval(ev: Value | None) -> str:
@@ -91,6 +110,20 @@ def format_state_eval(ev: Value | None) -> str:
     if suffix_parts:
         return f"{base} ({' | '.join(suffix_parts)})"
     return base
+
+
+def _parse_optional_nonnegative_int(
+    info: dict[str, str],
+    key: str,
+) -> int | None:
+    """Read one optional non-negative integer from render metadata."""
+    raw_count = info.get(key, "").strip()
+    if not raw_count:
+        return None
+    try:
+        return max(0, int(raw_count))
+    except ValueError:
+        return None
 
 
 class MainWindow(QWidget):
@@ -138,7 +171,11 @@ class MainWindow(QWidget):
         self.adapter: SvgGameAdapter | None = None
         self.current_pos: SvgPosition | None = None
         self.adapter_kind: GameKind | None = None
+        self.show_all_morpion_legal_actions = False
         self.action_name_history: list[str] = []
+        self.participant_history_labels: list[str] = []
+        self.participant_rows: list[ParticipantRowWidgets] = []
+        self.participant_rows_by_role: dict[GameRole, ParticipantRowWidgets] = {}
         # Set window icon with existence check
         window_icon_path = os.path.join(GUI_DIR, "chipicon.png")
         if os.path.exists(window_icon_path):
@@ -180,34 +217,8 @@ class MainWindow(QWidget):
         self.back_button.setToolTip("back one move")  # Tool tip
         self.back_button.move(900, 100)
 
-        self.player_white_button = QPushButton(self)
-        self.player_white_button.setText("Player")  # text
-        self._check_and_set_icon(
-            self.player_white_button, os.path.join(GUI_DIR, "white_king.png")
-        )  # icon
-        self.player_white_button.setStyleSheet(
-            "QPushButton {background-color: white; color: black;}"
-        )
-        self.player_white_button.setGeometry(620, 200, 470, 30)
-
-        self.progress_white = QProgressBar(self)
-        self.progress_white.setGeometry(620, 230, 470, 30)
-
-        self.player_black_button = QPushButton(self)
-        self.player_black_button.setText("Player")  # text
-        self._check_and_set_icon(
-            self.player_black_button, os.path.join(GUI_DIR, "black_king.png")
-        )  # icon
-        self.player_black_button.setStyleSheet(
-            "QPushButton {background-color: black; color: white;}"
-        )
-        self.player_black_button.setGeometry(620, 300, 470, 30)
-
-        self.progress_black = QProgressBar(self)
-        self.progress_black.setGeometry(620, 330, 470, 30)
-
         self.tablewidget = QTableWidget(1, 2, self)
-        self.tablewidget.setGeometry(1100, 200, 260, 330)
+        self.tablewidget.setGeometry(1140, 200, 250, 330)
 
         self.score_button = QPushButton(self)
         self.score_button.setText("⚖ Score 0-0")  # text
@@ -242,6 +253,14 @@ class MainWindow(QWidget):
         self.legal_moves_button.setTextInteractionFlags(
             QtGui.Qt.TextInteractionFlag.TextSelectableByMouse
         )
+
+        self.legal_actions_mode_button = QPushButton(self)
+        self.legal_actions_mode_button.setCheckable(True)
+        self.legal_actions_mode_button.clicked.connect(  # pylint: disable=no-member
+            self.toggle_morpion_legal_actions_view
+        )
+        self.legal_actions_mode_button.setGeometry(20, 740, 240, 30)
+        self.legal_actions_mode_button.hide()
 
         self.eval_button = QPushButton(self)
         self.eval_button.setText("🐟 Eval")  # text
@@ -315,6 +334,63 @@ class MainWindow(QWidget):
             chipiron_logger.warning("Icon file not found: %s", icon_path)
             # Set a default icon or leave empty
             button.setIcon(QIcon())  # Empty icon
+
+    def _participant_row_top(self, index: int) -> int:
+        """Return the top y-position for a participant row."""
+        return 200 + index * 70
+
+    def _ensure_participant_rows(self, count: int) -> None:
+        """Create enough participant widgets for the current metadata payload."""
+        while len(self.participant_rows) < count:
+            index = len(self.participant_rows)
+            top = self._participant_row_top(index)
+            button = QPushButton(self)
+            button.setText("Participant")
+            button.setGeometry(620, top, 470, 30)
+            progress = QProgressBar(self)
+            progress.setGeometry(620, top + 30, 470, 20)
+            progress.setTextVisible(False)
+            self.participant_rows.append(
+                ParticipantRowWidgets(button=button, progress=progress)
+            )
+
+        for index, row in enumerate(self.participant_rows):
+            visible = index < count
+            row.button.setVisible(visible)
+            row.progress.setVisible(visible)
+
+    def _apply_participant_style(self, button: QPushButton, role: GameRole) -> None:
+        """Apply lightweight styling for one participant role."""
+        if role == Color.WHITE:
+            self._check_and_set_icon(button, os.path.join(GUI_DIR, "white_king.png"))
+            button.setStyleSheet("QPushButton {background-color: white; color: black;}")
+        elif role == Color.BLACK:
+            self._check_and_set_icon(button, os.path.join(GUI_DIR, "black_king.png"))
+            button.setStyleSheet("QPushButton {background-color: black; color: white;}")
+        else:
+            button.setIcon(QIcon())
+            button.setStyleSheet(
+                "QPushButton {background-color: #eef3f8; color: black;}"
+            )
+
+    def _refresh_participant_progress_widgets(self) -> None:
+        """Refresh participant progress bars after metadata or pending-role changes."""
+        pending_role = (
+            self.pending_human_ctx.role_to_play
+            if self.pending_human_ctx is not None
+            else None
+        )
+        for row in self.participant_rows:
+            if row.role is None or not row.button.isVisible():
+                continue
+            if row.is_human:
+                row.progress.setTextVisible(True)
+                if row.role == pending_role:
+                    row.progress.setValue(100)
+                    row.progress.setFormat("Think Human!")
+                else:
+                    row.progress.setValue(0)
+                    row.progress.setFormat("Human")
 
     def stopppy(self) -> None:
         """Stop the execution of the GUI.
@@ -438,14 +514,66 @@ class MainWindow(QWidget):
         )
         self.main_thread_mailbox.put(cmd)
 
+    def _set_morpion_legal_actions_view(self) -> None:
+        """Apply the current Morpion legal-action view mode to the active adapter."""
+        if self.adapter_kind != GameKind.MORPION or self.adapter is None:
+            return
+        if not hasattr(self.adapter, "set_show_all_legal_actions"):
+            return
+        adapter_with_toggle = typing.cast(
+            "_MorpionLegalActionsToggleAdapter",
+            self.adapter,
+        )
+        adapter_with_toggle.set_show_all_legal_actions(
+            self.show_all_morpion_legal_actions
+        )
+
+    def _refresh_morpion_legal_actions_button(self) -> None:
+        """Refresh visibility and label for the Morpion action-view toggle."""
+        is_morpion = self.adapter_kind == GameKind.MORPION
+        self.legal_actions_mode_button.setVisible(is_morpion)
+        self.legal_actions_mode_button.setChecked(self.show_all_morpion_legal_actions)
+        if not is_morpion:
+            return
+        self.legal_actions_mode_button.setText(
+            "Action view: all"
+            if self.show_all_morpion_legal_actions
+            else "Action view: unique"
+        )
+
+    def _refresh_current_render(self) -> None:
+        """Re-render the current adapter position into the board and side panel."""
+        if self.adapter is None or self.current_pos is None:
+            return
+        render = self.adapter.render_svg(
+            self.current_pos,
+            size=int(self.board_size),
+            margin=int(self.margin),
+        )
+        self.widget_svg.load(render.svg_bytes)
+        self._apply_render_info(render.info)
+
+    def toggle_morpion_legal_actions_view(self, checked: bool) -> None:
+        """Switch the Morpion GUI between unique and raw legal-action views."""
+        self.show_all_morpion_legal_actions = checked
+        self._refresh_morpion_legal_actions_button()
+        self._set_morpion_legal_actions_view()
+        self._refresh_current_render()
+
     def reset_for_new_game(self) -> None:
         """Reset for new game."""
         self.tablewidget.clearContents()
-        self.tablewidget.setRowCount(1)
-        self.progress_white.reset()
-        self.progress_black.reset()
-        self.progress_white.setValue(0)
-        self.progress_black.setValue(0)
+        self.tablewidget.setRowCount(0)
+        self.participant_rows_by_role.clear()
+        self.participant_history_labels = []
+        for row in self.participant_rows:
+            row.role = None
+            row.is_human = False
+            row.button.setVisible(False)
+            row.progress.setVisible(False)
+            row.progress.reset()
+            row.progress.setValue(0)
+            row.progress.setTextVisible(False)
         self.eval_button.setText("🐟 Eval")
         self.eval_button_chi.setText("🐙 Eval")
         self.eval_button_white.setText("♕ White Eval")
@@ -458,6 +586,10 @@ class MainWindow(QWidget):
         self.action_name_history = []
         self.pending_human_ctx = None
         self.pending_human_state_tag = None
+        self.show_all_morpion_legal_actions = False
+        self.legal_actions_mode_button.hide()
+        self.legal_actions_mode_button.setChecked(False)
+        self.legal_actions_mode_button.setText("Action view: unique")
 
     def process_message(self) -> None:
         """Process a message received by the GUI.
@@ -519,28 +651,14 @@ class MainWindow(QWidget):
                     state_tag=payload.state_tag,
                     adapter_payload=payload.adapter_payload,
                 )
-
-                render = self.adapter.render_svg(
-                    self.current_pos,
-                    size=int(self.board_size),
-                    margin=int(self.margin),
-                )
-                self.widget_svg.load(render.svg_bytes)
-                self._apply_render_info(render.info)
+                self._set_morpion_legal_actions_view()
+                self._refresh_morpion_legal_actions_button()
+                self._refresh_current_render()
 
                 self.display_action_name_history()
 
-            case UpdPlayerProgress():
-                if (
-                    payload.player_color == Color.WHITE
-                    and payload.progress_percent is not None
-                ):
-                    self.progress_white.setValue(payload.progress_percent)
-                elif (
-                    payload.player_color == Color.BLACK
-                    and payload.progress_percent is not None
-                ):
-                    self.progress_black.setValue(payload.progress_percent)
+            case UpdParticipantProgress():
+                self.update_participant_progress(payload.role, payload.progress_percent)
 
             case UpdEvaluation():
                 self.update_evaluation(
@@ -550,8 +668,8 @@ class MainWindow(QWidget):
                     evaluation_black=payload.black,
                 )
 
-            case UpdPlayersInfo():
-                self.update_players_info(payload.white, payload.black)
+            case UpdParticipantsInfo():
+                self.update_participants_info(payload.participants)
 
             case UpdMatchResults():
                 self.update_match_stats(payload)
@@ -562,55 +680,107 @@ class MainWindow(QWidget):
             case UpdNeedHumanAction():
                 self.pending_human_ctx = payload.ctx
                 self.pending_human_state_tag = payload.state_tag
+                self._refresh_participant_progress_widgets()
 
             case UpdNoHumanActionPending():
                 self.pending_human_ctx = None
                 self.pending_human_state_tag = None
+                self._refresh_participant_progress_widgets()
 
             case _:
                 raise GuiUpdateError(payload)
 
     def display_action_name_history(self) -> None:
-        """Display action history in a two-column table widget."""
-        num_half_move = len(self.action_name_history)
-        num_rounds = math.ceil(num_half_move / 2)
-        self.tablewidget.setRowCount(num_rounds)
-        self.tablewidget.setHorizontalHeaderLabels(["White", "Black"])
-        for player in range(2):
-            for round_ in range(num_rounds):
-                half_move = round_ * 2 + player
-                if half_move < num_half_move:
-                    item = QTableWidgetItem(str(self.action_name_history[half_move]))
-                    self.tablewidget.setItem(round_, player, item)
+        """Display action history grouped by the current participant display order."""
+        headers, rows = build_action_history_table(
+            action_name_history=self.action_name_history,
+            participant_labels=self.participant_history_labels,
+        )
+        self.tablewidget.setColumnCount(len(headers))
+        self.tablewidget.setRowCount(len(rows))
+        self.tablewidget.setHorizontalHeaderLabels(headers)
+        for row_index, row_values in enumerate(rows):
+            for column_index, value in enumerate(row_values):
+                self.tablewidget.setItem(
+                    row_index, column_index, QTableWidgetItem(str(value))
+                )
 
     def _apply_render_info(self, info: dict[str, str]) -> None:
         """Update generic side panel labels using adapter render metadata."""
         self.round_button.setText("🎲 Round: " + info.get("round", "-"))
         self.fen_button.setText("🔧 <b>fen:</b> " + info.get("fen", "-"))
+        legal_moves_text = info.get("legal_moves", "")
+        legal_move_count = _parse_optional_nonnegative_int(info, "legal_move_count")
+        unique_legal_move_count = _parse_optional_nonnegative_int(
+            info, "legal_move_count_unique"
+        )
+        total_legal_move_count = _parse_optional_nonnegative_int(
+            info, "legal_move_count_total"
+        )
+        count_label = "0"
+        if (
+            unique_legal_move_count is not None
+            and total_legal_move_count is not None
+            and unique_legal_move_count != total_legal_move_count
+        ):
+            count_label = (
+                f"{unique_legal_move_count} unique / {total_legal_move_count} total"
+            )
+        elif legal_move_count is not None:
+            count_label = str(legal_move_count)
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
         self.legal_moves_button.setText(
-            f"📋 <b>legal moves:</b><pre>{info.get('legal_moves', '')}</pre>"
+            f"📋 <b>legal moves ({count_label}):</b><pre>{legal_moves_text}</pre>"
         )
 
-    def update_players_info(self, white: PlayerUiInfo, black: PlayerUiInfo) -> None:
-        """Update players info."""
-        self.player_white_button.setText(" White: " + white.label)
-        self.player_black_button.setText(" Black: " + black.label)
+    def update_participants_info(
+        self, participants: typing.Sequence[ParticipantUiInfo]
+    ) -> None:
+        """Update the participant side panel from a role-driven payload."""
+        self._ensure_participant_rows(len(participants))
+        self.participant_rows_by_role.clear()
+        self.participant_history_labels = [
+            participant.role_label for participant in participants
+        ]
 
-        if black.is_human:
-            self.progress_black.setTextVisible(True)
-            self.progress_black.setValue(100)
-            self.progress_black.setFormat("Think Human!")
-        else:
-            self.progress_black.setValue(0)
+        for index, participant in enumerate(participants):
+            row = self.participant_rows[index]
+            row.role = participant.role
+            row.is_human = participant.is_human
+            self.participant_rows_by_role[participant.role] = row
+            self._apply_participant_style(row.button, participant.role)
+            row.button.setText(f" {participant.role_label}: {participant.label}")
+            row.progress.reset()
+            row.progress.setValue(0)
+            row.progress.setTextVisible(False)
 
-        if white.is_human:
-            self.progress_white.setTextVisible(True)
-            self.progress_white.setValue(100)
-            self.progress_white.setFormat("Think Human!")
+        for row in self.participant_rows[len(participants) :]:
+            row.role = None
+            row.is_human = False
+            row.button.setVisible(False)
+            row.progress.setVisible(False)
+            row.progress.reset()
+            row.progress.setValue(0)
+            row.progress.setTextVisible(False)
+
+        self._refresh_participant_progress_widgets()
+        self.display_action_name_history()
+
+    def update_participant_progress(
+        self, role: GameRole, progress_percent: int | None
+    ) -> None:
+        """Update the progress bar for one participant role."""
+        row = self.participant_rows_by_role.get(role)
+        if row is None or row.is_human:
+            return
+        row.progress.setTextVisible(True)
+        if progress_percent is None:
+            row.progress.reset()
+            row.progress.setValue(0)
         else:
-            self.progress_white.setValue(0)
+            row.progress.setValue(progress_percent)
+            row.progress.setFormat("%p%")
 
     def update_evaluation(
         self,
@@ -672,9 +842,14 @@ class MainWindow(QWidget):
 
     def update_match_stats(self, upd: UpdMatchResults) -> None:
         """Update match stats."""
-        self.score_button.setText(
-            f"⚖ Score: {upd.wins_white}-{upd.wins_black}-{upd.draws}"
+        participant_summary = " | ".join(
+            f"{participant.participant_id} {participant.wins}"
+            for participant in upd.participant_stats
         )
+        score_text = participant_summary or "No participants"
+        if upd.draws:
+            score_text = f"{score_text} | draws {upd.draws}"
+        self.score_button.setText(f"⚖ Score: {score_text}")
 
         chipiron_logger.info("update match_finished=%s", upd.match_finished)
         if upd.match_finished:

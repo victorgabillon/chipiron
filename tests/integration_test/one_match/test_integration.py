@@ -210,24 +210,22 @@ def _build_base_configs() -> list[Any]:
         )
 
     # Add remaining configs
-    configs.extend(
-        [
-            # need a check with two games
-            PartialOpMatchScriptArgs(
-                gui=False,
-                match_args=PartialOpMatchArgs(
-                    player_one=PlayerConfigTag.SEQUOOL,
-                    player_two=PlayerConfigTag.RANDOM,
-                    match_setting=MatchConfigTag.TRON,
-                    player_one_overwrite=test_player_overwrite,
-                ),
-                base_script_args=PartialOpBaseScriptArgs(
-                    profiling=False, testing=True, seed=11
-                ),
+    configs.extend([
+        # need a check with two games
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.SEQUOOL,
+                player_two=PlayerConfigTag.RANDOM,
+                match_setting=MatchConfigTag.TRON,
+                player_one_overwrite=test_player_overwrite,
             ),
-            # TODO: add basic eval (no neural nets)
-        ]
-    )
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
+        ),
+        # TODO: add basic eval (no neural nets)
+    ])
 
     return configs
 
@@ -325,7 +323,7 @@ def test_randomness(log_level: int = logging.ERROR) -> None:
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
     match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
 
-    # Override player two with test tree move limit using parsley_coco
+    # Override player two with test tree move limit using parsley.
     match_args.player_one_overwrite = test_player_overwrite
     match_args = _resolve_match_args_with_max_half_moves(
         match_args,
@@ -391,7 +389,7 @@ def test_randomness(log_level: int = logging.ERROR) -> None:
     chipiron_logger.info("time: %s", end_time - start_time)
 
 
-def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
+def test_same_game_with_or_without_rust(log_level: int = logging.ERROR) -> None:
     """Test that running the same match with and without Rust boards produces identical results.
 
     Args:
@@ -408,8 +406,11 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
         test_player_overwrite  # Override player one with test tree move limit
     )
 
-    # Override player two with test tree move limit using parsley_coco
-    match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+    # Override player two with test tree move limit using parsley.
+    match_args = _resolve_match_args_with_max_half_moves(
+        match_args,
+        TEST_MAX_HALF_MOVES,
+    )
 
     assert isinstance(match_args.player_one, PlayerArgs)
     print(

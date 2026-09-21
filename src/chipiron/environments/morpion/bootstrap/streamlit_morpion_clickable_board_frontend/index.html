@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      #root {
+        width: 100%;
+      }
+
+      #board {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+
+      #board svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="board"></div>
+    </div>
+    <script>
+      const Streamlit = {
+        RENDER_EVENT: "streamlit:render",
+        events: {
+          addEventListener(type, handler) {
+            window.addEventListener("message", (event) => {
+              const message = event.data;
+              if (!message || message.type !== type) {
+                return;
+              }
+              handler({ detail: message });
+            });
+          },
+        },
+        setComponentReady() {
+          window.parent.postMessage(
+            {
+              isStreamlitMessage: true,
+              type: "streamlit:componentReady",
+              apiVersion: 1,
+            },
+            "*",
+          );
+        },
+        setFrameHeight(height) {
+          window.parent.postMessage(
+            {
+              isStreamlitMessage: true,
+              type: "streamlit:setFrameHeight",
+              height,
+            },
+            "*",
+          );
+        },
+        setComponentValue(value) {
+          window.parent.postMessage(
+            {
+              isStreamlitMessage: true,
+              type: "streamlit:setComponentValue",
+              value,
+            },
+            "*",
+          );
+        },
+      };
+
+      const boardElement = document.getElementById("board");
+      let currentTargets = [];
+      let currentRadius = 12;
+      let currentHeight = 760;
+
+      function svgPointFromEvent(svg, event) {
+        const rect = svg.getBoundingClientRect();
+        const viewBox = svg.viewBox && svg.viewBox.baseVal;
+        const width = viewBox && viewBox.width ? viewBox.width : svg.clientWidth;
+        const height = viewBox && viewBox.height ? viewBox.height : svg.clientHeight;
+        return {
+          x: ((event.clientX - rect.left) / rect.width) * width,
+          y: ((event.clientY - rect.top) / rect.height) * height,
+        };
+      }
+
+      function clickedTarget(point) {
+        for (const target of currentTargets) {
+          const dx = point.x - target.center_x;
+          const dy = point.y - target.center_y;
+          if (Math.hypot(dx, dy) <= currentRadius) {
+            return target;
+          }
+        }
+        return null;
+      }
+
+      function handleBoardClick(event) {
+        const svg = boardElement.querySelector("svg");
+        if (!svg) {
+          return;
+        }
+        const point = svgPointFromEvent(svg, event);
+        const target = clickedTarget(point);
+        if (!target) {
+          return;
+        }
+        Streamlit.setComponentValue({
+          action_name: target.action_name,
+          click_nonce: Date.now(),
+        });
+      }
+
+      function render(event) {
+        const args = event.detail.args || {};
+        currentTargets = Array.isArray(args.click_targets) ? args.click_targets : [];
+        currentRadius = Number(args.click_radius || 12);
+        currentHeight = Number(args.height || 760);
+        boardElement.innerHTML = args.svg || "";
+        const svg = boardElement.querySelector("svg");
+        if (svg) {
+          svg.addEventListener("click", handleBoardClick);
+        }
+        Streamlit.setFrameHeight(currentHeight);
+      }
+
+      Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, render);
+      Streamlit.setComponentReady();
+      Streamlit.setFrameHeight(currentHeight);
+    </script>
+  </body>
+</html>

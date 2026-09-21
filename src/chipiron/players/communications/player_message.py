@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 
-from valanga import Color, StateTag
+from valanga import StateTag
 from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
 
 from chipiron.core.request_context import RequestContext
+from chipiron.core.roles import GameRole
 from chipiron.displays.gui_protocol import Scope
 
 
@@ -19,7 +20,7 @@ class TurnStatePlusHistory[StateSnapT = object]:
     """
 
     current_state_tag: StateTag
-    turn: Color
+    role_to_play: GameRole
     snapshot: StateSnapT
     historical_actions: list[str] | None = None
 
@@ -47,7 +48,7 @@ class EvMove:
     corresponding_state_tag: StateTag
     ctx: RequestContext | None
     player_name: str
-    color_to_play: Color
+    player_role: GameRole
     evaluation: Value | None = None  # replace with your Value type if needed
 
 
@@ -55,7 +56,7 @@ class EvMove:
 class EvProgress:
     """Event reporting progress feedback for a player."""
 
-    player_color: Color
+    player_role: GameRole
     progress_percent: int | None
 
 

@@ -1,0 +1,25 @@
+name: IntegerReductionTreeBasic
+main_move_selector:
+  type: TreeAndValue
+  anemone_args:
+    type: TreeAndValue
+    node_selector:
+      type: Composed
+      priority:
+        type: PriorityNoop
+      base:
+        type: Uniform
+    opening_type: all_children
+    recommender_rule:
+      type: almost_equal_logistic
+      temperature: 1.0
+    stopping_criterion:
+      type: tree_branch_limit
+      tree_branch_limit: 128
+  evaluator_args:
+    master_board_evaluator:
+      oracle_evaluation: False
+      evaluation_scale: "entire_real_axis"
+      board_evaluator:
+        type: basic_evaluation
+oracle_play: False

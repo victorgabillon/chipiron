@@ -1,63 +1,61 @@
-"""Module for the GameArgsFactory class.
+"""Create per-game participant assignments from a validated match plan."""
 
-This module defines the GameArgsFactory class, which is responsible for creating game arguments and managing game settings.
-"""
-
-import typing
-
-from valanga import Color
 from valanga.game import Seed
 
 from chipiron import players
+from chipiron.core.roles import GameRole
+from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
 
-if typing.TYPE_CHECKING:
-    from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
-
 
 class GameArgsFactory:
-    """The GameArgsFactory creates the players and decides the rules.
+    """Execute validated match scheduling one game at a time."""
 
-    So far quite simple
-    This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
-    """
-
-    args_match: "MatchSettingsArgs"
     seed_: int | None
     args_player_one: players.PlayerArgs
-    args_player_two: players.PlayerArgs
+    args_player_two: players.PlayerArgs | None
     args_game: GameArgs
+    match_plan: ValidatedMatchPlan
     game_number: int
 
     def __init__(
         self,
-        args_match: "MatchSettingsArgs",
         args_player_one: players.PlayerArgs,
-        args_player_two: players.PlayerArgs,
+        args_player_two: players.PlayerArgs | None,
         seed_: int | None,
         args_game: GameArgs,
+        match_plan: ValidatedMatchPlan,
     ) -> None:
         """Initialize the instance."""
-        self.args_match = args_match
         self.seed_ = seed_
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
         self.args_game = args_game
+        self.match_plan = match_plan
         self.game_number = 0
+
+    @property
+    def participant_ids(self) -> tuple[str, ...]:
+        """Return the validated ordered participant identifiers for this match."""
+        return self.match_plan.participant_ids
 
     def generate_game_args(
         self, game_number: int
-    ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
+    ) -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """Generate game arguments for a specific game number.
+
+        The returned mapping is role-keyed. Topology and scheduling decisions
+        come from ``match_plan``; this factory only turns the scheduled
+        participant indexes into per-role player factory args.
 
         Args:
             game_number (int): The number of the game.
 
         Returns:
-            tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]: A tuple containing the player
-            color to factory arguments mapping, game arguments, and the merged seed.
+            tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, seed | None]:
+                participant assignment for this game, game args, and the merged seed.
 
         """
         merged_seed: Seed | None = unique_int_from_list([self.seed_, game_number])
@@ -66,24 +64,29 @@ class GameArgsFactory:
         player_one_factory_args = players.PlayerFactoryArgs(
             player_args=self.args_player_one, seed=merged_seed
         )
-        player_two_factory_args = players.PlayerFactoryArgs(
-            player_args=self.args_player_two, seed=merged_seed
-        )
 
-        player_color_to_factory_args: dict[Color, players.PlayerFactoryArgs]
-        if game_number < self.args_match.number_of_games_player_one_white:
-            player_color_to_factory_args = {
-                Color.WHITE: player_one_factory_args,
-                Color.BLACK: player_two_factory_args,
-            }
+        participant_factory_args_by_index: tuple[players.PlayerFactoryArgs, ...]
+        if self.match_plan.requires_second_participant:
+            assert self.args_player_two is not None
+            player_two_factory_args = players.PlayerFactoryArgs(
+                player_args=self.args_player_two, seed=merged_seed
+            )
+            participant_factory_args_by_index = (
+                player_one_factory_args,
+                player_two_factory_args,
+            )
         else:
-            player_color_to_factory_args = {
-                Color.WHITE: player_two_factory_args,
-                Color.BLACK: player_one_factory_args,
-            }
+            participant_factory_args_by_index = (player_one_factory_args,)
+
+        participant_assignment_by_role = {
+            role: participant_factory_args_by_index[participant_index]
+            for role, participant_index in self.match_plan.role_participant_indexes(
+                game_number
+            )
+        }
         self.game_number += 1
 
-        return player_color_to_factory_args, self.args_game, merged_seed
+        return participant_assignment_by_role, self.args_game, merged_seed
 
     def is_match_finished(self) -> bool:
         """Check if the match is finished.
@@ -92,8 +95,4 @@ class GameArgsFactory:
             bool: True if the match is finished, False otherwise.
 
         """
-        return (
-            self.game_number
-            >= self.args_match.number_of_games_player_one_white
-            + self.args_match.number_of_games_player_one_black
-        )
+        return self.game_number >= self.match_plan.total_games

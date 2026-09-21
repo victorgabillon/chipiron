@@ -1,0 +1,1683 @@
+"""Tests for persisted Morpion bootstrap config behavior."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from pathlib import Path
+from typing import cast
+
+import pytest
+from anemone.training_export import (
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+from chipiron.environments.morpion.bootstrap import (
+    BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS,
+    GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS,
+    MORPION_BOOTSTRAP_GAME,
+    MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    MORPION_BOOTSTRAP_VARIANT,
+    RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
+    IncompatibleStageBootstrapConfigError,
+    MalformedMorpionBootstrapConfigError,
+    MorpionBootstrapArgs,
+    MorpionBootstrapConfig,
+    MorpionBootstrapDatasetConfig,
+    MorpionBootstrapExperimentIdentityConfig,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRolloutConfig,
+    MorpionBootstrapRuntimeConfig,
+    MorpionBootstrapSearchConfig,
+    MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
+    UnsafeMorpionBootstrapConfigChangeError,
+    bootstrap_config_from_args,
+    bootstrap_config_from_dict,
+    bootstrap_config_sha256,
+    bootstrap_config_to_dict,
+    bootstrap_fields_owned_by_stage,
+    canonical_morpion_evaluator_family_config,
+    dataset_stage_owned_bootstrap_fields,
+    growth_stage_owned_bootstrap_fields,
+    load_bootstrap_config,
+    load_bootstrap_history,
+    load_bootstrap_run_state,
+    reevaluation_stage_owned_bootstrap_fields,
+    run_morpion_bootstrap_loop,
+    save_bootstrap_config,
+    save_bootstrap_run_state,
+    training_stage_owned_bootstrap_fields,
+    validate_bootstrap_config_change,
+    validate_stage_bootstrap_config_compatibility,
+)
+from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_ENTITY_RELATION_SCHEMA,
+    MORPION_ENTITY_RELATION_TYPE_COUNT,
+    MORPION_ENTITY_TOKEN_FEATURE_DIM,
+    MORPION_ENTITY_TOKEN_MODEL_KIND,
+    MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+
+def _feature_subset(width: int) -> tuple[str, tuple[str, ...]]:
+    """Return one deterministic explicit subset selection for config tests."""
+    return (
+        f"handcrafted_{width}_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:width],
+    )
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *, target_value: float, root_node_id: str
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for config-path tests."""
+    node = make_training_node_snapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=True,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-config-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the Morpion bootstrap protocol."""
+
+    def __init__(
+        self, *, tree_sizes: tuple[int, ...], target_values: tuple[float, ...]
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+        self.load_calls: list[tuple[str | None, str | None]] = []
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Record the latest tree/model inputs used to initialize the runner."""
+        _ = effective_runtime_config, reevaluate_tree
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        del max_growth_steps
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(self, output_path: str | Path) -> None:
+        """Write one real training snapshot to ``output_path``."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        save_training_tree_snapshot(snapshot, output_path)
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one representative two-evaluator bootstrap config."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp": MorpionEvaluatorSpec(
+                name="mlp",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
+def _make_args(work_dir: Path) -> MorpionBootstrapArgs:
+    """Build one representative bootstrap args object for config tests."""
+    return MorpionBootstrapArgs(
+        work_dir=work_dir,
+        training_export_mode="flat",
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.5,
+        save_after_seconds=10.0,
+        require_exact_or_terminal=True,
+        min_depth=2,
+        min_visit_count=3,
+        max_rows=17,
+        use_backed_up_value=False,
+        tree_branch_limit=96,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+
+
+def _make_config() -> MorpionBootstrapConfig:
+    """Build one representative bootstrap config for pure config tests."""
+    return MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=MORPION_BOOTSTRAP_GAME,
+            variant=MORPION_BOOTSTRAP_VARIANT,
+            initial_pattern=MORPION_BOOTSTRAP_INITIAL_PATTERN,
+            initial_point_count=MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+        ),
+        runtime=MorpionBootstrapRuntimeConfig(
+            save_after_tree_growth_factor=2.0,
+            save_after_seconds=60.0,
+            max_growth_steps_per_cycle=8,
+            tree_branch_limit=192,
+        ),
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=False,
+            min_depth=2,
+            min_visit_count=5,
+            max_rows=99,
+            use_backed_up_value=True,
+            family_target_policy="none",
+            family_prediction_blend=0.25,
+        ),
+        evaluators=_multi_evaluator_config(),
+        evaluator_update_policy="future_only",
+        pipeline_mode="single_process",
+        metadata={"owner": "test"},
+    )
+
+
+def test_growth_worker_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
+    """Growth workers may vary runtime batching without changing run semantics."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_growth_worker_allows_runtime_tree_branch_limit_drift(tmp_path: Path) -> None:
+    """Growth workers may vary the tree branch limit between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(replace(args, tree_branch_limit=128))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_growth_worker_allows_runtime_save_after_seconds_drift(
+    tmp_path: Path,
+) -> None:
+    """Growth workers may vary save cadence seconds between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, save_after_seconds=3600.0))
+    requested = bootstrap_config_from_args(replace(args, save_after_seconds=10.0))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_growth_worker_allows_runtime_save_after_tree_growth_factor_drift(
+    tmp_path: Path,
+) -> None:
+    """Growth workers may vary save cadence growth factor between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(
+        replace(args, save_after_tree_growth_factor=2.0)
+    )
+    requested = bootstrap_config_from_args(
+        replace(args, save_after_tree_growth_factor=1.2)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_default_rollout_config_keeps_rollout_disabled_with_traversing_selector() -> (
+    None
+):
+    """Rollout should be disabled unless a launcher explicitly enables it."""
+    rollout = MorpionBootstrapRolloutConfig()
+
+    assert rollout.enabled is False
+    assert rollout.max_extra_steps is None
+    assert rollout.action_selector_kind == "random_legal_prefer_openable"
+    assert rollout.random_seed == 0
+    assert rollout.stop_on_existing_node is False
+
+
+@pytest.mark.parametrize(
+    "action_selector_kind",
+    [
+        "first_openable",
+        "random_openable",
+        "no_rollout",
+        "first_legal_prefer_openable",
+        "random_legal_prefer_openable",
+    ],
+)
+def test_bootstrap_config_roundtrips_rollout_action_selector_kinds(
+    tmp_path: Path,
+    action_selector_kind: str,
+) -> None:
+    """Persisted rollout config should preserve every supported selector kind."""
+    args = replace(
+        _make_args(tmp_path),
+        search=MorpionBootstrapSearchConfig(
+            rollout=MorpionBootstrapRolloutConfig(
+                enabled=True,
+                action_selector_kind=action_selector_kind,
+            )
+        ),
+    )
+
+    payload = bootstrap_config_to_dict(bootstrap_config_from_args(args))
+    loaded = bootstrap_config_from_dict(payload)
+    search_payload = cast("dict[str, object]", payload["search"])
+    rollout_payload = cast("dict[str, object]", search_payload["rollout"])
+
+    assert rollout_payload["action_selector_kind"] == action_selector_kind
+    assert loaded.search.rollout.action_selector_kind == action_selector_kind
+
+
+def test_bootstrap_config_persists_search_rollout_section(tmp_path: Path) -> None:
+    """Persisted bootstrap config should include the rollout search settings."""
+    args = replace(
+        _make_args(tmp_path),
+        search=MorpionBootstrapSearchConfig(
+            rollout=MorpionBootstrapRolloutConfig(enabled=True)
+        ),
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["search"] == {
+        "rollout": {
+            "enabled": True,
+            "max_extra_steps": None,
+            "action_selector_kind": "random_legal_prefer_openable",
+            "random_seed": 0,
+            "stop_on_existing_node": False,
+        }
+    }
+    assert loaded.search.rollout == config.search.rollout
+
+
+def test_bootstrap_config_from_dict_rejects_blank_training_device() -> None:
+    """Persisted config parsing should reject blank training-device strings."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload["training_device"] = "   "
+
+    with pytest.raises(MalformedMorpionBootstrapConfigError, match="training_device"):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_persists_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Persisted runtime config should include the growth state-eviction policy."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="cold_expanded",
+        growth_state_eviction_recent_window=7,
+        growth_state_rematerialization_cache_size=11,
+        growth_state_eviction_scan_interval_steps=13,
+        growth_state_eviction_scan_node_limit=17,
+        growth_state_eviction_payload_mode="delta_when_safe",
+        growth_state_eviction_delta_chain_max_depth=19,
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "cold_expanded"
+    assert payload["runtime"]["growth_state_eviction_recent_window"] == 7
+    assert payload["runtime"]["growth_state_rematerialization_cache_size"] == 11
+    assert payload["runtime"]["growth_state_eviction_scan_interval_steps"] == 13
+    assert payload["runtime"]["growth_state_eviction_scan_node_limit"] == 17
+    assert payload["runtime"]["growth_state_eviction_payload_mode"] == "delta_when_safe"
+    assert payload["runtime"]["growth_state_eviction_delta_chain_max_depth"] == 19
+    assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
+    assert loaded.runtime.growth_state_eviction_recent_window == 7
+    assert loaded.runtime.growth_state_rematerialization_cache_size == 11
+    assert loaded.runtime.growth_state_eviction_scan_interval_steps == 13
+    assert loaded.runtime.growth_state_eviction_scan_node_limit == 17
+    assert loaded.runtime.growth_state_eviction_payload_mode == "delta_when_safe"
+    assert loaded.runtime.growth_state_eviction_delta_chain_max_depth == 19
+
+
+def test_bootstrap_config_accepts_frontier_cold_growth_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Persisted runtime config should accept the C4d frontier-cold policy."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="frontier_cold",
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "frontier_cold"
+    assert loaded.runtime.growth_state_eviction_policy == "frontier_cold"
+
+
+def test_bootstrap_config_normalizes_legacy_expanded_state_eviction_policy(
+    tmp_path: Path,
+) -> None:
+    """Legacy expanded policy spelling should persist as cold_expanded."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_state_eviction_policy="expanded",
+    )
+    config = bootstrap_config_from_args(args)
+
+    payload = bootstrap_config_to_dict(config)
+    loaded = bootstrap_config_from_dict({
+        **payload,
+        "runtime": {
+            **payload["runtime"],
+            "growth_state_eviction_policy": "expanded",
+        },
+    })
+
+    assert payload["runtime"]["growth_state_eviction_policy"] == "cold_expanded"
+    assert loaded.runtime.growth_state_eviction_policy == "cold_expanded"
+
+
+def test_bootstrap_config_without_search_section_is_rejected() -> None:
+    """Persisted configs must use the explicit search rollout schema."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload.pop("search")
+
+    with pytest.raises(MalformedMorpionBootstrapConfigError, match="`search`"):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_without_search_rollout_section_is_rejected() -> None:
+    """Persisted configs must include the rollout subsection explicitly."""
+    payload = bootstrap_config_to_dict(_make_config())
+    payload["search"] = {}
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match=r"`search\.rollout`",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_missing_rollout_field_is_rejected() -> None:
+    """Rollout configs should not silently fill missing persisted fields."""
+    payload = bootstrap_config_to_dict(_make_config())
+    search = cast("dict[str, object]", payload["search"])
+    rollout = cast("dict[str, object]", search["rollout"])
+    rollout.pop("max_extra_steps")
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match=r"`search\.rollout\.max_extra_steps`",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
+def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
+    """Loop stage should allow the same runtime batching override."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="loop",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_dataset_worker_rejects_tree_branch_limit_drift(tmp_path: Path) -> None:
+    """Dataset workers should ignore growth-only runtime policy drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="dataset_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+@pytest.mark.parametrize("stage", ["dataset_worker", "training_worker", "reevaluation"])
+def test_non_growth_workers_ignore_growth_save_cadence_drift(
+    tmp_path: Path, stage: str
+) -> None:
+    """Non-growth workers should ignore growth-only save cadence runtime drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(
+        replace(
+            args,
+            save_after_seconds=3600.0,
+            save_after_tree_growth_factor=2.0,
+        )
+    )
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            save_after_seconds=10.0,
+            save_after_tree_growth_factor=1.2,
+        )
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage=cast("object", stage),
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_training_worker_ignores_growth_runtime_drift(tmp_path: Path) -> None:
+    """Training workers should ignore growth-only runtime fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="training_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_reevaluation_ignores_growth_runtime_drift(tmp_path: Path) -> None:
+    """Reevaluation workers should ignore growth-only runtime fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="reevaluation",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> None:
+    """Args should normalize into one canonical persisted config object."""
+    config = bootstrap_config_from_args(_make_args(tmp_path))
+
+    assert config.experiment.game == MORPION_BOOTSTRAP_GAME
+    assert config.experiment.variant == MORPION_BOOTSTRAP_VARIANT
+    assert config.experiment.initial_pattern == MORPION_BOOTSTRAP_INITIAL_PATTERN
+    assert (
+        config.experiment.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
+    )
+    assert config.dataset.max_rows == 17
+    assert config.dataset.use_backed_up_value is False
+    assert config.runtime.tree_branch_limit == 96
+    assert config.runtime.reevaluation_blend_alpha == 1.0
+    assert config.runtime.min_available_ram_mb is None
+    assert config.runtime.candidate_checkpoint_load_headroom_factor == 60.0
+    assert config.runtime.candidate_checkpoint_load_min_headroom_mb == 512
+    assert set(config.evaluators.evaluators) == {"linear", "mlp"}
+    assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+    assert config.training_export_mode == "flat"
+
+
+def test_bootstrap_config_round_trips_growth_loop_controls(tmp_path: Path) -> None:
+    """Growth-loop workflow controls should persist in bootstrap config JSON."""
+    args = replace(
+        _make_args(tmp_path),
+        growth_additional_branch_budget=500000,
+        growth_save_and_exit=True,
+        growth_skip_training_export=True,
+    )
+
+    payload = bootstrap_config_to_dict(bootstrap_config_from_args(args))
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert loaded.runtime.growth_additional_branch_budget == 500000
+    assert loaded.runtime.growth_save_and_exit is True
+    assert loaded.runtime.growth_skip_training_export is True
+
+
+def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
+    tmp_path: Path,
+) -> None:
+    """Bootstrap args should inherit the canonical default export mode."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path)
+
+    assert args.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    assert args.training_export_mode == "sharded"
+    assert args.evaluator_diagnostics_max_rows == 60
+    assert args.growth_memory_profile is False
+    assert args.growth_memory_profile_top_n == 20
+    assert args.growth_memory_profile_sample_nodes == 2000
+    assert args.growth_memory_profile_recursive is False
+    assert args.growth_memory_profile_recursive_max_objects is None
+    assert args.growth_memory_profile_recursive_max_depth is None
+    assert args.growth_memory_profile_recursive_max_depth_explicit is False
+    assert args.growth_memory_profile_recursive_context_node_cap is None
+    assert args.growth_memory_profile_recursive_events == ("after_checkpoint_load",)
+    assert args.growth_memory_profile_recursive_complete_map is False
+    assert args.diagnostic_stop_after_growth is False
+    assert args.growth_additional_branch_budget is None
+    assert args.growth_save_and_exit is False
+    assert args.growth_skip_training_export is False
+    assert args.candidate_checkpoint_load_headroom_factor == 60.0
+    assert args.candidate_checkpoint_load_min_headroom_mb == 512
+
+
+def test_bootstrap_args_validate_evaluator_diagnostics_max_rows(
+    tmp_path: Path,
+) -> None:
+    """Evaluator diagnostics row limits should be non-negative integers or None."""
+    MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=None)
+    MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=0)
+
+    with pytest.raises(ValueError, match="evaluator_diagnostics_max_rows"):
+        MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=-1)
+    with pytest.raises(ValueError, match="evaluator_diagnostics_max_rows"):
+        MorpionBootstrapArgs(work_dir=tmp_path, evaluator_diagnostics_max_rows=True)
+
+
+def test_bootstrap_args_validate_growth_memory_profile_controls(
+    tmp_path: Path,
+) -> None:
+    """Growth profile bounds should stay explicit and cheap."""
+    MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=1)
+    MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_sample_nodes=0)
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_max_objects=1,
+    )
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_max_depth=0,
+    )
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_context_node_cap=1,
+    )
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        growth_memory_profile_recursive_events=("after_checkpoint_load",),
+    )
+
+    with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
+        MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=0)
+    with pytest.raises(ValueError, match="growth_memory_profile_top_n"):
+        MorpionBootstrapArgs(work_dir=tmp_path, growth_memory_profile_top_n=True)
+    with pytest.raises(ValueError, match="growth_memory_profile_sample_nodes"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_sample_nodes=-1,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_sample_nodes"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_sample_nodes=True,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_max_objects",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_objects=0,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_recursive_max_objects"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_objects=True,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_max_depth",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_depth=-1,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_recursive_max_depth"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_depth=True,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_max_depth_explicit",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_max_depth_explicit=1,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_context_node_cap",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_context_node_cap=0,
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_context_node_cap",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_context_node_cap=True,
+        )
+    with pytest.raises(ValueError, match="growth_memory_profile_recursive_events"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_events=(),
+        )
+    with pytest.raises(
+        ValueError,
+        match="growth_memory_profile_recursive_complete_map",
+    ):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            growth_memory_profile_recursive_complete_map=1,
+        )
+
+
+def test_bootstrap_args_validate_candidate_checkpoint_load_headroom(
+    tmp_path: Path,
+) -> None:
+    """Candidate checkpoint load forecast controls should be non-negative."""
+    MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        candidate_checkpoint_load_headroom_factor=0.0,
+        candidate_checkpoint_load_min_headroom_mb=0,
+    )
+
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_headroom_factor"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_headroom_factor=-1.0,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_headroom_factor"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_headroom_factor=True,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_min_headroom_mb"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_min_headroom_mb=-1,
+        )
+    with pytest.raises(ValueError, match="candidate_checkpoint_load_min_headroom_mb"):
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            candidate_checkpoint_load_min_headroom_mb=True,
+        )
+
+
+def test_bootstrap_config_from_args_preserves_explicit_training_export_mode(
+    tmp_path: Path,
+) -> None:
+    """Explicit training export mode should persist into the canonical config."""
+    config = bootstrap_config_from_args(
+        replace(_make_args(tmp_path), training_export_mode="sharded")
+    )
+
+    assert config.training_export_mode == "sharded"
+
+
+def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
+    """Older persisted configs should load with phase-1 defaults."""
+    config = _make_config()
+    payload = {
+        "experiment": {
+            "game": config.experiment.game,
+            "variant": config.experiment.variant,
+            "initial_pattern": config.experiment.initial_pattern,
+            "initial_point_count": config.experiment.initial_point_count,
+        },
+        "runtime": {
+            "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
+            "save_after_seconds": config.runtime.save_after_seconds,
+            "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
+            "tree_branch_limit": config.runtime.tree_branch_limit,
+        },
+        "dataset": {
+            "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
+            "min_depth": config.dataset.min_depth,
+            "min_visit_count": config.dataset.min_visit_count,
+            "max_rows": config.dataset.max_rows,
+            "use_backed_up_value": config.dataset.use_backed_up_value,
+            "family_target_policy": config.dataset.family_target_policy,
+            "family_prediction_blend": config.dataset.family_prediction_blend,
+        },
+        "evaluators": {
+            "evaluators": {
+                name: {
+                    "name": spec.name,
+                    "model_type": spec.model_type,
+                    "hidden_sizes": None
+                    if spec.hidden_sizes is None
+                    else list(spec.hidden_sizes),
+                    "num_epochs": spec.num_epochs,
+                    "batch_size": spec.batch_size,
+                    "learning_rate": spec.learning_rate,
+                    "feature_subset_name": spec.feature_subset_name,
+                    "feature_names": list(spec.feature_names),
+                }
+                for name, spec in config.evaluators.evaluators.items()
+            }
+        },
+        "search": {
+            "rollout": {
+                "enabled": config.search.rollout.enabled,
+                "max_extra_steps": config.search.rollout.max_extra_steps,
+                "action_selector_kind": config.search.rollout.action_selector_kind,
+                "random_seed": config.search.rollout.random_seed,
+                "stop_on_existing_node": config.search.rollout.stop_on_existing_node,
+            }
+        },
+        "metadata": dict(config.metadata),
+    }
+
+    loaded = cast(
+        "MorpionBootstrapConfig",
+        __import__(
+            "chipiron.environments.morpion.bootstrap.config",
+            fromlist=["bootstrap_config_from_dict"],
+        ).bootstrap_config_from_dict(payload),
+    )
+
+    assert loaded.evaluator_update_policy == "future_only"
+    assert loaded.pipeline_mode == "single_process"
+    assert loaded.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    assert loaded.training_export_mode == "sharded"
+    assert loaded.training_device == "auto"
+    assert loaded.runtime.reevaluation_blend_alpha == 1.0
+    assert loaded.runtime.min_available_ram_mb is None
+    assert loaded.runtime.candidate_checkpoint_load_headroom_factor == 60.0
+    assert loaded.runtime.candidate_checkpoint_load_min_headroom_mb == 512
+
+
+def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:
+    """The loop entry should create the canonical config file on first run."""
+    args = _make_args(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    config_path = MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path
+    assert config_path.is_file()
+    assert load_bootstrap_config(config_path) == bootstrap_config_from_args(args)
+
+
+def test_bootstrap_config_round_trips_training_export_mode(tmp_path: Path) -> None:
+    """Persisted config should round-trip an explicit training export mode."""
+    config = bootstrap_config_from_args(
+        replace(_make_args(tmp_path), training_export_mode="sharded")
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+
+    assert loaded.training_export_mode == "sharded"
+    assert loaded == config
+
+
+def test_safe_bootstrap_config_change_is_allowed() -> None:
+    """Operational changes should be allowed for one persistent run."""
+    previous = _make_config()
+    current = MorpionBootstrapConfig(
+        experiment=previous.experiment,
+        runtime=MorpionBootstrapRuntimeConfig(
+            save_after_tree_growth_factor=3.0,
+            save_after_seconds=5.0,
+            max_growth_steps_per_cycle=12,
+            tree_branch_limit=256,
+        ),
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=True,
+            min_depth=4,
+            min_visit_count=1,
+            max_rows=20,
+            use_backed_up_value=False,
+        ),
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="mlp",
+                    hidden_sizes=(16, 8),
+                    num_epochs=3,
+                    batch_size=2,
+                    learning_rate=2e-3,
+                )
+            }
+        ),
+        metadata={"owner": "updated"},
+    )
+
+    validate_bootstrap_config_change(previous, current)
+
+
+def test_dataset_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> None:
+    """Dataset workers must match persisted dataset extraction knobs."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, min_visit_count=99))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_visit_count"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_training_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> None:
+    """Training workers must match persisted evaluator/training knobs."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        num_epochs=1,
+        batch_size=2,
+    )
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, num_epochs=3, batch_size=4))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="evaluators"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="training_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_growth_worker_rejects_dataset_config_drift(tmp_path: Path) -> None:
+    """Growth workers must not silently change dataset-owned fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, min_depth=12))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_depth"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="growth",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_reevaluation_worker_rejects_unrelated_config_drift(tmp_path: Path) -> None:
+    """Reevaluation workers should not own bootstrap config drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, max_rows=1234))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="max_rows"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="reevaluation",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_package_root_reexports_stage_config_ownership_helpers() -> None:
+    """The bootstrap package root should re-export public ownership helpers."""
+    import chipiron.environments.morpion.bootstrap as bootstrap_package
+    import chipiron.environments.morpion.bootstrap.config as config_module
+
+    assert (
+        bootstrap_package.IncompatibleStageBootstrapConfigError
+        is config_module.IncompatibleStageBootstrapConfigError
+    )
+    assert (
+        bootstrap_package.dataset_stage_owned_bootstrap_fields
+        is config_module.dataset_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.training_stage_owned_bootstrap_fields
+        is config_module.training_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.growth_stage_owned_bootstrap_fields
+        is config_module.growth_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.reevaluation_stage_owned_bootstrap_fields
+        is config_module.reevaluation_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    )
+    assert (
+        bootstrap_package.bootstrap_fields_owned_by_stage
+        is config_module.bootstrap_fields_owned_by_stage
+    )
+    assert (
+        bootstrap_package.STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS
+    )
+    assert (
+        bootstrap_package.RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    )
+    assert (
+        bootstrap_package.validate_stage_bootstrap_config_compatibility
+        is config_module.validate_stage_bootstrap_config_compatibility
+    )
+
+
+def test_stage_owned_field_helpers_are_stable() -> None:
+    """Stage ownership helpers should expose deterministic bootstrap field names."""
+    assert "min_visit_count" in dataset_stage_owned_bootstrap_fields()
+    assert "num_epochs" in training_stage_owned_bootstrap_fields()
+    assert "evaluator_diagnostics_max_rows" in training_stage_owned_bootstrap_fields()
+    assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
+    assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
+    assert "min_available_ram_mb" in growth_stage_owned_bootstrap_fields()
+    assert (
+        "candidate_checkpoint_load_headroom_factor"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "candidate_checkpoint_load_min_headroom_mb"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert "growth_memory_profile" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_top_n" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_sample_nodes" in growth_stage_owned_bootstrap_fields()
+    assert "growth_memory_profile_recursive" in growth_stage_owned_bootstrap_fields()
+    assert (
+        "growth_memory_profile_recursive_max_objects"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "growth_memory_profile_recursive_max_depth"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "growth_memory_profile_recursive_max_depth_explicit"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert (
+        "growth_memory_profile_recursive_context_node_cap"
+        in growth_stage_owned_bootstrap_fields()
+    )
+    assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()
+    assert "training_export_mode" in growth_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" not in training_stage_owned_bootstrap_fields()
+    assert reevaluation_stage_owned_bootstrap_fields() == ()
+    assert bootstrap_fields_owned_by_stage("dataset_worker") == (
+        dataset_stage_owned_bootstrap_fields()
+    )
+    assert {
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
+        "reevaluation_blend_alpha",
+        "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
+    } == GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    assert {
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
+        "reevaluation_blend_alpha",
+        "min_available_ram_mb",
+        "candidate_checkpoint_load_headroom_factor",
+        "candidate_checkpoint_load_min_headroom_mb",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
+        "growth_additional_branch_budget",
+        "growth_save_and_exit",
+        "growth_skip_training_export",
+    } == RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    assert {
+        "rollout_after_opening",
+        "rollout_max_extra_steps",
+        "rollout_action_selector_kind",
+        "rollout_random_seed",
+        "rollout_stop_on_existing_node",
+    } == GROWTH_SEARCH_BOOTSTRAP_STAGE_VALUE_FIELDS
+    assert {
+        "search.rollout.enabled",
+        "search.rollout.max_extra_steps",
+        "search.rollout.action_selector_kind",
+        "search.rollout.random_seed",
+        "search.rollout.stop_on_existing_node",
+    } == GROWTH_SEARCH_BOOTSTRAP_CONFIG_DIFF_FIELDS
+    assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
+        *GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    }
+
+
+def test_growth_stage_allows_rollout_config_drift(tmp_path: Path) -> None:
+    """Growth workers may change rollout settings for future expansion."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_dataset_worker_rejects_explicit_rollout_config_drift(
+    tmp_path: Path,
+) -> None:
+    """Non-growth workers should inherit rollout config or match it exactly."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            search=MorpionBootstrapSearchConfig(
+                rollout=MorpionBootstrapRolloutConfig(enabled=True)
+            ),
+        )
+    )
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="rollout"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_unsafe_variant_change_is_rejected() -> None:
+    """Changing experiment variant must fail loudly for an existing run."""
+    previous = _make_config()
+    current = MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=previous.experiment.game,
+            variant="5D",
+            initial_pattern=previous.experiment.initial_pattern,
+            initial_point_count=previous.experiment.initial_point_count,
+        ),
+        runtime=previous.runtime,
+        dataset=previous.dataset,
+        evaluators=previous.evaluators,
+    )
+
+    with pytest.raises(UnsafeMorpionBootstrapConfigChangeError):
+        validate_bootstrap_config_change(previous, current)
+
+
+def test_unsafe_initial_pattern_change_is_rejected() -> None:
+    """Changing the starting pattern must fail loudly for an existing run."""
+    previous = _make_config()
+    current = MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=previous.experiment.game,
+            variant=previous.experiment.variant,
+            initial_pattern="diamond",
+            initial_point_count=previous.experiment.initial_point_count,
+        ),
+        runtime=previous.runtime,
+        dataset=previous.dataset,
+        evaluators=previous.evaluators,
+    )
+
+    with pytest.raises(UnsafeMorpionBootstrapConfigChangeError):
+        validate_bootstrap_config_change(previous, current)
+
+
+def test_unsafe_initial_point_count_change_is_rejected() -> None:
+    """Changing the starting point count must fail loudly for an existing run."""
+    previous = _make_config()
+    current = MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=previous.experiment.game,
+            variant=previous.experiment.variant,
+            initial_pattern=previous.experiment.initial_pattern,
+            initial_point_count=40,
+        ),
+        runtime=previous.runtime,
+        dataset=previous.dataset,
+        evaluators=previous.evaluators,
+    )
+
+    with pytest.raises(UnsafeMorpionBootstrapConfigChangeError):
+        validate_bootstrap_config_change(previous, current)
+
+
+def test_bootstrap_config_hash_is_stable_and_changes_with_content() -> None:
+    """The config hash should be stable for identical config and change on diffs."""
+    config = _make_config()
+    same_config = _make_config()
+    changed_config = MorpionBootstrapConfig(
+        experiment=config.experiment,
+        runtime=MorpionBootstrapRuntimeConfig(
+            save_after_tree_growth_factor=9.0,
+            save_after_seconds=config.runtime.save_after_seconds,
+            max_growth_steps_per_cycle=config.runtime.max_growth_steps_per_cycle,
+            tree_branch_limit=config.runtime.tree_branch_limit,
+        ),
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=config.dataset.require_exact_or_terminal,
+            min_depth=config.dataset.min_depth,
+            min_visit_count=config.dataset.min_visit_count,
+            max_rows=config.dataset.max_rows,
+            use_backed_up_value=not config.dataset.use_backed_up_value,
+        ),
+        evaluators=config.evaluators,
+        metadata=config.metadata,
+    )
+
+    assert bootstrap_config_sha256(config) == bootstrap_config_sha256(same_config)
+    assert bootstrap_config_sha256(config) != bootstrap_config_sha256(changed_config)
+
+
+def test_bootstrap_config_roundtrip_preserves_evaluator_feature_subset(
+    tmp_path: Path,
+) -> None:
+    """Persisted evaluator subset selection should survive config roundtrips."""
+    subset_name, feature_names = _feature_subset(10)
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name,
+                    feature_names=feature_names,
+                )
+            }
+        ),
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+
+    assert loaded == config
+    assert loaded.evaluators.evaluators["linear"].feature_subset_name == subset_name
+    assert loaded.evaluators.evaluators["linear"].feature_names == feature_names
+
+
+def test_linear_evaluator_serialization_omits_entity_token_defaults() -> None:
+    """Existing linear/MLP configs should not grow entity-token default fields."""
+    payload = bootstrap_config_to_dict(_make_config())
+    evaluator_payloads = cast(
+        "dict[str, dict[str, object]]",
+        cast("dict[str, object]", payload["evaluators"])["evaluators"],
+    )
+
+    assert evaluator_payloads
+    for spec_payload in evaluator_payloads.values():
+        assert "entity_max_tokens" not in spec_payload
+        assert "entity_d_model" not in spec_payload
+        assert "entity_pooling" not in spec_payload
+
+
+def test_bootstrap_config_roundtrip_preserves_entity_token_evaluator_fields(
+    tmp_path: Path,
+) -> None:
+    """Persisted entity-token settings should survive config roundtrips."""
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "entity_token": MorpionEvaluatorSpec(
+                    name="entity_token",
+                    model_type=MORPION_ENTITY_TOKEN_MODEL_KIND,
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=2,
+                    learning_rate=1e-3,
+                    entity_max_tokens=321,
+                    entity_input_feature_dim=MORPION_ENTITY_TOKEN_FEATURE_DIM,
+                    entity_d_model=32,
+                    entity_n_head=4,
+                    entity_n_layer=1,
+                    entity_dim_feedforward=64,
+                    entity_dropout_ratio=0.1,
+                    entity_pooling="masked_mean",
+                    entity_output_tanh=False,
+                )
+            }
+        ),
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+    loaded_spec = loaded.evaluators.evaluators["entity_token"]
+    payload = bootstrap_config_to_dict(config)
+    entity_token_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
+            "entity_token"
+        ],
+    )
+
+    assert loaded == config
+    assert entity_token_payload["entity_max_tokens"] == 321
+    assert entity_token_payload["entity_d_model"] == 32
+    assert entity_token_payload["entity_pooling"] == "masked_mean"
+    assert loaded_spec.model_type == MORPION_ENTITY_TOKEN_MODEL_KIND
+    assert loaded_spec.entity_max_tokens == 321
+    assert loaded_spec.entity_d_model == 32
+    assert loaded_spec.entity_n_head == 4
+    assert loaded_spec.entity_n_layer == 1
+    assert loaded_spec.entity_dim_feedforward == 64
+    assert loaded_spec.entity_dropout_ratio == 0.1
+    assert loaded_spec.entity_pooling == "masked_mean"
+    assert loaded_spec.entity_output_tanh is False
+
+
+def test_bootstrap_config_roundtrip_preserves_relational_evaluator_fields(
+    tmp_path: Path,
+) -> None:
+    """Persisted relational settings should remain explicit and validated."""
+    base = _make_config()
+    relational_spec = MorpionEvaluatorSpec(
+        name="entity_token_relational_transformer_small",
+        model_type=MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+        hidden_sizes=None,
+        num_epochs=1,
+        batch_size=2,
+        learning_rate=1e-3,
+        entity_relation_schema=MORPION_ENTITY_RELATION_SCHEMA,
+        entity_relation_type_count=MORPION_ENTITY_RELATION_TYPE_COUNT,
+    )
+    config = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={relational_spec.name: relational_spec}
+        ),
+    )
+    config_path = tmp_path / "relational_bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+    payload = bootstrap_config_to_dict(config)
+    relational_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][  # type: ignore[index]
+            relational_spec.name
+        ],
+    )
+
+    assert loaded == config
+    assert (
+        relational_payload["entity_relation_schema"] == MORPION_ENTITY_RELATION_SCHEMA
+    )
+    assert (
+        relational_payload["entity_relation_type_count"]
+        == MORPION_ENTITY_RELATION_TYPE_COUNT
+    )
+    assert relational_payload["entity_use_validity_feature"] is True
+
+
+@pytest.mark.parametrize(
+    "override",
+    (
+        {"entity_relation_schema": None},
+        {"entity_relation_type_count": None},
+        {"entity_use_validity_feature": False},
+    ),
+)
+def test_relational_evaluator_spec_rejects_missing_schema(
+    override: dict[str, object],
+) -> None:
+    """Relational evaluator specs should reject incomplete runtime metadata."""
+    kwargs: dict[str, object] = {
+        "name": "relational",
+        "model_type": MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
+        "hidden_sizes": None,
+        "num_epochs": 1,
+        "batch_size": 2,
+        "learning_rate": 1e-3,
+        "entity_relation_schema": MORPION_ENTITY_RELATION_SCHEMA,
+        "entity_relation_type_count": MORPION_ENTITY_RELATION_TYPE_COUNT,
+    }
+    kwargs.update(override)
+    with pytest.raises(ValueError):
+        MorpionEvaluatorSpec(**kwargs)  # type: ignore[arg-type]
+
+
+def test_bootstrap_config_rejects_removed_evaluator_fields() -> None:
+    """Bootstrap parsing should reject fields from the removed token schema."""
+    payload = bootstrap_config_to_dict(_make_config())
+    evaluator_payloads = cast(
+        "dict[str, dict[str, object]]",
+        cast("dict[str, object]", payload["evaluators"])["evaluators"],
+    )
+    first_evaluator = next(iter(evaluator_payloads.values()))
+    first_evaluator["graph" + "_max_tokens"] = 1536
+
+    with pytest.raises(
+        MalformedMorpionBootstrapConfigError,
+        match="valid Morpion evaluator mapping",
+    ):
+        bootstrap_config_from_dict(payload)
+
+
+def test_bootstrap_config_missing_entity_output_tanh_defaults_false() -> None:
+    """Missing entity output tanh should parse to the regression default."""
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "entity_token": MorpionEvaluatorSpec(
+                    name="entity_token",
+                    model_type=MORPION_ENTITY_TOKEN_MODEL_KIND,
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=2,
+                    learning_rate=1e-3,
+                )
+            }
+        ),
+    )
+    payload = bootstrap_config_to_dict(config)
+    entity_token_payload = cast(
+        "dict[str, object]",
+        cast("dict[str, dict[str, object]]", payload["evaluators"])["evaluators"][
+            "entity_token"
+        ],
+    )
+    entity_token_payload.pop("entity_output_tanh", None)
+
+    loaded = bootstrap_config_from_dict(payload)
+
+    assert loaded.evaluators.evaluators["entity_token"].entity_output_tanh is False
+
+
+def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:
+    """Subset-only evaluator differences should affect the bootstrap config hash."""
+    subset_name_10, feature_names_10 = _feature_subset(10)
+    subset_name_20, feature_names_20 = _feature_subset(20)
+    base = _make_config()
+    config_10 = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name_10,
+                    feature_names=feature_names_10,
+                )
+            }
+        ),
+    )
+    config_20 = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name_20,
+                    feature_names=feature_names_20,
+                )
+            }
+        ),
+    )
+
+    assert config_10.evaluators != config_20.evaluators
+    assert bootstrap_config_sha256(config_10) != bootstrap_config_sha256(config_20)
+
+
+def test_bootstrap_config_from_args_resolves_canonical_family_preset() -> None:
+    """Bootstrap config persistence should capture the resolved canonical family specs."""
+    args = MorpionBootstrapArgs(
+        work_dir=Path("/tmp/morpion-family"),
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+
+    config = bootstrap_config_from_args(args)
+
+    assert config.evaluators == canonical_morpion_evaluator_family_config()
+
+
+def test_bootstrap_config_hash_differs_between_single_evaluator_and_family() -> None:
+    """The canonical family should produce a different config hash than legacy defaults."""
+    single = bootstrap_config_from_args(
+        MorpionBootstrapArgs(work_dir=Path("/tmp/single"))
+    )
+    family = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=Path("/tmp/family"),
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        )
+    )
+
+    assert bootstrap_config_sha256(single) != bootstrap_config_sha256(family)
+
+
+def test_loop_stores_bootstrap_config_hash_in_metadata(tmp_path: Path) -> None:
+    """Accepted config hash should be persisted in run state and cycle history."""
+    args = _make_args(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    final_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+    persisted_run_state = load_bootstrap_run_state(paths.run_state_path)
+    expected_hash = bootstrap_config_sha256(bootstrap_config_from_args(args))
+
+    assert final_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == expected_hash
+    assert (
+        persisted_run_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY]
+        == expected_hash
+    )
+    assert history[-1].metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == expected_hash
+
+
+def test_legacy_run_without_config_file_migrates_cleanly(tmp_path: Path) -> None:
+    """Older runs without a config file should write one and continue normally."""
+    args = _make_args(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.0,))
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    legacy_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path="tree_exports/generation_000001.json",
+        latest_rows_path="rows/generation_000001.json",
+        latest_model_bundle_paths={"default": "models/generation_000001/default"},
+        active_evaluator_name="default",
+        tree_size_at_last_save=10,
+        last_save_unix_s=1.0,
+        latest_record_status=None,
+        metadata={},
+    )
+    save_bootstrap_run_state(legacy_state, paths.run_state_path)
+
+    final_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert paths.bootstrap_config_path.is_file()
+    assert load_bootstrap_config(
+        paths.bootstrap_config_path
+    ) == bootstrap_config_from_args(args)
+    assert final_state.metadata[
+        BOOTSTRAP_CONFIG_HASH_METADATA_KEY
+    ] == bootstrap_config_sha256(bootstrap_config_from_args(args))
+
+
+def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) -> None:
+    """Older persisted configs should pick up the default branch limit cleanly."""
+    config_path = tmp_path / "bootstrap_config.json"
+    config_path.write_text(
+        """
+{
+    "dataset": {
+        "max_rows": null,
+        "min_depth": null,
+        "min_visit_count": null,
+        "require_exact_or_terminal": false,
+        "use_backed_up_value": true
+    },
+    "evaluators": {
+        "evaluators": {
+            "default": {
+                "batch_size": 1,
+                "hidden_sizes": null,
+                "learning_rate": 0.001,
+                "model_type": "linear",
+                "name": "default",
+                "num_epochs": 1
+            }
+        }
+    },
+    "experiment": {
+        "game": "morpion",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+        "variant": "5T"
+    },
+    "metadata": {},
+    "runtime": {
+        "max_growth_steps_per_cycle": 8,
+        "save_after_seconds": 60.0,
+        "save_after_tree_growth_factor": 2.0
+    },
+    "search": {
+        "rollout": {
+            "action_selector_kind": "random_legal_prefer_openable",
+            "enabled": false,
+            "max_extra_steps": null,
+            "random_seed": 0,
+            "stop_on_existing_node": false
+        }
+    }
+}
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    loaded_config = load_bootstrap_config(config_path)
+
+    assert loaded_config.runtime.tree_branch_limit == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    assert loaded_config.search.rollout.enabled is False
+    assert loaded_config.search.rollout.max_extra_steps is None

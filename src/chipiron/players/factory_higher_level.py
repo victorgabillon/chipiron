@@ -14,8 +14,7 @@ import multiprocessing
 from functools import partial
 from typing import Protocol, cast
 
-from valanga import Color
-
+from chipiron.core.roles import GameRole
 from chipiron.environments.player_wiring_registry import get_observer_wiring
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import PlayerRequest
@@ -43,7 +42,7 @@ class PlayerObserverFactory(Protocol):
     def __call__(
         self,
         player_factory_args: PlayerFactoryArgs,
-        player_color: Color,
+        player_role: GameRole,
         main_thread_mailbox: PutQueue[MainMailboxMessage],
     ) -> tuple[PlayerHandle, MoveFunction]:
         """Create a player observer and its request sender."""
@@ -99,7 +98,7 @@ def create_player_observer_factory(
 
 def _create_player_observer_distributed(
     player_factory_args: PlayerFactoryArgs,
-    player_color: Color,
+    player_role: GameRole,
     main_thread_mailbox: PutQueue[IsDataclass],
     *,
     wiring: ObserverWiring[object, object, object],
@@ -113,9 +112,10 @@ def _create_player_observer_distributed(
     # `ObserverWiring.build_args_type` is game-specific; after type-erasure it must be
     # instantiated via a local cast.
     build_args_type = cast("type", wiring.build_args_type)
-    build_args = build_args_type(
+    build_args = _build_player_args(
+        build_args_type=build_args_type,
         player_factory_args=player_factory_args,
-        player_color=player_color,
+        player_role=player_role,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
     )
@@ -140,7 +140,7 @@ def _create_player_observer_distributed(
 
 def _create_player_observer_mono_process(
     player_factory_args: PlayerFactoryArgs,
-    player_color: Color,
+    player_role: GameRole,
     main_thread_mailbox: PutQueue[MainMailboxMessage],
     *,
     wiring: ObserverWiring[object, object, object],
@@ -149,9 +149,10 @@ def _create_player_observer_mono_process(
 ) -> tuple[PlayerHandle, MoveFunction]:
     """Create a player observer running in-process."""
     build_args_type = cast("type", wiring.build_args_type)
-    build_args = build_args_type(
+    build_args = _build_player_args(
+        build_args_type=build_args_type,
         player_factory_args=player_factory_args,
-        player_color=player_color,
+        player_role=player_role,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
     )
@@ -171,3 +172,33 @@ def _create_player_observer_mono_process(
 
     move_function = partial(run_request_inline, queue_move=main_thread_mailbox)
     return handle, cast("MoveFunction", move_function)
+
+
+class UnsupportedPlayerRoleBuildArgsError(TypeError):
+    """Raised when a wiring build-args type has no role slot."""
+
+    def __init__(self, build_args_type: type) -> None:
+        """Initialize the error with the unsupported args type."""
+        super().__init__(
+            f"Player build args must accept `player_role`: {build_args_type!r}"
+        )
+
+
+def _build_player_args(
+    *,
+    build_args_type: type,
+    player_factory_args: PlayerFactoryArgs,
+    player_role: GameRole,
+    implementation_args: object,
+    universal_behavior: bool,
+) -> object:
+    """Instantiate game-specific build args using role-based naming."""
+    common_kwargs = {
+        "player_factory_args": player_factory_args,
+        "implementation_args": implementation_args,
+        "universal_behavior": universal_behavior,
+    }
+    try:
+        return build_args_type(player_role=player_role, **common_kwargs)
+    except TypeError as exc:
+        raise UnsupportedPlayerRoleBuildArgsError(build_args_type) from exc

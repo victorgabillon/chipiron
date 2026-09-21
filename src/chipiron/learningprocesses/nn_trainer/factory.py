@@ -1,378 +1,41 @@
-"""Module to create and save neural network trainers and their parameters."""
+"""Compatibility facade for legacy supervised chess training imports.
 
-import os.path
-import pickle
-import sys
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import TYPE_CHECKING, Any, cast, no_type_check
+New code should import training config from:
+    chipiron.scripts.learn_nn_supervised.training_args
 
-import torch
-import yaml
-from coral.board_evaluation import (
-    PointOfView,
+New code should import checkpoint helpers from:
+    chipiron.scripts.learn_nn_supervised.checkpoint_helpers
+
+This module remains only to support older imports during the migration away from
+learningprocesses.nn_trainer.
+"""
+
+from __future__ import annotations
+
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
+    safe_nn_architecture_save as safe_nn_architecture_save,
 )
-from coral.chi_nn import ChiNN
-from coral.neural_networks.factory import (
-    get_nn_architecture_file_path_from,
-    get_nn_param_file_path_from,
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
+    safe_nn_param_save as safe_nn_param_save,
 )
-from coral.neural_networks.models.multi_layer_perceptron import (
-    MultiLayerPerceptronArgs,
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
+    safe_nn_trainer_save as safe_nn_trainer_save,
 )
-from coral.neural_networks.neural_net_architecture_args import (
-    NeuralNetArchitectureArgs,
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    GameInputArgs as GameInputArgs,
 )
-from coral.neural_networks.nn_model_type import (
-    ActivationFunctionType,
-    NNModelType,
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    NNTrainerArgs as NNTrainerArgs,
 )
-from coral.neural_networks.output_converters.model_output_type import (
-    ModelOutputType,
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    NNTrainerConfigError as NNTrainerConfigError,
 )
-from torch import optim
-
-from chipiron.environments.types import GameKind
-from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
-    ModelInputRepresentationType,
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    OptimizerType as OptimizerType,
 )
-from chipiron.utils import MyPath
-from chipiron.utils.dataclass import custom_asdict_factory
-from chipiron.utils.logger import chipiron_logger
-from chipiron.utils.small_tools import mkdir_if_not_existing
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
-
-
-class NNTrainerConfigError(ValueError):
-    """Raised when NN trainer configuration is inconsistent."""
-
-    def __init__(
-        self,
-        reuse_existing_model: bool,
-        nn_parameters_file_if_reusing_existing_one: MyPath | None,
-    ) -> None:
-        """Initialize the error with inconsistent trainer arguments."""
-        msg = (
-            "Problem because you are asking for a reuse of existing model without specifying a"
-            f" param file as we have: reuse_existing_model {reuse_existing_model}"
-            f" nn_param_file_if_not_reusing_existing_one {nn_parameters_file_if_reusing_existing_one}"
-        )
-        super().__init__(msg)
-
-
-SerializableType = (
-    str
-    | int
-    | float
-    | bool
-    | None
-    | dict[str, Any]
-    | list[Any]
-    | set[Any]
-    | frozenset[Any]
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    SupervisedTrainingArgs as SupervisedTrainingArgs,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class GameInputArgs:
-    """Gameinputargs implementation."""
-
-    game_kind: GameKind
-    representation: ModelInputRepresentationType
-
-
-@dataclass
-class NNTrainerArgs:
-    """Arguments for the NNTrainer class.
-
-    Attributes:
-        reuse_existing_trainer (bool): Whether to reuse an existing trainer.
-        starting_lr (float): The starting learning rate.
-        momentum_op (float): The momentum value.
-        scheduler_step_size (int): The step size for the scheduler.
-        scheduler_gamma (float): The gamma value for the scheduler.
-        saving_intermediate_copy (bool): Whether to save intermediate copies.
-
-    """
-
-    neural_network_architecture_args: NeuralNetArchitectureArgs = field(
-        default_factory=lambda: NeuralNetArchitectureArgs(
-            model_type_args=MultiLayerPerceptronArgs(
-                type=NNModelType.MULTI_LAYER_PERCEPTRON,
-                number_neurons_per_layer=[5, 1],
-                list_of_activation_functions=[
-                    ActivationFunctionType.TANGENT_HYPERBOLIC
-                ],
-            ),
-            model_output_type=ModelOutputType(point_of_view=PointOfView.PLAYER_TO_MOVE),
-        )
-    )
-    game_input: GameInputArgs = field(
-        default_factory=lambda: GameInputArgs(
-            game_kind=GameKind.CHESS,
-            representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
-        )
-    )
-    nn_parameters_file_if_reusing_existing_one: MyPath | None = None
-    specific_saving_folder: MyPath | None = None
-    reuse_existing_model: bool = False
-    reuse_existing_trainer: bool = False
-    starting_lr: float = 0.1
-    momentum_op: float = 0.9
-    scheduler_step_size: int = 1
-    scheduler_gamma: float = 0.5
-    saving_intermediate_copy: bool = True
-
-    batch_size_train: int = 32
-    batch_size_test: int = 10
-    saving_interval: int = 1000
-    saving_intermediate_copy_interval: int = 10000
-    min_interval_lr_change: int = 1000000
-    min_lr: float = 0.001
-
-    epochs_number: int = 100
-
-    def __post_init__(self) -> None:
-        """Run post-init."""
-        if (
-            self.reuse_existing_model
-            and self.nn_parameters_file_if_reusing_existing_one is None
-        ):
-            raise NNTrainerConfigError(
-                self.reuse_existing_model,
-                self.nn_parameters_file_if_reusing_existing_one,
-            )
-
-
-def get_optimizer_file_path_from(folder_path: MyPath) -> str:
-    """Return the file path for the optimizer file in the given folder path.
-
-    Args:
-        folder_path (str): The path to the folder containing the optimizer file.
-
-    Returns:
-        str: The file path for the optimizer file.
-
-    """
-    file_path: str = os.path.join(folder_path, "optimizer.pi")
-    return file_path
-
-
-def get_scheduler_file_path_from(folder_path: MyPath) -> str:
-    """Get the file path for the scheduler file in the given folder path.
-
-    Args:
-        folder_path (str): The path of the folder containing the scheduler file.
-
-    Returns:
-        str: The file path of the scheduler file.
-
-    """
-    file_path: str = os.path.join(folder_path, "scheduler.pi")
-    return file_path
-
-
-def get_folder_training_copies_path_from(folder_path: MyPath) -> str:
-    """Return the path to the 'training_copies' folder within the given folder path.
-
-    Args:
-        folder_path (str): The path to the folder.
-
-    Returns:
-        str: The path to the 'training_copies' folder.
-
-    """
-    return os.path.join(folder_path, "training_copies")
-
-
-def create_nn_trainer(
-    args: NNTrainerArgs, nn: ChiNN, saving_folder: MyPath
-) -> NNPytorchTrainer:
-    """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
-
-    Args:
-        args (NNTrainerArgs): The arguments for the NNTrainer.
-        nn (ChiNN): The neural network to be trained.
-
-    Returns:
-        NNPytorchTrainer: An instance of NNPytorchTrainer.
-
-    """
-    optimizer: torch.optim.Optimizer
-    scheduler: torch.optim.lr_scheduler.LRScheduler
-    if args.reuse_existing_trainer:
-        file_optimizer_path = get_optimizer_file_path_from(folder_path=saving_folder)
-        with open(file_optimizer_path, "rb") as file_optimizer:
-            optimizer = pickle.load(file_optimizer)
-
-        file_scheduler_path = get_scheduler_file_path_from(folder_path=saving_folder)
-        with open(file_scheduler_path, "rb") as file_scheduler:
-            scheduler = pickle.load(file_scheduler)
-
-    else:
-        optimizer = optim.SGD(
-            nn.parameters(),
-            lr=args.starting_lr,
-            momentum=args.momentum_op,
-            weight_decay=0.000,
-        )
-        scheduler = optim.lr_scheduler.StepLR(
-            optimizer, step_size=args.scheduler_step_size, gamma=args.scheduler_gamma
-        )
-
-    if args.saving_intermediate_copy:
-        folder_path_training_copies = get_folder_training_copies_path_from(
-            saving_folder
-        )
-        mkdir_if_not_existing(folder_path_training_copies)
-
-    return NNPytorchTrainer(net=nn, optimizer=optimizer, scheduler=scheduler)
-
-
-@no_type_check
-def serialize_for_yaml(obj: Any) -> SerializableType:
-    """Recursively converts Enums and other non-serializable objects.
-
-    into basic types for safe YAML dumping.
-    """
-    # Handle None and primitives
-    if obj is None or isinstance(obj, (str, int, float, bool)):
-        return cast("SerializableType", obj)
-
-    # Handle Enums
-    if isinstance(obj, Enum):
-        return serialize_for_yaml(obj.value)
-
-    # Handle dictionaries
-    if isinstance(obj, dict):
-        dict_obj = cast("dict[Any, Any]", obj)
-        dict_result: dict[str, SerializableType] = {}
-        for key, value in dict_obj.items():
-            str_key: str = str(key)
-            serialized_value: SerializableType = serialize_for_yaml(value)
-            dict_result[str_key] = serialized_value
-        return dict_result
-
-    # Handle lists and tuples
-    if isinstance(obj, (list, tuple)):
-        iterable_obj: Iterable[Any] = cast("Iterable[Any]", obj)
-        list_result: list[SerializableType] = [
-            serialize_for_yaml(item) for item in iterable_obj
-        ]
-        return list_result
-
-    # Handle frozensets
-    if isinstance(obj, frozenset):
-        frozenset_obj = cast("frozenset[Any]", obj)
-        frozenset_result: frozenset[SerializableType] = frozenset(
-            serialize_for_yaml(item) for item in frozenset_obj
-        )
-        return frozenset_result
-
-    # Handle objects with __dict__
-    if hasattr(obj, "__dict__"):
-        return serialize_for_yaml(vars(obj))
-
-    # Fallback: convert to string
-    return str(obj)
-
-
-def safe_nn_architecture_save(
-    nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: MyPath
-) -> None:
-    """Save the architecture of a neural network to a file.
-
-    Args:
-        nn_architecture_args (NeuralNetArchitectureArgs): The architecture arguments of the neural network.
-        nn_param_folder_name (path): The folder path where the architecture file will be saved.
-
-    """
-    path_to_param_file = get_nn_architecture_file_path_from(nn_param_folder_name)
-    try:
-        chipiron_logger.info("saving architecture to file: %s", path_to_param_file)
-        with open(path_to_param_file, "w", encoding="utf-8") as file_architecture:
-            yaml.dump(
-                asdict(
-                    nn_architecture_args,
-                    dict_factory=custom_asdict_factory,
-                ),
-                file_architecture,
-                default_flow_style=False,
-            )
-    except KeyboardInterrupt:
-        sys.exit(-1)
-
-
-def safe_nn_param_save(
-    nn: ChiNN,
-    nn_param_folder_name: MyPath,
-    file_name: str | None = None,
-    training_copy: bool = False,
-) -> None:
-    """Save the parameters of a neural network to a file.
-
-    Args:
-        nn (ChiNN): The neural network to save.
-        training_copy (bool, optional): Whether to save a training copy of the parameters. Defaults to False.
-
-    """
-    folder_path = nn_param_folder_name
-    folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
-
-    nn_file_path_pt: str
-    file_name_yaml: str
-    nn_file_path_pt, file_name_yaml = get_nn_param_file_path_from(
-        folder_path=folder_path, file_name=file_name
-    )
-    path_to_param_file: MyPath
-    if training_copy:
-        now = datetime.now()  # current date and time
-        path_to_param_file = os.path.join(
-            folder_path_training_copies, now.strftime("%A-%m-%d-%Y--%H:%M:%S:%f")
-        )
-    else:
-        path_to_param_file = nn_file_path_pt
-    try:
-        chipiron_logger.info("saving to file: %s", path_to_param_file)
-        with open(path_to_param_file, "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
-            nn.log_readable_model_weights_to_file(file_path=file_name_yaml)
-        with open(path_to_param_file + "_save", "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
-    except KeyboardInterrupt:
-        with open(path_to_param_file + "_save", "wb") as file_nnw:
-            torch.save(nn.state_dict(), file_nnw)
-        sys.exit(-1)
-
-
-def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: MyPath) -> None:
-    """Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
-
-    Args:
-        nn_trainer (NNPytorchTrainer): The NNPytorchTrainer object containing the optimizer and scheduler to be saved.
-
-    Returns:
-        None
-
-    """
-    file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
-    file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)
-    try:
-        with open(file_optimizer_path, "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
-        with open(file_scheduler_path, "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
-        with open(str(file_optimizer_path) + "_save", "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
-        with open(file_scheduler_path + "_save", "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
-    except KeyboardInterrupt:
-        with open(file_optimizer_path + "_save", "wb") as file_optimizer:
-            pickle.dump(nn_trainer.optimizer, file_optimizer)
-        with open(file_scheduler_path + "_save", "wb") as file_scheduler:
-            pickle.dump(nn_trainer.scheduler, file_scheduler)
-        sys.exit(-1)
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    SupervisedTrainingConfigError as SupervisedTrainingConfigError,
+)

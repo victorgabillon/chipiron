@@ -1,0 +1,630 @@
+"""Tests for Morpion bootstrap live control behavior."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, cast
+
+import pytest
+from anemone.training_export import (
+    TrainingNodeSnapshot,
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
+from chipiron.environments.morpion.bootstrap import (
+    BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    MissingForcedMorpionEvaluatorBundleError,
+    MorpionBootstrapArgs,
+    MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
+    MorpionBootstrapRuntimeControl,
+    MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
+    UnknownForcedMorpionEvaluatorError,
+    apply_control_to_args,
+    bootstrap_config_from_args,
+    effective_runtime_config_from_config_and_control,
+    load_bootstrap_control,
+    load_bootstrap_history,
+    run_morpion_bootstrap_loop,
+    run_one_bootstrap_cycle,
+    save_bootstrap_control,
+)
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
+from tests.environments.morpion_training_snapshot_helpers import (
+    make_training_node_snapshot,
+)
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *,
+    target_value: float,
+    root_node_id: str,
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for the bootstrap loop."""
+    node = make_training_node_snapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=True,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-control-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+class FakeMorpionSearchRunner:
+    """Deterministic runner used to verify per-cycle control reload behavior."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+        control_path: Path | None = None,
+        control_after_first_grow: MorpionBootstrapControl | None = None,
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+        self._control_path = control_path
+        self._control_after_first_grow = control_after_first_grow
+        self.load_calls: list[tuple[str | None, str | None]] = []
+        self.runtime_config_calls: list[
+            MorpionBootstrapEffectiveRuntimeConfig | None
+        ] = []
+        self.grow_calls: list[int] = []
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Record the latest tree/model inputs used to initialize the runner."""
+        _ = reevaluate_tree
+        self.load_calls.append((
+            None if tree_snapshot_path is None else str(tree_snapshot_path),
+            None if model_bundle_path is None else str(model_bundle_path),
+        ))
+        self.runtime_config_calls.append(effective_runtime_config)
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner and optionally rewrite the control file."""
+        self.grow_calls.append(max_growth_steps)
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+        if (
+            self._cycle_index == 0
+            and self._control_path is not None
+            and self._control_after_first_grow is not None
+        ):
+            save_bootstrap_control(self._control_after_first_grow, self._control_path)
+            self._control_after_first_grow = None
+
+    def export_training_tree_snapshot(
+        self,
+        output_path: str | Path,
+    ) -> None:
+        """Write one real training snapshot to ``output_path``."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        save_training_tree_snapshot(snapshot, output_path)
+
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded training export using the same deterministic snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
+        )
+        return manifest_path
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one representative two-evaluator bootstrap config."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp": MorpionEvaluatorSpec(
+                name="mlp",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
+
+
+def _patch_reported_losses(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    loss_by_evaluator_name: dict[str, float],
+) -> None:
+    """Patch training so evaluator selection is deterministic while bundles still exist."""
+    real_train = cycle_training_module.train_morpion_regressor
+
+    def _patched_train(train_args: object) -> object:
+        _model, metrics = real_train(train_args)
+        evaluator_name = Path(str(cast("Any", train_args).output_dir)).name
+        metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        metrics["validation_loss"] = loss_by_evaluator_name[evaluator_name]
+        return _model, metrics
+
+    monkeypatch.setattr(
+        cycle_training_module, "train_morpion_regressor", _patched_train
+    )
+
+
+def test_control_roundtrip(tmp_path: Path) -> None:
+    """Bootstrap control files should round-trip through JSON unchanged."""
+    control = MorpionBootstrapControl(
+        max_growth_steps_per_cycle=7,
+        max_rows=13,
+        use_backed_up_value=False,
+        save_after_seconds=12.5,
+        save_after_tree_growth_factor=1.5,
+        force_evaluator="linear",
+        runtime=MorpionBootstrapRuntimeControl(
+            tree_branch_limit=256,
+            reevaluation_blend_alpha=0.25,
+        ),
+    )
+    control_path = tmp_path / "control.json"
+
+    save_bootstrap_control(control, control_path)
+
+    assert load_bootstrap_control(control_path) == control
+
+
+def test_apply_control_to_args(tmp_path: Path) -> None:
+    """Only non-None control fields should override the base bootstrap args."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        max_rows=11,
+        use_backed_up_value=True,
+        save_after_seconds=10.0,
+        save_after_tree_growth_factor=2.0,
+    )
+    control = MorpionBootstrapControl(
+        max_growth_steps_per_cycle=9,
+        max_rows=None,
+        use_backed_up_value=False,
+        save_after_seconds=None,
+        save_after_tree_growth_factor=3.0,
+    )
+
+    effective_args = apply_control_to_args(args, control)
+
+    assert effective_args.max_growth_steps_per_cycle == 9
+    assert effective_args.max_rows == 11
+    assert effective_args.use_backed_up_value is False
+    assert effective_args.save_after_seconds == 10.0
+    assert effective_args.save_after_tree_growth_factor == 3.0
+
+
+def test_runtime_control_parsing_tolerates_malformed_fields(tmp_path: Path) -> None:
+    """Malformed runtime control fields should be ignored instead of breaking the loop."""
+    control_path = tmp_path / "control.json"
+    control_path.write_text(
+        (
+            '{"runtime": {"tree_branch_limit": "nope", '
+            '"reevaluation_blend_alpha": 2.0}, "max_rows": 7}\n'
+        ),
+        encoding="utf-8",
+    )
+
+    control = load_bootstrap_control(control_path)
+
+    assert control.max_rows == 7
+    assert control.runtime.tree_branch_limit is None
+    assert control.runtime.reevaluation_blend_alpha is None
+
+
+def test_effective_runtime_config_derivation(tmp_path: Path) -> None:
+    """Runtime config derivation should use persisted defaults and control overrides."""
+    config = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            tree_branch_limit=96,
+            reevaluation_blend_alpha=0.75,
+        )
+    )
+
+    assert effective_runtime_config_from_config_and_control(
+        config,
+        MorpionBootstrapControl(),
+    ) == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=96,
+        reevaluation_blend_alpha=0.75,
+    )
+    assert effective_runtime_config_from_config_and_control(
+        config,
+        MorpionBootstrapControl(
+            runtime=MorpionBootstrapRuntimeControl(
+                tree_branch_limit=256,
+                reevaluation_blend_alpha=0.5,
+            )
+        ),
+    ) == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=256,
+        reevaluation_blend_alpha=0.5,
+    )
+
+
+def test_reevaluation_blend_alpha_validation(tmp_path: Path) -> None:
+    """Reevaluation smoothing alpha should stay in the unit interval."""
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapArgs(work_dir=tmp_path, reevaluation_blend_alpha=1.5)
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapRuntimeControl(reevaluation_blend_alpha=-0.1)
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64,
+            reevaluation_blend_alpha=1.1,
+        )
+
+
+def test_loop_applies_control_between_cycles(tmp_path: Path) -> None:
+    """Control changes written during one cycle should apply on the next cycle."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(10, 20),
+        target_values=(1.25, -0.5),
+        control_path=paths.control_path,
+        control_after_first_grow=MorpionBootstrapControl(
+            max_growth_steps_per_cycle=9,
+            max_rows=3,
+            use_backed_up_value=False,
+            runtime=MorpionBootstrapRuntimeControl(
+                tree_branch_limit=64,
+                reevaluation_blend_alpha=0.3,
+            ),
+        ),
+    )
+
+    final_state = run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+
+    assert runner.grow_calls == [5, 9]
+    assert runner.runtime_config_calls == [
+        MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+            reevaluation_blend_alpha=1.0,
+        ),
+        MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64,
+            reevaluation_blend_alpha=0.3,
+        ),
+    ]
+    assert final_state.metadata[BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY] == {
+        "force_evaluator": None,
+        "max_growth_steps_per_cycle": 9,
+        "max_rows": 3,
+        "runtime": {"reevaluation_blend_alpha": 0.3, "tree_branch_limit": 64},
+        "save_after_seconds": None,
+        "save_after_tree_growth_factor": None,
+        "use_backed_up_value": False,
+    }
+    assert final_state.metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
+    }
+    assert final_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
+    }
+    assert isinstance(
+        final_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY],
+        str,
+    )
+    assert history[-1].metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
+    }
+    assert history[-1].metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
+    }
+
+
+def test_runtime_control_allows_tree_branch_limit_increase(
+    tmp_path: Path,
+) -> None:
+    """Increasing tree_branch_limit should allow an existing tree to continue."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(10, 20),
+        target_values=(1.25, -0.5),
+        control_path=paths.control_path,
+        control_after_first_grow=MorpionBootstrapControl(
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=256)
+        ),
+    )
+
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+
+    assert state.cycle_index == 1
+    assert runner.runtime_config_calls[-1] == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=256
+    )
+
+
+def test_runtime_reconfiguration_allows_fresh_run_with_any_limit() -> None:
+    """A fresh run with no persisted runtime config should accept any limit."""
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_runtime_config=None,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=512
+        ),
+    )
+
+
+def test_runtime_reconfiguration_allows_same_limit_on_resume() -> None:
+    """A resumed tree may keep the same runtime branch limit."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_runtime_config=previous_config,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64
+        ),
+    )
+
+
+def test_runtime_reconfiguration_allows_lower_limit_on_resume() -> None:
+    """A resumed tree may tighten the runtime branch limit."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_runtime_config=previous_config,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=32
+        ),
+    )
+
+
+def test_runtime_reconfiguration_allows_higher_limit_on_resume(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A resumed tree may widen the runtime branch limit."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    with caplog.at_level(logging.INFO):
+        bootstrap_loop_module._validate_runtime_reconfiguration(
+            previous_runtime_config=previous_config,
+            effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+                tree_branch_limit=128
+            ),
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert (
+        "[runtime-reconfig] tree_branch_limit changed previous=64 current=128 direction=increased"
+        in messages
+    )
+
+
+def test_force_evaluator(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A forced evaluator should override auto-selection and next-cycle bundle load."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.7, "mlp": 0.2},
+    )
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_control(
+        MorpionBootstrapControl(force_evaluator="linear"),
+        paths.control_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10, 20), target_values=(1.25, -0.5))
+
+    final_state = run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+
+    assert final_state.active_evaluator_name == "linear"
+    assert runner.load_calls[1][1] == str(
+        paths.resolve_work_dir_path("models/generation_000001/linear")
+    )
+    assert history[-1].metadata["forced_evaluator"] == "linear"
+
+
+def test_invalid_forced_evaluator_fails_loudly(tmp_path: Path) -> None:
+    """Unknown forced evaluator names should fail clearly."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_control(
+        MorpionBootstrapControl(force_evaluator="ghost"),
+        paths.control_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    with pytest.raises(UnknownForcedMorpionEvaluatorError):
+        run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+
+def test_missing_forced_evaluator_bundle_fails_loudly(tmp_path: Path) -> None:
+    """Forced restore should fail when the requested saved bundle is unavailable."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+    run_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths={"linear": "models/generation_000001/linear"},
+        active_evaluator_name="linear",
+        tree_size_at_last_save=10,
+        last_save_unix_s=0.0,
+    )
+
+    with pytest.raises(MissingForcedMorpionEvaluatorBundleError):
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=MorpionBootstrapPaths.from_work_dir(tmp_path),
+            runner=runner,
+            run_state=run_state,
+            control=MorpionBootstrapControl(force_evaluator="mlp"),
+        )

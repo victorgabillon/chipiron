@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol, TypeVar
 
-from valanga import Color, TurnState
+from valanga import TurnState
 
-from .final_game_result import FinalGameResult
+from chipiron.core.roles import GameRole
+
+from .final_game_result import RoleGameResult, RoleOutcome
 
 type AnyTurnState = TurnState[Any]
 
@@ -42,7 +44,7 @@ class GameOutcome:
     """Represents the outcome of a game."""
 
     kind: OutcomeKind
-    winner: Color | None = None
+    winner: GameRole | None = None
     reason: str | None = None
     source: OutcomeSource = OutcomeSource.TERMINAL
 
@@ -52,7 +54,7 @@ class PositionAssessment:
     """Represents a non-terminal assessment of a position."""
 
     kind: VerdictKind
-    winner: Color | None = None
+    winner: GameRole | None = None
     reason: str | None = None
 
 
@@ -96,20 +98,30 @@ class UnhandledOutcomeKindError(GameOutcomeError):
         super().__init__(f"Unhandled outcome kind: {kind}")
 
 
-def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
-    """Map a generic game outcome to the legacy FinalGameResult enum.
-
-    Unknown/aborted outcomes map to draws to preserve legacy behavior when
-    a game stops before a clean adjudication is available.
-    """
+def outcome_to_role_game_result(
+    outcome: GameOutcome, roles: tuple[GameRole, ...]
+) -> RoleGameResult:
+    """Map a generic game outcome to a role-aware result structure."""
     if outcome.kind is OutcomeKind.WIN:
-        if outcome.winner is Color.WHITE:
-            return FinalGameResult.WIN_FOR_WHITE
-        if outcome.winner is Color.BLACK:
-            return FinalGameResult.WIN_FOR_BLACK
-        raise MissingWinnerError
+        if outcome.winner is None:
+            raise MissingWinnerError
+        result_by_role = {
+            role: RoleOutcome.WIN if role == outcome.winner else RoleOutcome.LOSS
+            for role in roles
+        }
+        return RoleGameResult(
+            result_by_role=result_by_role,
+            winner_roles=(outcome.winner,),
+            reason=outcome.reason,
+        )
     if outcome.kind is OutcomeKind.DRAW:
-        return FinalGameResult.DRAW
+        return RoleGameResult(
+            result_by_role={role: RoleOutcome.DRAW for role in roles},
+            reason=outcome.reason,
+        )
     if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
-        return FinalGameResult.DRAW
+        return RoleGameResult(
+            result_by_role={role: RoleOutcome.UNKNOWN for role in roles},
+            reason=outcome.reason,
+        )
     raise UnhandledOutcomeKindError(outcome.kind)

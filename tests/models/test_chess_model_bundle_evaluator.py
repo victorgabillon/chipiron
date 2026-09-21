@@ -2,7 +2,6 @@
 
 import pytest
 
-pytest.importorskip("PySide6")
 pytest.importorskip("coral")
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks import (

@@ -27,9 +27,10 @@ from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
-from chipiron.players.factory_pipeline import create_player_with_pipeline
+from chipiron.players.factory_pipeline import (
+    create_player_with_standard_adapter_pipeline,
+)
 from chipiron.players.game_player import GamePlayer
-from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
 
@@ -39,7 +40,7 @@ class BuildCheckersGamePlayerArgs:
     """Buildcheckersgameplayerargs implementation."""
 
     player_factory_args: PlayerFactoryArgs
-    player_color: Color
+    player_role: Color
     implementation_args: object
     universal_behavior: bool
 
@@ -92,7 +93,7 @@ def build_checkers_game_player(
             rules_adapter=rules_adapter,
         )
 
-    player = create_player_with_pipeline(
+    player = create_player_with_standard_adapter_pipeline(
         name=player_args.name,
         main_selector_args=player_args.main_move_selector,
         state_type=CheckersState,
@@ -100,24 +101,17 @@ def build_checkers_game_player(
         value_oracle=None,
         terminal_oracle=None,
         master_evaluator_from_args=master_evaluator_from_args,
-        adapter_builder=lambda selector, _policy_oracle: CheckersAdapter(
+        game_kind=GameKind.CHECKERS,
+        random_generator=random_generator,
+        runtime_dynamics=dynamics,
+        adapter_factory=lambda selector: CheckersAdapter(
             dynamics=dynamics,
             main_move_selector=selector,
         ),
-        create_non_tree_selector=lambda selector_args, dyn: (
-            move_selector_factory.create_main_move_selector(
-                selector_args,
-                game_kind=GameKind.CHECKERS,
-                dynamics=dyn,
-                random_generator=random_generator,
-            )
-        ),
-        random_generator=random_generator,
-        runtime_dynamics=dynamics,
         implementation_args=None,
     )
 
-    return GamePlayer(player, args.player_color)
+    return GamePlayer(player, args.player_role)
 
 
 CHECKERS_WIRING: ObserverWiring[str, CheckersState, BuildCheckersGamePlayerArgs] = (

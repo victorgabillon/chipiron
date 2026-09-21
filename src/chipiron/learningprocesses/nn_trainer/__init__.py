@@ -1,1 +1,1 @@
-"""Package for nn trainer."""
+"""Compatibility package for legacy supervised chess trainer imports."""
