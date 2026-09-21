@@ -41,7 +41,7 @@ dependencies = [
   "algorhino-coral==0.1.15",
   "algorhino-anemone==0.2.24",
   "torchinfo",
-  "platformdirs>=4.9.2",
+  "platformdirs>=4.11.10",
   "huggingface_hub>=1.6.0",
   "shakmaty_python_binding",
 ]
