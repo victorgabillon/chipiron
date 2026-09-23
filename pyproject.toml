@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chipiron"
-version = "0.2.3"
+version = "0.2.4"
 description = "chipiron plays games"
 keywords = ["games", "AI", "torch"]
 classifiers = [
@@ -39,7 +39,7 @@ dependencies = [
   "valanga==0.2.5",
   "atomheart==0.2.11",
   "algorhino-coral==0.1.15",
-  "algorhino-anemone==0.2.24",
+  "algorhino-anemone==0.2.25",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
