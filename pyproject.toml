@@ -39,7 +39,7 @@ dependencies = [
   "valanga==0.2.5",
   "atomheart==0.2.11",
   "algorhino-coral==0.1.15",
-  "algorhino-anemone==0.2.25",
+  "algorhino-anemone==0.2.26",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
