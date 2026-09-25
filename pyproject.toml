@@ -398,7 +398,7 @@ commands = [
     "python",
     "scripts/ci_test_metrics.py",
     "-n",
-    "2",
+    "3",
     "--dist=loadfile",
     "--durations=100",
     "--durations-min=0",
