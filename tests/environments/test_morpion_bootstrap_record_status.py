@@ -524,6 +524,40 @@ def test_top_frontier_candidates_have_deterministic_tie_ordering() -> None:
     ]
 
 
+def test_leaderboard_without_certified_candidates_preserves_empty_state(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An uncertified frontier must not invent a record or create a leaderboard."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="frontier",
+        nodes=(
+            _make_training_node(
+                node_id="frontier",
+                move_count=0,
+                is_exact=False,
+                is_terminal=False,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    leaderboard_path = tmp_path / "leaderboard.jsonl"
+    with caplog.at_level(logging.INFO):
+        persist_certified_leaderboard_candidates(
+            snapshot=snapshot,
+            run_work_dir=tmp_path,
+            generation=1,
+            cycle_index=0,
+            timestamp_utc="2026-09-25T09:20:00Z",
+            leaderboard_path=leaderboard_path,
+        )
+
+    assert not leaderboard_path.exists()
+    assert "[leaderboard] persist_start candidates=0 existing_entries=0" in caplog.text
+    assert "inserted=0 skipped_duplicate=0 skipped_not_top=0" in caplog.text
+    assert "final_entries=0 best_total_points=None" in caplog.text
+
+
 def test_leaderboard_deduplicates_identical_states_by_fingerprint(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
