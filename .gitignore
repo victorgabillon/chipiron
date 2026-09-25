@@ -146,3 +146,6 @@ tests/**/tests_outputs/**
 # Local virtual environments and subprocess coverage fragments
 .venv/
 .coverage.*
+
+# Per-run CI validation evidence
+.ci-reports/

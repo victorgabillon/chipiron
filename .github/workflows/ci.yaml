@@ -60,3 +60,22 @@ jobs:
           QT_QPA_PLATFORM: offscreen
           STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m tox -e static
+
+      - name: Record CI environment and disk usage
+        if: always()
+        run: |
+          mkdir -p .ci-reports
+          python -m pip cache info
+          du -sh ~/.cache/pip .tox || true
+          df -h .
+          .tox/py313/bin/python -m pip list --format=json > .ci-reports/dependencies.json
+
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-evidence
+          path: |
+            .ci-reports/
+            .tox/static/tmp/static-analysis/
+          include-hidden-files: true

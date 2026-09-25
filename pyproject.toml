@@ -395,7 +395,12 @@ commands = [
     "scripts/check_installed_distribution.py",
   ],
   [
-    "pytest",
+    "python",
+    "scripts/ci_test_metrics.py",
+    "--durations=100",
+    "--durations-min=0",
+    "--cov-report=json:.ci-reports/coverage.json",
+    "--junitxml=.ci-reports/pytest.xml",
     "--basetemp={envtmpdir}/pytest-tmp",
     "-m",
     "not integration and not external_data",
