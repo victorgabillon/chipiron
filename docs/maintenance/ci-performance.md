@@ -27,6 +27,10 @@ zero; no mutable model/player state is shared.
 Two direct regressions now test pawn/quiet-move progress with actual Python/Rust
 boards and unsupported-state fallbacks. Previously some helper paths were covered
 only incidentally by particular game trajectories. No game case is removed.
+Four additional cases explicitly verify checkpoint payload cache invalidation
+when a real file's path, size or mtime changes, or it disappears. This coverage
+previously depended on incidental cache state left by another test. The test
+uses `os.utime` for deterministic timestamp changes instead of sleeping.
 
 ## Installation and parallel execution
 
@@ -41,8 +45,8 @@ Application outputs and SQLite tracking databases are isolated by run UUID and
 worker; ordinary serial runs retain their existing environment behavior. The
 observer plugin is loaded in every process. It records actual selected/deselected
 collections, rejects worker disagreements, and preserves pytest's failure status.
-All 1,293 original selected node IDs remain, plus 14 reviewed regressions: two real
-board helpers and 12 analyzer-failure cases. Both expected skips and all four
+All 1,293 original selected node IDs remain, plus 18 reviewed regressions: two real
+board helpers, 12 analyzer-failure cases, and four checkpoint cache identity cases. Both expected skips and all four
 marker deselections remain. Before/after evidence checks exact covered production
 lines and branches separately for installed and explicitly imported source modules.
 
