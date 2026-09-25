@@ -15,22 +15,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Cache quality tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
+      - name: Install pinned quality tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install tox==4.56.1 build==1.5.0
+      - name: Verify toolchain and formatting
+        timeout-minutes: 15
+        run: python -m tox -e tooling,ruff
+
+  pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
       PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Cache CPU dependencies
         uses: actions/cache@v4
         with:
@@ -38,7 +61,6 @@ jobs:
           key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
           restore-keys: |
             pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
-
       - name: Install system deps (Qt + OpenGL bits)
         run: |
           sudo apt-get update
@@ -46,29 +68,13 @@ jobs:
             libegl1 libgl1 libglu1-mesa-dev libxrender-dev libxi-dev \
             libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0 \
             libxcb-cursor0 libxcb-xinerama0 libx11-xcb-dev
-
       - name: Install pinned quality tools
         run: |
           python -m pip install --upgrade pip
           python -m pip install tox==4.56.1 build==1.5.0
-
-      - name: Verify toolchain and formatting
-        timeout-minutes: 15
-        run: python -m tox -e tooling,ruff
-
       - name: Test installed package
         timeout-minutes: 15
-        env:
-          QT_QPA_PLATFORM: offscreen
         run: python -m tox -e py313
-
-      - name: Check static-analysis ratchet
-        timeout-minutes: 15
-        env:
-          QT_QPA_PLATFORM: offscreen
-          STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python -m tox -e static
-
       - name: Record CI environment and disk usage
         if: always()
         run: |
@@ -77,13 +83,71 @@ jobs:
           du -sh ~/.cache/pip .tox || true
           df -h .
           .tox/py313/bin/python -m pip list --format=json > .ci-reports/dependencies.json
-
-      - name: Retain validation evidence
+          ps -eo pid,ppid,args > .ci-reports/processes-after-tests.txt
+      - name: Retain test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ci-validation-evidence
-          path: |
-            .ci-reports/
-            .tox/static/tmp/static-analysis/
+          path: .ci-reports/
           include-hidden-files: true
+
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
+      PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+      QT_QPA_PLATFORM: offscreen
+      STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Cache CPU dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
+          restore-keys: |
+            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
+      - name: Install system deps (Qt + OpenGL bits)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --fix-missing \
+            libegl1 libgl1 libglu1-mesa-dev libxrender-dev libxi-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-xinerama0 libx11-xcb-dev
+      - name: Install pinned quality tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install tox==4.56.1 build==1.5.0
+      - name: Check static-analysis ratchet
+        timeout-minutes: 15
+        run: python -m tox -e static
+      - name: Retain static evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-static-evidence
+          path: .tox/static/tmp/static-analysis/
+          include-hidden-files: true
+
+  test:
+    if: ${{ always() }}
+    needs: [quality, pytest, static]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation gate
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          PYTEST_RESULT: ${{ needs.pytest.result }}
+          STATIC_RESULT: ${{ needs.static.result }}
+        run: |
+          test "$QUALITY_RESULT" = success
+          test "$PYTEST_RESULT" = success
+          test "$STATIC_RESULT" = success
