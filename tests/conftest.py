@@ -140,6 +140,19 @@ def _patch_valanga_compat() -> None:
 
 _patch_valanga_compat()
 
+# xdist workers must never share SQLite tracking stores or application outputs.
+# Each invocation and worker gets a separate root; ordinary serial runs retain
+# their existing environment/default behavior.
+worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+if worker_id:
+    run_id = os.environ["PYTEST_XDIST_TESTRUNUID"]
+    TEST_OUTPUT_DIR = TEST_OUTPUT_DIR / run_id / worker_id
+    os.environ["CHIPIRON_OUTPUT_DIR"] = str(TEST_OUTPUT_DIR)
+    os.environ["ML_FLOW_URI_PATH"] = f"sqlite:///{TEST_OUTPUT_DIR / 'mlruns.db'}"
+    os.environ["ML_FLOW_URI_PATH_TEST"] = (
+        f"sqlite:///{TEST_OUTPUT_DIR / 'mlruns_test.db'}"
+    )
+
 TEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("CHIPIRON_OUTPUT_DIR", str(TEST_OUTPUT_DIR))
 os.environ.setdefault(
