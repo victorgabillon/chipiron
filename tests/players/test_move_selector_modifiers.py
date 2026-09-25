@@ -4,17 +4,24 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
+import pytest
 from anemone.dynamics import SearchDynamics
+from atomheart.games.chess.board import create_board
 from valanga import BranchKey, Color, TurnState
 from valanga.dynamics import Transition
 from valanga.evaluations import Certainty, Value
 from valanga.policy import Recommendation
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector.modifiers import (
     AccelerateWhenWinning,
     ComposedBranchSelector,
+    chess_is_zeroing,
+    chess_progress_gain_zeroing,
+    is_zeroing_state,
 )
 
 if TYPE_CHECKING:
@@ -223,6 +230,23 @@ def test_accelerate_when_winning_no_override_when_best_gain_is_zero() -> None:
     out = selector.recommend(state=state, seed=0)
 
     assert out.recommended_name == "a"
+
+
+@pytest.mark.parametrize("use_rust_boards", [False, True])
+def test_chess_progress_gain_uses_real_board_zeroing(use_rust_boards: bool) -> None:
+    """Pawn/quiet moves and unsupported states exercise the actual progress helper."""
+    board = create_board(use_rust_boards=use_rust_boards)
+    state = ChessState(board=board)
+    pawn = board.get_move_key_from_uci(move_uci="e2e4")
+    knight = board.get_move_key_from_uci(move_uci="g1f3")
+    assert is_zeroing_state(state)
+    assert chess_is_zeroing(state, pawn)
+    assert not chess_is_zeroing(state, knight)
+    assert chess_progress_gain_zeroing(state, pawn) == 1.0
+    assert chess_progress_gain_zeroing(state, knight) == 0.0
+    assert not is_zeroing_state(FakeTurnState())
+    assert chess_progress_gain_zeroing(FakeTurnState(), pawn) == 0.0
+    assert not is_zeroing_state(SimpleNamespace(board=object()))
 
 
 if __name__ == "__main__":
