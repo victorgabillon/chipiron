@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
@@ -48,7 +48,7 @@ jobs:
       PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
@@ -101,7 +101,7 @@ jobs:
       QT_QPA_PLATFORM: offscreen
       STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
