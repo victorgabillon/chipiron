@@ -352,7 +352,7 @@ commands = [["python", "scripts/check_toolchain_versions.py"]]
 # Tests (realistic)
 # ----------------
 [tool.tox.env.py313]
-deps = ["build==1.5.0"]
+deps = ["build==1.5.0", "pytest-xdist==3.8.0"]
 description = "Build + install package, run tests"
 extras = ["test"]
 set_env = { CHIPIRON_TEST_INSTALLED = "1", PYTHONPATH = "", QT_QPA_PLATFORM = "offscreen" }
@@ -395,7 +395,15 @@ commands = [
     "scripts/check_installed_distribution.py",
   ],
   [
-    "pytest",
+    "python",
+    "scripts/ci_test_metrics.py",
+    "-n",
+    "2",
+    "--dist=loadfile",
+    "--durations=100",
+    "--durations-min=0",
+    "--cov-report=json:.ci-reports/coverage.json",
+    "--junitxml=.ci-reports/pytest.xml",
     "--basetemp={envtmpdir}/pytest-tmp",
     "-m",
     "not integration and not external_data",

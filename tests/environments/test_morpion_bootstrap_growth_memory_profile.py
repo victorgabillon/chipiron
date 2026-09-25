@@ -11,6 +11,7 @@ import sys
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
+import pytest
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
@@ -106,7 +107,6 @@ recursive_runner_profile_module = importlib.import_module(
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    import pytest
     from _pytest.logging import LogCaptureFixture
 
 
@@ -611,6 +611,7 @@ class FakeRunnerWithCheckpointPayloadStore:
         self.nodes = []
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_logs_node_sample(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -643,6 +644,7 @@ def test_growth_runtime_memory_profile_logs_node_sample(
     assert "state_payload_fraction=" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_prefers_profile_iterator(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -664,6 +666,7 @@ def test_growth_runtime_memory_profile_prefers_profile_iterator(
     assert "sample_size=2" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_uses_private_runtime_fallback(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -685,6 +688,7 @@ def test_growth_runtime_memory_profile_uses_private_runtime_fallback(
     assert "sample_size=3" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_logs_node_attr_sample(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -711,6 +715,7 @@ def test_growth_runtime_memory_profile_logs_node_attr_sample(
     assert "top_child_attrs=" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_tolerates_broken_attr_getters(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -732,6 +737,7 @@ def test_growth_runtime_memory_profile_tolerates_broken_attr_getters(
     assert "node_attr_sample source=nodes attr=tree_evaluation" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_logs_node_attr_slot_sample(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -757,6 +763,7 @@ def test_growth_runtime_memory_profile_logs_node_attr_slot_sample(
     assert "node_attr_slot_sample source=nodes attr=tree_node slot=b" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_tolerates_broken_slot_getters(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -778,6 +785,7 @@ def test_growth_runtime_memory_profile_tolerates_broken_slot_getters(
     assert "node_attr_slot_sample source=nodes attr=tree_evaluation slot=b" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_runtime_memory_profile_handles_missing_nodes(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2099,6 +2107,7 @@ def test_gc_shallow_size_summary_attributes_fake_morpion_state_fields(
     }
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2131,6 +2140,7 @@ def test_growth_recursive_memory_profile_finds_checkpoint_payload_store(
     assert "mb=" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_logs_total_when_checkpoint_histogram_capped(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2155,6 +2165,7 @@ def test_growth_recursive_memory_profile_logs_total_when_checkpoint_histogram_ca
     assert "max_objects=1" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_logs_components(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2205,6 +2216,7 @@ def test_growth_recursive_memory_profile_logs_components(
     assert "largest_components=" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_logs_context_build_progress(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2348,6 +2360,7 @@ def test_build_recursive_profile_context_known_paths_do_not_walk_runtime(
     assert "context_build_checkpoint_stores_done count=1" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
     monkeypatch: pytest.MonkeyPatch,
     caplog: LogCaptureFixture,
@@ -2386,6 +2399,7 @@ def test_growth_recursive_memory_profile_logs_recursion_errors_and_continues(
     assert "[growth-recursive-profile-summary] event=after_checkpoint_load" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_complete_map_defaults_to_no_depth_cap(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2407,6 +2421,7 @@ def test_growth_recursive_memory_profile_complete_map_defaults_to_no_depth_cap(
     assert "recursion_error_count=0" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_honors_explicit_max_depth(
     caplog: LogCaptureFixture,
 ) -> None:
@@ -2429,6 +2444,7 @@ def test_growth_recursive_memory_profile_honors_explicit_max_depth(
     assert "max_depth=256 complete_map=True" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_growth_recursive_memory_profile_honors_explicit_none_max_depth(
     caplog: LogCaptureFixture,
 ) -> None:

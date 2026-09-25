@@ -196,3 +196,38 @@ def test_ci_requires_committed_baseline_history(
         ratchet.check_baseline_growth(
             tmp_path, tmp_path / "baseline.json", {"schema": 1, "diagnostics": []}
         )
+
+
+@pytest.mark.parametrize("failed_tool", ["mypy", "pyright", "pylint"])
+@pytest.mark.parametrize("failure", ["crash", "empty", "malformed", "timeout"])
+def test_parallel_analyzers_fail_closed_when_one_tool_fails(
+    ratchet: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failed_tool: str,
+    failure: str,
+) -> None:
+    """Successful siblings cannot conceal any one analyzer's unusable result."""
+    called: list[str] = []
+
+    def run_tool(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        tool = command[2]
+        called.append(tool)
+        assert kwargs["timeout"] == 600
+        if tool == failed_tool:
+            if failure == "timeout":
+                raise subprocess.TimeoutExpired(command, 600)
+            code = 127 if failure == "crash" else 1
+            output = "not json" if failure == "malformed" else ""
+            return subprocess.CompletedProcess(command, code, output, "failure")
+        output = {"mypy": "", "pyright": '{"generalDiagnostics": []}', "pylint": "[]"}[
+            tool
+        ]
+        return subprocess.CompletedProcess(command, 0, output, "")
+
+    monkeypatch.setattr(ratchet.subprocess, "run", run_tool)
+    with pytest.raises((ratchet.RatchetError, ValueError, subprocess.TimeoutExpired)):
+        ratchet.analyze(tmp_path, "src", tmp_path / "reports", mypy_strict=True)
+    assert sorted(called) == ["mypy", "pylint", "pyright"]

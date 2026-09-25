@@ -857,6 +857,7 @@ def test_pipeline_growth_stage_diagnostic_stop_after_growth_skips_artifacts(
     assert "reason=diagnostic_stop_after_growth" in caplog.text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_pipeline_growth_stage_diagnostic_stop_keeps_after_growth_profiles(
     tmp_path: Path,
     caplog: LogCaptureFixture,
@@ -888,6 +889,7 @@ def test_pipeline_growth_stage_diagnostic_stop_keeps_after_growth_profiles(
     assert "reason=diagnostic_stop_after_growth" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     tmp_path: Path,
     caplog: LogCaptureFixture,
@@ -934,6 +936,7 @@ def test_pipeline_growth_stage_logs_memory_profile_when_enabled(
     assert "histogram=tree_topology" in text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_pipeline_growth_stage_recursive_memory_profile_event_filter(
     tmp_path: Path,
     caplog: LogCaptureFixture,
@@ -1053,6 +1056,7 @@ def test_pipeline_growth_stage_loads_candidate_when_forecast_has_headroom(
     assert "[checkpoint] candidate_validate_start" in caplog.text
 
 
+@pytest.mark.usefixtures("bounded_profile_heap")
 def test_pipeline_growth_stage_profiles_candidate_checkpoint_load(
     tmp_path: Path,
     caplog: LogCaptureFixture,

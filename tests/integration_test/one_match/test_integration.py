@@ -4,8 +4,11 @@ import argparse
 import copy
 import logging
 import time
+from collections.abc import Iterator
+from functools import cache
 from typing import TYPE_CHECKING, Any
 
+import pytest
 from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
@@ -23,6 +26,7 @@ from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_factories import create_match_manager_from_args
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.domain.match.match_tag import MatchConfigTag
+from chipiron.models import model_bundle
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.stockfish_selector import StockfishSelector
@@ -36,6 +40,23 @@ from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 if TYPE_CHECKING:
     from chipiron.games.domain.match.match_results import MatchReport
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _reuse_downloaded_bundle_paths() -> Iterator[None]:
+    """Download each immutable HF file once; keep loading fresh model instances.
+
+    This match matrix tests game/selector implementations, not repeated HTTP
+    freshness checks. Dedicated model-bundle tests retain the resolver/error
+    coverage. Only successful path lookups are cached; files and weights are
+    never replaced and model state remains isolated between games.
+    """
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            model_bundle, "_download_hf_file", cache(model_bundle._download_hf_file)
+        )
+        yield
+
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
