@@ -1,0 +1,2 @@
+# CI only: retain the current Torch API version without CUDA dependencies.
+torch==2.14.0+cpu

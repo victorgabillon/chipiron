@@ -18,6 +18,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
+      PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +30,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: "pip"
+
+      - name: Cache CPU dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
+          restore-keys: |
+            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
 
       - name: Install system deps (Qt + OpenGL bits)
         run: |
