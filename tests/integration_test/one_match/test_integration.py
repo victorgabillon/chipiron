@@ -14,6 +14,7 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
+from anemone.utils.logger import anemone_logger
 from parsley import (
     make_partial_dataclass_with_optional_paths,
     resolve_extended_object,
@@ -40,6 +41,18 @@ from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 if TYPE_CHECKING:
     from chipiron.games.domain.match.match_results import MatchReport
+
+
+@pytest.fixture(autouse=True)
+def _plain_match_logs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep game/search messages without repeatedly rendering Rich presentation.
+
+    This matrix checks game behavior, not terminal styling. Leave log levels
+    and records intact; pytest restores the original handlers after each case.
+    The separate CLI smoke test still exercises the default logging setup.
+    """
+    monkeypatch.setattr(chipiron_logger, "handlers", [logging.StreamHandler()])
+    monkeypatch.setattr(anemone_logger, "handlers", [logging.StreamHandler()])
 
 
 @pytest.fixture(scope="module", autouse=True)
