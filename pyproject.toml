@@ -57,23 +57,23 @@ authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 [project.optional-dependencies]
 test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
-lint = ["ruff==0.15.20", "pylint==4.0.6"]
+lint = ["ruff==0.16.8", "pylint==4.0.8"]
 
 typecheck = [
-  "mypy==2.1.0",
-  "pyright[nodejs]==1.1.411",
+  "mypy==2.3.1",
+  "pyright[nodejs]==1.1.414",
   "types-PyYAML>=6.0.12.20260518",
 ]
 
 dev = [
-  "tox==4.56.1",
+  "tox==4.63.0",
   "black==26.5.1",
-  "build==1.5.0",
+  "build==1.6.1",
   "twine",
   "sphinx",
   "sphinx-rtd-theme",
   "sphinx-autodoc-typehints",
-  "pre-commit==4.6.0",
+  "pre-commit==4.6.2",
 ]
 
 [project.urls]
@@ -352,7 +352,7 @@ commands = [["python", "scripts/check_toolchain_versions.py"]]
 # Tests (realistic)
 # ----------------
 [tool.tox.env.py313]
-deps = ["build==1.5.0", "pytest-xdist==3.8.0"]
+deps = ["build==1.6.1", "pytest-xdist==3.8.0"]
 description = "Build + install package, run tests"
 extras = ["test"]
 set_env = { CHIPIRON_TEST_INSTALLED = "1", PYTHONPATH = "", QT_QPA_PLATFORM = "offscreen" }
@@ -474,7 +474,7 @@ commands = [
 # The strict lint/typecheck developer commands above remain available.
 [tool.tox.env.ruff]
 package = "skip"
-deps = ["ruff==0.15.20"]
+deps = ["ruff==0.16.8"]
 commands = [
   ["python", "-m", "ruff", "format", "--check", "."],
   ["python", "-m", "ruff", "check", "."],
