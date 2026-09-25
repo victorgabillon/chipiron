@@ -100,9 +100,11 @@ PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
 )
 
 
-# Create a common overwrite for test players with tree branch limit of 100
+# Keep the dedicated determinism/equivalence tests at their original limits.
 TEST_TREE_BRANCH_LIMIT = 100
 TEST_MAX_HALF_MOVES = 10
+MATCH_MATRIX_TREE_BRANCH_LIMIT = 50
+MATCH_MATRIX_MAX_HALF_MOVES = 6
 test_player_overwrite = PartialOpPlayerArgs(
     main_move_selector=PartialOpTreeAndValueAppArgs(
         type=MoveSelectorTypes.TREE_AND_VALUE,
@@ -132,6 +134,12 @@ def _resolve_match_args_with_max_half_moves(
 
 def _build_base_configs() -> list[Any]:
     """Build the base configurations, including Stockfish test only if available."""
+    # Shorten the broad smoke matrix without changing the dedicated comparisons.
+    matrix_player_overwrite = copy.deepcopy(test_player_overwrite)
+    matrix_stopping_criterion = (
+        matrix_player_overwrite.main_move_selector.anemone_args.stopping_criterion
+    )
+    matrix_stopping_criterion.tree_branch_limit = MATCH_MATRIX_TREE_BRANCH_LIMIT
     configs = [
         # random Player first to have a fast game
         PartialOpMatchScriptArgs(
@@ -140,7 +148,7 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -152,8 +160,8 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
-                player_two_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
+                player_two_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -165,8 +173,8 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.RECUR_ZIPF_BASE_4,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
-                player_two_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
+                player_two_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -178,8 +186,8 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.UNIFORM,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
-                player_two_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
+                player_two_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -191,8 +199,8 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
-                player_two_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
+                player_two_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -205,7 +213,7 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=True, testing=True, seed=11
@@ -218,7 +226,7 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
                 match_setting=MatchConfigTag.CUBO,
-                player_one_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=12
@@ -252,7 +260,7 @@ def _build_base_configs() -> list[Any]:
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
                 match_setting=MatchConfigTag.TRON,
-                player_one_overwrite=test_player_overwrite,
+                player_one_overwrite=matrix_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
                 profiling=False, testing=True, seed=11
@@ -319,7 +327,7 @@ def test_one_matches(
                 total_config.match_args.match_setting_overwrite = (
                     PartialOpMatchSettingsArgs(
                         game_args_overwrite=PartialOpGameArgs(
-                            max_half_moves=TEST_MAX_HALF_MOVES
+                            max_half_moves=MATCH_MATRIX_MAX_HALF_MOVES
                         )
                     )
                 )
