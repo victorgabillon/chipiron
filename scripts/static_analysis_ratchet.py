@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tomllib
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -173,7 +174,7 @@ def check_baseline_growth(root: Path, path: Path, manifest: dict[str, Any]) -> N
 
 
 def analyze(
-    root: Path, source: str, output: Path, *, mypy_strict: bool
+    root: Path, source: str, output: Path, *, mypy_strict: bool, workers: int = 3
 ) -> list[dict[str, Any]]:
     """Run all strict analyzers; tool crashes and invalid reports fail closed."""
     commands = {
@@ -189,30 +190,38 @@ def analyze(
     }
     output.mkdir(parents=True, exist_ok=True)
     diagnostics: list[dict[str, Any]] = []
-    for tool, args in commands.items():
-        result = subprocess.run(
-            [sys.executable, "-m", tool, *args],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=600,
-        )
-        (output / f"{tool}.json").write_text(result.stdout, encoding="utf-8")
-        (output / f"{tool}.stderr.txt").write_text(result.stderr, encoding="utf-8")
-        accepted = {0, 1} if tool != "pylint" else set(range(32))
-        if result.returncode not in accepted:
-            message = f"{tool} failed with exit {result.returncode}: {result.stderr}"
-            raise RatchetError(message)
-        records = parse_diagnostics(tool, result.stdout, root)
-        if result.returncode and not records:
-            message = f"{tool} failed without a usable diagnostic report."
-            raise RatchetError(message)
-        diagnostics.extend(records)
-        for row in records:
-            print(
-                f"{tool}: {row['file']}:{row['line']}: {row['rule']}: {row['message']}"
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = {
+            tool: executor.submit(
+                subprocess.run,
+                [sys.executable, "-m", tool, *args],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=600,
             )
+            for tool, args in commands.items()
+        }
+        for tool in commands:
+            result = results[tool].result()
+            (output / f"{tool}.json").write_text(result.stdout, encoding="utf-8")
+            (output / f"{tool}.stderr.txt").write_text(result.stderr, encoding="utf-8")
+            accepted = {0, 1} if tool != "pylint" else set(range(32))
+            if result.returncode not in accepted:
+                message = (
+                    f"{tool} failed with exit {result.returncode}: {result.stderr}"
+                )
+                raise RatchetError(message)
+            records = parse_diagnostics(tool, result.stdout, root)
+            if result.returncode and not records:
+                message = f"{tool} failed without a usable diagnostic report."
+                raise RatchetError(message)
+            diagnostics.extend(records)
+            for row in records:
+                print(
+                    f"{tool}: {row['file']}:{row['line']}: {row['rule']}: {row['message']}"
+                )
     return sorted(diagnostics, key=lambda row: tuple(str(row[key]) for key in FIELDS))
 
 
@@ -230,7 +239,11 @@ def run(args: argparse.Namespace) -> int:
         json.dumps(policy, sort_keys=True).encode()
     ).hexdigest()
     current = analyze(
-        root, args.source, args.output.resolve(), mypy_strict=args.mypy_strict
+        root,
+        args.source,
+        args.output.resolve(),
+        mypy_strict=args.mypy_strict,
+        workers=args.workers,
     )
     if args.record_baseline:
         if os.environ.get("CI") or baseline.exists():
@@ -296,6 +309,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--record-baseline", action="store_true")
     parser.add_argument("--mypy-strict", action="store_true")
+    parser.add_argument("--workers", type=int, choices=(1, 2, 3), default=3)
     args = parser.parse_args()
     try:
         return run(args)
