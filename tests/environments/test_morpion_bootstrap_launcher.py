@@ -789,7 +789,7 @@ def test_dashboard_hint_includes_exact_command(tmp_path: Path) -> None:
     )
 
     assert "Dashboard requested" in hint
-    assert "python -m chipiron.environments.morpion.bootstrap.dashboard.app" in hint
+    assert "chipiron-bootstrap dashboard" in hint
     assert str(tmp_path.resolve()) in hint
 
 

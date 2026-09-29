@@ -54,7 +54,11 @@ readme = { file = "README.md", content-type = "text/markdown" }
 
 authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 
+[project.scripts]
+chipiron-bootstrap = "chipiron.environments.morpion.bootstrap.operator_cli:main"
+
 [project.optional-dependencies]
+dashboard = ["streamlit==1.64.0"]
 test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
 lint = ["ruff==0.15.20", "pylint==4.0.6"]
@@ -88,6 +92,7 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.package-data]
 chipiron = [
+  "environments/morpion/bootstrap/streamlit_morpion_clickable_board_frontend/*.html",
   "data/players/**/*.yaml",
   "data/players/**/*.pt",
   "data/settings/*.yaml",
@@ -354,7 +359,7 @@ commands = [["python", "scripts/check_toolchain_versions.py"]]
 [tool.tox.env.py313]
 deps = ["build==1.5.0", "pytest-xdist==3.8.0"]
 description = "Build + install package, run tests"
-extras = ["test"]
+extras = ["test", "dashboard"]
 set_env = { CHIPIRON_TEST_INSTALLED = "1", PYTHONPATH = "", QT_QPA_PLATFORM = "offscreen" }
 changedir = "{toxinidir}"
 commands_pre = [

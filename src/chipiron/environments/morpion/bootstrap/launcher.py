@@ -894,10 +894,7 @@ def _latest_training_artifact_path(
 
 def _render_dashboard_hint(work_dir: Path, *, requested_open: bool) -> str:
     """Render the exact dashboard command for the current work directory."""
-    command = (
-        "python -m chipiron.environments.morpion.bootstrap.dashboard.app "
-        f"--work-dir {shlex.quote(str(work_dir))}"
-    )
+    command = f"chipiron-bootstrap dashboard --work-dir {shlex.quote(str(work_dir))}"
     heading = (
         "Dashboard requested: start it in a separate terminal for this work dir."
         if requested_open

@@ -25,10 +25,13 @@ from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
 from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     RUNTIME_CHECKPOINT_METADATA_KEY,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.checkpoint_reader import (
+    checkpoint_exists,
+    read_inspection_checkpoint,
+)
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
     InvalidMorpionSearchCheckpointError,
-    load_morpion_search_checkpoint_payload,
 )
 from chipiron.environments.morpion.morpion_display import build_morpion_display_payload
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
@@ -67,6 +70,7 @@ class MorpionBootstrapNodeSummary:
     backed_up_value_scalar: float | None
     best_child_id: str | None
     best_branch_label: str | None
+    direct_evaluation_version: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,9 +247,8 @@ def resolve_latest_runtime_checkpoint(
         dedicated_checkpoint_path = paths.resolve_work_dir_path(
             run_state.latest_runtime_checkpoint_path
         )
-        if (
-            dedicated_checkpoint_path is not None
-            and dedicated_checkpoint_path.is_file()
+        if dedicated_checkpoint_path is not None and checkpoint_exists(
+            dedicated_checkpoint_path
         ):
             return _ResolvedCheckpointReference(
                 checkpoint_path=dedicated_checkpoint_path,
@@ -254,7 +257,7 @@ def resolve_latest_runtime_checkpoint(
         metadata_path = run_state.metadata.get(RUNTIME_CHECKPOINT_METADATA_KEY)
         if isinstance(metadata_path, str):
             resolved_path = paths.resolve_work_dir_path(metadata_path)
-            if resolved_path is not None and resolved_path.is_file():
+            if resolved_path is not None and checkpoint_exists(resolved_path):
                 return _ResolvedCheckpointReference(
                     checkpoint_path=resolved_path,
                     checkpoint_source="run_state_metadata",
@@ -265,7 +268,9 @@ def resolve_latest_runtime_checkpoint(
             )
 
     checkpoint_candidates = sorted(
-        paths.runtime_checkpoint_dir.glob("generation_*.json*")
+        path
+        for path in paths.runtime_checkpoint_dir.glob("generation_*")
+        if checkpoint_exists(path)
     )
     if checkpoint_candidates:
         fallback_message = metadata_warning
@@ -301,7 +306,15 @@ def resolve_latest_runtime_checkpoint(
 def _checkpoint_mtime_ns(checkpoint_path: Path) -> int:
     """Return one stable checkpoint freshness token for cache invalidation."""
     try:
-        return checkpoint_path.stat().st_mtime_ns
+        return (
+            (
+                checkpoint_path / "manifest.json"
+                if checkpoint_path.is_dir()
+                else checkpoint_path
+            )
+            .stat()
+            .st_mtime_ns
+        )
     except OSError:
         return 0
 
@@ -310,7 +323,7 @@ def _load_indexed_checkpoint_tree(
     checkpoint_path: Path,
 ) -> _IndexedCheckpointTree:
     """Load and index one runtime checkpoint for bounded local inspection."""
-    payload = load_morpion_search_checkpoint_payload(checkpoint_path)
+    payload = read_inspection_checkpoint(checkpoint_path)
     return _index_checkpoint_payload(payload)
 
 
@@ -325,8 +338,10 @@ def _load_indexed_checkpoint_tree_cached(
     if cached_tree is not None:
         return cached_tree
 
-    indexed_tree = _load_indexed_checkpoint_tree(checkpoint_path)
+    # Release the previous checkpoint and its rendered states before replacement.
     _INDEXED_CHECKPOINT_TREE_CACHE.clear()
+    _build_selected_node_snapshot_parts.cache_clear()
+    indexed_tree = _load_indexed_checkpoint_tree(checkpoint_path)
     _INDEXED_CHECKPOINT_TREE_CACHE[cache_key] = indexed_tree
     return indexed_tree
 
@@ -491,6 +506,11 @@ def _build_node_summary(
         backed_up_value_scalar=backed_up_value,
         best_child_id=best_child_id,
         best_branch_label=best_branch_label,
+        direct_evaluation_version=(
+            None
+            if node_payload.evaluation is None
+            else node_payload.evaluation.direct_evaluation_version
+        ),
     )
 
 

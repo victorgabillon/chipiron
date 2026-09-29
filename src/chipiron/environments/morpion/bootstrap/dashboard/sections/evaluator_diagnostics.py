@@ -32,6 +32,7 @@ def render_evaluator_training_diagnostics_section(
     *,
     st: Any,
     work_dir: Path,
+    selected_evaluator_name: str | None = None,
 ) -> None:
     """Render the latest persisted evaluator diagnostics for one work directory."""
     diagnostics_by_evaluator = load_latest_evaluator_training_diagnostics_for_dashboard(
@@ -42,11 +43,15 @@ def render_evaluator_training_diagnostics_section(
         return
 
     evaluator_names = tuple(sorted(diagnostics_by_evaluator))
-    selected_evaluator_name = st.selectbox(
-        "Diagnostics evaluator",
-        options=evaluator_names,
-        key="evaluator_training_diagnostics_name",
-    )
+    if selected_evaluator_name is None:
+        selected_evaluator_name = st.selectbox(
+            "Diagnostics evaluator",
+            options=evaluator_names,
+            key="evaluator_training_diagnostics_name",
+        )
+    if selected_evaluator_name not in diagnostics_by_evaluator:
+        st.caption("No saved diagnostics for this evaluator yet.")
+        return
     diagnostics = diagnostics_by_evaluator[selected_evaluator_name]
     summary_columns = st.columns(5)
     summary_columns[0].metric("Generation", diagnostics.generation)
@@ -61,20 +66,20 @@ def render_evaluator_training_diagnostics_section(
         f"Created at {diagnostics.created_at} UTC. "
         "Representative rows are deterministic scale windows; worst rows are sorted by post-training absolute error."
     )
-    st.markdown("Representative Examples")
-    st.dataframe(
-        diagnostic_examples_rows(diagnostics.representative_examples),
-        width="stretch",
-        hide_index=True,
-    )
-    st.markdown("Worst Error Examples")
-    worst_rows = diagnostic_examples_rows(diagnostics.worst_examples)
-    if worst_rows:
-        st.dataframe(worst_rows, width="stretch", hide_index=True)
-    else:
-        st.caption(
-            "No post-training predictions were available for worst-error ranking."
+    with st.expander("Representative examples"):
+        st.dataframe(
+            diagnostic_examples_rows(diagnostics.representative_examples),
+            width="stretch",
+            hide_index=True,
         )
+    with st.expander("Worst errors"):
+        worst_rows = diagnostic_examples_rows(diagnostics.worst_examples)
+        if worst_rows:
+            st.dataframe(worst_rows, width="stretch", hide_index=True)
+        else:
+            st.caption(
+                "No post-training predictions were available for worst-error ranking."
+            )
 
 
 def load_latest_evaluator_training_diagnostics_for_dashboard(
