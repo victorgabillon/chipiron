@@ -214,7 +214,7 @@ def _render_tree_inspector_navigation(
     if local_tree_view is None or node_summary is None:
         return
 
-    nav_columns = st.columns((1, 1, 2, 3))
+    nav_columns = st.columns((1.3, 1.6, 3, 1.3))
     if nav_columns[0].button("Go to root", key=f"{state_key}::root"):
         st.session_state[state_key] = local_tree_view.root_node_id
         _tree_inspector_rerun(st)
@@ -248,13 +248,15 @@ def _render_tree_inspector_navigation(
             st.session_state[state_key] = selected_child_node_id
             _tree_inspector_rerun(st)
 
-    selected_node_input = st.text_input(
+    jump_input, jump_button = st.columns((4, 1.4))
+    selected_node_input = jump_input.text_input(
         "Node id",
         value=snapshot.selected_node_id,
         key=f"{state_key}::node_input",
         help="Jump directly to a checkpoint node id.",
+        label_visibility="collapsed",
     )
-    if st.button("Go to node id", key=f"{state_key}::node_jump"):
+    if jump_button.button("Go to node id", key=f"{state_key}::node_jump"):
         st.session_state[state_key] = selected_node_input.strip()
         _tree_inspector_rerun(st)
 

@@ -20,12 +20,12 @@ CSS = """
 <style>
 :root { --operator-ink:#263631; --operator-muted:#697873; --operator-border:#e1e6df; }
 [data-testid="stAppViewContainer"] { background:#f7f8f5; font-family:Arial, sans-serif; }
-[data-testid="stMainBlockContainer"] { padding-top:4.5rem; padding-bottom:2rem; max-width:1600px; }
+[data-testid="stMainBlockContainer"] { padding:4.5rem 2rem 2rem; max-width:1600px; }
 [data-testid="stSidebar"] { background:#eef1ed; border-right:1px solid var(--operator-border); }
 [data-testid="stMetric"] { background:white; border:1px solid var(--operator-border); border-radius:10px; padding:14px 16px; min-height:108px; }
 [data-testid="stMetricValue"] { font-size:1.45rem; line-height:1.4; }
 [data-testid="stMetricValue"] * { white-space:normal !important; overflow-wrap:anywhere; text-overflow:clip !important; }
-[data-testid="stMetricLabel"] * { white-space:normal !important; text-overflow:clip !important; }
+[data-testid="stMetricLabel"] * { font-size:12px !important; white-space:normal !important; overflow-wrap:normal !important; word-break:normal !important; text-overflow:clip !important; }
 [data-testid="stMetricLabel"] { color:var(--operator-muted); font-size:.8rem; }
 [data-testid="stExpander"] { background:#fff; border-radius:10px; }
 h1,h2,h3 { letter-spacing:-.025em; color:var(--operator-ink); }
