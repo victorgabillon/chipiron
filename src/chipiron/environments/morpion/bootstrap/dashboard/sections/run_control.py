@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
@@ -31,7 +32,21 @@ __all__ = [
 
 def render_run_control_section(*, st: Any, paths: MorpionBootstrapPaths) -> None:
     """Render Start / Stop / Restart controls for the launcher subprocess."""
-    st.subheader("Run Control")
+    from chipiron.environments.morpion.bootstrap.dashboard.view_model import (
+        read_artifact,
+    )
+
+    errors: list[str] = []
+    config = read_artifact(paths.bootstrap_config_path, errors)
+    for error in errors:
+        st.error(error)
+    if config.get("pipeline_mode") != "single_process":
+        st.info(
+            "Lifecycle is controlled by the canonical workspace launcher / CLI. This dashboard does not start or restart artifact-pipeline workers."
+        )
+        st.code("chipiron-bootstrap run --work-dir " + shlex.quote(str(paths.work_dir)))
+        return
+    st.subheader("Run control · single process")
     state = load_morpion_bootstrap_process_state(paths)
     render_run_control_state(st=st, paths=paths, state=state)
 

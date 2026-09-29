@@ -1,25 +1,78 @@
-# Morpion Bootstrap Run & Dashboard
+# Morpion Bootstrap Operator
 
-This project runs a bootstrap training loop for **Morpion Solitaire 5T**, combining:
+Monitor an existing Morpion Solitaire workspace, inspect its records and models,
+and deliberately launch its prepared experiment.
 
-* search (Anemone)
-* training cycles
-* checkpointing and dataset generation
-* a Streamlit dashboard for monitoring
-
----
-
-## 🚀 1. Setup
+Install dashboard support from this checkout:
 
 ```bash
-cd ~/oldata/victor/chipiron
-conda activate anemone
-export PYTHONPATH=src
+pip install -e '.[dashboard]'
 ```
 
----
+Choose a run once, then open its dashboard from any directory:
 
-## ▶️ 2. Launch a Morpion bootstrap run
+```bash
+chipiron-bootstrap use /path/to/run
+chipiron-bootstrap
+```
+
+Inspect it without opening a browser:
+
+```bash
+chipiron-bootstrap current
+chipiron-bootstrap status
+```
+
+Preview the prepared command, then launch it when ready:
+
+```bash
+chipiron-bootstrap run --dry-run
+chipiron-bootstrap run
+```
+
+`run` asks for confirmation and delegates to the workspace's own
+`run_bootstrap.sh`, including its preflight. It stays in the foreground and
+preserves signals and exit status. It never reconstructs scientific settings
+from package defaults. A missing launcher is an error. `--yes` is available for
+deliberate noninteractive launches.
+
+All commands share the same workspace resolution: explicit `--work-dir`, then
+`MORPION_WORK_DIR`, then the saved current run, then the current directory if it
+contains `bootstrap_config.json`. `use` atomically saves a versioned selection
+in the platformdirs user configuration directory; it does not change the run.
+
+The dashboard has five views:
+
+- **Overview**: status, generation, tree, dataset, certified record, frontier and
+  learning trends. It refreshes every 15 seconds by default.
+- **Record**: the certified board, its source and a separate frontier summary.
+- **Tree**: lazy checkpoint inspection, clickable actions, node navigation,
+  stored evaluations and a bounded local graph. Manual refresh is the default.
+- **Evaluator**: active bundle provenance, training metrics and example diagnostics.
+- **Operations**: pipeline evidence, storage, persistence, controls and raw details.
+
+Auto refresh supports Off, 5s, 15s and 30s. Missing liveness evidence is shown as
+`unknown`; a saved artifact alone never proves that a worker is running.
+Monitoring charts use a bounded recent history (2,000 events / 4 MiB and 256
+pipeline generations). Operations exposes full historical analysis on request.
+Runtime controls preview the requested changes before saving and retain their
+existing cycle-boundary semantics. Artifact-pipeline lifecycle is controlled by
+the canonical workspace launcher, with no generic Start/Restart buttons.
+
+For a remote terminal or a different port:
+
+```bash
+chipiron-bootstrap dashboard --no-browser --port 8501
+```
+
+The server binds to loopback. Core Chipiron does not require Streamlit; dashboard
+support uses the pinned, Python 3.13-validated `dashboard` extra. A packaged
+installation may use `pip install 'chipiron[dashboard]'` once this change is released.
+
+## Advanced / internal launcher
+
+The existing low-level launcher below remains available to prepare or configure
+new experiments. These options are not needed to operate an already prepared run.
 
 ```bash
 python -m chipiron.environments.morpion.bootstrap.launcher \
@@ -396,56 +449,11 @@ mkdir -p ~/oldata/victor/morpion_runs/big_run_01
 
 ---
 
-## 📊 4. Launch the dashboard (GUI)
+## Dashboard access
 
-### ✅ Recommended
-
-Use the dashboard owner entrypoint:
-
-```bash
-cd ~/oldata/victor/chipiron
-conda activate anemone
-export PYTHONPATH=src
-
-python -m streamlit run \
-  src/chipiron/environments/morpion/bootstrap/dashboard/streamlit_entry.py \
-  -- --work-dir ~/oldata/victor/morpion_runs/big_run_01
-```
-
-This entrypoint wraps:
-
-```python
-from __future__ import annotations
-
-import argparse
-from pathlib import Path
-
-from chipiron.environments.morpion.bootstrap.dashboard.app import run_dashboard_app
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--work-dir", required=True)
-    args = parser.parse_args()
-    run_dashboard_app(Path(args.work_dir))
-
-
-if __name__ == "__main__":
-    main()
-```
-
-The legacy `bootstrap/dashboard_streamlit_entry.py` wrapper remains available as a
-small executable convenience, but new commands should use the dashboard package path.
-
-### 🌐 Access
-
-Once launched, open in your browser:
-
-```
-http://localhost:8501
-```
-
----
+Use `chipiron-bootstrap use /path/to/run` and `chipiron-bootstrap` as described
+above. The installed command opens the browser automatically; `--no-browser`
+keeps it headless. No repository working directory or `PYTHONPATH` is required.
 
 ## 🧪 5. Run evaluator sanity checks
 
@@ -572,7 +580,7 @@ sudo sysctl -p
 python -m chipiron.environments.morpion.bootstrap.launcher --work-dir ...
 
 # open dashboard
-python -m streamlit run src/chipiron/environments/morpion/bootstrap/dashboard/streamlit_entry.py -- --work-dir ...
+chipiron-bootstrap dashboard --work-dir /path/to/run
 ```
 
 ---

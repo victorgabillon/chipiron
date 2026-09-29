@@ -133,6 +133,7 @@
         boardElement.innerHTML = args.svg || "";
         const svg = boardElement.querySelector("svg");
         if (svg) {
+          svg.style.maxWidth = `${currentHeight}px`;
           svg.addEventListener("click", handleBoardClick);
         }
         Streamlit.setFrameHeight(currentHeight);

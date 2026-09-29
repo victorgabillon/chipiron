@@ -105,6 +105,12 @@ def cached_dashboard_data_freshness_tokens(
         _path_mtime_ns(paths.work_dir),
         _path_mtime_ns(paths.bootstrap_config_path),
         _path_mtime_ns(paths.control_path),
+        *(
+            _path_mtime_ns(path)
+            for path in sorted(
+                paths.pipeline_dir.glob("generation_*/dataset_status.json")
+            )
+        ),
         _path_mtime_ns(paths.run_state_path),
         _path_mtime_ns(paths.history_jsonl_path),
         _path_mtime_ns(paths.latest_status_path),
@@ -135,6 +141,12 @@ def cached_certified_record_board_freshness_tokens(
     """Return freshness tokens for certified-record board rebuilds."""
     latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
     return (
+        *(
+            _path_mtime_ns(path)
+            for path in sorted(
+                paths.pipeline_dir.glob("generation_*/dataset_status.json")
+            )
+        ),
         _path_mtime_ns(paths.run_state_path),
         _path_mtime_ns(paths.history_jsonl_path),
         _path_mtime_ns(paths.tree_snapshot_dir),

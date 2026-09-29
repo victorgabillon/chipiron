@@ -343,3 +343,69 @@ def test_decode_node_state_rejects_self_referential_state_parent() -> None:
             indexed_checkpoint=indexed_checkpoint,
             decoded_states_by_node_id={},
         )
+
+
+def test_checkpoint_turnover_releases_selected_node_cache(tmp_path: Path) -> None:
+    """Retain only one checkpoint generation while keeping same-node navigation hot."""
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    _create_runtime_checkpoint(first)
+    _create_runtime_checkpoint(second)
+    parts = tree_inspector_module._build_selected_node_snapshot_parts
+    tree_inspector_module._INDEXED_CHECKPOINT_TREE_CACHE.clear()
+    parts.cache_clear()
+    snapshot = build_morpion_bootstrap_tree_inspector_snapshot(first)
+    assert snapshot.node_summary is not None
+    if snapshot.node_summary.child_ids:
+        build_morpion_bootstrap_tree_inspector_snapshot(
+            first, selected_node_id=snapshot.node_summary.child_ids[0]
+        )
+    assert parts.cache_info().currsize >= 1
+    build_morpion_bootstrap_tree_inspector_snapshot(second)
+    assert parts.cache_info().currsize == 1
+    assert parts.cache_info().maxsize == 128
+    assert len(tree_inspector_module._INDEXED_CHECKPOINT_TREE_CACHE) == 1
+    assert (
+        str(second)
+        in next(iter(tree_inspector_module._INDEXED_CHECKPOINT_TREE_CACHE))[0]
+    )
+    hits = parts.cache_info().hits
+    build_morpion_bootstrap_tree_inspector_snapshot(second)
+    assert parts.cache_info().hits > hits
+
+
+@pytest.mark.parametrize("layout", ["split", "node_records"])
+@pytest.mark.parametrize("encoding", ["jsonl", "jsonl_zst"])
+def test_sharded_inspection_matches_flat_checkpoint(
+    tmp_path: Path, layout: str, encoding: str
+) -> None:
+    """Both canonical shard layouts preserve every selected node, value and board."""
+    from anemone.checkpoints import write_sharded_search_checkpoint
+
+    flat = _create_runtime_checkpoint(tmp_path)
+    payload = load_morpion_search_checkpoint_payload(flat)
+    reference = {
+        str(node.node_id): build_morpion_bootstrap_tree_inspector_snapshot(
+            tmp_path, selected_node_id=str(node.node_id)
+        )
+        for node in payload.tree.nodes
+    }
+    sharded = flat.parent / "generation_000002.sharded"
+    write_sharded_search_checkpoint(
+        payload, sharded, layout=layout, encoding=encoding, node_count_per_shard=2
+    )
+    for node_id, before in reference.items():
+        after = build_morpion_bootstrap_tree_inspector_snapshot(
+            tmp_path, selected_node_id=node_id
+        )
+        assert after.checkpoint_path == sharded
+        assert after.error_message is None
+        assert after.node_summary == before.node_summary
+        assert after.child_summaries == before.child_summaries
+        assert after.state_view == before.state_view
+        assert after.local_tree_view == before.local_tree_view
+    # A damaged completed manifest must invalidate the cache and produce a visible error.
+    (sharded / "manifest.json").write_text("{")
+    damaged = build_morpion_bootstrap_tree_inspector_snapshot(tmp_path)
+    assert damaged.error_message is not None
+    assert damaged.node_summary is None
