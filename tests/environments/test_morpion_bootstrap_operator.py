@@ -328,3 +328,19 @@ def test_fake_prepared_launcher_preserves_exit_and_signal(
     )
     assert result.returncode == expected
     assert "Command:" in result.stdout
+
+
+@pytest.mark.parametrize("stopped", ["broken", "2026-01-01T10:00:00Z"])
+def test_old_or_malformed_stop_does_not_override_a_new_launch(
+    workspace: Path, stopped: str
+) -> None:
+    """Historical single-process metadata cannot certify the current launch as stopped."""
+    status, _ = vm.classify_run(
+        workspace,
+        manifest={},
+        started={"started_at_utc": "2026-01-02T10:00:00Z"},
+        finished={},
+        process={"stopped_at_utc": stopped},
+        has_progress=True,
+    )
+    assert status == "unknown"

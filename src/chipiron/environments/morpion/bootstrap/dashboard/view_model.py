@@ -162,7 +162,10 @@ def classify_run(
                 status,
                 f"Recorded launcher outcome: {finished.get('termination_reason', code)}.",
             )
-    if process.get("stopped_at_utc"):
+    stopped_time = timestamp(process.get("stopped_at_utc"))
+    if stopped_time is not None and (
+        started_time is None or stopped_time >= started_time
+    ):
         return (
             "stopped",
             "Launcher recorded a stop; current worker liveness is unknown.",

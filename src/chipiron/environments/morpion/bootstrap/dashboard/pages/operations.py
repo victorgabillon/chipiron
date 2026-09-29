@@ -108,6 +108,17 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         errors: list[str] = []
         st.write("Current requested control")
         st.json(read_artifact(snapshot.work_dir / "control.json", errors))
+        st.write("Launcher and worker artifacts (recorded state; not live telemetry)")
+        for relative in (
+            "launcher_process_state.json",
+            "launch_started.json",
+            "launch_finished.json",
+            "pipeline/reevaluation_cursor.json",
+        ):
+            st.caption(relative)
+            st.json(read_artifact(snapshot.work_dir / relative, errors))
+        st.write("stdout log:", str(paths.launcher_stdout_log_path))
+        st.write("stderr log:", str(paths.launcher_stderr_log_path))
         for error in errors:
             st.warning(error)
 
