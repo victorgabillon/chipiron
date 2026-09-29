@@ -22,7 +22,7 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         cached_dashboard_data_freshness_tokens,
     )
     from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_inspector import (
-        render_tree_inspector_section,
+        render_tree_inspector_fragment,
     )
     from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure import (
         render_tree_structure_section,
@@ -39,7 +39,7 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         data = cached_build_morpion_bootstrap_dashboard_data(
             str(paths.work_dir), cached_dashboard_data_freshness_tokens(paths)
         )
-        render_tree_inspector_section(
+        render_tree_inspector_fragment(
             st=st,
             paths=paths,
             latest_linoo_selection_table=data.latest_linoo_selection_table,
