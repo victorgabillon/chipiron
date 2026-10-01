@@ -48,9 +48,11 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         tree_structure_data = None
         if load_saved_summary:
             with st.spinner("Reading saved whole-tree summary…"):
-                tree_structure_data = cached_build_morpion_bootstrap_tree_structure_data(
-                    str(paths.work_dir),
-                    cached_tree_structure_freshness_tokens(paths),
+                tree_structure_data = (
+                    cached_build_morpion_bootstrap_tree_structure_data(
+                        str(paths.work_dir),
+                        cached_tree_structure_freshness_tokens(paths),
+                    )
                 )
 
         render_tree_inspector_fragment(
