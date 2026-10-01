@@ -8,6 +8,8 @@ import logging
 import os
 import sqlite3
 import time
+from contextlib import suppress
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
@@ -36,28 +38,27 @@ class PersistentTreeIndexCacheError(ValueError):
     """Raised when the derived dashboard tree index cannot be used."""
 
 
+@dataclass(frozen=True, slots=True)
 class IndexedChildLink:
     """One indexed branch edge from a checkpoint node to an expanded child."""
 
-    __slots__ = ("branch_key", "child_node_id")
-
-    def __init__(self, *, branch_key: object, child_node_id: int) -> None:
-        self.branch_key = branch_key
-        self.child_node_id = child_node_id
+    branch_key: object
+    child_node_id: int
 
 
 class PersistentCheckpointTreeIndex:
     """Random-access view over one derived SQLite checkpoint index."""
 
     __slots__ = (
-        "root_node_id",
-        "database_path",
+        "_child_link_cache",
         "_node_cache",
         "_parent_cache",
-        "_child_link_cache",
+        "database_path",
+        "root_node_id",
     )
 
     def __init__(self, *, root_node_id: int, database_path: Path) -> None:
+        """Initialize one lightweight handle to a persistent checkpoint index."""
         self.root_node_id = root_node_id
         self.database_path = database_path
         self._node_cache: dict[int, AlgorithmNodeCheckpointPayload] = {}
@@ -179,13 +180,9 @@ def load_or_build_persistent_checkpoint_tree_index(
         build_elapsed_s = time.perf_counter() - build_started_at
         cached = _load_existing_index(target_path, identity)
     except (OSError, sqlite3.Error, TypeError, ValueError) as exc:
-        raise PersistentTreeIndexCacheError(
-            f"failed to build persistent tree index: {exc}"
-        ) from exc
+        raise PersistentTreeIndexCacheError from exc
     if cached is None:
-        raise PersistentTreeIndexCacheError(
-            "persistent tree index did not validate after creation"
-        )
+        raise PersistentTreeIndexCacheError
     _remove_stale_indexes(target_path)
     LOGGER.info(
         "[dashboard] persistent_tree_index_built checkpoint=%s nodes=%s "
@@ -242,9 +239,7 @@ def _index_path(checkpoint_path: Path, identity: str) -> Path:
 def _connect(database_path: Path) -> sqlite3.Connection:
     """Open an existing SQLite index."""
     if not database_path.is_file():
-        raise PersistentTreeIndexCacheError(
-            f"persistent tree index is missing: {database_path}"
-        )
+        raise PersistentTreeIndexCacheError
     return sqlite3.connect(database_path)
 
 
@@ -276,10 +271,8 @@ def _load_existing_index(
             database_path,
             exc_info=True,
         )
-        try:
+        with suppress(OSError):
             database_path.unlink()
-        except OSError:
-            pass
         return None
     return PersistentCheckpointTreeIndex(
         root_node_id=root_node_id,
@@ -296,10 +289,8 @@ def _build_index(
     """Build one SQLite index atomically from a fully validated checkpoint."""
     database_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = database_path.with_name(f".{database_path.name}.{os.getpid()}.tmp")
-    try:
+    with suppress(FileNotFoundError):
         temporary_path.unlink()
-    except FileNotFoundError:
-        pass
 
     connection = sqlite3.connect(temporary_path)
     try:
@@ -385,7 +376,7 @@ def _inspection_node_mapping(
     """Keep only node fields required by dashboard state/value/navigation reads."""
     raw = checkpoint_payload_to_jsonable(node)
     if not isinstance(raw, dict):
-        raise TypeError("checkpoint node payload must serialize to an object")
+        raise TypeError
     required_keys = (
         "node_id",
         "parent_node_id",
@@ -403,7 +394,7 @@ def _deserialize_node_payload(payload_json: str) -> AlgorithmNodeCheckpointPaylo
     """Reconstruct one typed Anemone node payload from the SQLite row."""
     raw_payload = json.loads(payload_json)
     if not isinstance(raw_payload, dict):
-        raise PersistentTreeIndexCacheError("node payload must be a JSON object")
+        raise PersistentTreeIndexCacheError
     normalized = _normalize_algorithm_node_payload_for_dacite(
         cast("dict[str, Any]", raw_payload)
     )
