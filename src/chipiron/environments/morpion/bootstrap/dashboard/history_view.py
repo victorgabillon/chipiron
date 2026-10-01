@@ -841,6 +841,14 @@ def _load_sharded_training_tree_snapshot_for_dashboard(
         return None
 
 
+def load_evaluator_loss_series_for_dashboard(
+    work_dir: str | Path,
+) -> Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
+    """Load evaluator loss history from small training-status artifacts only."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    return _evaluator_loss_series_by_name_from_training_status(paths)
+
+
 def _evaluator_loss_series_by_name_from_training_status(
     paths: MorpionBootstrapPaths,
 ) -> Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
@@ -1453,6 +1461,7 @@ __all__ = [
     "filesystem_usage_for_path",
     "format_num_bytes",
     "latest_tree_depth_distribution",
+    "load_evaluator_loss_series_for_dashboard",
     "load_latest_linoo_selection_table_for_dashboard",
     "load_morpion_bootstrap_run_view",
     "record_total_points_series",
