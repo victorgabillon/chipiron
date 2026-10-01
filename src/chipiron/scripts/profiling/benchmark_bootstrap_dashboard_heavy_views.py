@@ -17,9 +17,9 @@ import json
 import os
 import tempfile
 import time
+from collections.abc import Callable  # noqa: TC003
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
