@@ -85,6 +85,32 @@ def test_overview_never_deserializes_checkpoint(
     assert not app.exception
 
 
+def test_tree_first_paint_skips_saved_whole_tree_scan(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Opening Tree should not deserialize the training tree until explicitly requested."""
+    from chipiron.environments.morpion.bootstrap.dashboard import data_cache
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Tree first paint attempted a saved whole-tree scan")
+
+    monkeypatch.setattr(
+        data_cache,
+        "cached_build_morpion_bootstrap_tree_structure_data",
+        forbidden,
+    )
+    (tmp_path / "bootstrap_config.json").write_text("{}")
+    app = _app(tmp_path).run()
+    app.radio(key="bootstrap_operator_page").set_value("Tree").run()
+
+    assert not app.exception, [e.message for e in app.exception]
+    assert any(
+        checkbox.label == "Load saved whole-tree statistics"
+        for checkbox in app.checkbox
+    )
+
+
 def test_pending_edit_preview_precedes_apply(tmp_path: Path) -> None:
     """Operator edits preview a persistent request; no mutation occurs until apply."""
     from chipiron.environments.morpion.bootstrap.bootstrap_args import (
