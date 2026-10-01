@@ -17,9 +17,9 @@ import json
 import os
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, TypeVar
 
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
@@ -48,8 +48,6 @@ from chipiron.environments.morpion.bootstrap.record_status import (
     select_best_certified_record_candidate_from_training_tree_snapshot,
 )
 
-T = TypeVar("T")
-
 
 @dataclass(frozen=True, slots=True)
 class Timing:
@@ -59,7 +57,7 @@ class Timing:
     seconds: float
 
 
-def _timed(name: str, operation: Callable[[], T]) -> tuple[T, Timing]:
+def _timed[T](name: str, operation: Callable[[], T]) -> tuple[T, Timing]:
     started_at = time.perf_counter()
     result = operation()
     return result, Timing(name=name, seconds=time.perf_counter() - started_at)
@@ -136,17 +134,17 @@ def _benchmark_tree(work_dir: Path) -> list[Timing]:
     if resolved.checkpoint_path is None:
         return timings
 
-    payload, timing = _timed(
+    checkpoint_payload, timing = _timed(
         "tree.baseline.checkpoint_deserialize",
         lambda: read_inspection_checkpoint(resolved.checkpoint_path),
     )
     timings.append(timing)
     _index, timing = _timed(
         "tree.baseline.in_memory_index_build",
-        lambda: _index_checkpoint_payload(payload),
+        lambda: _index_checkpoint_payload(checkpoint_payload),
     )
     timings.append(timing)
-    del payload
+    del checkpoint_payload
     del _index
     gc.collect()
 
