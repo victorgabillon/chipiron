@@ -9,6 +9,7 @@ from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
     build_current_certified_record_board_view,
     build_morpion_bootstrap_dashboard_data,
     build_morpion_bootstrap_tree_structure_data,
+    load_evaluator_loss_series_for_dashboard,
 )
 
 if TYPE_CHECKING:
@@ -28,6 +29,8 @@ __all__ = [
     "cached_build_morpion_bootstrap_tree_structure_data",
     "cached_certified_record_board_freshness_tokens",
     "cached_dashboard_data_freshness_tokens",
+    "cached_evaluator_loss_freshness_tokens",
+    "cached_load_evaluator_loss_series_for_dashboard",
     "cached_tree_structure_freshness_tokens",
     "checked_training_status_files_summary",
     "loss_series_contains_points",
@@ -155,6 +158,18 @@ def cached_tree_structure_freshness_tokens(
     )
 
 
+def cached_evaluator_loss_freshness_tokens(
+    paths: MorpionBootstrapPaths,
+) -> tuple[int, ...]:
+    """Return freshness tokens for lightweight evaluator-loss history inputs."""
+    return tuple(
+        _path_mtime_ns(path)
+        for path in sorted(
+            paths.pipeline_dir.glob("generation_*/training_status.json")
+        )
+    )
+
+
 def cached_certified_record_board_freshness_tokens(
     paths: MorpionBootstrapPaths,
 ) -> tuple[int, ...]:
@@ -195,6 +210,16 @@ def cached_build_morpion_bootstrap_tree_structure_data(
     """Cache the explicitly requested saved whole-tree summary."""
     _ = freshness_tokens
     return build_morpion_bootstrap_tree_structure_data(work_dir)
+
+
+@lru_cache(maxsize=4)
+def cached_load_evaluator_loss_series_for_dashboard(
+    work_dir: str,
+    freshness_tokens: tuple[int, ...],
+) -> Any:
+    """Cache evaluator loss history without entering heavy tree/dashboard paths."""
+    _ = freshness_tokens
+    return load_evaluator_loss_series_for_dashboard(work_dir)
 
 
 @lru_cache(maxsize=1)
