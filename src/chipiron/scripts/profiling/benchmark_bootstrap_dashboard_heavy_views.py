@@ -17,9 +17,9 @@ import json
 import os
 import tempfile
 import time
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
@@ -134,18 +134,24 @@ def _benchmark_tree(work_dir: Path) -> list[Timing]:
     if resolved.checkpoint_path is None:
         return timings
 
-    checkpoint_payload, timing = _timed(
-        "tree.baseline.checkpoint_deserialize",
-        lambda: read_inspection_checkpoint(resolved.checkpoint_path),
+    started_at = time.perf_counter()
+    loaded_checkpoint = read_inspection_checkpoint(resolved.checkpoint_path)
+    timings.append(
+        Timing(
+            name="tree.baseline.checkpoint_deserialize",
+            seconds=time.perf_counter() - started_at,
+        )
     )
-    timings.append(timing)
-    _index, timing = _timed(
-        "tree.baseline.in_memory_index_build",
-        lambda: _index_checkpoint_payload(checkpoint_payload),
+    started_at = time.perf_counter()
+    legacy_index = _index_checkpoint_payload(loaded_checkpoint)
+    timings.append(
+        Timing(
+            name="tree.baseline.in_memory_index_build",
+            seconds=time.perf_counter() - started_at,
+        )
     )
-    timings.append(timing)
-    del checkpoint_payload
-    del _index
+    del loaded_checkpoint
+    del legacy_index
     gc.collect()
 
     _clear_tree_process_caches()
