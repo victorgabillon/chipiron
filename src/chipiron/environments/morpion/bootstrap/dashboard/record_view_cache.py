@@ -85,38 +85,63 @@ def save_cached_certified_record(
         "schema_version": _CACHE_SCHEMA_VERSION,
         "work_dir": str(Path(work_dir).resolve()),
         "record_signature": signature,
-        "record": {
-            "variant": record.variant,
-            "moves_since_start": record.moves_since_start,
-            "total_points": record.total_points,
-            "is_exact": record.is_exact,
-            "is_terminal": record.is_terminal,
-            "source": record.source,
-            "state_ref_payload": checkpoint_payload_to_jsonable(
-                record.state_ref_payload
-            ),
-            "node_id": record.node_id,
-            "generation": record.generation,
-        },
+        "record": _record_to_mapping(record),
     }
-    temporary_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    _write_cache_payload(path, payload)
+
+
+
+def load_cached_certified_record_for_snapshot(
+    *,
+    work_dir: str | Path,
+    snapshot_path: Path,
+) -> CachedCertifiedRecord | None:
+    """Load a dashboard-only record cached for one immutable tree snapshot."""
+    signature = _snapshot_signature(snapshot_path)
+    if signature is None:
+        return None
+    path = _cache_path(Path(work_dir), "snapshot:" + signature)
+    if not path.is_file():
+        return None
     try:
-        temporary_path.write_text(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")),
-            encoding="utf-8",
-        )
-        os.replace(temporary_path, path)
-        _prune_record_cache(path)
-    except OSError:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return None
+        if payload.get("schema_version") != _CACHE_SCHEMA_VERSION:
+            return None
+        if payload.get("work_dir") != str(Path(work_dir).resolve()):
+            return None
+        if payload.get("snapshot_signature") != signature:
+            return None
+        return _cached_record_from_mapping(payload["record"])
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
         LOGGER.warning(
-            "[dashboard] certified_record_cache_write_failed path=%s",
+            "[dashboard] certified_record_snapshot_cache_read_failed path=%s",
             path,
             exc_info=True,
         )
-        try:
-            temporary_path.unlink()
-        except OSError:
-            pass
+        return None
+
+
+def save_cached_certified_record_for_snapshot(
+    *,
+    work_dir: str | Path,
+    snapshot_path: Path,
+    record: CachedCertifiedRecord,
+) -> None:
+    """Persist a record state keyed by snapshot identity for legacy runs."""
+    signature = _snapshot_signature(snapshot_path)
+    if signature is None:
+        return
+    path = _cache_path(Path(work_dir), "snapshot:" + signature)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": _CACHE_SCHEMA_VERSION,
+        "work_dir": str(Path(work_dir).resolve()),
+        "snapshot_signature": signature,
+        "record": _record_to_mapping(record),
+    }
+    _write_cache_payload(path, payload)
 
 
 def load_matching_leaderboard_record(
@@ -185,6 +210,62 @@ def load_matching_leaderboard_record(
     if not matches:
         return None
     return max(matches, key=lambda item: item[:3])[3]
+
+
+
+def _record_to_mapping(record: CachedCertifiedRecord) -> dict[str, object]:
+    """Return the JSON-friendly representation shared by both cache keys."""
+    return {
+        "variant": record.variant,
+        "moves_since_start": record.moves_since_start,
+        "total_points": record.total_points,
+        "is_exact": record.is_exact,
+        "is_terminal": record.is_terminal,
+        "source": record.source,
+        "state_ref_payload": checkpoint_payload_to_jsonable(record.state_ref_payload),
+        "node_id": record.node_id,
+        "generation": record.generation,
+    }
+
+
+def _write_cache_payload(path: Path, payload: dict[str, object]) -> None:
+    """Atomically write one dashboard-only cache object."""
+    temporary_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        temporary_path.write_text(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        os.replace(temporary_path, path)
+        _prune_record_cache(path)
+    except OSError:
+        LOGGER.warning(
+            "[dashboard] certified_record_cache_write_failed path=%s",
+            path,
+            exc_info=True,
+        )
+        try:
+            temporary_path.unlink()
+        except OSError:
+            pass
+
+
+def _snapshot_signature(snapshot_path: Path) -> str | None:
+    """Return a cheap immutable identity for one training-tree snapshot reference."""
+    try:
+        resolved = snapshot_path.resolve()
+        stat = resolved.stat()
+    except OSError:
+        return None
+    return json.dumps(
+        {
+            "path": str(resolved),
+            "mtime_ns": stat.st_mtime_ns,
+            "size": stat.st_size,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _status_signature(status: MorpionBootstrapRecordStatus) -> str | None:
@@ -301,6 +382,8 @@ def _default_leaderboard_path() -> Path:
 __all__ = [
     "CachedCertifiedRecord",
     "load_cached_certified_record",
+    "load_cached_certified_record_for_snapshot",
     "load_matching_leaderboard_record",
     "save_cached_certified_record",
+    "save_cached_certified_record_for_snapshot",
 ]
