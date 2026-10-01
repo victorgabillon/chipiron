@@ -6,16 +6,18 @@ import hashlib
 import json
 import logging
 import os
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from anemone.checkpoints import checkpoint_payload_to_jsonable
 from platformdirs import user_cache_path
 
-from chipiron.environments.morpion.bootstrap.record_status import (
-    MorpionBootstrapRecordStatus,
-)
+if TYPE_CHECKING:
+    from chipiron.environments.morpion.bootstrap.record_status import (
+        MorpionBootstrapRecordStatus,
+    )
 
 LOGGER = logging.getLogger(__name__)
 
@@ -242,10 +244,8 @@ def _write_cache_payload(path: Path, payload: dict[str, object]) -> None:
             path,
             exc_info=True,
         )
-        try:
+        with suppress(OSError):
             temporary_path.unlink()
-        except OSError:
-            pass
 
 
 def _snapshot_signature(snapshot_path: Path) -> str | None:
@@ -318,7 +318,7 @@ def _record_matches_status(
 def _cached_record_from_mapping(payload: Any) -> CachedCertifiedRecord:
     """Decode one cached JSON mapping into the typed dashboard record."""
     if not isinstance(payload, dict):
-        raise TypeError("cached record must be an object")
+        raise TypeError
     generation = payload.get("generation")
     node_id = payload.get("node_id")
     return CachedCertifiedRecord(
