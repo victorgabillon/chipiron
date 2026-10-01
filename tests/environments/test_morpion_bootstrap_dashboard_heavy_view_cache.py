@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import pytest
@@ -37,6 +36,8 @@ from tests.environments.morpion_training_snapshot_helpers import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from _pytest.monkeypatch import MonkeyPatch
 
 
