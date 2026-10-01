@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any, cast
 
@@ -147,13 +148,24 @@ def load_or_build_persistent_checkpoint_tree_index(
     checkpoint_path = checkpoint_path.resolve()
     identity = _checkpoint_identity(checkpoint_path)
     target_path = _index_path(checkpoint_path, identity)
+    started_at = time.perf_counter()
     cached = _load_existing_index(target_path, identity)
     if cached is not None:
+        LOGGER.info(
+            "[dashboard] persistent_tree_index_hit checkpoint=%s elapsed=%.3fs bytes=%s",
+            checkpoint_path,
+            time.perf_counter() - started_at,
+            target_path.stat().st_size,
+        )
         return cached
 
+    read_started_at = time.perf_counter()
     payload = read_inspection_checkpoint(checkpoint_path)
+    read_elapsed_s = time.perf_counter() - read_started_at
+    build_started_at = time.perf_counter()
     try:
         _build_index(target_path, identity=identity, payload=payload)
+        build_elapsed_s = time.perf_counter() - build_started_at
         cached = _load_existing_index(target_path, identity)
     except (OSError, sqlite3.Error, TypeError, ValueError) as exc:
         raise PersistentTreeIndexCacheError(
@@ -164,6 +176,16 @@ def load_or_build_persistent_checkpoint_tree_index(
             "persistent tree index did not validate after creation"
         )
     _remove_stale_indexes(target_path)
+    LOGGER.info(
+        "[dashboard] persistent_tree_index_built checkpoint=%s nodes=%s "
+        "checkpoint_read=%.3fs index_build=%.3fs total=%.3fs bytes=%s",
+        checkpoint_path,
+        len(payload.tree.nodes),
+        read_elapsed_s,
+        build_elapsed_s,
+        time.perf_counter() - started_at,
+        target_path.stat().st_size,
+    )
     return cached
 
 
@@ -302,7 +324,7 @@ def _build_index(
                 (
                     node.node_id,
                     json.dumps(
-                        checkpoint_payload_to_jsonable(node),
+                        _inspection_node_mapping(node),
                         separators=(",", ":"),
                     ),
                 )
@@ -349,6 +371,26 @@ def _remove_stale_indexes(current_path: Path) -> None:
                 candidate,
                 exc_info=True,
             )
+
+
+def _inspection_node_mapping(
+    node: AlgorithmNodeCheckpointPayload,
+) -> dict[str, object]:
+    """Keep only node fields required by dashboard state/value/navigation reads."""
+    raw = checkpoint_payload_to_jsonable(node)
+    if not isinstance(raw, dict):
+        raise TypeError("checkpoint node payload must serialize to an object")
+    required_keys = (
+        "node_id",
+        "parent_node_id",
+        "branch_from_parent",
+        "depth",
+        "state_payload",
+        "generated_all_branches",
+        "linked_children",
+        "evaluation",
+    )
+    return {key: raw[key] for key in required_keys}
 
 
 def _deserialize_node_payload(payload_json: str) -> AlgorithmNodeCheckpointPayload:
