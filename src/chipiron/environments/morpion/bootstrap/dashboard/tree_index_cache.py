@@ -1,4 +1,5 @@
 """Persistent read-only cache for dashboard runtime-checkpoint inspection."""
+# pylint: disable=protected-access
 
 from __future__ import annotations
 
