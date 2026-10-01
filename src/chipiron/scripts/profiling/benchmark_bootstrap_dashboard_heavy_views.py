@@ -8,6 +8,7 @@ Example:
         /path/to/generic_linoo_fresh_with_bigrun_models_v1 \
         /path/to/big_run_01
 """
+# pylint: disable=protected-access
 
 from __future__ import annotations
 
