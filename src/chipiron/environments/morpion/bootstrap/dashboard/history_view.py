@@ -248,6 +248,16 @@ class MorpionBootstrapDashboardData:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionBootstrapTreeStructureData:
+    """Whole-tree summaries loaded only after explicit operator disclosure."""
+
+    latest_tree_snapshot_status_message: str | None
+    latest_tree_status: MorpionBootstrapTreeStatus | None
+    latest_tree_node_classification_summary: MorpionTreeNodeClassificationSummary | None
+    latest_tree_depth_distribution: tuple[TreeDepthDistributionRow, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionBootstrapCertifiedRecordBoardView:
     """Dashboard-ready rendering of the current strict certified Morpion record."""
 
@@ -702,6 +712,29 @@ def build_morpion_bootstrap_dashboard_data(
         ),
         latest_linoo_selection_table=load_latest_linoo_selection_table_for_dashboard(
             work_dir
+        ),
+    )
+
+
+def build_morpion_bootstrap_tree_structure_data(
+    work_dir: str | Path,
+) -> MorpionBootstrapTreeStructureData:
+    """Load only the saved whole-tree summaries requested by the Tree page."""
+    run_view = load_morpion_bootstrap_run_view(work_dir)
+    resolved_tree_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    latest_snapshot = _load_resolved_training_tree_snapshot(resolved_tree_snapshot)
+    return MorpionBootstrapTreeStructureData(
+        latest_tree_snapshot_status_message=resolved_tree_snapshot.status_message,
+        latest_tree_status=_latest_tree_status(
+            run_view,
+            latest_snapshot=latest_snapshot,
+        ),
+        latest_tree_node_classification_summary=summarize_tree_node_classification(
+            latest_snapshot
+        ),
+        latest_tree_depth_distribution=latest_tree_depth_distribution(
+            run_view,
+            latest_snapshot=latest_snapshot,
         ),
     )
 
