@@ -15,6 +15,14 @@ from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.record_view_cache import (
+    CachedCertifiedRecord,
+    load_cached_certified_record,
+    load_cached_certified_record_for_snapshot,
+    load_matching_leaderboard_record,
+    save_cached_certified_record,
+    save_cached_certified_record_for_snapshot,
+)
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapEvent,
     MorpionBootstrapFrontierStatus,
@@ -840,12 +848,55 @@ def _evaluator_loss_series_by_name_from_training_status(
 def build_current_certified_record_board_view(
     work_dir: str | Path,
 ) -> MorpionBootstrapCertifiedRecordBoardView | None:
-    """Build the current strict certified-record board view for the dashboard."""
+    """Build the current certified board without rescanning unchanged large trees."""
     run_view = load_morpion_bootstrap_run_view(work_dir)
+    record_status = _latest_certified_record_status(run_view)
+
+    if record_status is not None:
+        cached_record = load_cached_certified_record(
+            work_dir=run_view.work_dir,
+            status=record_status,
+        )
+        if cached_record is None:
+            cached_record = load_matching_leaderboard_record(
+                work_dir=run_view.work_dir,
+                status=record_status,
+            )
+            if cached_record is not None:
+                save_cached_certified_record(
+                    work_dir=run_view.work_dir,
+                    status=record_status,
+                    record=cached_record,
+                )
+        board_view = _board_view_from_cached_record(
+            cached_record,
+            source_context="record cache/leaderboard",
+        )
+        if board_view is not None:
+            return board_view
+
     resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
     snapshot_path = resolved_snapshot.snapshot_path
     if snapshot_path is None:
         return None
+
+    # Legacy runs may predate status/leaderboard state payloads. Cache the expensive
+    # discovery by immutable snapshot identity so it is paid only once.
+    if (
+        record_status is None
+        or record_status.current_best_total_points is None
+        or record_status.current_best_moves_since_start is None
+    ):
+        cached_snapshot_record = load_cached_certified_record_for_snapshot(
+            work_dir=run_view.work_dir,
+            snapshot_path=snapshot_path,
+        )
+        board_view = _board_view_from_cached_record(
+            cached_snapshot_record,
+            source_context="snapshot record cache",
+        )
+        if board_view is not None:
+            return board_view
 
     snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
     if snapshot is None:
@@ -857,18 +908,53 @@ def build_current_certified_record_board_view(
     if candidate is None:
         return None
 
+    cached_record = CachedCertifiedRecord(
+        variant=candidate.variant,
+        moves_since_start=candidate.moves_since_start,
+        total_points=candidate.total_points,
+        is_exact=True,
+        is_terminal=True,
+        source="certified_terminal_leaf",
+        state_ref_payload=candidate.state_ref_payload,
+        node_id=candidate.node_id,
+    )
+    save_cached_certified_record_for_snapshot(
+        work_dir=run_view.work_dir,
+        snapshot_path=snapshot_path,
+        record=cached_record,
+    )
+    if record_status is not None:
+        save_cached_certified_record(
+            work_dir=run_view.work_dir,
+            status=record_status,
+            record=cached_record,
+        )
+    return _board_view_from_cached_record(
+        cached_record,
+        source_context=f"tree snapshot {snapshot_path}",
+    )
+
+
+def _board_view_from_cached_record(
+    record: CachedCertifiedRecord | None,
+    *,
+    source_context: str,
+) -> MorpionBootstrapCertifiedRecordBoardView | None:
+    """Decode and render one compact certified-record state source."""
+    if record is None:
+        return None
     try:
-        state_ref_payload = candidate.state_ref_payload
-        atom_state = decode_morpion_state_ref_payload(state_ref_payload)
+        atom_state = decode_morpion_state_ref_payload(record.state_ref_payload)
         display_state_ref_payload = cast(
-            "Mapping[str, object] | None", state_ref_payload
+            "Mapping[str, object] | None",
+            record.state_ref_payload,
         )
         return _certified_record_board_view_from_atom_state(
             atom_state=atom_state,
             state_ref_payload=display_state_ref_payload,
-            is_exact=True,
-            is_terminal=True,
-            source="certified_terminal_leaf",
+            is_exact=record.is_exact,
+            is_terminal=record.is_terminal,
+            source=record.source,
         )
     except (
         InvalidMorpionStateRefPayloadError,
@@ -877,9 +963,9 @@ def build_current_certified_record_board_view(
         TypeError,
     ):
         LOGGER.exception(
-            "[dashboard] certified_record_board_reconstruction_failed path=%s node_id=%s",
-            str(snapshot_path),
-            candidate.node_id,
+            "[dashboard] certified_record_board_reconstruction_failed source=%s node_id=%s",
+            source_context,
+            record.node_id,
         )
         return None
 
