@@ -90,7 +90,6 @@ def save_cached_certified_record(
     _write_cache_payload(path, payload)
 
 
-
 def load_cached_certified_record_for_snapshot(
     *,
     work_dir: str | Path,
@@ -210,7 +209,6 @@ def load_matching_leaderboard_record(
     if not matches:
         return None
     return max(matches, key=lambda item: item[:3])[3]
-
 
 
 def _record_to_mapping(record: CachedCertifiedRecord) -> dict[str, object]:
@@ -349,10 +347,7 @@ def _cache_path(work_dir: Path, signature: str) -> Path:
     work_hash = hashlib.sha256(str(work_dir.resolve()).encode("utf-8")).hexdigest()[:20]
     signature_hash = hashlib.sha256(signature.encode("utf-8")).hexdigest()
     return (
-        _dashboard_cache_root()
-        / "record-view"
-        / work_hash
-        / f"{signature_hash}.json"
+        _dashboard_cache_root() / "record-view" / work_hash / f"{signature_hash}.json"
     )
 
 
