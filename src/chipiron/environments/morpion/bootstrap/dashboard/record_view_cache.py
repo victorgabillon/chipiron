@@ -15,6 +15,8 @@ from anemone.checkpoints import checkpoint_payload_to_jsonable
 from platformdirs import user_cache_path
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from chipiron.environments.morpion.bootstrap.record_status import (
         MorpionBootstrapRecordStatus,
     )
@@ -228,7 +230,7 @@ def _record_to_mapping(record: CachedCertifiedRecord) -> dict[str, object]:
     }
 
 
-def _write_cache_payload(path: Path, payload: dict[str, object]) -> None:
+def _write_cache_payload(path: Path, payload: Mapping[str, object]) -> None:
     """Atomically write one dashboard-only cache object."""
     temporary_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     try:
