@@ -86,8 +86,10 @@ def _benchmark_record(work_dir: Path) -> list[Timing]:
         if snapshot is not None:
             candidate, timing = _timed(
                 "record.baseline.certified_candidate_scan",
-                lambda: select_best_certified_record_candidate_from_training_tree_snapshot(
-                    snapshot
+                lambda: (
+                    select_best_certified_record_candidate_from_training_tree_snapshot(
+                        snapshot
+                    )
                 ),
             )
             timings.append(timing)
@@ -206,12 +208,8 @@ def benchmark_work_dir(work_dir: Path) -> dict[str, object]:
 
     return {
         "work_dir": str(resolved),
-        "record": {
-            timing.name: round(timing.seconds, 6) for timing in record_timings
-        },
-        "tree": {
-            timing.name: round(timing.seconds, 6) for timing in tree_timings
-        },
+        "record": {timing.name: round(timing.seconds, 6) for timing in record_timings},
+        "tree": {timing.name: round(timing.seconds, 6) for timing in tree_timings},
     }
 
 
