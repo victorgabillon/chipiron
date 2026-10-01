@@ -63,7 +63,9 @@ def _morpion_payload(move_count: int) -> dict[str, object]:
     for _ in range(move_count):
         action = dynamics.all_legal_actions(state)[0]
         state = dynamics.step(state, action).next_state
-    return cast("dict[str, object]", MorpionStateCheckpointCodec().dump_state_ref(state))
+    return cast(
+        "dict[str, object]", MorpionStateCheckpointCodec().dump_state_ref(state)
+    )
 
 
 def test_tree_index_survives_process_cache_reset(
