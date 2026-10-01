@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from chipiron.environments.morpion.bootstrap.dashboard.history_view import (
     build_current_certified_record_board_view,
     build_morpion_bootstrap_dashboard_data,
+    build_morpion_bootstrap_tree_structure_data,
 )
 
 if TYPE_CHECKING:
@@ -24,8 +25,10 @@ if TYPE_CHECKING:
 __all__ = [
     "cached_build_current_certified_record_board_view",
     "cached_build_morpion_bootstrap_dashboard_data",
+    "cached_build_morpion_bootstrap_tree_structure_data",
     "cached_certified_record_board_freshness_tokens",
     "cached_dashboard_data_freshness_tokens",
+    "cached_tree_structure_freshness_tokens",
     "checked_training_status_files_summary",
     "loss_series_contains_points",
 ]
@@ -135,6 +138,23 @@ def cached_dashboard_data_freshness_tokens(
     )
 
 
+def cached_tree_structure_freshness_tokens(
+    paths: MorpionBootstrapPaths,
+) -> tuple[int, ...]:
+    """Return freshness tokens only for saved whole-tree summary inputs."""
+    latest_tree_snapshot_path = _latest_tree_snapshot_generation_json_path(paths)
+    return (
+        _path_mtime_ns(paths.run_state_path),
+        _path_mtime_ns(paths.history_jsonl_path),
+        _path_mtime_ns(paths.latest_status_path),
+        _path_mtime_ns(paths.tree_snapshot_dir),
+        _path_mtime_ns(paths.sharded_tree_snapshot_dir),
+        0
+        if latest_tree_snapshot_path is None
+        else _path_mtime_ns(latest_tree_snapshot_path),
+    )
+
+
 def cached_certified_record_board_freshness_tokens(
     paths: MorpionBootstrapPaths,
 ) -> tuple[int, ...]:
@@ -165,6 +185,16 @@ def cached_build_morpion_bootstrap_dashboard_data(
     """Cache dashboard-wide data for one work dir until relevant artifacts change."""
     _ = freshness_tokens
     return build_morpion_bootstrap_dashboard_data(work_dir)
+
+
+@lru_cache(maxsize=1)
+def cached_build_morpion_bootstrap_tree_structure_data(
+    work_dir: str,
+    freshness_tokens: tuple[int, ...],
+) -> Any:
+    """Cache the explicitly requested saved whole-tree summary."""
+    _ = freshness_tokens
+    return build_morpion_bootstrap_tree_structure_data(work_dir)
 
 
 @lru_cache(maxsize=1)
