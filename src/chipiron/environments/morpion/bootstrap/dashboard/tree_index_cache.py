@@ -141,6 +141,17 @@ class PersistentCheckpointTreeIndex:
         return result
 
 
+def persistent_checkpoint_tree_index_exists(checkpoint_path: Path) -> bool:
+    """Return whether a valid derived index already exists without building it."""
+    checkpoint_path = checkpoint_path.resolve()
+    try:
+        identity = _checkpoint_identity(checkpoint_path)
+    except OSError:
+        return False
+    target_path = _index_path(checkpoint_path, identity)
+    return _load_existing_index(target_path, identity) is not None
+
+
 def load_or_build_persistent_checkpoint_tree_index(
     checkpoint_path: Path,
 ) -> PersistentCheckpointTreeIndex:
@@ -416,4 +427,5 @@ __all__ = [
     "PersistentCheckpointTreeIndex",
     "PersistentTreeIndexCacheError",
     "load_or_build_persistent_checkpoint_tree_index",
+    "persistent_checkpoint_tree_index_exists",
 ]
