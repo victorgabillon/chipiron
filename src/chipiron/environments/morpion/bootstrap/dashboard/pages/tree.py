@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
-    """Keep first paint light; load whole-tree training summaries only on request."""
+    """Keep first paint light; build heavy derived data only after disclosure."""
     from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
         MorpionBootstrapPaths,
     )
@@ -29,6 +29,12 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     )
     from chipiron.environments.morpion.bootstrap.dashboard.sections.tree_structure import (
         render_tree_structure_section,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.tree_index_cache import (
+        persistent_checkpoint_tree_index_exists,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.tree_inspector import (
+        resolve_latest_runtime_checkpoint,
     )
 
     page_header(
@@ -55,16 +61,51 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
                     )
                 )
 
-        render_tree_inspector_fragment(
-            st=st,
-            paths=paths,
-            latest_linoo_selection_table=latest_linoo_selection_table,
-            tree_node_classification_summary=(
-                None
-                if tree_structure_data is None
-                else tree_structure_data.latest_tree_node_classification_summary
-            ),
+        resolved_checkpoint = resolve_latest_runtime_checkpoint(paths)
+        checkpoint_path = resolved_checkpoint.checkpoint_path
+        index_ready = (
+            checkpoint_path is not None
+            and persistent_checkpoint_tree_index_exists(checkpoint_path)
         )
+        build_request_key = (
+            None
+            if checkpoint_path is None
+            else f"morpion_bootstrap_build_tree_index::{checkpoint_path}"
+        )
+        build_requested = (
+            False
+            if build_request_key is None
+            else bool(st.session_state.get(build_request_key, False))
+        )
+
+        if checkpoint_path is not None and not index_ready and not build_requested:
+            st.info(
+                "This checkpoint has not been indexed for dashboard inspection yet. "
+                "Building the read-only index may take several seconds on a large tree, "
+                "but it is done only once for this checkpoint."
+            )
+            if resolved_checkpoint.status_message:
+                st.caption(resolved_checkpoint.status_message)
+            if st.button(
+                "Build tree inspector index",
+                key=f"build-tree-index-button::{checkpoint_path}",
+                type="primary",
+            ):
+                if build_request_key is not None:
+                    st.session_state[build_request_key] = True
+                st.rerun()
+        else:
+            render_tree_inspector_fragment(
+                st=st,
+                paths=paths,
+                latest_linoo_selection_table=latest_linoo_selection_table,
+                tree_node_classification_summary=(
+                    None
+                    if tree_structure_data is None
+                    else tree_structure_data.latest_tree_node_classification_summary
+                ),
+            )
+
         with st.expander("Whole-tree structure · saved summary"):
             st.checkbox(
                 "Load saved whole-tree statistics",
@@ -76,8 +117,8 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
             )
             if tree_structure_data is None:
                 st.caption(
-                    "Not loaded. Node inspection above uses the runtime checkpoint "
-                    "index and does not need this full-tree scan."
+                    "Not loaded. Node inspection uses the runtime checkpoint index "
+                    "and does not need this full-tree scan."
                 )
             else:
                 if tree_structure_data.latest_tree_snapshot_status_message:
