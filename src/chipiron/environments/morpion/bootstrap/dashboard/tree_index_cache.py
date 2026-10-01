@@ -224,10 +224,7 @@ def _index_path(checkpoint_path: Path, identity: str) -> Path:
     namespace = hashlib.sha256(namespace_source).hexdigest()[:20]
     identity_hash = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     return (
-        _dashboard_cache_root()
-        / "tree-index"
-        / namespace
-        / f"{identity_hash}.sqlite3"
+        _dashboard_cache_root() / "tree-index" / namespace / f"{identity_hash}.sqlite3"
     )
 
 
@@ -287,9 +284,7 @@ def _build_index(
 ) -> None:
     """Build one SQLite index atomically from a fully validated checkpoint."""
     database_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = database_path.with_name(
-        f".{database_path.name}.{os.getpid()}.tmp"
-    )
+    temporary_path = database_path.with_name(f".{database_path.name}.{os.getpid()}.tmp")
     try:
         temporary_path.unlink()
     except FileNotFoundError:
