@@ -245,3 +245,31 @@ def test_performance_operations_is_lazy_and_partial_safe(
     ).check().run()
     assert not app.exception
     assert any("growth (s)" in frame.value.columns for frame in app.dataframe)
+
+
+def test_all_evaluator_curves_are_distinguishable() -> None:
+    """All models and splits remain visible, with one color per evaluator."""
+    from chipiron.environments.morpion.bootstrap.dashboard.pages.evaluator import (
+        render_all_evaluator_losses,
+    )
+
+    figures: list[Any] = []
+    st = SimpleNamespace(plotly_chart=lambda figure, **kwargs: figures.append(figure))
+    snapshot = SimpleNamespace(
+        training_history=[
+            {
+                "updated_at_utc": "2026-10-05T12:00:00Z",
+                "evaluator_results": {
+                    "mlp_41": {"train_loss": 1, "validation_loss": 2},
+                    "linear_41": {"train_loss": 3, "validation_loss": 4},
+                },
+            }
+        ],
+        history=[],
+    )
+    render_all_evaluator_losses(st, snapshot)
+    [figure] = figures
+    assert len(figure.data) == 4
+    assert len({trace.line.color for trace in figure.data}) == 2
+    assert len({trace.line.dash for trace in figure.data}) == 2
+    assert sorted(float(trace.y[0]) for trace in figure.data) == [1, 2, 3, 4]

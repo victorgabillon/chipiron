@@ -233,7 +233,11 @@ def render_performance(st: Any, work_dir: Path) -> None:
     if not summary.generations:
         st.info("No persisted performance evidence yet.")
         return
-    st.dataframe(summary.generations, hide_index=True, width="stretch")
+    st.dataframe(
+        pd.DataFrame(summary.generations).style.format(na_rep="N/A", precision=3),
+        hide_index=True,
+        width="stretch",
+    )
     chart_data = pd.DataFrame(summary.generations).apply(pd.to_numeric, errors="coerce")
     axis = st.selectbox("Scaling axis", ["Generation", "Nodes", "Dataset rows"])
     st.line_chart(
@@ -252,7 +256,11 @@ def render_performance(st: Any, work_dir: Path) -> None:
         st.line_chart(chart_data, x="Nodes", y="Nodes/s")
     st.subheader("Per-evaluator training")
     if summary.evaluators:
-        st.dataframe(summary.evaluators, hide_index=True, width="stretch")
+        st.dataframe(
+            pd.DataFrame(summary.evaluators).style.format(na_rep="N/A", precision=3),
+            hide_index=True,
+            width="stretch",
+        )
     else:
         st.info("Per-evaluator measurements are unavailable for this run.")
     with st.expander("Stage timeline · worker overlap and patch provenance"):
