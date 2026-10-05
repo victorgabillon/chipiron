@@ -76,6 +76,14 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     if not names:
         st.info("No configured or trained evaluator metadata is available yet.")
         return
+    st.subheader("All evaluator loss curves")
+    trend(
+        st,
+        title="Train and validation losses · all evaluators",
+        rows=loss_rows(snapshot),
+        color=PALETTE["green"],
+        key="evaluator-all-losses",
+    )
     selected = st.selectbox(
         "Inspect evaluator",
         names,

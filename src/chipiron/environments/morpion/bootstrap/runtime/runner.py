@@ -293,6 +293,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_cycle_index: int | None = None
         self._linoo_selection_table_generation: int | None = None
         self._last_reevaluation_patch_apply_metrics: dict[str, object] | None = None
+        self.last_growth_steps: int | None = None
         self._latest_checkpoint_metrics: dict[str, object] | None = None
         self._latest_training_export_stats: dict[str, object] | None = None
         self._latest_training_export_profile: dict[str, object] | None = None
@@ -629,6 +630,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 current_tree_size - initial_tree_size,
                 branch_count if isinstance(branch_count, int) else "unknown",
             )
+        self.last_growth_steps = steps_executed
         final_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
             "[growth] done steps=%s nodes_added=%s final_size=%s stop_reason=%s",

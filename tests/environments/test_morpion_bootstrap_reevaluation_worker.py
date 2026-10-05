@@ -403,6 +403,16 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
     assert cursor.next_node_cursor == "node-c"
     assert cursor.completed_full_pass_count == 0
     assert cursor.last_patch_id == "patch-1"
+    [metrics_path] = (tmp_path / "pipeline/performance").glob(
+        "generation_*/reevaluation-*.json"
+    )
+    observation = json.loads(metrics_path.read_text())
+    assert observation["elapsed_s"] >= 0
+    assert observation["process_peak_rss_mb"] > 0
+    assert observation["rows_requested"] == observation["rows_reevaluated"] == 2
+    assert observation["patch_build_write_s"] >= 0
+    assert observation["inference_window"]["elapsed_s"] >= 0
+    assert observation["next_node_cursor"] == "node-c"
 
 
 def test_worker_loads_sharded_tree_snapshot_manifest(tmp_path: Path) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -155,6 +156,15 @@ def test_patch_is_applied_and_deleted(tmp_path: Path) -> None:
         reason=None,
     )
     assert runner.received_patches == [patch]
+    [metrics_path] = (tmp_path / "pipeline/performance").glob(
+        "generation_*/patch_apply-*.json"
+    )
+    observation = json.loads(metrics_path.read_text())
+    assert observation["elapsed_s"] >= 0
+    assert observation["process_peak_rss_mb"] > 0
+    assert observation["rows_requested"] == observation["rows_applied"] == 2
+    assert observation["patch_id"] == "patch-applied"
+
     assert not paths.pipeline_reevaluation_patch_path.exists()
 
 
