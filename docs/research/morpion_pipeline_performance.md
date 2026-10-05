@@ -102,8 +102,14 @@ report actual nodes per step; parameters must not be adjusted automatically.
 - Current main rejects the historical evaluator mapping, which uses `graph_*`
   settings. Silently rebuilding it from current defaults is unacceptable.
 - The active bundle is `mlp_41` from model generation **430**, restored manually;
-  gen38 training selected **mlp_20**. Current monotonic training guards would
-  reject 39–48 behind active generation 430. No forced evaluator is configured.
+  gen38 training selected **mlp_20**. The training scheduler correctly infers an
+  external seed and keeps the local lower bound at 38, so training 39–48 is
+  eligible. A separate active-model publication guard compares against raw
+  generation 430 and would leave that bundle active after local training.
+  This blocks promotion of the automatically selected local model, not training
+  itself. No forced evaluator is configured. The existing regression
+  `test_training_stage_trains_local_generation_after_external_seed` explicitly
+  verifies this distinction.
 - Existing workers choose the latest pending generation, so an asynchronous run
   does not guarantee training of every intermediate generation. Changing that
   scheduling is outside observational instrumentation.
