@@ -29,6 +29,14 @@ from chipiron.environments.morpion.bootstrap.dashboard.checkpoint_reader import 
     checkpoint_exists,
     read_inspection_checkpoint,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.tree_index_cache import (
+    IndexedChildLink as _IndexedChildLink,
+)
+from chipiron.environments.morpion.bootstrap.dashboard.tree_index_cache import (
+    PersistentCheckpointTreeIndex,
+    PersistentTreeIndexCacheError,
+    load_or_build_persistent_checkpoint_tree_index,
+)
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from chipiron.environments.morpion.bootstrap.runtime.checkpoint_codec import (
     InvalidMorpionSearchCheckpointError,
@@ -37,7 +45,9 @@ from chipiron.environments.morpion.morpion_display import build_morpion_display_
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 LOGGER = logging.getLogger(__name__)
-_INDEXED_CHECKPOINT_TREE_CACHE: dict[tuple[str, int], _IndexedCheckpointTree] = {}
+_INDEXED_CHECKPOINT_TREE_CACHE: dict[
+    tuple[str, int], _IndexedCheckpointTree | PersistentCheckpointTreeIndex
+] = {}
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,14 +147,6 @@ class _ResolvedCheckpointReference:
 
 
 @dataclass(frozen=True, slots=True)
-class _IndexedChildLink:
-    """Indexed branch edge from one node to one expanded child."""
-
-    branch_key: object
-    child_node_id: int
-
-
-@dataclass(frozen=True, slots=True)
 class _IndexedCheckpointTree:
     """Read-only indexed checkpoint state for local dashboard navigation."""
 
@@ -152,6 +154,26 @@ class _IndexedCheckpointTree:
     nodes_by_id: dict[int, AlgorithmNodeCheckpointPayload]
     parent_ids_by_node_id: dict[int, tuple[int, ...]]
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]]
+
+    def has_node(self, node_id: int) -> bool:
+        """Return whether one node id exists in this in-memory index."""
+        return node_id in self.nodes_by_id
+
+    def node(self, node_id: int) -> AlgorithmNodeCheckpointPayload:
+        """Return one node payload by id."""
+        return self.nodes_by_id[node_id]
+
+    def node_or_none(self, node_id: int) -> AlgorithmNodeCheckpointPayload | None:
+        """Return one node payload when present."""
+        return self.nodes_by_id.get(node_id)
+
+    def parent_ids(self, node_id: int) -> tuple[int, ...]:
+        """Return reverse parent ids for one node."""
+        return self.parent_ids_by_node_id.get(node_id, ())
+
+    def child_links(self, node_id: int) -> tuple[_IndexedChildLink, ...]:
+        """Return expanded child links for one node."""
+        return self.child_links_by_node_id.get(node_id, ())
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,15 +343,23 @@ def _checkpoint_mtime_ns(checkpoint_path: Path) -> int:
 
 def _load_indexed_checkpoint_tree(
     checkpoint_path: Path,
-) -> _IndexedCheckpointTree:
-    """Load and index one runtime checkpoint for bounded local inspection."""
-    payload = read_inspection_checkpoint(checkpoint_path)
-    return _index_checkpoint_payload(payload)
+) -> _IndexedCheckpointTree | PersistentCheckpointTreeIndex:
+    """Open the persistent dashboard index, falling back to the legacy memory index."""
+    try:
+        return load_or_build_persistent_checkpoint_tree_index(checkpoint_path)
+    except PersistentTreeIndexCacheError:
+        LOGGER.warning(
+            "[dashboard] persistent_tree_index_unavailable checkpoint=%s",
+            checkpoint_path,
+            exc_info=True,
+        )
+        payload = read_inspection_checkpoint(checkpoint_path)
+        return _index_checkpoint_payload(payload)
 
 
 def _load_indexed_checkpoint_tree_cached(
     checkpoint_path: Path,
-) -> _IndexedCheckpointTree:
+) -> _IndexedCheckpointTree | PersistentCheckpointTreeIndex:
     """Return the indexed checkpoint tree cached by path and file freshness."""
     checkpoint_path = checkpoint_path.resolve()
     checkpoint_mtime_ns = _checkpoint_mtime_ns(checkpoint_path)
@@ -359,7 +389,7 @@ def _build_selected_node_snapshot_parts(
     """Build and cache the selected-node inspector payload for one checkpoint."""
     _ = checkpoint_mtime_ns
     indexed_checkpoint = _load_indexed_checkpoint_tree_cached(checkpoint_path)
-    node_payload = indexed_checkpoint.nodes_by_id[selected_node_id]
+    node_payload = indexed_checkpoint.node(selected_node_id)
     decoded_states_by_node_id: dict[int, MorpionState] = {}
     state = _decode_node_state(
         node_payload,
@@ -444,7 +474,7 @@ def _index_checkpoint_payload(
 
 def _resolve_selected_node_id(
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     selected_node_id: str | None,
 ) -> tuple[int, str | None]:
     """Resolve the requested selected node id or fall back to the root."""
@@ -457,7 +487,7 @@ def _resolve_selected_node_id(
             indexed_checkpoint.root_node_id,
             f"Selected node id {selected_node_id!r} is invalid; showing the root node instead.",
         )
-    if requested_node_id in indexed_checkpoint.nodes_by_id:
+    if indexed_checkpoint.has_node(requested_node_id):
         return requested_node_id, None
     return (
         indexed_checkpoint.root_node_id,
@@ -467,7 +497,7 @@ def _resolve_selected_node_id(
 
 def _build_node_summary(
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     node_payload: AlgorithmNodeCheckpointPayload,
     state: MorpionState,
 ) -> MorpionBootstrapNodeSummary:
@@ -483,19 +513,14 @@ def _build_node_summary(
     )
     child_ids = tuple(
         str(child_link.child_node_id)
-        for child_link in indexed_checkpoint.child_links_by_node_id[
-            node_payload.node_id
-        ]
+        for child_link in indexed_checkpoint.child_links(node_payload.node_id)
     )
     return MorpionBootstrapNodeSummary(
         node_id=str(node_payload.node_id),
         depth=node_payload.depth,
         parent_ids=tuple(
             str(parent_id)
-            for parent_id in indexed_checkpoint.parent_ids_by_node_id.get(
-                node_payload.node_id,
-                (),
-            )
+            for parent_id in indexed_checkpoint.parent_ids(node_payload.node_id)
         ),
         child_ids=child_ids,
         num_children=len(child_ids),
@@ -516,7 +541,7 @@ def _build_node_summary(
 
 def _build_child_summaries(
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     node_payload: AlgorithmNodeCheckpointPayload,
     state: MorpionState,
     decoded_states_by_node_id: dict[int, MorpionState],
@@ -527,9 +552,7 @@ def _build_child_summaries(
         _child_link_branch_label(
             state=state, child_link=child_link
         ): child_link.child_node_id
-        for child_link in indexed_checkpoint.child_links_by_node_id[
-            node_payload.node_id
-        ]
+        for child_link in indexed_checkpoint.child_links(node_payload.node_id)
     }
     child_summaries: list[MorpionBootstrapChildSummary] = []
     expanded_child_count = 0
@@ -551,7 +574,7 @@ def _build_child_summaries(
                 )
             )
             continue
-        child_payload = indexed_checkpoint.nodes_by_id[child_node_id]
+        child_payload = indexed_checkpoint.node(child_node_id)
         expanded_child_count += 1
         child_state = _decode_node_state(
             child_payload,
@@ -582,21 +605,21 @@ def _build_child_summaries(
 
 def _build_local_tree_view(
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     selected_node_id: int,
 ) -> MorpionBootstrapLocalTreeView:
     """Build the bounded local tree neighborhood around the selected node."""
-    parent_ids = indexed_checkpoint.parent_ids_by_node_id.get(selected_node_id, ())
+    parent_ids = indexed_checkpoint.parent_ids(selected_node_id)
     child_ids = tuple(
         str(child_link.child_node_id)
-        for child_link in indexed_checkpoint.child_links_by_node_id[selected_node_id]
+        for child_link in indexed_checkpoint.child_links(selected_node_id)
     )
     sibling_ids: tuple[str, ...] = ()
     if parent_ids:
         first_parent_id = parent_ids[0]
         sibling_ids = tuple(
             str(child_link.child_node_id)
-            for child_link in indexed_checkpoint.child_links_by_node_id[first_parent_id]
+            for child_link in indexed_checkpoint.child_links(first_parent_id)
             if child_link.child_node_id != selected_node_id
         )
     return MorpionBootstrapLocalTreeView(
@@ -651,7 +674,7 @@ def _build_state_view(
 def _decode_node_state(
     node_payload: AlgorithmNodeCheckpointPayload,
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     decoded_states_by_node_id: dict[int, MorpionState],
 ) -> MorpionState:
     """Decode one checkpoint node state on demand from Anemone state payloads."""
@@ -683,7 +706,7 @@ def _decode_delta_checkpoint_state(
     *,
     node_payload: AlgorithmNodeCheckpointPayload,
     state_payload: DeltaCheckpointStatePayload,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     decoded_states_by_node_id: dict[int, MorpionState],
     state_codec: MorpionStateCheckpointCodec,
     dynamics: MorpionDynamics,
@@ -696,7 +719,7 @@ def _decode_delta_checkpoint_state(
             f"delta node {node_payload.node_id} cannot reference itself as state parent",
         )
 
-    parent_payload = indexed_checkpoint.nodes_by_id.get(state_parent_node_id)
+    parent_payload = indexed_checkpoint.node_or_none(state_parent_node_id)
     if parent_payload is None:
         raise InvalidMorpionSearchCheckpointError(
             Path("<in-memory>"),
@@ -815,7 +838,7 @@ def _best_branch_label(
 
 def _best_child_id(
     *,
-    indexed_checkpoint: _IndexedCheckpointTree,
+    indexed_checkpoint: _IndexedCheckpointTree | PersistentCheckpointTreeIndex,
     node_id: int,
     state: MorpionState,
     best_branch_label: str | None,
@@ -823,7 +846,7 @@ def _best_child_id(
     """Resolve the expanded child id for the best known branch when present."""
     if best_branch_label is None:
         return None
-    for child_link in indexed_checkpoint.child_links_by_node_id[node_id]:
+    for child_link in indexed_checkpoint.child_links(node_id):
         if (
             _child_link_branch_label(state=state, child_link=child_link)
             == best_branch_label

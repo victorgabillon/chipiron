@@ -29,6 +29,23 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         render_evaluator_training_diagnostics_section,
     )
 
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.data_cache import (
+        cached_evaluator_loss_freshness_tokens,
+        cached_load_evaluator_loss_series_for_dashboard,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
+        downsample_loss_series_by_name,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.plot import (
+        plot_evaluator_losses,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.sections.plot import (
+        render_plot,
+    )
+
     page_header(
         st,
         snapshot,
@@ -76,6 +93,32 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     if not names:
         st.info("No configured or trained evaluator metadata is available yet.")
         return
+
+    st.subheader("Loss comparison")
+    st.caption(
+        "All recorded evaluator validation-loss curves on the same axes. "
+        "Use the selector below for one model's detailed diagnostics."
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(snapshot.work_dir)
+    try:
+        loss_by_name = cached_load_evaluator_loss_series_for_dashboard(
+            str(snapshot.work_dir),
+            cached_evaluator_loss_freshness_tokens(paths),
+        )
+        logarithmic = st.checkbox(
+            "Log scale for comparison",
+            key="evaluator-all-losses-log-scale",
+        )
+        render_plot(
+            st,
+            lambda: plot_evaluator_losses(
+                downsample_loss_series_by_name(loss_by_name),
+                log_scale=logarithmic,
+            ),
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        st.warning(f"Evaluator loss history temporarily unavailable: {exc}")
+
     selected = st.selectbox(
         "Inspect evaluator",
         names,
