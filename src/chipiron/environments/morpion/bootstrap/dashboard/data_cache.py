@@ -164,9 +164,7 @@ def cached_evaluator_loss_freshness_tokens(
     """Return freshness tokens for lightweight evaluator-loss history inputs."""
     return tuple(
         _path_mtime_ns(path)
-        for path in sorted(
-            paths.pipeline_dir.glob("generation_*/training_status.json")
-        )
+        for path in sorted(paths.pipeline_dir.glob("generation_*/training_status.json"))
     )
 
 
