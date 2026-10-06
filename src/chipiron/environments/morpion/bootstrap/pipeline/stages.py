@@ -124,6 +124,10 @@ from chipiron.environments.morpion.bootstrap.cycle_validation import (
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapHistoryRecorder,
 )
+from chipiron.environments.morpion.bootstrap.performance import (
+    StageMeasurement,
+    persist_stage_measurement,
+)
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
@@ -215,6 +219,7 @@ from .observability import (
 )
 from .observability import (
     configure_linoo_selection_artifact_for_growth,
+    optional_runner_mapping,
 )
 from .training_recovery import DEFAULT_STALE_GRACE_SECONDS
 from .training_selection import (
@@ -481,6 +486,7 @@ def _run_one_pipeline_growth_cycle_impl(
     memory: MemoryDiagnostics,
 ) -> MorpionBootstrapRunState:
     """Run one artifact-pipeline cycle that only grows and exports artifacts."""
+    cycle_measurement = StageMeasurement()
     cycle_started_at = time.perf_counter()
     _validate_pipeline_mode(args)
     _require_artifact_pipeline_mode(args)
@@ -650,7 +656,9 @@ def _run_one_pipeline_growth_cycle_impl(
         cycle_index=cycle_index,
         generation=run_state.generation,
     )
+    growth_measurement = StageMeasurement()
     runner.grow(args.max_growth_steps_per_cycle)
+    growth_observation = growth_measurement.finish()
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()
     memory.log("after_tree_growth")
@@ -693,6 +701,25 @@ def _run_one_pipeline_growth_cycle_impl(
         last_save_unix_s=run_state.last_save_unix_s,
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
+    )
+    persist_stage_measurement(
+        paths.work_dir,
+        run_state.generation + int(save_triggered or args.growth_save_and_exit),
+        "growth",
+        {
+            **growth_observation,
+            "cycle_index": cycle_index,
+            "node_count_before": tree_size_before_growth,
+            "node_count_after": current_tree_size,
+            "nodes_added": nodes_added,
+            "branch_count_before": branch_count_before_growth,
+            "branch_count_after": branch_count,
+            "growth_steps_requested": args.max_growth_steps_per_cycle,
+            "growth_steps": getattr(runner, "last_growth_steps", None),
+            "nodes_added_per_second": nodes_added / growth_duration_s
+            if growth_duration_s > 0
+            else None,
+        },
     )
     save_reason = _save_trigger_reason(
         current_tree_size=current_tree_size,
@@ -991,7 +1018,21 @@ def _run_one_pipeline_growth_cycle_impl(
         checkpoint_save_rss_before_mb = (
             current_rss_mb() if args.growth_memory_profile else None
         )
+        checkpoint_measurement = StageMeasurement()
         save_checkpoint(runtime_checkpoint_path)
+        checkpoint_observation = checkpoint_measurement.finish()
+        persist_stage_measurement(
+            paths.work_dir,
+            generation,
+            "checkpoint",
+            {
+                **checkpoint_observation,
+                "components": optional_runner_mapping(
+                    runner, "latest_checkpoint_metrics"
+                ),
+                "node_count": current_tree_size,
+            },
+        )
         if not runtime_checkpoint_artifact_exists(runtime_checkpoint_path):
             raise MissingSavedBootstrapArtifactError(
                 action="runner.save_checkpoint()",
@@ -1045,11 +1086,29 @@ def _run_one_pipeline_growth_cycle_impl(
         relative_tree_snapshot_path = None
         training_export_override = {"status": "skipped", "reason": "config"}
     else:
+        export_measurement = StageMeasurement()
         tree_snapshot_path = _export_training_snapshot_for_generation(
             args=args,
             paths=paths,
             runner=runner,
             generation=generation,
+        )
+        persist_stage_measurement(
+            paths.work_dir,
+            generation,
+            "export",
+            export_measurement.finish(
+                components=optional_runner_mapping(
+                    runner, "latest_training_export_stats"
+                ),
+                profile=optional_runner_mapping(
+                    runner, "latest_training_export_profile"
+                ),
+                state_eviction=optional_runner_mapping(
+                    runner, "profile_state_eviction_runtime"
+                ),
+                node_count=current_tree_size,
+            ),
         )
         if not tree_snapshot_path.is_file():
             raise MissingSavedBootstrapArtifactError(
@@ -1081,6 +1140,16 @@ def _run_one_pipeline_growth_cycle_impl(
         training_export_metadata = observability_metadata["training_export"]
         if isinstance(training_export_metadata, dict):
             training_export_metadata.setdefault("status", "written")
+    persist_stage_measurement(
+        paths.work_dir,
+        generation,
+        "cycle",
+        cycle_measurement.finish(
+            cycle_index=cycle_index,
+            node_count=current_tree_size,
+            nodes_added=nodes_added,
+        ),
+    )
     run_state_metadata = _next_metadata(
         run_state.metadata,
         relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
@@ -1224,6 +1293,7 @@ def run_pipeline_dataset_stage(
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
+    dataset_measurement = StageMeasurement()
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
@@ -1320,6 +1390,7 @@ def run_pipeline_dataset_stage(
             event="before_snapshot_load",
             tree_snapshot_path=tree_snapshot_path,
         )
+        snapshot_started = time.perf_counter()
         snapshot = _load_training_snapshot_for_generation(
             args=args,
             artifact_path=tree_snapshot_path,
@@ -1330,6 +1401,7 @@ def run_pipeline_dataset_stage(
             event="after_snapshot_load",
             node_count=len(snapshot.nodes),
         )
+        snapshot_load_s = time.perf_counter() - snapshot_started
         previous_record_status = resolve_previous_pipeline_record_status(
             paths=paths,
             generation=generation,
@@ -1345,6 +1417,7 @@ def run_pipeline_dataset_stage(
             previous_record_status=previous_record_status,
             generation=generation,
         )
+        record_scan_s = time.perf_counter() - record_started_at
         LOGGER.info(
             "[record] resolve_done generation=%s elapsed=%.3fs best_total_points=%s",
             generation,
@@ -1363,6 +1436,7 @@ def run_pipeline_dataset_stage(
             snapshot=snapshot,
             previous_frontier_status=previous_frontier_status,
         )
+        frontier_scan_s = time.perf_counter() - frontier_started_at
         frontier_status = frontier_resolution.status
         LOGGER.info(
             "[frontier] resolve_done generation=%s elapsed=%.3fs candidates=%s best_total_points=%s method=depth_metadata",
@@ -1383,6 +1457,7 @@ def run_pipeline_dataset_stage(
             event="before_rows_write_stream",
             node_count=len(snapshot.nodes),
         )
+        rows_started = time.perf_counter()
         streaming_rows = _streaming_rows_from_training_snapshot(
             args=args,
             snapshot=snapshot,
@@ -1403,6 +1478,7 @@ def run_pipeline_dataset_stage(
                 row_count,
             ),
         )
+        rows_extract_write_s = time.perf_counter() - rows_started
         expected_num_rows = streaming_rows.metadata.get("num_rows")
         if (
             isinstance(expected_num_rows, int)
@@ -1470,6 +1546,21 @@ def run_pipeline_dataset_stage(
                 "[leaderboard] persist_done elapsed=%.3fs",
                 time.perf_counter() - leaderboard_started_at,
             )
+        dataset_observation = dataset_measurement.finish(
+            input_tree_generation=generation,
+            rows_considered=len(snapshot.nodes),
+            rows_emitted=write_stats.row_count,
+            output_row_count=write_stats.row_count,
+            bytes_written=rows_bytes,
+            snapshot_load_s=snapshot_load_s,
+            record_scan_s=record_scan_s,
+            frontier_scan_s=frontier_scan_s,
+            rows_extract_write_s=rows_extract_write_s,
+            leaderboard_s=time.perf_counter() - leaderboard_started_at,
+        )
+        persist_stage_measurement(
+            paths.work_dir, generation, "dataset", dataset_observation
+        )
         save_pipeline_dataset_status_file(
             generation=generation,
             dataset_status=manifest.dataset_status,
@@ -1603,6 +1694,7 @@ def run_pipeline_training_stage(
         metadata={"entrypoint": "run_pipeline_training_stage"},
     )
     timestamp_utc = _now_timestamp_utc()
+    training_measurement = StageMeasurement()
     training_cycle_started_at = time.perf_counter()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
     log_pipeline_memory(
@@ -1828,6 +1920,16 @@ def run_pipeline_training_stage(
                 ],
             )
         save_training_cursor_completed(paths=paths, generation=generation)
+        persist_stage_measurement(
+            paths.work_dir,
+            generation,
+            "training",
+            training_measurement.finish(
+                dataset_rows=training_rows_used,
+                selected_evaluator=training_result.selected_evaluator_name,
+                selection_policy=training_result.selection_policy,
+            ),
+        )
         LOGGER.info(
             "[pipeline] training_done generation=%s selected=%s",
             generation,

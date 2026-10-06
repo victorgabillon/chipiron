@@ -18,6 +18,7 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
+from .performance import StageMeasurement, persist_stage_measurement
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
     MorpionPipelineActiveModel,
@@ -383,6 +384,8 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         repr=False,
     )
     _evaluator: object | None = field(default=None, init=False, repr=False)
+    last_inference_s: float = field(default=0.0, init=False)
+    last_model_load_s: float = field(default=0.0, init=False)
 
     def _load_snapshot_state(self, payload: object) -> MorpionState:
         """Decode one training-snapshot state payload for model evaluation."""
@@ -404,7 +407,10 @@ class MorpionActiveModelNodeReevaluationEvaluator:
     ) -> tuple[MorpionReevaluationPatchRow, ...]:
         """Evaluate one bounded snapshot node set with the active model bundle."""
         nodes_by_id = {node.node_id: node for node in snapshot.nodes}
+        load_started = time.perf_counter()
         evaluator = self._resolved_evaluator()
+        self.last_model_load_s = time.perf_counter() - load_started
+        self.last_inference_s = 0.0
         rows: list[MorpionReevaluationPatchRow] = []
         for node_id in node_ids:
             node = nodes_by_id[node_id]
@@ -416,7 +422,9 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                 source = "terminal_existing_value"
             else:
                 state = self._load_snapshot_state(node.state_ref_payload)
+                inference_started = time.perf_counter()
                 raw_evaluation = cast("Any", evaluator).evaluate(state)
+                self.last_inference_s += time.perf_counter() - inference_started
                 direct_value = _extract_score(raw_evaluation, node_id=node_id)
                 source = "active_model_reevaluation"
             rows.append(
@@ -770,6 +778,7 @@ def run_morpion_reevaluation_worker_once(
         event="before_snapshot_load",
         tree_snapshot_path=snapshot_path,
     )
+    stage_measurement = StageMeasurement()
     snapshot = load_reevaluation_training_tree_snapshot(snapshot_path)
     log_pipeline_memory(
         stage="reevaluation",
@@ -851,6 +860,8 @@ def run_morpion_reevaluation_worker_once(
         event="before_patch_rows_build",
         rows=len(selected_node_ids),
     )
+    inference_measurement = StageMeasurement(cuda_device="auto")
+    active_model_evaluator = None
     patch_rows_start_unix_s = time.time()
     if evaluator is not None:
         patch_rows = tuple(evaluator.evaluate_patch_rows(snapshot, selected_node_ids))
@@ -871,6 +882,7 @@ def run_morpion_reevaluation_worker_once(
         event="after_patch_rows_build",
         rows=len(patch_rows),
     )
+    inference_observation = inference_measurement.finish()
     patch_rows_elapsed_s = max(time.time() - patch_rows_start_unix_s, 0.0)
     rows_per_s = (
         len(patch_rows) / patch_rows_elapsed_s if patch_rows_elapsed_s > 0.0 else 0.0
@@ -929,6 +941,7 @@ def run_morpion_reevaluation_worker_once(
     resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
     timestamp_utc = timestamp_utc_from_unix_s(resolved_now_unix_s)
     resolved_patch_id = str(uuid.uuid4()) if patch_id is None else patch_id
+    patch_write_started = time.perf_counter()
     patch = MorpionReevaluationPatch(
         patch_id=resolved_patch_id,
         created_at_utc=timestamp_utc,
@@ -988,6 +1001,7 @@ def run_morpion_reevaluation_worker_once(
             model_bundle_path=active_model.model_bundle_path,
         )
 
+    patch_build_write_s = time.perf_counter() - patch_write_started
     LOGGER.info(
         "[reevaluation-patch] create_done patch_id=%s rows=%s direct_updates=%s tree_generation=%s start_cursor=%s end_cursor=%s",
         patch.patch_id,
@@ -1052,6 +1066,32 @@ def run_morpion_reevaluation_worker_once(
         rows=len(patch.rows),
     )
 
+    persist_stage_measurement(
+        paths.work_dir,
+        tree_generation,
+        "reevaluation",
+        stage_measurement.finish(
+            model_generation=active_model.generation,
+            evaluator_name=active_model.evaluator_name,
+            patch_id=patch.patch_id,
+            rows_requested=len(selected_node_ids),
+            rows_reevaluated=len(patch.rows),
+            node_count=len(sorted_node_ids),
+            inference_window=inference_observation,
+            model_inference_s=getattr(
+                active_model_evaluator or evaluator, "last_inference_s", None
+            ),
+            model_load_s=getattr(
+                active_model_evaluator or evaluator, "last_model_load_s", None
+            ),
+            patch_rows_build_s=patch_rows_elapsed_s,
+            patch_build_write_s=patch_build_write_s,
+            start_cursor=selected_start_cursor,
+            end_cursor=selected_end_cursor,
+            next_node_cursor=next_node_cursor,
+            completed_full_pass_count=next_completed_full_pass_count,
+        ),
+    )
     return MorpionReevaluationWorkerResult(
         patch_written=True,
         reason=None,
