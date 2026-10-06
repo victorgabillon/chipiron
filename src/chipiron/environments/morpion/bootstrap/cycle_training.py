@@ -36,6 +36,7 @@ from .evaluator_diagnostics import (
     save_evaluator_training_diagnostics,
 )
 from .history import MorpionEvaluatorMetrics
+from .performance import StageMeasurement, persist_stage_measurement
 from .pipeline_artifacts import MorpionPipelineEvaluatorTrainingResult
 from .pipeline_memory import log_pipeline_memory
 from .training_logging import (
@@ -466,6 +467,7 @@ def train_and_select_evaluators(
             event="before_evaluator",
             evaluator=evaluator_name,
         )
+        evaluator_measurement = StageMeasurement(cuda_device=args.training_device)
         evaluator_started_at = time.perf_counter()
         try:
             trained_model, metrics = train_morpion_regressor(
@@ -489,6 +491,7 @@ def train_and_select_evaluators(
                 error=exc,
             )
             raise
+        evaluator_observation = evaluator_measurement.finish()
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         learning_rate = _metric_optional_float(metrics, "learning_rate")
@@ -536,6 +539,7 @@ def train_and_select_evaluators(
             loss_name=evaluator_metrics[evaluator_name].loss_name,
             elapsed_s=evaluator_elapsed_s,
             model_bundle_path=model_bundle_paths[evaluator_name],
+            performance=evaluator_observation,
         )
         LOGGER.info(
             "[train] evaluator_done name=%s train_loss=%s "
@@ -545,6 +549,28 @@ def train_and_select_evaluators(
             evaluator_metrics[evaluator_name].validation_loss,
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
+        )
+        persist_stage_measurement(
+            paths.work_dir,
+            generation,
+            "evaluator",
+            {
+                **evaluator_observation,
+                "evaluator_name": evaluator_name,
+                "metrics": {
+                    key: metrics.get(key)
+                    for key in (
+                        "train_loss",
+                        "validation_loss",
+                        "train_mae",
+                        "validation_mae",
+                        "num_epochs",
+                        "num_train_samples",
+                        "num_validation_samples",
+                        "final_loss",
+                    )
+                },
+            },
         )
         log_training_evaluator_done(
             generation=generation,
@@ -728,6 +754,7 @@ def train_and_select_evaluators_streaming(
             event="before_evaluator_streaming",
             evaluator=evaluator_name,
         )
+        evaluator_measurement = StageMeasurement(cuda_device=args.training_device)
         evaluator_started_at = time.perf_counter()
 
         def _log_progress(
@@ -782,6 +809,7 @@ def train_and_select_evaluators_streaming(
                 error=exc,
             )
             raise
+        evaluator_observation = evaluator_measurement.finish()
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         learning_rate = _metric_optional_float(metrics, "learning_rate")
@@ -829,6 +857,7 @@ def train_and_select_evaluators_streaming(
             loss_name=evaluator_metrics[evaluator_name].loss_name,
             elapsed_s=evaluator_elapsed_s,
             model_bundle_path=model_bundle_paths[evaluator_name],
+            performance=evaluator_observation,
         )
         LOGGER.info(
             "[train-stream] evaluator_done name=%s train_loss=%s "
@@ -838,6 +867,28 @@ def train_and_select_evaluators_streaming(
             evaluator_metrics[evaluator_name].validation_loss,
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
+        )
+        persist_stage_measurement(
+            paths.work_dir,
+            generation,
+            "evaluator",
+            {
+                **evaluator_observation,
+                "evaluator_name": evaluator_name,
+                "metrics": {
+                    key: metrics.get(key)
+                    for key in (
+                        "train_loss",
+                        "validation_loss",
+                        "train_mae",
+                        "validation_mae",
+                        "num_epochs",
+                        "num_train_samples",
+                        "num_validation_samples",
+                        "final_loss",
+                    )
+                },
+            },
         )
         log_training_evaluator_done(
             generation=generation,

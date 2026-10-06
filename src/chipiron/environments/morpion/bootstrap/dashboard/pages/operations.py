@@ -62,6 +62,13 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
                 render_disk_usage_section(
                     st=st, summary=build_disk_usage_summary(snapshot.work_dir)
                 )
+    with st.expander("Performance & scaling"):
+        if st.checkbox("Load performance measurements"):
+            from chipiron.environments.morpion.bootstrap.dashboard.performance_view import (
+                render_performance,
+            )
+
+            render_performance(st, snapshot.work_dir)
     with st.expander("Memory & persistence · checkpoint/export diagnostics"):
         render_observability_section(
             st=st,

@@ -479,9 +479,11 @@ class MorpionPipelineEvaluatorTrainingResult:
     batch_size: int | None = None
     learning_rate: float | None = None
     loss_name: str | None = None
+    performance: dict[str, object] = field(default_factory=_empty_metadata)
 
     def __post_init__(self) -> None:
         """Validate and normalize per-evaluator training result fields eagerly."""
+        object.__setattr__(self, "performance", _metadata_dict(self.performance))
         object.__setattr__(
             self,
             "final_loss",
@@ -1214,6 +1216,7 @@ def pipeline_evaluator_training_result_to_dict(
     """Serialize one per-evaluator training result into JSON-friendly data."""
     return {
         "elapsed_s": result.elapsed_s,
+        "performance": dict(result.performance),
         "final_loss": result.final_loss,
         "train_loss": result.train_loss,
         "validation_loss": result.validation_loss,
@@ -1237,6 +1240,7 @@ def pipeline_evaluator_training_result_from_dict(
     return MorpionPipelineEvaluatorTrainingResult(
         final_loss=_float_value(payload.get("final_loss"), field_name="final_loss"),
         elapsed_s=_float_value(payload.get("elapsed_s"), field_name="elapsed_s"),
+        performance=_metadata_dict(payload.get("performance")),
         model_bundle_path=_require_non_empty_str(
             payload.get("model_bundle_path"),
             field_name="model_bundle_path",

@@ -76,6 +76,8 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     if not names:
         st.info("No configured or trained evaluator metadata is available yet.")
         return
+    st.subheader("All evaluator loss curves")
+    render_all_evaluator_losses(st, snapshot)
     selected = st.selectbox(
         "Inspect evaluator",
         names,
@@ -131,3 +133,40 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         st.write("Training status and dataset provenance")
         st.json(snapshot.training)
         st.json(snapshot.dataset)
+
+
+def render_all_evaluator_losses(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
+    """Keep each evaluator identifiable by color, with train/validation line styles."""
+    import plotly.express as px
+
+    rows = loss_rows(snapshot)
+    if not rows:
+        st.caption("Waiting for the first saved observation.")
+        return
+    for row in rows:
+        row["evaluator"], row["split"] = row["series"].rsplit(" · ", 1)
+    figure = px.line(
+        rows,
+        x="time",
+        y="value",
+        color="evaluator",
+        line_dash="split",
+        color_discrete_sequence=px.colors.qualitative.Safe,
+        markers=True,
+        height=420,
+        labels={
+            "time": "Recorded training time",
+            "value": "Loss",
+            "evaluator": "Evaluator",
+            "split": "Split",
+        },
+    )
+    figure.update_layout(
+        margin={"l": 8, "r": 8, "t": 12, "b": 8}, legend_title_text="Evaluator · split"
+    )
+    st.plotly_chart(
+        figure,
+        width="stretch",
+        config={"displayModeBar": False},
+        key="evaluator-all-losses",
+    )

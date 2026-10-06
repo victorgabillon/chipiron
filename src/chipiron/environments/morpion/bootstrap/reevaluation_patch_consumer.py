@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
+from .performance import StageMeasurement, persist_stage_measurement
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
     delete_reevaluation_patch,
@@ -133,6 +134,7 @@ def apply_pending_reevaluation_patch_to_runner(
         patch.patch_id,
         len(patch.rows),
     )
+    measurement = StageMeasurement()
     try:
         applied_count = _resolve_applied_count(patch, apply_patch(patch))
     except Exception:
@@ -143,9 +145,25 @@ def apply_pending_reevaluation_patch_to_runner(
         )
         raise
 
+    observation = measurement.finish()
     apply_metrics = getattr(runner, "last_reevaluation_patch_apply_metrics", None)
     if callable(apply_metrics):
         apply_metrics = apply_metrics()
+    persist_stage_measurement(
+        paths.work_dir,
+        patch.tree_generation
+        if patch.tree_generation is not None
+        else patch.evaluator_generation,
+        "patch_apply",
+        {
+            **observation,
+            "patch_id": patch.patch_id,
+            "model_generation": patch.evaluator_generation,
+            "rows_requested": len(patch.rows),
+            "rows_applied": applied_count,
+            "counts": apply_metrics if isinstance(apply_metrics, dict) else {},
+        },
+    )
     if delete_after_apply:
         delete_reevaluation_patch(patch_path)
     LOGGER.info(
