@@ -12,6 +12,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressorArgs,
 )
@@ -39,6 +42,7 @@ class MorpionEvaluatorSpec:
     learning_rate: float
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
     feature_names: tuple[str, ...] = field(default_factory=tuple)
+    legacy_graph_tokens: LegacyGraphConfig | None = None
     entity_max_tokens: int = 1536
     entity_input_feature_dim: int = MORPION_ENTITY_TOKEN_FEATURE_DIM
     entity_d_model: int = 64
@@ -63,6 +67,7 @@ class MorpionEvaluatorSpec:
         object.__setattr__(self, "feature_names", subset.feature_names)
         MorpionRegressorArgs(
             model_kind=self.model_type,
+            legacy_graph_tokens=self.legacy_graph_tokens,
             feature_subset_name=subset.name,
             feature_names=subset.feature_names,
             hidden_sizes=self.hidden_sizes,

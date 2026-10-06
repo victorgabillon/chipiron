@@ -137,6 +137,7 @@ def morpion_training_args_from_evaluator_spec(
         feature_subset_name=spec.feature_subset_name,
         feature_names=spec.feature_names,
         hidden_sizes=spec.hidden_sizes,
+        legacy_graph_tokens=spec.legacy_graph_tokens,
         entity_max_tokens=spec.entity_max_tokens,
         entity_input_feature_dim=spec.entity_input_feature_dim,
         entity_d_model=spec.entity_d_model,

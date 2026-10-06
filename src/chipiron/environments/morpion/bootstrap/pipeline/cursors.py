@@ -50,7 +50,22 @@ def active_model_generation_for_training_guard(
     """Return current active-model generation when the singleton artifact exists."""
     if not paths.pipeline_active_model_path.is_file():
         return None
-    return load_pipeline_active_model(paths.pipeline_active_model_path).generation
+    active = load_pipeline_active_model(paths.pipeline_active_model_path)
+    if active.source == "external_seed":
+        from chipiron.environments.morpion.bootstrap.derived.provenance import (
+            derived_external_local_bound,
+        )
+
+        bound = derived_external_local_bound(
+            paths.work_dir,
+            active.metadata,
+            active.source_generation
+            if active.source_generation is not None
+            else active.generation,
+        )
+        if bound is not None:
+            return bound
+    return active.generation
 
 
 def _latest_local_generation(paths: MorpionBootstrapPaths) -> int | None:

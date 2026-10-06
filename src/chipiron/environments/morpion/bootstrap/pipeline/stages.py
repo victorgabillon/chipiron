@@ -371,6 +371,7 @@ def run_pipeline_growth_stage(
     runner: MorpionSearchRunner,
     *,
     max_cycles: int = 1,
+    derived_sequential: bool = False,
 ) -> MorpionBootstrapRunState:
     """Run the Phase 4 growth-only stage for artifact-pipeline mode."""
     _require_artifact_pipeline_mode(args)
@@ -405,8 +406,25 @@ def run_pipeline_growth_stage(
             control=control,
             config_hash=config_hash,
             bootstrap_config=current_config,
+            force_save=derived_sequential,
         )
-        save_bootstrap_run_state(run_state, paths.run_state_path)
+        if derived_sequential:
+            from dataclasses import asdict
+
+            from chipiron.environments.morpion.bootstrap.derived.provenance import (
+                atomic_json,
+                sync_checkpoint,
+            )
+
+            if run_state.latest_runtime_checkpoint_path is not None:
+                checkpoint_path = paths.resolve_work_dir_path(
+                    run_state.latest_runtime_checkpoint_path
+                )
+                assert checkpoint_path is not None
+                sync_checkpoint(checkpoint_path)
+            atomic_json(paths.run_state_path, asdict(run_state))
+        else:
+            save_bootstrap_run_state(run_state, paths.run_state_path)
         if run_state.generation > previous_generation:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
@@ -452,6 +470,7 @@ def _run_one_pipeline_growth_cycle(
     config_hash: str,
     bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None = None,
+    force_save: bool = False,
 ) -> MorpionBootstrapRunState:
     """Run one growth-only artifact-pipeline cycle with memory hooks."""
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
@@ -467,6 +486,7 @@ def _run_one_pipeline_growth_cycle(
             bootstrap_config=bootstrap_config,
             now_unix_s=now_unix_s,
             memory=memory,
+            force_save=force_save,
         )
     finally:
         log_after_cycle_gc(memory)
@@ -484,6 +504,7 @@ def _run_one_pipeline_growth_cycle_impl(
     bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None,
     memory: MemoryDiagnostics,
+    force_save: bool = False,
 ) -> MorpionBootstrapRunState:
     """Run one artifact-pipeline cycle that only grows and exports artifacts."""
     cycle_measurement = StageMeasurement()
@@ -704,7 +725,8 @@ def _run_one_pipeline_growth_cycle_impl(
     )
     persist_stage_measurement(
         paths.work_dir,
-        run_state.generation + int(save_triggered or args.growth_save_and_exit),
+        run_state.generation
+        + int(save_triggered or args.growth_save_and_exit or force_save),
         "growth",
         {
             **growth_observation,
@@ -729,6 +751,9 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+    if force_save:
+        save_triggered = True
+        save_reason = "derived_generation_barrier"
     if args.growth_save_and_exit:
         save_triggered = True
         save_reason = "growth_save_and_exit"

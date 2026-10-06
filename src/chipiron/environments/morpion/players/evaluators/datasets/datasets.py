@@ -28,6 +28,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.tokens import (
+    MorpionGraphTokenConverter,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
@@ -75,6 +81,7 @@ class MorpionEntityTokenSupervisedDatasetArgs:
 
     file_name: str | os.PathLike[str]
     max_tokens: int = 1536
+    legacy_graph_tokens: LegacyGraphConfig | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,7 +147,7 @@ def process_morpion_supervised_row_to_entity_token_tensors(
     row: MorpionSupervisedRow,
     *,
     dynamics: MorpionDynamics | None = None,
-    converter: MorpionEntityTokenConverter | None = None,
+    converter: MorpionEntityTokenConverter | MorpionGraphTokenConverter | None = None,
 ) -> MorpionEntityTokenSupervisedSample:
     """Convert one raw Morpion supervised row into entity-token tensors."""
     dyn = dynamics if dynamics is not None else MorpionDynamics()
@@ -235,7 +242,7 @@ class MorpionEntityTokenSupervisedDataset(Dataset[MorpionEntityTokenSupervisedSa
 
     args: MorpionEntityTokenSupervisedDatasetArgs
     _dynamics: MorpionDynamics
-    _converter: MorpionEntityTokenConverter
+    _converter: MorpionEntityTokenConverter | MorpionGraphTokenConverter
     _rows_bundle: MorpionSupervisedRows
     _samples: tuple[MorpionEntityTokenSupervisedSample, ...]
 
@@ -243,9 +250,15 @@ class MorpionEntityTokenSupervisedDataset(Dataset[MorpionEntityTokenSupervisedSa
         """Load and eagerly preprocess one persisted Morpion row file."""
         self.args = args
         self._dynamics = MorpionDynamics()
-        self._converter = MorpionEntityTokenConverter(
-            dynamics=self._dynamics,
-            max_tokens=args.max_tokens,
+        self._converter = (
+            MorpionGraphTokenConverter(
+                dynamics=self._dynamics,
+                max_tokens=args.legacy_graph_tokens.graph_max_tokens,
+            )
+            if args.legacy_graph_tokens is not None
+            else MorpionEntityTokenConverter(
+                dynamics=self._dynamics, max_tokens=args.max_tokens
+            )
         )
         self._rows_bundle = load_morpion_supervised_rows(os.fspath(args.file_name))
         self._samples = tuple(

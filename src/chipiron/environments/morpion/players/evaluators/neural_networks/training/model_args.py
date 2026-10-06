@@ -30,6 +30,7 @@ def morpion_regressor_args_from_training_args(
         feature_subset_name=args.feature_subset_name,
         feature_names=args.feature_names,
         hidden_sizes=resolve_hidden_sizes(args),
+        legacy_graph_tokens=args.legacy_graph_tokens,
         entity_max_tokens=args.entity_max_tokens,
         entity_input_feature_dim=args.entity_input_feature_dim,
         entity_d_model=args.entity_d_model,

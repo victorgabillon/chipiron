@@ -20,6 +20,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tok
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    legacy_graph_config_from_dict,
+)
 
 from .bootstrap_errors import InvalidReevaluationBlendAlphaError
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
@@ -1234,6 +1237,7 @@ def _evaluator_spec_from_config_payload(
         "learning_rate",
         "feature_subset_name",
         "feature_names",
+        "legacy_graph_tokens",
         "entity_max_tokens",
         "entity_input_feature_dim",
         "entity_d_model",
@@ -1255,6 +1259,9 @@ def _evaluator_spec_from_config_payload(
         )
 
     return MorpionEvaluatorSpec(
+        legacy_graph_tokens=legacy_graph_config_from_dict(
+            spec_mapping.get("legacy_graph_tokens")
+        ),
         name=_required_str(
             spec_mapping.get("name"),
             field_name=f"{section_name}.name",
@@ -1370,6 +1377,9 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "feature_subset_name": spec.feature_subset_name,
         "feature_names": list(spec.feature_names),
     }
+    if spec.legacy_graph_tokens is not None:
+        payload["legacy_graph_tokens"] = spec.legacy_graph_tokens.to_dict()
+        return payload
     if (
         is_morpion_entity_token_model_kind(spec.model_type)
         or is_relational_entity_token_model_kind(spec.model_type)
