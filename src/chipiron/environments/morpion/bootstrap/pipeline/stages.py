@@ -725,7 +725,8 @@ def _run_one_pipeline_growth_cycle_impl(
     )
     persist_stage_measurement(
         paths.work_dir,
-        run_state.generation + int(save_triggered or args.growth_save_and_exit),
+        run_state.generation
+        + int(save_triggered or args.growth_save_and_exit or force_save),
         "growth",
         {
             **growth_observation,

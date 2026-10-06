@@ -380,6 +380,25 @@ def test_real_tiny_two_generation_pipeline_promotes_and_drains(
         evidence = result["generations"][str(generation)]["evidence"]
         assert evidence["training"]["evaluators"] == ["linear_41", "transformer"]
         assert evidence["drain"]["rows"] == evidence["growth"]["nodes"]
+        assert evidence["growth"]["growth_steps"] == 2
+        observations = [
+            read_json(path)
+            for path in (
+                target / "pipeline/performance" / f"generation_{generation:06d}"
+            ).glob("*.json")
+        ]
+        assert {
+            "growth",
+            "checkpoint",
+            "export",
+            "dataset",
+            "training",
+            "reevaluation",
+            "patch_apply",
+        } <= {item["stage"] for item in observations}
+        growth = next(item for item in observations if item["stage"] == "growth")
+        assert growth["nodes_added"] == evidence["growth"]["nodes_added"]
+        assert growth["growth_steps"] == 2
     assert _hashes(historical) == before
     assert not (target / "search_checkpoints/generation_000041.sharded").exists()
 
