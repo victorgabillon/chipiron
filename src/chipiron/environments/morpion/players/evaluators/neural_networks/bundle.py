@@ -39,6 +39,8 @@ from .latent_window_features import (
     MORPION_CORRECTED_BLOCKING_PROXY_VERSION,
     MORPION_LATENT_WINDOW_PROXY_VERSION,
 )
+from .legacy_graph.config import LegacyGraphConfig, legacy_graph_config_from_dict
+from .legacy_graph.tokens import MORPION_GRAPH_TOKEN_FEATURE_NAMES
 from .model import (
     MORPION_INPUT_DIM,
     InvalidMorpionEntityTokenRegressorArgsError,
@@ -350,7 +352,9 @@ def save_morpion_model_bundle(
     manifest = MorpionModelManifest(
         input_dim=model_args.input_dim,
         input_representation=(
-            morpion_entity_token_input_representation(
+            "graph_tokens_v1"
+            if model_args.legacy_graph_tokens is not None
+            else morpion_entity_token_input_representation(
                 model_args.global_geometry_features,
                 model_args.edge_token_mode,
                 model_args.latent_window_move_features,
@@ -397,7 +401,12 @@ def load_morpion_model_bundle(
     _validate_manifest_compatibility(manifest, model_args)
 
     model = build_morpion_regressor(model_args)
-    model.load_weights_from_file(str(weights_path))
+    if model_args.legacy_graph_tokens is not None:
+        model.load_state_dict(
+            torch.load(weights_path, map_location="cpu", weights_only=True), strict=True
+        )
+    else:
+        model.load_weights_from_file(str(weights_path))
     return model, model_args, manifest
 
 
@@ -426,6 +435,13 @@ def _bundle_metadata(
         "reported_metric_scale": "original",
         "public_output_scale": "original",
     })
+    if model_args.legacy_graph_tokens is not None:
+        bundle_metadata.update({
+            "legacy_graph_tokens": model_args.legacy_graph_tokens.to_dict(),
+            "graph_token_feature_names": list(MORPION_GRAPH_TOKEN_FEATURE_NAMES),
+            "compatibility_implementation": "historical graph_tokens_v1",
+        })
+        return bundle_metadata
     if _uses_entity_token_input(model_args.model_kind):
         feature_names = morpion_entity_token_feature_names(
             model_args.global_geometry_features,
@@ -500,6 +516,13 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     if not _is_str_key_mapping(raw):
         raise InvalidMorpionModelBundleError.invalid_model_args_mapping(path)
     data = cast("Mapping[str, object]", raw)
+    if "legacy_graph_tokens" in data or (
+        data.get("model_kind") == "entity_token_transformer_value_net"
+        and data.get("input_dim") == 26
+        and not any(key.startswith("entity_") for key in data)
+        and (set(LegacyGraphConfig().to_dict()) - {"representation"}) <= set(data)
+    ):
+        return _load_legacy_model_args(data, path)
     allowed_fields = {
         "model_kind",
         "input_dim",
@@ -677,6 +700,18 @@ def _validate_manifest_compatibility(
     """Validate that the loaded Morpion manifest matches current code."""
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
+    if model_args.legacy_graph_tokens is not None:
+        if (
+            manifest.model_kind != model_args.model_kind
+            or manifest.input_representation != "graph_tokens_v1"
+            or manifest.input_dim != 26
+            or manifest.entity_relation_schema is not None
+            or manifest.entity_relation_type_count is not None
+        ):
+            raise IncompatibleMorpionModelBundleError.wrong_feature_schema(
+                manifest.input_representation
+            )
+        return
     if _uses_entity_token_input(model_args.model_kind):
         if manifest.model_kind != model_args.model_kind:
             raise IncompatibleMorpionModelBundleError.wrong_model_kind(
@@ -749,6 +784,7 @@ def _validate_manifest_compatibility(
 
 def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
     """Serialize Morpion regressor args into JSON-friendly data."""
+    data: dict[str, object]
     target_transform_data: dict[str, object] = {}
     if (
         model_args.target_transform_enabled
@@ -760,8 +796,19 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
             "target_mean": model_args.target_mean,
             "target_standard_deviation": model_args.target_standard_deviation,
         })
+    if model_args.legacy_graph_tokens is not None:
+        return {
+            "model_kind": model_args.model_kind,
+            "input_representation": "graph_tokens_v1",
+            "input_dim": 26,
+            "feature_subset_name": model_args.feature_subset_name,
+            "feature_names": list(model_args.feature_names),
+            "hidden_sizes": None,
+            "legacy_graph_tokens": model_args.legacy_graph_tokens.to_dict(),
+            **target_transform_data,
+        }
     if _uses_entity_token_input(model_args.model_kind):
-        data: dict[str, object] = {
+        data = {
             "model_kind": model_args.model_kind,
             "input_representation": morpion_entity_token_input_representation(
                 model_args.global_geometry_features,
@@ -798,7 +845,7 @@ def _model_args_to_dict(model_args: MorpionRegressorArgs) -> dict[str, object]:
                 "relation_bias_scale": model_args.relation_bias_scale,
             })
         return data
-    data: dict[str, object] = {
+    data = {
         "model_kind": model_args.model_kind,
         "input_dim": model_args.input_dim,
         "feature_subset_name": model_args.feature_subset_name,
@@ -950,3 +997,59 @@ __all__ = [
     "load_morpion_regressor_for_inference",
     "save_morpion_model_bundle",
 ]
+
+
+def _load_legacy_model_args(
+    data: Mapping[str, object], path: Path
+) -> MorpionRegressorArgs:
+    """Recognize historical bundles without treating graph fields as entity fields."""
+    graph_fields = set(LegacyGraphConfig().to_dict()) - {"representation"}
+    common = {
+        "model_kind",
+        "input_representation",
+        "input_dim",
+        "feature_subset_name",
+        "feature_names",
+        "hidden_sizes",
+    }
+    if "legacy_graph_tokens" in data:
+        allowed = common | {
+            "legacy_graph_tokens",
+            "target_transform_enabled",
+            "target_mean",
+            "target_standard_deviation",
+        }
+        legacy = legacy_graph_config_from_dict(data["legacy_graph_tokens"])
+    else:
+        allowed = common | graph_fields
+        if not graph_fields <= set(data):
+            raise InvalidMorpionModelBundleError.invalid_model_args_mapping(path)
+        legacy = legacy_graph_config_from_dict({
+            "representation": "graph_tokens_v1",
+            **{key: data[key] for key in graph_fields},
+        })
+    if set(data) - allowed:
+        raise InvalidMorpionModelBundleError.unexpected_model_args_fields(
+            path, set(data) - allowed
+        )
+    if (
+        data.get("model_kind") != "entity_token_transformer_value_net"
+        or data.get("input_dim") != 26
+        or data.get("input_representation", "graph_tokens_v1") != "graph_tokens_v1"
+        or data.get("hidden_sizes") is not None
+    ):
+        raise InvalidMorpionModelBundleError.invalid_model_args_mapping(path)
+    subset = full_morpion_feature_subset()
+    return MorpionRegressorArgs(
+        model_kind="entity_token_transformer_value_net",
+        legacy_graph_tokens=legacy,
+        feature_subset_name=subset.name,
+        feature_names=subset.feature_names,
+        target_transform_enabled=_coerce_bool(
+            data.get("target_transform_enabled", False)
+        ),
+        target_mean=_coerce_float(data.get("target_mean", 0.0)),
+        target_standard_deviation=_coerce_float(
+            data.get("target_standard_deviation", 1.0)
+        ),
+    )

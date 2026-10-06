@@ -22,6 +22,12 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tok
     MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
     MorpionEntityTokenConverter,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    LegacyGraphConfig,  # noqa: TC001 - public cache signature introspection
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.tokens import (
+    MorpionGraphTokenConverter,
+)
 from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.learning.supervised import TensorSupervisedBatch
 
@@ -125,6 +131,7 @@ def default_entity_token_cache_paths(
     rows_path: str | os.PathLike[str],
     *,
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
     max_rows: int | None = None,
 ) -> MorpionEntityTokenCachePaths:
     """Return default entity-token cache paths beside one rows artifact."""
@@ -134,6 +141,8 @@ def default_entity_token_cache_paths(
         f"{source.stem}.entity_tokens.max_tokens_{entity_max_tokens}.{row_limit_tag}"
     )
     cache_dir = source.parent / ENTITY_TOKEN_CACHE_DIR_NAME
+    if legacy_graph_tokens is not None:
+        cache_stem = cache_stem.replace(".entity_tokens.", ".legacy_graph_tokens_v1.")
     return MorpionEntityTokenCachePaths(
         tensor_path=cache_dir / f"{cache_stem}.pt",
         manifest_path=cache_dir / f"{cache_stem}.manifest.json",
@@ -146,11 +155,15 @@ def load_or_materialize_entity_token_cache(
     row_chunk_size: int,
     max_rows: int | None,
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
 ) -> MorpionEntityTokenCache:
     """Load a valid entity-token cache or rebuild it from Morpion rows."""
+    if legacy_graph_tokens is not None:
+        entity_max_tokens = legacy_graph_tokens.graph_max_tokens
     paths = default_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
         max_rows=max_rows,
     )
     started_at = perf_counter()
@@ -158,6 +171,7 @@ def load_or_materialize_entity_token_cache(
         paths=paths,
         rows_path=rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
     )
     if loaded is not None:
         return MorpionEntityTokenCache(
@@ -177,10 +191,12 @@ def load_or_materialize_entity_token_cache(
         row_chunk_size=row_chunk_size,
         max_rows=max_rows,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
     )
     manifest = _entity_token_cache_manifest(
         rows_path=rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
         packed_input_tensor=packed_input_tensor,
         token_lengths=token_lengths,
         target_tensor=target_tensor,
@@ -213,12 +229,16 @@ def entity_token_cache_is_valid(
     *,
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
     max_rows: int | None = None,
 ) -> bool:
     """Return whether the default entity-token cache matches the rows source."""
+    if legacy_graph_tokens is not None:
+        entity_max_tokens = legacy_graph_tokens.graph_max_tokens
     paths = default_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
         max_rows=max_rows,
     )
     return (
@@ -226,6 +246,7 @@ def entity_token_cache_is_valid(
             paths=paths,
             rows_path=rows_path,
             entity_max_tokens=entity_max_tokens,
+            legacy_graph_tokens=legacy_graph_tokens,
         )
         is not None
     )
@@ -235,12 +256,16 @@ def load_entity_token_cache(
     *,
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
     max_rows: int | None = None,
 ) -> MorpionEntityTokenCache:
     """Load one existing valid Morpion entity-token cache."""
+    if legacy_graph_tokens is not None:
+        entity_max_tokens = legacy_graph_tokens.graph_max_tokens
     paths = default_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
         max_rows=max_rows,
     )
     started_at = perf_counter()
@@ -248,6 +273,7 @@ def load_entity_token_cache(
         paths=paths,
         rows_path=rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
     )
     if loaded is None:
         raise InvalidMorpionEntityTokenCacheError.missing_or_stale(rows_path)
@@ -314,6 +340,7 @@ def _try_load_valid_entity_token_cache(
     paths: MorpionEntityTokenCachePaths,
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
 ) -> _LoadedMorpionEntityTokenCache | None:
     """Load a entity-token cache when it matches its source rows and args."""
     manifest = _read_entity_token_cache_manifest(paths.manifest_path)
@@ -321,6 +348,7 @@ def _try_load_valid_entity_token_cache(
         manifest,
         rows_path=rows_path,
         entity_max_tokens=entity_max_tokens,
+        legacy_graph_tokens=legacy_graph_tokens,
     ):
         return None
     payload = _read_entity_token_cache_payload(paths.tensor_path)
@@ -406,12 +434,18 @@ def _materialize_entity_tokens(
     row_chunk_size: int,
     max_rows: int | None,
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Materialize packed entity tokens and targets from row chunks."""
     dynamics = MorpionDynamics()
-    entity_converter = MorpionEntityTokenConverter(
-        dynamics=dynamics,
-        max_tokens=entity_max_tokens,
+    entity_converter = (
+        MorpionGraphTokenConverter(
+            dynamics=dynamics, max_tokens=legacy_graph_tokens.graph_max_tokens
+        )
+        if legacy_graph_tokens is not None
+        else MorpionEntityTokenConverter(
+            dynamics=dynamics, max_tokens=entity_max_tokens
+        )
     )
     token_tensors: list[torch.Tensor] = []
     token_lengths: list[int] = []
@@ -434,7 +468,15 @@ def _materialize_entity_tokens(
             target_tensors.append(target_tensor)
     if not token_tensors:
         return (
-            torch.empty((0, MORPION_ENTITY_TOKEN_FEATURE_DIM), dtype=torch.float32),
+            torch.empty(
+                (
+                    0,
+                    26
+                    if legacy_graph_tokens is not None
+                    else MORPION_ENTITY_TOKEN_FEATURE_DIM,
+                ),
+                dtype=torch.float32,
+            ),
             torch.empty((0,), dtype=torch.long),
             torch.empty((0, 1), dtype=torch.float32),
         )
@@ -449,6 +491,7 @@ def _entity_token_cache_manifest(
     *,
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
     packed_input_tensor: torch.Tensor,
     token_lengths: torch.Tensor,
     target_tensor: torch.Tensor,
@@ -462,9 +505,13 @@ def _entity_token_cache_manifest(
         source_rows_size=source_stat.st_size,
         source_rows_mtime_ns=source_stat.st_mtime_ns,
         row_count=int(token_lengths.shape[0]),
-        input_representation=MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
+        input_representation="graph_tokens_v1"
+        if legacy_graph_tokens is not None
+        else MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION,
         entity_max_tokens=entity_max_tokens,
-        input_feature_dim=MORPION_ENTITY_TOKEN_FEATURE_DIM,
+        input_feature_dim=26
+        if legacy_graph_tokens is not None
+        else MORPION_ENTITY_TOKEN_FEATURE_DIM,
         packed_input_shape=(
             int(packed_input_tensor.shape[0]),
             int(packed_input_tensor.shape[1]),
@@ -483,6 +530,7 @@ def _manifest_matches_rows(
     *,
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
+    legacy_graph_tokens: LegacyGraphConfig | None = None,
 ) -> bool:
     """Return whether one manifest still matches its source and entity-token args."""
     source = Path(rows_path).resolve()
@@ -492,13 +540,20 @@ def _manifest_matches_rows(
         return False
     return (
         manifest.format == MORPION_ENTITY_TOKEN_CACHE_FORMAT
-        and manifest.input_representation == MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
+        and manifest.input_representation
+        == (
+            "graph_tokens_v1"
+            if legacy_graph_tokens is not None
+            else MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION
+        )
         and manifest.source_rows_path == str(source)
         and manifest.source_rows_size == source_stat.st_size
         and manifest.source_rows_mtime_ns == source_stat.st_mtime_ns
         and manifest.entity_max_tokens == entity_max_tokens
-        and manifest.input_feature_dim == MORPION_ENTITY_TOKEN_FEATURE_DIM
-        and manifest.packed_input_shape[1] == MORPION_ENTITY_TOKEN_FEATURE_DIM
+        and manifest.input_feature_dim
+        == (26 if legacy_graph_tokens is not None else MORPION_ENTITY_TOKEN_FEATURE_DIM)
+        and manifest.packed_input_shape[1]
+        == (26 if legacy_graph_tokens is not None else MORPION_ENTITY_TOKEN_FEATURE_DIM)
         and manifest.token_lengths_shape == (manifest.row_count,)
         and manifest.target_shape == (manifest.row_count, 1)
         and manifest.input_dtype == str(torch.float32)

@@ -138,6 +138,7 @@ def train_morpion_regressor(
         elif is_morpion_entity_token_model_kind(args.model_kind):
             dataset = MorpionEntityTokenSupervisedDataset(
                 MorpionEntityTokenSupervisedDatasetArgs(
+                    legacy_graph_tokens=args.legacy_graph_tokens,
                     file_name=os.fspath(args.dataset_file),
                     max_tokens=args.entity_max_tokens,
                 )
@@ -476,6 +477,7 @@ def train_morpion_regressor_streaming(
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
             entity_max_tokens=training_args.entity_max_tokens,
+            legacy_graph_tokens=training_args.legacy_graph_tokens,
         )
         entity_token_cache_metadata = {
             "used": True,

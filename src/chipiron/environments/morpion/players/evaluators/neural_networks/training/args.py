@@ -15,6 +15,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     MorpionFeatureSubset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+)
 
 type MorpionTrainingProgressCallback = Callable[[int, int, int, int], None]
 
@@ -42,6 +45,7 @@ class MorpionTrainingArgs:
     feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
     hidden_dim: int | None = None
+    legacy_graph_tokens: LegacyGraphConfig | None = None
     entity_max_tokens: int = 1536
     entity_input_feature_dim: int = MORPION_ENTITY_TOKEN_FEATURE_DIM
     entity_d_model: int = 64

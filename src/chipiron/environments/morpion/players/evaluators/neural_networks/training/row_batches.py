@@ -26,6 +26,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tok
     MorpionEntityTokenConverter,
     is_morpion_entity_token_model_kind,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.tokens import (
+    MorpionGraphTokenConverter,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
@@ -89,9 +92,14 @@ def rows_to_sample_batch(
             for row in rows
         ])
     if is_morpion_entity_token_model_kind(args.model_kind):
-        entity_converter = MorpionEntityTokenConverter(
-            dynamics=dynamics,
-            max_tokens=args.entity_max_tokens,
+        entity_converter = (
+            MorpionGraphTokenConverter(
+                dynamics=dynamics, max_tokens=args.legacy_graph_tokens.graph_max_tokens
+            )
+            if args.legacy_graph_tokens is not None
+            else MorpionEntityTokenConverter(
+                dynamics=dynamics, max_tokens=args.entity_max_tokens
+            )
         )
         return collate_morpion_entity_token_supervised_samples([
             process_morpion_supervised_row_to_entity_token_tensors(

@@ -25,6 +25,7 @@ from .neural_networks.entity_tokens import (
     MorpionEntityTokenConverter,
     is_morpion_entity_token_model_kind,
 )
+from .neural_networks.legacy_graph.tokens import MorpionGraphTokenConverter
 from .neural_networks.state_to_tensor import MorpionFeatureTensorConverter
 
 if TYPE_CHECKING:
@@ -101,7 +102,11 @@ def load_morpion_evaluator_from_model_bundle(
     model.to(torch.device(device)).eval()
     over_detector = MorpionOverEventDetector()
     input_converter: MorpionStateToTensorConverter
-    if is_relational_entity_token_model_kind(model_args.model_kind):
+    if model_args.legacy_graph_tokens is not None:
+        input_converter = MorpionGraphTokenConverter(
+            max_tokens=model_args.legacy_graph_tokens.graph_max_tokens
+        )
+    elif is_relational_entity_token_model_kind(model_args.model_kind):
         input_converter = MorpionRelationalEntityTokenConverter(
             dynamics=MorpionDynamics(),
             max_tokens=model_args.entity_max_tokens,

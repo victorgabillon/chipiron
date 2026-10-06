@@ -75,6 +75,7 @@ def apply_pending_reevaluation_patch_to_runner(
     *,
     paths: MorpionBootstrapPaths,
     runner: object,
+    delete_after_apply: bool = True,
 ) -> MorpionReevaluationPatchConsumptionResult:
     """Apply and delete one pending reevaluation patch if it exists."""
     patch_path = paths.pipeline_reevaluation_patch_path
@@ -145,7 +146,8 @@ def apply_pending_reevaluation_patch_to_runner(
     apply_metrics = getattr(runner, "last_reevaluation_patch_apply_metrics", None)
     if callable(apply_metrics):
         apply_metrics = apply_metrics()
-    delete_reevaluation_patch(patch_path)
+    if delete_after_apply:
+        delete_reevaluation_patch(patch_path)
     LOGGER.info(
         "[reevaluation-patch] apply_done patch_id=%s applied=%s missing=%s recomputed=%s selector_invalidated=%s",
         patch.patch_id,

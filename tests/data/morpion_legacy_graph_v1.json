@@ -1,0 +1,210 @@
+{
+  "original_chipiron_revision": "47d464b2c38071b3e0186bb78041070b08b4374e",
+  "original_token_source_sha256": "3ac100c52aa53d553cd7cb67af250c4b9025a662a637071b073fb52fab1f1406",
+  "original_coral_revision": "791168a",
+  "original_coral_source_sha256": "0dbd89d95e95f906ca72c792deeac311dfb3d0a1c555601193312f65fd52cfc6",
+  "feature_names": [
+    "type_value",
+    "type_global",
+    "type_dot",
+    "type_edge",
+    "type_move",
+    "x_rel",
+    "y_rel",
+    "dir_horizontal",
+    "dir_vertical",
+    "dir_diag_up",
+    "dir_diag_down",
+    "occupied",
+    "candidate",
+    "drawn",
+    "degree_horizontal",
+    "degree_vertical",
+    "degree_diag_up",
+    "degree_diag_down",
+    "is_new_dot_for_move",
+    "missing_index_in_5_window",
+    "path_position",
+    "num_points",
+    "moves",
+    "legal_action_count",
+    "used_unit_segment_count",
+    "validity"
+  ],
+  "cases": [
+    {
+      "depth": 0,
+      "max_tokens": 2,
+      "state_ref": [
+        0,
+        []
+      ],
+      "shape": [
+        2,
+        26
+      ],
+      "token_sha256": "24ece5c2f453bb4c1cbd188308e6ce7de47cf05dfb35ca46977ae79621bcd65f",
+      "prediction": [
+        0.09983724355697632
+      ]
+    },
+    {
+      "depth": 0,
+      "max_tokens": 32,
+      "state_ref": [
+        0,
+        []
+      ],
+      "shape": [
+        32,
+        26
+      ],
+      "token_sha256": "87554ea88082d11e69ef97b234a4ad80ce572c4d9fbf10ac696eb87bff4e5fe7",
+      "prediction": [
+        0.0998372957110405
+      ]
+    },
+    {
+      "depth": 0,
+      "max_tokens": 1536,
+      "state_ref": [
+        0,
+        []
+      ],
+      "shape": [
+        94,
+        26
+      ],
+      "token_sha256": "fd9e079a6f88049c4d06ccd7ff86c5406ec7392e79bc2f3694ac656c446aaf51",
+      "prediction": [
+        0.09983766824007034
+      ]
+    },
+    {
+      "depth": 1,
+      "max_tokens": 2,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950
+        ]
+      ],
+      "shape": [
+        2,
+        26
+      ],
+      "token_sha256": "a8d01e1fbea226f92b12822aad7606a315a51c553682ccdd70dd459e0b8cd34d",
+      "prediction": [
+        0.09983722865581512
+      ]
+    },
+    {
+      "depth": 1,
+      "max_tokens": 32,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950
+        ]
+      ],
+      "shape": [
+        32,
+        26
+      ],
+      "token_sha256": "d176cf907ecea3aefa68d1a7bbe4a01db00cc91e59a50c485c4c3cd1e3109517",
+      "prediction": [
+        0.09983734041452408
+      ]
+    },
+    {
+      "depth": 1,
+      "max_tokens": 1536,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950
+        ]
+      ],
+      "shape": [
+        97,
+        26
+      ],
+      "token_sha256": "d27e72152c36f1f0269292f8c50e31103d2548a288ec250139a70253620d482d",
+      "prediction": [
+        0.09983767569065094
+      ]
+    },
+    {
+      "depth": 7,
+      "max_tokens": 2,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950,
+          9221823930925219841,
+          9222105388721864705,
+          9222668330085744635,
+          9222668368740450308,
+          9223512767900975102,
+          9223512780785876993
+        ]
+      ],
+      "shape": [
+        2,
+        26
+      ],
+      "token_sha256": "b9b35f027dee61e954a64bccb1bab4934837740e129c1c32505ddf78a015c633",
+      "prediction": [
+        0.09983715415000916
+      ]
+    },
+    {
+      "depth": 7,
+      "max_tokens": 32,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950,
+          9221823930925219841,
+          9222105388721864705,
+          9222668330085744635,
+          9222668368740450308,
+          9223512767900975102,
+          9223512780785876993
+        ]
+      ],
+      "shape": [
+        32,
+        26
+      ],
+      "token_sha256": "0f5ca3c2db402fa8f33156a42ed4bdfd39ebc038ea7670381c130e8d0013d12d",
+      "prediction": [
+        0.09983749687671661
+      ]
+    },
+    {
+      "depth": 7,
+      "max_tokens": 1536,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950,
+          9221823930925219841,
+          9222105388721864705,
+          9222668330085744635,
+          9222668368740450308,
+          9223512767900975102,
+          9223512780785876993
+        ]
+      ],
+      "shape": [
+        105,
+        26
+      ],
+      "token_sha256": "efc2a3473c2dc542668389e7bdf7c00a319ea5b682c659098cdb944e7681db0a",
+      "prediction": [
+        0.09983767569065094
+      ]
+    }
+  ]
+}

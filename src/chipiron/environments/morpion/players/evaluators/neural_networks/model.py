@@ -34,6 +34,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     full_morpion_feature_subset,
     resolve_morpion_feature_subset,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
+    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.target_transform import (
     MorpionTargetTransform,
 )
@@ -49,6 +52,7 @@ class MorpionRegressorArgs:
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
     feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
+    legacy_graph_tokens: LegacyGraphConfig | None = None
     entity_max_tokens: int = 1536
     global_geometry_features: MorpionGlobalGeometryFeatures = "none"
     edge_token_mode: MorpionEdgeTokenMode = "drawn_only"
@@ -77,7 +81,20 @@ class MorpionRegressorArgs:
         validate_morpion_global_geometry_features(self.global_geometry_features)
         validate_morpion_edge_token_mode(self.edge_token_mode)
         validate_morpion_latent_window_move_features(self.latent_window_move_features)
-        if is_morpion_entity_token_model_kind(
+        if self.legacy_graph_tokens is not None:
+            if self.model_kind != "entity_token_transformer_value_net":
+                message = "Legacy graph config requires its historical model kind."
+                raise ValueError(message)
+            if (
+                self.global_geometry_features != "none"
+                or self.edge_token_mode != "drawn_only"
+                or self.latent_window_move_features != "none"
+            ):
+                message = (
+                    "Legacy graph representation cannot use modern token extensions."
+                )
+                raise ValueError(message)
+        elif is_morpion_entity_token_model_kind(
             self.model_kind
         ) or is_relational_entity_token_model_kind(self.model_kind):
             _validate_entity_token_transformer_value_net_args(self)
@@ -108,6 +125,8 @@ class MorpionRegressorArgs:
     @property
     def input_dim(self) -> int:
         """Return the model input width."""
+        if self.legacy_graph_tokens is not None:
+            return self.legacy_graph_tokens.graph_input_feature_dim
         if is_morpion_entity_token_model_kind(
             self.model_kind
         ) or is_relational_entity_token_model_kind(self.model_kind):
@@ -331,6 +350,8 @@ def morpion_evaluator_v1_model_args() -> MorpionRegressorArgs:
 
 def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
     """Build the internal torch module for one Morpion regressor."""
+    if args.legacy_graph_tokens is not None:
+        return args.legacy_graph_tokens.build_model()
     if args.model_kind == "linear":
         return nn.Linear(args.input_dim, 1)
     if args.model_kind == "mlp":
@@ -373,6 +394,10 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
             "use_validity_feature": args.entity_use_validity_feature,
             "validity_feature_index": args.entity_validity_feature_index,
         }
+        model_type_args: (
+            EntityTokenTransformerValueNetArgs
+            | RelationBiasedEntityTokenTransformerValueNetArgs
+        )
         if is_relational_entity_token_model_kind(args.model_kind):
             model_type_args = RelationBiasedEntityTokenTransformerValueNetArgs(
                 **common_args,  # type: ignore[arg-type]
