@@ -284,11 +284,13 @@ class PipelineGenerationStages:
                 self.args, generation=generation, claim_owner=self.claim_owner
             )
             status = load_pipeline_training_status_file(status_path)
+        if status is not None and status.generation != generation:
+            message = "Training status belongs to a different generation."
+            raise DerivationError(message)
         if (
             status is None
             or manifest.training_status != "done"
             or status.status != "done"
-            or status.generation != generation
             or set(status.evaluator_results) != expected
             or manifest.selected_evaluator_name != status.selected_evaluator_name
         ):
