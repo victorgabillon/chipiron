@@ -23,6 +23,7 @@ from chipiron.environments.morpion.bootstrap.pipeline.stages import (
 )
 from chipiron.environments.morpion.bootstrap.profiling.runtime_attribution.attribution import (
     ProfileLimits,
+    _selector_roots,
     account_components,
 )
 from chipiron.environments.morpion.bootstrap.profiling.runtime_attribution.checkpoint_audit import (
@@ -109,6 +110,7 @@ def test_restore_only_is_immutable_and_reports_phases(
         "after_tree_bookkeeping",
         "after_edges_and_runtime_state_restored",
         "after_explicit_selector_restoration",
+        "state_decode_progress",
         "after_latest_expansions_restoration",
         "after_drop_raw_checkpoint_payload_if_applicable",
         "after_gc",
@@ -343,3 +345,14 @@ def test_instrumentation_is_removed_after_exception(tmp_path: Path) -> None:
         assert state_handles.CheckpointStateResolver._resolve_anchor is not original
         raise RuntimeError("interrupt")
     assert state_handles.CheckpointStateResolver._resolve_anchor is original
+
+
+def test_selector_wrapper_exposes_linoo_containers_without_graph_walk() -> None:
+    """The released composed selector uses `base`; include its table/heap shells."""
+    table = {1: "frontier"}
+    heap = [1, 2, 3]
+    selector = SimpleNamespace(base=SimpleNamespace(_node_state_by_id=table, heap=heap))
+    roots = _selector_roots(selector, 8)
+    assert any(root is table for root in roots)
+    assert any(root is heap for root in roots)
+    assert len(roots) <= 2 + 2 * 8

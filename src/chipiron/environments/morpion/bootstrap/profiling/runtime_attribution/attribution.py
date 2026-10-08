@@ -151,7 +151,9 @@ def _selector_roots(selector: object, cap: int) -> tuple[object, ...]:
     """Follow only known wrapper links; never search arbitrary runtime object graphs."""
     values = [selector]
     for _ in range(4):
-        nested = raw_getattr(values[-1], "base_selector")
+        nested = raw_getattr(values[-1], "base")
+        if nested is None:
+            nested = raw_getattr(values[-1], "base_selector")
         if nested is None or any(nested is value for value in values):
             break
         values.append(nested)

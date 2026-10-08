@@ -58,7 +58,7 @@ class PhaseRecorder:
         with self.output.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(event) + "\n")
         print(
-            f"[restore-memory] {phase} elapsed={event['elapsed_s']:.2f}s rss={event['rss_mib']}MiB available={event['available_ram_mib']}MiB",
+            f"[restore-memory] {phase} elapsed={event['elapsed_s']:.2f}s rss={event['rss_mib']}MiB available={event['available_ram_mib']}MiB decodes={sum(self.decode_counts.values())}",
             flush=True,
         )
 
@@ -149,6 +149,9 @@ def observe_restore(recorder: PhaseRecorder) -> Iterator[None]:
                 **kwargs: Any,
             ) -> Any:
                 recorder.decode_counts[_kind] += 1
+                total_decodes = sum(recorder.decode_counts.values())
+                if total_decodes == 1 or total_decodes % 2000 == 0:
+                    recorder.log("state_decode_progress", total_decodes=total_decodes)
                 if recorder.decode_counts[_kind] <= 3:
                     recorder.first_decode_stacks.append({
                         "kind": _kind,

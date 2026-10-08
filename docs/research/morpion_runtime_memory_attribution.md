@@ -125,7 +125,8 @@ Outputs:
 - `checkpoint-audit.json`: disk facts, lazy-payload candidates and prefix sample.
 - `restore-phases.jsonl`: immediate terminal/file progress, elapsed time, RSS,
   available RAM, process lifetime peak RSS, decode counts and existing callback
-  metadata. Includes all 13 requested boundaries, plus evaluator attachment and
+  metadata. Decoding progress is also emitted every 2,000 decodes, including
+  during a long selector restore. Includes all 13 requested boundaries, plus evaluator attachment and
   post-profile/runtime-release GC. A phase-sampled peak is not an exact temporary
   peak; process lifetime high-water marks also include imports / previous phases.
 - `cheap-profile.json`: unique shallow roots / dictionaries, bounded sampled node
