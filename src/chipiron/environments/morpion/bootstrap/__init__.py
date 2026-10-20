@@ -152,6 +152,7 @@ __all__ = [
     "MorpionSearchRunner",
     "MorpionTrainingExportMode",
     "MorpionTreeNodeClassificationSummary",
+    "MorpionWindowNodeReevaluationEvaluator",
     "NoSelectableMorpionEvaluatorError",
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
