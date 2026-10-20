@@ -186,6 +186,7 @@ class MorpionBootstrapLauncherArgs:
     pipeline_stage: MorpionPipelineStage = "loop"
     pipeline_generation: int | None = None
     reevaluation_max_nodes_per_patch: int = 10_000
+    dataset_streaming_sharded_reader: bool = False
     reevaluation_streaming_sharded_reader: bool = False
     verbose_checkpoint_logs: bool = False
     training_export_mode_explicit: bool = False
@@ -312,6 +313,11 @@ def run_morpion_bootstrap_experiment(
             max_nodes_per_patch=launcher_args.reevaluation_max_nodes_per_patch,
         )
     if launcher_args.pipeline_stage == "dataset_worker":
+        if launcher_args.dataset_streaming_sharded_reader:
+            return run_next_pipeline_dataset_stage_once(
+                startup_status.resolved_bootstrap_args,
+                use_streaming_sharded_reader=True,
+            )
         return run_next_pipeline_dataset_stage_once(
             startup_status.resolved_bootstrap_args
         )
@@ -320,6 +326,13 @@ def run_morpion_bootstrap_experiment(
             startup_status.resolved_bootstrap_args
         )
     if launcher_args.pipeline_stage == "dataset":
+        if launcher_args.dataset_streaming_sharded_reader:
+            assert launcher_args.pipeline_generation is not None
+            return run_pipeline_dataset_stage(
+                startup_status.resolved_bootstrap_args,
+                generation=launcher_args.pipeline_generation,
+                use_streaming_sharded_reader=True,
+            )
         assert launcher_args.pipeline_generation is not None
         return run_pipeline_dataset_stage(
             startup_status.resolved_bootstrap_args,
@@ -1273,6 +1286,11 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Minimum estimated RAM headroom for candidate checkpoint load.",
     )
     parser.add_argument(
+        "--dataset-streaming-sharded-reader",
+        action="store_true",
+        help="Opt in to bounded Dataset extraction for supported sharded JSONL exports.",
+    )
+    parser.add_argument(
         "--reevaluation-streaming-sharded-reader",
         action="store_true",
         help="Opt in to bounded indexed sharded Reevaluation (legacy formats/evaluators fall back).",
@@ -1608,6 +1626,7 @@ def launcher_args_from_cli(
         pipeline_stage=cast("MorpionPipelineStage", parsed.pipeline_stage),
         pipeline_generation=parsed.pipeline_generation,
         reevaluation_max_nodes_per_patch=parsed.reevaluation_max_nodes_per_patch,
+        dataset_streaming_sharded_reader=parsed.dataset_streaming_sharded_reader,
         reevaluation_streaming_sharded_reader=parsed.reevaluation_streaming_sharded_reader,
         verbose_checkpoint_logs=parsed.verbose_checkpoint_logs,
         training_export_mode_explicit=training_export_mode_explicit,

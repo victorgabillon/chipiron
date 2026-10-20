@@ -20,7 +20,11 @@ from .pv_family_targets import (
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+    from anemone.training_export import TrainingNodeSnapshot
+
+    from chipiron.environments.morpion.learning.tree_to_dataset import (
+        TrainingTreeSource,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,7 +61,7 @@ class DatasetFamilyTargetContext:
 
 def apply_dataset_family_target_policy(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     rows: MorpionSupervisedRows,
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
@@ -80,7 +84,7 @@ def apply_dataset_family_target_policy(
 
 def build_dataset_family_target_context(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
     use_backed_up_value: bool = True,
@@ -122,7 +126,7 @@ def build_dataset_family_target_context(
 
 def _snapshot_raw_targets(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     use_backed_up_value: bool,
 ) -> dict[str, float]:
     raw_targets: dict[str, float] = {}
@@ -149,7 +153,7 @@ def _node_raw_target(
 
 def _snapshot_prediction_values(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     raw_targets: Mapping[str, float],
 ) -> dict[str, float]:
     prediction_values: dict[str, float] = {}
@@ -163,7 +167,7 @@ def _snapshot_prediction_values(
 
 def _snapshot_selected_child_by_raw_target(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     raw_targets: Mapping[str, float],
 ) -> dict[str, str | None]:
     selected_child_by_node: dict[str, str | None] = {}

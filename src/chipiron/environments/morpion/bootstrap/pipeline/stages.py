@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+from contextlib import ExitStack
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
@@ -170,6 +171,15 @@ from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
+    ShardedTrainingGenerationView,
+    is_sharded_generation_manifest,
+)
+from chipiron.environments.morpion.bootstrap.streaming_dataset import (
+    IndexedDatasetSource,
+    UnsupportedStreamingDatasetError,
+    disk_dataset_context,
+)
 from chipiron.environments.morpion.bootstrap.training_logging import (
     TrainingActiveModelCursorSummary,
     log_training_cycle_done,
@@ -237,6 +247,9 @@ if TYPE_CHECKING:
     )
     from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
         MorpionSearchRunner,
+    )
+    from chipiron.environments.morpion.learning.tree_to_dataset import (
+        TrainingTreeSource,
     )
 
 LOGGER = logging.getLogger(__name__)
@@ -1315,6 +1328,8 @@ def run_pipeline_dataset_stage(
     generation: int,
     claim_ttl_seconds: float = 3600.0,
     claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
@@ -1377,6 +1392,9 @@ def run_pipeline_dataset_stage(
         dataset_status="extracting_rows",
         timestamp_utc=timestamp_utc,
     )
+    resources = ExitStack()
+    reader_mode = "legacy_full_snapshot"
+    reader_observation: dict[str, object] = {}
     try:
         tree_snapshot_path = paths.resolve_work_dir_path(
             require_manifest_tree_snapshot_path(manifest)
@@ -1416,9 +1434,45 @@ def run_pipeline_dataset_stage(
             tree_snapshot_path=tree_snapshot_path,
         )
         snapshot_started = time.perf_counter()
-        snapshot = _load_training_snapshot_for_generation(
-            args=args,
-            artifact_path=tree_snapshot_path,
+        snapshot: TrainingTreeSource | None = None
+        view = None
+        family_context = None
+        fallback_reason = "disabled"
+        if use_streaming_sharded_reader:
+            fallback_reason = "unsupported_format_or_output"
+            if (
+                args.training_export_mode == "sharded"
+                and rows_path.suffix == ".jsonl"
+                and is_sharded_generation_manifest(tree_snapshot_path)
+            ):
+                try:
+                    view = resources.enter_context(
+                        ShardedTrainingGenerationView(
+                            tree_snapshot_path, cache_dir=reader_cache_dir
+                        )
+                    )
+                    # Check root reconstruction via the shared keyed loading API.
+                    if view.node_count():
+                        view.load_nodes((view.root_node_id,))
+                    indexed_source = IndexedDatasetSource(view)
+                    family_context = resources.enter_context(
+                        disk_dataset_context(indexed_source, args)
+                    )
+                    snapshot = indexed_source
+                    reader_mode = "sharded_indexed"
+                    reader_observation = view.initialization_observation
+                    fallback_reason = "none"
+                except UnsupportedStreamingDatasetError as exc:
+                    fallback_reason = str(exc)
+                    resources.close()
+                    family_context = None
+        if family_context is None:
+            snapshot = _load_training_snapshot_for_generation(
+                args=args, artifact_path=tree_snapshot_path
+            )
+        assert snapshot is not None
+        LOGGER.info(
+            "[dataset-reader] mode=%s fallback_reason=%s", reader_mode, fallback_reason
         )
         log_pipeline_memory(
             stage="dataset",
@@ -1483,10 +1537,12 @@ def run_pipeline_dataset_stage(
             node_count=len(snapshot.nodes),
         )
         rows_started = time.perf_counter()
-        streaming_rows = _streaming_rows_from_training_snapshot(
-            args=args,
-            snapshot=snapshot,
-            generation=generation,
+        streaming_rows = (
+            family_context.stream(generation)
+            if family_context is not None
+            else _streaming_rows_from_training_snapshot(
+                args=args, snapshot=snapshot, generation=generation
+            )
         )
         LOGGER.info(
             "[pipeline] dataset_rows_stream_start generation=%s path=%s",
@@ -1572,6 +1628,14 @@ def run_pipeline_dataset_stage(
                 time.perf_counter() - leaderboard_started_at,
             )
         dataset_observation = dataset_measurement.finish(
+            reader_mode=reader_mode,
+            reader=reader_observation,
+            reader_source_bytes_read=view.source_bytes_read
+            if view is not None and family_context is not None
+            else None,
+            family_scratch_logical_bytes=family_context.scratch_bytes()
+            if family_context is not None
+            else None,
             input_tree_generation=generation,
             rows_considered=len(snapshot.nodes),
             rows_emitted=write_stats.row_count,
@@ -1631,6 +1695,7 @@ def run_pipeline_dataset_stage(
         )
         return manifest
     finally:
+        resources.close()
         release_pipeline_stage_claim(
             claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
             claim_id=claim.claim_id,

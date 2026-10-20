@@ -582,6 +582,8 @@ def run_next_pipeline_dataset_stage_once(
     *,
     claim_ttl_seconds: float = 3600.0,
     claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending dataset generation once, if any."""
@@ -641,12 +643,22 @@ def run_next_pipeline_dataset_stage_once(
     )
 
     try:
-        run_pipeline_dataset_stage(
-            args,
-            generation=generation,
-            claim_ttl_seconds=claim_ttl_seconds,
-            claim_owner=claim_owner,
-        )
+        if use_streaming_sharded_reader:
+            run_pipeline_dataset_stage(
+                args,
+                generation=generation,
+                claim_ttl_seconds=claim_ttl_seconds,
+                claim_owner=claim_owner,
+                use_streaming_sharded_reader=True,
+                reader_cache_dir=reader_cache_dir,
+            )
+        else:
+            run_pipeline_dataset_stage(
+                args,
+                generation=generation,
+                claim_ttl_seconds=claim_ttl_seconds,
+                claim_owner=claim_owner,
+            )
     except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[pipeline] dataset_worker_done action=error generation=%s elapsed=%.3fs",

@@ -43,6 +43,9 @@ if TYPE_CHECKING:
         MorpionSupervisedRow,
         MorpionSupervisedRows,
     )
+    from chipiron.environments.morpion.learning.tree_to_dataset import (
+        TrainingTreeSource,
+    )
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -152,7 +155,7 @@ def iter_rows_from_training_snapshot(
 def streaming_rows_from_training_snapshot(
     *,
     args: MorpionBootstrapArgs,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     generation: int,
 ) -> MorpionSupervisedRowsStream:
     """Return fresh streaming rows plus extraction metadata for a dataset export."""
