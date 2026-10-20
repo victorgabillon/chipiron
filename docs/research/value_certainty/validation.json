@@ -1,0 +1,36 @@
+{
+  "baseline_chipiron": "50fb67a42577e195bc565f4d03e38d919640d08a",
+  "anemone_source": "a07fb2fdd75e2020d9795d34ec1cf896eb86f3a0",
+  "implementation_commit": "0666b9c8",
+  "streaming_baseline": "79693ce2dc59c6d6ccb951951c9ba75fa69057f3",
+  "streaming_integration": "c371dcd3",
+  "failing_before": {
+    "failed": 6,
+    "passed": 83,
+    "skipped": 2,
+    "note": "Before addition of one streaming-only test; same six regressions retained."
+  },
+  "installed_affected_suite": {
+    "passed": 218,
+    "skipped": 3
+  },
+  "existing_bootstrap_family_suite": {
+    "passed": 88
+  },
+  "streaming_integration_suite": {
+    "passed": 122
+  },
+  "static": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "sdist_and_wheel": "passed",
+  "toolchain": "passed",
+  "ruff": "passed",
+  "installed_distribution_contract": "passed",
+  "matrix_outputs_per_revision": 1296,
+  "matrix_unchanged": 1080,
+  "matrix_intentionally_changed": 216
+}
