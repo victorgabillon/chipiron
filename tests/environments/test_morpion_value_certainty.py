@@ -463,7 +463,9 @@ def test_streaming_worker_actual_proof_matches_flat(
         adapter = worker.MorpionActiveModelNodeReevaluationEvaluator(tmp_path / "model")
         adapter._evaluator = neural_evaluator(42)
         monkeypatch.setattr(
-            worker, "build_active_model_reevaluation_evaluator", lambda **_: adapter
+            worker,
+            "build_active_model_reevaluation_evaluator",
+            lambda adapter=adapter, **_: adapter,
         )
         result = worker.run_morpion_reevaluation_worker_once(
             _artifact_pipeline_args(paths.work_dir),
