@@ -19,6 +19,12 @@ from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
     runtime_checkpoint_artifact_exists,
 )
+from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
+    RECEIPTS_METADATA_KEY,
+    CheckpointPatchReceiptError,
+    GrowthPatchReceiptSession,
+    growth_receipt_ownership,
+)
 from chipiron.environments.morpion.bootstrap.config import (
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
@@ -372,12 +378,66 @@ def run_pipeline_growth_stage(
     *,
     max_cycles: int = 1,
     derived_sequential: bool = False,
+    checkpoint_bound_receipts: bool = False,
 ) -> MorpionBootstrapRunState:
-    """Run the Phase 4 growth-only stage for artifact-pipeline mode."""
+    """Run Growth, with explicit experimental checkpoint-bound receipt activation.
+
+    Receipt mode requires a quiescent existing baseline and immutable flat exports
+    (or skipped exports). No CLI or production worker enables this option.
+    """
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    # Updated legacy callers also take this lease and cannot race a receipt owner.
+    # Old binaries must be quiesced before adoption; they do not know this lock.
+    with growth_receipt_ownership(paths):
+        session = (
+            GrowthPatchReceiptSession(paths, runner)
+            if checkpoint_bound_receipts
+            else None
+        )
+        try:
+            return _run_pipeline_growth_stage_owned(
+                args,
+                runner,
+                paths=paths,
+                max_cycles=max_cycles,
+                derived_sequential=derived_sequential,
+                receipt_session=session,
+            )
+        finally:
+            if session is not None:
+                session.discard_runtime()
 
+
+def _run_pipeline_growth_stage_owned(
+    args: MorpionBootstrapArgs,
+    runner: MorpionSearchRunner,
+    *,
+    paths: MorpionBootstrapPaths,
+    max_cycles: int,
+    derived_sequential: bool,
+    receipt_session: GrowthPatchReceiptSession | None,
+) -> MorpionBootstrapRunState:
+    """Hold Growth ownership across cold restore, commitment and acknowledgement."""
+    if receipt_session is not None and (
+        derived_sequential or not paths.run_state_path.is_file()
+    ):
+        message = (
+            "Receipt activation requires ordinary Growth with an existing run state."
+        )
+        raise CheckpointPatchReceiptError(message)
+    run_state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.is_file()
+        else initialize_bootstrap_run_state()
+    )
+    if receipt_session is None and RECEIPTS_METADATA_KEY in run_state.metadata:
+        message = "Receipt-enabled run state requires checkpoint_bound_receipts=True; downgrade refused."
+        raise CheckpointPatchReceiptError(message)
+
+    if receipt_session is not None:
+        receipt_session.validate_options(args)
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
@@ -385,16 +445,14 @@ def run_pipeline_growth_stage(
     save_bootstrap_config(current_config, paths.bootstrap_config_path)
     config_hash = bootstrap_config_sha256(current_config)
 
-    run_state = (
-        load_bootstrap_run_state(paths.run_state_path)
-        if paths.run_state_path.is_file()
-        else initialize_bootstrap_run_state()
-    )
     run_state = _with_config_hash_metadata(run_state, config_hash=config_hash)
+    if receipt_session is not None:
+        run_state = receipt_session.prepare(run_state, args)
 
     LOGGER.info("[pipeline] growth_start max_cycles=%s", max_cycles)
     cycles_run = 0
     while cycles_run < max_cycles:
+        previous_state = run_state
         previous_generation = run_state.generation
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
@@ -407,8 +465,11 @@ def run_pipeline_growth_stage(
             config_hash=config_hash,
             bootstrap_config=current_config,
             force_save=derived_sequential,
+            receipt_session=receipt_session,
         )
-        if derived_sequential:
+        if receipt_session is not None:
+            run_state = receipt_session.commit(previous_state, run_state)
+        elif derived_sequential:
             from dataclasses import asdict
 
             from chipiron.environments.morpion.bootstrap.derived.provenance import (
@@ -425,7 +486,7 @@ def run_pipeline_growth_stage(
             atomic_json(paths.run_state_path, asdict(run_state))
         else:
             save_bootstrap_run_state(run_state, paths.run_state_path)
-        if run_state.generation > previous_generation:
+        if run_state.generation > previous_generation and receipt_session is None:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
         if (
@@ -471,6 +532,7 @@ def _run_one_pipeline_growth_cycle(
     bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None = None,
     force_save: bool = False,
+    receipt_session: GrowthPatchReceiptSession | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one growth-only artifact-pipeline cycle with memory hooks."""
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
@@ -487,6 +549,7 @@ def _run_one_pipeline_growth_cycle(
             now_unix_s=now_unix_s,
             memory=memory,
             force_save=force_save,
+            receipt_session=receipt_session,
         )
     finally:
         log_after_cycle_gc(memory)
@@ -505,6 +568,7 @@ def _run_one_pipeline_growth_cycle_impl(
     now_unix_s: float | None,
     memory: MemoryDiagnostics,
     force_save: bool = False,
+    receipt_session: GrowthPatchReceiptSession | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one artifact-pipeline cycle that only grows and exports artifacts."""
     cycle_measurement = StageMeasurement()
@@ -548,27 +612,33 @@ def _run_one_pipeline_growth_cycle_impl(
         paths=paths,
         force_evaluator=resolved_control.force_evaluator,
     )
+    restore_tree_path: Path | None
     try:
-        restore_tree_path = _resolve_runtime_restore_path(
-            paths=paths,
-            run_state=run_state,
-            before_candidate_checkpoint_load=lambda _source, _path: (
-                should_load_candidate_checkpoint(
-                    args=args,
-                    generation=run_state.generation,
-                    source=_source,
-                    candidate_path=_path,
-                )
-            ),
-            after_candidate_checkpoint_load=log_candidate_checkpoint_load_profile
-            if args.growth_memory_profile
-            else None,
-            candidate_checkpoint_payload_loader=(
-                candidate_checkpoint_payload_loader(args)
+        if receipt_session is not None:
+            receipt_session.validate_options(args)
+            receipt_session.begin_cycle(resolved_active_model.model_bundle_path)
+            restore_tree_path = receipt_session.validate_state(run_state)
+        else:
+            restore_tree_path = _resolve_runtime_restore_path(
+                paths=paths,
+                run_state=run_state,
+                before_candidate_checkpoint_load=lambda _source, _path: (
+                    should_load_candidate_checkpoint(
+                        args=args,
+                        generation=run_state.generation,
+                        source=_source,
+                        candidate_path=_path,
+                    )
+                ),
+                after_candidate_checkpoint_load=log_candidate_checkpoint_load_profile
                 if args.growth_memory_profile
-                else None
-            ),
-        )
+                else None,
+                candidate_checkpoint_payload_loader=(
+                    candidate_checkpoint_payload_loader(args)
+                    if args.growth_memory_profile
+                    else None
+                ),
+            )
     except CandidateCheckpointLoadDeferredError as exc:
         LOGGER.info(
             "[pipeline] growth_skip generation=%s reason=low_available_ram action=%s",
@@ -647,9 +717,10 @@ def _run_one_pipeline_growth_cycle_impl(
             reason="low_available_ram",
         )
         return run_state
-    reevaluation_patch_result = apply_pending_reevaluation_patch_to_runner(
-        paths=paths,
-        runner=runner,
+    reevaluation_patch_result = (
+        receipt_session.apply(run_state, effective_runtime_config)
+        if receipt_session is not None
+        else apply_pending_reevaluation_patch_to_runner(paths=paths, runner=runner)
     )
     memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
@@ -723,10 +794,18 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+    receipt_requires_save = (
+        receipt_session is not None and reevaluation_patch_result.patch_applied
+    )
     persist_stage_measurement(
         paths.work_dir,
         run_state.generation
-        + int(save_triggered or args.growth_save_and_exit or force_save),
+        + int(
+            save_triggered
+            or args.growth_save_and_exit
+            or force_save
+            or receipt_requires_save
+        ),
         "growth",
         {
             **growth_observation,
@@ -757,6 +836,9 @@ def _run_one_pipeline_growth_cycle_impl(
     if args.growth_save_and_exit:
         save_triggered = True
         save_reason = "growth_save_and_exit"
+    if receipt_requires_save:
+        save_triggered = True
+        save_reason = "checkpoint_bound_patch"
 
     if args.diagnostic_stop_after_growth:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -969,9 +1051,12 @@ def _run_one_pipeline_growth_cycle_impl(
     LOGGER.info(
         "[save] decision_done triggered=true reason=%s", save_reason or "unknown"
     )
-    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation_with_format(
-        generation,
-        args.runtime_checkpoint_format,
+    runtime_checkpoint_path = (
+        receipt_session.checkpoint_path(generation, args.runtime_checkpoint_format)
+        if receipt_session is not None
+        else paths.runtime_checkpoint_path_for_generation_with_format(
+            generation, args.runtime_checkpoint_format
+        )
     )
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
@@ -1114,7 +1199,9 @@ def _run_one_pipeline_growth_cycle_impl(
         export_measurement = StageMeasurement()
         tree_snapshot_path = _export_training_snapshot_for_generation(
             args=args,
-            paths=paths,
+            paths=receipt_session.export_paths()
+            if receipt_session is not None
+            else paths,
             runner=runner,
             generation=generation,
         )
@@ -1228,19 +1315,20 @@ def _run_one_pipeline_growth_cycle_impl(
             },
         )
     )
-    _write_pipeline_manifest_for_generation(
-        paths=paths,
-        generation=generation,
-        timestamp_utc=timestamp_utc,
-        relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
-        relative_tree_snapshot_path=relative_tree_snapshot_path,
-        relative_rows_path=None,
-        model_bundle_paths={},
-        selected_evaluator_name=None,
-        dataset_status="not_started",
-        training_status="not_started",
-        metadata={**_pipeline_metadata(args=args), **observability_metadata},
-    )
+    if receipt_session is None:
+        _write_pipeline_manifest_for_generation(
+            paths=paths,
+            generation=generation,
+            timestamp_utc=timestamp_utc,
+            relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+            relative_tree_snapshot_path=relative_tree_snapshot_path,
+            relative_rows_path=None,
+            model_bundle_paths={},
+            selected_evaluator_name=None,
+            dataset_status="not_started",
+            training_status="not_started",
+            metadata={**_pipeline_metadata(args=args), **observability_metadata},
+        )
     LOGGER.info(
         "[pipeline] growth_cycle_done cycle=%s generation=%s saved=true elapsed=%.3fs",
         cycle_index,

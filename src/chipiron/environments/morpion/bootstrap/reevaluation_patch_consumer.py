@@ -77,15 +77,23 @@ def apply_pending_reevaluation_patch_to_runner(
     paths: MorpionBootstrapPaths,
     runner: object,
     delete_after_apply: bool = True,
+    patch_snapshot: MorpionReevaluationPatch | None = None,
 ) -> MorpionReevaluationPatchConsumptionResult:
     """Apply and delete one pending reevaluation patch if it exists."""
+    if delete_after_apply and paths.run_state_path.is_file():
+        from .run_state import load_bootstrap_run_state
+
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if "checkpoint_bound_reevaluation_v1" in state.metadata:
+            message = "Checkpoint-bound patches require committed identity-checked acknowledgement."
+            raise RuntimeError(message)
     patch_path = paths.pipeline_reevaluation_patch_path
     log_pipeline_memory(
         stage="reevaluation",
         event="start",
         patch_path=patch_path,
     )
-    if not patch_path.exists():
+    if patch_snapshot is None and not patch_path.exists():
         LOGGER.debug("[reevaluation-patch] missing path=%s", str(patch_path))
         log_pipeline_memory(
             stage="reevaluation",
@@ -102,7 +110,7 @@ def apply_pending_reevaluation_patch_to_runner(
         )
 
     try:
-        patch = load_reevaluation_patch(patch_path)
+        patch = patch_snapshot or load_reevaluation_patch(patch_path)
     except MissingMorpionPipelineArtifactError:
         LOGGER.debug("[reevaluation-patch] missing path=%s", str(patch_path))
         log_pipeline_memory(
