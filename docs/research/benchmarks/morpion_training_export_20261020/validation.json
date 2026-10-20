@@ -17,6 +17,20 @@
     "/tmp/morpion-export-related-tests.log": "6a6101b6edd9d634f8bf9abe82d0945ff7637908f2ffd9376be62958c5ab3cf4",
     "/tmp/morpion-export-full-tests.log": "a0bc34cc3707af37811bd397f2b811990ca78223f5d75e24a3d7b318e2da1cd2",
     "/tmp/morpion-export-baseline-first-tests.log": "577ef5faf9cb637da68648767bca526f2ac499befdbbd88470a5fa4e4858c621",
-    "/tmp/morpion-export-static-final.log": "b1636a9c7ec10d2f479987ad850c9e88d975449d643b3beec9d8b47efb3696f5"
+    "/tmp/morpion-export-static-final.log": "b1636a9c7ec10d2f479987ad850c9e88d975449d643b3beec9d8b47efb3696f5",
+    "/tmp/morpion-export-package-build.log": "622beaed0197d08ca0eb46d648887ac5115006b2f2aa956452727bcb6eca573a",
+    "/tmp/morpion-export-wheel-check.log": "371dd91af9055d298f3156edb577d36241c14bc2e24e6daa8b8718d65e299164",
+    "/tmp/morpion-export-wheel-tests.log": "e2718a8540e96d2d4d02ae3036337f4a6edcd4364d9c1031dbfbd0c67ee6bba8",
+    "/tmp/morpion-export-reviewed-allocation-final.log": "f302aa19c700bd728a9b319d78c5b6ccc596264ad2a03f92b7b75c95121f21f1"
+  },
+  "package": "sdist + wheel build, installed-distribution contracts, and 8 installed-wheel writer tests passed",
+  "reviewed_reproducers": "driver, allocation wrapper, and explicit-output audit smoke tests passed; exports/checkpoints/selections and audit fields match retained originals",
+  "product_head_remote_ci": {
+    "head": "f099364feb853472facc0e5b33cdaee75ad35d74",
+    "url": "https://github.com/victorgabillon/chipiron/actions/runs/39422085420",
+    "quality": "success",
+    "static": "success",
+    "pytest": "success",
+    "test": "success"
   }
 }

@@ -8,13 +8,15 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from chipiron.environments.morpion.bootstrap import sharded_training_export as writer
+
 spec = importlib.util.spec_from_file_location(
     "export_driver", Path(__file__).with_name("profile_morpion_export.py")
 )
 driver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(driver)
 original = driver.ProfileRunner.export_call
-write = driver.writer._write_json
+write = writer._write_json
 samples = []
 
 
@@ -61,7 +63,7 @@ def observed_export(self: Any, kind: Any, function: Any) -> Any:
 
 
 with (
-    patch.object(driver.writer, "_write_json", observed_write),
+    patch.object(writer, "_write_json", observed_write),
     patch.object(driver.ProfileRunner, "export_call", observed_export),
 ):
     driver.main()

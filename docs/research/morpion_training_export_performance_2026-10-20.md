@@ -158,7 +158,7 @@ The small patch removes the second O(K) normalized-ref object graph; it does not
 
 ## Validation, exact sources and reproduction
 
-- Eight sharded-writer tests pass, including the new nested-mutable ownership regression.
+- Eight sharded-writer tests pass, including the new nested-mutable ownership regression. Sdist/wheel build, installed-distribution contracts and the same eight tests against the built wheel also pass. The retained driver, allocation wrapper and audit are smoke-tested against exact retained output.
 - **172 relevant writer/runtime/pipeline/performance tests pass** with a test-only override directing default leaderboard writes to each test's temporary directory. All record extraction/persistence logic and assertions still run.
 - Full repository Ruff checks/format and toolchain-coherence checks pass. The existing static ratchet passes with **zero new diagnostics** (209 baseline / 206 current); the reviewed debt file is unchanged.
 - An optional broad local run was stopped after approximately nine minutes at 98%: 1,364 passed, 22 failed and 2 skipped. It includes unmarked legacy integration/data-download tests and tests that try to write the default home-directory leaderboard. That write is blocked by the sandbox and reproduces on untouched main (`test_first_run_writes_bootstrap_config`, after 165 passes). This run is **not** reported as green. The retained `validation_safety.py` supplies only temporary default leaderboard paths for the successful relevant suite. HOME is unchanged. Remote CI status is reported on the draft PR.
