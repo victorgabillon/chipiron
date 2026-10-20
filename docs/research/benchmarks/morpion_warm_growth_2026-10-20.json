@@ -1,0 +1,687 @@
+{
+  "production_warm_reuse_enabled": false,
+  "reason": "Strict 10k checkpoint parity fails; retain the cold production path.",
+  "anemone_pr77_sha": "ec9fec7e47ca661eb1dd9330d115d010d9e5e64d",
+  "code_commit_with_production_disable": "5e5c8b4551e5388da110e403afdd0f80cc71c5e1",
+  "trials": {
+    "clean_1k_with_auxiliary": {
+      "chipiron_sha": "51ab037783068c73c40304e0b78edb2c01e24171",
+      "chipiron_dirty": false,
+      "anemone_sha": "ec9fec7e47ca661eb1dd9330d115d010d9e5e64d",
+      "anemone_import": "/home/pompote/oldata/victor/anemone-state-free-compare/src/anemone/__init__.py",
+      "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+      "scope": "Synthetic CPU fixtures; eviction disabled; no gen38 projection",
+      "raw_report_sha256": "7742adec31d3c06cdc6241fe0147b864f94eeb640d554ce4a470289063a9a6a4",
+      "raw_report_path": "/tmp/chipiron-warm-benchmark-committed.json",
+      "training_export_skipped": false,
+      "cases": [
+        {
+          "requested_nodes": 1000,
+          "initial_nodes": 1006,
+          "checkpoint_parity": true,
+          "selection_parity": true,
+          "cold": {
+            "restores": 3,
+            "same_runtime": false,
+            "nodes": 1108,
+            "branches": 1196,
+            "elapsed_s": 15.988187118000496,
+            "rss_before_mb": 300.5625,
+            "rss_after_mb": 324.24609375,
+            "process_peak_rss_mb": 323.9140625,
+            "checkpoint_digest": "4b3752e082e91d9aede14210a68765fd1f6b87a63a406f49e9a88f92b3c6d54f",
+            "selected": [
+              [
+                979,
+                38
+              ],
+              [
+                136,
+                5
+              ],
+              [
+                1014,
+                39
+              ],
+              [
+                125,
+                3
+              ],
+              [
+                1044,
+                40
+              ],
+              [
+                882,
+                12
+              ]
+            ],
+            "checkpoint_component_digests": null,
+            "source_sha256": {
+              "src/chipiron/environments/morpion/bootstrap/runtime/runner.py": "d4c51d584615b6bce9ccf562f66b4d5e9a893e79dfa242dbb34c567f007ad85a",
+              "src/chipiron/environments/morpion/bootstrap/runtime/warm_growth.py": "a3322376bfacec1da17c7c84868649fa9147178e4dca0cfba619a1614199edfd",
+              "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py": "dd7740eb6b290e566f0b60276666a3303492faede6c0bf448b72f44b9597fcb2"
+            },
+            "import_inclusive_rss_kib_per_final_node": 299.66425992779784,
+            "new_nodes_per_second_including_save_export": 6.379710172716333,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                0.16743022300033772,
+                0.2946421279993956,
+                0.2753970300000219
+              ],
+              "growth": [
+                0.3538239949994022,
+                0.45308594300149707,
+                0.46959263999997347
+              ],
+              "checkpoint": [
+                0.2063630689990532,
+                0.3572799979992851,
+                0.23298090900061652
+              ],
+              "export": [
+                3.7999696050010243,
+                4.672681712001577,
+                4.398519349000708
+              ],
+              "cycle": [
+                4.530245975000071,
+                5.7804304839992255,
+                5.379325522999352
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 2,
+              "selected_step_tracked_count": 2
+            }
+          },
+          "warm": {
+            "restores": 1,
+            "same_runtime": true,
+            "nodes": 1108,
+            "branches": 1196,
+            "elapsed_s": 10.79594348899991,
+            "rss_before_mb": 300.41796875,
+            "rss_after_mb": 324.94921875,
+            "process_peak_rss_mb": 325.0,
+            "checkpoint_digest": "4b3752e082e91d9aede14210a68765fd1f6b87a63a406f49e9a88f92b3c6d54f",
+            "selected": [
+              [
+                979,
+                38
+              ],
+              [
+                136,
+                5
+              ],
+              [
+                1014,
+                39
+              ],
+              [
+                125,
+                3
+              ],
+              [
+                1044,
+                40
+              ],
+              [
+                882,
+                12
+              ]
+            ],
+            "checkpoint_component_digests": null,
+            "source_sha256": {
+              "src/chipiron/environments/morpion/bootstrap/runtime/runner.py": "d4c51d584615b6bce9ccf562f66b4d5e9a893e79dfa242dbb34c567f007ad85a",
+              "src/chipiron/environments/morpion/bootstrap/runtime/warm_growth.py": "a3322376bfacec1da17c7c84868649fa9147178e4dca0cfba619a1614199edfd",
+              "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py": "dd7740eb6b290e566f0b60276666a3303492faede6c0bf448b72f44b9597fcb2"
+            },
+            "import_inclusive_rss_kib_per_final_node": 300.3140794223827,
+            "new_nodes_per_second_including_save_export": 9.447993137786316,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                0.17964260699955048,
+                0.012320838999585249,
+                0.013623856000776868
+              ],
+              "growth": [
+                0.44218986300074903,
+                0.2784531840006821,
+                0.2824967229989852
+              ],
+              "checkpoint": [
+                0.22605252100038342,
+                0.3431454620003933,
+                0.40497903499999666
+              ],
+              "export": [
+                3.8449055799992493,
+                2.0718079490015953,
+                2.4126078779991076
+              ],
+              "cycle": [
+                4.695546517999901,
+                2.7085678959992947,
+                3.11647623799945
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 6,
+              "selected_step_tracked_count": 6
+            }
+          },
+          "auxiliary": {
+            "settings": "CPU, one Torch thread, <=1024 rows, linear, 1 epoch, batch64, diagnostics off, patch64",
+            "dataset_s": 0.3918949170001724,
+            "training_s": 3.533042242999727,
+            "reevaluation_s": 2.044840179998573,
+            "reevaluation_rows": 64,
+            "observations": [
+              {
+                "input_tree_generation": 4,
+                "rows_considered": 1108,
+                "rows_emitted": 77,
+                "output_row_count": 77,
+                "bytes_written": 73141,
+                "snapshot_load_s": 0.014362473999426584,
+                "record_scan_s": 0.00019036999947275035,
+                "frontier_scan_s": 0.001834235001297202,
+                "rows_extract_write_s": 0.3672851149985945,
+                "leaderboard_s": 0.004209531998640159,
+                "started_unix_s": 1792490497.9294188,
+                "finished_unix_s": 1792490498.3200364,
+                "elapsed_s": 0.3906171189992165,
+                "pid": 66592,
+                "rss_before_mb": 301.3828125,
+                "rss_after_mb": 305.84375,
+                "process_peak_rss_mb": 305.3828125,
+                "available_ram_before_mb": 8446.15234375,
+                "available_ram_after_mb": 8469.625,
+                "cuda_before": null,
+                "cuda_after": null,
+                "schema_version": 1,
+                "generation": 4,
+                "stage": "dataset"
+              },
+              {
+                "started_unix_s": 1792490498.3234198,
+                "finished_unix_s": 1792490501.6040406,
+                "elapsed_s": 3.2806211260012788,
+                "pid": 66592,
+                "rss_before_mb": 305.84375,
+                "rss_after_mb": 395.12109375,
+                "process_peak_rss_mb": 394.3671875,
+                "available_ram_before_mb": 8469.625,
+                "available_ram_after_mb": 8551.67578125,
+                "cuda_before": null,
+                "cuda_after": null,
+                "evaluator_name": "default",
+                "metrics": {
+                  "train_loss": 5117.164818548387,
+                  "validation_loss": 4834.600520833334,
+                  "train_mae": 68.99936995967742,
+                  "validation_mae": 67.191357421875,
+                  "num_epochs": 1.0,
+                  "num_train_samples": 62.0,
+                  "num_validation_samples": 15.0,
+                  "final_loss": 4834.600520833334
+                },
+                "schema_version": 1,
+                "generation": 4,
+                "stage": "evaluator"
+              },
+              {
+                "model_generation": 4,
+                "evaluator_name": "default",
+                "patch_id": "8876258d-206f-40b8-813c-4c3d4107dcb6",
+                "rows_requested": 64,
+                "rows_reevaluated": 64,
+                "node_count": 1108,
+                "inference_window": {
+                  "started_unix_s": 1792490501.8727198,
+                  "finished_unix_s": 1792490503.8966932,
+                  "elapsed_s": 2.0239728369997465,
+                  "pid": 66592,
+                  "rss_before_mb": 396.69140625,
+                  "rss_after_mb": 397.53515625,
+                  "process_peak_rss_mb": 396.921875,
+                  "available_ram_before_mb": 8546.50390625,
+                  "available_ram_after_mb": 8600.4140625,
+                  "cuda_before": null,
+                  "cuda_after": null
+                },
+                "model_inference_s": 1.6386177770054928,
+                "model_load_s": 0.0020559479999064934,
+                "patch_rows_build_s": 2.023984909057617,
+                "patch_build_write_s": 0.000978101001237519,
+                "start_cursor": "0",
+                "end_cursor": "1054",
+                "next_node_cursor": "1055",
+                "completed_full_pass_count": 0,
+                "started_unix_s": 1792490501.8556023,
+                "finished_unix_s": 1792490503.8984268,
+                "elapsed_s": 2.0428245189996233,
+                "pid": 66592,
+                "rss_before_mb": 395.125,
+                "rss_after_mb": 397.53515625,
+                "process_peak_rss_mb": 396.921875,
+                "available_ram_before_mb": 8546.73828125,
+                "available_ram_after_mb": 8600.4140625,
+                "cuda_before": null,
+                "cuda_after": null,
+                "schema_version": 1,
+                "generation": 4,
+                "stage": "reevaluation"
+              },
+              {
+                "dataset_rows": 77,
+                "selected_evaluator": "default",
+                "selection_policy": "lowest_validation_loss",
+                "started_unix_s": 1792490498.3218498,
+                "finished_unix_s": 1792490501.8537993,
+                "elapsed_s": 3.5319500240002526,
+                "pid": 66592,
+                "rss_before_mb": 305.84375,
+                "rss_after_mb": 395.125,
+                "process_peak_rss_mb": 394.4921875,
+                "available_ram_before_mb": 8469.625,
+                "available_ram_after_mb": 8546.73828125,
+                "cuda_before": null,
+                "cuda_after": null,
+                "schema_version": 1,
+                "generation": 4,
+                "stage": "training"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "development_5k": {
+      "chipiron_sha": "50fb67a42577e195bc565f4d03e38d919640d08a",
+      "chipiron_dirty": true,
+      "anemone_sha": "ec9fec7e47ca661eb1dd9330d115d010d9e5e64d",
+      "anemone_import": "/home/pompote/oldata/victor/anemone-state-free-compare/src/anemone/__init__.py",
+      "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+      "scope": "Synthetic CPU fixtures; eviction disabled; no gen38 projection",
+      "raw_report_sha256": "c08791d04fb26d462d5539856b67686dba25594fa4bb37dfd3af7b9c9214af39",
+      "raw_report_path": "/tmp/chipiron-warm-benchmark-larger.json",
+      "training_export_skipped": false,
+      "cases": [
+        {
+          "requested_nodes": 5000,
+          "initial_nodes": 5001,
+          "checkpoint_parity": true,
+          "selection_parity": true,
+          "cold": {
+            "restores": 3,
+            "same_runtime": false,
+            "nodes": 5104,
+            "branches": 5872,
+            "elapsed_s": 102.79399742600071,
+            "rss_before_mb": 300.50390625,
+            "rss_after_mb": 425.78125,
+            "process_peak_rss_mb": 433.85546875,
+            "checkpoint_digest": "19411cce6124ac95b1c3e647c04f41a3132ce2268f860bb9449ce712dce78105",
+            "selected": [
+              [
+                2828,
+                43
+              ],
+              [
+                2206,
+                9
+              ],
+              [
+                2125,
+                4
+              ],
+              [
+                3849,
+                10
+              ],
+              [
+                2096,
+                5
+              ],
+              [
+                16,
+                2
+              ]
+            ],
+            "checkpoint_component_digests": null,
+            "source_sha256": null,
+            "import_inclusive_rss_kib_per_final_node": 85.42319749216301,
+            "new_nodes_per_second_including_save_export": 1.002004033106579,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                0.5995037419997971,
+                0.8580560539994622,
+                0.8359586400001717
+              ],
+              "growth": [
+                0.2620304890006082,
+                0.33960586300054274,
+                0.2897795480002969
+              ],
+              "checkpoint": [
+                0.795286546999705,
+                0.6770518730008916,
+                0.5905710820006789
+              ],
+              "export": [
+                31.589962394000395,
+                33.4536454809986,
+                32.0472111959989
+              ],
+              "cycle": [
+                33.25021003599977,
+                35.33208893399933,
+                33.76660329599872
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 2,
+              "selected_step_tracked_count": 2
+            }
+          },
+          "warm": {
+            "restores": 1,
+            "same_runtime": true,
+            "nodes": 5104,
+            "branches": 5872,
+            "elapsed_s": 69.50808522899933,
+            "rss_before_mb": 304.4453125,
+            "rss_after_mb": 429.80859375,
+            "process_peak_rss_mb": 434.75,
+            "checkpoint_digest": "19411cce6124ac95b1c3e647c04f41a3132ce2268f860bb9449ce712dce78105",
+            "selected": [
+              [
+                2828,
+                43
+              ],
+              [
+                2206,
+                9
+              ],
+              [
+                2125,
+                4
+              ],
+              [
+                3849,
+                10
+              ],
+              [
+                2096,
+                5
+              ],
+              [
+                16,
+                2
+              ]
+            ],
+            "checkpoint_component_digests": null,
+            "source_sha256": null,
+            "import_inclusive_rss_kib_per_final_node": 86.23119122257053,
+            "new_nodes_per_second_including_save_export": 1.4818419995409047,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                0.5997636579995742,
+                0.06405108399849269,
+                0.06475510599921108
+              ],
+              "growth": [
+                0.25003580700104067,
+                0.27863697899920226,
+                0.270953148999979
+              ],
+              "checkpoint": [
+                0.7704952340009186,
+                0.9197683740003413,
+                0.9007623920006154
+              ],
+              "export": [
+                29.71504980300051,
+                17.678331650000473,
+                17.592920171000515
+              ],
+              "cycle": [
+                31.33859870299966,
+                18.945486530999915,
+                18.83374831400033
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 6,
+              "selected_step_tracked_count": 6
+            }
+          }
+        }
+      ]
+    },
+    "blocked_10k_without_export": {
+      "chipiron_sha": "51ab037783068c73c40304e0b78edb2c01e24171",
+      "chipiron_dirty": true,
+      "anemone_sha": "ec9fec7e47ca661eb1dd9330d115d010d9e5e64d",
+      "anemone_import": "/home/pompote/oldata/victor/anemone-state-free-compare/src/anemone/__init__.py",
+      "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+      "scope": "Blocked experimental prototype; production reuse disabled. Synthetic CPU fixtures, eviction/rollout disabled; no gen38 projection",
+      "raw_report_sha256": "3b056ea3c9811fad4f24323e2956e45f89e576e6b5ecf573092eaf3cea2f0b97",
+      "raw_report_path": "/tmp/chipiron-warm-counterexample.json",
+      "training_export_skipped": true,
+      "cases": [
+        {
+          "requested_nodes": 10000,
+          "initial_nodes": 10008,
+          "checkpoint_parity": false,
+          "selection_parity": true,
+          "cold": {
+            "restores": 3,
+            "same_runtime": false,
+            "nodes": 10110,
+            "branches": 11904,
+            "elapsed_s": 7.528489054000602,
+            "rss_before_mb": 300.65234375,
+            "rss_after_mb": 357.86328125,
+            "process_peak_rss_mb": 374.28125,
+            "checkpoint_digest": "d867393a303f301dd2c0239f4e757171853ebc538ea91f2d7bb414c8fc4dffba",
+            "selected": [
+              [
+                412,
+                3
+              ],
+              [
+                6917,
+                18
+              ],
+              [
+                1231,
+                46
+              ],
+              [
+                2592,
+                38
+              ],
+              [
+                4956,
+                8
+              ],
+              [
+                2558,
+                16
+              ]
+            ],
+            "checkpoint_component_digests": {
+              "metadata": "ffe8940ee6c1290cdf9e37008e1e7ac9fa7aeb414578744994252768c123aeb8",
+              "node_shells": "3c9e77beb47f37c8a07c156890976644892ff5a845188cfbe3431a88603f72fe",
+              "state_payloads": "705143c332338454e4e3ca549c7de0317b9dc9c938042f2bc5818a7b5ae1fd62",
+              "node_runtime": "0ceeabbe144224094b9df09e5876e01a6f7243636f574229e55b034c4a1ec78f",
+              "selector": "1dd186c5f461b3addbaf51a01a2b9902ad2d12da14c212c580dc25ef3ece00a8",
+              "latest_expansions": "7cdee1618b6d8e3d352bad7478d352d1f22efb0b3965b2b27419a8c8e0443e60"
+            },
+            "source_sha256": {
+              "src/chipiron/environments/morpion/bootstrap/runtime/runner.py": "1ae0f1c619d64db82757d6466cdc6a89638aa2c030ba205ffb8df3a675535abd",
+              "src/chipiron/environments/morpion/bootstrap/runtime/warm_growth.py": "a3322376bfacec1da17c7c84868649fa9147178e4dca0cfba619a1614199edfd",
+              "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py": "dd7740eb6b290e566f0b60276666a3303492faede6c0bf448b72f44b9597fcb2"
+            },
+            "import_inclusive_rss_kib_per_final_node": 36.24648862512364,
+            "new_nodes_per_second_including_save_export": 13.548535339345111,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                1.0431263419995958,
+                1.1995342259997415,
+                1.1759284510008001
+              ],
+              "growth": [
+                0.26928002099884907,
+                0.25082317700071144,
+                0.25462826100010716
+              ],
+              "checkpoint": [
+                0.9713579790004587,
+                1.0214218109995272,
+                1.0113612379991537
+              ],
+              "export": [],
+              "cycle": [
+                2.2867613889993663,
+                2.474791868000466,
+                2.444890406999548
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 2,
+              "selected_step_tracked_count": 2
+            }
+          },
+          "warm": {
+            "restores": 1,
+            "same_runtime": true,
+            "nodes": 10110,
+            "branches": 11904,
+            "elapsed_s": 5.990159026998299,
+            "rss_before_mb": 300.47265625,
+            "rss_after_mb": 358.65625,
+            "process_peak_rss_mb": 374.52734375,
+            "checkpoint_digest": "c6767ce913154f348caf460feb0a8cc273803496d56bb077ed6bdf5d577fd890",
+            "selected": [
+              [
+                412,
+                3
+              ],
+              [
+                6917,
+                18
+              ],
+              [
+                1231,
+                46
+              ],
+              [
+                2592,
+                38
+              ],
+              [
+                4956,
+                8
+              ],
+              [
+                2558,
+                16
+              ]
+            ],
+            "checkpoint_component_digests": {
+              "metadata": "ffe8940ee6c1290cdf9e37008e1e7ac9fa7aeb414578744994252768c123aeb8",
+              "node_shells": "e9f8614afcdc6994afd7db58ecb9f234d3105d8d4c1080f74174020a336c91a3",
+              "state_payloads": "705143c332338454e4e3ca549c7de0317b9dc9c938042f2bc5818a7b5ae1fd62",
+              "node_runtime": "0ceeabbe144224094b9df09e5876e01a6f7243636f574229e55b034c4a1ec78f",
+              "selector": "1dd186c5f461b3addbaf51a01a2b9902ad2d12da14c212c580dc25ef3ece00a8",
+              "latest_expansions": "7cdee1618b6d8e3d352bad7478d352d1f22efb0b3965b2b27419a8c8e0443e60"
+            },
+            "source_sha256": {
+              "src/chipiron/environments/morpion/bootstrap/runtime/runner.py": "1ae0f1c619d64db82757d6466cdc6a89638aa2c030ba205ffb8df3a675535abd",
+              "src/chipiron/environments/morpion/bootstrap/runtime/warm_growth.py": "a3322376bfacec1da17c7c84868649fa9147178e4dca0cfba619a1614199edfd",
+              "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py": "dd7740eb6b290e566f0b60276666a3303492faede6c0bf448b72f44b9597fcb2"
+            },
+            "import_inclusive_rss_kib_per_final_node": 36.326805143422355,
+            "new_nodes_per_second_including_save_export": 17.02792856421255,
+            "stage_elapsed_s": {
+              "runtime_load": [
+                1.271327819000362,
+                0.1396540610003285,
+                0.1324895199995808
+              ],
+              "growth": [
+                0.3232348149995232,
+                0.29921370500051125,
+                0.2610782450010447
+              ],
+              "checkpoint": [
+                1.0967625840003166,
+                1.0525339910000184,
+                1.0436020200013445
+              ],
+              "export": [],
+              "cycle": [
+                2.694818669999222,
+                1.4969284449998668,
+                1.4417237779998686
+              ]
+            },
+            "live_eviction_counters": {
+              "eviction_attempt_count": 0,
+              "eviction_success_count": 0,
+              "rematerialization_count": 0,
+              "rematerialization_cache_hit": 0,
+              "rematerialization_cache_miss": 0,
+              "cache_evictions": 0,
+              "recent_selected_count": 6,
+              "selected_step_tracked_count": 6
+            }
+          }
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Experimental subclasses explicitly override the production-disable hook; their speedups cannot justify activation.",
+    "Full-export 10k also failed, but its old tool version removed temporary per-mode records on failure. The retained no-export repeat isolates the checkpoint component divergence.",
+    "The 10k parent recorded HEAD before a commit transition; all three per-file runtime fingerprints match commit 5e5c8b4551e5388da110e403afdd0f80cc71c5e1, verified separately.",
+    "The clean 1k trial uses committed 51ab037783068c73c40304e0b78edb2c01e24171 before production was disabled. The 5k trial is an explicitly dirty development trial.",
+    "RSS includes interpreter/imports/caches; process peaks are not isolated stage-local ownership. No peak-memory reduction or production projection is claimed.",
+    "Auxiliary CPU stage functions are sequential in one fresh process; the Reevaluation process peak includes preceding Training. No worker daemon or real experiment is launched."
+  ]
+}
