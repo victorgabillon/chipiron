@@ -27,6 +27,7 @@ from anemone.checkpoints import (
     write_checkpoint_json_payload,
     write_sharded_search_checkpoint,
 )
+from anemone.checkpoints.rng_state import rollout_random_generator
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
 )
@@ -37,6 +38,7 @@ from anemone.factory import (
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
+from anemone.node_selector import StatefulNodeSelector
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
 from anemone.node_selector.linoo import LinooArgs
 from anemone.node_selector.node_selector_types import NodeSelectorType
@@ -67,6 +69,10 @@ from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTree
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     linoo_selection_table_from_report,
     save_linoo_selection_table,
+)
+from chipiron.environments.morpion.bootstrap.performance import (
+    StageMeasurement,
+    persist_stage_measurement,
 )
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     log_pipeline_memory,
@@ -163,15 +169,22 @@ from .training_export_profile import (
     training_export_profile_to_dict,
     value_to_scalar,
 )
+from .warm_growth import LiveRuntimeStamp, WarmGrowthRuntime, growth_runtime_identity
 
 if TYPE_CHECKING:
     from anemone.checkpoints._protocols import CheckpointStateSummary
 
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
     from chipiron.environments.morpion.bootstrap.control import (
         MorpionBootstrapEffectiveRuntimeConfig,
     )
     from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
         MorpionReevaluationPatch,
+    )
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        MorpionBootstrapRunState,
     )
 
 LOGGER = logging.getLogger(__name__)
@@ -260,6 +273,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Initialize the real runner with explicit or default runtime settings."""
         self._args = args if args is not None else AnemoneMorpionSearchRunnerArgs()
         self._runtime: object | None = None
+        self._warm_growth = WarmGrowthRuntime()
         self._random_generator = Random(self._args.random_seed)
         self._dynamics = MorpionDynamics()
         self._state_codec = ChipironMorpionStateCheckpointCodec(
@@ -316,6 +330,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> None:
         """Apply a supported runtime config to the loaded live runtime."""
         runtime = self._require_runtime()
+        self._warm_growth.invalidate()
         apply_runtime_config_to_runtime(runtime, runtime_config)
         self._last_applied_runtime_config = runtime_config
 
@@ -344,7 +359,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
+        had_runtime = self._runtime is not None
+        self._runtime = None
+        self._current_evaluator_bundle_path = None
+        self._warm_growth.clear()
         self._reset_growth_state_eviction_runtime()
+        if had_runtime:
+            # Phase wrappers form cycles. Release the old graph before loading another.
+            gc.collect()
         LOGGER.info(
             "[search] selector=%s opening_type=%s opening_expansion=%s",
             _selector_family_name(self._args.search_args),
@@ -403,9 +425,169 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
 
+    def _live_runtime_stamp(self) -> LiveRuntimeStamp:
+        """Capture scalar state and RNGs without enumerating the tree."""
+        runtime = self._require_runtime()
+        rollout_rng = rollout_random_generator(runtime)
+        return LiveRuntimeStamp(
+            runtime_id=id(runtime),
+            node_count=self.current_tree_size(),
+            branch_count=self.current_tree_branch_count(),
+            evaluator_version=runtime.evaluator_version,
+            search_rng_state=self._random_generator.getstate(),
+            rollout_rng_state=None if rollout_rng is None else rollout_rng.getstate(),
+            runtime_config=self._last_applied_runtime_config,
+        )
+
+    def _warm_reuse_is_validated(self) -> bool:
+        """Keep production cold: the 10k exact-checkpoint counterexample is unresolved.
+
+        Test/benchmark subclasses may exercise the prototype explicitly. Enabling
+        production requires an Anemone-owned persisted state-handle rebind proof.
+        """
+        return False
+
+    def load_growth_runtime(
+        self,
+        tree_snapshot_path: Path | None,
+        model_bundle_path: Path | None,
+        effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+        *,
+        paths: MorpionBootstrapPaths,
+        run_state: MorpionBootstrapRunState,
+        force_evaluator: str | None,
+        reevaluate_tree: bool,
+    ) -> None:
+        """Reuse only a saved runtime acknowledged by pipeline publication."""
+        measurement = StageMeasurement()
+        self._warm_growth.validate_before_publication(paths)
+        identity = growth_runtime_identity(
+            paths=paths,
+            run_state=run_state,
+            checkpoint=tree_snapshot_path,
+            evaluator=model_bundle_path,
+            runtime_config=effective_runtime_config,
+            force_evaluator=force_evaluator,
+            reevaluate_tree=reevaluate_tree,
+        )
+        stamp = None if self._runtime is None else self._live_runtime_stamp()
+        reason = self._warm_growth.decision(identity, stamp)
+        if (
+            reason == "compatible_committed_checkpoint"
+            and not self._warm_reuse_is_validated()
+        ):
+            reason = "warm_reuse_not_validated"
+        if reason == "compatible_committed_checkpoint" and (
+            _effective_growth_state_eviction_policy(
+                self._args.growth_state_eviction_policy
+            )
+            != "none"
+        ):
+            # Cold restore replaces compact/materialized handles with checkpoint-backed
+            # handles. Their stored parent/anchor references affect future exports.
+            # Retaining those handles under eviction has not passed exact parity.
+            reason = "state_eviction_requires_cold_restore"
+        if reason == "compatible_committed_checkpoint" and (
+            _opening_expansion_kind_name(self._args.search_args) != "one_ply"
+        ):
+            # Rollout-created incoming-edge order also failed exact checkpoint parity.
+            reason = "rollout_requires_cold_restore"
+        if reason == "compatible_committed_checkpoint" and not isinstance(
+            self._require_runtime().node_selector, StatefulNodeSelector
+        ):
+            reason = "selector_checkpoint_rebind_unavailable"
+        if reason == "compatible_committed_checkpoint":
+            self._warm_growth.invalidate()
+            # Reuse Anemone's selector checkpoint hooks: cold restoration clears
+            # priority signatures and rebinds stale-entry versions. Preserve even
+            # those cache tokens exactly, rather than relaxing checkpoint parity.
+            runtime = self._require_runtime()
+            apply_runtime_config_to_runtime(runtime, effective_runtime_config)
+            self._last_applied_runtime_config = effective_runtime_config
+            selector = runtime.node_selector
+            if isinstance(selector, StatefulNodeSelector):
+                objective = runtime.tree.root_node.tree_evaluation.required_objective
+                payload = selector.build_checkpoint_payload(objective)
+                if payload is not None:
+                    selector.restore_from_checkpoint_payload(
+                        tree=runtime.tree, objective=objective, payload=payload
+                    )
+            # Cold restore reattaches even identical weights, advancing evaluator_version.
+            # Keep that policy and its checkpoint semantics on the warm path too.
+            if model_bundle_path is not None:
+                self._set_runtime_evaluator_from_bundle(
+                    model_bundle_path, reevaluate_tree=False
+                )
+            action = "warm_reuse"
+        else:
+            action = (
+                "cold_restore_required"
+                if self._runtime is not None
+                else "fresh_create"
+                if tree_snapshot_path is None
+                else "cold_restore"
+            )
+            self.load_or_create(
+                tree_snapshot_path,
+                model_bundle_path,
+                effective_runtime_config,
+                reevaluate_tree=reevaluate_tree,
+            )
+        self._warm_growth.loaded = identity
+        observation = measurement.finish(
+            runtime_load_action=action,
+            reason=reason,
+            checkpoint_identity=None
+            if identity.checkpoint is None
+            else identity.checkpoint.digest,
+            evaluator_identity=None
+            if identity.evaluator is None
+            else identity.evaluator.digest,
+            node_count=self.current_tree_size(),
+            branch_count=self.current_tree_branch_count(),
+            state_eviction=self.profile_state_eviction_runtime(),
+        )
+        persist_stage_measurement(
+            paths.work_dir, run_state.generation, "runtime_load", observation
+        )
+        LOGGER.info(
+            "[runtime] runtime_load_action=%s reason=%s generation=%s elapsed=%.6fs nodes=%s branches=%s checkpoint_identity=%s evaluator_identity=%s rss_mb=%s available_ram_mb=%s",
+            action,
+            reason,
+            run_state.generation,
+            observation["elapsed_s"],
+            observation["node_count"],
+            observation["branch_count"],
+            observation["checkpoint_identity"],
+            observation["evaluator_identity"],
+            observation["rss_after_mb"],
+            observation["available_ram_after_mb"],
+        )
+
+    def validate_growth_publication(self, paths: MorpionBootstrapPaths) -> None:
+        """Check the publisher identity before run-state publication."""
+        self._warm_growth.validate_before_publication(paths)
+
+    def acknowledge_growth_publication(
+        self,
+        *,
+        paths: MorpionBootstrapPaths,
+        run_state: MorpionBootstrapRunState,
+        generation_published: bool,
+    ) -> None:
+        """Arm reuse after the caller successfully publishes the run state."""
+        if self._runtime is not None:
+            self._warm_growth.acknowledge_publication(
+                paths=paths,
+                run_state=run_state,
+                generation_published=generation_published,
+                stamp=self._live_runtime_stamp(),
+            )
+
     def grow(self, max_growth_steps: int) -> None:
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
         runtime = self._require_runtime()
+        self._warm_growth.invalidate()
         initial_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
             "[growth] start max_steps=%s initial_tree_size=%s state_eviction_policy=%s state_eviction_recent_window=%s state_rematerialization_cache_size=%s state_eviction_scan_interval_steps=%s state_eviction_scan_node_limit=%s state_eviction_payload_mode=%s state_eviction_delta_chain_max_depth=%s",
@@ -1469,6 +1651,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""
+        self._warm_growth.invalidate()
         runtime = self._runtime
         if runtime is None:
             raise _uninitialized_reevaluation_patch_runtime_error()
@@ -1922,6 +2105,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
+        self._warm_growth.invalidate()
         runtime = self._require_runtime()
         output = Path(output_path)
 
@@ -2068,6 +2252,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             nodes=node_count,
             generation=generation_from_checkpoint_path(output),
         )
+        if self._warm_growth.loaded is not None:
+            self._warm_growth.record_save(output, self._live_runtime_stamp())
 
 
 def _count_expanded_nodes(runtime: Any) -> int:

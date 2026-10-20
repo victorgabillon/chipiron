@@ -170,6 +170,7 @@ from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from chipiron.environments.morpion.bootstrap.runtime.warm_growth import WarmGrowthRunner
 from chipiron.environments.morpion.bootstrap.training_logging import (
     TrainingActiveModelCursorSummary,
     log_training_cycle_done,
@@ -408,6 +409,8 @@ def run_pipeline_growth_stage(
             bootstrap_config=current_config,
             force_save=derived_sequential,
         )
+        if isinstance(runner, WarmGrowthRunner):
+            runner.validate_growth_publication(paths)
         if derived_sequential:
             from dataclasses import asdict
 
@@ -425,6 +428,12 @@ def run_pipeline_growth_stage(
             atomic_json(paths.run_state_path, asdict(run_state))
         else:
             save_bootstrap_run_state(run_state, paths.run_state_path)
+        if isinstance(runner, WarmGrowthRunner):
+            runner.acknowledge_growth_publication(
+                paths=paths,
+                run_state=run_state,
+                generation_published=run_state.generation > previous_generation,
+            )
         if run_state.generation > previous_generation:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
@@ -599,12 +608,23 @@ def _run_one_pipeline_growth_cycle_impl(
             reason="low_available_ram",
         )
         return run_state
-    runner.load_or_create(
-        restore_tree_path,
-        resolved_active_model.model_bundle_path,
-        effective_runtime_config,
-        reevaluate_tree=reevaluate_tree,
-    )
+    if isinstance(runner, WarmGrowthRunner):
+        runner.load_growth_runtime(
+            restore_tree_path,
+            resolved_active_model.model_bundle_path,
+            effective_runtime_config,
+            paths=paths,
+            run_state=run_state,
+            force_evaluator=resolved_control.force_evaluator,
+            reevaluate_tree=reevaluate_tree,
+        )
+    else:
+        runner.load_or_create(
+            restore_tree_path,
+            resolved_active_model.model_bundle_path,
+            effective_runtime_config,
+            reevaluate_tree=reevaluate_tree,
+        )
     restored_tree_size = runner.current_tree_size()
     restored_branch_count = _current_tree_branch_count(runner)
     effective_runtime_config, growth_budget_metadata = growth_budget_runtime_config(
