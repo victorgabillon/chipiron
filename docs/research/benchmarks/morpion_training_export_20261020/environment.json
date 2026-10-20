@@ -1,0 +1,15 @@
+{
+  "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+  "executable": "/tmp/anemone-lifecycle-integration-venv/bin/python",
+  "packages": {
+    "chipiron": "0.2.4",
+    "algorhino-anemone": "0.2.26",
+    "atomheart": "0.2.11",
+    "valanga": "0.2.5",
+    "torch": "2.14.0+cpu",
+    "zstandard": "0.25.0",
+    "numpy": "2.2.6"
+  },
+  "atomheart_checkpoint_file": "/tmp/anemone-lifecycle-integration-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+  "atomheart_checkpoint_file_sha256": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+}
