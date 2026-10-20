@@ -76,10 +76,15 @@ def protect_exact_values_from_model_predictions(
             continue
         evaluation = node.tree_evaluation
         direct = evaluation.direct_value
+        tree = evaluation.tree_value
         if (
             direct is not None
             and direct.certainty in {Certainty.FORCED, Certainty.TERMINAL}
-        ) or (evaluation.has_exact_value() and not node.all_branches_generated):
+        ) or (
+            tree is not None
+            and tree.certainty in {Certainty.FORCED, Certainty.TERMINAL}
+            and not node.all_branches_generated
+        ):
             skipped.add(id(row))
     if not skipped:
         return patch, ()

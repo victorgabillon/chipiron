@@ -14,6 +14,7 @@ from anemone.node_evaluation.tree.single_agent.node_max_evaluation import (
 )
 from anemone.node_selector.linoo.errors import LinooSelectionError
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
+from anemone.value_updates import NodeValueUpdate
 from atomheart.games.morpion import MorpionDynamics as AtomDynamics
 from atomheart.games.morpion import initial_state
 from valanga.evaluations import Certainty
@@ -252,6 +253,38 @@ def test_model_does_not_replace_explicit_direct_proof(
     restored = runner_module.AnemoneMorpionSearchRunner(runner._args)
     restored.load_or_create(checkpoint, None)
     assert values(restored) == values(runner)
+
+
+@pytest.mark.parametrize("alpha", [1.0, 0.25])
+@pytest.mark.parametrize("direct_score", [2.0, 42.0])
+def test_partial_tree_proof_is_protected_independently_of_effective_exactness(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    alpha: float,
+    direct_score: float,
+) -> None:
+    """Explicit API-supplied tree proof, distinct from a normal partial max backup."""
+    runner = make_runner(monkeypatch, alpha=alpha)
+    root = next(iter(runner.iter_profile_nodes()))
+    runtime = runner._runtime
+    runtime.apply_node_value_updates(
+        (
+            NodeValueUpdate(
+                str(root.id), direct_value=3, backed_up_value=3, is_exact=True
+            ),
+        ),
+        recompute_backups=False,
+    )
+    runtime.apply_node_value_updates(
+        (NodeValueUpdate(str(root.id), direct_value=direct_score, is_exact=False),),
+        recompute_backups=False,
+    )
+    assert root.tree_evaluation.tree_value.certainty == Certainty.FORCED
+    assert root.tree_evaluation.has_exact_value() is (direct_score < 3)
+    before = values(runner)
+    patch = model_patch(runner, monkeypatch, 10, tmp_path)
+    assert runner.apply_reevaluation_patch(replace(patch, rows=(patch.rows[0],))) == 0
+    assert values(runner) == before
 
 
 @pytest.mark.parametrize("alpha", [1.0, 0.25])
