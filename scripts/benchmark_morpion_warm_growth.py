@@ -61,7 +61,7 @@ def git(directory: Path, *arguments: str) -> str:
     ).strip()
 
 
-def checkpoint_digest(root: Path) -> str:
+def checkpoint_digest(root: Path) -> dict[str, Any]:
     """Hash all decompressed scientific fields; normalize only JSON formatting."""
     records: dict[str, Any] = {}
     for shard in json.loads((root / "manifest.json").read_text())["shards"]:
@@ -72,7 +72,15 @@ def checkpoint_digest(root: Path) -> str:
                 )
             else:
                 records[shard["kind"]] = json.load(stream)
-    return hashlib.sha256(json.dumps(records, sort_keys=True).encode()).hexdigest()
+    return {
+        "digest": hashlib.sha256(
+            json.dumps(records, sort_keys=True).encode()
+        ).hexdigest(),
+        "components": {
+            name: hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+            for name, value in records.items()
+        },
+    }
 
 
 class BenchmarkRunner(AnemoneMorpionSearchRunner):
@@ -87,6 +95,10 @@ class BenchmarkRunner(AnemoneMorpionSearchRunner):
         self.restores = 0
         self.runtime_ids: list[int] = []
         self.selected: list[object] = []
+
+    def _warm_reuse_is_validated(self) -> bool:
+        """Explicitly exercise the blocked prototype; production remains cold."""
+        return True
 
     def _load_runtime_from_checkpoint(self, *args: Any, **kwargs: Any) -> object:
         self.restores += 1
@@ -146,7 +158,9 @@ def prepare(work: Path, nodes: int) -> dict[str, object]:
     return {"initial_nodes": runner.current_tree_size()}
 
 
-def measure(work: Path, *, cold: bool, cycles: int) -> dict[str, Any]:
+def measure(
+    work: Path, *, cold: bool, cycles: int, skip_export: bool = False
+) -> dict[str, Any]:
     """Measure real pipeline saves/exports using existing boundary observations."""
     runner = BenchmarkRunner(cold=cold)
     args = MorpionBootstrapArgs(
@@ -155,6 +169,7 @@ def measure(work: Path, *, cold: bool, cycles: int) -> dict[str, Any]:
         runtime_checkpoint_format="sharded",
         training_export_mode="flat",
         tree_branch_limit=100000,
+        growth_skip_training_export=skip_export,
         max_growth_steps_per_cycle=2,
         save_after_tree_growth_factor=1.0,
         save_after_seconds=0.0,
@@ -170,9 +185,9 @@ def measure(work: Path, *, cold: bool, cycles: int) -> dict[str, Any]:
         selected=runner.selected,
         eviction=runner.profile_state_eviction_runtime(),
     )
-    result["checkpoint_digest"] = checkpoint_digest(
-        work / state.latest_runtime_checkpoint_path
-    )
+    checkpoint = checkpoint_digest(work / state.latest_runtime_checkpoint_path)
+    result["checkpoint_digest"] = checkpoint["digest"]
+    result["checkpoint_component_digests"] = checkpoint["components"]
     result["observations"] = [
         json.loads(p.read_text())
         for p in sorted(work.glob("pipeline/performance/*/*.json"))
@@ -235,6 +250,11 @@ def main() -> None:
         help="Also time bounded CPU Dataset/Training/Reevaluation stage functions",
     )
     parser.add_argument("--temporary-work", type=Path)
+    parser.add_argument(
+        "--skip-training-export",
+        action="store_true",
+        help="Isolate checkpoint parity without export/rematerialization",
+    )
     args = parser.parse_args()
     if not all(1 <= n <= 10000 for n in args.nodes) or not 2 <= args.cycles <= 10:
         parser.error("Only small fixtures (<=10000 nodes, 2..10 cycles) are allowed")
@@ -260,7 +280,12 @@ def main() -> None:
             else (
                 prepare(work, args.nodes[0])
                 if args.child == "prepare"
-                else measure(work, cold=args.child == "cold", cycles=args.cycles)
+                else measure(
+                    work,
+                    cold=args.child == "cold",
+                    cycles=args.cycles,
+                    skip_export=args.skip_training_export,
+                )
             )
         )
         repository = Path(__file__).resolve().parents[1]
@@ -281,8 +306,9 @@ def main() -> None:
         "chipiron_sha": git(repository, "rev-parse", "HEAD"),
         "chipiron_dirty": bool(git(repository, "status", "--porcelain")),
         "python": sys.version,
+        "training_export_skipped": args.skip_training_export,
         "cases": [],
-        "scope": "Synthetic CPU fixtures; eviction disabled; no gen38 projection",
+        "scope": "Blocked experimental prototype; production reuse disabled. Synthetic CPU fixtures, eviction/rollout disabled; no gen38 projection",
     }
     with tempfile.TemporaryDirectory(prefix="chipiron-warm-benchmark-") as directory:
         root = Path(directory)
@@ -319,8 +345,18 @@ def main() -> None:
                     "--output",
                     str(output),
                 ]
+                if args.skip_training_export:
+                    command.append("--skip-training-export")
                 subprocess.run(command, check=True, env=os.environ.copy(), timeout=300)
                 case[mode] = json.loads(output.read_text())
+            case["checkpoint_parity"] = (
+                case["cold"]["checkpoint_digest"] == case["warm"]["checkpoint_digest"]
+            )
+            case["selection_parity"] = (
+                case["cold"]["selected"] == case["warm"]["selected"]
+            )
+            results["cases"].append(case)
+            args.output.write_text(json.dumps(results, indent=2))
             if (
                 case["cold"]["checkpoint_digest"] != case["warm"]["checkpoint_digest"]
                 or case["cold"]["selected"] != case["warm"]["selected"]
@@ -337,7 +373,6 @@ def main() -> None:
                 )
                 raise RuntimeError(message)
             case["exact_checkpoint_and_selection_parity"] = True
-            results["cases"].append(case)
             args.output.write_text(json.dumps(results, indent=2))
             print(
                 f"{nodes}: cold={case['cold']['elapsed_s']:.3f}s warm={case['warm']['elapsed_s']:.3f}s",

@@ -82,6 +82,10 @@ class RecordingRunner(AnemoneMorpionSearchRunner):
         self.runtime_ids: list[int] = []
         self.selected: list[object] = []
 
+    def _warm_reuse_is_validated(self) -> bool:
+        """Exercise only the experimental prototype in isolated test fixtures."""
+        return True
+
     def _load_runtime_from_checkpoint(self, *args: Any, **kwargs: Any) -> object:
         self.restores += 1
         assert self._runtime is None
@@ -466,3 +470,20 @@ def test_incompatible_scientific_configuration_still_refuses(tmp_path: Path) -> 
     paths.bootstrap_config_path.write_text(json.dumps(persisted))
     with pytest.raises(ValueError):
         stages.run_pipeline_growth_stage(args_for(tmp_path), runner)
+
+
+def test_production_stays_cold_until_large_checkpoint_parity_is_proven(
+    tmp_path: Path,
+) -> None:
+    """Do not enable the prototype after the 10k-node counterexample."""
+    runner = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(runtime_checkpoint_format="sharded")
+    )
+    stages.run_pipeline_growth_stage(args_for(tmp_path), runner, max_cycles=3)
+    observed = events(tmp_path)
+    assert [event["runtime_load_action"] for event in observed] == [
+        "fresh_create",
+        "cold_restore_required",
+        "cold_restore_required",
+    ]
+    assert all(event["reason"] == "warm_reuse_not_validated" for event in observed[1:])

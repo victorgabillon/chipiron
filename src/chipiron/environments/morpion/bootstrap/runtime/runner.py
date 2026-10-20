@@ -439,6 +439,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             runtime_config=self._last_applied_runtime_config,
         )
 
+    def _warm_reuse_is_validated(self) -> bool:
+        """Keep production cold: the 10k exact-checkpoint counterexample is unresolved.
+
+        Test/benchmark subclasses may exercise the prototype explicitly. Enabling
+        production requires an Anemone-owned persisted state-handle rebind proof.
+        """
+        return False
+
     def load_growth_runtime(
         self,
         tree_snapshot_path: Path | None,
@@ -464,6 +472,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         stamp = None if self._runtime is None else self._live_runtime_stamp()
         reason = self._warm_growth.decision(identity, stamp)
+        if (
+            reason == "compatible_committed_checkpoint"
+            and not self._warm_reuse_is_validated()
+        ):
+            reason = "warm_reuse_not_validated"
         if reason == "compatible_committed_checkpoint" and (
             _effective_growth_state_eviction_policy(
                 self._args.growth_state_eviction_policy
