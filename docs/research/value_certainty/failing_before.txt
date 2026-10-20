@@ -6,4 +6,8 @@ FAILED tests/environments/test_morpion_value_certainty.py::test_model_prediction
 FAILED tests/environments/test_morpion_value_certainty.py::test_model_prediction_keeps_its_own_certainty[42.0-0.25]
 FAILED tests/environments/test_morpion_value_certainty.py::test_model_does_not_replace_explicit_direct_proof[1.0]
 FAILED tests/environments/test_morpion_value_certainty.py::test_model_does_not_replace_explicit_direct_proof[0.25]
-6 failed, 83 passed, 2 skipped in 10.15s
+FAILED tests/environments/test_morpion_value_certainty.py::test_partial_tree_proof_is_protected_independently_of_effective_exactness[2.0-1.0]
+FAILED tests/environments/test_morpion_value_certainty.py::test_partial_tree_proof_is_protected_independently_of_effective_exactness[2.0-0.25]
+FAILED tests/environments/test_morpion_value_certainty.py::test_partial_tree_proof_is_protected_independently_of_effective_exactness[42.0-1.0]
+FAILED tests/environments/test_morpion_value_certainty.py::test_partial_tree_proof_is_protected_independently_of_effective_exactness[42.0-0.25]
+10 failed, 83 passed, 3 skipped in 8.52s

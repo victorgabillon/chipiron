@@ -106,14 +106,21 @@ The small correction has two parts:
    their existing backup, or their existing direct score when no backup exists.
    A terminal row with neither score fails instead of inventing a score.
 2. Before either runner application path, unproved built-in model rows are
-   skipped if they would replace an existing exact direct value, or an exact
-   effective value at a partial node. Fully opened nodes with an estimated
+   skipped if they would replace an existing exact direct value, or cause an
+   exact tree value at a partial node to be recomputed under partial proof rules.
+   The latter check uses tree certainty even when the effective value is estimated.
+   Fully opened nodes with an estimated
    direct value still accept model updates while retaining their tree proof.
    Applied counts exclude skipped rows; diagnostics retain skipped IDs. Patch
    IDs, evaluator/model identities and persisted patch contents are preserved.
 
 Explicitly authoritative external rows retain the public `NodeValueUpdate`
-contract. The guard recognizes the existing built-in model source and an explicit
+contract. Four additional API-valid partial-tree tests supply an external tree
+proof via public `NodeValueUpdate`, then set estimated direct scores below/above
+it with `recompute_backups=False`. The model guard preserves this proof with
+both alphas, including when effective exactness is false. These are explicit
+external proofs, not claims about the default partial max backup producer.
+The guard recognizes the existing built-in model source and an explicit
 estimated row; it does not reinterpret arbitrary external updates or silently
 rewrite old pending patches. Already persisted false FORCED values cannot be
 distinguished from genuine proofs by this fix and are not automatically repaired.
@@ -208,8 +215,9 @@ The nine policy names and v1 supervised row format remain frozen here.
 [Regression tests](../../tests/environments/test_morpion_value_certainty.py)
 exercise the real APIs and intentionally preserve v1 Dataset/fallback behavior
 for review. [Failing-before evidence](value_certainty/failing_before.txt) records
-six failures on untouched Chipiron main: four false neural certainty cases
-(equal/different scores, both alphas), and two proof overwrite cases. The corrected
+ten failures on untouched Chipiron main: four false neural certainty cases
+(equal/different scores, both alphas), two direct-proof overwrite cases, and four
+partial-tree proof cases (both alphas and both effective certainty outcomes). The corrected
 runtime passes those assertions without changing Anemone's proof semantics.
 
 [Audit driver](value_certainty/audit.py), [baseline results](value_certainty/baseline.json.gz),
@@ -235,10 +243,10 @@ unchanged). Tests redirect the global leaderboard to fresh pytest scratch paths
 without changing HOME or record assertions. Python 3.13.5, Torch 2.14.0+cpu,
 Anemone 0.2.26, Atomheart 0.2.11 and Valanga 0.2.5 are used, with the Anemone source
 explicitly pinned above. Streaming integration additionally uses ijson 3.4.0.post0.
-The installed affected suite passes **218 tests, three streaming-only skips**;
-the focused installed-wheel suite passes **89, three skips**; the existing
+The installed affected suite passes **222 tests, three streaming-only skips**;
+the focused value-certainty suite passes **93, three skips**; the existing
 bootstrap/family suite passes **88**; the separate streaming integration passes
-**122**, including those three streaming-only cases. The installed-distribution
+**126**, including those three streaming-only cases. The installed-distribution
 contract script verifies the actual wheel imports and evaluator/checkpoint APIs.
 [Machine-readable validation](value_certainty/validation.json) and
 [protected worktree status](value_certainty/protected_status.json) retain details.
