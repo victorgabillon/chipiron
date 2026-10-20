@@ -26,6 +26,7 @@ from .dataset_family_targets import (
     apply_dataset_family_target_policy,
     build_dataset_family_target_context,
 )
+from .generation_publication_io import generation_read_pin
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -257,9 +258,10 @@ def load_training_snapshot_for_generation(
     artifact_path: str | Path,
 ) -> TrainingTreeSnapshot:
     """Load the training snapshot represented by the configured artifact path."""
-    if args.training_export_mode == "sharded":
-        return load_morpion_sharded_training_tree_snapshot(artifact_path)
-    return load_training_tree_snapshot(artifact_path)
+    with generation_read_pin(Path(artifact_path)):
+        if args.training_export_mode == "sharded":
+            return load_morpion_sharded_training_tree_snapshot(artifact_path)
+        return load_training_tree_snapshot(artifact_path)
 
 
 def build_and_save_dataset_for_generation(

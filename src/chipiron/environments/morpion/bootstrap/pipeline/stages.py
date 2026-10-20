@@ -29,6 +29,7 @@ from chipiron.environments.morpion.bootstrap.config import (
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
+    bootstrap_config_to_dict,
     load_bootstrap_config,
     save_bootstrap_config,
     validate_bootstrap_config_change,
@@ -126,6 +127,9 @@ from chipiron.environments.morpion.bootstrap.cycle_validation import (
 )
 from chipiron.environments.morpion.bootstrap.cycle_validation import (
     validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
+)
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    PUBLICATION_KEY,
 )
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapHistoryRecorder,
@@ -379,20 +383,31 @@ def run_pipeline_growth_stage(
     max_cycles: int = 1,
     derived_sequential: bool = False,
     checkpoint_bound_receipts: bool = False,
+    durable_generation_publication: bool = False,
 ) -> MorpionBootstrapRunState:
     """Run Growth, with explicit experimental checkpoint-bound receipt activation.
 
-    Receipt mode requires a quiescent existing baseline and immutable flat exports
-    (or skipped exports). No CLI or production worker enables this option.
+    Receipt mode alone supports flat/skipped exports. The additional explicit
+    durable_generation_publication option supports immutable scientific v1
+    sharded/both exports too. No CLI or production worker enables either option.
     """
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    if durable_generation_publication and not checkpoint_bound_receipts:
+        message = (
+            "Durable generation publication requires checkpoint-bound receipt mode."
+        )
+        raise CheckpointPatchReceiptError(message)
     # Updated legacy callers also take this lease and cannot race a receipt owner.
     # Old binaries must be quiesced before adoption; they do not know this lock.
     with growth_receipt_ownership(paths):
         session = (
-            GrowthPatchReceiptSession(paths, runner)
+            GrowthPatchReceiptSession(
+                paths,
+                runner,
+                durable_generation_publication=durable_generation_publication,
+            )
             if checkpoint_bound_receipts
             else None
         )
@@ -435,6 +450,11 @@ def _run_pipeline_growth_stage_owned(
     if receipt_session is None and RECEIPTS_METADATA_KEY in run_state.metadata:
         message = "Receipt-enabled run state requires checkpoint_bound_receipts=True; downgrade refused."
         raise CheckpointPatchReceiptError(message)
+    if PUBLICATION_KEY in run_state.metadata and (
+        receipt_session is None or receipt_session.publication is None
+    ):
+        message = "Durable generation run state requires durable_generation_publication=True; downgrade refused."
+        raise CheckpointPatchReceiptError(message)
 
     if receipt_session is not None:
         receipt_session.validate_options(args)
@@ -442,7 +462,16 @@ def _run_pipeline_growth_stage_owned(
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
         validate_bootstrap_config_change(persisted_config, current_config)
-    save_bootstrap_config(current_config, paths.bootstrap_config_path)
+    if receipt_session is not None and receipt_session.publication is not None:
+        from chipiron.environments.morpion.bootstrap.derived.provenance import (
+            atomic_json,
+        )
+
+        atomic_json(
+            paths.bootstrap_config_path, bootstrap_config_to_dict(current_config)
+        )
+    else:
+        save_bootstrap_config(current_config, paths.bootstrap_config_path)
     config_hash = bootstrap_config_sha256(current_config)
 
     run_state = _with_config_hash_metadata(run_state, config_hash=config_hash)
@@ -671,7 +700,9 @@ def _run_one_pipeline_growth_cycle_impl(
         return run_state
     runner.load_or_create(
         restore_tree_path,
-        resolved_active_model.model_bundle_path,
+        receipt_session.runtime_model_path(resolved_active_model.model_bundle_path)
+        if receipt_session is not None
+        else resolved_active_model.model_bundle_path,
         effective_runtime_config,
         reevaluate_tree=reevaluate_tree,
     )
@@ -1199,7 +1230,9 @@ def _run_one_pipeline_growth_cycle_impl(
         export_measurement = StageMeasurement()
         tree_snapshot_path = _export_training_snapshot_for_generation(
             args=args,
-            paths=receipt_session.export_paths()
+            paths=receipt_session.export_paths(
+                sharded=args.training_export_mode in {"sharded", "both"}
+            )
             if receipt_session is not None
             else paths,
             runner=runner,

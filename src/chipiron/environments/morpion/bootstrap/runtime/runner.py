@@ -63,6 +63,9 @@ from chipiron.environments.morpion.bootstrap.config import (
 from chipiron.environments.morpion.bootstrap.cycle_timing import (
     timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
 )
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    assert_artifact_writable,
+)
 from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTreeStatus
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     linoo_selection_table_from_report,
@@ -1209,6 +1212,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         LOGGER.info(
             "[save] tree_export_start output=%s nodes=%s",
@@ -1929,6 +1933,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         output = Path(output_path)
 

@@ -1569,6 +1569,11 @@ def save_pipeline_manifest(
     path: Path,
 ) -> None:
     """Persist one pipeline generation manifest atomically."""
+    if "durable_generation_publication_v1" in manifest.metadata:
+        from .derived.provenance import atomic_json
+
+        atomic_json(path, pipeline_manifest_to_dict(manifest))
+        return
     _atomic_write_json(pipeline_manifest_to_dict(manifest), path)
 
 

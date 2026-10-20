@@ -24,6 +24,7 @@ from anemone.training_export.model import (
 )
 from anemone.training_export.state_refs import state_ref_payload_without_resolving
 
+from .generation_publication_io import assert_artifact_writable, generation_read_pin
 from .pipeline_memory import current_rss_mb, format_metric, log_pipeline_memory
 
 MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND = "morpion_sharded_training_export"
@@ -167,6 +168,7 @@ def save_morpion_sharded_training_tree_from_live_nodes(
     total_started_at = perf_counter()
     rss_before_mb = current_rss_mb()
     root = Path(output_dir)
+    assert_artifact_writable(root)
     log_pipeline_memory(
         stage="growth",
         generation=generation,
@@ -442,6 +444,14 @@ def load_morpion_sharded_training_tree_snapshot(
     generation_manifest_path: str | Path,
 ) -> TrainingTreeSnapshot:
     """Load one sharded export generation into a training-tree snapshot."""
+    with generation_read_pin(Path(generation_manifest_path)):
+        return _load_sharded_snapshot(generation_manifest_path)
+
+
+def _load_sharded_snapshot(
+    generation_manifest_path: str | Path,
+) -> TrainingTreeSnapshot:
+    """Keep scientific v1 merging unchanged inside the optional publication pin."""
     manifest_path = Path(generation_manifest_path)
     root = manifest_path.parent
     generation_manifest = _load_generation_manifest(manifest_path)

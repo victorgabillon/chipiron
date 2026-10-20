@@ -11,13 +11,17 @@ import hashlib
 import json
 import os
 import uuid
-from contextlib import contextmanager
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from .cycle_timing import timestamp_utc_from_unix_s
 from .derived.provenance import PROVENANCE_NAME, atomic_json, inside, sync_checkpoint
+from .generation_publication import DurableGenerationPublication
+from .generation_publication_io import PUBLICATION_KEY
+from .generation_publication_io import (
+    growth_receipt_ownership as _growth_receipt_ownership,
+)
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
     MorpionPipelineGenerationManifest,
@@ -35,7 +39,7 @@ from .reevaluation_patch_consumer import (
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from contextlib import AbstractContextManager
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -69,18 +73,11 @@ def sync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
-@contextmanager
-def growth_receipt_ownership(paths: MorpionBootstrapPaths) -> Iterator[None]:
-    """Keep a stable kernel lock across the whole Growth invocation, never a TTL."""
-    import fcntl
-
-    paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
-    with (paths.pipeline_dir / ".growth_patch_consumer.lock").open("a+") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        try:
-            yield
-        finally:
-            fcntl.flock(lock, fcntl.LOCK_UN)
+def growth_receipt_ownership(
+    paths: MorpionBootstrapPaths,
+) -> AbstractContextManager[None]:
+    """Preserve PR #79's public ownership API and the same stable lock inode."""
+    return _growth_receipt_ownership(paths)
 
 
 def artifact_sha256(path: Path) -> str:
@@ -231,7 +228,13 @@ def receipt_ledger(
 class GrowthPatchReceiptSession:
     """One locked Growth owner; immutable checkpoints and run-state receipts only."""
 
-    def __init__(self, paths: MorpionBootstrapPaths, runner: object) -> None:
+    def __init__(
+        self,
+        paths: MorpionBootstrapPaths,
+        runner: object,
+        *,
+        durable_generation_publication: bool = False,
+    ) -> None:
         """Create volatile transaction context; this is never a recovery authority."""
         self.paths = paths
         self.runner = runner
@@ -241,6 +244,12 @@ class GrowthPatchReceiptSession:
         self.applied_count: int | None = None
         self.blend_alpha = 1.0
         self.attempt_id = uuid.uuid4().hex
+        self.publication = (
+            DurableGenerationPublication(paths)
+            if durable_generation_publication
+            else None
+        )
+        self.frozen_model_path: Path | None = None
 
     def begin_cycle(self, model_bundle_path: str | Path | None) -> None:
         """Cold restore only; bind the selected bundle before loading or applying."""
@@ -265,6 +274,12 @@ class GrowthPatchReceiptSession:
             ),
             "Selected runtime model differs from the active model identity.",
         )
+        if self.publication is not None:
+            self.frozen_model_path = self.publication.begin_cycle(self.runtime_model)
+
+    def runtime_model_path(self, original: str | Path | None) -> str | Path | None:
+        """Load frozen model bytes in publication mode; preserve original logical provenance."""
+        return self.frozen_model_path if self.publication is not None else original
 
     def discard_runtime(self) -> None:
         """Do not retain partial or uncommitted values across restore boundaries."""
@@ -319,6 +334,8 @@ class GrowthPatchReceiptSession:
                     ),
                     "Head receipt does not identify the committed checkpoint.",
                 )
+        if self.publication is not None and PUBLICATION_KEY in state.metadata:
+            self.publication.validate_state(state)
         return checkpoint
 
     def validate_options(self, args: MorpionBootstrapArgs) -> None:
@@ -332,7 +349,9 @@ class GrowthPatchReceiptSession:
             "Receipt recovery requires future_only; restore reevaluation is not supported.",
         )
         _require(
-            args.growth_skip_training_export or args.training_export_mode == "flat",
+            self.publication is not None
+            or args.growth_skip_training_export
+            or args.training_export_mode == "flat",
             "Activation blocked: additive sharded exports need independent immutable publication.",
         )
         _require(
@@ -386,10 +405,14 @@ class GrowthPatchReceiptSession:
             save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
         checkpoint = self.validate_state(state)
         self.sync_artifact(checkpoint)
+        if self.publication is not None:
+            state = self.publication.prepare(state)
         # Adopt a complete state observed after an interrupted replace/fsync.
         self.sync_artifact(self.paths.run_state_path)
         self.publish_manifest(state)
         self.acknowledge_pending(state)
+        if self.publication is not None:
+            self.publication.prune_uncommitted(state)
         return state
 
     def current_model(self) -> dict[str, Any]:
@@ -473,13 +496,17 @@ class GrowthPatchReceiptSession:
 
     def checkpoint_path(self, generation: int, checkpoint_format: str) -> Path:
         """Keep generation basename/codec format and never overwrite another attempt."""
+        if self.publication is not None:
+            return self.publication.checkpoint_path(generation, checkpoint_format)
         canonical = self.paths.runtime_checkpoint_path_for_generation_with_format(
             generation, checkpoint_format
         )
         return canonical.parent / "receipt_attempts" / self.attempt_id / canonical.name
 
-    def export_paths(self) -> MorpionBootstrapPaths:
+    def export_paths(self, *, sharded: bool = False) -> MorpionBootstrapPaths:
         """Flat exports remain immutable across interrupted same-generation retries."""
+        if self.publication is not None:
+            return self.publication.export_paths(sharded=sharded)
         return replace(
             self.paths,
             tree_snapshot_dir=(
@@ -507,6 +534,9 @@ class GrowthPatchReceiptSession:
             )
             save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
             self.discard_runtime()
+            if self.publication is not None:
+                self.publication.committed(state)
+                self.publication.prune_uncommitted(state)
             return state
         _require(
             state.generation == previous.generation + 1, "Non-sequential Growth commit."
@@ -521,6 +551,8 @@ class GrowthPatchReceiptSession:
             isinstance(state.latest_runtime_checkpoint_path, str),
             "No resulting checkpoint.",
         )
+        if self.publication is not None:
+            state = self.publication.publish(state)
         assert state.latest_runtime_checkpoint_path is not None
         checkpoint = inside(self.paths.work_dir, state.latest_runtime_checkpoint_path)
         self.sync_artifact(checkpoint)
@@ -575,9 +607,13 @@ class GrowthPatchReceiptSession:
         state = replace(state, metadata=metadata)
         # This durable replacement, not checkpoint creation, is the commit point.
         save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
+        if self.publication is not None:
+            self.publication.committed(state)
         self.publish_manifest(state)
         self.acknowledge_pending(state)
         self.discard_runtime()
+        if self.publication is not None:
+            self.publication.prune_uncommitted(state)
         return state
 
     def publish_manifest(self, state: MorpionBootstrapRunState) -> None:
@@ -638,7 +674,13 @@ class GrowthPatchReceiptSession:
             "Conflicting reused patch ID.",
         )
         _require(
-            artifact_sha256(inside(self.paths.work_dir, receipt.model_bundle_path))
+            artifact_sha256(
+                self.publication.model_pin(
+                    persisted, receipt.model_bundle_path, receipt.model_sha256
+                )
+                if self.publication is not None
+                else inside(self.paths.work_dir, receipt.model_bundle_path)
+            )
             == receipt.model_sha256,
             "Committed patch model content changed.",
         )
