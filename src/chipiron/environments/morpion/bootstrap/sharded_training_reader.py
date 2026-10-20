@@ -1,14 +1,16 @@
 """Read published sharded training exports with bounded RAM and disposable SQLite.
 
-Only individual JSON rows are built. No Morpion states or tree snapshots are
-constructed during indexing. Memory is O(window + largest row + parser buffer +
-SQLite cache + generation manifests); disk is O(all immutable rows + G updates).
+Only individual JSON rows are built. V2 canonicality checks decode one state at
+a time; indexing never constructs a tree snapshot. Memory is O(window + largest
+row/state + parser buffer + SQLite cache + bounded generation metadata); disk
+is O(all immutable rows + generation updates + graph validation tables).
 """
 # ruff: noqa: TRY003
 
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import logging
 import os
@@ -18,9 +20,11 @@ import tempfile
 from contextlib import contextmanager, suppress
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ijson
+from anemone.checkpoints import checkpoint_payload_to_jsonable
+from anemone.training_export import TrainingNodeSnapshot
 from platformdirs import user_cache_path
 
 from .performance import StageMeasurement
@@ -36,15 +40,30 @@ from .sharded_training_export import (
     _node_update_from_dict,
     _node_update_to_dict,
 )
+from .sharded_training_v2 import (
+    _CODEC,
+    REFERENCE_CONTRACT,
+    _envelope,
+    _integer,
+    _path,
+    _validate_update,
+)
+from .sharded_training_v2 import (
+    CONTRACT as SCIENTIFIC_CONTRACT,
+)
+from .sharded_training_v2 import (
+    KIND as SCIENTIFIC_KIND,
+)
+from .sharded_training_v2 import (
+    VERSION as SCIENTIFIC_VERSION,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
     from types import TracebackType
 
-    from anemone.training_export import TrainingNodeSnapshot
-
 LOGGER = logging.getLogger(__name__)
-INDEX_SCHEMA_VERSION = 1
+INDEX_SCHEMA_VERSION = 2
 PARSER_BUFFER_BYTES = 64 * 1024
 SQLITE_CACHE_KIB = 2048
 TRANSACTION_ROWS = 256
@@ -70,6 +89,36 @@ def _has_surrogate_escape(path: Path) -> bool:
     return found
 
 
+def _parser_events(
+    path: Path, *, multiple_values: bool = False, strict_keys: bool = False
+) -> Iterator[tuple[str, str, object]]:
+    """Share the existing lossless bounded ijson backends across both schemas."""
+    lossless_unicode = _has_surrogate_escape(path) or ijson.backend == "python"
+    with path.open("rb") as stream:
+        backend = ijson.get_backend("python") if lossless_unicode else ijson
+        events = backend.parse(
+            stream,
+            buf_size=1 if lossless_unicode else PARSER_BUFFER_BYTES,
+            multiple_values=multiple_values,
+        )
+        maps: list[set[str] | None] = []
+        for prefix, event, value in events:
+            if strict_keys:
+                if event == "start_map":
+                    # This one map is O(N); uniqueness is validated on disk.
+                    maps.append(None if prefix == "creation_index" else set())
+                elif event == "map_key" and maps[-1] is not None:
+                    keys = maps[-1]
+                    if str(value) in keys:
+                        raise ValueError(
+                            f"Duplicate JSON key in {path}: {prefix}.{value}"
+                        )
+                    keys.add(str(value))
+                elif event == "end_map":
+                    maps.pop()
+            yield prefix, event, float(value) if isinstance(value, Decimal) else value
+
+
 def _shard_events(path: Path, field: str) -> Iterator[tuple[str, str, object]]:
     """Validate the array envelope using parser events, normalizing JSON floats.
 
@@ -82,14 +131,9 @@ def _shard_events(path: Path, field: str) -> Iterator[tuple[str, str, object]]:
     # Its lexer can retain consumed prefixes when a string spans every chunk.
     # One-byte input guarantees a discard boundary after every completed token.
     # Only uncommon surrogate-escaped shards need this slower cold-build path.
-    lossless_unicode = _has_surrogate_escape(path) or ijson.backend == "python"
     keys: set[str] = set()
     found_array = False
-    with path.open("rb") as stream:
-        if lossless_unicode:
-            events = ijson.get_backend("python").parse(stream, buf_size=1)
-        else:
-            events = ijson.parse(stream, buf_size=PARSER_BUFFER_BYTES)
+    with _closing_events(_parser_events(path)) as events:
         if next(events, None) != ("", "start_map", None):
             raise ValueError(f"Expected a JSON object in {path}")
         yield "", "start_map", None
@@ -122,15 +166,109 @@ def _shard_events(path: Path, field: str) -> Iterator[tuple[str, str, object]]:
         raise ValueError(f"Missing {field!r} array in {path}")
 
 
-def iter_shard_rows(path: Path, field: str) -> Iterator[dict[str, object]]:
+@contextmanager
+def _closing_events(
+    events: Iterator[tuple[str, str, object]],
+) -> Iterator[Iterator[tuple[str, str, object]]]:
+    """Close file-backed parser generators even when header sniffing stops early."""
+    try:
+        yield events
+    finally:
+        close = getattr(events, "close", None)
+        if close is not None:
+            close()
+
+
+def iter_shard_rows(
+    path: Path, field: str, *, scientific_generation: int | None = None
+) -> Iterator[dict[str, object]]:
     """Yield validated JSON array records, retaining no complete input array."""
     try:
+        if scientific_generation is not None:
+            with _closing_events(
+                _parser_events(path, multiple_values=True, strict_keys=True)
+            ) as events:
+                rows = ijson.items(events, "")
+                header = next(rows, None)
+                if (
+                    not isinstance(header, dict)
+                    or header != _envelope(field, generation=scientific_generation)
+                    or not _integer(header.get("format_version"))
+                    or not _integer(header.get("generation"))
+                ):
+                    raise ValueError(f"Unsupported scientific shard envelope: {path}")
+                for row in rows:
+                    if not isinstance(row, dict):
+                        raise TypeError(f"Expected scientific row object: {path}")
+                    yield cast("dict[str, object]", row)
+            return
         for row in ijson.items(_shard_events(path, field), f"{field}.item"):
             if not isinstance(row, dict):
                 raise TypeError(f"Expected object in {path} {field!r} array")
             yield cast("dict[str, object]", row)
     except ijson.JSONError as exc:
         raise ValueError(f"Malformed or incomplete JSON shard {path}: {exc}") from exc
+
+
+def _source_kind(path: Path) -> object:
+    """Recognize an explicit kind without ever building a creation-index map."""
+    kind: object = MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND
+    scientific_fields = False
+    with _closing_events(_parser_events(path)) as events:
+        for prefix, event, value in events:
+            if prefix == "format_kind" and event not in ("map_key", "end_map"):
+                kind = value
+                if kind == SCIENTIFIC_KIND:
+                    return kind
+            if prefix in ("scientific_contract", "creation_index"):
+                scientific_fields = True
+    if scientific_fields:
+        raise ValueError("Missing or ambiguous explicit scientific format kind")
+    return kind
+
+
+def _scientific_manifest(path: Path, role: str) -> dict[str, Any]:
+    """Bound metadata, streaming past v2's O(N) creation_index without loading it."""
+
+    def metadata_events() -> Iterator[tuple[str, str, object]]:
+        skipping = False
+        started = False
+        size = 0
+        for prefix, event, value in _parser_events(path, strict_keys=True):
+            if prefix == "" and event == "map_key" and value == "creation_index":
+                skipping, started = True, False
+                yield prefix, event, value
+                yield "creation_index", "null", None
+                continue
+            if skipping:
+                if not started:
+                    if (prefix, event) != ("creation_index", "start_map"):
+                        raise ValueError("Scientific creation_index must be an object")
+                    started = True
+                elif (prefix, event) == ("creation_index", "end_map"):
+                    skipping = False
+                continue
+            size += len(str(value).encode("utf-8", errors="surrogatepass")) + 16
+            if size > MANIFEST_MAX_BYTES:
+                raise ValueError(
+                    "Scientific metadata exceeds bounded-reader size limit"
+                )
+            yield prefix, event, value
+
+    try:
+        values = ijson.items(metadata_events(), "")
+        data = next(values)
+        if next(values, None) is not None:
+            raise ValueError("Multiple scientific manifest objects")
+    except (ijson.JSONError, StopIteration) as exc:
+        raise ValueError(f"Malformed scientific manifest: {path}") from exc
+    if not isinstance(data, dict) or any(
+        data.get(key) != value for key, value in _envelope(role).items()
+    ):
+        raise ValueError(f"Unsupported scientific format/contract/role: {path}")
+    if not _integer(data["format_version"]):
+        raise ValueError("Scientific version must be an integer")
+    return cast("dict[str, Any]", data)
 
 
 def _read_manifest_identity(path: Path) -> dict[str, object]:
@@ -154,7 +292,13 @@ def _read_manifest_identity(path: Path) -> dict[str, object]:
 
 
 def is_sharded_generation_manifest(path: Path) -> bool:
-    """Recognize small generation manifests without reading flat snapshot arrays."""
+    """Recognize explicit schemas and keep flat snapshots on the legacy path."""
+    kind = _source_kind(path)
+    if kind == SCIENTIFIC_KIND:
+        _scientific_manifest(path, "generation")
+        return True
+    if kind != MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND:
+        raise ValueError(f"Unsupported explicit training-export format: {kind}")
     if path.stat().st_size > MANIFEST_MAX_BYTES:
         return False
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -163,11 +307,25 @@ def is_sharded_generation_manifest(path: Path) -> bool:
     )
 
 
+def is_scientific_generation_manifest(path: Path) -> bool:
+    """Identify v2 for explicit routing refusal, without building its manifest."""
+    return _source_kind(path) == SCIENTIFIC_KIND
+
+
+def require_scientific_opt_in(allowed: bool) -> None:
+    """Refuse legacy fallback for explicitly requested experimental v2 routing."""
+    if not allowed:
+        raise ValueError(
+            "Scientific v2 requires explicit opt-in and a supported bounded consumer; production certainty gate remains unresolved"
+        )
+
+
 def _configure_connection(connection: sqlite3.Connection) -> None:
     """Bound page cache and sorting RAM; never mmap the whole index."""
     connection.execute(f"PRAGMA cache_size=-{SQLITE_CACHE_KIB}")
     connection.execute("PRAGMA mmap_size=0")
     connection.execute("PRAGMA temp_store=FILE")
+    connection.execute(f"PRAGMA temp.cache_size=-{SQLITE_CACHE_KIB}")
     connection.execute("PRAGMA foreign_keys=ON")
 
 
@@ -198,44 +356,45 @@ class ShardedTrainingGenerationView:
         generation_manifest_path: str | Path,
         *,
         cache_dir: str | Path | None = None,
+        allow_scientific_v2: bool = False,
     ) -> None:
         """Initialize/reuse an index without constructing training snapshots."""
         measurement = StageMeasurement()
         self.source_bytes_read = 0
         self.index_build_peak_disk_bytes = 0
+        self.index_build_temp_logical_bytes = 0
         self.manifest_path = Path(generation_manifest_path).resolve()
+        self.format_kind = _source_kind(self.manifest_path)
+        self.format_version = 1
+        self.scientific_contract: str | None = None
+        self.created_at_unix_s: float | None = None
+        self.provenance: dict[str, Any] = {}
+        self.snapshot_metadata: dict[str, Any] = {
+            "format_kind": "training_tree_snapshot",
+            "format_version": 1,
+        }
+        self._v2_manifest: dict[str, Any] = {}
+        self._v2_descriptors: dict[Path, dict[str, Any]] = {}
+        self._v2_prepared_stats: dict[Path, tuple[int, int, int]] = {}
         self.root = self.manifest_path.parent
-        _read_manifest_identity(self.manifest_path)
-        self.manifest = _load_generation_manifest(self.manifest_path)
-        self.source_bytes_read += 2 * self.manifest_path.stat().st_size
-        if self.manifest.generation < 1:
-            raise ValueError("Sharded export generation must be positive")
-        self.root_node_id = self.manifest.root_node_id
-        self.generation = self.manifest.generation
-        self._node_shards: list[Path] = []
-        self._source_paths: list[Path] = [self.manifest_path]
-        root_manifest_path = self.root / "manifest.json"
-        if root_manifest_path.exists():
-            _read_manifest_identity(root_manifest_path)
-            self._source_paths.append(root_manifest_path)
-        root_manifest = _load_root_manifest(root_manifest_path)
-        if root_manifest_path.is_file():
-            self.source_bytes_read += 2 * root_manifest_path.stat().st_size
-        for generation in range(1, self.generation + 1):
-            relative = root_manifest.generation_manifests.get(str(generation))
-            if relative is None:
-                continue  # Same referenced-generation selection as the full loader.
-            path = self.root / relative
-            _read_manifest_identity(path)
-            shard_manifest = _load_generation_manifest(path)
-            self.source_bytes_read += 2 * path.stat().st_size
-            self._source_paths.append(path)
-            shard = self.root / shard_manifest.node_shard_path
-            self._source_paths.append(shard)
-            self._node_shards.append(shard)
-        self._update_shard = self.root / self.manifest.update_shard_path
-        self._source_paths.append(self._update_shard)
-        self._source_paths = list(dict.fromkeys(self._source_paths))
+        if self.format_kind == SCIENTIFIC_KIND:
+            if not allow_scientific_v2:
+                raise ValueError(
+                    "Scientific v2 requires explicit allow_scientific_v2; certainty activation gate remains unresolved"
+                )
+            for path in (
+                self.manifest_path,
+                self.manifest_path.parent.parent / "manifest.json",
+            ):
+                stat = path.stat()
+                self._v2_prepared_stats[path] = (
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    stat.st_ctime_ns,
+                )
+            self._prepare_scientific_source()
+        else:
+            self._prepare_legacy_source()
         self.identity = self._source_identity()
         directory = (
             Path(cache_dir)
@@ -270,6 +429,7 @@ class ShardedTrainingGenerationView:
             index_reused=self.index_reused,
             index_bytes=self.index_bytes,
             index_build_peak_disk_bytes=self.index_build_peak_disk_bytes,
+            index_build_temp_logical_bytes=self.index_build_temp_logical_bytes,
             source_bytes_read=self.source_bytes_read,
             index=self.index_observation,
         )
@@ -284,11 +444,156 @@ class ShardedTrainingGenerationView:
             index_bytes=self.index_bytes,
         )
 
+    def _prepare_legacy_source(self) -> None:
+        """Retain the v1 manifest selection and interpretation without repair."""
+        _read_manifest_identity(self.manifest_path)
+        self.manifest = _load_generation_manifest(self.manifest_path)
+        self.source_bytes_read += 2 * self.manifest_path.stat().st_size
+        if self.manifest.generation < 1:
+            raise ValueError("Sharded export generation must be positive")
+        self.root_node_id = self.manifest.root_node_id
+        self.generation = self.manifest.generation
+        self._expected_count = self.manifest.node_count
+        self._node_shards: list[Path] = []
+        self._source_paths: list[Path] = [self.manifest_path]
+        root_manifest_path = self.root / "manifest.json"
+        if root_manifest_path.exists():
+            _read_manifest_identity(root_manifest_path)
+            self._source_paths.append(root_manifest_path)
+        root_manifest = _load_root_manifest(root_manifest_path)
+        if root_manifest_path.is_file():
+            self.source_bytes_read += 2 * root_manifest_path.stat().st_size
+        for generation in range(1, self.generation + 1):
+            relative = root_manifest.generation_manifests.get(str(generation))
+            if relative is None:
+                continue  # Same referenced-generation selection as the full loader.
+            path = self.root / relative
+            _read_manifest_identity(path)
+            shard_manifest = _load_generation_manifest(path)
+            self.source_bytes_read += 2 * path.stat().st_size
+            self._source_paths.append(path)
+            shard = self.root / shard_manifest.node_shard_path
+            self._source_paths.append(shard)
+            self._node_shards.append(shard)
+        self._update_shard = self.root / self.manifest.update_shard_path
+        self._source_paths.append(self._update_shard)
+        self._source_paths = list(dict.fromkeys(self._source_paths))
+        self.provenance = {
+            "source_format_kind": self.format_kind,
+            "source_format_version": 1,
+            "source_generation": self.generation,
+        }
+
+    def _prepare_scientific_source(self) -> None:
+        """Discover explicit v2 source files; never materialize creation_index."""
+        manifest = _scientific_manifest(self.manifest_path, "generation")
+        expected = set(_envelope("generation")) | {
+            "generation",
+            "snapshot",
+            "producer",
+            "creation_index",
+            "record_shards",
+            "update_shard",
+        }
+        if set(manifest) != expected:
+            raise ValueError(
+                "Missing, unknown or ambiguous scientific generation fields"
+            )
+        self.root = self.manifest_path.parent.parent
+        catalog_path = self.root / "manifest.json"
+        catalog = _scientific_manifest(catalog_path, "catalog")
+        if set(catalog) != set(_envelope("catalog")) | {
+            "latest",
+            "v2_generations",
+            "producer",
+        }:
+            raise ValueError("Missing, unknown or ambiguous scientific catalog fields")
+        self.generation = manifest["generation"]
+        if not _integer(self.generation) or self.generation < 1:
+            raise ValueError("Invalid scientific generation")
+        if (
+            catalog["v2_generations"].get(str(self.generation))
+            != self.manifest_path.relative_to(self.root).as_posix()
+        ):
+            raise ValueError("Unpublished scientific generation")
+        if manifest["producer"] != catalog["producer"]:
+            raise ValueError("Mixed scientific producer identity")
+        if (
+            importlib.metadata.version("atomheart") != "0.2.11"
+            or not isinstance(manifest["producer"], dict)
+            or manifest["producer"].get("state_ref_contract") != REFERENCE_CONTRACT
+        ):
+            raise ValueError("Unsupported scientific state-reference contract/decoder")
+        info = manifest["snapshot"]
+        if set(info) != {"root_node_id", "node_count", "created_at_unix_s", "metadata"}:
+            raise ValueError("Incomplete scientific snapshot header")
+        if not _integer(info["node_count"]) or info["node_count"] < 1:
+            raise ValueError("Invalid scientific node count")
+        self.root_node_id = _validated_node_id(info["root_node_id"])
+        self._expected_count = info["node_count"]
+        self.snapshot_metadata = dict(info["metadata"])
+        self.created_at_unix_s = (
+            None
+            if info["created_at_unix_s"] is None
+            else float(info["created_at_unix_s"])
+        )
+        self.format_version = SCIENTIFIC_VERSION
+        self.scientific_contract = SCIENTIFIC_CONTRACT
+        self.provenance = {
+            "source_format_kind": SCIENTIFIC_KIND,
+            "source_format_version": SCIENTIFIC_VERSION,
+            "scientific_contract": SCIENTIFIC_CONTRACT,
+            "source_generation": self.generation,
+            "producer": manifest["producer"],
+        }
+        self._v2_manifest = manifest
+        self._node_shards = []
+        self._source_paths = [self.manifest_path, catalog_path]
+        for descriptor in manifest["record_shards"]:
+            path = self._scientific_descriptor(descriptor)
+            if (
+                descriptor["generation"] > self.generation
+                or path in self._v2_descriptors
+            ):
+                raise ValueError("Future or duplicate scientific record shard")
+            self._node_shards.append(path)
+            self._v2_descriptors[path] = descriptor
+        self._update_shard = self._scientific_descriptor(manifest["update_shard"])
+        if (
+            manifest["update_shard"]["generation"] != self.generation
+            or self._update_shard in self._v2_descriptors
+        ):
+            raise ValueError("Mixed scientific update generation/path")
+        self._v2_descriptors[self._update_shard] = manifest["update_shard"]
+        self._source_paths.extend([*self._node_shards, self._update_shard])
+        self.source_bytes_read += 2 * (
+            self.manifest_path.stat().st_size + catalog_path.stat().st_size
+        )
+
+    def _scientific_descriptor(self, descriptor: dict[str, Any]) -> Path:
+        if (
+            set(descriptor) != {"path", "generation", "count", "sha256"}
+            or not _integer(descriptor["generation"])
+            or not _integer(descriptor["count"])
+            or descriptor["count"] < 0
+            or descriptor["generation"] < 1
+        ):
+            raise ValueError("Invalid scientific shard descriptor")
+        return _path(self.root, descriptor["path"])
+
     def _source_identity(self) -> str:
         """Hash exact source contents with a fixed-size buffer on every open."""
         sources: list[dict[str, object]] = []
         for path in self._source_paths:
             before = path.stat()
+            if path in self._v2_prepared_stats and self._v2_prepared_stats[path] != (
+                before.st_size,
+                before.st_mtime_ns,
+                before.st_ctime_ns,
+            ):
+                raise ValueError(
+                    f"Training export changed while preparing scientific metadata: {path}"
+                )
             with path.open("rb") as stream:
                 digest = hashlib.file_digest(stream, "sha256").hexdigest()
             self.source_bytes_read += before.st_size
@@ -301,6 +606,12 @@ class ShardedTrainingGenerationView:
                 raise ValueError(
                     f"Training export changed during fingerprinting: {path}"
                 )
+            if (
+                self.format_version == SCIENTIFIC_VERSION
+                and path in self._v2_descriptors
+                and digest != self._v2_descriptors[path]["sha256"]
+            ):
+                raise ValueError(f"Scientific source shard hash mismatch: {path}")
             sources.append({
                 "path": str(path.resolve()),
                 "size": before.st_size,
@@ -309,7 +620,11 @@ class ShardedTrainingGenerationView:
         return json.dumps(
             {
                 "schema": INDEX_SCHEMA_VERSION,
-                "format": MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
+                "format": self.format_version,
+                "format_kind": self.format_kind,
+                "scientific_contract": self.scientific_contract,
+                "generation": self.generation,
+                "producer": self.provenance.get("producer"),
                 "manifest": str(self.manifest_path),
                 "sources": sources,
             },
@@ -327,10 +642,15 @@ class ShardedTrainingGenerationView:
             try:
                 _configure_connection(connection)
                 row = connection.execute("SELECT identity FROM completed").fetchone()
-                return bool(
+                valid = bool(
                     row == (self.identity,)
                     and connection.execute("PRAGMA quick_check").fetchone() == ("ok",)
                 )
+                if valid and self.format_version == SCIENTIFIC_VERSION:
+                    valid = connection.execute(
+                        "SELECT digest FROM cache_digest"
+                    ).fetchone() == (self._cache_digest(connection),)
+                return valid
             finally:
                 connection.close()
         except sqlite3.DatabaseError:
@@ -359,9 +679,14 @@ class ShardedTrainingGenerationView:
                 );
                 CREATE INDEX export_order ON updates(order_index, sequence);
                 CREATE TABLE completed (identity TEXT NOT NULL);
+                CREATE TABLE cache_digest (digest TEXT NOT NULL);
             """)
             count = 0
-            for path in self._node_shards:
+            if self.format_version == SCIENTIFIC_VERSION:
+                self._build_scientific_rows(connection, temporary)
+            for path in (
+                () if self.format_version == SCIENTIFIC_VERSION else self._node_shards
+            ):
                 for row in iter_shard_rows(path, "nodes"):
                     record = _node_record_from_dict(row)
                     connection.execute(
@@ -377,7 +702,9 @@ class ShardedTrainingGenerationView:
                         connection.commit()
                 self.source_bytes_read += 2 * path.stat().st_size
             for sequence, row in enumerate(
-                iter_shard_rows(self._update_shard, "updates")
+                ()
+                if self.format_version == SCIENTIFIC_VERSION
+                else iter_shard_rows(self._update_shard, "updates")
             ):
                 update = _node_update_from_dict(row)
                 if not -(2**63) <= update.order_index < 2**63:
@@ -396,9 +723,9 @@ class ShardedTrainingGenerationView:
                     connection.commit()
             self.source_bytes_read += 2 * self._update_shard.stat().st_size
             count = connection.execute("SELECT COUNT(*) FROM updates").fetchone()[0]
-            if count != self.manifest.node_count:
+            if count != self._expected_count:
                 raise ValueError(
-                    f"Generation node_count={self.manifest.node_count} differs from {count} updates"
+                    f"Generation node_count={self._expected_count} differs from {count} updates"
                 )
             if (
                 count
@@ -409,6 +736,11 @@ class ShardedTrainingGenerationView:
                 raise ValueError(f"Generation root {self.root_node_id!r} has no update")
             if self._source_identity() != self.identity:
                 raise ValueError("Training export changed during index construction")
+            if self.format_version == SCIENTIFIC_VERSION:
+                connection.execute(
+                    "INSERT INTO cache_digest VALUES (?)",
+                    (self._cache_digest(connection),),
+                )
             connection.execute("INSERT INTO completed VALUES (?)", (self.identity,))
             connection.commit()
             if connection.execute("PRAGMA quick_check").fetchone() != ("ok",):
@@ -426,6 +758,234 @@ class ShardedTrainingGenerationView:
             with suppress(FileNotFoundError):
                 temporary.with_name(temporary.name + "-journal").unlink()
 
+    @staticmethod
+    def _cache_digest(connection: sqlite3.Connection) -> str:
+        """Detect scientifically meaningful cache corruption in bounded scans."""
+        digest = hashlib.sha256()
+        for table, fields in (
+            ("records", "node_id,payload"),
+            ("updates", "node_id,order_index,sequence,payload"),
+        ):
+            digest.update(table.encode())
+            for row in connection.execute(
+                f"SELECT {fields} FROM {table} ORDER BY node_id"
+            ):
+                digest.update(json.dumps(row, ensure_ascii=True).encode("utf-8"))
+                digest.update(b"\n")
+        return digest.hexdigest()
+
+    def _build_scientific_rows(
+        self, connection: sqlite3.Connection, temporary: Path
+    ) -> None:
+        """Use the same index and parser, with disk-backed v2 contract checks."""
+        connection.executescript("""
+            CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL);
+            CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child));
+            CREATE TEMP TABLE v2_children (parent TEXT, child TEXT, PRIMARY KEY(parent,child));
+        """)
+        count = 0
+        for path in self._node_shards:
+            descriptor = self._v2_descriptors[path]
+            shard_count = 0
+            for row in iter_shard_rows(
+                path, "records", scientific_generation=descriptor["generation"]
+            ):
+                if set(row) != {
+                    "node_id",
+                    "creation_generation",
+                    "state_ref_payload",
+                } or not isinstance(row["node_id"], str):
+                    raise ValueError("Invalid scientific immutable record")
+                if (
+                    not _integer(row["creation_generation"])
+                    or row["creation_generation"] != descriptor["generation"]
+                ):
+                    raise ValueError("Invalid scientific creation generation")
+                ref = row["state_ref_payload"]
+                canonical = checkpoint_payload_to_jsonable(
+                    _CODEC.dump_state_ref(_CODEC.load_state_ref(ref))
+                )
+                if ref is None or canonical != ref:
+                    raise ValueError("Noncanonical scientific state reference")
+                connection.execute(
+                    "INSERT INTO records VALUES (?, ?)",
+                    (
+                        _validated_node_id(row["node_id"]),
+                        json.dumps(row, allow_nan=False),
+                    ),
+                )
+                count += 1
+                shard_count += 1
+                if count % TRANSACTION_ROWS == 0:
+                    self._measure_build_disk(temporary)
+                    connection.commit()
+            if shard_count != descriptor["count"]:
+                raise ValueError("Scientific record shard count mismatch")
+            self.source_bytes_read += 2 * path.stat().st_size
+        with _closing_events(
+            _parser_events(self.manifest_path, strict_keys=True)
+        ) as events:
+            for index, (node_id, generation) in enumerate(
+                ijson.kvitems(events, "creation_index"), 1
+            ):
+                if not _integer(generation) or not 1 <= generation <= self.generation:
+                    raise ValueError("Invalid scientific creation index entry")
+                connection.execute(
+                    "INSERT INTO v2_creation VALUES (?, ?)",
+                    (_validated_node_id(node_id), generation),
+                )
+                if index % TRANSACTION_ROWS == 0:
+                    connection.commit()
+        self.source_bytes_read += 2 * self.manifest_path.stat().st_size
+        invalid = connection.execute("""
+            SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id
+            WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1
+        """).fetchone()
+        if (
+            invalid
+            or count
+            != connection.execute("SELECT COUNT(*) FROM v2_creation").fetchone()[0]
+        ):
+            raise ValueError("Incomplete or inconsistent scientific creation index")
+        update_count = 0
+        for sequence, row in enumerate(
+            iter_shard_rows(
+                self._update_shard, "updates", scientific_generation=self.generation
+            )
+        ):
+            _validate_update(row)
+            if row["order_index"] != sequence:
+                raise ValueError("Invalid scientific export order")
+            node_id = _validated_node_id(cast("str", row["node_id"]))
+            connection.execute(
+                "INSERT INTO updates VALUES (?, ?, ?, ?)",
+                (node_id, sequence, sequence, json.dumps(row, allow_nan=False)),
+            )
+            connection.executemany(
+                "INSERT OR IGNORE INTO v2_parents VALUES (?, ?)",
+                (
+                    (_validated_node_id(parent), node_id)
+                    for parent in cast("list[str]", row["parent_ids"])
+                ),
+            )
+            connection.executemany(
+                "INSERT OR IGNORE INTO v2_children VALUES (?, ?)",
+                (
+                    (node_id, _validated_node_id(child))
+                    for child in cast("list[str]", row["child_ids"])
+                ),
+            )
+            update_count += 1
+            if update_count % TRANSACTION_ROWS == 0:
+                self._measure_build_disk(temporary)
+                connection.commit()
+        if update_count != self._v2_descriptors[self._update_shard]["count"]:
+            raise ValueError("Scientific update shard count mismatch")
+        self._validate_scientific_topology(connection, update_count)
+        self.index_build_temp_logical_bytes = int(
+            connection.execute("PRAGMA temp.page_count").fetchone()[0]
+        ) * int(connection.execute("PRAGMA temp.page_size").fetchone()[0])
+        connection.executescript("""
+            DROP TABLE v2_creation; DROP TABLE v2_parents; DROP TABLE v2_children;
+            DROP TABLE v2_degrees; DROP TABLE v2_queue;
+        """)
+
+    @staticmethod
+    def _validate_scientific_topology(
+        connection: sqlite3.Connection, count: int
+    ) -> None:
+        """Require the reference reader's reciprocal closed DAG using TEMP disk."""
+        for left, right in (
+            ("v2_parents", "v2_children"),
+            ("v2_children", "v2_parents"),
+        ):
+            if connection.execute(
+                f"SELECT * FROM {left} EXCEPT SELECT * FROM {right} LIMIT 1"
+            ).fetchone():
+                raise ValueError("Nonreciprocal scientific topology")
+        if connection.execute("""
+            SELECT 1 FROM v2_parents e LEFT JOIN updates p ON p.node_id=e.parent
+            LEFT JOIN updates c ON c.node_id=e.child
+            WHERE p.node_id IS NULL OR c.node_id IS NULL LIMIT 1
+        """).fetchone():
+            raise ValueError("Scientific topology references nodes outside generation")
+        connection.executescript("""
+            CREATE TEMP TABLE v2_degrees (id TEXT PRIMARY KEY, degree INTEGER);
+            INSERT INTO v2_degrees SELECT u.node_id, COUNT(p.parent) FROM updates u
+                LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id;
+            CREATE TEMP TABLE v2_queue (id TEXT PRIMARY KEY);
+            INSERT INTO v2_queue SELECT id FROM v2_degrees WHERE degree=0;
+        """)
+        visited = 0
+        while row := connection.execute(
+            "SELECT id FROM v2_queue ORDER BY id LIMIT 1"
+        ).fetchone():
+            connection.execute("DELETE FROM v2_queue WHERE id=?", row)
+            connection.execute(
+                "UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)",
+                row,
+            )
+            connection.execute(
+                "INSERT OR IGNORE INTO v2_queue SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0",
+                row,
+            )
+            visited += 1
+            if visited % TRANSACTION_ROWS == 0:
+                connection.commit()
+        if visited != count:
+            raise ValueError("Cyclic scientific topology")
+
+    @staticmethod
+    def _scientific_node(
+        record: dict[str, Any], update: dict[str, Any]
+    ) -> TrainingNodeSnapshot:
+        """Reconstruct exactly the saved v2 fields, without a v1 value fallback."""
+        _validate_update(update)
+        return TrainingNodeSnapshot(
+            node_id=update["node_id"],
+            parent_ids=tuple(update["parent_ids"]),
+            child_ids=tuple(update["child_ids"]),
+            depth=update["depth"],
+            state_ref_payload=record["state_ref_payload"],
+            direct_value_scalar=None
+            if update["direct_value_scalar"] is None
+            else float(update["direct_value_scalar"]),
+            tree_value_scalar=None
+            if update["tree_value_scalar"] is None
+            else float(update["tree_value_scalar"]),
+            effective_value_scalar=None
+            if update["effective_value_scalar"] is None
+            else float(update["effective_value_scalar"]),
+            effective_value_source=update["effective_value_source"],
+            target_value_scalar=None
+            if update["target_value_scalar"] is None
+            else float(update["target_value_scalar"]),
+            backed_up_value_scalar=None
+            if update["backed_up_value_scalar"] is None
+            else float(update["backed_up_value_scalar"]),
+            is_terminal=update["is_terminal"],
+            is_exact=update["is_exact"],
+            over_event_label=update["over_event_label"],
+            visit_count=update["visit_count"],
+            metadata=dict(update["metadata"]),
+        )
+
+    def load_value_contracts(
+        self, node_ids: Sequence[str]
+    ) -> tuple[dict[str, Any], ...]:
+        """Expose complete certainty/target contracts for a caller-bounded window."""
+        if self.format_version != SCIENTIFIC_VERSION:
+            raise ValueError("Per-value scientific contracts are unavailable in v1")
+        result = []
+        for node_id in node_ids:
+            row = self._connection.execute(
+                "SELECT payload FROM updates WHERE node_id=?", (node_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(node_id)
+            result.append(json.loads(row[0])["value_contract"])
+        return tuple(result)
+
     def _measure_build_disk(self, temporary: Path) -> None:
         """Sample main/journal bytes at transaction boundaries, without walking disk."""
         total = temporary.stat().st_size
@@ -437,7 +997,12 @@ class ShardedTrainingGenerationView:
     def validate_source_identity(self) -> None:
         """Reject changed exports before publishing a multi-pass consumer's output."""
         if self._source_identity() != self.identity:
-            raise ValueError("Training export changed during Dataset extraction")
+            message = (
+                "Training export changed during Dataset extraction"
+                if self.format_version == 1
+                else "Training export changed during scientific consumption"
+            )
+            raise ValueError(message)
 
     @contextmanager
     def temporary_workspace(self) -> Iterator[sqlite3.Connection]:
@@ -510,6 +1075,8 @@ class ShardedTrainingGenerationView:
         ).fetchone()
         if row is None:
             raise KeyError(node_id)
+        if self.format_version == SCIENTIFIC_VERSION:
+            return self._scientific_node(json.loads(row[0]), json.loads(row[1]))
         return _merge_node_record_and_update(
             _node_record_from_dict(json.loads(row[0])),
             _node_update_from_dict(json.loads(row[1])),

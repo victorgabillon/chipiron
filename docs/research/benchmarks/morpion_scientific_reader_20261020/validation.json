@@ -1,0 +1,58 @@
+{
+  "python": "3.13.5",
+  "dependencies": {
+    "algorhino-anemone": "0.2.26",
+    "atomheart": "0.2.11",
+    "valanga": "0.2.5",
+    "torch": "2.14.0+cpu",
+    "ijson": "3.6.0",
+    "pytest": "9.1.1",
+    "pytest-xdist": "3.8.0",
+    "ruff": "0.15.20"
+  },
+  "local_ci": {
+    "exit_code": 0,
+    "selected": 1712,
+    "deselected": [
+      "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+    ],
+    "passed": 1710,
+    "skipped": [
+      "tests/environments/test_morpion_relational_model_integration.py::test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "tests/learning/supervised/test_multi_input.py::test_multi_input_batch_moves_all_inputs_to_cuda"
+    ],
+    "elapsed_s": 496.8120704539979,
+    "command": "PYTHONPATH=. CHIPIRON_TEST_INSTALLED=1 QT_QPA_PLATFORM=offscreen python scripts/ci_test_metrics.py -n 2 --dist=loadfile --durations=30 --cov-report=json:.ci-reports/coverage.json --junitxml=.ci-reports/pytest.xml --basetemp=/tmp/scientific-reader-full-ci-pytest -m 'not integration and not external_data' -p docs.research.benchmarks.morpion_training_export_20261020.validation_safety",
+    "safety_plugin": "docs/research/benchmarks/morpion_training_export_20261020/validation_safety.py"
+  },
+  "additional_test": {
+    "nodeid": "tests/environments/test_morpion_scientific_training_reader.py::test_scientific_export_order_differs_from_unicode_cursor_order",
+    "passed": 1,
+    "elapsed_s": 1.97,
+    "command": "PYTHONPATH=src:. QT_QPA_PLATFORM=offscreen python -m pytest tests/environments/test_morpion_scientific_training_reader.py -q --no-cov -k unicode_cursor_order"
+  },
+  "static_ratchet": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "static_command": "PYTHONPATH=src STATIC_ANALYSIS_BASE_REF=f09a038b2589e124ffbb96a0d9936081692b3195 python scripts/static_analysis_ratchet.py --mypy-strict --workers 1",
+  "quality": {
+    "toolchain": "passed",
+    "ruff_format": "634 files already formatted",
+    "ruff_check": "passed",
+    "diff_check": "passed"
+  },
+  "build": "sdist and wheel built without isolation; wheel installed in separate /tmp/chipiron-scientific-reader-ci-venv; installed-distribution guard passed",
+  "evidence_sha256": {
+    ".ci-reports/tests.json": "341d52c69f23fa223ec71f6dfa83b48007d82d3fa78f677b410a40cccf286886",
+    ".ci-reports/pytest.xml": "54324a2620fdfcba4baef25d0b42890b9e785b6cabc32797cf00d3c0049af650",
+    ".ci-reports/coverage.json": "2c10dfbe6c8a615996b358496d45a4db585099d15c52d6ee6c0653de6b83ab9d",
+    "dist/chipiron-0.2.4-py3-none-any.whl": "6f26307ea6f690c55de5f4b6fe5700fe9bb2db267706f72e9f5be9e8b1000b47",
+    "docs/research/benchmarks/morpion_training_export_20261020/validation_safety.py": "7d08bd1bfc8c9c1011647b3d11958fd006be0448dcbd73c6466ea8e990419b39"
+  }
+}

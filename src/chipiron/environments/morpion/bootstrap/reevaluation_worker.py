@@ -41,7 +41,9 @@ from .runtime.runner import load_morpion_evaluator_from_model_bundle
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 from .sharded_training_reader import (
     ShardedTrainingGenerationView,
+    is_scientific_generation_manifest,
     is_sharded_generation_manifest,
+    require_scientific_opt_in,
 )
 
 if TYPE_CHECKING:
@@ -631,6 +633,7 @@ def run_morpion_reevaluation_worker_once(
     use_snapshot_value_fallback: bool = False,
     use_streaming_sharded_reader: bool = False,
     reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
 ) -> MorpionReevaluationWorkerResult:
     """Produce at most one reevaluation patch and advance the reevaluation cursor."""
     if max_nodes_per_patch < 0:
@@ -829,6 +832,14 @@ def run_morpion_reevaluation_worker_once(
         fallback_reason = None
         reader_mode = "legacy_full_snapshot"
         if use_streaming_sharded_reader:
+            if is_scientific_generation_manifest(snapshot_path):
+                require_scientific_opt_in(
+                    allow_scientific_v2
+                    and (
+                        evaluator is None
+                        or isinstance(evaluator, MorpionWindowNodeReevaluationEvaluator)
+                    )
+                )
             if evaluator is not None and not isinstance(
                 evaluator, MorpionWindowNodeReevaluationEvaluator
             ):
@@ -840,6 +851,7 @@ def run_morpion_reevaluation_worker_once(
                     ShardedTrainingGenerationView(
                         snapshot_path,
                         cache_dir=reader_cache_dir,
+                        allow_scientific_v2=allow_scientific_v2,
                     )
                 )
                 reader_mode = "sharded_indexed"
@@ -1075,6 +1087,8 @@ def run_morpion_reevaluation_worker_once(
             "source": "reevaluation_worker",
         },
     )
+    if view is not None and view.format_version == 2:
+        view.validate_source_identity()
     if not _save_reevaluation_patch_exclusive(
         patch,
         paths.pipeline_reevaluation_patch_path,

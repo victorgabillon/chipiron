@@ -33,7 +33,7 @@ from .pv_family_targets import PvFamilyTargetPolicy, PvFamilyTargets, family_nod
 
 if TYPE_CHECKING:
     import sqlite3
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
     from anemone.training_export import TrainingNodeSnapshot
 
@@ -81,6 +81,8 @@ class IndexedDatasetSource:
     @property
     def metadata(self) -> dict[str, Any]:
         """Match the legacy sharded loader's extraction format identity."""
+        if self.view.format_version == 2:
+            return dict(self.view.snapshot_metadata)
         return {
             "format_kind": TRAINING_TREE_SNAPSHOT_FORMAT_KIND,
             "format_version": TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
@@ -104,6 +106,7 @@ class DiskDatasetFamilyContext:
         self.source = source
         self.connection = connection
         self.args = args
+        self._active_scientific_rows: Generator[MorpionSupervisedRow] | None = None
         connection.executescript("""
             CREATE TEMP TABLE dataset_nodes (
                 id TEXT COLLATE BINARY PRIMARY KEY,
@@ -124,10 +127,8 @@ class DiskDatasetFamilyContext:
             if prediction is None:
                 prediction = raw
             if (
-                raw is None
-                or prediction is None
-                or not all(math.isfinite(v) for v in (raw, prediction))
-            ):
+                source.view.format_version != 2 and (raw is None or prediction is None)
+            ) or not all(math.isfinite(v) for v in (raw, prediction) if v is not None):
                 raise UnsupportedStreamingDatasetError(
                     "missing_or_nonfinite_family_scalar"
                 )
@@ -153,7 +154,10 @@ class DiskDatasetFamilyContext:
                 ).fetchone()
                 if row is None:
                     continue
-                value = float(json.loads(row[0]))
+                decoded = json.loads(row[0])
+                if decoded is None:
+                    continue
+                value = float(decoded)
                 if best is None or value > best:
                     best, selected = value, child_id
             connection.execute(
@@ -224,7 +228,9 @@ class DiskDatasetFamilyContext:
         for (value,) in self.connection.execute(
             query + " ORDER BY id", (representative,)
         ):
-            yield float(json.loads(value))
+            decoded = json.loads(value)
+            if decoded is not None:
+                yield float(decoded)
 
     def _build_family(self, representative: str) -> None:
         """Use Python sum/min/max in legacy order, including compensated sum."""
@@ -232,20 +238,51 @@ class DiskDatasetFamilyContext:
             "SELECT COUNT(*), SUM(exact), MIN(id) FROM dataset_nodes WHERE representative=?",
             (representative,),
         ).fetchone()
+        missing_exact = self.connection.execute(
+            "SELECT id FROM dataset_nodes WHERE representative=? AND exact=1 AND raw='null' ORDER BY id LIMIT 1",
+            (representative,),
+        ).fetchone()
+        if missing_exact is not None:
+            # The reference accesses raw_targets[id] for every exact family
+            # member. Missing certainty/values are never silently synthesized.
+            raise KeyError(missing_exact[0])
+        prediction_count = self.connection.execute(
+            "SELECT COUNT(*) FROM dataset_nodes WHERE representative=? AND prediction!='null'",
+            (representative,),
+        ).fetchone()[0]
         exact_target = max(
             self._values(representative, "raw", exact=True), default=None
         )
         exact_min = min(self._values(representative, "raw", exact=True), default=None)
-        payload = {
+        payload: dict[str, Any] = {
             "size": size,
             "exact_count": exact_count,
-            "mean": sum(self._values(representative, "prediction")) / size,
+            "mean": sum(self._values(representative, "prediction")) / prediction_count
+            if prediction_count
+            else 0.0,
             "min": min(self._values(representative, "prediction"), default=0.0),
             "exact_target": exact_target,
             "exact_rule": "pv_exact_family_multi_max"
             if exact_min != exact_target
             else "pv_exact_family",
         }
+        for node_id, exact in self.connection.execute(
+            "SELECT id,exact FROM dataset_nodes WHERE representative=? AND raw='null' ORDER BY id",
+            (representative,),
+        ):
+            # Some policies legitimately need no raw scalar; others raise the
+            # same KeyError as the full reference, even for filtered nodes.
+            family_node_target(
+                raw_targets={},
+                node_id=node_id,
+                is_exact=bool(exact),
+                family_mean=payload["mean"],
+                family_min=payload["min"],
+                exact_family_target=exact_target,
+                exact_family_rule=payload["exact_rule"],
+                family_target_policy=self.args.dataset_family_target_policy,
+                family_prediction_blend=self.args.dataset_family_prediction_blend,
+            )
         self.connection.execute(
             "INSERT INTO dataset_families VALUES (?, ?, ?)",
             (representative, first_id, json.dumps(payload)),
@@ -286,7 +323,21 @@ class DiskDatasetFamilyContext:
             row, raw_target=raw, selected_child_id=selected, family_targets=targets
         )
 
+    def close_rows(self) -> None:
+        """Release a partial v2 pass before dropping its TEMP tables."""
+        if self._active_scientific_rows is not None:
+            self._active_scientific_rows.close()
+            self._active_scientific_rows = None
+
     def rows(self) -> Iterator[MorpionSupervisedRow]:
+        """Start one sequential scientific pass; keep v1 iterator behavior intact."""
+        if self.source.view.format_version == 2:
+            self.close_rows()
+            self._active_scientific_rows = self._iter_rows()
+            return self._active_scientific_rows
+        return self._iter_rows()
+
+    def _iter_rows(self) -> Generator[MorpionSupervisedRow]:
         """Repeat exactly the oracle's filter, validation and max_rows order."""
         args = self.args
         for row in iter_morpion_supervised_rows_from_training_snapshot(
@@ -398,9 +449,13 @@ def disk_dataset_context(
 ) -> Iterator[DiskDatasetFamilyContext]:
     """Scope all TEMP storage to one Dataset attempt, including failed attempts."""
     with source.view.temporary_workspace() as connection:
+        context = None
         try:
-            yield DiskDatasetFamilyContext(source, connection, args)
+            context = DiskDatasetFamilyContext(source, connection, args)
+            yield context
         finally:
+            if context is not None:
+                context.close_rows()
             for table in ("dataset_deltas", "dataset_families", "dataset_nodes"):
                 connection.execute(f"DROP TABLE IF EXISTS temp.{table}")
             connection.commit()

@@ -173,7 +173,9 @@ from chipiron.environments.morpion.bootstrap.run_state import (
 )
 from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
     ShardedTrainingGenerationView,
+    is_scientific_generation_manifest,
     is_sharded_generation_manifest,
+    require_scientific_opt_in,
 )
 from chipiron.environments.morpion.bootstrap.streaming_dataset import (
     IndexedDatasetSource,
@@ -1330,6 +1332,7 @@ def run_pipeline_dataset_stage(
     claim_owner: str | None = None,
     use_streaming_sharded_reader: bool = False,
     reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
@@ -1439,6 +1442,12 @@ def run_pipeline_dataset_stage(
         family_context = None
         fallback_reason = "disabled"
         if use_streaming_sharded_reader:
+            if is_scientific_generation_manifest(tree_snapshot_path):
+                require_scientific_opt_in(
+                    allow_scientific_v2
+                    and args.training_export_mode == "sharded"
+                    and rows_path.suffix == ".jsonl"
+                )
             fallback_reason = "unsupported_format_or_output"
             if (
                 args.training_export_mode == "sharded"
@@ -1448,7 +1457,9 @@ def run_pipeline_dataset_stage(
                 try:
                     view = resources.enter_context(
                         ShardedTrainingGenerationView(
-                            tree_snapshot_path, cache_dir=reader_cache_dir
+                            tree_snapshot_path,
+                            cache_dir=reader_cache_dir,
+                            allow_scientific_v2=allow_scientific_v2,
                         )
                     )
                     # Check root reconstruction via the shared keyed loading API.
@@ -1463,6 +1474,8 @@ def run_pipeline_dataset_stage(
                     reader_observation = view.initialization_observation
                     fallback_reason = "none"
                 except UnsupportedStreamingDatasetError as exc:
+                    if view is not None and view.format_version == 2:
+                        raise  # Never invoke a full reader on the indexed v2 path.
                     fallback_reason = str(exc)
                     resources.close()
                     family_context = None
