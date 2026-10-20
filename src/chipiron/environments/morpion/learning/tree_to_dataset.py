@@ -6,7 +6,7 @@ import json
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import load_training_tree_snapshot
@@ -24,8 +24,39 @@ MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND = "morpion_supervised_rows_metadata
 MORPION_SUPERVISED_ROW_RECORD_KIND = "morpion_supervised_row"
 
 if TYPE_CHECKING:
-    from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+    from anemone.training_export import TrainingNodeSnapshot
     from atomheart.games.morpion.state import MorpionState as AtomMorpionState
+
+
+class TrainingNodes(Protocol):
+    """Repeatable node traversal with a cheap count, including indexed sources."""
+
+    def __iter__(self) -> Iterator[TrainingNodeSnapshot]:
+        """Yield nodes in export order."""
+        ...
+
+    def __len__(self) -> int:
+        """Return the total generation node count."""
+        ...
+
+
+class TrainingTreeSource(Protocol):
+    """Fields consumed by row extraction, without requiring a full snapshot."""
+
+    @property
+    def root_node_id(self) -> str | None:
+        """Return the root identifier."""
+        ...
+
+    @property
+    def nodes(self) -> TrainingNodes:
+        """Return repeatable nodes."""
+        ...
+
+    @property
+    def metadata(self) -> Mapping[str, Any]:
+        """Return source metadata."""
+        ...
 
 
 def _empty_metadata() -> dict[str, Any]:
@@ -221,7 +252,7 @@ def training_node_to_morpion_supervised_row(
 
 
 def training_tree_snapshot_to_morpion_supervised_rows(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
@@ -256,7 +287,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
 
 
 def iter_morpion_supervised_rows_from_training_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
@@ -283,7 +314,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
 
 
 def morpion_supervised_rows_metadata_from_training_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
@@ -600,7 +631,7 @@ class _ExtractionStats:
 
 
 def _collect_extraction_stats(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     require_exact_or_terminal: bool,
     min_depth: int | None,
@@ -691,7 +722,7 @@ def _passes_filters(
 
 
 def _build_rows_metadata(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     metadata: dict[str, object] | None,
     require_exact_or_terminal: bool,

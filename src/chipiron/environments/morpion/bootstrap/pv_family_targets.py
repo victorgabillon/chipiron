@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 PvFamilyTargetPolicy = Literal[
     "none",
@@ -106,54 +109,19 @@ def family_adjusted_targets(
             family_exact_target_by_node[node_id] = exact_family_target
             family_num_exact_by_node[node_id] = len(exact_node_ids)
 
-            if (
-                _uses_exact_family_rule(family_target_policy)
-                and exact_family_target is not None
-            ):
-                effective_targets[node_id] = exact_family_target
-                family_target_rule_by_node[node_id] = exact_family_rule
-            elif node_id in exact_or_terminal_node_ids:
-                effective_targets[node_id] = raw_targets[node_id]
-                family_target_rule_by_node[node_id] = "hard_exact_anchor"
-            elif family_target_policy == "none":
-                effective_targets[node_id] = raw_targets[node_id]
-                family_target_rule_by_node[node_id] = "raw_backup"
-            elif family_target_policy == "pv_mean_prediction":
-                effective_targets[node_id] = family_mean
-                family_target_rule_by_node[node_id] = "pv_mean_prediction"
-            elif family_target_policy == "pv_min_prediction":
-                effective_targets[node_id] = family_min
-                family_target_rule_by_node[node_id] = "pv_min_prediction"
-            elif family_target_policy == "pv_blend_mean_prediction":
-                effective_targets[node_id] = (
-                    1.0 - family_prediction_blend
-                ) * raw_targets[node_id] + family_prediction_blend * family_mean
-                family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
-            elif family_target_policy == "pv_blend_min_prediction":
-                effective_targets[node_id] = (
-                    1.0 - family_prediction_blend
-                ) * raw_targets[node_id] + family_prediction_blend * family_min
-                family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
-            elif family_target_policy == "pv_exact_then_mean_prediction":
-                effective_targets[node_id] = family_mean
-                family_target_rule_by_node[node_id] = "pv_mean_prediction"
-            elif family_target_policy == "pv_exact_then_min_prediction":
-                effective_targets[node_id] = family_min
-                family_target_rule_by_node[node_id] = "pv_min_prediction"
-            elif family_target_policy == "pv_exact_then_blend_mean_prediction":
-                effective_targets[node_id] = (
-                    1.0 - family_prediction_blend
-                ) * raw_targets[node_id] + family_prediction_blend * family_mean
-                family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
-            elif family_target_policy == "pv_exact_then_blend_min_prediction":
-                effective_targets[node_id] = (
-                    1.0 - family_prediction_blend
-                ) * raw_targets[node_id] + family_prediction_blend * family_min
-                family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
-            else:
-                raise ValueError(  # noqa: TRY003
-                    f"Unknown family target policy: {family_target_policy!r}."
+            effective_targets[node_id], family_target_rule_by_node[node_id] = (
+                family_node_target(
+                    raw_targets=raw_targets,
+                    node_id=node_id,
+                    is_exact=node_id in exact_or_terminal_node_ids,
+                    family_mean=family_mean,
+                    family_min=family_min,
+                    exact_family_target=exact_family_target,
+                    exact_family_rule=exact_family_rule,
+                    family_target_policy=family_target_policy,
+                    family_prediction_blend=family_prediction_blend,
                 )
+            )
 
     for node_id, raw_target in raw_targets.items():
         if node_id in effective_targets:
@@ -184,6 +152,70 @@ def family_adjusted_targets(
         mean_family_size=_mean([float(size) for size in family_sizes]),
         max_family_size=max(family_sizes, default=None),
     )
+
+
+def family_node_target(
+    *,
+    raw_targets: Mapping[str, float],
+    node_id: str,
+    is_exact: bool,
+    family_mean: float,
+    family_min: float,
+    exact_family_target: float | None,
+    exact_family_rule: str,
+    family_target_policy: PvFamilyTargetPolicy,
+    family_prediction_blend: float,
+) -> tuple[float, str]:
+    """Apply the scientific policy to one node, independent of map storage."""
+    if (
+        _uses_exact_family_rule(family_target_policy)
+        and exact_family_target is not None
+    ):
+        effective_target = exact_family_target
+        rule = exact_family_rule
+    elif is_exact:
+        effective_target = raw_targets[node_id]
+        rule = "hard_exact_anchor"
+    elif family_target_policy == "none":
+        effective_target = raw_targets[node_id]
+        rule = "raw_backup"
+    elif family_target_policy == "pv_mean_prediction":
+        effective_target = family_mean
+        rule = "pv_mean_prediction"
+    elif family_target_policy == "pv_min_prediction":
+        effective_target = family_min
+        rule = "pv_min_prediction"
+    elif family_target_policy == "pv_blend_mean_prediction":
+        effective_target = (1.0 - family_prediction_blend) * raw_targets[
+            node_id
+        ] + family_prediction_blend * family_mean
+        rule = "pv_blend_mean_prediction"
+    elif family_target_policy == "pv_blend_min_prediction":
+        effective_target = (1.0 - family_prediction_blend) * raw_targets[
+            node_id
+        ] + family_prediction_blend * family_min
+        rule = "pv_blend_min_prediction"
+    elif family_target_policy == "pv_exact_then_mean_prediction":
+        effective_target = family_mean
+        rule = "pv_mean_prediction"
+    elif family_target_policy == "pv_exact_then_min_prediction":
+        effective_target = family_min
+        rule = "pv_min_prediction"
+    elif family_target_policy == "pv_exact_then_blend_mean_prediction":
+        effective_target = (1.0 - family_prediction_blend) * raw_targets[
+            node_id
+        ] + family_prediction_blend * family_mean
+        rule = "pv_blend_mean_prediction"
+    elif family_target_policy == "pv_exact_then_blend_min_prediction":
+        effective_target = (1.0 - family_prediction_blend) * raw_targets[
+            node_id
+        ] + family_prediction_blend * family_min
+        rule = "pv_blend_min_prediction"
+    else:
+        raise ValueError(  # noqa: TRY003
+            f"Unknown family target policy: {family_target_policy!r}."
+        )
+    return effective_target, rule
 
 
 def _principal_variation_representative(

@@ -15,7 +15,7 @@ import os
 import re
 import sqlite3
 import tempfile
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -433,6 +433,24 @@ class ShardedTrainingGenerationView:
         if journal.exists():
             total += journal.stat().st_size
         self.index_build_peak_disk_bytes = max(self.index_build_peak_disk_bytes, total)
+
+    def validate_source_identity(self) -> None:
+        """Reject changed exports before publishing a multi-pass consumer's output."""
+        if self._source_identity() != self.identity:
+            raise ValueError("Training export changed during Dataset extraction")
+
+    @contextmanager
+    def temporary_workspace(self) -> Iterator[sqlite3.Connection]:
+        """Lend this index connection for disposable disk-backed Dataset tables.
+
+        Only TEMP tables are writable: the completed index stays read-only.
+        Callers must drop their tables on exit. No second source index is built.
+        """
+        self._connection.execute(f"PRAGMA temp.cache_size=-{SQLITE_CACHE_KIB}")
+        try:
+            yield self._connection
+        finally:
+            self._connection.rollback()
 
     def node_count(self) -> int:
         """Return generation update count, excluding unused historical records."""
