@@ -613,3 +613,48 @@ def test_sharded_export_preserves_opaque_mapping_payloads(tmp_path: Path) -> Non
     )
 
     assert loaded_snapshot.nodes[0].state_ref_payload == payload
+
+
+def test_sharded_state_refs_detach_shared_dumper_payload_before_later_calls(
+    tmp_path: Path,
+) -> None:
+    """Keep each node's ref snapshot when a dumper reuses nested mutable data."""
+    shared_moves: list[object] = []
+    shared_payload: dict[str, object] = {"opaque": {"moves": shared_moves}}
+
+    def dump_shared(state: object) -> object:
+        shared_moves.append(state)
+        return shared_payload
+
+    nodes = tuple(
+        _LiveNode(
+            id=name,
+            depth=depth,
+            state_payload=name,
+            direct_value=0.25,
+            backed_up_value=0.5,
+            is_terminal=False,
+            is_exact=False,
+            visit_count=None,
+            parent_ids=() if depth == 0 else ("a",),
+            child_ids=("b",) if depth == 0 else (),
+        )
+        for depth, name in enumerate(("a", "b"))
+    )
+    manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
+        nodes=nodes,
+        root_node_id="a",
+        output_dir=tmp_path / "shared-dumper",
+        generation=1,
+        state_ref_dumper=dump_shared,
+        direct_value_extractor=_value_to_scalar,
+        backed_up_value_extractor=_value_to_scalar,
+    )
+    snapshot = load_morpion_sharded_training_tree_snapshot(manifest_path)
+    assert [node.state_ref_payload for node in snapshot.nodes] == [
+        {"opaque": {"moves": ["a"]}},
+        {"opaque": {"moves": ["a", "b"]}},
+    ]
+    assert [node.node_id for node in snapshot.nodes] == ["a", "b"]
+    assert [node.parent_ids for node in snapshot.nodes] == [(), ("a",)]
+    assert [node.child_ids for node in snapshot.nodes] == [("b",), ()]
