@@ -574,9 +574,9 @@ def _node_record_to_dict(record: MorpionShardedTrainingNodeRecord) -> dict[str, 
         "parent_ids": list(record.parent_ids),
         "depth": record.depth,
         "creation_generation": record.creation_generation,
-        "state_ref_payload": None
-        if record.state_ref_payload is None
-        else checkpoint_payload_to_jsonable(record.state_ref_payload),
+        # Record creation already normalized and detached this payload. Reuse
+        # that private copy instead of allocating another nested JSON graph.
+        "state_ref_payload": record.state_ref_payload,
     }
 
 
