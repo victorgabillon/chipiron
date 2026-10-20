@@ -1467,6 +1467,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             depth_node_counts=depth_node_counts,
         )
 
+    def discard_uncommitted_runtime(self) -> None:
+        """Require a cold restore after an aborted checkpoint/patch transaction."""
+        self._runtime = None
+        self._current_evaluator_bundle_path = None
+        self._last_reevaluation_patch_apply_metrics = None
+        self._reset_growth_state_eviction_runtime()
+
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""
         runtime = self._runtime

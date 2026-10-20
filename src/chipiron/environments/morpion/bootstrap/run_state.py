@@ -148,9 +148,19 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
 def save_bootstrap_run_state(
     state: MorpionBootstrapRunState,
     path: str | Path,
+    *,
+    durable: bool = False,
 ) -> None:
-    """Persist one Morpion bootstrap run state as UTF-8 JSON."""
+    """Persist run state, optionally committing a complete durable replacement."""
     target = Path(path)
+    if "checkpoint_bound_reevaluation_v1" in state.metadata and not durable:
+        message = "Receipt-enabled run state requires an atomic durable commit."
+        raise ValueError(message)
+    if durable:
+        from .derived.provenance import atomic_json
+
+        atomic_json(target, _run_state_to_dict(state))
+        return
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps(_run_state_to_dict(state), indent=2, sort_keys=True) + "\n",

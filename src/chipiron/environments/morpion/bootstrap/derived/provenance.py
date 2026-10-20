@@ -109,6 +109,15 @@ def derived_external_local_bound(
 
 def sync_checkpoint(directory: Path) -> None:
     """Flush a complete checkpoint before committing the journal's restore pointer."""
+    if directory.is_file():
+        with directory.open("rb") as handle:
+            os.fsync(handle.fileno())
+        descriptor = os.open(directory.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        return
     for path in directory.rglob("*"):
         if path.is_file():
             with path.open("rb") as handle:
