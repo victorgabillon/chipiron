@@ -1,0 +1,1972 @@
+{
+  "tool": "Existing benchmark mock operation hooks and perf_counter; phase gated explicitly on Python 3.13",
+  "scope": "separate serial overhead-bearing runs, no cProfile; SQL execute/DDL/commit and existing-parser next() calls; SELECT fetching separate; not additive with cProfile cumulative times",
+  "observations": [
+    {
+      "size": "1k",
+      "case": "operation-detail-baseline-v2-g1",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-1k/operation-detail-baseline-v2-g1/cold.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00023932999465614557
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.8079001165460795e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 9.29300585994497e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 1.3598000805359334e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 8.688002708368003e-06
+        },
+        "SQL.executescript CREATE TABLE records ( node_id TEXT COLLATE BINARY PRIMARY KEY, payload TEXT NOT NULL ); CREATE TABLE updates ( node_id TEXT COLLATE BINARY PRIMARY KEY REFERENCES records(node_id), order_index INTEGER NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL ); CREATE INDEX export_order ON updates(order_index, sequence); CREATE TABLE completed (identity TEXT NOT NULL); CREATE TABLE cache_digest (digest TEXT NOT NULL);": {
+          "calls": 1,
+          "elapsed_s": 0.14158956299797865
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL); CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child)); CREATE TEMP TABLE v2_children (parent TEXT, child TEXT, PRIMARY KEY(parent,child));": {
+          "calls": 1,
+          "elapsed_s": 0.00013636500079883263
+        },
+        "parser.records.generation-1": {
+          "calls": 1001,
+          "elapsed_s": 0.0121861958905356
+        },
+        "SQL.execute INSERT INTO records VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.005964404954283964
+        },
+        "SQL.commit": {
+          "calls": 13,
+          "elapsed_s": 0.25477014601347037
+        },
+        "SQL.execute INSERT INTO v2_creation VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.005207179136050399
+        },
+        "SQL.execute SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0020111650010221638
+        },
+        "SQL.execute SELECT COUNT(*) FROM v2_creation": {
+          "calls": 1,
+          "elapsed_s": 1.996300125028938e-05
+        },
+        "parser.updates.generation-1": {
+          "calls": 1001,
+          "elapsed_s": 0.06015308402129449
+        },
+        "SQL.execute INSERT INTO updates VALUES (?, ?, ?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.008330974895216059
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_parents VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.0039044562217895873
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_children VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.00277867400291143
+        },
+        "SQL.execute SELECT * FROM v2_parents EXCEPT SELECT * FROM v2_children LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.00041261199658038095
+        },
+        "SQL.execute SELECT * FROM v2_children EXCEPT SELECT * FROM v2_parents LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0003377379980520345
+        },
+        "SQL.execute SELECT 1 FROM v2_parents e LEFT JOIN updates p ON p.node_id=e.parent LEFT JOIN updates c ON c.node_id=e.child WHERE p.node_id IS NULL OR c.node_id IS NULL LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.00038915299955988303
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_degrees (id TEXT PRIMARY KEY, degree INTEGER); INSERT INTO v2_degrees SELECT u.node_id, COUNT(p.parent) FROM updates u LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id; CREATE TEMP TABLE v2_queue (id TEXT PRIMARY KEY); INSERT INTO v2_queue SELECT id FROM v2_degrees WHERE degree=0;": {
+          "calls": 1,
+          "elapsed_s": 0.03123442699870793
+        },
+        "SQL.execute SELECT id FROM v2_queue ORDER BY id LIMIT 1": {
+          "calls": 1001,
+          "elapsed_s": 0.0020088909586775117
+        },
+        "SQL.execute DELETE FROM v2_queue WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.002525757059629541
+        },
+        "SQL.execute UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)": {
+          "calls": 1000,
+          "elapsed_s": 0.006909831878147088
+        },
+        "SQL.execute INSERT OR IGNORE INTO v2_queue SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0": {
+          "calls": 1000,
+          "elapsed_s": 0.0040668687943252735
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 4.80699964100495e-06
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 2.8270005714148283e-06
+        },
+        "SQL.executescript DROP TABLE v2_creation; DROP TABLE v2_parents; DROP TABLE v2_children; DROP TABLE v2_degrees; DROP TABLE v2_queue;": {
+          "calls": 1,
+          "elapsed_s": 0.0005253479976090603
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 2,
+          "elapsed_s": 5.541499558603391e-05
+        },
+        "SQL.execute SELECT 1 FROM updates WHERE node_id=?": {
+          "calls": 1,
+          "elapsed_s": 1.2210002751089633e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.9016002372372895e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.4923996534198523e-05
+        },
+        "SQL.execute INSERT INTO cache_digest VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 5.143299495102838e-05
+        },
+        "SQL.execute INSERT INTO completed VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 1.1984004231635481e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.004192312997474801
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 2.6793120000000004,
+          "cpu_system_s": 0.02112,
+          "io": {
+            "rchar": 33263929,
+            "wchar": 6703904,
+            "syscr": 3254,
+            "syscw": 1907,
+            "read_bytes": 0,
+            "write_bytes": 6828032,
+            "cancelled_write_bytes": 356352
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 1,
+          "source_node_count": 1000,
+          "index_reused": false,
+          "index_bytes": 5857280,
+          "index_build_peak_disk_bytes": 5857280,
+          "index_build_temp_logical_bytes": 327680,
+          "source_bytes_read": 21175646,
+          "index": {
+            "status": "built",
+            "started_unix_s": 1792524212.0960155,
+            "finished_unix_s": 1792524215.2048168,
+            "elapsed_s": 3.1088019390008412,
+            "pid": 8,
+            "rss_before_mb": 251.21484375,
+            "rss_after_mb": 254.92578125,
+            "process_peak_rss_mb": 254.5546875,
+            "available_ram_before_mb": 8537.015625,
+            "available_ram_after_mb": 8578.69140625,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524212.0904016,
+          "finished_unix_s": 1792524215.2054834,
+          "elapsed_s": 3.115082276999601,
+          "pid": 8,
+          "rss_before_mb": 250.90625,
+          "rss_after_mb": 254.92578125,
+          "process_peak_rss_mb": 254.5546875,
+          "available_ram_before_mb": 8537.015625,
+          "available_ram_after_mb": 8578.69140625,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524212.0902598,
+        "finished_unix_s": 1792524215.2059228,
+        "elapsed_s": 3.1156622209964553,
+        "pid": 8,
+        "rss_before_mb": 250.90234375,
+        "rss_after_mb": 254.92578125,
+        "process_peak_rss_mb": 254.5546875,
+        "available_ram_before_mb": 8537.015625,
+        "available_ram_after_mb": 8578.69140625,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "1k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-1k/operation-detail-baseline-v2-g2/cold.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.0002656029973877594
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.7853002646006644e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 8.980001439340413e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 1.4516001101583242e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 8.505994628649205e-06
+        },
+        "SQL.executescript CREATE TABLE records ( node_id TEXT COLLATE BINARY PRIMARY KEY, payload TEXT NOT NULL ); CREATE TABLE updates ( node_id TEXT COLLATE BINARY PRIMARY KEY REFERENCES records(node_id), order_index INTEGER NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL ); CREATE INDEX export_order ON updates(order_index, sequence); CREATE TABLE completed (identity TEXT NOT NULL); CREATE TABLE cache_digest (digest TEXT NOT NULL);": {
+          "calls": 1,
+          "elapsed_s": 0.14845473599416437
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL); CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child)); CREATE TEMP TABLE v2_children (parent TEXT, child TEXT, PRIMARY KEY(parent,child));": {
+          "calls": 1,
+          "elapsed_s": 0.00048201300523942336
+        },
+        "parser.records.generation-1": {
+          "calls": 1001,
+          "elapsed_s": 0.014401967884623446
+        },
+        "SQL.execute INSERT INTO records VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.005947764024313074
+        },
+        "SQL.commit": {
+          "calls": 13,
+          "elapsed_s": 0.25467818800825626
+        },
+        "parser.records.generation-2": {
+          "calls": 1,
+          "elapsed_s": 0.00013408200175035745
+        },
+        "SQL.execute INSERT INTO v2_creation VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.004911559037282132
+        },
+        "SQL.execute SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.002046011999482289
+        },
+        "SQL.execute SELECT COUNT(*) FROM v2_creation": {
+          "calls": 1,
+          "elapsed_s": 1.9957995391450822e-05
+        },
+        "parser.updates.generation-2": {
+          "calls": 1001,
+          "elapsed_s": 0.05588844011799665
+        },
+        "SQL.execute INSERT INTO updates VALUES (?, ?, ?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.007647535043361131
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_parents VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.003537670119840186
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_children VALUES (?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.0025887498995871283
+        },
+        "SQL.execute SELECT * FROM v2_parents EXCEPT SELECT * FROM v2_children LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0004109399960725568
+        },
+        "SQL.execute SELECT * FROM v2_children EXCEPT SELECT * FROM v2_parents LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0003241930025978945
+        },
+        "SQL.execute SELECT 1 FROM v2_parents e LEFT JOIN updates p ON p.node_id=e.parent LEFT JOIN updates c ON c.node_id=e.child WHERE p.node_id IS NULL OR c.node_id IS NULL LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0003833680020761676
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_degrees (id TEXT PRIMARY KEY, degree INTEGER); INSERT INTO v2_degrees SELECT u.node_id, COUNT(p.parent) FROM updates u LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id; CREATE TEMP TABLE v2_queue (id TEXT PRIMARY KEY); INSERT INTO v2_queue SELECT id FROM v2_degrees WHERE degree=0;": {
+          "calls": 1,
+          "elapsed_s": 0.030955951995565556
+        },
+        "SQL.execute SELECT id FROM v2_queue ORDER BY id LIMIT 1": {
+          "calls": 1001,
+          "elapsed_s": 0.0020176868565613404
+        },
+        "SQL.execute DELETE FROM v2_queue WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0025254412030335516
+        },
+        "SQL.execute UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)": {
+          "calls": 1000,
+          "elapsed_s": 0.007162150002841372
+        },
+        "SQL.execute INSERT OR IGNORE INTO v2_queue SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0": {
+          "calls": 1000,
+          "elapsed_s": 0.004092115035746247
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 4.668996552936733e-06
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 2.796004991978407e-06
+        },
+        "SQL.executescript DROP TABLE v2_creation; DROP TABLE v2_parents; DROP TABLE v2_children; DROP TABLE v2_degrees; DROP TABLE v2_queue;": {
+          "calls": 1,
+          "elapsed_s": 0.0004893879959126934
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 2,
+          "elapsed_s": 6.359199323924258e-05
+        },
+        "SQL.execute SELECT 1 FROM updates WHERE node_id=?": {
+          "calls": 1,
+          "elapsed_s": 1.176699879579246e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.7440997655503452e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.332199801458046e-05
+        },
+        "SQL.execute INSERT INTO cache_digest VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 6.25140019110404e-05
+        },
+        "SQL.execute INSERT INTO completed VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 1.221399725181982e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.0032773860002635047
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 2.6794530000000005,
+          "cpu_system_s": 0.01734799999999999,
+          "io": {
+            "rchar": 33265865,
+            "wchar": 6703904,
+            "syscr": 3266,
+            "syscw": 1907,
+            "read_bytes": 0,
+            "write_bytes": 6828032,
+            "cancelled_write_bytes": 356352
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 2,
+          "source_node_count": 1000,
+          "index_reused": false,
+          "index_bytes": 5857280,
+          "index_build_peak_disk_bytes": 5857280,
+          "index_build_temp_logical_bytes": 327680,
+          "source_bytes_read": 21177298,
+          "index": {
+            "status": "built",
+            "started_unix_s": 1792524216.7510576,
+            "finished_unix_s": 1792524219.8585827,
+            "elapsed_s": 3.107525745006569,
+            "pid": 24,
+            "rss_before_mb": 251.2265625,
+            "rss_after_mb": 254.94140625,
+            "process_peak_rss_mb": 254.46875,
+            "available_ram_before_mb": 8582.98046875,
+            "available_ram_after_mb": 8594.33203125,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524216.7455661,
+          "finished_unix_s": 1792524219.8593335,
+          "elapsed_s": 3.1137674240017077,
+          "pid": 24,
+          "rss_before_mb": 250.91796875,
+          "rss_after_mb": 254.94140625,
+          "process_peak_rss_mb": 254.46875,
+          "available_ram_before_mb": 8582.98046875,
+          "available_ram_after_mb": 8594.33203125,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524216.7454412,
+        "finished_unix_s": 1792524219.8597689,
+        "elapsed_s": 3.1143271690016263,
+        "pid": 24,
+        "rss_before_mb": 250.9140625,
+        "rss_after_mb": 254.94140625,
+        "process_peak_rss_mb": 254.46875,
+        "available_ram_before_mb": 8582.98046875,
+        "available_ram_after_mb": 8594.33203125,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "1k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "reuse",
+      "file": "/tmp/morpion-v2-profile-new-1k/operation-detail-baseline-v2-g2/reuse.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.0001602949996595271
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.1707001249305904e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.385998520068824e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 7.924005331005901e-06
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.283996870275587e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.2210999557282776e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.0022916890011401847
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 2.0669001969508827e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 1.8089995137415826e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 3.610700514400378e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 1.7342004866804928e-05
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 0.023798999999999904,
+          "cpu_system_s": 0.003025,
+          "io": {
+            "rchar": 16641798,
+            "wchar": 0,
+            "syscr": 2832,
+            "syscw": 0,
+            "read_bytes": 0,
+            "write_bytes": 0,
+            "cancelled_write_bytes": 0
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 2,
+          "source_node_count": 1000,
+          "index_reused": true,
+          "index_bytes": 5857280,
+          "index_build_peak_disk_bytes": 0,
+          "index_build_temp_logical_bytes": 0,
+          "source_bytes_read": 5327499,
+          "index": {
+            "status": "reused",
+            "started_unix_s": 1792524221.4105492,
+            "finished_unix_s": 1792524221.431291,
+            "elapsed_s": 0.020741849002661183,
+            "pid": 40,
+            "rss_before_mb": 251.2109375,
+            "rss_after_mb": 253.80078125,
+            "process_peak_rss_mb": 253.4375,
+            "available_ram_before_mb": 8589.80078125,
+            "available_ram_after_mb": 8586.00390625,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524221.4048922,
+          "finished_unix_s": 1792524221.4315536,
+          "elapsed_s": 0.02666136399784591,
+          "pid": 40,
+          "rss_before_mb": 250.90625,
+          "rss_after_mb": 253.80078125,
+          "process_peak_rss_mb": 253.4375,
+          "available_ram_before_mb": 8589.80078125,
+          "available_ram_after_mb": 8586.00390625,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524221.4047654,
+        "finished_unix_s": 1792524221.4317226,
+        "elapsed_s": 0.026956938003422692,
+        "pid": 40,
+        "rss_before_mb": 250.8984375,
+        "rss_after_mb": 253.80078125,
+        "process_peak_rss_mb": 253.4375,
+        "available_ram_before_mb": 8589.80078125,
+        "available_ram_after_mb": 8586.00390625,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "1k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-1k/operation-detail-baseline-v2-g2/dataset.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00016323100135196
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.165499270427972e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 9.488998330198228e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 3,
+          "elapsed_s": 1.568500738358125e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.744004738517106e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.3313998351804912e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.0022946900062379427
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 2.272600249852985e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 1.8596998415887356e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.7103997126687318e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 1.723299646982923e-05
+        },
+        "SQL.executescript CREATE TEMP TABLE dataset_nodes ( id TEXT COLLATE BINARY PRIMARY KEY, raw TEXT NOT NULL, prediction TEXT NOT NULL, exact INTEGER NOT NULL, selected TEXT, representative TEXT, visiting INTEGER DEFAULT 0, previous TEXT ); CREATE TEMP TABLE dataset_families ( representative TEXT COLLATE BINARY PRIMARY KEY, first_id TEXT COLLATE BINARY NOT NULL, payload TEXT NOT NULL ); CREATE TEMP TABLE dataset_deltas ( sequence INTEGER PRIMARY KEY, exact INTEGER NOT NULL, delta TEXT NOT NULL );": {
+          "calls": 1,
+          "elapsed_s": 0.00012022699957014993
+        },
+        "SQL.execute SELECT node_id FROM updates ORDER BY order_index, sequence": {
+          "calls": 5,
+          "elapsed_s": 9.527099609840661e-05
+        },
+        "SQL.execute SELECT records.payload, updates.payload FROM updates JOIN records USING(node_id) WHERE updates.node_id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.027594221857725643
+        },
+        "SQL.execute INSERT INTO dataset_nodes(id, raw, prediction, exact) VALUES (?, ?, ?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.003929153936041985
+        },
+        "SQL.commit": {
+          "calls": 1014,
+          "elapsed_s": 0.000815853985841386
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0025933590295608155
+        },
+        "SQL.execute UPDATE dataset_nodes SET selected=? WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0034202868409920484
+        },
+        "SQL.execute SELECT id FROM dataset_nodes ORDER BY id": {
+          "calls": 1,
+          "elapsed_s": 1.8298000213690102e-05
+        },
+        "SQL.execute SELECT selected, representative, visiting FROM dataset_nodes WHERE id=?": {
+          "calls": 1500,
+          "elapsed_s": 0.0030424239739659242
+        },
+        "SQL.execute UPDATE dataset_nodes SET visiting=1, previous=? WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.002820761081238743
+        },
+        "SQL.execute SELECT previous FROM dataset_nodes WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0017362399667035788
+        },
+        "SQL.execute UPDATE dataset_nodes SET representative=?, visiting=0, previous=NULL WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.002282195033330936
+        },
+        "SQL.execute CREATE INDEX temp.dataset_family_order ON dataset_nodes(representative, id)": {
+          "calls": 1,
+          "elapsed_s": 0.0001955780026037246
+        },
+        "SQL.execute SELECT DISTINCT representative FROM dataset_nodes ORDER BY representative": {
+          "calls": 1,
+          "elapsed_s": 1.4303004718385637e-05
+        },
+        "SQL.execute SELECT COUNT(*), SUM(exact), MIN(id) FROM dataset_nodes WHERE representative=?": {
+          "calls": 500,
+          "elapsed_s": 0.0015094158807187341
+        },
+        "SQL.execute SELECT id FROM dataset_nodes WHERE representative=? AND exact=1 AND raw='null' ORDER BY id LIMIT 1": {
+          "calls": 500,
+          "elapsed_s": 0.0012808259853045456
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_nodes WHERE representative=? AND prediction!='null'": {
+          "calls": 500,
+          "elapsed_s": 0.0011235509664402343
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE representative=? AND exact=1 ORDER BY id": {
+          "calls": 1000,
+          "elapsed_s": 0.0021536920103244483
+        },
+        "SQL.execute SELECT prediction FROM dataset_nodes WHERE representative=? ORDER BY id": {
+          "calls": 1000,
+          "elapsed_s": 0.0019015140060218982
+        },
+        "SQL.execute SELECT id,exact FROM dataset_nodes WHERE representative=? AND raw='null' ORDER BY id": {
+          "calls": 500,
+          "elapsed_s": 0.0012226100079715252
+        },
+        "SQL.execute INSERT INTO dataset_families VALUES (?, ?, ?)": {
+          "calls": 500,
+          "elapsed_s": 0.001295002926781308
+        },
+        "SQL.execute DELETE FROM dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 2.104899613186717e-05
+        },
+        "SQL.execute SELECT n.raw, n.selected, n.representative, f.payload FROM dataset_nodes n JOIN dataset_families f ON f.representative=n.representative WHERE n.id=?": {
+          "calls": 1632,
+          "elapsed_s": 0.010895635663473513
+        },
+        "SQL.execute INSERT INTO dataset_deltas VALUES (?, ?, ?)": {
+          "calls": 816,
+          "elapsed_s": 0.0031608740537194535
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 2.5364999601151794e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 1.2774995411746204e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families ORDER BY first_id": {
+          "calls": 1,
+          "elapsed_s": 6.780400144634768e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas WHERE exact=? ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 2.197299909312278e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 1.0689000191632658e-05
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 1.782600156730041e-05
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 4.3289983295835555e-06
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 6.525299977511168e-05
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_families": {
+          "calls": 1,
+          "elapsed_s": 0.00017534800281282514
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_nodes": {
+          "calls": 1,
+          "elapsed_s": 0.00020819799829041585
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 2.4036350000000004,
+          "cpu_system_s": 0.014029999999999987,
+          "io": {
+            "rchar": 54702383,
+            "wchar": 4294617,
+            "syscr": 8363,
+            "syscw": 550,
+            "read_bytes": 0,
+            "write_bytes": 4304896,
+            "cancelled_write_bytes": 262144
+          }
+        },
+        "policy": "pv_exact_then_blend_mean_prediction",
+        "node_count": 1000,
+        "stats": {
+          "row_count": 816,
+          "bytes_written": 4039145,
+          "path": "/tmp/morpion-v2-profile-new-1k/operation-detail-baseline-v2-g2/measured-dataset.jsonl",
+          "format_kind": "morpion_supervised_rows_jsonl",
+          "format_version": 1
+        },
+        "temp_logical_bytes": 262144,
+        "started_unix_s": 1792524222.9740217,
+        "finished_unix_s": 1792524225.3974397,
+        "elapsed_s": 2.4234176730024046,
+        "pid": 56,
+        "rss_before_mb": 250.81640625,
+        "rss_after_mb": 254.1640625,
+        "process_peak_rss_mb": 253.73046875,
+        "available_ram_before_mb": 8510.97265625,
+        "available_ram_after_mb": 8432.05078125,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "1k",
+      "case": "operation-detail-optimized-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-1k/operation-detail-optimized-v2-g2/dataset.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00015756900393171236
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.0765004844870418e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.360001523513347e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 3,
+          "elapsed_s": 1.4244003978092223e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.8019941207021475e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.2645999959204346e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.0022234849966480397
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 2.12439990718849e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 1.8384998838882893e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.0783998479600996e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 1.6999998479150236e-05
+        },
+        "SQL.executescript CREATE TEMP TABLE dataset_nodes ( id TEXT COLLATE BINARY PRIMARY KEY, raw TEXT NOT NULL, prediction TEXT NOT NULL, exact INTEGER NOT NULL, selected TEXT, representative TEXT, visiting INTEGER DEFAULT 0, previous TEXT ); CREATE TEMP TABLE dataset_families ( representative TEXT COLLATE BINARY PRIMARY KEY, first_id TEXT COLLATE BINARY NOT NULL, payload TEXT NOT NULL ); CREATE TEMP TABLE dataset_deltas ( sequence INTEGER PRIMARY KEY, exact INTEGER NOT NULL, delta TEXT NOT NULL );": {
+          "calls": 1,
+          "elapsed_s": 0.00011790799908339977
+        },
+        "SQL.execute SELECT node_id FROM updates ORDER BY order_index, sequence": {
+          "calls": 5,
+          "elapsed_s": 8.19120105006732e-05
+        },
+        "SQL.execute SELECT records.payload, updates.payload FROM updates JOIN records USING(node_id) WHERE updates.node_id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.024055200708971824
+        },
+        "SQL.execute INSERT INTO dataset_nodes(id, raw, prediction, exact) VALUES (?, ?, ?, ?)": {
+          "calls": 1000,
+          "elapsed_s": 0.003871267028443981
+        },
+        "SQL.commit": {
+          "calls": 1014,
+          "elapsed_s": 0.0007659710609004833
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0026022219462902285
+        },
+        "SQL.execute UPDATE dataset_nodes SET selected=? WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.003351274128363002
+        },
+        "SQL.execute SELECT id FROM dataset_nodes ORDER BY id": {
+          "calls": 1,
+          "elapsed_s": 1.3541997759602964e-05
+        },
+        "SQL.execute SELECT selected, representative, visiting FROM dataset_nodes WHERE id=?": {
+          "calls": 1500,
+          "elapsed_s": 0.003062256073462777
+        },
+        "SQL.execute UPDATE dataset_nodes SET visiting=1, previous=? WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.002795876069285441
+        },
+        "SQL.execute SELECT previous FROM dataset_nodes WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0017643019600654952
+        },
+        "SQL.execute UPDATE dataset_nodes SET representative=?, visiting=0, previous=NULL WHERE id=?": {
+          "calls": 1000,
+          "elapsed_s": 0.0022654749991488643
+        },
+        "SQL.execute CREATE INDEX temp.dataset_family_order ON dataset_nodes(representative, id)": {
+          "calls": 1,
+          "elapsed_s": 0.00022383400209946558
+        },
+        "SQL.execute SELECT DISTINCT representative FROM dataset_nodes ORDER BY representative": {
+          "calls": 1,
+          "elapsed_s": 1.346299541182816e-05
+        },
+        "SQL.execute SELECT COUNT(*), SUM(exact), MIN(id) FROM dataset_nodes WHERE representative=?": {
+          "calls": 500,
+          "elapsed_s": 0.0014776599491597153
+        },
+        "SQL.execute SELECT id FROM dataset_nodes WHERE representative=? AND exact=1 AND raw='null' ORDER BY id LIMIT 1": {
+          "calls": 500,
+          "elapsed_s": 0.0012550808824016713
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_nodes WHERE representative=? AND prediction!='null'": {
+          "calls": 500,
+          "elapsed_s": 0.0011263900087215006
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE representative=? AND exact=1 ORDER BY id": {
+          "calls": 1000,
+          "elapsed_s": 0.0021740990778198466
+        },
+        "SQL.execute SELECT prediction FROM dataset_nodes WHERE representative=? ORDER BY id": {
+          "calls": 1000,
+          "elapsed_s": 0.0019233559287386015
+        },
+        "SQL.execute SELECT id,exact FROM dataset_nodes WHERE representative=? AND raw='null' ORDER BY id": {
+          "calls": 500,
+          "elapsed_s": 0.0012037608757964335
+        },
+        "SQL.execute INSERT INTO dataset_families VALUES (?, ?, ?)": {
+          "calls": 500,
+          "elapsed_s": 0.0013175428539398126
+        },
+        "SQL.execute DELETE FROM dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 1.0263996955472976e-05
+        },
+        "SQL.execute SELECT n.raw, n.selected, n.representative, f.payload FROM dataset_nodes n JOIN dataset_families f ON f.representative=n.representative WHERE n.id=?": {
+          "calls": 1632,
+          "elapsed_s": 0.0075380359558039345
+        },
+        "SQL.execute INSERT INTO dataset_deltas VALUES (?, ?, ?)": {
+          "calls": 816,
+          "elapsed_s": 0.002597464932478033
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 1.7471000319346786e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 9.668001439422369e-06
+        },
+        "SQL.execute SELECT payload FROM dataset_families ORDER BY first_id": {
+          "calls": 1,
+          "elapsed_s": 6.386199675034732e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas WHERE exact=? ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 1.5174999134615064e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 9.615992894396186e-06
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 1.4711004041600972e-05
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 3.62699938705191e-06
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 4.9752998165786266e-05
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_families": {
+          "calls": 1,
+          "elapsed_s": 0.00017101100092986599
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_nodes": {
+          "calls": 1,
+          "elapsed_s": 0.00018901499424828216
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 0.3314539999999999,
+          "cpu_system_s": 0.009979000000000016,
+          "io": {
+            "rchar": 54702383,
+            "wchar": 4294617,
+            "syscr": 8363,
+            "syscw": 550,
+            "read_bytes": 0,
+            "write_bytes": 4304896,
+            "cancelled_write_bytes": 262144
+          }
+        },
+        "policy": "pv_exact_then_blend_mean_prediction",
+        "node_count": 1000,
+        "stats": {
+          "row_count": 816,
+          "bytes_written": 4039145,
+          "path": "/tmp/morpion-v2-profile-new-1k/operation-detail-optimized-v2-g2/measured-dataset.jsonl",
+          "format_kind": "morpion_supervised_rows_jsonl",
+          "format_version": 1
+        },
+        "temp_logical_bytes": 262144,
+        "started_unix_s": 1792524226.7860355,
+        "finished_unix_s": 1792524227.1277356,
+        "elapsed_s": 0.34169975700206123,
+        "pid": 72,
+        "rss_before_mb": 250.7578125,
+        "rss_after_mb": 254.01953125,
+        "process_peak_rss_mb": 253.62890625,
+        "available_ram_before_mb": 8464.578125,
+        "available_ram_after_mb": 8460.453125,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "5k",
+      "case": "operation-detail-baseline-v2-g1",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-5k/operation-detail-baseline-v2-g1/cold.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00020695900457212701
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.3108001439832151e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 6.027992640156299e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 9.377996320836246e-06
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 6.803995347581804e-06
+        },
+        "SQL.executescript CREATE TABLE records ( node_id TEXT COLLATE BINARY PRIMARY KEY, payload TEXT NOT NULL ); CREATE TABLE updates ( node_id TEXT COLLATE BINARY PRIMARY KEY REFERENCES records(node_id), order_index INTEGER NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL ); CREATE INDEX export_order ON updates(order_index, sequence); CREATE TABLE completed (identity TEXT NOT NULL); CREATE TABLE cache_digest (digest TEXT NOT NULL);": {
+          "calls": 1,
+          "elapsed_s": 0.13841531200159807
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL); CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child)); CREATE TEMP TABLE v2_children (parent TEXT, child TEXT, PRIMARY KEY(parent,child));": {
+          "calls": 1,
+          "elapsed_s": 0.0001039260023389943
+        },
+        "parser.records.generation-1": {
+          "calls": 5001,
+          "elapsed_s": 0.06987853001191979
+        },
+        "SQL.execute INSERT INTO records VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.03353274506662274
+        },
+        "SQL.commit": {
+          "calls": 77,
+          "elapsed_s": 1.2610323149856413
+        },
+        "SQL.execute INSERT INTO v2_creation VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.014880944196193013
+        },
+        "SQL.execute SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0038462150041596033
+        },
+        "SQL.execute SELECT COUNT(*) FROM v2_creation": {
+          "calls": 1,
+          "elapsed_s": 1.139699452323839e-05
+        },
+        "parser.updates.generation-1": {
+          "calls": 5001,
+          "elapsed_s": 0.2698936131928349
+        },
+        "SQL.execute INSERT INTO updates VALUES (?, ?, ?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.03624674922320992
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_parents VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.018405399183393456
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_children VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.013770509794994723
+        },
+        "SQL.execute SELECT * FROM v2_parents EXCEPT SELECT * FROM v2_children LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.00191796100261854
+        },
+        "SQL.execute SELECT * FROM v2_children EXCEPT SELECT * FROM v2_parents LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.001750392999383621
+        },
+        "SQL.execute SELECT 1 FROM v2_parents e LEFT JOIN updates p ON p.node_id=e.parent LEFT JOIN updates c ON c.node_id=e.child WHERE p.node_id IS NULL OR c.node_id IS NULL LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0021027940019848756
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_degrees (id TEXT PRIMARY KEY, degree INTEGER); INSERT INTO v2_degrees SELECT u.node_id, COUNT(p.parent) FROM updates u LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id; CREATE TEMP TABLE v2_queue (id TEXT PRIMARY KEY); INSERT INTO v2_queue SELECT id FROM v2_degrees WHERE degree=0;": {
+          "calls": 1,
+          "elapsed_s": 0.031120004001422785
+        },
+        "SQL.execute SELECT id FROM v2_queue ORDER BY id LIMIT 1": {
+          "calls": 5001,
+          "elapsed_s": 0.007137254789995495
+        },
+        "SQL.execute DELETE FROM v2_queue WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.009830378054175526
+        },
+        "SQL.execute UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)": {
+          "calls": 5000,
+          "elapsed_s": 0.024243119143648073
+        },
+        "SQL.execute INSERT OR IGNORE INTO v2_queue SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0": {
+          "calls": 5000,
+          "elapsed_s": 0.013849625953298528
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 6.0200036386959255e-06
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 3.240005753468722e-06
+        },
+        "SQL.executescript DROP TABLE v2_creation; DROP TABLE v2_parents; DROP TABLE v2_children; DROP TABLE v2_degrees; DROP TABLE v2_queue;": {
+          "calls": 1,
+          "elapsed_s": 0.0016293480002786964
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 2,
+          "elapsed_s": 7.102500239852816e-05
+        },
+        "SQL.execute SELECT 1 FROM updates WHERE node_id=?": {
+          "calls": 1,
+          "elapsed_s": 1.3568002032116055e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 3.0484996386803687e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 3.3472999348305166e-05
+        },
+        "SQL.execute INSERT INTO cache_digest VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 9.195299935527146e-05
+        },
+        "SQL.execute INSERT INTO completed VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 1.555099879624322e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.017877652993774973
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 21.845246000000003,
+          "cpu_system_s": 0.083098,
+          "io": {
+            "rchar": 174691042,
+            "wchar": 34748168,
+            "syscr": 17727,
+            "syscw": 10389,
+            "read_bytes": 24576,
+            "write_bytes": 35172352,
+            "cancelled_write_bytes": 2387968
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 1,
+          "source_node_count": 5000,
+          "index_reused": false,
+          "index_bytes": 29433856,
+          "index_build_peak_disk_bytes": 29433856,
+          "index_build_temp_logical_bytes": 1433600,
+          "source_bytes_read": 106804318,
+          "index": {
+            "status": "built",
+            "started_unix_s": 1792524228.5092564,
+            "finished_unix_s": 1792524251.8052711,
+            "elapsed_s": 23.296014970001124,
+            "pid": 88,
+            "rss_before_mb": 251.875,
+            "rss_after_mb": 257.26171875,
+            "process_peak_rss_mb": 256.94140625,
+            "available_ram_before_mb": 8499.91796875,
+            "available_ram_after_mb": 8596.63671875,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524228.4863954,
+          "finished_unix_s": 1792524251.8057444,
+          "elapsed_s": 23.319348945005913,
+          "pid": 88,
+          "rss_before_mb": 250.8828125,
+          "rss_after_mb": 257.26171875,
+          "process_peak_rss_mb": 256.94140625,
+          "available_ram_before_mb": 8503.71484375,
+          "available_ram_after_mb": 8596.63671875,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524228.4862695,
+        "finished_unix_s": 1792524251.8059947,
+        "elapsed_s": 23.319724925997434,
+        "pid": 88,
+        "rss_before_mb": 250.875,
+        "rss_after_mb": 257.26171875,
+        "process_peak_rss_mb": 256.94140625,
+        "available_ram_before_mb": 8503.71484375,
+        "available_ram_after_mb": 8596.63671875,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "5k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-5k/operation-detail-baseline-v2-g2/cold.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.0001737220081849955
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.3229997421149164e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.724003131035715e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 9.501003660261631e-06
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.806999979540706e-06
+        },
+        "SQL.executescript CREATE TABLE records ( node_id TEXT COLLATE BINARY PRIMARY KEY, payload TEXT NOT NULL ); CREATE TABLE updates ( node_id TEXT COLLATE BINARY PRIMARY KEY REFERENCES records(node_id), order_index INTEGER NOT NULL, sequence INTEGER NOT NULL, payload TEXT NOT NULL ); CREATE INDEX export_order ON updates(order_index, sequence); CREATE TABLE completed (identity TEXT NOT NULL); CREATE TABLE cache_digest (digest TEXT NOT NULL);": {
+          "calls": 1,
+          "elapsed_s": 0.14706879400182515
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL); CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child)); CREATE TEMP TABLE v2_children (parent TEXT, child TEXT, PRIMARY KEY(parent,child));": {
+          "calls": 1,
+          "elapsed_s": 0.0004943859967170283
+        },
+        "parser.records.generation-1": {
+          "calls": 5001,
+          "elapsed_s": 0.07364441906975117
+        },
+        "SQL.execute INSERT INTO records VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.03329237412981456
+        },
+        "SQL.commit": {
+          "calls": 77,
+          "elapsed_s": 1.3053101859768503
+        },
+        "parser.records.generation-2": {
+          "calls": 1,
+          "elapsed_s": 0.00011476000508992001
+        },
+        "SQL.execute INSERT INTO v2_creation VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.00883663506101584
+        },
+        "SQL.execute SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0037888309961999767
+        },
+        "SQL.execute SELECT COUNT(*) FROM v2_creation": {
+          "calls": 1,
+          "elapsed_s": 1.5412995708175004e-05
+        },
+        "parser.updates.generation-2": {
+          "calls": 5001,
+          "elapsed_s": 0.2639832991771982
+        },
+        "SQL.execute INSERT INTO updates VALUES (?, ?, ?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.035573258421209175
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_parents VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.01755379014502978
+        },
+        "SQL.executemany INSERT OR IGNORE INTO v2_children VALUES (?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.012919686530949548
+        },
+        "SQL.execute SELECT * FROM v2_parents EXCEPT SELECT * FROM v2_children LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.001908100995933637
+        },
+        "SQL.execute SELECT * FROM v2_children EXCEPT SELECT * FROM v2_parents LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0017202500021085143
+        },
+        "SQL.execute SELECT 1 FROM v2_parents e LEFT JOIN updates p ON p.node_id=e.parent LEFT JOIN updates c ON c.node_id=e.child WHERE p.node_id IS NULL OR c.node_id IS NULL LIMIT 1": {
+          "calls": 1,
+          "elapsed_s": 0.0020516970034805126
+        },
+        "SQL.executescript CREATE TEMP TABLE v2_degrees (id TEXT PRIMARY KEY, degree INTEGER); INSERT INTO v2_degrees SELECT u.node_id, COUNT(p.parent) FROM updates u LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id; CREATE TEMP TABLE v2_queue (id TEXT PRIMARY KEY); INSERT INTO v2_queue SELECT id FROM v2_degrees WHERE degree=0;": {
+          "calls": 1,
+          "elapsed_s": 0.03737862699927064
+        },
+        "SQL.execute SELECT id FROM v2_queue ORDER BY id LIMIT 1": {
+          "calls": 5001,
+          "elapsed_s": 0.0070145783756743185
+        },
+        "SQL.execute DELETE FROM v2_queue WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.010136855235032272
+        },
+        "SQL.execute UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)": {
+          "calls": 5000,
+          "elapsed_s": 0.023834404280933086
+        },
+        "SQL.execute INSERT OR IGNORE INTO v2_queue SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0": {
+          "calls": 5000,
+          "elapsed_s": 0.013804022339172661
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 5.714995495509356e-06
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 2.7709975256584585e-06
+        },
+        "SQL.executescript DROP TABLE v2_creation; DROP TABLE v2_parents; DROP TABLE v2_children; DROP TABLE v2_degrees; DROP TABLE v2_queue;": {
+          "calls": 1,
+          "elapsed_s": 0.0014960490007069893
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 2,
+          "elapsed_s": 6.757399387424812e-05
+        },
+        "SQL.execute SELECT 1 FROM updates WHERE node_id=?": {
+          "calls": 1,
+          "elapsed_s": 1.3189004675950855e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 3.075700078625232e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 3.321799886180088e-05
+        },
+        "SQL.execute INSERT INTO cache_digest VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 6.990700057940558e-05
+        },
+        "SQL.execute INSERT INTO completed VALUES (?)": {
+          "calls": 1,
+          "elapsed_s": 1.2755997886415571e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.015341033002187032
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 21.879872000000002,
+          "cpu_system_s": 0.08589999999999998,
+          "io": {
+            "rchar": 174692838,
+            "wchar": 34748168,
+            "syscr": 17739,
+            "syscw": 10389,
+            "read_bytes": 0,
+            "write_bytes": 35172352,
+            "cancelled_write_bytes": 2387968
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 2,
+          "source_node_count": 5000,
+          "index_reused": false,
+          "index_bytes": 29433856,
+          "index_build_peak_disk_bytes": 29433856,
+          "index_build_temp_logical_bytes": 1433600,
+          "source_bytes_read": 106805970,
+          "index": {
+            "status": "built",
+            "started_unix_s": 1792524253.7874782,
+            "finished_unix_s": 1792524277.1682048,
+            "elapsed_s": 23.380726718001824,
+            "pid": 104,
+            "rss_before_mb": 251.90625,
+            "rss_after_mb": 257.25390625,
+            "process_peak_rss_mb": 256.83203125,
+            "available_ram_before_mb": 8588.88671875,
+            "available_ram_after_mb": 8539.85546875,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524253.7643518,
+          "finished_unix_s": 1792524277.1686206,
+          "elapsed_s": 23.40426882799511,
+          "pid": 104,
+          "rss_before_mb": 250.91015625,
+          "rss_after_mb": 257.25390625,
+          "process_peak_rss_mb": 256.83203125,
+          "available_ram_before_mb": 8592.30859375,
+          "available_ram_after_mb": 8539.85546875,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524253.764226,
+        "finished_unix_s": 1792524277.1688569,
+        "elapsed_s": 23.404630459001055,
+        "pid": 104,
+        "rss_before_mb": 250.90625,
+        "rss_after_mb": 257.25390625,
+        "process_peak_rss_mb": 256.83203125,
+        "available_ram_before_mb": 8592.30859375,
+        "available_ram_after_mb": 8539.85546875,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "5k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "reuse",
+      "file": "/tmp/morpion-v2-profile-new-5k/operation-detail-baseline-v2-g2/reuse.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00016756600234657526
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.1102994903922081e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.244997737463564e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 8.534007065463811e-06
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.211004463490099e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.164399873232469e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.009002842001791578
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 2.7362002583686262e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.136299735866487e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 4.7309004003182054e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 2.8522998036351055e-05
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 0.11009099999999972,
+          "cpu_system_s": 0.015005999999999992,
+          "io": {
+            "rchar": 94472755,
+            "wchar": 0,
+            "syscr": 16633,
+            "syscw": 0,
+            "read_bytes": 0,
+            "write_bytes": 0,
+            "cancelled_write_bytes": 0
+          }
+        },
+        "reader": {
+          "reader_mode": "sharded_indexed",
+          "source_generation": 2,
+          "source_node_count": 5000,
+          "index_reused": true,
+          "index_bytes": 29433856,
+          "index_build_peak_disk_bytes": 0,
+          "index_build_temp_logical_bytes": 0,
+          "source_bytes_read": 26848667,
+          "index": {
+            "status": "reused",
+            "started_unix_s": 1792524279.10641,
+            "finished_unix_s": 1792524279.2079155,
+            "elapsed_s": 0.10150619899650337,
+            "pid": 120,
+            "rss_before_mb": 251.84375,
+            "rss_after_mb": 254.4375,
+            "process_peak_rss_mb": 254.0625,
+            "available_ram_before_mb": 8548.375,
+            "available_ram_after_mb": 8553.921875,
+            "cuda_before": null,
+            "cuda_after": null
+          },
+          "started_unix_s": 1792524279.0833414,
+          "finished_unix_s": 1792524279.2082486,
+          "elapsed_s": 0.12490731300204061,
+          "pid": 120,
+          "rss_before_mb": 250.8515625,
+          "rss_after_mb": 254.4375,
+          "process_peak_rss_mb": 254.0625,
+          "available_ram_before_mb": 8552.48828125,
+          "available_ram_after_mb": 8553.921875,
+          "cuda_before": null,
+          "cuda_after": null
+        },
+        "started_unix_s": 1792524279.0832086,
+        "finished_unix_s": 1792524279.2084458,
+        "elapsed_s": 0.12523668199719395,
+        "pid": 120,
+        "rss_before_mb": 250.84375,
+        "rss_after_mb": 254.4375,
+        "process_peak_rss_mb": 254.0625,
+        "available_ram_before_mb": 8552.48828125,
+        "available_ram_after_mb": 8553.921875,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "5k",
+      "case": "operation-detail-baseline-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-5k/operation-detail-baseline-v2-g2/dataset.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00017053899500751868
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.1781005014199764e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.22199843544513e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 3,
+          "elapsed_s": 1.55890011228621e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 5.576999683398753e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.2987999070901424e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.009206229005940259
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 3.4673001209739596e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.163699537049979e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 4.5045999286230654e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 2.9132999770808965e-05
+        },
+        "SQL.executescript CREATE TEMP TABLE dataset_nodes ( id TEXT COLLATE BINARY PRIMARY KEY, raw TEXT NOT NULL, prediction TEXT NOT NULL, exact INTEGER NOT NULL, selected TEXT, representative TEXT, visiting INTEGER DEFAULT 0, previous TEXT ); CREATE TEMP TABLE dataset_families ( representative TEXT COLLATE BINARY PRIMARY KEY, first_id TEXT COLLATE BINARY NOT NULL, payload TEXT NOT NULL ); CREATE TEMP TABLE dataset_deltas ( sequence INTEGER PRIMARY KEY, exact INTEGER NOT NULL, delta TEXT NOT NULL );": {
+          "calls": 1,
+          "elapsed_s": 0.00012327100557740778
+        },
+        "SQL.execute SELECT node_id FROM updates ORDER BY order_index, sequence": {
+          "calls": 5,
+          "elapsed_s": 0.00011485299910418689
+        },
+        "SQL.execute SELECT records.payload, updates.payload FROM updates JOIN records USING(node_id) WHERE updates.node_id=?": {
+          "calls": 25000,
+          "elapsed_s": 0.14816234256431926
+        },
+        "SQL.execute INSERT INTO dataset_nodes(id, raw, prediction, exact) VALUES (?, ?, ?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.020166714195511304
+        },
+        "SQL.commit": {
+          "calls": 5058,
+          "elapsed_s": 0.006461411641794257
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.013494193757651374
+        },
+        "SQL.execute UPDATE dataset_nodes SET selected=? WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.017383219390467275
+        },
+        "SQL.execute SELECT id FROM dataset_nodes ORDER BY id": {
+          "calls": 1,
+          "elapsed_s": 3.519000165397301e-05
+        },
+        "SQL.execute SELECT selected, representative, visiting FROM dataset_nodes WHERE id=?": {
+          "calls": 7500,
+          "elapsed_s": 0.015307885070797056
+        },
+        "SQL.execute UPDATE dataset_nodes SET visiting=1, previous=? WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.013992375133966561
+        },
+        "SQL.execute SELECT previous FROM dataset_nodes WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.008705287866177969
+        },
+        "SQL.execute UPDATE dataset_nodes SET representative=?, visiting=0, previous=NULL WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.011413024869398214
+        },
+        "SQL.execute CREATE INDEX temp.dataset_family_order ON dataset_nodes(representative, id)": {
+          "calls": 1,
+          "elapsed_s": 0.0009536060024402104
+        },
+        "SQL.execute SELECT DISTINCT representative FROM dataset_nodes ORDER BY representative": {
+          "calls": 1,
+          "elapsed_s": 1.708700438030064e-05
+        },
+        "SQL.execute SELECT COUNT(*), SUM(exact), MIN(id) FROM dataset_nodes WHERE representative=?": {
+          "calls": 2500,
+          "elapsed_s": 0.007297167954675388
+        },
+        "SQL.execute SELECT id FROM dataset_nodes WHERE representative=? AND exact=1 AND raw='null' ORDER BY id LIMIT 1": {
+          "calls": 2500,
+          "elapsed_s": 0.006226990110008046
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_nodes WHERE representative=? AND prediction!='null'": {
+          "calls": 2500,
+          "elapsed_s": 0.005400228801590856
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE representative=? AND exact=1 ORDER BY id": {
+          "calls": 5000,
+          "elapsed_s": 0.010778055962873623
+        },
+        "SQL.execute SELECT prediction FROM dataset_nodes WHERE representative=? ORDER BY id": {
+          "calls": 5000,
+          "elapsed_s": 0.009348863713967148
+        },
+        "SQL.execute SELECT id,exact FROM dataset_nodes WHERE representative=? AND raw='null' ORDER BY id": {
+          "calls": 2500,
+          "elapsed_s": 0.005931538027653005
+        },
+        "SQL.execute INSERT INTO dataset_families VALUES (?, ?, ?)": {
+          "calls": 2500,
+          "elapsed_s": 0.006396469958417583
+        },
+        "SQL.execute DELETE FROM dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 1.56539972522296e-05
+        },
+        "SQL.execute SELECT n.raw, n.selected, n.representative, f.payload FROM dataset_nodes n JOIN dataset_families f ON f.representative=n.representative WHERE n.id=?": {
+          "calls": 8154,
+          "elapsed_s": 0.05958149723301176
+        },
+        "SQL.execute INSERT INTO dataset_deltas VALUES (?, ?, ?)": {
+          "calls": 4077,
+          "elapsed_s": 0.016896022876608185
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 2.6507004804443568e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 1.2664000678341836e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families ORDER BY first_id": {
+          "calls": 1,
+          "elapsed_s": 0.0003477829959592782
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas WHERE exact=? ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 2.5267007004003972e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 1.2675001926254481e-05
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 1.7883001419249922e-05
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 3.778004611376673e-06
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 0.00020761499763466418
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_families": {
+          "calls": 1,
+          "elapsed_s": 0.0005594100002781488
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_nodes": {
+          "calls": 1,
+          "elapsed_s": 0.0007467629984603263
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 19.406635,
+          "cpu_system_s": 0.096766,
+          "io": {
+            "rchar": 321437772,
+            "wchar": 21582176,
+            "syscr": 52875,
+            "syscw": 2875,
+            "read_bytes": 0,
+            "write_bytes": 21594112,
+            "cancelled_write_bytes": 1212416
+          }
+        },
+        "policy": "pv_exact_then_blend_mean_prediction",
+        "node_count": 5000,
+        "stats": {
+          "row_count": 4077,
+          "bytes_written": 20378168,
+          "path": "/tmp/morpion-v2-profile-new-5k/operation-detail-baseline-v2-g2/measured-dataset.jsonl",
+          "format_kind": "morpion_supervised_rows_jsonl",
+          "format_version": 1
+        },
+        "temp_logical_bytes": 1183744,
+        "started_unix_s": 1792524281.1605544,
+        "finished_unix_s": 1792524300.6735752,
+        "elapsed_s": 19.51302014799876,
+        "pid": 136,
+        "rss_before_mb": 250.82421875,
+        "rss_after_mb": 256.1171875,
+        "process_peak_rss_mb": 255.578125,
+        "available_ram_before_mb": 8525.94140625,
+        "available_ram_after_mb": 8574.3828125,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    },
+    {
+      "size": "5k",
+      "case": "operation-detail-optimized-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-5k/operation-detail-optimized-v2-g2/dataset.json",
+      "operations": {
+        "SQL.execute PRAGMA cache_size=-2048": {
+          "calls": 2,
+          "elapsed_s": 0.00016767300257924944
+        },
+        "SQL.execute PRAGMA mmap_size=0": {
+          "calls": 2,
+          "elapsed_s": 1.140101085184142e-05
+        },
+        "SQL.execute PRAGMA temp_store=FILE": {
+          "calls": 2,
+          "elapsed_s": 5.808004061691463e-06
+        },
+        "SQL.execute PRAGMA temp.cache_size=-2048": {
+          "calls": 3,
+          "elapsed_s": 1.5186997188720852e-05
+        },
+        "SQL.execute PRAGMA foreign_keys=ON": {
+          "calls": 2,
+          "elapsed_s": 4.959001671522856e-06
+        },
+        "SQL.execute SELECT identity FROM completed": {
+          "calls": 1,
+          "elapsed_s": 1.2152006092946976e-05
+        },
+        "SQL.execute PRAGMA quick_check": {
+          "calls": 1,
+          "elapsed_s": 0.009132602994213812
+        },
+        "SQL.execute SELECT digest FROM cache_digest": {
+          "calls": 1,
+          "elapsed_s": 3.516700235195458e-05
+        },
+        "SQL.execute SELECT node_id,payload FROM records ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 2.1394000214058906e-05
+        },
+        "SQL.execute SELECT node_id,order_index,sequence,payload FROM updates ORDER BY node_id": {
+          "calls": 1,
+          "elapsed_s": 4.230000195093453e-05
+        },
+        "SQL.execute SELECT COUNT(*) FROM updates": {
+          "calls": 1,
+          "elapsed_s": 3.0039002012927085e-05
+        },
+        "SQL.executescript CREATE TEMP TABLE dataset_nodes ( id TEXT COLLATE BINARY PRIMARY KEY, raw TEXT NOT NULL, prediction TEXT NOT NULL, exact INTEGER NOT NULL, selected TEXT, representative TEXT, visiting INTEGER DEFAULT 0, previous TEXT ); CREATE TEMP TABLE dataset_families ( representative TEXT COLLATE BINARY PRIMARY KEY, first_id TEXT COLLATE BINARY NOT NULL, payload TEXT NOT NULL ); CREATE TEMP TABLE dataset_deltas ( sequence INTEGER PRIMARY KEY, exact INTEGER NOT NULL, delta TEXT NOT NULL );": {
+          "calls": 1,
+          "elapsed_s": 0.000129564999951981
+        },
+        "SQL.execute SELECT node_id FROM updates ORDER BY order_index, sequence": {
+          "calls": 5,
+          "elapsed_s": 0.00010770199878606945
+        },
+        "SQL.execute SELECT records.payload, updates.payload FROM updates JOIN records USING(node_id) WHERE updates.node_id=?": {
+          "calls": 25000,
+          "elapsed_s": 0.132021187520877
+        },
+        "SQL.execute INSERT INTO dataset_nodes(id, raw, prediction, exact) VALUES (?, ?, ?, ?)": {
+          "calls": 5000,
+          "elapsed_s": 0.019479491158563178
+        },
+        "SQL.commit": {
+          "calls": 5058,
+          "elapsed_s": 0.006086707813665271
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.012828814862587024
+        },
+        "SQL.execute UPDATE dataset_nodes SET selected=? WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.016721142703318037
+        },
+        "SQL.execute SELECT id FROM dataset_nodes ORDER BY id": {
+          "calls": 1,
+          "elapsed_s": 1.9279003026895225e-05
+        },
+        "SQL.execute SELECT selected, representative, visiting FROM dataset_nodes WHERE id=?": {
+          "calls": 7500,
+          "elapsed_s": 0.015276208141585812
+        },
+        "SQL.execute UPDATE dataset_nodes SET visiting=1, previous=? WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.014104060224781279
+        },
+        "SQL.execute SELECT previous FROM dataset_nodes WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.008723977967747487
+        },
+        "SQL.execute UPDATE dataset_nodes SET representative=?, visiting=0, previous=NULL WHERE id=?": {
+          "calls": 5000,
+          "elapsed_s": 0.011515322883496992
+        },
+        "SQL.execute CREATE INDEX temp.dataset_family_order ON dataset_nodes(representative, id)": {
+          "calls": 1,
+          "elapsed_s": 0.0009663370001362637
+        },
+        "SQL.execute SELECT DISTINCT representative FROM dataset_nodes ORDER BY representative": {
+          "calls": 1,
+          "elapsed_s": 1.6133002645801753e-05
+        },
+        "SQL.execute SELECT COUNT(*), SUM(exact), MIN(id) FROM dataset_nodes WHERE representative=?": {
+          "calls": 2500,
+          "elapsed_s": 0.007524503860622644
+        },
+        "SQL.execute SELECT id FROM dataset_nodes WHERE representative=? AND exact=1 AND raw='null' ORDER BY id LIMIT 1": {
+          "calls": 2500,
+          "elapsed_s": 0.006443736841902137
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_nodes WHERE representative=? AND prediction!='null'": {
+          "calls": 2500,
+          "elapsed_s": 0.005610789805359673
+        },
+        "SQL.execute SELECT raw FROM dataset_nodes WHERE representative=? AND exact=1 ORDER BY id": {
+          "calls": 5000,
+          "elapsed_s": 0.011436597073043231
+        },
+        "SQL.execute SELECT prediction FROM dataset_nodes WHERE representative=? ORDER BY id": {
+          "calls": 5000,
+          "elapsed_s": 0.009835146949626505
+        },
+        "SQL.execute SELECT id,exact FROM dataset_nodes WHERE representative=? AND raw='null' ORDER BY id": {
+          "calls": 2500,
+          "elapsed_s": 0.006329580726742279
+        },
+        "SQL.execute INSERT INTO dataset_families VALUES (?, ?, ?)": {
+          "calls": 2500,
+          "elapsed_s": 0.00688141914724838
+        },
+        "SQL.execute DELETE FROM dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 1.8890001229010522e-05
+        },
+        "SQL.execute SELECT n.raw, n.selected, n.representative, f.payload FROM dataset_nodes n JOIN dataset_families f ON f.representative=n.representative WHERE n.id=?": {
+          "calls": 8154,
+          "elapsed_s": 0.04185093938576756
+        },
+        "SQL.execute INSERT INTO dataset_deltas VALUES (?, ?, ?)": {
+          "calls": 4077,
+          "elapsed_s": 0.01382884234044468
+        },
+        "SQL.execute SELECT COUNT(*) FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 1.9981998775620013e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families": {
+          "calls": 1,
+          "elapsed_s": 1.0836993169505149e-05
+        },
+        "SQL.execute SELECT payload FROM dataset_families ORDER BY first_id": {
+          "calls": 1,
+          "elapsed_s": 0.00033652900310698897
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas WHERE exact=? ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 3.42599960276857e-05
+        },
+        "SQL.execute SELECT delta FROM dataset_deltas ORDER BY sequence": {
+          "calls": 2,
+          "elapsed_s": 1.7705999198369682e-05
+        },
+        "SQL.execute PRAGMA temp.page_count": {
+          "calls": 1,
+          "elapsed_s": 1.720400177873671e-05
+        },
+        "SQL.execute PRAGMA temp.page_size": {
+          "calls": 1,
+          "elapsed_s": 3.817003744188696e-06
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_deltas": {
+          "calls": 1,
+          "elapsed_s": 0.00019744299788726494
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_families": {
+          "calls": 1,
+          "elapsed_s": 0.0005533790026674978
+        },
+        "SQL.execute DROP TABLE IF EXISTS temp.dataset_nodes": {
+          "calls": 1,
+          "elapsed_s": 0.0007701540016569197
+        }
+      },
+      "instrumented_phase": {
+        "costs": {
+          "cpu_user_s": 1.7165780000000002,
+          "cpu_system_s": 0.055939000000000016,
+          "io": {
+            "rchar": 321437772,
+            "wchar": 21582176,
+            "syscr": 52875,
+            "syscw": 2875,
+            "read_bytes": 0,
+            "write_bytes": 21594112,
+            "cancelled_write_bytes": 1212416
+          }
+        },
+        "policy": "pv_exact_then_blend_mean_prediction",
+        "node_count": 5000,
+        "stats": {
+          "row_count": 4077,
+          "bytes_written": 20378168,
+          "path": "/tmp/morpion-v2-profile-new-5k/operation-detail-optimized-v2-g2/measured-dataset.jsonl",
+          "format_kind": "morpion_supervised_rows_jsonl",
+          "format_version": 1
+        },
+        "temp_logical_bytes": 1183744,
+        "started_unix_s": 1792524302.0910456,
+        "finished_unix_s": 1792524303.8640053,
+        "elapsed_s": 1.7729592809992027,
+        "pid": 152,
+        "rss_before_mb": 250.83203125,
+        "rss_after_mb": 256.015625,
+        "process_peak_rss_mb": 255.65625,
+        "available_ram_before_mb": 8587.61328125,
+        "available_ram_after_mb": 8584.578125,
+        "cuda_before": null,
+        "cuda_after": null
+      }
+    }
+  ]
+}
