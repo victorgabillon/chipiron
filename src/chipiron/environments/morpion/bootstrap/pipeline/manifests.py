@@ -6,6 +6,9 @@ import logging
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    validate_manifest_publication,
+)
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     MorpionPipelineDatasetStatus,
     MorpionPipelineDatasetStatusArtifact,
@@ -77,7 +80,9 @@ def load_generation_manifest(
     generation: int,
 ) -> MorpionPipelineGenerationManifest:
     """Load the persisted pipeline manifest for one generation."""
-    return load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    manifest = load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    validate_manifest_publication(paths.work_dir, manifest)
+    return manifest
 
 
 def latest_prior_dataset_status_artifact(
