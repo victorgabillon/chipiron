@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import chipiron.environments.morpion.bootstrap.reevaluation_publication as publication
 import chipiron.environments.morpion.bootstrap.reevaluation_worker as worker
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
@@ -265,14 +266,11 @@ def test_pending_patch_and_failed_publication_never_advance_cursor(
             worker, "_save_reevaluation_patch_exclusive", competing_save
         )
     elif race == "write_failure":
-        original = worker.json.dump
 
-        def failed_write(payload: object, stream: object, **kwargs: object) -> None:
-            if str(getattr(stream, "name", "")) == str(pending):
-                raise OSError("synthetic write failure")
-            original(payload, stream, **kwargs)  # type: ignore[arg-type]
+        def failed_fsync(_descriptor: int) -> None:
+            raise OSError("synthetic write failure")
 
-        monkeypatch.setattr(worker.json, "dump", failed_write)
+        monkeypatch.setattr(publication.os, "fsync", failed_fsync)
     if race == "write_failure":
         with pytest.raises(OSError, match="synthetic"):
             run_once(paths, evaluator=RacingEvaluator())
