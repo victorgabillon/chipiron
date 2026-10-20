@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
+from valanga.evaluations import Certainty
 
 if TYPE_CHECKING:
     from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
@@ -46,6 +47,50 @@ def _uninitialized_reevaluation_patch_runtime_error() -> RuntimeError:
     """Build the stable missing-runtime error for live patch application."""
     return RuntimeError(
         "Cannot apply Morpion reevaluation patch before the Anemone search runtime is initialized."
+    )
+
+
+def protect_exact_values_from_model_predictions(
+    *, runtime: Any, patch: MorpionReevaluationPatch
+) -> tuple[MorpionReevaluationPatch, tuple[str, ...]]:
+    """Skip unproved model writes that would replace an existing exact value.
+
+    A fully opened node with an estimated direct value can still receive model
+    updates: its exact tree value remains effective. External authoritative
+    updates and the legacy snapshot-value fallback keep their existing contract.
+    """
+    model_rows = tuple(
+        row
+        for row in patch.rows
+        if row.metadata.get("source") == "active_model_reevaluation"
+        and row.is_exact is False
+        and row.is_terminal is not True
+    )
+    if not model_rows:
+        return patch, ()
+    nodes_by_id = runtime._nodes_by_public_id()  # pylint: disable=protected-access
+    skipped: set[int] = set()
+    for row in model_rows:
+        node = nodes_by_id.get(row.node_id)
+        if node is None:
+            continue
+        evaluation = node.tree_evaluation
+        direct = evaluation.direct_value
+        tree = evaluation.tree_value
+        if (
+            direct is not None
+            and direct.certainty in {Certainty.FORCED, Certainty.TERMINAL}
+        ) or (
+            tree is not None
+            and tree.certainty in {Certainty.FORCED, Certainty.TERMINAL}
+            and not node.all_branches_generated
+        ):
+            skipped.add(id(row))
+    if not skipped:
+        return patch, ()
+    return (
+        replace(patch, rows=tuple(row for row in patch.rows if id(row) not in skipped)),
+        tuple(row.node_id for row in patch.rows if id(row) in skipped),
     )
 
 

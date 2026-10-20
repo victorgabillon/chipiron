@@ -113,6 +113,7 @@ from .reevaluation_patching import (
     _blend_average,
     _uninitialized_reevaluation_patch_runtime_error,
     apply_blended_reevaluation_patch,
+    protect_exact_values_from_model_predictions,
 )
 from .restore_memory_logging import (
     RestoreMemoryLogger,
@@ -1474,6 +1475,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise _uninitialized_reevaluation_patch_runtime_error()
         runtime = cast("Any", runtime)
         blend_alpha = self._last_applied_runtime_config.reevaluation_blend_alpha
+        patch, skipped_exact_node_ids = protect_exact_values_from_model_predictions(
+            runtime=runtime, patch=patch
+        )
         LOGGER.info(
             "[reevaluation-patch] runner_apply_start patch_id=%s rows=%s",
             patch.patch_id,
@@ -1530,6 +1534,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "recomputed": result.recomputed_count,
             "selector_invalidated": selector_invalidated,
         }
+        if skipped_exact_node_ids:
+            self._last_reevaluation_patch_apply_metrics["skipped_exact_node_ids"] = (
+                skipped_exact_node_ids
+            )
         LOGGER.info(
             "[reevaluation-patch] backup_refresh_done affected_nodes=%s ancestors_recomputed=%s selector_invalidated=%s",
             result.applied_count,
