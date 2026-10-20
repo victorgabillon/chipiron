@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, get_args
 
+from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export.model import (
     TRAINING_TREE_SNAPSHOT_FORMAT_KIND,
     TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
@@ -347,6 +348,13 @@ class DiskDatasetFamilyContext:
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            # Only v2's opt-in index proves canonicality for every immutable
+            # record and verifies the source plus cached payload digest. Keep
+            # the identical JSON normalization without replaying each state on
+            # both summary and output passes. The end guard still gates rename.
+            _validated_state_ref_normalizer=checkpoint_payload_to_jsonable
+            if self.source.view.format_version == 2
+            else None,
         ):
             yield self.adjust_row(row)
         # The writer has not renamed its temporary output yet at this boundary.

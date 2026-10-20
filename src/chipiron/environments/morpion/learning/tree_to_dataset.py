@@ -206,6 +206,7 @@ def training_node_to_morpion_supervised_row(
     min_depth: int | None = None,
     min_visit_count: int | None = None,
     use_backed_up_value: bool = True,
+    _validated_state_ref_normalizer: Callable[[object], object] | None = None,
 ) -> MorpionSupervisedRow | None:
     """Convert one exported training node into one raw Morpion supervised row.
 
@@ -233,9 +234,13 @@ def training_node_to_morpion_supervised_row(
     ):
         return None
 
-    normalized_payload = _validate_and_normalize_state_ref_payload(
-        node.state_ref_payload
+    # Internal hook for sources whose indexed immutable references have already
+    # passed canonical codec validation and cache/source integrity checks. The
+    # default remains the full codec check for unverified and legacy sources.
+    normalize = (
+        _validated_state_ref_normalizer or _validate_and_normalize_state_ref_payload
     )
+    normalized_payload = normalize(node.state_ref_payload)
 
     return MorpionSupervisedRow(
         node_id=node.node_id,
@@ -294,6 +299,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
     min_visit_count: int | None = None,
     max_rows: int | None = None,
     use_backed_up_value: bool = True,
+    _validated_state_ref_normalizer: Callable[[object], object] | None = None,
 ) -> Iterable[MorpionSupervisedRow]:
     """Yield ordered raw Morpion supervised rows from one training snapshot."""
     emitted_count = 0
@@ -304,6 +310,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
             min_depth=min_depth,
             min_visit_count=min_visit_count,
             use_backed_up_value=use_backed_up_value,
+            _validated_state_ref_normalizer=_validated_state_ref_normalizer,
         )
         if row is None:
             continue
