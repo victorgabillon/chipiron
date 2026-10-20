@@ -426,6 +426,70 @@ def test_streaming_window_model_values_match_legacy(
     assert terminal.tree_evaluation.direct_value.certainty == Certainty.TERMINAL
 
 
+def test_streaming_worker_actual_proof_matches_flat(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    endgame: tuple[Any, Any],
+) -> None:
+    """Exercise real bounded source reconstruction, publication and live application."""
+    if not hasattr(
+        worker.MorpionActiveModelNodeReevaluationEvaluator, "evaluate_node_window"
+    ):
+        pytest.skip("streaming API belongs to the separately pinned PR")
+    from chipiron.environments.morpion.bootstrap import (
+        MorpionBootstrapPaths,
+        load_reevaluation_cursor,
+    )
+    from tests.environments.test_morpion_bootstrap_reevaluation_worker import (
+        _artifact_pipeline_args,
+        _write_active_model,
+        _write_manifest_with_sharded_snapshot,
+        _write_manifest_with_snapshot,
+    )
+
+    observed = []
+    for mode in ("flat", "sharded_full", "sharded_indexed"):
+        runner = make_runner(monkeypatch, state=endgame[0])
+        snapshot, _ = runner.build_training_tree_snapshot_payload()
+        paths = MorpionBootstrapPaths.from_work_dir(tmp_path / mode)
+        paths.ensure_directories()
+        _write_active_model(paths)
+        writer = (
+            _write_manifest_with_snapshot
+            if mode == "flat"
+            else _write_manifest_with_sharded_snapshot
+        )
+        writer(paths, generation=7, snapshot=snapshot)
+        adapter = worker.MorpionActiveModelNodeReevaluationEvaluator(tmp_path / "model")
+        adapter._evaluator = neural_evaluator(42)
+        monkeypatch.setattr(
+            worker, "build_active_model_reevaluation_evaluator", lambda **_: adapter
+        )
+        result = worker.run_morpion_reevaluation_worker_once(
+            _artifact_pipeline_args(paths.work_dir),
+            max_nodes_per_patch=2,
+            now_unix_s=123456.0,
+            patch_id="same-identity",
+            use_streaming_sharded_reader=mode == "sharded_indexed",
+            reader_cache_dir=paths.work_dir / "reader-cache",
+        )
+        assert result.patch_written
+        patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+        assert patch.rows[0].direct_value == 42 and patch.rows[0].is_exact is False
+        assert patch.rows[1].direct_value == 35 and patch.rows[1].is_terminal is True
+        assert runner.apply_reevaluation_patch(patch) == 2
+        root, terminal = tuple(runner.iter_profile_nodes())
+        assert root.tree_evaluation.direct_value.certainty == Certainty.ESTIMATE
+        assert root.tree_evaluation.tree_value.certainty == Certainty.FORCED
+        assert terminal.tree_evaluation.direct_value.certainty == Certainty.TERMINAL
+        observed.append((
+            patch,
+            load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path),
+            values(runner),
+        ))
+    assert observed[0] == observed[1] == observed[2]
+
+
 @pytest.mark.parametrize("policy", get_args(PvFamilyTargetPolicy))
 @pytest.mark.parametrize("use_backup", [True, False])
 @pytest.mark.parametrize("prediction", [None, 42.0])
