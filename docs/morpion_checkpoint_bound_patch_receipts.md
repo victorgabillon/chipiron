@@ -97,6 +97,10 @@ publication alone cannot serialize a multi-producer cursor.
 2. Capture complete pending bytes once, parse them, and hash those bytes. Match
    the ID against the cumulative committed receipt ledger. A matching ID/hash
    skips application; a reused ID with changed bytes fails closed.
+   Before a new application, sync the observed pending file and its namespace
+   and recheck identity. Growth may observe PR #78's complete link before the
+   producer finishes its directory fsync; this consumer barrier preserves replay
+   input across that publication window too.
 3. For a new patch, require a nonmissing source tree generation at or before the
    committed Growth generation. Older sources are valid asynchronous inputs;
    future sources are rejected. Match evaluator generation/name/bundle path

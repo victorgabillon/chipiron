@@ -605,7 +605,13 @@ def test_filesystem_commit_and_ack_order(
     )
     publish_fixture_patch(paths)
     events: list[tuple[str, str]] = []
+    runner = ColdScalarRunner()
+    original_apply = runner.apply_reevaluation_patch
     original_sync, original_replace, original_unlink = os.fsync, os.replace, Path.unlink
+
+    def apply(patch: object) -> int:
+        events.append(("apply", "patch"))
+        return original_apply(patch)
 
     def sync(descriptor: int) -> None:
         original_sync(descriptor)
@@ -623,9 +629,12 @@ def test_filesystem_commit_and_ack_order(
         trace.setattr(os, "fsync", sync)
         trace.setattr(os, "replace", publish)
         trace.setattr(Path, "unlink", unlink)
-        state = run_pipeline_growth_stage(
-            args, ColdScalarRunner(), checkpoint_bound_receipts=True
-        )
+        trace.setattr(runner, "apply_reevaluation_patch", apply)
+        state = run_pipeline_growth_stage(args, runner, checkpoint_bound_receipts=True)
+    application = events.index(("apply", "patch"))
+    pending_sync = events.index(("sync", str(paths.pipeline_reevaluation_patch_path)))
+    pending_namespace = events.index(("sync", str(paths.pipeline_dir)), pending_sync)
+    assert pending_sync < pending_namespace < application
     state_replace = events.index(("replace", str(paths.run_state_path)))
     state_commit = events.index(("sync", str(tmp_path)), state_replace)
     unlink_index = events.index(("unlink", str(paths.pipeline_reevaluation_patch_path)))

@@ -430,6 +430,14 @@ class GrowthPatchReceiptSession:
         _require(
             self.pending is None, "Patch already provisionally applied to this runtime."
         )
+        # Atomic visibility precedes the producer's directory durability barrier.
+        # Preserve replay input even if that producer dies before confirming it.
+        self.sync_artifact(self.paths.pipeline_reevaluation_patch_path)
+        _require(
+            observe_pending_patch(self.paths.pipeline_reevaluation_patch_path)
+            == pending,
+            "Pending patch changed before durable application capture.",
+        )
         patch = pending.patch
         _require(
             patch.tree_generation is not None

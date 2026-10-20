@@ -70,19 +70,31 @@ with growth_receipt_ownership(MorpionBootstrapPaths.from_work_dir(Path(sys.argv[
     assert not paths.pipeline_reevaluation_patch_path.exists()
 
 
+@pytest.mark.parametrize("publication_phase", ["durable", "after_link"])
 def test_producer_cursor_barrier_and_new_patch_after_ack(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, publication_phase: str
 ) -> None:
     """A delayed producer cursor fences ack; a subsequent publication survives old ack."""
     args, paths = setup_receipt_baseline(tmp_path)
     script = """
-import sys
+import os, sys
 from pathlib import Path
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import MorpionBootstrapPaths
 from tests.environments.morpion_patch_receipt_helpers import fixture_patch, publish_fixture_patch, save_fixture_cursor
 paths = MorpionBootstrapPaths.from_work_dir(Path(sys.argv[1]))
+phase = sys.argv[2]
+original_link = os.link
+first_link = True
+def link(source, destination):
+    global first_link
+    original_link(source, destination)
+    if first_link and phase == 'after_link':
+        first_link = False
+        print('published', flush=True)
+        assert sys.stdin.readline().strip() == 'durable'
+os.link = link
 patch = publish_fixture_patch(paths, cursor=False)
-print('published', flush=True)
+print('durable' if phase == 'after_link' else 'published', flush=True)
 assert sys.stdin.readline().strip() == 'cursor'
 save_fixture_cursor(paths, patch)
 print('cursor', flush=True)
@@ -91,7 +103,7 @@ publish_fixture_patch(paths, fixture_patch('patch-2'))
 print('next', flush=True)
 """
     with subprocess.Popen(
-        [sys.executable, "-c", script, str(tmp_path)],
+        [sys.executable, "-c", script, str(tmp_path), publication_phase],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,
@@ -105,6 +117,10 @@ print('next', flush=True)
             assert runner.apply_calls == 1 and state.generation == 2
             assert paths.pipeline_reevaluation_patch_path.exists()
             assert producer.stdin is not None
+            if publication_phase == "after_link":
+                producer.stdin.write("durable\n")
+                producer.stdin.flush()
+                assert _line(producer) == "durable"
             producer.stdin.write("cursor\n")
             producer.stdin.flush()
             assert _line(producer) == "cursor"
