@@ -9,8 +9,12 @@ from anemone.node_evaluation.common import canonical_value
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from atomheart.games.morpion.dynamics import MorpionDynamics
 
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
 from chipiron.environments.morpion.bootstrap.sharded_training_v2 import (
     save_scientific_training_generation,
+    value_score,
 )
 from tests.environments.test_morpion_sharded_training_v2 import Evaluation
 
@@ -39,6 +43,7 @@ def generated_scientific_source(
     padding: int = 0,
     id_padding: int = 0,
     generations: int = 1,
+    legacy_root: Path | None = None,
 ) -> Path:
     """Generate exact-size bounded-degree DAGs with no production experiment input.
 
@@ -88,6 +93,16 @@ def generated_scientific_source(
         generation=1,
         producer=producer,
     )
+    if legacy_root is not None:
+        save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=nodes,
+            root_node_id=ids[0],
+            output_dir=legacy_root,
+            generation=1,
+            state_ref_dumper=codec.dump_state_ref,
+            direct_value_extractor=value_score,
+            backed_up_value_extractor=value_score,
+        )
     if generations == 2:
         new_parent = (count - 2) // 2 - 1
         nodes[-1].parent_ids += (ids[new_parent],)
@@ -100,4 +115,14 @@ def generated_scientific_source(
             generation=2,
             producer=producer,
         )
+        if legacy_root is not None:
+            save_morpion_sharded_training_tree_from_live_nodes(
+                nodes=nodes,
+                root_node_id=ids[0],
+                output_dir=legacy_root,
+                generation=2,
+                state_ref_dumper=codec.dump_state_ref,
+                direct_value_extractor=value_score,
+                backed_up_value_extractor=value_score,
+            )
     return path

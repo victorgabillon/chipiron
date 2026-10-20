@@ -7,14 +7,21 @@ forbid the full reader. No bootstrap/distributed worker or experiment is used.
 from __future__ import annotations
 
 import argparse
+import cProfile
 import hashlib
 import json
 import logging
+import pstats
 import resource
+import sqlite3
+from contextlib import ExitStack, contextmanager
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, get_args
+from time import perf_counter
+from typing import TYPE_CHECKING, Any, get_args
+from unittest.mock import patch
 
+import chipiron.environments.morpion.bootstrap.sharded_training_reader as indexed_reader
 import chipiron.environments.morpion.bootstrap.sharded_training_v2 as scientific
 from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
 from chipiron.environments.morpion.bootstrap.cycle_dataset import (
@@ -28,8 +35,12 @@ from chipiron.environments.morpion.bootstrap.reevaluation_worker import (
     MorpionActiveModelNodeReevaluationEvaluator,
     select_reevaluation_node_window,
 )
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    load_morpion_sharded_training_tree_snapshot,
+)
 from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
     ShardedTrainingGenerationView,
+    iter_shard_rows,
 )
 from chipiron.environments.morpion.bootstrap.streaming_dataset import (
     IndexedDatasetSource,
@@ -42,6 +53,9 @@ from tests.environments.morpion_scientific_reader_helpers import (
     generated_scientific_source,
 )
 from tests.environments.test_morpion_scientific_training_reader import StateScore
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 PINS = {
     "reader": "79693ce2dc59c6d6ccb951951c9ba75fa69057f3",
@@ -90,7 +104,102 @@ def delta(before: tuple[float, float, dict[str, int]]) -> dict[str, Any]:
     }
 
 
-def measure(root: Path, path: Path, size: int, mode: str) -> dict[str, Any]:
+@contextmanager
+def profile_operations() -> Iterator[tuple[dict[str, dict[str, float]], list[bool]]]:
+    """Profile-only hooks, following the existing writer benchmark's mock pattern.
+
+    cProfile/pstats remain the profiler. These bounded counters distinguish SQL
+    literals and suspension-aware shard parsing that cProfile combines. No SQL
+    parameters or node populations are retained. Enabled only for the requested
+    phase (cProfile uses monitoring rather than sys.getprofile on Python 3.13).
+    """
+    observations: dict[str, dict[str, float]] = {}
+    active = [False]
+
+    def record(label: str, started: float) -> None:
+        entry = observations.setdefault(label, {"calls": 0, "elapsed_s": 0.0})
+        entry["calls"] += 1
+        entry["elapsed_s"] += perf_counter() - started
+
+    class ObservedConnection(sqlite3.Connection):
+        def execute(self, sql: str, parameters: Any = (), /) -> sqlite3.Cursor:
+            if not active[0]:
+                return super().execute(sql, parameters)
+            started = perf_counter()
+            try:
+                return super().execute(sql, parameters)
+            finally:
+                record("SQL.execute " + " ".join(sql.split()), started)
+
+        def executemany(self, sql: str, parameters: Any, /) -> sqlite3.Cursor:
+            started = perf_counter()
+            try:
+                return super().executemany(sql, parameters)
+            finally:
+                if active[0]:
+                    record("SQL.executemany " + " ".join(sql.split()), started)
+
+        def executescript(self, sql: str, /) -> sqlite3.Cursor:
+            started = perf_counter()
+            try:
+                return super().executescript(sql)
+            finally:
+                if active[0]:
+                    record("SQL.executescript " + " ".join(sql.split()), started)
+
+        def commit(self) -> None:
+            started = perf_counter()
+            try:
+                return super().commit()
+            finally:
+                if active[0]:
+                    record("SQL.commit", started)
+
+    connect = sqlite3.connect
+    iterator = indexed_reader.iter_shard_rows
+
+    def observed_connect(*args: Any, **kwargs: Any) -> sqlite3.Connection:
+        return connect(*args, **kwargs, factory=ObservedConnection)
+
+    def observed_rows(
+        path: Path, field: str, **kwargs: Any
+    ) -> Iterator[dict[str, object]]:
+        rows = iterator(path, field, **kwargs)
+        try:
+            while True:
+                started = perf_counter()
+                try:
+                    row = next(rows)
+                except StopIteration:
+                    return
+                finally:
+                    if active[0]:
+                        record(
+                            f"parser.{field}.generation-{kwargs.get('scientific_generation', 'v1')}",
+                            started,
+                        )
+                yield row
+        finally:
+            rows.close()
+
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(sqlite3, "connect", observed_connect))
+        stack.enter_context(
+            patch.object(indexed_reader, "iter_shard_rows", observed_rows)
+        )
+        yield observations, active
+
+
+def measure(
+    root: Path,
+    path: Path,
+    size: int,
+    mode: str,
+    *,
+    profile: bool = False,
+    cache_dir: Path | None = None,
+    capture: list[bool] | None = None,
+) -> dict[str, Any]:
     """Measure bounded initialization, a wrapped window and an exact full scan."""
 
     def forbidden(*_args: object, **_kwargs: object) -> Any:
@@ -98,15 +207,26 @@ def measure(root: Path, path: Path, size: int, mode: str) -> dict[str, Any]:
         raise AssertionError(message)
 
     scientific.load_scientific_training_generation = forbidden
-    cache = root / "cache"
-    if bool(list(cache.glob("v*.sqlite3"))) != (mode == "reuse"):
+    cache = cache_dir or root / "cache"
+    if mode == "reuse" and not any(cache.glob("v*.sqlite3")):
         message = "cold/reuse cache precondition failed"
         raise ValueError(message)
     stage = StageMeasurement()
     before = costs()
-    with ShardedTrainingGenerationView(
+    profiler = cProfile.Profile() if profile else None
+    if capture is not None:
+        capture[0] = True
+    if profiler is not None:
+        profiler.enable()
+    view = ShardedTrainingGenerationView(
         path, cache_dir=cache, allow_scientific_v2=True
-    ) as view:
+    )
+    if profiler is not None:
+        profiler.disable()
+        profiler.dump_stats(str(root / f"{mode}.prof"))
+    if capture is not None:
+        capture[0] = False
+    with view:
         assert view.index_reused == (mode == "reuse")
         initialization = stage.finish(
             costs=delta(before), reader=view.initialization_observation
@@ -115,7 +235,11 @@ def measure(root: Path, path: Path, size: int, mode: str) -> dict[str, Any]:
         before = costs()
         selection = view.select_sorted_node_window(f"node-{size - 5:06d}-é", 64)
         nodes = view.load_nodes(selection[0])
-        contracts = view.load_value_contracts(selection[0])
+        contracts = (
+            view.load_value_contracts(selection[0])
+            if view.format_version == 2
+            else None
+        )
         adapter = MorpionActiveModelNodeReevaluationEvaluator(
             Path("/synthetic/fixed-model")
         )
@@ -141,7 +265,9 @@ def measure(root: Path, path: Path, size: int, mode: str) -> dict[str, Any]:
             digest.update(
                 encode({
                     "node": asdict(node),
-                    "contract": view.load_value_contracts((node.node_id,))[0],
+                    "contract": view.load_value_contracts((node.node_id,))[0]
+                    if view.format_version == 2
+                    else None,
                 })
             )
             digest.update(b"\n")
@@ -163,7 +289,7 @@ def measure(root: Path, path: Path, size: int, mode: str) -> dict[str, Any]:
         }
 
 
-def parity(root: Path, path: Path) -> dict[str, Any]:
+def parity(root: Path, path: Path, *, cache_dir: Path | None = None) -> dict[str, Any]:
     """Use the pinned full oracle only in this separate, unmeasured process."""
     oracle = scientific.load_scientific_training_generation(path)
     cold = json.loads((root / "cold.json").read_text())
@@ -172,7 +298,12 @@ def parity(root: Path, path: Path) -> dict[str, Any]:
     selected = select_reevaluation_node_window(
         ids, start_cursor=f"node-{len(ids) - 5:06d}-é", max_nodes=64
     )
-    by_id = {node.node_id: node for node in oracle.snapshot.nodes}
+    selected_ids = set(selected[0])
+    by_id = {
+        node.node_id: node
+        for node in oracle.snapshot.nodes
+        if node.node_id in selected_ids
+    }
     nodes = tuple(by_id[node_id] for node_id in selected[0])
     adapter = MorpionActiveModelNodeReevaluationEvaluator(
         Path("/synthetic/fixed-model")
@@ -202,10 +333,13 @@ def parity(root: Path, path: Path) -> dict[str, Any]:
         assert measurement["scan"]["scientific_sha256"] == digest.hexdigest()
     rows = []
     with ShardedTrainingGenerationView(
-        path, cache_dir=root / "cache", allow_scientific_v2=True
+        path, cache_dir=cache_dir or root / "cache", allow_scientific_v2=True
     ) as view:
         assert view.provenance == oracle.provenance
-        assert tuple(view.iter_nodes_in_export_order()) == oracle.snapshot.nodes
+        for actual, expected_node in zip(
+            view.iter_nodes_in_export_order(), oracle.snapshot.nodes, strict=True
+        ):
+            assert actual == expected_node
         for policy in get_args(PvFamilyTargetPolicy):
             args = MorpionBootstrapArgs(
                 work_dir=root, dataset_family_target_policy=policy
@@ -259,7 +393,13 @@ def parity(root: Path, path: Path) -> dict[str, Any]:
     }
 
 
-def measure_dataset(root: Path, path: Path) -> dict[str, Any]:
+def measure_dataset(
+    root: Path,
+    path: Path,
+    *,
+    expected: Path | None = None,
+    cache_dir: Path | None = None,
+) -> dict[str, Any]:
     """Measure a complete global-family Dataset pass, forbidding the full oracle."""
 
     def forbidden(*_args: object, **_kwargs: object) -> Any:
@@ -276,7 +416,7 @@ def measure_dataset(root: Path, path: Path) -> dict[str, Any]:
     stage = StageMeasurement()
     before = costs()
     with ShardedTrainingGenerationView(
-        path, cache_dir=root / "cache", allow_scientific_v2=True
+        path, cache_dir=cache_dir or root / "cache", allow_scientific_v2=True
     ) as view:
         assert view.index_reused
         with disk_dataset_context(IndexedDatasetSource(view), args) as context:
@@ -293,9 +433,107 @@ def measure_dataset(root: Path, path: Path) -> dict[str, Any]:
             stats={**asdict(stats), "path": str(stats.path)},
             temp_logical_bytes=scratch_bytes,
         )
-    expected = root / f"{policy}-reference.jsonl"
+    expected = expected or root / f"{policy}-reference.jsonl"
     assert sha(output) == sha(expected)
     return {"dataset": observation, "jsonl_sha256": sha(output)}
+
+
+def measure_reference(
+    root: Path, path: Path, *, legacy: bool, generation: int
+) -> dict[str, Any]:
+    """Measure the full oracle only in its own separate reference process."""
+    stage, before = StageMeasurement(), costs()
+    loaded = (
+        load_morpion_sharded_training_tree_snapshot(path)
+        if legacy
+        else scientific.load_scientific_training_generation(path)
+    )
+    snapshot = loaded if legacy else loaded.snapshot
+    initialization = stage.finish(costs=delta(before), node_count=len(snapshot.nodes))
+    stage, before = StageMeasurement(), costs()
+    policy = "pv_exact_then_blend_mean_prediction"
+    rows = extract_rows_from_training_snapshot(
+        args=MorpionBootstrapArgs(work_dir=root, dataset_family_target_policy=policy),
+        snapshot=snapshot,
+        generation=generation,
+    )
+    output = root / f"{policy}-reference.jsonl"
+    stats = save_morpion_supervised_rows_streaming(
+        rows=rows.rows, metadata=rows.metadata, path=output
+    )
+    dataset = stage.finish(
+        costs=delta(before), stats={**asdict(stats), "path": str(stats.path)}
+    )
+    return {
+        "initialization": initialization,
+        "dataset": dataset,
+        "jsonl_sha256": sha(output),
+    }
+
+
+def audit_matched_inputs(root: Path) -> dict[str, Any]:
+    """Compare actual immutable refs and update order with the existing parser."""
+    legacy_manifest = json.loads((root / "v1/generation_000001.json").read_text())
+    first_records = root / "source/generation_000001/records.jsonl"
+    fingerprint = hashlib.sha256()
+    counts: dict[int, int] = {}
+    states: dict[int, str] = {}
+    count = 0
+    for old, new in zip(
+        iter_shard_rows(root / "v1" / legacy_manifest["node_shard_path"], "nodes"),
+        iter_shard_rows(first_records, "records", scientific_generation=1),
+        strict=True,
+    ):
+        assert old["node_id"] == new["node_id"]
+        assert encode(old["state_ref_payload"]) == encode(new["state_ref_payload"])
+        ref = new["state_ref_payload"]
+        moves = len(ref[1])
+        state_sha = hashlib.sha256(encode(ref)).hexdigest()
+        assert states.setdefault(moves, state_sha) == state_sha
+        counts[moves] = counts.get(moves, 0) + 1
+        fingerprint.update(encode([new["node_id"], ref]))
+        fingerprint.update(b"\n")
+        count += 1
+    orders = []
+    for generation in (1, 2):
+        manifest = json.loads(
+            (root / f"v1/generation_{generation:06d}.json").read_text()
+        )
+        order = hashlib.sha256()
+        for old, new in zip(
+            iter_shard_rows(root / "v1" / manifest["update_shard_path"], "updates"),
+            iter_shard_rows(
+                root / f"source/generation_{generation:06d}/updates.jsonl",
+                "updates",
+                scientific_generation=generation,
+            ),
+            strict=True,
+        ):
+            assert old["node_id"] == new["node_id"]
+            assert old["child_ids"] == new["child_ids"]
+            order.update(encode(old["node_id"]))
+            order.update(b"\n")
+        orders.append(order.hexdigest())
+    return {
+        "node_count": count,
+        "ordered_node_and_reference_sha256": fingerprint.hexdigest(),
+        "v1_v2_immutable_reference_bytes_equal": True,
+        "current_child_ids_and_update_order_equal": True,
+        "update_order_sha256": orders,
+        "moves_histogram": counts,
+        "distinct_references": len(states),
+        "known_format_difference": "v1 generation 2 incoming parents remain creation-time; v2 preserves current links and richer scientific values/provenance",
+        "sources": [
+            {
+                "path": str(p.relative_to(root)),
+                "bytes": p.stat().st_size,
+                "sha256": sha(p),
+            }
+            for directory in (root / "source", root / "v1")
+            for p in sorted(directory.rglob("*"))
+            if p.is_file()
+        ],
+    }
 
 
 def main() -> None:
@@ -303,11 +541,35 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--action",
-        choices=("prepare", "cold", "reuse", "parity", "dataset"),
+        choices=(
+            "prepare",
+            "cold",
+            "reuse",
+            "parity",
+            "dataset",
+            "reference",
+            "audit-inputs",
+        ),
         required=True,
     )
     parser.add_argument("--size", type=int, choices=(1000, 5000, 10000), required=True)
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--matched-v1", action="store_true")
+    parser.add_argument("--format", choices=("v1", "v2"), default="v2")
+    parser.add_argument("--generation", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--cache-dir", type=Path)
+    parser.add_argument("--reference-dir", type=Path)
+    parser.add_argument(
+        "--operation-counts",
+        action="store_true",
+        help="SQL/parser phase timers without cProfile overhead",
+    )
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Existing cProfile/pstats tools; overhead-bearing samples",
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     if not root.is_relative_to(Path("/tmp")):
@@ -316,7 +578,11 @@ def main() -> None:
     if args.action == "prepare":
         root.mkdir(parents=True, exist_ok=False)
         path = generated_scientific_source(
-            root / "source", args.size, padding=4096, generations=2
+            root / "source",
+            args.size,
+            padding=4096,
+            generations=2,
+            legacy_root=root / "v1" if args.matched_v1 else None,
         )
         (root / "fixture.json").write_text(
             json.dumps(
@@ -337,16 +603,90 @@ def main() -> None:
         fixture["synthetic"] is not True
         or fixture["size"] != args.size
         or fixture["pins"] != PINS
+        or fixture["oracle_source_sha256"] != sha(Path(scientific.__file__))
     ):
         parser.error("synthetic fixture identity mismatch")
-    path = root / fixture["manifest"]
-    if args.action == "parity":
-        result = parity(root, path)
+    path = (
+        root / "v1" / f"generation_{args.generation:06d}.json"
+        if args.format == "v1"
+        else root / "source" / f"generation_{args.generation:06d}" / "generation.json"
+    )
+    output_dir = args.output_dir.resolve() if args.output_dir else root
+    if not output_dir.is_relative_to(root):
+        parser.error("output-dir must be inside the synthetic fixture root")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if args.cache_dir and not args.cache_dir.resolve().is_relative_to(root):
+        parser.error("cache-dir must be inside the synthetic fixture root")
+    observers = ExitStack()
+    operations, capture = (
+        observers.enter_context(profile_operations())
+        if args.profile or args.operation_counts
+        else (None, None)
+    )
+    profiler = (
+        cProfile.Profile()
+        if args.profile and args.action not in ("cold", "reuse")
+        else None
+    )
+    if profiler is not None:
+        profiler.enable()
+    if capture is not None and args.action not in ("cold", "reuse"):
+        capture[0] = True
+    if args.action == "audit-inputs":
+        result = audit_matched_inputs(root)
+    elif args.action == "parity":
+        result = parity(output_dir, path, cache_dir=args.cache_dir)
     elif args.action == "dataset":
-        result = measure_dataset(root, path)
+        expected = (
+            (
+                args.reference_dir.resolve()
+                if args.reference_dir
+                else root / f"reference-{args.format}-g{args.generation}"
+            )
+            / "pv_exact_then_blend_mean_prediction-reference.jsonl"
+            if args.output_dir
+            else None
+        )
+        if expected is not None and (
+            not expected.is_relative_to(root) or not expected.is_file()
+        ):
+            parser.error(
+                "reference JSONL must already exist within this synthetic root"
+            )
+        result = measure_dataset(
+            output_dir, path, expected=expected, cache_dir=args.cache_dir
+        )
+    elif args.action == "reference":
+        result = measure_reference(
+            output_dir, path, legacy=args.format == "v1", generation=args.generation
+        )
     else:
-        result = measure(root, path, args.size, args.action)
-    output = root / f"{args.action}.json"
+        result = measure(
+            output_dir,
+            path,
+            args.size,
+            args.action,
+            profile=args.profile,
+            cache_dir=args.cache_dir,
+            capture=capture,
+        )
+    if profiler is not None:
+        profiler.disable()
+        profiler.dump_stats(str(output_dir / f"{args.action}.prof"))
+    if capture is not None:
+        capture[0] = False
+    observers.close()
+    if operations is not None:
+        result["profile_operations"] = operations
+    if args.profile:
+        with (output_dir / f"{args.action}-profile.txt").open("w") as stream:
+            pstats.Stats(
+                str(output_dir / f"{args.action}.prof"), stream=stream
+            ).sort_stats("cumulative").print_stats(60)
+            pstats.Stats(
+                str(output_dir / f"{args.action}.prof"), stream=stream
+            ).sort_stats("tottime").print_stats(60)
+    output = output_dir / f"{args.action}.json"
     with output.open("x") as stream:
         json.dump(result, stream, indent=2)
         stream.write("\n")
