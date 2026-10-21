@@ -109,6 +109,8 @@ def test_missing_or_different_validator_performs_full_validation(
     path.write_text(json.dumps(payload))
     record["descriptor_sha256"] = file_digest(path)
     save_bootstrap_run_state(state, paths.run_state_path, durable=True)
+    # This is a different committed test head; reconstruct its discovery on recovery.
+    paths.pipeline_manifest_path_for_generation(state.generation).unlink()
     calls = count_decodes(monkeypatch)
     publish_scientific_patch(paths)
     result = run_scientific_publication(args, ScientificPublicationRunner())
@@ -138,6 +140,8 @@ def test_malformed_committed_evidence_fails_closed(tmp_path: Path, change: str) 
     path.write_text(json.dumps(payload))
     record["descriptor_sha256"] = file_digest(path)
     save_bootstrap_run_state(state, paths.run_state_path, durable=True)
+    # This is a different committed test head; reconstruct its discovery on recovery.
+    paths.pipeline_manifest_path_for_generation(state.generation).unlink()
     publish_scientific_patch(paths)
     with pytest.raises(GenerationPublicationError, match=r"canonical|Canonical"):
         run_scientific_publication(args, ScientificPublicationRunner())

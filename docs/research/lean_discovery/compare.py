@@ -25,6 +25,26 @@ def compare(root: Path, output: Path) -> dict[str, object]:
     )
     for a, b in zip(before["writer_stats"], after["writer_stats"], strict=True):
         assert {k: a[k] for k in count_keys} == {k: b[k] for k in count_keys}
+    heads = [
+        json.loads((root / side / "work/run_state.json").read_bytes())
+        for side in ("before", "after_")
+    ]
+    records = [
+        head["metadata"]["durable_generation_publication_v1"]["generations"]
+        for head in heads
+    ]
+    assert len(records[0]) == len(records[1]) == 64
+    for a, b in zip(*records, strict=True):
+        assert a["scientific_identity"] == b["scientific_identity"]
+        manifest = json.loads(
+            (
+                root
+                / "after_"
+                / "work/pipeline"
+                / f"generation_{b['generation']:06d}/manifest.json"
+            ).read_bytes()
+        )
+        assert manifest["metadata"]["pipeline_discovery"]["publication"] == b
     stages = []
     for a, b in zip(before["stages"][1:], after["stages"][1:], strict=True):
         keys = ("generation", "scientific_export_sha256", "checkpoint_sha256")
@@ -34,6 +54,8 @@ def compare(root: Path, output: Path) -> dict[str, object]:
         "base": "3623bb0f60d784476294f93fa533f7ec2d0e35db",
         "parity": {
             "matched_generations": 64,
+            "matched_scientific_identities_including_genesis_checkpoint": 64,
+            "new_projections_equal_authoritative_current_records": 64,
             "matched_export_and_checkpoint_hash_pairs": len(stages),
             "matched_final_source_files": len(before["source_fingerprints"]),
             "producer_equal": True,

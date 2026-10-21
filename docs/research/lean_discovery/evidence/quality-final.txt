@@ -1,0 +1,3 @@
+Toolchain versions are coherent.
+670 files already formatted
+All checks passed!

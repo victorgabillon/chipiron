@@ -1,0 +1,5 @@
+chipiron 0.2.4: /home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/ci-venv/lib/python3.13/site-packages/chipiron/__init__.py
+coral 0.1.15: /home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/ci-venv/lib/python3.13/site-packages/coral/__init__.py
+anemone 0.2.26: /home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/ci-venv/lib/python3.13/site-packages/anemone/__init__.py
+atomheart 0.2.11: /home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/ci-venv/lib/python3.13/site-packages/atomheart/__init__.py
+Installed evaluator-v1 and checkpoint contracts passed.

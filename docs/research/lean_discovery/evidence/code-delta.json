@@ -1,0 +1,26 @@
+{
+  "implementation": "a0666f45978a0daf44fddadc8eb9ba9e8b99d5c5",
+  "base": "3623bb0f60d784476294f93fa533f7ec2d0e35db",
+  "production": [
+    {
+      "file": "src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py",
+      "added": 42,
+      "removed": 1
+    },
+    {
+      "file": "src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+      "added": 13,
+      "removed": 0
+    },
+    {
+      "file": "src/chipiron/environments/morpion/bootstrap/pipeline_artifacts.py",
+      "added": 71,
+      "removed": 4
+    }
+  ],
+  "added": 126,
+  "removed": 5,
+  "net": 121,
+  "paired_changed_lines_within_hunks": 5,
+  "counting": "Git numstat counts replaced lines once removed and once added; paired_changed_lines is sum(min(additions,deletions)) per zero-context diff hunk; includes comments and blank lines."
+}
