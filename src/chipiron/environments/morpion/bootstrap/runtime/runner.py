@@ -63,6 +63,9 @@ from chipiron.environments.morpion.bootstrap.config import (
 from chipiron.environments.morpion.bootstrap.cycle_timing import (
     timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
 )
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    assert_artifact_writable,
+)
 from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTreeStatus
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
     linoo_selection_table_from_report,
@@ -1210,6 +1213,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         LOGGER.info(
             "[save] tree_export_start output=%s nodes=%s",
@@ -1467,6 +1471,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             max_depth_present=None if not depths_present else depths_present[-1],
             depth_node_counts=depth_node_counts,
         )
+
+    def discard_uncommitted_runtime(self) -> None:
+        """Require a cold restore after an aborted checkpoint/patch transaction."""
+        self._runtime = None
+        self._current_evaluator_bundle_path = None
+        self._last_reevaluation_patch_apply_metrics = None
+        self._reset_growth_state_eviction_runtime()
 
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""
@@ -1930,6 +1941,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         output = Path(output_path)
 

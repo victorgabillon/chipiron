@@ -139,6 +139,11 @@ def drain_patch(
     """Commit a patched runtime checkpoint before acknowledgement; never call grow."""
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     state = load_bootstrap_run_state(paths.run_state_path)
+    if "checkpoint_bound_reevaluation_v1" in state.metadata:
+        message = (
+            "Ordinary checkpoint-bound receipts cannot be consumed by derived drain."
+        )
+        raise DerivationError(message)
     committed = state.metadata.get("derived_drain", {})
     if not paths.pipeline_reevaluation_patch_path.exists():
         if committed.get("generation") == state.generation and committed.get(

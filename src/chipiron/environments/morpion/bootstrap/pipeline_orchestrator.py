@@ -426,12 +426,17 @@ def load_available_pipeline_manifests(
     paths: MorpionBootstrapPaths,
 ) -> dict[int, MorpionPipelineGenerationManifest]:
     """Load all valid persisted manifests under the pipeline directory."""
-    return {
+    from .generation_publication_io import validate_manifest_publication
+
+    manifests = {
         generation: load_pipeline_manifest(
             paths.pipeline_manifest_path_for_generation(generation)
         )
         for generation in list_pipeline_manifest_generations(paths)
     }
+    for manifest in manifests.values():
+        validate_manifest_publication(paths.work_dir, manifest)
+    return manifests
 
 
 def _recover_stale_training_states(

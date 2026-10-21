@@ -32,11 +32,11 @@ from .pipeline_artifacts import (
     MorpionReevaluationPatchRow,
     load_pipeline_active_model,
     load_reevaluation_cursor,
-    reevaluation_patch_to_dict,
     save_reevaluation_cursor,
 )
 from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
+from .reevaluation_publication import publish_reevaluation_patch_if_absent
 from .runtime.runner import load_morpion_evaluator_from_model_bundle
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 from .sharded_training_reader import (
@@ -114,17 +114,8 @@ def _save_reevaluation_patch_exclusive(
     patch: MorpionReevaluationPatch,
     path: Path,
 ) -> bool:
-    """Create one pending patch only if no patch artifact exists yet."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with path.open("x", encoding="utf-8") as handle:
-            json.dump(
-                reevaluation_patch_to_dict(patch), handle, indent=2, sort_keys=True
-            )
-            handle.write("\n")
-    except FileExistsError:
-        return False
-    return True
+    """Publish a complete durable patch, preserving create-only producer races."""
+    return publish_reevaluation_patch_if_absent(patch, path)
 
 
 def _metric_value(value: object | None) -> str:

@@ -27,6 +27,7 @@ from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot
 from platformdirs import user_cache_path
 
+from .generation_publication_io import generation_read_pin, pinned_file_hashes
 from .performance import StageMeasurement
 from .pipeline_memory import log_pipeline_memory
 from .sharded_training_export import (
@@ -359,9 +360,32 @@ class ShardedTrainingGenerationView:
         allow_scientific_v2: bool = False,
     ) -> None:
         """Initialize/reuse an index without constructing training snapshots."""
+        self.index_build_peak_disk_bytes = 0
+        self._publication_pin = generation_read_pin(Path(generation_manifest_path))
+        self._publication_pin.__enter__()
+        try:
+            self._publication_hashes = pinned_file_hashes(
+                Path(generation_manifest_path)
+            )
+            self._initialize(
+                generation_manifest_path,
+                cache_dir=cache_dir,
+                allow_scientific_v2=allow_scientific_v2,
+            )
+        except BaseException:
+            self._publication_pin.__exit__(None, None, None)
+            raise
+
+    def _initialize(
+        self,
+        generation_manifest_path: str | Path,
+        *,
+        cache_dir: str | Path | None,
+        allow_scientific_v2: bool,
+    ) -> None:
+        """Build the selected format's view after acquiring its lifetime pin."""
         measurement = StageMeasurement()
         self.source_bytes_read = 0
-        self.index_build_peak_disk_bytes = 0
         self.index_build_temp_logical_bytes = 0
         self.manifest_path = Path(generation_manifest_path).resolve()
         self.format_kind = _source_kind(self.manifest_path)
@@ -598,11 +622,19 @@ class ShardedTrainingGenerationView:
                 digest = hashlib.file_digest(stream, "sha256").hexdigest()
             self.source_bytes_read += before.st_size
             after = path.stat()
-            if (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
+            expected = self._publication_hashes.get(str(path))
+            if expected is not None and digest != expected:
+                raise ValueError(f"Committed training export changed: {path}")
+            changed_payload = (before.st_size, before.st_mtime_ns) != (
                 after.st_size,
                 after.st_mtime_ns,
-                after.st_ctime_ns,
-            ):
+            )
+            # Linking immutable payloads into a new capsule changes inode ctime.
+            # Exact committed hashes replace that mutable-file heuristic here.
+            changed_legacy_metadata = (
+                expected is None and before.st_ctime_ns != after.st_ctime_ns
+            )
+            if changed_payload or changed_legacy_metadata:
                 raise ValueError(
                     f"Training export changed during fingerprinting: {path}"
                 )
@@ -1091,7 +1123,10 @@ class ShardedTrainingGenerationView:
 
     def close(self) -> None:
         """Release the read-only index connection."""
-        self._connection.close()
+        try:
+            self._connection.close()
+        finally:
+            self._publication_pin.__exit__(None, None, None)
 
     def __enter__(self) -> ShardedTrainingGenerationView:
         """Return this generation view."""

@@ -233,6 +233,24 @@ def runtime_checkpoint_artifact_exists(path: str | Path) -> bool:
 
 def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
     """Delete old generation checkpoint files while keeping the newest generations."""
+    from .generation_publication_io import (
+        PUBLICATION_KEY,
+        PUBLICATION_NAMESPACE,
+        assert_artifact_writable,
+        read_object,
+        require,
+    )
+
+    assert_artifact_writable(directory)
+    work_dir = directory.parent
+    if (work_dir / PUBLICATION_NAMESPACE).exists() and (
+        work_dir / "run_state.json"
+    ).is_file():
+        metadata = read_object(work_dir / "run_state.json").get("metadata", {})
+        require(
+            PUBLICATION_KEY not in metadata,
+            "Legacy count-based pruning is forbidden for durable publication roots.",
+        )
     if keep_latest < 1:
         raise InvalidGenerationRetentionCountError(keep_latest)
 
