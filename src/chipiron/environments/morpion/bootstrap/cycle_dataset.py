@@ -16,6 +16,12 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidenceContext,
+    DatasetConfidenceError,
+    finalize_confidence_metadata,
+    validate_confidence_policy,
+)
 
 from .bootstrap_errors import (
     MissingBootstrapFrontierStatusError,
@@ -35,7 +41,8 @@ from .record_status import (
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
+    from typing import Any
 
     from anemone.training_export import TrainingTreeSnapshot
 
@@ -96,8 +103,13 @@ def extract_rows_from_training_snapshot(
     args: MorpionBootstrapArgs,
     snapshot: TrainingTreeSnapshot,
     generation: int,
+    value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
+    source_provenance: Mapping[str, Any] | None = None,
 ) -> MorpionSupervisedRows:
     """Extract and post-process supervised rows from one training snapshot."""
+    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    if confidence is not None:
+        confidence.require_generation(generation)
     rows = training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
         require_exact_or_terminal=args.require_exact_or_terminal,
@@ -106,6 +118,7 @@ def extract_rows_from_training_snapshot(
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
         metadata={"bootstrap_generation": generation},
+        confidence=confidence,
     )
     rows = apply_dataset_family_target_policy(
         snapshot=snapshot,
@@ -113,6 +126,7 @@ def extract_rows_from_training_snapshot(
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        confidence=confidence,
     )
     target_source_counts = rows.metadata.get("target_source_counts", {})
     LOGGER.info(
@@ -127,19 +141,40 @@ def extract_rows_from_training_snapshot(
     return rows
 
 
+def full_dataset_confidence(
+    args: MorpionBootstrapArgs,
+    value_contracts: Mapping[str, Mapping[str, Any]] | None,
+    source_provenance: Mapping[str, Any] | None,
+) -> DatasetConfidenceContext | None:
+    """Require an explicit v2 sidecar; never infer certainty for flat/v1 data."""
+    validate_confidence_policy(
+        args.dataset_confidence_policy, args.dataset_family_target_policy
+    )
+    if args.dataset_confidence_policy == "legacy_v1":
+        return None
+    if value_contracts is None or source_provenance is None:
+        raise DatasetConfidenceError.missing_source()
+    return DatasetConfidenceContext(value_contracts.__getitem__, source_provenance)
+
+
 def iter_rows_from_training_snapshot(
     *,
     args: MorpionBootstrapArgs,
     snapshot: TrainingTreeSnapshot,
     generation: int,
+    value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
+    source_provenance: Mapping[str, Any] | None = None,
 ) -> Iterable[MorpionSupervisedRow]:
     """Yield post-processed supervised rows from one training snapshot."""
-    del generation
+    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    if confidence is not None:
+        confidence.require_generation(generation)
     context = build_dataset_family_target_context(
         snapshot=snapshot,
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        confidence=confidence,
     )
     for row in iter_morpion_supervised_rows_from_training_snapshot(
         snapshot,
@@ -148,6 +183,7 @@ def iter_rows_from_training_snapshot(
         min_visit_count=args.min_visit_count,
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
+        confidence=confidence,
     ):
         yield context.adjust_row(row)
 
@@ -157,13 +193,19 @@ def streaming_rows_from_training_snapshot(
     args: MorpionBootstrapArgs,
     snapshot: TrainingTreeSource,
     generation: int,
+    value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
+    source_provenance: Mapping[str, Any] | None = None,
 ) -> MorpionSupervisedRowsStream:
     """Return fresh streaming rows plus extraction metadata for a dataset export."""
+    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    if confidence is not None:
+        confidence.require_generation(generation)
     context = build_dataset_family_target_context(
         snapshot=snapshot,
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        confidence=confidence,
     )
 
     def _adjusted_rows() -> Iterable[MorpionSupervisedRow]:
@@ -174,6 +216,7 @@ def streaming_rows_from_training_snapshot(
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            confidence=confidence,
         ):
             yield context.adjust_row(row)
 
@@ -185,10 +228,12 @@ def streaming_rows_from_training_snapshot(
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
         metadata={"bootstrap_generation": generation},
+        confidence=confidence,
     )
     # TODO: compute family-target summary during the write pass once row metadata
     # can be finalized after streaming, e.g. via a sidecar rows manifest.
     metadata.update(context.summary_for_rows(_adjusted_rows()))
+    finalize_confidence_metadata(metadata)
     target_source_counts = metadata.get("target_source_counts", {})
     if not isinstance(target_source_counts, dict):
         target_source_counts = {}

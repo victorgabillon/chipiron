@@ -16,12 +16,22 @@ from atomheart.games.morpion.checkpoints import (
     MorpionStateCheckpointCodec,
 )
 
+from .target_confidence import (
+    DatasetConfidenceContext,
+    DatasetConfidenceError,
+    dataset_format_version,
+    is_certified,
+    validate_confident_row,
+)
+
 MORPION_SUPERVISED_ROWS_DATASET_KIND = "morpion_supervised_rows"
 MORPION_SUPERVISED_ROWS_DATASET_VERSION = 1
 MORPION_SUPERVISED_ROWS_JSONL_FORMAT_KIND = "morpion_supervised_rows_jsonl"
 MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION = 1
 MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND = "morpion_supervised_rows_metadata"
 MORPION_SUPERVISED_ROW_RECORD_KIND = "morpion_supervised_row"
+MORPION_SCIENTIFIC_ROWS_KIND = "morpion_scientific_supervised_rows"
+MORPION_SCIENTIFIC_METADATA_KIND = "morpion_scientific_supervised_rows_metadata"
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
@@ -207,6 +217,7 @@ def training_node_to_morpion_supervised_row(
     min_visit_count: int | None = None,
     use_backed_up_value: bool = True,
     _validated_state_ref_normalizer: Callable[[object], object] | None = None,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRow | None:
     """Convert one exported training node into one raw Morpion supervised row.
 
@@ -225,12 +236,23 @@ def training_node_to_morpion_supervised_row(
     if target is None:
         return None
     target_value, target_source = target
+    target_confidence = (
+        confidence.selected(node, target_value, target_source)
+        if confidence is not None
+        else None
+    )
+    selected_exact = (
+        is_certified(target_confidence["raw_target_certainty"])
+        if target_confidence is not None
+        else None
+    )
 
     if not _passes_filters(
         node,
         require_exact_or_terminal=require_exact_or_terminal,
         min_depth=min_depth,
         min_visit_count=min_visit_count,
+        selected_target_is_exact=selected_exact,
     ):
         return None
 
@@ -247,12 +269,28 @@ def training_node_to_morpion_supervised_row(
         state_ref_payload=normalized_payload,
         target_value=target_value,
         is_terminal=node.is_terminal,
-        is_exact=node.is_exact,
+        is_exact=node.is_exact if selected_exact is None else selected_exact,
         depth=node.depth,
         visit_count=node.visit_count,
         direct_value=node.direct_value_scalar,
         over_event_label=node.over_event_label,
-        metadata={**dict(node.metadata), "target_source": target_source},
+        metadata={
+            **dict(node.metadata),
+            "target_source": target_source,
+            **(
+                {"target_confidence": target_confidence}
+                if target_confidence is not None
+                else {}
+            ),
+            **(
+                {
+                    "target_source": target_confidence["raw_target_source"],
+                    "target_selection_rule": target_source,
+                }
+                if target_confidence is not None
+                else {}
+            ),
+        },
     )
 
 
@@ -265,6 +303,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     max_rows: int | None = None,
     use_backed_up_value: bool = True,
     metadata: dict[str, object] | None = None,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRows:
     """Extract ordered raw Morpion supervised rows from one training snapshot."""
     rows = tuple(
@@ -275,6 +314,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             min_visit_count=min_visit_count,
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
+            confidence=confidence,
         )
     )
     return MorpionSupervisedRows(
@@ -287,6 +327,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             min_visit_count=min_visit_count,
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
+            confidence=confidence,
         ),
     )
 
@@ -300,6 +341,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
     max_rows: int | None = None,
     use_backed_up_value: bool = True,
     _validated_state_ref_normalizer: Callable[[object], object] | None = None,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> Iterable[MorpionSupervisedRow]:
     """Yield ordered raw Morpion supervised rows from one training snapshot."""
     emitted_count = 0
@@ -311,6 +353,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
             min_visit_count=min_visit_count,
             use_backed_up_value=use_backed_up_value,
             _validated_state_ref_normalizer=_validated_state_ref_normalizer,
+            confidence=confidence,
         )
         if row is None:
             continue
@@ -329,6 +372,7 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
     max_rows: int | None = None,
     use_backed_up_value: bool = True,
     metadata: dict[str, object] | None = None,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> dict[str, Any]:
     """Build extraction metadata without materializing supervised rows."""
     stats = _collect_extraction_stats(
@@ -338,8 +382,9 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
         min_visit_count=min_visit_count,
         max_rows=max_rows,
         use_backed_up_value=use_backed_up_value,
+        confidence=confidence,
     )
-    return _build_rows_metadata(
+    built_metadata = _build_rows_metadata(
         snapshot,
         metadata=metadata,
         require_exact_or_terminal=require_exact_or_terminal,
@@ -351,6 +396,9 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
         skipped_no_target_count=stats.skipped_no_target_count,
         target_source_counts=stats.target_source_counts,
     )
+    if confidence is not None:
+        built_metadata.update(confidence.metadata())
+    return built_metadata
 
 
 def load_training_tree_snapshot_as_morpion_supervised_rows(
@@ -378,6 +426,20 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
 
 def morpion_supervised_rows_to_dict(data: MorpionSupervisedRows) -> dict[str, object]:
     """Serialize raw Morpion supervised rows into a JSON-friendly dictionary."""
+    if dataset_format_version(data.metadata) == 2:
+        for row in data.rows:
+            validate_confident_row(
+                row.metadata.get("target_confidence"),
+                value=row.target_value,
+                is_exact=row.is_exact,
+                is_terminal=row.is_terminal,
+            )
+        return {
+            "format_kind": MORPION_SCIENTIFIC_ROWS_KIND,
+            "format_version": 2,
+            "scientific_rows": [_row_to_dict(row) for row in data.rows],
+            "metadata": dict(data.metadata),
+        }
     return {
         "rows": [_row_to_dict(row) for row in data.rows],
         "metadata": dict(data.metadata),
@@ -388,17 +450,38 @@ def morpion_supervised_rows_from_dict(
     data: dict[str, object],
 ) -> MorpionSupervisedRows:
     """Deserialize raw Morpion supervised rows from JSON-friendly data."""
-    rows_data = data.get("rows")
+    metadata = _metadata_dict(data.get("metadata"))
+    version = dataset_format_version(metadata)
+    if (
+        version == 2
+        or "scientific_rows" in data
+        or data.get("format_kind") == MORPION_SCIENTIFIC_ROWS_KIND
+    ):
+        _validate_scientific_json_envelope(data, version)
+    rows_data = data.get("scientific_rows" if version == 2 else "rows")
     if not isinstance(rows_data, list):
         raise MalformedMorpionSupervisedRowsError.missing_rows_field()
     typed_rows_data = cast("list[object]", rows_data)
 
     return MorpionSupervisedRows(
         rows=tuple(
-            _row_from_dict(_require_row_mapping(item)) for item in typed_rows_data
+            _row_from_dict(_require_row_mapping(item), version=version)
+            for item in typed_rows_data
         ),
-        metadata=_metadata_dict(data.get("metadata")),
+        metadata=metadata,
     )
+
+
+def _validate_scientific_json_envelope(data: Mapping[str, Any], version: int) -> None:
+    """Keep the v2 JSON namespace inaccessible to historical v1 loaders."""
+    if (
+        version != 2
+        or data.get("format_kind") != MORPION_SCIENTIFIC_ROWS_KIND
+        or not isinstance(data.get("format_version"), int)
+        or data["format_version"] != 2
+        or "rows" in data
+    ):
+        raise DatasetConfidenceError.invalid_envelope()
 
 
 def save_morpion_supervised_rows(
@@ -431,17 +514,27 @@ def save_morpion_supervised_rows_streaming(
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
     row_count = 0
+    version = dataset_format_version(metadata)
     try:
         with temporary.open("w", encoding="utf-8") as stream:
             _write_jsonl_record(
                 stream,
                 {
-                    "kind": MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND,
-                    "format_version": MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION,
+                    "kind": MORPION_SCIENTIFIC_METADATA_KIND
+                    if version == 2
+                    else MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND,
+                    "format_version": version,
                     "metadata": dict(metadata),
                 },
             )
             for row in rows:
+                if version == 2:
+                    validate_confident_row(
+                        row.metadata.get("target_confidence"),
+                        value=row.target_value,
+                        is_exact=row.is_exact,
+                        is_terminal=row.is_terminal,
+                    )
                 _write_jsonl_record(
                     stream,
                     {
@@ -465,7 +558,7 @@ def save_morpion_supervised_rows_streaming(
         bytes_written=target.stat().st_size,
         path=target,
         format_kind=MORPION_SUPERVISED_ROWS_JSONL_FORMAT_KIND,
-        format_version=MORPION_SUPERVISED_ROWS_JSONL_FORMAT_VERSION,
+        format_version=version,
     )
 
 
@@ -483,12 +576,17 @@ def load_morpion_supervised_rows_metadata(path: str | Path) -> dict[str, Any]:
             if not isinstance(record, dict):
                 raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
             kind = record.get("kind")
-            if kind != MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
+            if kind not in (
+                MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND,
+                MORPION_SCIENTIFIC_METADATA_KIND,
+            ):
                 raise MalformedMorpionSupervisedRowsError.unexpected_jsonl_record_kind(
                     line_number,
                     kind,
                 )
-            return _metadata_dict(record.get("metadata"))
+            metadata = _metadata_dict(record.get("metadata"))
+            _validate_jsonl_confidence_version(record, metadata)
+            return metadata
     raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
 
 
@@ -509,6 +607,7 @@ def iter_morpion_supervised_rows_from_path(
             yield row
         return
     saw_metadata = False
+    version = 1
     with source.open("r", encoding="utf-8") as stream:
         for line_number, line in enumerate(stream, start=1):
             stripped = line.strip()
@@ -518,7 +617,17 @@ def iter_morpion_supervised_rows_from_path(
             if not isinstance(record, dict):
                 raise MalformedMorpionSupervisedRowsError.row_entry_must_be_mapping()
             kind = record.get("kind")
-            if kind == MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND:
+            if kind in (
+                MORPION_SUPERVISED_ROWS_METADATA_RECORD_KIND,
+                MORPION_SCIENTIFIC_METADATA_KIND,
+            ):
+                if saw_metadata and (
+                    version == 2 or kind == MORPION_SCIENTIFIC_METADATA_KIND
+                ):
+                    raise DatasetConfidenceError.invalid_envelope()
+                version = _validate_jsonl_confidence_version(
+                    record, _metadata_dict(record.get("metadata"))
+                )
                 saw_metadata = True
                 continue
             if not saw_metadata:
@@ -531,7 +640,9 @@ def iter_morpion_supervised_rows_from_path(
             if max_rows is not None and emitted >= max_rows:
                 break
             emitted += 1
-            yield _row_from_dict(_require_row_mapping(record.get("row")))
+            yield _row_from_dict(
+                _require_row_mapping(record.get("row")), version=version
+            )
     if not saw_metadata:
         raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
 
@@ -645,19 +756,33 @@ def _collect_extraction_stats(
     min_visit_count: int | None,
     max_rows: int | None,
     use_backed_up_value: bool,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> _ExtractionStats:
     """Return compact extraction stats without building row objects."""
     skipped_no_target_count = 0
     num_rows = 0
-    target_source_counts = _empty_target_source_counts()
+    target_source_counts = (
+        _empty_target_source_counts()
+        if confidence is None
+        else {"tree_value": 0, "direct_value": 0}
+    )
     for node in snapshot.nodes:
         if node.state_ref_payload is None:
             continue
+        selected_exact = None
+        if confidence is not None:
+            selected = _choose_target_value_and_source(
+                node, use_backed_up_value=use_backed_up_value
+            )
+            selected_exact = selected is not None and is_certified(
+                confidence.selected(node, *selected)["raw_target_certainty"]
+            )
         if not _passes_filters(
             node,
             require_exact_or_terminal=require_exact_or_terminal,
             min_depth=min_depth,
             min_visit_count=min_visit_count,
+            selected_target_is_exact=selected_exact,
         ):
             continue
         target = _choose_target_value_and_source(
@@ -670,6 +795,10 @@ def _collect_extraction_stats(
         if max_rows is not None and num_rows >= max_rows:
             continue
         _target_value, target_source = target
+        if confidence is not None:
+            target_source = (
+                "tree_value" if target_source == "backed_up_value" else "direct_value"
+            )
         if target_source in target_source_counts:
             target_source_counts[target_source] += 1
         num_rows += 1
@@ -714,9 +843,15 @@ def _passes_filters(
     require_exact_or_terminal: bool,
     min_depth: int | None,
     min_visit_count: int | None,
+    selected_target_is_exact: bool | None = None,
 ) -> bool:
     """Return whether one exported node passes extraction filters."""
-    if require_exact_or_terminal and not (node.is_exact or node.is_terminal):
+    exact = (
+        (node.is_exact or node.is_terminal)
+        if selected_target_is_exact is None
+        else selected_target_is_exact
+    )
+    if require_exact_or_terminal and not exact:
         return False
     if min_depth is not None and node.depth < min_depth:
         return False
@@ -795,7 +930,9 @@ def _require_row_mapping(value: object) -> dict[str, object]:
     return cast("dict[str, object]", value)
 
 
-def _row_from_dict(data: dict[str, object]) -> MorpionSupervisedRow:
+def _row_from_dict(
+    data: dict[str, object], *, version: int = 1
+) -> MorpionSupervisedRow:
     """Deserialize one Morpion supervised row from JSON-friendly data."""
     node_id = data.get("node_id")
     if not isinstance(node_id, str):
@@ -804,7 +941,7 @@ def _row_from_dict(data: dict[str, object]) -> MorpionSupervisedRow:
     if "target_value" not in data:
         raise MalformedMorpionSupervisedRowsError.missing_target_value()
 
-    return MorpionSupervisedRow(
+    row = MorpionSupervisedRow(
         node_id=node_id,
         state_ref_payload=_validate_and_normalize_state_ref_payload(
             data.get("state_ref_payload")
@@ -818,6 +955,33 @@ def _row_from_dict(data: dict[str, object]) -> MorpionSupervisedRow:
         over_event_label=_optional_str(data.get("over_event_label")),
         metadata=_metadata_dict(data.get("metadata")),
     )
+    if version == 2:
+        if not isinstance(data.get("is_exact"), bool) or not isinstance(
+            data.get("is_terminal"), bool
+        ):
+            raise DatasetConfidenceError.invalid_row_flags()
+        validate_confident_row(
+            row.metadata.get("target_confidence"),
+            value=row.target_value,
+            is_exact=row.is_exact,
+            is_terminal=row.is_terminal,
+        )
+    return row
+
+
+def _validate_jsonl_confidence_version(
+    record: Mapping[str, Any], metadata: Mapping[str, Any]
+) -> int:
+    """Keep v1 interpretation and reject unsupported explicit v2 envelopes."""
+    version = dataset_format_version(metadata)
+    if (version == 2 or record.get("format_version", 1) != 1) and (
+        not isinstance(record.get("format_version"), int)
+        or record["format_version"] != version
+    ):
+        raise DatasetConfidenceError.invalid_envelope()
+    if (record.get("kind") == MORPION_SCIENTIFIC_METADATA_KIND) != (version == 2):
+        raise DatasetConfidenceError.invalid_envelope()
+    return version
 
 
 def _required_float(value: object) -> float:

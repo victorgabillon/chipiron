@@ -20,6 +20,12 @@ from anemone.training_export.model import (
     TRAINING_TREE_SNAPSHOT_FORMAT_VERSION,
 )
 
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidenceContext,
+    DatasetConfidenceError,
+    finalize_confidence_metadata,
+    validate_confidence_policy,
+)
 from chipiron.environments.morpion.learning.tree_to_dataset import (
     iter_morpion_supervised_rows_from_training_snapshot,
     morpion_supervised_rows_metadata_from_training_snapshot,
@@ -29,6 +35,7 @@ from .cycle_dataset import MorpionSupervisedRowsStream
 from .dataset_family_targets import (
     _dataset_row_with_family_target_metadata,
     _node_raw_target,
+    _node_raw_target_is_certified,
 )
 from .pv_family_targets import PvFamilyTargetPolicy, PvFamilyTargets, family_node_target
 
@@ -107,6 +114,17 @@ class DiskDatasetFamilyContext:
         self.source = source
         self.connection = connection
         self.args = args
+        validate_confidence_policy(
+            args.dataset_confidence_policy, args.dataset_family_target_policy
+        )
+        self.confidence = None
+        if args.dataset_confidence_policy == "selected_value_v2":
+            if source.view.format_version != 2:
+                raise DatasetConfidenceError("Dataset v2 requires scientific v2 input")
+            self.confidence = DatasetConfidenceContext(
+                lambda node_id: source.view.load_value_contracts((node_id,))[0],
+                source.view.provenance,
+            )
         self._active_scientific_rows: Generator[MorpionSupervisedRow] | None = None
         connection.executescript("""
             CREATE TEMP TABLE dataset_nodes (
@@ -140,7 +158,15 @@ class DiskDatasetFamilyContext:
                     node.node_id,
                     json.dumps(raw),
                     json.dumps(prediction),
-                    int(node.is_exact or node.is_terminal),
+                    int(node.is_exact or node.is_terminal)
+                    if self.confidence is None
+                    else int(
+                        _node_raw_target_is_certified(
+                            node,
+                            use_backed_up_value=args.use_backed_up_value,
+                            confidence=self.confidence,
+                        )
+                    ),
                 ),
             )
             if index % 256 == 255:
@@ -300,7 +326,9 @@ class DiskDatasetFamilyContext:
         effective, rule = family_node_target(
             raw_targets={row.node_id: raw},
             node_id=row.node_id,
-            is_exact=row.is_exact or row.is_terminal,
+            is_exact=(row.is_exact or row.is_terminal)
+            if self.confidence is None
+            else row.is_exact,
             family_mean=family["mean"],
             family_min=family["min"],
             exact_family_target=family["exact_target"],
@@ -321,7 +349,11 @@ class DiskDatasetFamilyContext:
             max_family_size=None,
         )
         return _dataset_row_with_family_target_metadata(
-            row, raw_target=raw, selected_child_id=selected, family_targets=targets
+            row,
+            raw_target=raw,
+            selected_child_id=selected,
+            family_targets=targets,
+            scientific_confidence=self.confidence is not None,
         )
 
     def close_rows(self) -> None:
@@ -348,6 +380,7 @@ class DiskDatasetFamilyContext:
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            confidence=self.confidence,
             # Only v2's opt-in index proves canonicality for every immutable
             # record and verifies the source plus cached payload digest. Keep
             # the identical JSON normalization without replaying each state on
@@ -437,6 +470,8 @@ class DiskDatasetFamilyContext:
     def stream(self, generation: int) -> MorpionSupervisedRowsStream:
         """Compute the complete header before the repeatable write pass."""
         args = self.args
+        if self.confidence is not None:
+            self.confidence.require_generation(generation)
         metadata = morpion_supervised_rows_metadata_from_training_snapshot(
             self.source,
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -445,8 +480,10 @@ class DiskDatasetFamilyContext:
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
             metadata={"bootstrap_generation": generation},
+            confidence=self.confidence,
         )
         metadata.update(self.summary())
+        finalize_confidence_metadata(metadata)
         return MorpionSupervisedRowsStream(rows=self.rows(), metadata=metadata)
 
 

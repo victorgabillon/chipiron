@@ -190,9 +190,15 @@ from chipiron.environments.morpion.bootstrap.training_logging import (
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRowsSource,
     load_morpion_supervised_rows,
+    load_morpion_supervised_rows_metadata,
     morpion_supervised_rows_source_from_path,
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
+)
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidenceError,
+    dataset_format_version,
+    validate_confidence_policy,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     morpion_streaming_split_policy,
@@ -1335,12 +1341,34 @@ def run_pipeline_dataset_stage(
     allow_scientific_v2: bool = False,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
+    validate_confidence_policy(
+        args.dataset_confidence_policy, args.dataset_family_target_policy
+    )
+    if args.dataset_confidence_policy == "selected_value_v2" and not (
+        use_streaming_sharded_reader and allow_scientific_v2
+    ):
+        raise DatasetConfidenceError.missing_source()
     _require_artifact_pipeline_mode(args)
     dataset_measurement = StageMeasurement()
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = load_generation_manifest(paths=paths, generation=generation)
+    if args.dataset_confidence_policy == "selected_value_v2":
+        existing_rows = (
+            paths.resolve_work_dir_path(manifest.rows_path)
+            if manifest.rows_path is not None
+            else paths.rows_jsonl_path_for_generation(generation)
+        )
+        if (
+            existing_rows is not None
+            and existing_rows.exists()
+            and dataset_format_version(
+                load_morpion_supervised_rows_metadata(existing_rows)
+            )
+            != 2
+        ):
+            raise DatasetConfidenceError.invalid_envelope()
     guard_tree_snapshot_path = (
         paths.resolve_work_dir_path(manifest.tree_snapshot_path)
         if manifest.tree_snapshot_path is not None
@@ -1614,6 +1642,15 @@ def run_pipeline_dataset_stage(
         manifest_metadata["dataset_completed_at_utc"] = timestamp_utc
         manifest_metadata["dataset_rows"] = write_stats.row_count
         manifest_metadata["dataset_rows_bytes"] = rows_bytes
+        if args.dataset_confidence_policy == "selected_value_v2":
+            for key in (
+                "dataset_version",
+                "dataset_confidence_policy",
+                "dataset_confidence_contract",
+                "dataset_extraction_identity",
+                "scientific_source_provenance",
+            ):
+                manifest_metadata[key] = streaming_rows.metadata[key]
         manifest = replace(
             manifest,
             rows_path=paths.relative_to_work_dir(rows_path),

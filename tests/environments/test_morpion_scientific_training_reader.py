@@ -743,9 +743,8 @@ def test_real_terminal_reference_and_reevaluation(
             adapter._evaluator.evaluate = forbidden
         rows = adapter.evaluate_node_window(nodes)
         assert rows == expected
-        assert rows[0].metadata["source"] == (
-            "terminal_existing_value" if tree_present else "active_model_reevaluation"
-        )
+        # PR #82 preserves terminal direct values when no tree value exists.
+        assert rows[0].metadata["source"] == "terminal_existing_value"
 
 
 @pytest.mark.parametrize("target", ["DIRECT_VALUE", "TREE_VALUE", "EFFECTIVE_VALUE"])

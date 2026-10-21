@@ -24,6 +24,10 @@ from .pipeline_config import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from chipiron.environments.morpion.learning.target_confidence import (
+        DatasetConfidencePolicy,
+    )
+
     from .pv_family_targets import PvFamilyTargetPolicy
 
 type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
@@ -225,6 +229,7 @@ class MorpionBootstrapArgs:
     min_visit_count: int | None = None
     max_rows: int | None = None
     use_backed_up_value: bool = True
+    dataset_confidence_policy: DatasetConfidencePolicy = "legacy_v1"
     dataset_family_target_policy: PvFamilyTargetPolicy = "none"
     dataset_family_prediction_blend: float = 0.25
     memory_diagnostics: bool = False

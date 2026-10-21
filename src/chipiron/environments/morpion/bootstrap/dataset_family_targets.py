@@ -10,6 +10,13 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
 )
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidenceContext,
+    adjusted_confidence,
+    finalize_confidence_metadata,
+    is_certified,
+    validate_confidence_policy,
+)
 
 from .pv_family_targets import (
     PvFamilyTargetPolicy,
@@ -36,6 +43,7 @@ class DatasetFamilyTargetContext:
     family_targets: PvFamilyTargets
     family_target_policy: PvFamilyTargetPolicy
     family_prediction_blend: float
+    confidence: DatasetConfidenceContext | None = None
 
     def adjust_row(self, row: MorpionSupervisedRow) -> MorpionSupervisedRow:
         """Return ``row`` with the configured family target adjustment applied."""
@@ -44,6 +52,7 @@ class DatasetFamilyTargetContext:
             raw_target=self.raw_targets.get(row.node_id, row.target_value),
             selected_child_id=self.selected_child_by_node.get(row.node_id),
             family_targets=self.family_targets,
+            scientific_confidence=self.confidence is not None,
         )
 
     def summary_for_rows(
@@ -66,6 +75,7 @@ def apply_dataset_family_target_policy(
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
     use_backed_up_value: bool = True,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRows:
     """Apply PV-family target smoothing to exported bootstrap training rows."""
     context = build_dataset_family_target_context(
@@ -73,12 +83,13 @@ def apply_dataset_family_target_policy(
         family_target_policy=family_target_policy,
         family_prediction_blend=family_prediction_blend,
         use_backed_up_value=use_backed_up_value,
+        confidence=confidence,
     )
     adjusted_rows = tuple(context.adjust_row(row) for row in rows.rows)
     summary = context.summary_for_rows(adjusted_rows)
     return MorpionSupervisedRows(
         rows=adjusted_rows,
-        metadata={**rows.metadata, **summary},
+        metadata=finalize_confidence_metadata({**rows.metadata, **summary}),
     )
 
 
@@ -88,10 +99,13 @@ def build_dataset_family_target_context(
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
     use_backed_up_value: bool = True,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> DatasetFamilyTargetContext:
     """Build snapshot-level maps for per-row family target adjustment."""
     if not 0.0 <= family_prediction_blend <= 1.0:
         raise ValueError("dataset_family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
+    if confidence is not None:
+        validate_confidence_policy("selected_value_v2", family_target_policy)
     raw_targets = _snapshot_raw_targets(
         snapshot=snapshot,
         use_backed_up_value=use_backed_up_value,
@@ -100,9 +114,18 @@ def build_dataset_family_target_context(
         snapshot=snapshot,
         raw_targets=raw_targets,
     )
-    exact_or_terminal_node_ids = {
-        node.node_id for node in snapshot.nodes if node.is_exact or node.is_terminal
-    }
+    if confidence is None:
+        exact_or_terminal_node_ids = {
+            node.node_id for node in snapshot.nodes if node.is_exact or node.is_terminal
+        }
+    else:
+        exact_or_terminal_node_ids = {
+            node.node_id
+            for node in snapshot.nodes
+            if _node_raw_target_is_certified(
+                node, use_backed_up_value=use_backed_up_value, confidence=confidence
+            )
+        }
     selected_child_by_node = _snapshot_selected_child_by_raw_target(
         snapshot=snapshot,
         raw_targets=raw_targets,
@@ -121,6 +144,7 @@ def build_dataset_family_target_context(
         family_targets=family_targets,
         family_target_policy=family_target_policy,
         family_prediction_blend=family_prediction_blend,
+        confidence=confidence,
     )
 
 
@@ -149,6 +173,27 @@ def _node_raw_target(
     if node.backed_up_value_scalar is not None:
         return float(node.backed_up_value_scalar)
     return None
+
+
+def _node_raw_target_is_certified(
+    node: TrainingNodeSnapshot,
+    *,
+    use_backed_up_value: bool,
+    confidence: DatasetConfidenceContext,
+) -> bool:
+    """Use the selected family input's own certainty; unknown is never a proof."""
+    raw = _node_raw_target(node, use_backed_up_value=use_backed_up_value)
+    if raw is None:
+        return False
+    source = (
+        "backed_up_value"
+        if (
+            (use_backed_up_value and node.backed_up_value_scalar is not None)
+            or node.direct_value_scalar is None
+        )
+        else "direct_value"
+    )
+    return is_certified(confidence.selected(node, raw, source)["raw_target_certainty"])
 
 
 def _snapshot_prediction_values(
@@ -189,6 +234,7 @@ def _dataset_row_with_family_target_metadata(
     raw_target: float,
     selected_child_id: str | None,
     family_targets: PvFamilyTargets,
+    scientific_confidence: bool = False,
 ) -> MorpionSupervisedRow:
     effective_target = family_targets.effective_targets.get(row.node_id, raw_target)
     metadata = dict(row.metadata)
@@ -234,12 +280,33 @@ def _dataset_row_with_family_target_metadata(
             ),
         },
     )
+    target_exact = row.is_exact
+    if scientific_confidence:
+        target_confidence = adjusted_confidence(
+            row.metadata["target_confidence"],
+            value=effective_target,
+            rule=metadata["family_target_rule"],
+        )
+        metadata["target_confidence"] = target_confidence
+        target_exact = is_certified(target_confidence["training_target_certainty"])
+        metadata["family_has_certified_member"] = metadata[
+            "family_has_exact_or_terminal"
+        ]
+        metadata["family_certified_member_count"] = metadata[
+            "family_num_exact_or_terminal"
+        ]
+        metadata["family_exact_target"] = None
+        metadata["family_proof_contract"] = None
+        # Provenance follows the computation even when numbers happen to agree.
+        metadata["effective_target_source"] = target_confidence[
+            "training_target_source"
+        ]
     return MorpionSupervisedRow(
         node_id=row.node_id,
         state_ref_payload=copy.deepcopy(row.state_ref_payload),
         target_value=effective_target,
         is_terminal=row.is_terminal,
-        is_exact=row.is_exact,
+        is_exact=target_exact,
         depth=row.depth,
         visit_count=row.visit_count,
         direct_value=row.direct_value,
