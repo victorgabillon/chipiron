@@ -1,0 +1,19 @@
+{
+  "comparisons": 3780,
+  "case_count": 5,
+  "complete_case_outputs_equal": true,
+  "family_counterexample_equal": true,
+  "paired_supervised_jsonl_files": 8820,
+  "paired_source_jsonl_files": 10,
+  "matched_source_fingerprints": 24,
+  "patch_field_differences": [
+    "/rows/0/metadata/model_bundle_path",
+    "/rows/1/metadata/model_bundle_path"
+  ],
+  "patch_sha256": {
+    "before": "d0b58b608ec1c0f49e2c97beb2104f214c895e9628f762a3e8145ccb3beff11a",
+    "after": "2a12ba10b6bf35fc5ad8fadd60ada67e4cddf16075456bc3745da447d5c1efea"
+  },
+  "base": "69534167486f980afebc4a07af4e9f6c95784370",
+  "implementation": "c1c737ca0d9fb76f9a9d2ad68d0f999a4c9f0be1"
+}
