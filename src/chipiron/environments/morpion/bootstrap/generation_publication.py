@@ -68,18 +68,26 @@ def _copy_artifact(source: Path, destination: Path, *, link: bool = False) -> No
             shutil.copyfile(source, destination)
 
 
-def _is_v1_sharded(path: Path) -> bool:
+def _is_v1_sharded(path: Path, *, allow_flat_metadata: bool = False) -> bool:
     """Classify an explicit existing export without changing legacy dispatch."""
     header: dict[str, object] = {}
+    fields = {"format_kind", "format_version"}
+    accepted = fields | (
+        {f"metadata.{field}" for field in fields} if allow_flat_metadata else set()
+    )
     with path.open("rb") as stream:
         for prefix, event, value in ijson.parse(stream):
-            if prefix in {"format_kind", "format_version"} and event in {
+            if prefix in accepted and event in {
                 "string",
                 "number",
             }:
                 header[prefix] = value
-                if len(header) == 2:
+                if fields <= header.keys():
                     break
+    if allow_flat_metadata and fields.isdisjoint(header):
+        # Saved flat snapshots declare their existing v1 contract in metadata.
+        # An explicit top-level format always wins, including unsupported v2.
+        header = {field: header.get(f"metadata.{field}") for field in fields}
     require(
         header.get("format_kind")
         in {MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND, "training_tree_snapshot"}
@@ -464,7 +472,10 @@ class DurableGenerationPublication:
         if not baseline and state.latest_tree_snapshot_path is not None:
             # A future adapter can return a new layout that the v1 filename probe
             # below cannot see. Refuse it before sealing or moving any capsule.
-            _is_v1_sharded(inside(self.paths.work_dir, state.latest_tree_snapshot_path))
+            _is_v1_sharded(
+                inside(self.paths.work_dir, state.latest_tree_snapshot_path),
+                allow_flat_metadata=True,
+            )
         export = (
             self.staging
             / "tree_exports_sharded"
