@@ -1,6 +1,6 @@
-"""Filesystem rules for opt-in immutable publication of scientific v1 artifacts.
+"""Filesystem rules shared by explicit scientific-v1 and scientific-v2 adapters.
 
-The publication protocol is v1 too; it is unrelated to scientific sharded v2.
+The existing metadata key is retained as a fail-closed version fence.
 Only run_state.json decides which complete capsules have committed.
 """
 
@@ -10,10 +10,13 @@ import ctypes
 import hashlib
 import json
 import os
+import shutil
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
 
 from .derived.provenance import inside, sync_checkpoint
+from .sharded_training_v2_contract import CONTRACT, KIND, VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -26,6 +29,41 @@ PUBLICATION_KEY = "durable_generation_publication_v1"
 PUBLICATION_NAMESPACE = "generation_publications_v1"
 CAPSULE_SEAL = ".generation_publication_v1.json"
 ATTEMPT_MARKER = ".publication_attempt_v1.json"
+_PRIVATE_VALIDATION: ContextVar[Path | None] = ContextVar(
+    "private_capsule_validation", default=None
+)
+
+
+def publication_namespace(version: int = 1) -> str:
+    """Keep scientific-v2 transactions in an explicit, independent namespace."""
+    require(
+        isinstance(version, int)
+        and not isinstance(version, bool)
+        and version in (1, 2),
+        "Unsupported publication version.",
+    )
+    return f"generation_publications_v{version}"
+
+
+def capsule_seal(version: int = 1) -> str:
+    """Version the seal without changing any historical v1 payload."""
+    publication_namespace(version)
+    return f".generation_publication_v{version}.json"
+
+
+@contextmanager
+def private_generation_validation(staging: Path) -> Iterator[None]:
+    """Permit only the owner's temporary validation index, never consumer discovery.
+
+    The publisher holds the Growth lease. Its temporary index is removed before
+    sealing and cannot become a cached consumer index for an uncommitted capsule.
+    """
+    require(staging.parent.name == "staging", "Private validation requires staging.")
+    token = _PRIVATE_VALIDATION.set(staging.absolute())
+    try:
+        yield
+    finally:
+        _PRIVATE_VALIDATION.reset(token)
 
 
 class GenerationPublicationError(ValueError):
@@ -145,7 +183,10 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
     """Read the append-only roots owned by the same atomic run-state commit."""
     data = metadata.get(PUBLICATION_KEY)
     require(
-        isinstance(data, dict) and data.get("schema_version") == 1,
+        isinstance(data, dict)
+        and isinstance(data.get("schema_version"), int)
+        and not isinstance(data.get("schema_version"), bool)
+        and data["schema_version"] in (1, 2),
         "Missing or unsupported durable generation protocol.",
     )
     assert isinstance(data, dict)
@@ -159,6 +200,12 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
     generations: set[int] = set()
     for record in records:
         require(isinstance(record, dict), "Malformed generation root.")
+        require(
+            isinstance(record.get("publication_version", 1), int)
+            and not isinstance(record.get("publication_version", 1), bool)
+            and record.get("publication_version", 1) == data["schema_version"],
+            "Mixed publication versions.",
+        )
         identifier = record.get("id")
         generation = record.get("generation")
         require(
@@ -190,20 +237,24 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
     return records
 
 
-def capsule_path(work_dir: Path, identifier: str) -> Path:
+def capsule_path(work_dir: Path, identifier: str, version: int = 1) -> Path:
     """Resolve only a validated capsule identifier in the owned namespace."""
     require(
         len(identifier) == 32 and all(c in "0123456789abcdef" for c in identifier),
         "Malformed capsule identity.",
     )
-    return work_dir / PUBLICATION_NAMESPACE / "objects" / identifier
+    return work_dir / publication_namespace(version) / "objects" / identifier
 
 
 def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
     """Verify every dependency before exposing scientific rows or acknowledging a patch."""
-    root = capsule_path(work_dir, record["id"])
+    version = record.get("publication_version", 1)
+    root = capsule_path(work_dir, record["id"], version)
     seal = inside(work_dir, record["descriptor_path"])
-    require(seal == root / CAPSULE_SEAL, "Descriptor escaped its committed capsule.")
+    require(
+        seal == root / capsule_seal(version),
+        "Descriptor escaped its committed capsule.",
+    )
     require(
         file_digest(seal) == record["descriptor_sha256"],
         "Committed capsule descriptor changed.",
@@ -214,6 +265,18 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
         == (PUBLICATION_KEY, record["id"], record["generation"]),
         "Capsule generation identity mismatch.",
     )
+    require(
+        isinstance(descriptor.get("publication_version", 1), int)
+        and not isinstance(descriptor.get("publication_version", 1), bool)
+        and descriptor.get("publication_version", 1) == version,
+        "Capsule version mismatch.",
+    )
+    if version == 2:
+        require(
+            descriptor.get("scientific_identity") == record.get("scientific_identity")
+            and isinstance(record.get("scientific_identity"), dict),
+            "Scientific publication identity mismatch.",
+        )
     entries = descriptor.get("files")
     require(
         isinstance(entries, list) and bool(entries),
@@ -227,7 +290,7 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
         require(
             isinstance(relative, str)
             and relative not in names
-            and relative != CAPSULE_SEAL,
+            and relative != capsule_seal(version),
             "Conflicting capsule dependency path.",
         )
         names.add(relative)
@@ -256,6 +319,8 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
                 require(
                     path.is_relative_to(root), "Committed pointer escaped its capsule."
                 )
+    if version == 2:
+        validate_committed_identity(work_dir, root, record, descriptor)
     return descriptor
 
 
@@ -266,12 +331,15 @@ def capsule_lease(
     *,
     exclusive: bool = False,
     nonblocking: bool = False,
+    version: int = 1,
 ) -> Iterator[None]:
     """Stable inode pins are never unlinked, including by orphan collection."""
     import fcntl
 
-    capsule_path(work_dir, identifier)  # Validate before using the ID as a filename.
-    directory = work_dir / PUBLICATION_NAMESPACE / "pins"
+    capsule_path(
+        work_dir, identifier, version
+    )  # Validate before using the ID as a filename.
+    directory = work_dir / publication_namespace(version) / "pins"
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / f"{identifier}.lock").open("a+") as handle:
         flags = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
@@ -284,28 +352,44 @@ def capsule_lease(
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def locate_capsule(path: Path) -> tuple[Path, str] | None:
+def locate_capsule(path: Path) -> tuple[Path, str, int] | None:
     """Recognize only the explicit publication namespace, leaving legacy v1 alone."""
     for ancestor in path.absolute().parents:
-        if (
-            ancestor.parent.name == "objects"
-            and ancestor.parent.parent.name == PUBLICATION_NAMESPACE
-        ):
-            return ancestor.parent.parent.parent, ancestor.name
+        if ancestor.parent.name == "objects" and ancestor.parent.parent.name in {
+            PUBLICATION_NAMESPACE,
+            publication_namespace(2),
+        }:
+            return (
+                ancestor.parent.parent.parent,
+                ancestor.name,
+                int(ancestor.parent.parent.name[-1]),
+            )
     return None
 
 
 @contextmanager
 def generation_read_pin(path: Path) -> Iterator[None]:
     """Read a raw capsule path only after adopting its run-state commit."""
+    for ancestor in path.absolute().parents:
+        if ancestor.parent.parent.name == publication_namespace(
+            2
+        ) and ancestor.parent.name in {"staging", "trash"}:
+            require(
+                ancestor == _PRIVATE_VALIDATION.get(),
+                "Uncommitted private scientific generation.",
+            )
     location = locate_capsule(path)
     if location is None:
         yield
         return
-    work_dir, identifier = location
-    with capsule_lease(work_dir, identifier):
+    work_dir, identifier, version = location
+    with capsule_lease(work_dir, identifier, version=version):
         state = read_object(work_dir / "run_state.json")
         records = publication_records(state["metadata"])
+        require(
+            state["metadata"][PUBLICATION_KEY]["schema_version"] == version,
+            "Publication namespace/version mismatch.",
+        )
         matching = [r for r in records if r["id"] == identifier]
         require(
             len(matching) == 1, "Uncommitted capsule is not a published generation."
@@ -320,7 +404,7 @@ def assert_artifact_writable(path: Path) -> None:
     """Cooperative serializers cannot overwrite a sealed capsule or its hard links."""
     for ancestor in [path, *path.parents]:
         require(
-            not (ancestor / CAPSULE_SEAL).exists(),
+            not any((ancestor / capsule_seal(v)).exists() for v in (1, 2)),
             "Cannot write into an immutable publication capsule.",
         )
 
@@ -330,9 +414,9 @@ def pinned_file_hashes(path: Path) -> dict[str, str]:
     location = locate_capsule(path)
     if location is None:
         return {}
-    work_dir, identifier = location
-    root = capsule_path(work_dir, identifier)
-    descriptor = read_object(root / CAPSULE_SEAL)
+    work_dir, identifier, version = location
+    root = capsule_path(work_dir, identifier, version)
+    descriptor = read_object(root / capsule_seal(version))
     return {str(root / entry["path"]): entry["sha256"] for entry in descriptor["files"]}
 
 
@@ -340,7 +424,7 @@ def validate_manifest_publication(
     work_dir: Path, manifest: MorpionPipelineGenerationManifest
 ) -> None:
     """Check discovery against the authoritative state, preserving legacy baselines."""
-    if not (work_dir / PUBLICATION_NAMESPACE).exists():
+    if not any((work_dir / publication_namespace(v)).exists() for v in (1, 2)):
         return
     state_path = work_dir / "run_state.json"
     if not state_path.is_file():
@@ -366,3 +450,88 @@ def validate_manifest_publication(
         "Discovery manifest differs from its committed generation.",
     )
     validate_capsule(work_dir, record)
+
+
+def object_digest(value: object) -> str:
+    """Bind an explicit JSON identity without discarding any provenance fields."""
+    return hashlib.sha256(
+        json.dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
+    ).hexdigest()
+
+
+def copy_artifact(source: Path, destination: Path, *, link: bool = False) -> None:
+    """Copy an external baseline, or link immutable committed capsule bytes."""
+    require(not source.is_symlink(), f"Symlinked publication input: {source}")
+    if source.is_dir():
+        destination.mkdir(parents=True, exist_ok=False)
+        for path in sorted(source.iterdir()):
+            copy_artifact(path, destination / path.name, link=link)
+    else:
+        require(source.is_file(), f"Missing publication input: {source}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if link:
+            os.link(source, destination)
+        else:
+            shutil.copyfile(source, destination)
+
+
+def validate_committed_identity(
+    work_dir: Path, root: Path, record: dict[str, Any], descriptor: dict[str, Any]
+) -> None:
+    """Bind managed reader sources to the sealed checkpoint/scientific identity."""
+    identity = record["scientific_identity"]
+    path = inside(work_dir, record["tree_snapshot_path"])
+    require(
+        path.is_relative_to(root)
+        and descriptor["sharded_snapshot_path"] == path.relative_to(root).as_posix(),
+        "Scientific pointer escaped its sealed identity.",
+    )
+    require(
+        (
+            identity.get("source_format_kind"),
+            identity.get("source_format_version"),
+            identity.get("scientific_contract"),
+        )
+        == (KIND, VERSION, CONTRACT),
+        "Unsupported committed scientific identity.",
+    )
+    require(
+        identity.get("growth_generation")
+        == identity.get("source_generation")
+        == record["generation"]
+        and identity.get("generation_mapping") == "growth-equals-scientific-from-1",
+        "Scientific generation mapping mismatch.",
+    )
+    require(
+        identity["producer_sha256"] == object_digest(identity["producer"])
+        and identity["generation_descriptor_sha256"] == file_digest(path)
+        and identity["catalog_sha256"]
+        == file_digest(path.parent.parent / "manifest.json")
+        and identity["checkpoint_sha256"]
+        == artifact_digest(inside(work_dir, record["checkpoint_path"])),
+        "Committed scientific/checkpoint identity changed.",
+    )
+
+
+def committed_scientific_source(path: Path) -> dict[str, Any] | None:
+    """Bind a managed v2 patch to the exact committed source, not a generation label alone."""
+    location = locate_capsule(path)
+    if location is None or location[2] != 2:
+        return None
+    work_dir, identifier, _version = location
+    with generation_read_pin(path):
+        state = read_object(work_dir / "run_state.json")
+        record = next(
+            r for r in publication_records(state["metadata"]) if r["id"] == identifier
+        )
+        require(
+            path.absolute()
+            == inside(work_dir, record["tree_snapshot_path"]).absolute(),
+            "Patch source must select its capsule's committed scientific head.",
+        )
+        return {
+            "capsule_id": identifier,
+            "scientific_identity": record["scientific_identity"],
+        }

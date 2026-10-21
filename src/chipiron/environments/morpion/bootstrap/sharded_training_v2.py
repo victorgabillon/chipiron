@@ -1,4 +1,4 @@
-"""Explicit, offline scientific v2 export; never selected by pipeline dispatch.
+"""Explicit scientific v2 export; selected only by the opt-in v2 publication API.
 
 The v1 writer/loader remain untouched. This reference implementation uses a
 different envelope and JSONL shards so an old loader cannot silently project
@@ -37,7 +37,8 @@ from valanga.evaluations import Value
 
 from chipiron.environments.morpion.types import MorpionState
 
-from .generation_publication_io import assert_artifact_writable
+from . import sharded_training_v2_contract as format_contract
+from .generation_publication_io import assert_artifact_writable, generation_read_pin
 from .pipeline_memory import current_rss_mb, log_pipeline_memory
 
 if TYPE_CHECKING:
@@ -45,10 +46,10 @@ if TYPE_CHECKING:
 
     from anemone.node_evaluation.common.value_snapshot import NodeValueSnapshotAccess
 
-KIND = "morpion_scientific_training_export"
-VERSION = 2
-CONTRACT = "anemone-values-canonical-morpion-1"
-REFERENCE_CONTRACT = "atomheart-0.2.11-dump-state-ref"
+KIND = format_contract.KIND
+VERSION = format_contract.VERSION
+CONTRACT = format_contract.CONTRACT
+REFERENCE_CONTRACT = format_contract.REFERENCE_CONTRACT
 _CODEC = MorpionStateCheckpointCodec()
 _SCALARS = (
     "direct_value_scalar",
@@ -672,7 +673,12 @@ def _validate_topology(topology: dict[str, tuple[list[str], list[str]]]) -> None
 
 def load_scientific_training_generation(path: str | Path) -> ScientificGeneration:
     """Load v2 into memory for reference validation only; no legacy fallback."""
-    manifest_path = Path(path)
+    with generation_read_pin(Path(path)):
+        return _load_scientific_training_generation(Path(path))
+
+
+def _load_scientific_training_generation(manifest_path: Path) -> ScientificGeneration:
+    """Load the reference oracle while holding the managed source pin."""
     root = manifest_path.parent.parent
     manifest = _read(manifest_path, "generation")
     catalog = _read(root / "manifest.json", "catalog")

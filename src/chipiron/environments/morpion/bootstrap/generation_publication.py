@@ -1,4 +1,4 @@
-"""Immutable capsules around the unchanged additive scientific v1 writer.
+"""Immutable capsules with explicit scientific v1 and v2 export adapters.
 
 All committed capsules remain durable retention roots. Only uncommitted owned
 attempts can be collected, under the same Growth lease as normal publication.
@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 import uuid
 from dataclasses import replace
@@ -19,14 +18,14 @@ import ijson
 from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
     ATTEMPT_MARKER,
-    CAPSULE_SEAL,
     PUBLICATION_KEY,
-    PUBLICATION_NAMESPACE,
     artifact_digest,
     capsule_lease,
     capsule_path,
+    capsule_seal,
     file_digest,
     growth_receipt_ownership,
+    publication_namespace,
     publication_records,
     publish_directory_if_absent,
     read_object,
@@ -34,6 +33,9 @@ from .generation_publication_io import (
     sync_artifact,
     sync_directory,
     validate_capsule,
+)
+from .generation_publication_io import (
+    copy_artifact as _copy_artifact,
 )
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 from .sharded_training_export import (
@@ -46,26 +48,11 @@ from .sharded_training_export import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
     from .bootstrap_paths import MorpionBootstrapPaths
     from .run_state import MorpionBootstrapRunState
-
-
-def _copy_artifact(source: Path, destination: Path, *, link: bool = False) -> None:
-    """Copy an external baseline, or link immutable committed capsule bytes."""
-    require(not source.is_symlink(), f"Symlinked publication input: {source}")
-    if source.is_dir():
-        destination.mkdir(parents=True, exist_ok=False)
-        for path in sorted(source.iterdir()):
-            _copy_artifact(path, destination / path.name, link=link)
-    else:
-        require(source.is_file(), f"Missing publication input: {source}")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if link:
-            os.link(source, destination)
-        else:
-            shutil.copyfile(source, destination)
 
 
 def _is_v1_sharded(path: Path, *, allow_flat_metadata: bool = False) -> bool:
@@ -254,10 +241,19 @@ def validate_v1_export(path: Path) -> None:
 class DurableGenerationPublication:
     """One Growth owner publishes immutable dependencies, then run state commits."""
 
-    def __init__(self, paths: MorpionBootstrapPaths) -> None:
+    def __init__(
+        self,
+        paths: MorpionBootstrapPaths,
+        *,
+        scientific_v2_producer: Mapping[str, str] | None = None,
+    ) -> None:
         """Bind only to the new protocol namespace, never a legacy export root."""
         self.paths = paths
-        self.root = paths.work_dir / PUBLICATION_NAMESPACE
+        self.version = 1 if scientific_v2_producer is None else 2
+        self.producer = (
+            None if scientific_v2_producer is None else dict(scientific_v2_producer)
+        )
+        self.root = paths.work_dir / publication_namespace(self.version)
         self.state: MorpionBootstrapRunState | None = None
         self.staging: Path | None = None
         self.identifier: str | None = None
@@ -293,6 +289,10 @@ class DurableGenerationPublication:
     def validate_state(self, state: MorpionBootstrapRunState) -> dict[str, Any]:
         """Require the current head to include every immutable dependency."""
         records = publication_records(state.metadata)
+        require(
+            state.metadata[PUBLICATION_KEY]["schema_version"] == self.version,
+            "Explicit publication version required; downgrade refused.",
+        )
         head = records[-1]
         require(
             head["generation"] == state.generation
@@ -309,7 +309,17 @@ class DurableGenerationPublication:
                 ),
                 "Broken publication ancestry.",
             )
-        return validate_capsule(self.paths.work_dir, head)
+        descriptor = validate_capsule(self.paths.work_dir, head)
+        if self.version == 2:
+            from .sharded_training_v2 import _producer
+
+            assert self.producer is not None
+            require(
+                records[0]["generation"] == 1
+                and head["scientific_identity"]["producer"] == _producer(self.producer),
+                "Scientific publication producer or genesis changed.",
+            )
+        return descriptor
 
     def model_pin(
         self, state: MorpionBootstrapRunState, origin: str, digest: str
@@ -320,7 +330,8 @@ class DurableGenerationPublication:
             for pin in descriptor["model_pins"]:
                 if (pin["origin"], pin["sha256"]) == (origin, digest):
                     path = inside(
-                        capsule_path(self.paths.work_dir, record["id"]), pin["path"]
+                        capsule_path(self.paths.work_dir, record["id"], self.version),
+                        pin["path"],
                     )
                     require(
                         artifact_digest(path) == digest,
@@ -355,7 +366,8 @@ class DurableGenerationPublication:
                 if match is not None:
                     validate_capsule(self.paths.work_dir, record)
                     source = inside(
-                        capsule_path(self.paths.work_dir, record["id"]), match["path"]
+                        capsule_path(self.paths.work_dir, record["id"], self.version),
+                        match["path"],
                     )
                     break
         require(
@@ -387,6 +399,10 @@ class DurableGenerationPublication:
             self.state = state
             self.validate_state(state)
             return state
+        require(
+            self.version == 1,
+            "Scientific v2 requires explicit initialization in a new isolated workspace.",
+        )
         require(
             not self.paths.pipeline_reevaluation_patch_path.exists(),
             "Publication adoption requires a quiescent baseline without a pending patch.",
@@ -454,9 +470,17 @@ class DurableGenerationPublication:
                 if selected is not None:
                     validate_capsule(self.paths.work_dir, record)
                     source = inside(
-                        capsule_path(self.paths.work_dir, record["id"]), selected
+                        capsule_path(self.paths.work_dir, record["id"], self.version),
+                        selected,
                     )
-                    clone_v1_catalog(source, destination, link=True)
+                    if self.version == 2:
+                        from .scientific_generation_publication import (
+                            clone_scientific_catalog,
+                        )
+
+                        clone_scientific_catalog(source, destination)
+                    else:
+                        clone_v1_catalog(source, destination, link=True)
                     break
         return replace(
             self.paths,
@@ -469,7 +493,11 @@ class DurableGenerationPublication:
     ) -> MorpionBootstrapRunState:
         """Publish complete dependencies; only a later durable run-state write commits."""
         assert self.staging is not None and self.identifier is not None
-        if not baseline and state.latest_tree_snapshot_path is not None:
+        if (
+            self.version == 1
+            and not baseline
+            and state.latest_tree_snapshot_path is not None
+        ):
             # A future adapter can return a new layout that the v1 filename probe
             # below cannot see. Refuse it before sealing or moving any capsule.
             _is_v1_sharded(
@@ -481,7 +509,7 @@ class DurableGenerationPublication:
             / "tree_exports_sharded"
             / f"generation_{state.generation:06d}.json"
         )
-        if export.exists():
+        if self.version == 1 and export.exists():
             require(
                 _load_generation_manifest(export).generation == state.generation,
                 "Sharded source generation differs from publication generation.",
@@ -491,6 +519,68 @@ class DurableGenerationPublication:
         previous = (
             [] if self.state is None else publication_records(self.state.metadata)
         )
+        scientific_identity = None
+        if self.version == 2:
+            from .scientific_generation_publication import validate_scientific_export
+
+            require(
+                not baseline
+                and isinstance(state.generation, int)
+                and not isinstance(state.generation, bool)
+                and state.generation
+                == (1 if not previous else previous[-1]["generation"] + 1),
+                "Scientific publication requires consecutive generations.",
+            )
+            require(
+                state.latest_tree_snapshot_path is not None
+                and state.latest_runtime_checkpoint_path is not None,
+                "Scientific publication requires an export and checkpoint for every saved generation.",
+            )
+            assert (
+                state.latest_tree_snapshot_path is not None
+                and state.latest_runtime_checkpoint_path is not None
+            )
+            assert self.producer is not None and self.config_hash is not None
+            self.sharded_path = inside(
+                self.paths.work_dir, state.latest_tree_snapshot_path
+            )
+            checkpoint = inside(
+                self.paths.work_dir, state.latest_runtime_checkpoint_path
+            )
+            require(
+                checkpoint.is_relative_to(self.staging),
+                "Checkpoint escaped private scientific attempt.",
+            )
+            scientific_identity = validate_scientific_export(
+                self.sharded_path,
+                staging=self.staging,
+                generation=state.generation,
+                producer=self.producer,
+                checkpoint=checkpoint,
+                config_hash=self.config_hash,
+            )
+            if previous:
+                assert self.state is not None
+                parent = self.validate_state(self.state)
+                # Preserve the exact committed prefix, even if an adapter replaces
+                # a linked inode privately instead of using the v2 writer.
+                for entry in parent["files"]:
+                    relative = entry["path"]
+                    if (
+                        relative.startswith("tree_exports_sharded/")
+                        and relative != "tree_exports_sharded/manifest.json"
+                    ):
+                        require(
+                            file_digest(self.staging / relative) == entry["sha256"],
+                            "Scientific committed prefix changed in private attempt.",
+                        )
+                initial = read_object(
+                    inside(self.paths.work_dir, previous[0]["descriptor_path"])
+                )
+                require(
+                    self.model_pins == initial["model_pins"],
+                    "Scientific publication model epoch changed; explicit new lineage required.",
+                )
         parent_id = None if not previous else previous[-1]["id"]
         files = [p for p in sorted(self.staging.rglob("*")) if p.is_file()]
         require(
@@ -517,9 +607,14 @@ class DurableGenerationPublication:
                 for p in files
             ],
         }
-        atomic_json(self.staging / CAPSULE_SEAL, descriptor)
+        if self.version == 2:
+            descriptor.update(
+                publication_version=2, scientific_identity=scientific_identity
+            )
+        seal_name = capsule_seal(self.version)
+        atomic_json(self.staging / seal_name, descriptor)
         sync_artifact(self.staging, self.paths.work_dir)
-        final = capsule_path(self.paths.work_dir, self.identifier)
+        final = capsule_path(self.paths.work_dir, self.identifier, self.version)
         old_staging = self.staging
         publish_directory_if_absent(old_staging, final, self.paths.work_dir)
 
@@ -546,14 +641,18 @@ class DurableGenerationPublication:
             "id": self.identifier,
             "generation": state.generation,
             "parent_id": parent_id,
-            "descriptor_path": self.paths.relative_to_work_dir(final / CAPSULE_SEAL),
-            "descriptor_sha256": file_digest(final / CAPSULE_SEAL),
+            "descriptor_path": self.paths.relative_to_work_dir(final / seal_name),
+            "descriptor_sha256": file_digest(final / seal_name),
             "checkpoint_path": state.latest_runtime_checkpoint_path,
             "tree_snapshot_path": state.latest_tree_snapshot_path,
         }
+        if self.version == 2:
+            record.update(
+                publication_version=2, scientific_identity=scientific_identity
+            )
         metadata = dict(state.metadata)
         metadata[PUBLICATION_KEY] = {
-            "schema_version": 1,
+            "schema_version": self.version,
             "head_id": self.identifier,
             "generations": [*previous, record],
         }
@@ -567,7 +666,7 @@ class DurableGenerationPublication:
     def retention_roots(self, state: MorpionBootstrapRunState) -> set[Path]:
         """Conservatively pin all committed capsules and legacy provenance inputs."""
         roots = {
-            capsule_path(self.paths.work_dir, r["id"])
+            capsule_path(self.paths.work_dir, r["id"], self.version)
             for r in publication_records(state.metadata)
         }
         roots.update({
@@ -623,7 +722,11 @@ class DurableGenerationPublication:
                     continue
                 try:
                     with capsule_lease(
-                        self.paths.work_dir, path.name, exclusive=True, nonblocking=True
+                        self.paths.work_dir,
+                        path.name,
+                        exclusive=True,
+                        nonblocking=True,
+                        version=self.version,
                     ):
                         trash = self.root / "trash" / path.name
                         if path != trash:
@@ -666,4 +769,14 @@ def prune_uncommitted_generation_artifacts(paths: MorpionBootstrapPaths) -> list
     """Collect proven orphans under the same kernel Growth lease as publication."""
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
-        return DurableGenerationPublication(paths).prune_uncommitted(state)
+        version = state.metadata[PUBLICATION_KEY]["schema_version"]
+        producer = (
+            None
+            if version == 1
+            else publication_records(state.metadata)[-1]["scientific_identity"][
+                "producer"
+            ]["identity"]
+        )
+        return DurableGenerationPublication(
+            paths, scientific_v2_producer=producer
+        ).prune_uncommitted(state)

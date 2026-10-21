@@ -405,16 +405,22 @@ def run_pipeline_growth_stage(
     derived_sequential: bool = False,
     checkpoint_bound_receipts: bool = False,
     durable_generation_publication: bool = False,
+    scientific_v2_producer: Mapping[str, str] | None = None,
 ) -> MorpionBootstrapRunState:
     """Run Growth, with explicit experimental checkpoint-bound receipt activation.
 
     Receipt mode alone supports flat/skipped exports. The additional explicit
     durable_generation_publication option supports immutable scientific v1
-    sharded/both exports too. No CLI or production worker enables either option.
+    sharded/both exports too. Supplying scientific_v2_producer selects the explicit
+    v2 adapter in an already initialized v2 workspace. No CLI or production worker
+    enables these options.
     """
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    if scientific_v2_producer is not None and not durable_generation_publication:
+        message = "Scientific v2 requires durable publication."
+        raise CheckpointPatchReceiptError(message)
     if durable_generation_publication and not checkpoint_bound_receipts:
         message = (
             "Durable generation publication requires checkpoint-bound receipt mode."
@@ -428,6 +434,7 @@ def run_pipeline_growth_stage(
                 paths,
                 runner,
                 durable_generation_publication=durable_generation_publication,
+                scientific_v2_producer=scientific_v2_producer,
             )
             if checkpoint_bound_receipts
             else None
@@ -479,6 +486,7 @@ def _run_pipeline_growth_stage_owned(
 
     if receipt_session is not None:
         receipt_session.validate_options(args)
+        receipt_session.validate_publication_version(run_state)
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
@@ -506,6 +514,12 @@ def _run_pipeline_growth_stage_owned(
         previous_generation = run_state.generation
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
+        if (
+            receipt_session is not None
+            and receipt_session.publication is not None
+            and receipt_session.publication.version == 2
+        ):
+            receipt_session.validate_options(effective_args)
         run_state = _run_one_pipeline_growth_cycle(
             args=effective_args,
             paths=paths,
@@ -1249,15 +1263,24 @@ def _run_one_pipeline_growth_cycle_impl(
         training_export_override = {"status": "skipped", "reason": "config"}
     else:
         export_measurement = StageMeasurement()
-        tree_snapshot_path = _export_training_snapshot_for_generation(
-            args=args,
-            paths=receipt_session.export_paths(
-                sharded=args.training_export_mode in {"sharded", "both"}
+        scientific_publication = (
+            receipt_session is not None
+            and receipt_session.publication is not None
+            and receipt_session.publication.version == 2
+        )
+        tree_snapshot_path = (
+            receipt_session.export_scientific(generation)
+            if scientific_publication and receipt_session is not None
+            else _export_training_snapshot_for_generation(
+                args=args,
+                paths=receipt_session.export_paths(
+                    sharded=args.training_export_mode in {"sharded", "both"}
+                )
+                if receipt_session is not None
+                else paths,
+                runner=runner,
+                generation=generation,
             )
-            if receipt_session is not None
-            else paths,
-            runner=runner,
-            generation=generation,
         )
         persist_stage_measurement(
             paths.work_dir,

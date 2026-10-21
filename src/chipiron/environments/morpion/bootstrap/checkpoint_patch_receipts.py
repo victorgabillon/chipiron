@@ -39,6 +39,7 @@ from .reevaluation_patch_consumer import (
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from contextlib import AbstractContextManager
 
     from .bootstrap_args import MorpionBootstrapArgs
@@ -234,8 +235,13 @@ class GrowthPatchReceiptSession:
         runner: object,
         *,
         durable_generation_publication: bool = False,
+        scientific_v2_producer: Mapping[str, str] | None = None,
     ) -> None:
         """Create volatile transaction context; this is never a recovery authority."""
+        _require(
+            scientific_v2_producer is None or durable_generation_publication,
+            "Scientific v2 requires durable publication.",
+        )
         self.paths = paths
         self.runner = runner
         self.pending: PendingPatch | None = None
@@ -245,7 +251,9 @@ class GrowthPatchReceiptSession:
         self.blend_alpha = 1.0
         self.attempt_id = uuid.uuid4().hex
         self.publication = (
-            DurableGenerationPublication(paths)
+            DurableGenerationPublication(
+                paths, scientific_v2_producer=scientific_v2_producer
+            )
             if durable_generation_publication
             else None
         )
@@ -340,6 +348,18 @@ class GrowthPatchReceiptSession:
 
     def validate_options(self, args: MorpionBootstrapArgs) -> None:
         """Reject unsupported modes before modifying any configuration or baseline."""
+        if self.publication is not None and self.publication.version == 2:
+            _require(
+                args.training_export_mode == "sharded"
+                and not args.growth_skip_training_export,
+                "Scientific v2 publication requires a sharded export at every saved Growth generation.",
+            )
+            _require(
+                callable(
+                    getattr(self.runner, "export_scientific_training_snapshot", None)
+                ),
+                "Runner has no explicit scientific v2 export adapter.",
+            )
         _require(
             not (self.paths.work_dir / PROVENANCE_NAME).exists(),
             "Ordinary receipt activation cannot modify a derived workspace.",
@@ -359,11 +379,46 @@ class GrowthPatchReceiptSession:
             "Receipt mode requires checkpoint creation.",
         )
 
+    def validate_publication_version(self, state: MorpionBootstrapRunState) -> None:
+        """Reject downgrade or implicit initialization before changing config or receipts."""
+        data = state.metadata.get(PUBLICATION_KEY)
+        expected = self.publication.version if self.publication is not None else None
+        if data is not None:
+            _require(
+                isinstance(data, dict) and data.get("schema_version") == expected,
+                "Explicit matching publication version required; downgrade refused.",
+            )
+        elif expected == 2:
+            _require(
+                False,
+                "Scientific v2 requires explicit initialization in a new isolated workspace.",
+            )
+
+    def export_scientific(self, generation: int) -> Path:
+        """Invoke the v2 writer only in the selected private capsule attempt."""
+        assert self.publication is not None and self.publication.producer is not None
+        export = getattr(self.runner, "export_scientific_training_snapshot", None)
+        _require(callable(export), "Runner has no scientific v2 export adapter.")
+        assert callable(export)
+        paths = self.export_paths(sharded=True)
+        result = export(
+            paths.sharded_tree_snapshot_dir,
+            generation=generation,
+            producer=self.publication.producer,
+        )
+        _require(
+            isinstance(result, str | Path),
+            "Scientific export adapter returned no path.",
+        )
+        assert isinstance(result, str | Path)
+        return Path(result)
+
     def prepare(
         self, state: MorpionBootstrapRunState, args: MorpionBootstrapArgs
     ) -> MorpionBootstrapRunState:
         """Adopt only a quiescent explicit baseline; leave production activation gated."""
         self.validate_options(args)
+        self.validate_publication_version(state)
         self.discard_runtime()
         if RECEIPTS_METADATA_KEY not in state.metadata:
             _require(
@@ -467,6 +522,24 @@ class GrowthPatchReceiptSession:
             and 0 <= patch.tree_generation <= state.generation,
             "Patch source generation is missing or ahead of committed Growth.",
         )
+        if self.publication is not None and self.publication.version == 2:
+            from .generation_publication_io import (
+                committed_scientific_source,
+                publication_records,
+            )
+
+            matching = [
+                r
+                for r in publication_records(state.metadata)
+                if r["generation"] == patch.tree_generation
+            ]
+            _require(len(matching) == 1, "Patch has no committed scientific source.")
+            source = inside(self.paths.work_dir, matching[0]["tree_snapshot_path"])
+            _require(
+                patch.metadata.get("scientific_publication")
+                == committed_scientific_source(source),
+                "Patch scientific publication identity mismatch.",
+            )
         model = self.current_model()
         _require(
             model == self.runtime_model, "Active model changed since runtime restore."

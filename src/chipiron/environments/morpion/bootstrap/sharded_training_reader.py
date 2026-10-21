@@ -27,7 +27,11 @@ from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot
 from platformdirs import user_cache_path
 
-from .generation_publication_io import generation_read_pin, pinned_file_hashes
+from .generation_publication_io import (
+    assert_artifact_writable,
+    generation_read_pin,
+    pinned_file_hashes,
+)
 from .performance import StageMeasurement
 from .pipeline_memory import log_pipeline_memory
 from .sharded_training_export import (
@@ -447,6 +451,8 @@ class ShardedTrainingGenerationView:
         # Even an explicit override must never place a cache inside the export.
         if directory == self.root or self.root in directory.parents:
             raise ValueError("Reader cache must be outside the source export directory")
+        if self.format_kind == SCIENTIFIC_KIND:
+            assert_artifact_writable(directory)
         directory.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()
         self.index_path = directory / f"v{INDEX_SCHEMA_VERSION}-{digest}.sqlite3"
@@ -629,10 +635,11 @@ class ShardedTrainingGenerationView:
         sources: list[dict[str, object]] = []
         for path in self._source_paths:
             before = path.stat()
-            if path in self._v2_prepared_stats and self._v2_prepared_stats[path] != (
-                before.st_size,
-                before.st_mtime_ns,
-                before.st_ctime_ns,
+            prepared = self._v2_prepared_stats.get(path)
+            expected = self._publication_hashes.get(str(path))
+            if prepared is not None and (
+                prepared[:2] != (before.st_size, before.st_mtime_ns)
+                or (expected is None and prepared[2] != before.st_ctime_ns)
             ):
                 raise ValueError(
                     f"Training export changed while preparing scientific metadata: {path}"

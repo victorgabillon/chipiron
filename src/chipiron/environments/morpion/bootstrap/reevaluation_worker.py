@@ -8,7 +8,7 @@ import math
 import time
 import uuid
 from contextlib import ExitStack
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
 
 from anemone.training_export import (
@@ -1083,6 +1083,14 @@ def run_morpion_reevaluation_worker_once(
             "source": "reevaluation_worker",
         },
     )
+    from .generation_publication_io import committed_scientific_source
+
+    committed_source = committed_scientific_source(snapshot_path)
+    if committed_source is not None:
+        patch = replace(
+            patch,
+            metadata={**patch.metadata, "scientific_publication": committed_source},
+        )
     if view is not None and view.format_version == 2:
         view.validate_source_identity()
     if not _save_reevaluation_patch_exclusive(

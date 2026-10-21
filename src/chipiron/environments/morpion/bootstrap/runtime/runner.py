@@ -1274,6 +1274,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         return manifest_path
 
+    def export_scientific_training_snapshot(
+        self, output_dir: str | Path, *, generation: int, producer: Mapping[str, str]
+    ) -> Path:
+        """Explicit v2 export from the same quiescent runtime as its checkpoint.
+
+        Only the opt-in durable scientific session selects this method. Source
+        values and target choice use the unchanged scientific writer contract.
+        """
+        from chipiron.environments.morpion.bootstrap.sharded_training_v2 import (
+            save_scientific_training_generation,
+        )
+
+        runtime = self._require_runtime()
+        nodes = runtime._all_nodes_in_tree_order()  # pylint: disable=protected-access
+        path, _stats = save_scientific_training_generation(
+            nodes=nodes,
+            root_node_id=str(runtime.tree.root_node.id),
+            output_dir=output_dir,
+            generation=generation,
+            producer=producer,
+        )
+        return path
+
     def build_training_tree_snapshot_payload(
         self,
     ) -> tuple[TrainingTreeSnapshot, MorpionTrainingExportProfile]:
