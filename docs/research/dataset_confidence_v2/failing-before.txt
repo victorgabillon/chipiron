@@ -1,0 +1,171 @@
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+_____________ test_selected_value_and_terminal_requirements[none] ______________
+
+policy = 'none'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+     assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+>    assert not parent['is_exact'], 'selected direct ESTIMATE(42) became exact evidence'
+E    AssertionError: selected direct ESTIMATE(42) became exact evidence
+E    assert not True
+
+../morpion-confidence-contract-probe.py:23: AssertionError
+___ test_selected_value_and_terminal_requirements[pv_blend_mean_prediction] ____
+
+policy = 'pv_blend_mean_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+     assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+>    assert not parent['is_exact'], 'selected direct ESTIMATE(42) became exact evidence'
+E    AssertionError: selected direct ESTIMATE(42) became exact evidence
+E    assert not True
+
+../morpion-confidence-contract-probe.py:23: AssertionError
+____ test_selected_value_and_terminal_requirements[pv_blend_min_prediction] ____
+
+policy = 'pv_blend_min_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+     assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+>    assert not parent['is_exact'], 'selected direct ESTIMATE(42) became exact evidence'
+E    AssertionError: selected direct ESTIMATE(42) became exact evidence
+E    assert not True
+
+../morpion-confidence-contract-probe.py:23: AssertionError
+_ test_selected_value_and_terminal_requirements[pv_exact_then_blend_mean_prediction] _
+
+policy = 'pv_exact_then_blend_mean_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+>    assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+E    AssertionError: a family estimate overwrote a certified terminal 35
+E    assert 42.0 == 35
+
+../morpion-confidence-contract-probe.py:22: AssertionError
+_ test_selected_value_and_terminal_requirements[pv_exact_then_blend_min_prediction] _
+
+policy = 'pv_exact_then_blend_min_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+>    assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+E    AssertionError: a family estimate overwrote a certified terminal 35
+E    assert 42.0 == 35
+
+../morpion-confidence-contract-probe.py:22: AssertionError
+_ test_selected_value_and_terminal_requirements[pv_exact_then_mean_prediction] _
+
+policy = 'pv_exact_then_mean_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+>    assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+E    AssertionError: a family estimate overwrote a certified terminal 35
+E    assert 42.0 == 35
+
+../morpion-confidence-contract-probe.py:22: AssertionError
+_ test_selected_value_and_terminal_requirements[pv_exact_then_min_prediction] __
+
+policy = 'pv_exact_then_min_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+>    assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+E    AssertionError: a family estimate overwrote a certified terminal 35
+E    assert 42.0 == 35
+
+../morpion-confidence-contract-probe.py:22: AssertionError
+______ test_selected_value_and_terminal_requirements[pv_mean_prediction] _______
+
+policy = 'pv_mean_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+     assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+>    assert not parent['is_exact'], 'selected direct ESTIMATE(42) became exact evidence'
+E    AssertionError: selected direct ESTIMATE(42) became exact evidence
+E    assert not True
+
+../morpion-confidence-contract-probe.py:23: AssertionError
+_______ test_selected_value_and_terminal_requirements[pv_min_prediction] _______
+
+policy = 'pv_min_prediction'
+
+    @pytest.mark.parametrize('policy',POLICIES)
+    def test_selected_value_and_terminal_requirements(policy):
+     confidence='legacy_v1' if REVISION=='before' else 'selected_value_v2'
+     result=next(x for x in CASE['comparisons'] if x['confidence_policy']==confidence and x['policy']==policy and not x['use_backup'] and x['blend']==.25 and not x['filters'])
+     if result['status']=='gated_all_three_paths':
+      assert REVISION=='after' and policy.startswith('pv_exact_then_')
+      return
+     output=result['output'];parent,terminal=output.get('scientific_rows',output.get('rows'))
+     assert terminal['target_value']==35, 'a family estimate overwrote a certified terminal 35'
+>    assert not parent['is_exact'], 'selected direct ESTIMATE(42) became exact evidence'
+E    AssertionError: selected direct ESTIMATE(42) became exact evidence
+E    assert not True
+
+../morpion-confidence-contract-probe.py:23: AssertionError
+=========================== short test summary info ============================
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[none]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_blend_mean_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_blend_min_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_exact_then_blend_mean_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_exact_then_blend_min_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_exact_then_mean_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_exact_then_min_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_mean_prediction]
+FAILED ../morpion-confidence-contract-probe.py::test_selected_value_and_terminal_requirements[pv_min_prediction]
+9 failed in 0.14s

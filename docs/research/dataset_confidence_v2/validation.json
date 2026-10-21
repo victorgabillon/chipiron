@@ -1,0 +1,56 @@
+{
+  "artifact_sha256": {
+    ".ci-reports/coverage.json": "7d3876e50a989cb92900e4b5ccb1b5e764e7e169f85882d8fda143111f2b2ab6",
+    ".ci-reports/pytest.xml": "ea0f5865ff53e8b7a92b59f4be8dc51b5d51d9130b48cdb5f0fca529594d2380",
+    ".ci-reports/tests.json": "4c91a2916edbd091f7f764e49ab92e2d711dfd896857cf84e05b94500f68f6c4",
+    "dist/chipiron-0.2.4-py3-none-any.whl": "322c53ba8cf6f0cdd0fbf707be64ceb88e8e84f8308c9aa52395fc76798dd1b2",
+    "dist/chipiron-0.2.4.tar.gz": "911f2d7b11ff8293cc142cb8c5ae919443a5fcafcd059058ad1f02f36f24d06e"
+  },
+  "focused_affected_suite": {
+    "passed": 247,
+    "seconds": 120.9
+  },
+  "full_ci": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. CHIPIRON_TEST_INSTALLED=1 QT_QPA_PLATFORM=offscreen python scripts/ci_test_metrics.py -n 2 --dist=loadfile --durations=30 --cov-report=json:.ci-reports/coverage.json --junitxml=.ci-reports/pytest.xml --basetemp=/tmp/morpion-confidence-full-ci -m 'not integration and not external_data' -p docs.research.benchmarks.morpion_training_export_20261020.validation_safety",
+    "deselected": [
+      "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+    ],
+    "elapsed_seconds": 463.1499760680017,
+    "exit_code": 0,
+    "failed": [],
+    "passed": 1872,
+    "selected": 1874,
+    "skipped": [
+      {
+        "duration": 0.0006486189959105104,
+        "nodeid": "tests/environments/test_morpion_relational_model_integration.py::test_relational_model_inputs_move_to_cuda_without_dtype_change",
+        "outcome": "skipped",
+        "phase": "setup"
+      },
+      {
+        "duration": 0.00042403499537613243,
+        "nodeid": "tests/learning/supervised/test_multi_input.py::test_multi_input_batch_moves_all_inputs_to_cuda",
+        "outcome": "skipped",
+        "phase": "setup"
+      }
+    ],
+    "warnings": 126
+  },
+  "implementation_commit": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+  "installed_distribution_guard": "passed",
+  "installed_wheel": true,
+  "repository_ruff_format": "640 files passed",
+  "repository_ruff_lint": "passed",
+  "sdist_and_wheel_build": "passed",
+  "static_ratchet": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "toolchain_check": "passed",
+  "wheel_matches_all_463_python_source_files": true
+}
