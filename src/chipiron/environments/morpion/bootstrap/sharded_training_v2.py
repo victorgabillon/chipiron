@@ -37,6 +37,7 @@ from valanga.evaluations import Value
 
 from chipiron.environments.morpion.types import MorpionState
 
+from .generation_publication_io import assert_artifact_writable
 from .pipeline_memory import current_rss_mb, log_pipeline_memory
 
 if TYPE_CHECKING:
@@ -321,6 +322,7 @@ def save_scientific_training_generation(
     )
     _require(_integer(generation) and generation >= 1, "invalid generation")
     root = Path(output_dir)
+    assert_artifact_writable(root)
     root.mkdir(parents=True, exist_ok=True)
     manifest_path = root / "manifest.json"
     if manifest_path.exists():

@@ -461,6 +461,10 @@ class DurableGenerationPublication:
     ) -> MorpionBootstrapRunState:
         """Publish complete dependencies; only a later durable run-state write commits."""
         assert self.staging is not None and self.identifier is not None
+        if not baseline and state.latest_tree_snapshot_path is not None:
+            # A future adapter can return a new layout that the v1 filename probe
+            # below cannot see. Refuse it before sealing or moving any capsule.
+            _is_v1_sharded(inside(self.paths.work_dir, state.latest_tree_snapshot_path))
         export = (
             self.staging
             / "tree_exports_sharded"

@@ -63,6 +63,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
     from types import TracebackType
 
+    from .sharded_training_export import MorpionShardedTrainingGenerationManifest
+
 LOGGER = logging.getLogger(__name__)
 INDEX_SCHEMA_VERSION = 2
 PARSER_BUFFER_BYTES = 64 * 1024
@@ -361,6 +363,23 @@ class ShardedTrainingGenerationView:
     ) -> None:
         """Initialize/reuse an index without constructing training snapshots."""
         self.index_build_peak_disk_bytes = 0
+        # Format preparation runs inside the pin's exception-safe initializer.
+        # Declare the fields populated by those format-specific helpers here.
+        self.index_build_temp_logical_bytes: int
+        self.format_version: int
+        self.scientific_contract: str | None
+        self.created_at_unix_s: float | None
+        self.provenance: dict[str, Any]
+        self.snapshot_metadata: dict[str, Any]
+        self._v2_manifest: dict[str, Any]
+        self.root: Path
+        self.manifest: MorpionShardedTrainingGenerationManifest
+        self.root_node_id: str
+        self.generation: int
+        self._expected_count: int
+        self._node_shards: list[Path]
+        self._source_paths: list[Path]
+        self._update_shard: Path
         self._publication_pin = generation_read_pin(Path(generation_manifest_path))
         self._publication_pin.__enter__()
         try:
@@ -390,14 +409,14 @@ class ShardedTrainingGenerationView:
         self.manifest_path = Path(generation_manifest_path).resolve()
         self.format_kind = _source_kind(self.manifest_path)
         self.format_version = 1
-        self.scientific_contract: str | None = None
-        self.created_at_unix_s: float | None = None
-        self.provenance: dict[str, Any] = {}
-        self.snapshot_metadata: dict[str, Any] = {
+        self.scientific_contract = None
+        self.created_at_unix_s = None
+        self.provenance = {}
+        self.snapshot_metadata = {
             "format_kind": "training_tree_snapshot",
             "format_version": 1,
         }
-        self._v2_manifest: dict[str, Any] = {}
+        self._v2_manifest = {}
         self._v2_descriptors: dict[Path, dict[str, Any]] = {}
         self._v2_prepared_stats: dict[Path, tuple[int, int, int]] = {}
         self.root = self.manifest_path.parent
@@ -478,8 +497,8 @@ class ShardedTrainingGenerationView:
         self.root_node_id = self.manifest.root_node_id
         self.generation = self.manifest.generation
         self._expected_count = self.manifest.node_count
-        self._node_shards: list[Path] = []
-        self._source_paths: list[Path] = [self.manifest_path]
+        self._node_shards = []
+        self._source_paths = [self.manifest_path]
         root_manifest_path = self.root / "manifest.json"
         if root_manifest_path.exists():
             _read_manifest_identity(root_manifest_path)
