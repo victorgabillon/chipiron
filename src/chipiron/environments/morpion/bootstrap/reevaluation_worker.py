@@ -446,9 +446,11 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         rows: list[MorpionReevaluationPatchRow] = []
         for node in nodes:
             node_id = node.node_id
-            if node.is_terminal and node.backed_up_value_scalar is not None:
+            if node.is_terminal:
                 direct_value = _required_terminal_value(
-                    node.backed_up_value_scalar,
+                    node.backed_up_value_scalar
+                    if node.backed_up_value_scalar is not None
+                    else node.direct_value_scalar,
                     node_id=node_id,
                 )
                 source = "terminal_existing_value"
@@ -464,7 +466,10 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                     node_id=node_id,
                     direct_value=direct_value,
                     backed_up_value=None,
-                    is_exact=node.is_exact,
+                    # A proof of the effective/tree value does not certify a
+                    # new neural prediction. Only the preserved terminal score
+                    # is authoritative in this built-in model adapter.
+                    is_exact=node.is_terminal,
                     is_terminal=node.is_terminal,
                     metadata={
                         "model_bundle_path": str(self.model_bundle_path),
