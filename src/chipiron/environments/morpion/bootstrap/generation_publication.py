@@ -520,6 +520,7 @@ class DurableGenerationPublication:
             [] if self.state is None else publication_records(self.state.metadata)
         )
         scientific_identity = None
+        canonical_validation = None
         if self.version == 2:
             from .scientific_generation_publication import validate_scientific_export
 
@@ -551,13 +552,15 @@ class DurableGenerationPublication:
                 checkpoint.is_relative_to(self.staging),
                 "Checkpoint escaped private scientific attempt.",
             )
-            scientific_identity = validate_scientific_export(
+            scientific_identity, canonical_validation = validate_scientific_export(
                 self.sharded_path,
                 staging=self.staging,
                 generation=state.generation,
                 producer=self.producer,
                 checkpoint=checkpoint,
                 config_hash=self.config_hash,
+                work_dir=self.paths.work_dir,
+                parent=None if not previous else previous[-1],
             )
             if previous:
                 assert self.state is not None
@@ -609,7 +612,9 @@ class DurableGenerationPublication:
         }
         if self.version == 2:
             descriptor.update(
-                publication_version=2, scientific_identity=scientific_identity
+                publication_version=2,
+                scientific_identity=scientific_identity,
+                canonical_validation=canonical_validation,
             )
         seal_name = capsule_seal(self.version)
         atomic_json(self.staging / seal_name, descriptor)

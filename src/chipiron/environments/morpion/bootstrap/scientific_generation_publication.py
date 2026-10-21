@@ -18,6 +18,11 @@ from .generation_publication_io import (
     private_generation_validation,
     require,
 )
+from .scientific_validation_evidence import (
+    canonical_validation_evidence,
+    committed_canonical_validation,
+    validator_identity,
+)
 from .sharded_training_reader import ShardedTrainingGenerationView, _scientific_manifest
 from .sharded_training_v2 import _producer
 
@@ -64,7 +69,9 @@ def validate_scientific_export(
     producer: Mapping[str, str],
     checkpoint: Path,
     config_hash: str,
-) -> dict[str, Any]:
+    work_dir: Path,
+    parent: dict[str, Any] | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Validate the new complete dependency closure with the existing bounded index.
 
     Previous generations have been sealed and verified before cloning. The new
@@ -102,19 +109,28 @@ def validate_scientific_export(
             "Unsupported scientific shard layout.",
         )
         expected_records = records
+    validator = validator_identity()
     with (
+        committed_canonical_validation(
+            work_dir=work_dir,
+            parent=parent,
+            manifest=path,
+            header=header,
+            validator=validator,
+        ) as reused_from,
         tempfile.TemporaryDirectory(prefix=".validation-index-", dir=staging) as cache,
         private_generation_validation(staging),
         ShardedTrainingGenerationView(
             path, cache_dir=cache, allow_scientific_v2=True
         ) as view,
     ):
+        require(not view.index_reused, "Publication validation requires a fresh index.")
         require(
             view.generation == generation, "Indexed scientific generation mismatch."
         )
         view.validate_source_identity()
         provenance = dict(view.provenance)
-    return {
+    identity = {
         **provenance,
         "growth_generation": generation,
         "generation_mapping": "growth-equals-scientific-from-1",
@@ -123,3 +139,10 @@ def validate_scientific_export(
         "catalog_sha256": file_digest(path.parent.parent / "manifest.json"),
         "checkpoint_sha256": artifact_digest(checkpoint),
     }
+
+    return identity, canonical_validation_evidence(
+        identity=identity,
+        records=expected_records,
+        validator=validator,
+        reused_from=reused_from,
+    )

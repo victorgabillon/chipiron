@@ -34,6 +34,7 @@ from .generation_publication_io import (
 )
 from .performance import StageMeasurement
 from .pipeline_memory import log_pipeline_memory
+from .scientific_validation_evidence import canonical_record_is_validated
 from .sharded_training_export import (
     MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
     MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
@@ -845,6 +846,9 @@ class ShardedTrainingGenerationView:
         for path in self._node_shards:
             descriptor = self._v2_descriptors[path]
             shard_count = 0
+            canonical_validated = canonical_record_is_validated(
+                self.manifest_path, self.provenance["producer"], descriptor
+            )
             for row in iter_shard_rows(
                 path, "records", scientific_generation=descriptor["generation"]
             ):
@@ -860,11 +864,12 @@ class ShardedTrainingGenerationView:
                 ):
                     raise ValueError("Invalid scientific creation generation")
                 ref = row["state_ref_payload"]
-                canonical = checkpoint_payload_to_jsonable(
-                    _CODEC.dump_state_ref(_CODEC.load_state_ref(ref))
-                )
-                if ref is None or canonical != ref:
-                    raise ValueError("Noncanonical scientific state reference")
+                if not canonical_validated:
+                    canonical = checkpoint_payload_to_jsonable(
+                        _CODEC.dump_state_ref(_CODEC.load_state_ref(ref))
+                    )
+                    if ref is None or canonical != ref:
+                        raise ValueError("Noncanonical scientific state reference")
                 connection.execute(
                     "INSERT INTO records VALUES (?, ?)",
                     (
