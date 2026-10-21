@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import ijson
+
 from .generation_publication_io import (
     generation_read_pin,
     object_digest,
@@ -79,7 +81,15 @@ def validator_identity() -> dict[str, Any]:
         "format_version": VERSION,
         "scientific_contract": CONTRACT,
         "state_ref_contract": REFERENCE_CONTRACT,
-        "python": [sys.implementation.name, sys.version],
+        "python": [
+            sys.implementation.name,
+            sys.version,
+            sys.implementation.cache_tag,
+            sys.flags.optimize,
+            sys.byteorder,
+            sys.maxsize,
+        ],
+        "ijson_backend": ijson.backend,
         "implementation_sha256": digest.hexdigest(),
     }
 

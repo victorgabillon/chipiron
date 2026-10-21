@@ -81,7 +81,10 @@ def test_reuses_only_committed_immutable_records(
     assert indexed == load_scientific_training_generation(source).snapshot.nodes
 
 
-@pytest.mark.parametrize("change", ["missing", "implementation", "python", "codec"])
+@pytest.mark.parametrize(
+    "change",
+    ["missing", "implementation", "python", "codec", "optimization", "backend"],
+)
 def test_missing_or_different_validator_performs_full_validation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
 ) -> None:
@@ -92,11 +95,14 @@ def test_missing_or_different_validator_performs_full_validation(
     payload = json.loads(path.read_bytes())
     if change == "missing":
         del payload["canonical_validation"]
+    elif change == "optimization":
+        payload["canonical_validation"]["validator"]["python"][3] += 1
     else:
         key = {
             "implementation": "implementation_sha256",
             "python": "python",
             "codec": "state_ref_contract",
+            "backend": "ijson_backend",
         }[change]
         payload["canonical_validation"]["validator"][key] = "previous-validator"
     # Simulate a separately committed predecessor format/validator in this new fixture.
@@ -301,3 +307,21 @@ print(f'committed:{state.generation}:{runner.apply_calls}',flush=True)
     current = load_bootstrap_run_state(paths.run_state_path)
     seal = validate_capsule(tmp_path, publication_records(current.metadata)[-1])
     assert seal["canonical_validation"]["reused_from"] is not None
+
+
+def test_validator_identity_includes_selected_parser_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The same package bytes do not authorize a different selected parser backend."""
+    import ijson
+
+    from chipiron.environments.morpion.bootstrap.scientific_validation_evidence import (
+        validator_identity,
+    )
+
+    current = validator_identity()
+    monkeypatch.setattr(ijson, "backend", "different-parser-selection")
+    changed = validator_identity()
+    assert current["implementation_sha256"] == changed["implementation_sha256"]
+    assert current != changed
+    assert current["python"][3] == sys.flags.optimize
