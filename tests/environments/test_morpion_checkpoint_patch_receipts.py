@@ -331,10 +331,19 @@ def test_flat_export_is_private_and_matches_checkpoint(tmp_path: Path) -> None:
     manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(2))
     assert manifest.runtime_checkpoint_path == state.latest_runtime_checkpoint_path
     assert manifest.tree_snapshot_path == state.latest_tree_snapshot_path
-    assert (
-        manifest.metadata[receipts.RECEIPTS_METADATA_KEY]
-        == state.metadata[receipts.RECEIPTS_METADATA_KEY]
-    )
+    assert receipts.RECEIPTS_METADATA_KEY not in manifest.metadata
+    assert manifest.metadata["pipeline_discovery"] == {
+        "schema_version": 2,
+        "generation": state.generation,
+        "publication": None,
+        "checkpoint": {
+            "path": state.latest_runtime_checkpoint_path,
+            "sha256": state.metadata[receipts.RECEIPTS_METADATA_KEY][
+                "checkpoint_sha256"
+            ],
+        },
+    }
+    assert set(receipts.receipt_ledger(state)) == {"patch-1"}
 
 
 def test_activation_and_downgrade_guards(tmp_path: Path) -> None:

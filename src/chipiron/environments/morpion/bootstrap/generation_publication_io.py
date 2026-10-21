@@ -16,6 +16,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
 
 from .derived.provenance import inside, sync_checkpoint
+from .pipeline_artifacts import DISCOVERY_METADATA_KEY
 from .sharded_training_v2_contract import CONTRACT, KIND, VERSION
 
 if TYPE_CHECKING:
@@ -449,6 +450,18 @@ def validate_manifest_publication(
         == (record["checkpoint_path"], record["tree_snapshot_path"]),
         "Discovery manifest differs from its committed generation.",
     )
+    projection = manifest.metadata.get(DISCOVERY_METADATA_KEY)
+    if projection is not None:
+        assert isinstance(projection, dict)  # Validated by the manifest type.
+        require(
+            projection["publication"] == record
+            or (
+                generation == baseline
+                and projection["publication"] is None
+                and projection["checkpoint"]["path"] == record["checkpoint_path"]
+            ),
+            "Discovery projection differs from its committed publication.",
+        )
     validate_capsule(work_dir, record)
 
 

@@ -23,6 +23,7 @@ from .generation_publication_io import (
     growth_receipt_ownership as _growth_receipt_ownership,
 )
 from .pipeline_artifacts import (
+    DISCOVERY_METADATA_KEY,
     MissingMorpionPipelineArtifactError,
     MorpionPipelineGenerationManifest,
     MorpionReevaluationPatch,
@@ -224,6 +225,25 @@ def receipt_ledger(
         )
         ledger[receipt.patch_id] = receipt
     return ledger
+
+
+def _discovery_metadata(state: MorpionBootstrapRunState) -> dict[str, object]:
+    """Project one committed reference, retaining diagnostics but no history ledgers."""
+    metadata = dict(state.metadata)
+    publication = metadata.pop(PUBLICATION_KEY, None)
+    receipts = metadata.pop(RECEIPTS_METADATA_KEY)
+    metadata[DISCOVERY_METADATA_KEY] = {
+        "schema_version": 2,
+        "generation": state.generation,
+        "publication": None if publication is None else publication["generations"][-1],
+        "checkpoint": {
+            "path": state.latest_runtime_checkpoint_path,
+            "sha256": receipts["checkpoint_sha256"],
+        }
+        if publication is None
+        else None,
+    }
+    return metadata
 
 
 class GrowthPatchReceiptSession:
@@ -709,6 +729,27 @@ class GrowthPatchReceiptSession:
                 ),
                 "Existing generation manifest conflicts with committed run state.",
             )
+            if DISCOVERY_METADATA_KEY in existing.metadata:
+                projection = existing.metadata[DISCOVERY_METADATA_KEY]
+                assert isinstance(projection, dict)  # Validated by the manifest type.
+                # Receipt-only discovery can predate same-generation capsule adoption.
+                expected = _discovery_metadata(state)[DISCOVERY_METADATA_KEY]
+                assert isinstance(expected, dict)
+                if projection["publication"] is None:
+                    expected = {
+                        **expected,
+                        "publication": None,
+                        "checkpoint": {
+                            "path": state.latest_runtime_checkpoint_path,
+                            "sha256": state.metadata[RECEIPTS_METADATA_KEY][
+                                "checkpoint_sha256"
+                            ],
+                        },
+                    }
+                _require(
+                    projection == expected,
+                    "Existing discovery projection conflicts with committed run state.",
+                )
             return
         _require(
             state.last_save_unix_s is not None,
@@ -720,7 +761,7 @@ class GrowthPatchReceiptSession:
             created_at_utc=timestamp_utc_from_unix_s(state.last_save_unix_s),
             runtime_checkpoint_path=state.latest_runtime_checkpoint_path,
             tree_snapshot_path=state.latest_tree_snapshot_path,
-            metadata=dict(state.metadata),
+            metadata=_discovery_metadata(state),
         )
         atomic_json(path, pipeline_manifest_to_dict(manifest))
         self.sync_artifact(path)

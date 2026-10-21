@@ -17,6 +17,8 @@ from .record_status import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+DISCOVERY_METADATA_KEY = "pipeline_discovery"
+
 MorpionPipelineDatasetStatus = Literal[
     "not_started",
     "exporting_tree",
@@ -234,6 +236,62 @@ def _metadata_dict(value: object, *, field_name: str = "metadata") -> dict[str, 
     return dict(cast("Mapping[str, object]", raw_mapping))
 
 
+def _discovery_metadata_dict(value: object, generation: int) -> dict[str, object]:
+    """Read explicit lean projections; leave historical metadata uninterpreted."""
+    metadata = _metadata_dict(value)
+    if DISCOVERY_METADATA_KEY not in metadata:
+        return metadata
+    projection = metadata[DISCOVERY_METADATA_KEY]
+    if (
+        not isinstance(projection, dict)
+        or set(projection)
+        != {"schema_version", "generation", "publication", "checkpoint"}
+        or "durable_generation_publication_v1" in metadata
+        or "checkpoint_bound_reevaluation_v1" in metadata
+    ):
+        raise _invalid_field_error(
+            DISCOVERY_METADATA_KEY, "invalid or mixed projection version"
+        )
+    if (
+        _require_generation(
+            projection["schema_version"], field_name=DISCOVERY_METADATA_KEY
+        )
+        != 2
+        or _require_generation(
+            projection["generation"], field_name=DISCOVERY_METADATA_KEY
+        )
+        != generation
+    ):
+        raise _invalid_field_error(
+            DISCOVERY_METADATA_KEY, "unsupported version or generation"
+        )
+    publication, checkpoint = projection["publication"], projection["checkpoint"]
+    if publication is not None:
+        valid = (
+            isinstance(publication, dict)
+            and _require_generation(
+                publication.get("generation"), field_name=DISCOVERY_METADATA_KEY
+            )
+            == generation
+            and checkpoint is None
+        )
+    else:
+        valid = (
+            isinstance(checkpoint, dict)
+            and set(checkpoint) == {"path", "sha256"}
+            and isinstance(checkpoint["path"], str)
+            and bool(checkpoint["path"])
+            and isinstance(checkpoint["sha256"], str)
+            and len(checkpoint["sha256"]) == 64
+            and all(c in "0123456789abcdef" for c in checkpoint["sha256"])
+        )
+    if not valid:
+        raise _invalid_field_error(
+            DISCOVERY_METADATA_KEY, "invalid committed reference"
+        )
+    return metadata
+
+
 def _model_bundle_paths_dict(value: object) -> dict[str, str]:
     """Return one shallow-copied evaluator bundle-path mapping."""
     if value is None:
@@ -365,7 +423,9 @@ class MorpionPipelineGenerationManifest:
             "training_status",
             _training_status(self.training_status),
         )
-        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+        object.__setattr__(
+            self, "metadata", _discovery_metadata_dict(self.metadata, self.generation)
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -614,7 +674,9 @@ class MorpionPipelineTrainingStatusArtifact:
             "evaluator_results",
             _training_result_mapping(self.evaluator_results),
         )
-        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+        object.__setattr__(
+            self, "metadata", _discovery_metadata_dict(self.metadata, self.generation)
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -657,7 +719,9 @@ class MorpionPipelineDatasetStatusArtifact:
                 field_name="frontier_status",
             ),
         )
-        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+        object.__setattr__(
+            self, "metadata", _discovery_metadata_dict(self.metadata, self.generation)
+        )
 
 
 def _training_result_mapping(
@@ -1569,7 +1633,10 @@ def save_pipeline_manifest(
     path: Path,
 ) -> None:
     """Persist one pipeline generation manifest atomically."""
-    if "durable_generation_publication_v1" in manifest.metadata:
+    if (
+        "durable_generation_publication_v1" in manifest.metadata
+        or DISCOVERY_METADATA_KEY in manifest.metadata
+    ):
         from .derived.provenance import atomic_json
 
         atomic_json(path, pipeline_manifest_to_dict(manifest))
