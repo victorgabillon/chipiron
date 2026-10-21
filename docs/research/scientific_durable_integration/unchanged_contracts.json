@@ -1,0 +1,22 @@
+{
+  "src/chipiron/environments/morpion/bootstrap/pv_family_targets.py": {
+    "scientific_tip_blob": "28b3eb91a19b7292cc4f9a9314582eac88ee70a5",
+    "consolidated_blob": "28b3eb91a19b7292cc4f9a9314582eac88ee70a5",
+    "identical": true
+  },
+  "src/chipiron/environments/morpion/learning/target_confidence.py": {
+    "scientific_tip_blob": "6e478ebc4c3a8f4e9b9b7eeb450e892d31cd1ce6",
+    "consolidated_blob": "6e478ebc4c3a8f4e9b9b7eeb450e892d31cd1ce6",
+    "identical": true
+  },
+  "src/chipiron/environments/morpion/bootstrap/streaming_dataset.py": {
+    "scientific_tip_blob": "bcbe38f014f1df2cfa88051704430527d186b184",
+    "consolidated_blob": "bcbe38f014f1df2cfa88051704430527d186b184",
+    "identical": true
+  },
+  "src/chipiron/environments/morpion/players/evaluators/neural_evaluator.py": {
+    "scientific_tip_blob": "2f3e16d5422040bb8f0a53488dee99ec0609b052",
+    "consolidated_blob": "2f3e16d5422040bb8f0a53488dee99ec0609b052",
+    "identical": true
+  }
+}

@@ -1,0 +1,102 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+__ test_v1_capsule_refuses_scientific_v2_before_sealing[tree_exports_sharded] __
+
+tmp_path = PosixPath('/tmp/pytest-of-pompote/pytest-87/test_v1_capsule_refuses_scient0')
+directory = 'tree_exports_sharded'
+
+    @pytest.mark.parametrize("directory", ["tree_exports_sharded", "custom-v2"])
+    def test_v1_capsule_refuses_scientific_v2_before_sealing(
+        tmp_path: Path, directory: str
+    ) -> None:
+        """A future writer adapter cannot sneak v2 through the generic capsule seal."""
+        _args, paths = setup_publication_baseline(tmp_path)
+        original_state = paths.run_state_path.read_bytes()
+        with growth_receipt_ownership(paths):
+            publication = DurableGenerationPublication(paths)
+            state = publication.prepare(load_bootstrap_run_state(paths.run_state_path))
+            publication.begin_cycle(None)
+            assert publication.staging is not None
+            checkpoint = publication.checkpoint_path(2, "json-zst")
+            runner = PublicationRunner()
+            runner.values = {"root": 2.0, "leaf": 4.0}
+            runner.save_checkpoint(checkpoint)
+            export, _ = save_scientific_training_generation(
+                nodes=nodes_fixture(),
+                root_node_id="0",
+                output_dir=publication.staging / directory,
+                generation=1,
+                producer=PRODUCER,
+            )
+            candidate = replace(
+                state,
+                generation=2,
+                latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint),
+                latest_tree_snapshot_path=paths.relative_to_work_dir(export),
+            )
+            objects = set((publication.root / "objects").iterdir())
+>           with pytest.raises(GenerationPublicationError, match="scientific v1"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE GenerationPublicationError
+
+tests/environments/test_morpion_scientific_durable_integration.py:85: Failed
+_______ test_v1_capsule_refuses_scientific_v2_before_sealing[custom-v2] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-pompote/pytest-87/test_v1_capsule_refuses_scient1')
+directory = 'custom-v2'
+
+    @pytest.mark.parametrize("directory", ["tree_exports_sharded", "custom-v2"])
+    def test_v1_capsule_refuses_scientific_v2_before_sealing(
+        tmp_path: Path, directory: str
+    ) -> None:
+        """A future writer adapter cannot sneak v2 through the generic capsule seal."""
+        _args, paths = setup_publication_baseline(tmp_path)
+        original_state = paths.run_state_path.read_bytes()
+        with growth_receipt_ownership(paths):
+            publication = DurableGenerationPublication(paths)
+            state = publication.prepare(load_bootstrap_run_state(paths.run_state_path))
+            publication.begin_cycle(None)
+            assert publication.staging is not None
+            checkpoint = publication.checkpoint_path(2, "json-zst")
+            runner = PublicationRunner()
+            runner.values = {"root": 2.0, "leaf": 4.0}
+            runner.save_checkpoint(checkpoint)
+            export, _ = save_scientific_training_generation(
+                nodes=nodes_fixture(),
+                root_node_id="0",
+                output_dir=publication.staging / directory,
+                generation=1,
+                producer=PRODUCER,
+            )
+            candidate = replace(
+                state,
+                generation=2,
+                latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint),
+                latest_tree_snapshot_path=paths.relative_to_work_dir(export),
+            )
+            objects = set((publication.root / "objects").iterdir())
+>           with pytest.raises(GenerationPublicationError, match="scientific v1"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE GenerationPublicationError
+
+tests/environments/test_morpion_scientific_durable_integration.py:85: Failed
+____________ test_scientific_writer_cannot_mutate_a_sealed_capsule _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-pompote/pytest-87/test_scientific_writer_cannot_0')
+
+    def test_scientific_writer_cannot_mutate_a_sealed_capsule(tmp_path: Path) -> None:
+        """All cooperative writers must honor the immutable-inode boundary."""
+        _args, paths = setup_publication_baseline(tmp_path)
+        state = load_bootstrap_run_state(paths.run_state_path)
+        capsule = capsule_path(tmp_path, publication_records(state.metadata)[-1]["id"])
+        before = artifact_digest(capsule)
+>       with pytest.raises(GenerationPublicationError, match="immutable publication"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE GenerationPublicationError
+
+tests/environments/test_morpion_scientific_durable_integration.py:98: Failed
+=========================== short test summary info ============================
+FAILED tests/environments/test_morpion_scientific_durable_integration.py::test_v1_capsule_refuses_scientific_v2_before_sealing[tree_exports_sharded]
+FAILED tests/environments/test_morpion_scientific_durable_integration.py::test_v1_capsule_refuses_scientific_v2_before_sealing[custom-v2]
+FAILED tests/environments/test_morpion_scientific_durable_integration.py::test_scientific_writer_cannot_mutate_a_sealed_capsule
+3 failed, 9 deselected in 2.78s

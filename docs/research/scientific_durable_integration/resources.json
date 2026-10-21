@@ -1,0 +1,762 @@
+{
+  "scientific": [
+    {
+      "dataset": null,
+      "index_bytes": 5857280,
+      "initialization": {
+        "available_ram_after_mb": 7890.4765625,
+        "available_ram_before_mb": 7866.84375,
+        "costs": {
+          "cpu_system_s": 0.025803999999999994,
+          "cpu_user_s": 2.744435,
+          "io": {
+            "cancelled_write_bytes": 356352,
+            "rchar": 33265979,
+            "read_bytes": 0,
+            "syscr": 3254,
+            "syscw": 1907,
+            "wchar": 6703904,
+            "write_bytes": 6828032
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 3.0740094169887016,
+        "finished_unix_s": 1792581539.1443326,
+        "index_reused": false,
+        "nodes": 1000,
+        "pid": 24,
+        "process_peak_rss_mb": 254.33203125,
+        "rss_after_mb": 254.60546875,
+        "rss_before_mb": 253.67578125,
+        "started_unix_s": 1792581536.0703228
+      },
+      "jsonl_sha256": null,
+      "label": "before",
+      "mode": "cold",
+      "size": 1000,
+      "source_identity_sha256": "1d7f0a004b3ff7bbf2d5b23895d7c03c1bde11ad98958b9006d0ad53eecc7c2d",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+        "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+        "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": {
+        "available_ram_after_mb": 7885.09765625,
+        "available_ram_before_mb": 7892.53125,
+        "costs": {
+          "cpu_system_s": 0.011974999999999986,
+          "cpu_user_s": 0.4960580000000001,
+          "io": {
+            "cancelled_write_bytes": 266240,
+            "rchar": 49161078,
+            "read_bytes": 0,
+            "syscr": 9495,
+            "syscw": 645,
+            "wchar": 6247468,
+            "write_bytes": 6254592
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.5081741969916038,
+        "finished_unix_s": 1792581541.2627828,
+        "output_bytes": 5987892,
+        "pid": 40,
+        "process_peak_rss_mb": 254.09765625,
+        "rows": 1000,
+        "rss_after_mb": 254.3203125,
+        "rss_before_mb": 254.2578125,
+        "started_unix_s": 1792581540.7546089,
+        "temp_bytes": 266240
+      },
+      "index_bytes": 5857280,
+      "initialization": {
+        "available_ram_after_mb": 7892.53125,
+        "available_ram_before_mb": 7888.30859375,
+        "costs": {
+          "cpu_system_s": 0.0030040000000000067,
+          "cpu_user_s": 0.023985000000000145,
+          "io": {
+            "cancelled_write_bytes": 0,
+            "rchar": 16641313,
+            "read_bytes": 0,
+            "syscr": 2829,
+            "syscw": 0,
+            "wchar": 0,
+            "write_bytes": 0
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.027132313000038266,
+        "finished_unix_s": 1792581540.7545598,
+        "index_reused": true,
+        "nodes": 1000,
+        "pid": 40,
+        "process_peak_rss_mb": 253.97265625,
+        "rss_after_mb": 254.2578125,
+        "rss_before_mb": 253.6484375,
+        "started_unix_s": 1792581540.7274272
+      },
+      "jsonl_sha256": "9fa0d8cca328c5b6d8b2ede5be969890e2338035d7c0a8b267b816ac99bfc43e",
+      "label": "before",
+      "mode": "dataset",
+      "size": 1000,
+      "source_identity_sha256": "1d7f0a004b3ff7bbf2d5b23895d7c03c1bde11ad98958b9006d0ad53eecc7c2d",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+        "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+        "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": null,
+      "index_bytes": 5857280,
+      "initialization": {
+        "available_ram_after_mb": 7806.8671875,
+        "available_ram_before_mb": 7883.296875,
+        "costs": {
+          "cpu_system_s": 0.01788300000000001,
+          "cpu_user_s": 2.7524699999999998,
+          "io": {
+            "cancelled_write_bytes": 356352,
+            "rchar": 33265973,
+            "read_bytes": 0,
+            "syscr": 3254,
+            "syscw": 1907,
+            "wchar": 6703904,
+            "write_bytes": 6828032
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 3.086078805004945,
+        "finished_unix_s": 1792581545.9240544,
+        "index_reused": false,
+        "nodes": 1000,
+        "pid": 56,
+        "process_peak_rss_mb": 254.41015625,
+        "rss_after_mb": 254.74609375,
+        "rss_before_mb": 253.8359375,
+        "started_unix_s": 1792581542.837975
+      },
+      "jsonl_sha256": null,
+      "label": "after",
+      "mode": "cold",
+      "size": 1000,
+      "source_identity_sha256": "1d7f0a004b3ff7bbf2d5b23895d7c03c1bde11ad98958b9006d0ad53eecc7c2d",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+        "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+        "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": {
+        "available_ram_after_mb": 7794.08203125,
+        "available_ram_before_mb": 7798.0625,
+        "costs": {
+          "cpu_system_s": 0.007930999999999994,
+          "cpu_user_s": 0.4978480000000003,
+          "io": {
+            "cancelled_write_bytes": 266240,
+            "rchar": 49161078,
+            "read_bytes": 0,
+            "syscr": 9495,
+            "syscw": 645,
+            "wchar": 6247468,
+            "write_bytes": 6254592
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.5059226469893474,
+        "finished_unix_s": 1792581548.101925,
+        "output_bytes": 5987892,
+        "pid": 72,
+        "process_peak_rss_mb": 254.078125,
+        "rows": 1000,
+        "rss_after_mb": 254.4921875,
+        "rss_before_mb": 254.4296875,
+        "started_unix_s": 1792581547.5960028,
+        "temp_bytes": 266240
+      },
+      "index_bytes": 5857280,
+      "initialization": {
+        "available_ram_after_mb": 7798.0625,
+        "available_ram_before_mb": 7798.0625,
+        "costs": {
+          "cpu_system_s": 0.0029969999999999997,
+          "cpu_user_s": 0.0241880000000001,
+          "io": {
+            "cancelled_write_bytes": 0,
+            "rchar": 16641313,
+            "read_bytes": 0,
+            "syscr": 2829,
+            "syscw": 0,
+            "wchar": 0,
+            "write_bytes": 0
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.027330981989507563,
+        "finished_unix_s": 1792581547.5959542,
+        "index_reused": true,
+        "nodes": 1000,
+        "pid": 72,
+        "process_peak_rss_mb": 254.078125,
+        "rss_after_mb": 254.4296875,
+        "rss_before_mb": 253.765625,
+        "started_unix_s": 1792581547.5686228
+      },
+      "jsonl_sha256": "9fa0d8cca328c5b6d8b2ede5be969890e2338035d7c0a8b267b816ac99bfc43e",
+      "label": "after",
+      "mode": "dataset",
+      "size": 1000,
+      "source_identity_sha256": "1d7f0a004b3ff7bbf2d5b23895d7c03c1bde11ad98958b9006d0ad53eecc7c2d",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+        "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+        "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": null,
+      "index_bytes": 29433856,
+      "initialization": {
+        "available_ram_after_mb": 7921.0625,
+        "available_ram_before_mb": 7885.9296875,
+        "costs": {
+          "cpu_system_s": 0.06331199999999998,
+          "cpu_user_s": 22.868416,
+          "io": {
+            "cancelled_write_bytes": 2387968,
+            "rchar": 174702006,
+            "read_bytes": 4096,
+            "syscr": 17727,
+            "syscw": 10389,
+            "wchar": 34748168,
+            "write_bytes": 35172352
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 24.007522959000198,
+        "finished_unix_s": 1792581586.9454014,
+        "index_reused": false,
+        "nodes": 5000,
+        "pid": 104,
+        "process_peak_rss_mb": 256.515625,
+        "rss_after_mb": 256.83984375,
+        "rss_before_mb": 253.65625,
+        "started_unix_s": 1792581562.9378781
+      },
+      "jsonl_sha256": null,
+      "label": "before",
+      "mode": "cold",
+      "size": 5000,
+      "source_identity_sha256": "7bc9f83a3ed31ad0500da98d255fc457e382ce2343e9db8b36d6cb40b769abcf",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+        "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+        "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": {
+        "available_ram_after_mb": 7917.5234375,
+        "available_ram_before_mb": 7919.640625,
+        "costs": {
+          "cpu_system_s": 0.05086199999999999,
+          "cpu_user_s": 2.5238650000000002,
+          "io": {
+            "cancelled_write_bytes": 1228800,
+            "rchar": 282236802,
+            "read_bytes": 0,
+            "syscr": 56125,
+            "syscw": 3348,
+            "wchar": 31392639,
+            "write_bytes": 31404032
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 2.5750856889935676,
+        "finished_unix_s": 1792581591.264189,
+        "output_bytes": 30172215,
+        "pid": 120,
+        "process_peak_rss_mb": 255.55859375,
+        "rows": 5000,
+        "rss_after_mb": 255.8671875,
+        "rss_before_mb": 254.76171875,
+        "started_unix_s": 1792581588.6891036,
+        "temp_bytes": 1200128
+      },
+      "index_bytes": 29433856,
+      "initialization": {
+        "available_ram_after_mb": 7919.640625,
+        "available_ram_before_mb": 7920.2734375,
+        "costs": {
+          "cpu_system_s": 0.014021000000000006,
+          "cpu_user_s": 0.1164010000000002,
+          "io": {
+            "cancelled_write_bytes": 0,
+            "rchar": 94474643,
+            "read_bytes": 0,
+            "syscr": 16630,
+            "syscw": 0,
+            "wchar": 0,
+            "write_bytes": 0
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.1306023009965429,
+        "finished_unix_s": 1792581588.689052,
+        "index_reused": true,
+        "nodes": 5000,
+        "pid": 120,
+        "process_peak_rss_mb": 254.43359375,
+        "rss_after_mb": 254.76171875,
+        "rss_before_mb": 253.74609375,
+        "started_unix_s": 1792581588.5584495
+      },
+      "jsonl_sha256": "56acaf936f0ce5fa01910e524ea63d1e027d36acd3bc49b0217c4b7546e0dfc2",
+      "label": "before",
+      "mode": "dataset",
+      "size": 5000,
+      "source_identity_sha256": "7bc9f83a3ed31ad0500da98d255fc457e382ce2343e9db8b36d6cb40b769abcf",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+        "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+        "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": null,
+      "index_bytes": 29433856,
+      "initialization": {
+        "available_ram_after_mb": 7902.18359375,
+        "available_ram_before_mb": 7898.19921875,
+        "costs": {
+          "cpu_system_s": 0.067325,
+          "cpu_user_s": 22.696379,
+          "io": {
+            "cancelled_write_bytes": 2387968,
+            "rchar": 174702006,
+            "read_bytes": 0,
+            "syscr": 17727,
+            "syscw": 10389,
+            "wchar": 34748168,
+            "write_bytes": 35172352
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 23.851276178000262,
+        "finished_unix_s": 1792581616.8004024,
+        "index_reused": false,
+        "nodes": 5000,
+        "pid": 136,
+        "process_peak_rss_mb": 256.8203125,
+        "rss_after_mb": 257.07421875,
+        "rss_before_mb": 253.8046875,
+        "started_unix_s": 1792581592.9491262
+      },
+      "jsonl_sha256": null,
+      "label": "after",
+      "mode": "cold",
+      "size": 5000,
+      "source_identity_sha256": "7bc9f83a3ed31ad0500da98d255fc457e382ce2343e9db8b36d6cb40b769abcf",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+        "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+        "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    },
+    {
+      "dataset": {
+        "available_ram_after_mb": 7902.859375,
+        "available_ram_before_mb": 7904.078125,
+        "costs": {
+          "cpu_system_s": 0.054906999999999984,
+          "cpu_user_s": 2.506434,
+          "io": {
+            "cancelled_write_bytes": 1228800,
+            "rchar": 282236802,
+            "read_bytes": 0,
+            "syscr": 56125,
+            "syscw": 3348,
+            "wchar": 31392639,
+            "write_bytes": 31404032
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 2.561665664004977,
+        "finished_unix_s": 1792581621.0941248,
+        "output_bytes": 30172215,
+        "pid": 152,
+        "process_peak_rss_mb": 255.69140625,
+        "rows": 5000,
+        "rss_after_mb": 256.01953125,
+        "rss_before_mb": 254.90625,
+        "started_unix_s": 1792581618.5324595,
+        "temp_bytes": 1200128
+      },
+      "index_bytes": 29433856,
+      "initialization": {
+        "available_ram_after_mb": 7904.078125,
+        "available_ram_before_mb": 7905.02734375,
+        "costs": {
+          "cpu_system_s": 0.017022999999999983,
+          "cpu_user_s": 0.11209800000000003,
+          "io": {
+            "cancelled_write_bytes": 0,
+            "rchar": 94474643,
+            "read_bytes": 0,
+            "syscr": 16630,
+            "syscw": 0,
+            "wchar": 0,
+            "write_bytes": 0
+          }
+        },
+        "cuda_after": null,
+        "cuda_before": null,
+        "elapsed_s": 0.1292833830084419,
+        "finished_unix_s": 1792581618.5324082,
+        "index_reused": true,
+        "nodes": 5000,
+        "pid": 152,
+        "process_peak_rss_mb": 254.56640625,
+        "rss_after_mb": 254.90625,
+        "rss_before_mb": 253.7734375,
+        "started_unix_s": 1792581618.4031246
+      },
+      "jsonl_sha256": "56acaf936f0ce5fa01910e524ea63d1e027d36acd3bc49b0217c4b7546e0dfc2",
+      "label": "after",
+      "mode": "dataset",
+      "size": 5000,
+      "source_identity_sha256": "7bc9f83a3ed31ad0500da98d255fc457e382ce2343e9db8b36d6cb40b769abcf",
+      "source_sha256": {
+        "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+        "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+        "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+        "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+      }
+    }
+  ],
+  "durability": [
+    {
+      "label": "before",
+      "measurement": {
+        "base_sha": "7313ecfad36667ab2a8dd1bbd4b894aa682a7e9b",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+        "python": "3.13.5",
+        "results": [
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 716800,
+              "apparent_file_bytes": 636053,
+              "file_names": 12,
+              "unique_file_bytes": 636053,
+              "unique_inodes": 24
+            },
+            "baseline_peak_rss_mib": 278.10546875,
+            "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 1986560,
+              "apparent_file_bytes": 1866506,
+              "file_names": 25,
+              "unique_file_bytes": 1866506,
+              "unique_inodes": 37
+            },
+            "fixture_elapsed_seconds": 0.14388939099444542,
+            "mode": "legacy",
+            "nodes": 1000,
+            "peak_rss_growth_mib": 0.0,
+            "peak_rss_mib": 278.10546875,
+            "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 32768,
+              "rchar": 68160,
+              "read_bytes": 0,
+              "syscr": 46,
+              "syscw": 27,
+              "wchar": 1299616,
+              "write_bytes": 1388544
+            }
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 1413120,
+              "apparent_file_bytes": 1272742,
+              "file_names": 21,
+              "unique_file_bytes": 1272742,
+              "unique_inodes": 42
+            },
+            "baseline_peak_rss_mib": 279.328125,
+            "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 3031040,
+              "apparent_file_bytes": 5565604,
+              "file_names": 90,
+              "unique_file_bytes": 2633038,
+              "unique_inodes": 120
+            },
+            "fixture_elapsed_seconds": 1.20360935399367,
+            "mode": "durable",
+            "nodes": 1000,
+            "peak_rss_growth_mib": 0.125,
+            "peak_rss_mib": 279.453125,
+            "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 90112,
+              "rchar": 57394622,
+              "read_bytes": 0,
+              "syscr": 2628,
+              "syscw": 74,
+              "wchar": 1458509,
+              "write_bytes": 1646592
+            },
+            "steady_wchar_ratio_vs_legacy": 1.1222614987811785
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 3244032,
+              "apparent_file_bytes": 3168050,
+              "file_names": 12,
+              "unique_file_bytes": 3168050,
+              "unique_inodes": 24
+            },
+            "baseline_peak_rss_mib": 287.71875,
+            "checkpoint_sha256": "2e1a33ce510712e59e72617dfe26d390cb631617b14de08132b5b81fe3396b46",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 9465856,
+              "apparent_file_bytes": 9354494,
+              "file_names": 25,
+              "unique_file_bytes": 9354494,
+              "unique_inodes": 37
+            },
+            "fixture_elapsed_seconds": 0.4499536609946517,
+            "mode": "legacy",
+            "nodes": 5000,
+            "peak_rss_growth_mib": 0.0,
+            "peak_rss_mib": 287.71875,
+            "scientific_export_sha256": "013e6c3f536de5b1804e68fb4638db22a4c39c83a7d73c2ab6faa5bfda8d2bc7",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 114688,
+              "rchar": 320162,
+              "read_bytes": 0,
+              "syscr": 46,
+              "syscw": 27,
+              "wchar": 6507607,
+              "write_bytes": 6586368
+            }
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 6471680,
+              "apparent_file_bytes": 6336739,
+              "file_names": 21,
+              "unique_file_bytes": 6336739,
+              "unique_inodes": 42
+            },
+            "baseline_peak_rss_mib": 289.6796875,
+            "checkpoint_sha256": "2e1a33ce510712e59e72617dfe26d390cb631617b14de08132b5b81fe3396b46",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 13287424,
+              "apparent_file_bytes": 27609594,
+              "file_names": 90,
+              "unique_file_bytes": 12905034,
+              "unique_inodes": 120
+            },
+            "fixture_elapsed_seconds": 2.0057048970047617,
+            "mode": "durable",
+            "nodes": 5000,
+            "peak_rss_growth_mib": 2.87890625,
+            "peak_rss_mib": 292.55859375,
+            "scientific_export_sha256": "013e6c3f536de5b1804e68fb4638db22a4c39c83a7d73c2ab6faa5bfda8d2bc7",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 335872,
+              "rchar": 285454732,
+              "read_bytes": 4096,
+              "syscr": 3294,
+              "syscw": 74,
+              "wchar": 6918508,
+              "write_bytes": 7090176
+            },
+            "steady_wchar_ratio_vs_legacy": 1.063141643310667
+          }
+        ],
+        "schema_version": 1,
+        "scope": "Generated scalar checkpoints, real v1 exports, tiny synthetic model; no search or workers."
+      }
+    },
+    {
+      "label": "after",
+      "measurement": {
+        "base_sha": "7313ecfad36667ab2a8dd1bbd4b894aa682a7e9b",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+        "python": "3.13.5",
+        "results": [
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 716800,
+              "apparent_file_bytes": 636053,
+              "file_names": 12,
+              "unique_file_bytes": 636053,
+              "unique_inodes": 24
+            },
+            "baseline_peak_rss_mib": 278.96484375,
+            "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 1986560,
+              "apparent_file_bytes": 1866506,
+              "file_names": 25,
+              "unique_file_bytes": 1866506,
+              "unique_inodes": 37
+            },
+            "fixture_elapsed_seconds": 0.14645172300515696,
+            "mode": "legacy",
+            "nodes": 1000,
+            "peak_rss_growth_mib": 0.125,
+            "peak_rss_mib": 279.08984375,
+            "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 32768,
+              "rchar": 68160,
+              "read_bytes": 0,
+              "syscr": 46,
+              "syscw": 27,
+              "wchar": 1299616,
+              "write_bytes": 1388544
+            }
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 1413120,
+              "apparent_file_bytes": 1272742,
+              "file_names": 21,
+              "unique_file_bytes": 1272742,
+              "unique_inodes": 42
+            },
+            "baseline_peak_rss_mib": 279.91796875,
+            "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 3031040,
+              "apparent_file_bytes": 5565606,
+              "file_names": 90,
+              "unique_file_bytes": 2633040,
+              "unique_inodes": 120
+            },
+            "fixture_elapsed_seconds": 1.222429422006826,
+            "mode": "durable",
+            "nodes": 1000,
+            "peak_rss_growth_mib": 0.125,
+            "peak_rss_mib": 280.04296875,
+            "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 90112,
+              "rchar": 57395534,
+              "read_bytes": 0,
+              "syscr": 2634,
+              "syscw": 74,
+              "wchar": 1458507,
+              "write_bytes": 1646592
+            },
+            "steady_wchar_ratio_vs_legacy": 1.1222599598650678
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 3244032,
+              "apparent_file_bytes": 3168050,
+              "file_names": 12,
+              "unique_file_bytes": 3168050,
+              "unique_inodes": 24
+            },
+            "baseline_peak_rss_mib": 288.15625,
+            "checkpoint_sha256": "2e1a33ce510712e59e72617dfe26d390cb631617b14de08132b5b81fe3396b46",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 9465856,
+              "apparent_file_bytes": 9354494,
+              "file_names": 25,
+              "unique_file_bytes": 9354494,
+              "unique_inodes": 37
+            },
+            "fixture_elapsed_seconds": 0.4998762299946975,
+            "mode": "legacy",
+            "nodes": 5000,
+            "peak_rss_growth_mib": 0.0,
+            "peak_rss_mib": 288.15625,
+            "scientific_export_sha256": "013e6c3f536de5b1804e68fb4638db22a4c39c83a7d73c2ab6faa5bfda8d2bc7",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 114688,
+              "rchar": 320162,
+              "read_bytes": 0,
+              "syscr": 46,
+              "syscw": 27,
+              "wchar": 6507607,
+              "write_bytes": 6586368
+            }
+          },
+          {
+            "baseline_disk": {
+              "allocated_bytes_unique_inodes": 6471680,
+              "apparent_file_bytes": 6336739,
+              "file_names": 21,
+              "unique_file_bytes": 6336739,
+              "unique_inodes": 42
+            },
+            "baseline_peak_rss_mib": 289.9296875,
+            "checkpoint_sha256": "2e1a33ce510712e59e72617dfe26d390cb631617b14de08132b5b81fe3396b46",
+            "final_disk": {
+              "allocated_bytes_unique_inodes": 13291520,
+              "apparent_file_bytes": 27609595,
+              "file_names": 90,
+              "unique_file_bytes": 12905035,
+              "unique_inodes": 120
+            },
+            "fixture_elapsed_seconds": 2.0023060780076776,
+            "mode": "durable",
+            "nodes": 5000,
+            "peak_rss_growth_mib": 2.390625,
+            "peak_rss_mib": 292.3203125,
+            "scientific_export_sha256": "013e6c3f536de5b1804e68fb4638db22a4c39c83a7d73c2ab6faa5bfda8d2bc7",
+            "steady_generations": 3,
+            "steady_process_io": {
+              "cancelled_write_bytes": 335872,
+              "rchar": 285455583,
+              "read_bytes": 0,
+              "syscr": 3300,
+              "syscw": 74,
+              "wchar": 6918487,
+              "write_bytes": 7090176
+            },
+            "steady_wchar_ratio_vs_legacy": 1.0631384163180106
+          }
+        ],
+        "schema_version": 1,
+        "scope": "Generated scalar checkpoints, real v1 exports, tiny synthetic model; no search or workers."
+      }
+    }
+  ]
+}

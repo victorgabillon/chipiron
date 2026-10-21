@@ -1,0 +1,18 @@
+{
+  "static_ratchet": {
+    "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121",
+    "path": "/tmp/morpion-consolidation-static-final-guard/summary.json"
+  },
+  "quality": {
+    "sha256": "17c5d5dfceebb3fab33ce58d8cd667df08f167518f61ad24337768136464868f",
+    "path": "/tmp/morpion-consolidation-quality.log"
+  },
+  "installed_guard": {
+    "sha256": "d72a5c087ac9a661d8e8e37baa229a76a858eb6ed8ccd2c24b2de4fb42de730c",
+    "path": "/tmp/morpion-consolidation-installed-guard.log"
+  },
+  "focused_boundary_compatibility": {
+    "sha256": "03034fca207259f2c434aa875e36d6a90ac6666a7e81eeb50f87ce0aacee9674",
+    "path": "/tmp/morpion-consolidation-flat-correction.log"
+  }
+}

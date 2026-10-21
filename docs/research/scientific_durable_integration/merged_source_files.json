@@ -1,0 +1,21 @@
+[
+  "chipiron/environments/morpion/bootstrap/run_state.py",
+  "chipiron/environments/morpion/bootstrap/reevaluation_worker.py",
+  "chipiron/environments/morpion/bootstrap/reevaluation_patch_consumer.py",
+  "chipiron/environments/morpion/bootstrap/reevaluation_publication.py",
+  "chipiron/environments/morpion/bootstrap/generation_publication.py",
+  "chipiron/environments/morpion/bootstrap/pipeline_orchestrator.py",
+  "chipiron/environments/morpion/bootstrap/cycle_dataset.py",
+  "chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+  "chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+  "chipiron/environments/morpion/bootstrap/pipeline_artifacts.py",
+  "chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+  "chipiron/environments/morpion/bootstrap/bootstrap_paths.py",
+  "chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py",
+  "chipiron/environments/morpion/bootstrap/sharded_training_export.py",
+  "chipiron/environments/morpion/bootstrap/pipeline/stages.py",
+  "chipiron/environments/morpion/bootstrap/pipeline/manifests.py",
+  "chipiron/environments/morpion/bootstrap/derived/runtime.py",
+  "chipiron/environments/morpion/bootstrap/derived/provenance.py",
+  "chipiron/environments/morpion/bootstrap/runtime/runner.py"
+]

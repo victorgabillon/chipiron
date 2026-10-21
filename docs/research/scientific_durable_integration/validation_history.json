@@ -1,0 +1,45 @@
+{
+  "raw_merge_focused": {
+    "passed": 96,
+    "seconds": 106.85
+  },
+  "boundary_regressions_before": {
+    "failed": 3,
+    "deselected": 9
+  },
+  "boundary_regressions_after": {
+    "passed": 12,
+    "seconds": 9.12
+  },
+  "final_source_reader_and_boundaries": {
+    "passed": 83,
+    "seconds": 104.73
+  },
+  "flat_header_correction_focused": {
+    "passed": 37,
+    "seconds": 22.6
+  },
+  "initial_full_ci": {
+    "passed": 2018,
+    "failed": 7,
+    "skipped": 2,
+    "interrupted": true,
+    "seconds": 692.09,
+    "diagnosis": {
+      "corrected_guard_compatibility": [
+        "flat",
+        "both"
+      ],
+      "environment_failures": [
+        "three multiprocessing chess match cases",
+        "one-match CLI EOFError",
+        "90-second data-loader subprocess timeout"
+      ]
+    }
+  },
+  "second_full_ci": {
+    "completed": false,
+    "reason": "Temporary filesystem exhausted; coverage SQLite report could not be written. Only own disposable fixture directories removed."
+  },
+  "static_environment_diagnosis": "Sandboxed Pyright omitted installed dependency paths; normal interpreter discovery confirmed outside sandbox. Final source uses explicit field declarations, no suppressions or baseline changes."
+}
