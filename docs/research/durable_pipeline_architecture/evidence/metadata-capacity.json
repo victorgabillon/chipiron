@@ -1,0 +1,25 @@
+{
+  "scope": "Artificial metadata-only capacity probe, not actual generation validation; shard references are placeholders and are never opened by a production view. Uses the real bounded header parser.",
+  "results": [
+    {
+      "generations": 1000,
+      "file_bytes": 155431,
+      "result": "header accepted"
+    },
+    {
+      "generations": 5000,
+      "file_bytes": 775431,
+      "result": "header accepted"
+    },
+    {
+      "generations": 10000,
+      "file_bytes": 1550433,
+      "result": "header accepted"
+    },
+    {
+      "generations": 20000,
+      "file_bytes": 3110433,
+      "result": "Scientific metadata exceeds bounded-reader size limit"
+    }
+  ]
+}
