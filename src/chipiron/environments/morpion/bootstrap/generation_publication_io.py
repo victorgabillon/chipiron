@@ -17,7 +17,13 @@ from typing import TYPE_CHECKING, Any
 
 from .derived.provenance import inside, sync_checkpoint
 from .pipeline_artifacts import DISCOVERY_METADATA_KEY
-from .sharded_training_v2_contract import CONTRACT, KIND, VERSION
+from .sharded_training_v2_contract import (
+    CLOSED_KIND,
+    CLOSED_LAYOUT,
+    CONTRACT,
+    KIND,
+    VERSION,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -40,7 +46,7 @@ def publication_namespace(version: int = 1) -> str:
     require(
         isinstance(version, int)
         and not isinstance(version, bool)
-        and version in (1, 2),
+        and version in (1, 2, 3),
         "Unsupported publication version.",
     )
     return f"generation_publications_v{version}"
@@ -187,7 +193,7 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
         isinstance(data, dict)
         and isinstance(data.get("schema_version"), int)
         and not isinstance(data.get("schema_version"), bool)
-        and data["schema_version"] in (1, 2),
+        and data["schema_version"] in (1, 2, 3),
         "Missing or unsupported durable generation protocol.",
     )
     assert isinstance(data, dict)
@@ -280,7 +286,7 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
         and descriptor.get("publication_version", 1) == version,
         "Capsule version mismatch.",
     )
-    if version == 2:
+    if version in (2, 3):
         require(
             descriptor.get("scientific_identity") == record.get("scientific_identity")
             and isinstance(record.get("scientific_identity"), dict),
@@ -328,7 +334,7 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
                 require(
                     path.is_relative_to(root), "Committed pointer escaped its capsule."
                 )
-    if version == 2:
+    if version in (2, 3):
         validate_committed_identity(work_dir, root, record, descriptor)
     return descriptor
 
@@ -367,6 +373,7 @@ def locate_capsule(path: Path) -> tuple[Path, str, int] | None:
         if ancestor.parent.name == "objects" and ancestor.parent.parent.name in {
             PUBLICATION_NAMESPACE,
             publication_namespace(2),
+            publication_namespace(3),
         }:
             return (
                 ancestor.parent.parent.parent,
@@ -382,9 +389,10 @@ def generation_read_pin(
 ) -> Iterator[None]:
     """Read a raw capsule path only after adopting its run-state commit."""
     for ancestor in path.absolute().parents:
-        if ancestor.parent.parent.name == publication_namespace(
-            2
-        ) and ancestor.parent.name in {"staging", "trash"}:
+        if ancestor.parent.parent.name in {
+            publication_namespace(2),
+            publication_namespace(3),
+        } and ancestor.parent.name in {"staging", "trash"}:
             require(
                 ancestor == _PRIVATE_VALIDATION.get(),
                 "Uncommitted private scientific generation.",
@@ -431,7 +439,7 @@ def assert_artifact_writable(path: Path) -> None:
     """Cooperative serializers cannot overwrite a sealed capsule or its hard links."""
     for ancestor in [path, *path.parents]:
         require(
-            not any((ancestor / capsule_seal(v)).exists() for v in (1, 2)),
+            not any((ancestor / capsule_seal(v)).exists() for v in (1, 2, 3)),
             "Cannot write into an immutable publication capsule.",
         )
 
@@ -580,9 +588,45 @@ def validate_committed_identity(
             identity.get("source_format_version"),
             identity.get("scientific_contract"),
         )
-        == (KIND, VERSION, CONTRACT),
+        == (
+            CLOSED_KIND if record.get("publication_version") == 3 else KIND,
+            VERSION,
+            CONTRACT,
+        ),
         "Unsupported committed scientific identity.",
     )
+    if record.get("publication_version") == 3:
+        # The seal binds a descriptor already checked by the scientific reader.
+        # Compare its declared hashes to this freshly verified inventory.
+        header = read_object(path)
+        require(
+            header["generation"] == record["generation"]
+            and header["producer"] == identity["producer"],
+            "Closed descriptor differs from committed identity.",
+        )
+        require(
+            descriptor["bootstrap_config_hash"]
+            == identity["producer"]["identity"]["config_sha256"]
+            == hashlib.sha256(
+                (root / "bootstrap_config.json").read_bytes().removesuffix(b"\n")
+            ).hexdigest(),
+            "Closed capsule config identity changed.",
+        )
+        for model in descriptor["model_pins"]:
+            require(
+                artifact_digest(inside(root, model["path"])) == model["sha256"],
+                "Closed capsule model identity changed.",
+            )
+        inventory = {entry["path"]: entry for entry in descriptor["files"]}
+        for key in ("record_shard", "update_shard"):
+            shard = header[key]
+            entry = inventory.get(
+                (path.parent / shard["path"]).relative_to(root).as_posix()
+            )
+            require(
+                entry is not None and entry["sha256"] == shard["sha256"],
+                "Closed shard differs from its validated descriptor.",
+            )
     require(
         identity.get("growth_generation")
         == identity.get("source_generation")
@@ -593,8 +637,13 @@ def validate_committed_identity(
     require(
         identity["producer_sha256"] == object_digest(identity["producer"])
         and identity["generation_descriptor_sha256"] == file_digest(path)
-        and identity["catalog_sha256"]
-        == file_digest(path.parent.parent / "manifest.json")
+        and (
+            identity.get("storage_layout_version") == CLOSED_LAYOUT
+            and "catalog_sha256" not in identity
+            if record.get("publication_version") == 3
+            else identity["catalog_sha256"]
+            == file_digest(path.parent.parent / "manifest.json")
+        )
         and identity["checkpoint_sha256"]
         == artifact_digest(inside(work_dir, record["checkpoint_path"])),
         "Committed scientific/checkpoint identity changed.",
@@ -604,7 +653,7 @@ def validate_committed_identity(
 def committed_scientific_source(path: Path) -> dict[str, Any] | None:
     """Bind a managed v2 patch to the exact committed source, not a generation label alone."""
     location = locate_capsule(path)
-    if location is None or location[2] != 2:
+    if location is None or location[2] not in (2, 3):
         return None
     work_dir, identifier, _version = location
     with generation_read_pin(path):

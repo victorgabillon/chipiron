@@ -79,12 +79,14 @@ def save_closed_scientific_snapshot(
     target_source: NodeTargetSource = NodeTargetSource.TREE_VALUE,
     metadata: Mapping[str, object] | None = None,
     created_at_unix_s: float | None = None,
+    _validation_result: dict[str, Any] | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     """Create a new standalone directory atomically, without committing a run.
 
     No source means genesis (generation 1). Incremental copying requires the
-    exact scientific head dependency of a committed v2 capsule. Closed output
-    cannot itself be adopted as a source until the next durability review unit.
+    exact scientific head dependency of a committed v2 or closed capsule.
+    The private result sink transfers completed byte checks to the existing
+    publisher within this process; it is never a persistent cache or authority.
     Identical inputs produce identical payload bytes; a destination is never
     replaced. On interruption any private staging directory is non-authoritative.
     """
@@ -102,7 +104,7 @@ def save_closed_scientific_snapshot(
     assert_artifact_writable(destination)
     _require(not destination.exists(), "snapshot destination already exists")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    snapshot_metadata = {
+    snapshot_metadata: dict[str, object] = {
         "format_kind": "training_tree_snapshot",
         "format_version": 1,
         "default_target_source": target_source.value,
@@ -150,6 +152,7 @@ def save_closed_scientific_snapshot(
                         committed_source,
                         cache_dir=cache / "source",
                         allow_scientific_v2=True,
+                        allow_closed_snapshot=True,
                     )
                 )
                 _require(
@@ -299,6 +302,12 @@ def save_closed_scientific_snapshot(
             timings["validation_hashing_s"] = perf_counter() - validation
             sync_artifact(staging, destination.parent)
             publish_directory_if_absent(staging, destination, destination.parent)
+            if _validation_result is not None:
+                _validation_result.update(
+                    manifest_sha256=_sha(destination / "generation.json"),
+                    producer=identity,
+                    record_shard=header["record_shard"],
+                )
     finally:
         if staging.exists():
             shutil.rmtree(staging)

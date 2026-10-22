@@ -221,11 +221,10 @@ def iter_shard_rows(
                     )
                     or not _integer(header.get("format_version"))
                     or not _integer(header.get("generation"))
-                    or (
-                        closed and type(header.get("storage_layout_version")) is not int
-                    )
                 ):
                     raise ValueError(f"Unsupported scientific shard envelope: {path}")
+                if closed and not _integer(header.get("storage_layout_version")):
+                    raise ValueError(f"Unsupported scientific layout version: {path}")
                 for row in rows:
                     if not isinstance(row, dict):
                         raise TypeError(f"Expected scientific row object: {path}")
@@ -314,7 +313,7 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
         | {"generation", "snapshot", "producer", "record_shard", "update_shard"},
         "missing or unknown closed snapshot field",
     )
-    _require(type(manifest["storage_layout_version"]) is int, "invalid layout version")
+    _require(_integer(manifest["storage_layout_version"]), "invalid layout version")
     generation = manifest["generation"]
     _require(_integer(generation) and generation >= 1, "invalid generation")
     producer = manifest["producer"]
@@ -351,7 +350,7 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
     )
     _require(
         info["metadata"].get("format_kind") == "training_tree_snapshot"
-        and type(info["metadata"].get("format_version")) is int
+        and _integer(info["metadata"].get("format_version"))
         and info["metadata"]["format_version"] == 1
         and info["metadata"].get("default_target_source")
         in ("direct_value", "tree_value", "effective_value"),
@@ -369,12 +368,12 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
         )
         _require(
             item["path"] == name
-            and type(item["generation"]) is int
+            and _integer(item["generation"])
             and item["generation"] == generation,
             "invalid closed shard path/generation",
         )
         _require(
-            type(item["count"]) is int and item["count"] == info["node_count"],
+            _integer(item["count"]) and item["count"] == info["node_count"],
             "invalid closed shard count",
         )
         _require(
@@ -488,6 +487,8 @@ class ShardedTrainingGenerationView:
         self.provenance: dict[str, Any]
         self.snapshot_metadata: dict[str, Any]
         self._v2_manifest: dict[str, Any]
+        self._v2_descriptors: dict[Path, dict[str, Any]]
+        self.storage_layout_version: int | None
         self.root: Path
         self.manifest: MorpionShardedTrainingGenerationManifest
         self.root_node_id: str
@@ -527,7 +528,7 @@ class ShardedTrainingGenerationView:
         self.manifest_path = Path(generation_manifest_path).resolve()
         self.format_kind = _source_kind(self.manifest_path)
         self.format_version = 1
-        self.storage_layout_version: int | None = None
+        self.storage_layout_version = None
         self.scientific_contract = None
         self.created_at_unix_s = None
         self.provenance = {}
@@ -536,7 +537,7 @@ class ShardedTrainingGenerationView:
             "format_version": 1,
         }
         self._v2_manifest = {}
-        self._v2_descriptors: dict[Path, dict[str, Any]] = {}
+        self._v2_descriptors = {}
         self._v2_prepared_stats: dict[Path, tuple[int, int, int]] = {}
         self.root = self.manifest_path.parent
         if self.format_kind == CLOSED_KIND:
@@ -578,7 +579,7 @@ class ShardedTrainingGenerationView:
         # Even an explicit override must never place a cache inside the export.
         if directory == self.root or self.root in directory.parents:
             raise ValueError("Reader cache must be outside the source export directory")
-        if self.format_version == SCIENTIFIC_VERSION:
+        if self.format_kind in (SCIENTIFIC_KIND, CLOSED_KIND):
             assert_artifact_writable(directory)
         directory.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()

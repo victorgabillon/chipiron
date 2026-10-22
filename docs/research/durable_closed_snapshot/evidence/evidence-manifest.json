@@ -1,0 +1,54 @@
+{
+  "benchmarks.json": {
+    "bytes": 769693,
+    "sha256": "954ab7d0301d4de9f6d0618a7042ab3412fb9d810f79a7da4095ef34bc4c66aa"
+  },
+  "checkpoint-comparison.json": {
+    "bytes": 148977,
+    "sha256": "06be0dbcf04491b675d0fbb62f28144bb1eb0e390cb8d98846933cfd40c77896"
+  },
+  "ci-summary.json": {
+    "bytes": 2470,
+    "sha256": "46720d27c6b42032e9a0742aed8902333ace7ef0231cdee3db55f844f742b99a"
+  },
+  "code-delta.json": {
+    "bytes": 2163,
+    "sha256": "7f2ddca2b61b4e3d4aff02fb61e502b534fd110ce84b3a2985b5cb72d2a9ffcf"
+  },
+  "dependencies.json": {
+    "bytes": 7671,
+    "sha256": "488cb4f91cff5aa24c6b7d093dc5a0b83197d2bc3d0a0336dd49d0e031249b41"
+  },
+  "dependency-source-comparison.json": {
+    "bytes": 405,
+    "sha256": "1e4162814d0193e5b6ca2fc3dc94518917c39ec5684a6ac067965962fb318b12"
+  },
+  "machine.json": {
+    "bytes": 8009,
+    "sha256": "2bf647bd3df6acba7e78d793a339e68d8f11ac07bea37c2ec210e31a8252a297"
+  },
+  "profile-summary.json": {
+    "bytes": 6194,
+    "sha256": "f9cbec72f507b9aa8a02fdc1f2bc8354731e203e565b534ed56c3b5e979a5bee"
+  },
+  "protected-summary.json": {
+    "bytes": 4297,
+    "sha256": "abece013eb03c804bfdd1cf8b6c277f78e847f28acc65dcf5667c0056a6f987b"
+  },
+  "publication-strace-wall.txt": {
+    "bytes": 428,
+    "sha256": "b5d5524320708c5690348b7734aa5996ce71f8a5a6eb3241c79e0a731f1d1cef"
+  },
+  "publication-strace.txt": {
+    "bytes": 428,
+    "sha256": "58d2609f318f5bed20ba78285d5f3767305a7385a4c503d39cc41165933d6c3e"
+  },
+  "source-manifest.json": {
+    "bytes": 2410,
+    "sha256": "b3962907d9b349b60d38dcf22f4253e81142e544e59ba4987e141ca434babc6d"
+  },
+  "static-summary.json": {
+    "bytes": 68,
+    "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121"
+  }
+}

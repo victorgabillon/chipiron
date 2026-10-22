@@ -256,6 +256,7 @@ class GrowthPatchReceiptSession:
         *,
         durable_generation_publication: bool = False,
         scientific_v2_producer: Mapping[str, str] | None = None,
+        closed_scientific_snapshot: bool = False,
     ) -> None:
         """Create volatile transaction context; this is never a recovery authority."""
         _require(
@@ -272,7 +273,9 @@ class GrowthPatchReceiptSession:
         self.attempt_id = uuid.uuid4().hex
         self.publication = (
             DurableGenerationPublication(
-                paths, scientific_v2_producer=scientific_v2_producer
+                paths,
+                scientific_v2_producer=scientific_v2_producer,
+                closed_scientific_snapshot=closed_scientific_snapshot,
             )
             if durable_generation_publication
             else None
@@ -368,7 +371,7 @@ class GrowthPatchReceiptSession:
 
     def validate_options(self, args: MorpionBootstrapArgs) -> None:
         """Reject unsupported modes before modifying any configuration or baseline."""
-        if self.publication is not None and self.publication.version == 2:
+        if self.publication is not None and self.publication.version in (2, 3):
             _require(
                 args.training_export_mode == "sharded"
                 and not args.growth_skip_training_export,
@@ -376,7 +379,13 @@ class GrowthPatchReceiptSession:
             )
             _require(
                 callable(
-                    getattr(self.runner, "export_scientific_training_snapshot", None)
+                    getattr(
+                        self.runner,
+                        "export_closed_scientific_snapshot"
+                        if self.publication.version == 3
+                        else "export_scientific_training_snapshot",
+                        None,
+                    )
                 ),
                 "Runner has no explicit scientific v2 export adapter.",
             )
@@ -408,7 +417,7 @@ class GrowthPatchReceiptSession:
                 isinstance(data, dict) and data.get("schema_version") == expected,
                 "Explicit matching publication version required; downgrade refused.",
             )
-        elif expected == 2:
+        elif expected in (2, 3):
             _require(
                 False,
                 "Scientific v2 requires explicit initialization in a new isolated workspace.",
@@ -417,9 +426,40 @@ class GrowthPatchReceiptSession:
     def export_scientific(self, generation: int) -> Path:
         """Invoke the v2 writer only in the selected private capsule attempt."""
         assert self.publication is not None and self.publication.producer is not None
-        export = getattr(self.runner, "export_scientific_training_snapshot", None)
+        export = getattr(
+            self.runner,
+            "export_closed_scientific_snapshot"
+            if self.publication.version == 3
+            else "export_scientific_training_snapshot",
+            None,
+        )
         _require(callable(export), "Runner has no scientific v2 export adapter.")
         assert callable(export)
+        if self.publication.version == 3:
+            from .generation_publication_io import private_generation_validation
+
+            assert (
+                self.publication.staging is not None
+                and self.publication.state is not None
+            )
+            assert self.publication.state.latest_tree_snapshot_path is not None
+            with private_generation_validation(self.publication.staging):
+                result = export(
+                    self.publication.staging / "scientific_snapshot",
+                    generation=generation,
+                    producer=self.publication.producer,
+                    committed_source=inside(
+                        self.paths.work_dir,
+                        self.publication.state.latest_tree_snapshot_path,
+                    ),
+                    _validation_result=self.publication.closed_validation,
+                )
+                _require(
+                    isinstance(result, str | Path),
+                    "Closed export adapter returned no path.",
+                )
+                assert isinstance(result, str | Path)
+                return Path(result)
         paths = self.export_paths(sharded=True)
         result = export(
             paths.sharded_tree_snapshot_dir,
@@ -542,7 +582,7 @@ class GrowthPatchReceiptSession:
             and 0 <= patch.tree_generation <= state.generation,
             "Patch source generation is missing or ahead of committed Growth.",
         )
-        if self.publication is not None and self.publication.version == 2:
+        if self.publication is not None and self.publication.version in (2, 3):
             from .generation_publication_io import (
                 committed_scientific_source,
                 publication_records,

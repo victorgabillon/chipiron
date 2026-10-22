@@ -1,0 +1,178 @@
+[
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+    "line": 868,
+    "function": "_build_index",
+    "calls": 3,
+    "own_s": 0.00028798100000000003,
+    "cumulative_s": 1.568398686
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/closed_scientific_snapshot.py",
+    "line": 71,
+    "function": "save_closed_scientific_snapshot",
+    "calls": 1,
+    "own_s": 0.004789515,
+    "cumulative_s": 1.4147822380000001
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication.py",
+    "line": 514,
+    "function": "publish",
+    "calls": 1,
+    "own_s": 0.000150148,
+    "cumulative_s": 0.7140669150000001
+  },
+  {
+    "file": "~",
+    "line": 0,
+    "function": "<method 'commit' of 'sqlite3.Connection' objects>",
+    "calls": 30,
+    "own_s": 0.556784056,
+    "cumulative_s": 0.556784056
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/scientific_generation_publication.py",
+    "line": 151,
+    "function": "validate_closed_export",
+    "calls": 1,
+    "own_s": 8.67e-05,
+    "cumulative_s": 0.552692798
+  },
+  {
+    "file": "~",
+    "line": 0,
+    "function": "<method 'executescript' of 'sqlite3.Connection' objects>",
+    "calls": 12,
+    "own_s": 0.49487802000000003,
+    "cumulative_s": 0.49487802000000003
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "line": 264,
+    "function": "validate_capsule",
+    "calls": 19,
+    "own_s": 0.002477866,
+    "cumulative_s": 0.418360777
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/docs/research/durable_closed_snapshot/measure.py",
+    "line": 61,
+    "function": "save_checkpoint",
+    "calls": 1,
+    "own_s": 1.7142e-05,
+    "cumulative_s": 0.285388539
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/runtime/runner.py",
+    "line": 1992,
+    "function": "save_checkpoint",
+    "calls": 1,
+    "own_s": 0.000768832,
+    "cumulative_s": 0.285370876
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/docs/research/durable_scientific_v2/measure.py",
+    "line": 81,
+    "function": "sync",
+    "calls": 157,
+    "own_s": 0.00046350400000000005,
+    "cumulative_s": 0.28087402100000003
+  },
+  {
+    "file": "~",
+    "line": 0,
+    "function": "<built-in method posix.fsync>",
+    "calls": 157,
+    "own_s": 0.27874355900000003,
+    "cumulative_s": 0.27874355900000003
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "line": 386,
+    "function": "generation_read_pin",
+    "calls": 16,
+    "own_s": 0.00028705,
+    "cumulative_s": 0.150133271
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py",
+    "line": 29,
+    "function": "atomic_json",
+    "calls": 5,
+    "own_s": 0.000140211,
+    "cumulative_s": 0.09198589700000001
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "line": 94,
+    "function": "file_digest",
+    "calls": 589,
+    "own_s": 0.000799977,
+    "cumulative_s": 0.056773593000000004
+  },
+  {
+    "file": "~",
+    "line": 0,
+    "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+    "calls": 21139,
+    "own_s": 0.048264109000000006,
+    "cumulative_s": 0.048264109000000006
+  },
+  {
+    "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+    "line": 195,
+    "function": "file_digest",
+    "calls": 890,
+    "own_s": 0.004076985,
+    "cumulative_s": 0.044696952000000005
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/run_state.py",
+    "line": 148,
+    "function": "save_bootstrap_run_state",
+    "calls": 1,
+    "own_s": 3.1247e-05,
+    "cumulative_s": 0.019621917000000003
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "line": 158,
+    "function": "publish_directory_if_absent",
+    "calls": 2,
+    "own_s": 0.00020606900000000002,
+    "cumulative_s": 0.01744742
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+    "line": 784,
+    "function": "_source_identity",
+    "calls": 10,
+    "own_s": 0.000320625,
+    "cumulative_s": 0.013670337000000001
+  },
+  {
+    "file": "~",
+    "line": 0,
+    "function": "<method 'executemany' of 'sqlite3.Connection' objects>",
+    "calls": 6018,
+    "own_s": 0.008263825,
+    "cumulative_s": 0.012334044
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/scientific_validation_evidence.py",
+    "line": 238,
+    "function": "committed_source_validation",
+    "calls": 2,
+    "own_s": 2.0580000000000003e-05,
+    "cumulative_s": 0.010667018
+  },
+  {
+    "file": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "line": 558,
+    "function": "copy_artifact",
+    "calls": 6,
+    "own_s": 4.0459e-05,
+    "cumulative_s": 0.001112656
+  }
+]

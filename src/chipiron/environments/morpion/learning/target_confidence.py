@@ -103,7 +103,10 @@ class DatasetConfidenceContext:
                 or (
                     self.provenance.get("source_format_kind")
                     == "morpion_closed_scientific_snapshot"
-                    and type(self.provenance.get("storage_layout_version")) is int
+                    and isinstance(self.provenance.get("storage_layout_version"), int)
+                    and not isinstance(
+                        self.provenance.get("storage_layout_version"), bool
+                    )
                     and self.provenance["storage_layout_version"] == 1
                 )
             )

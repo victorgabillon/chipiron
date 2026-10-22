@@ -28,6 +28,7 @@ def initialize_scientific_v2_publication(
     state: MorpionBootstrapRunState,
     *,
     producer: Mapping[str, str],
+    closed_scientific_snapshot: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -63,7 +64,10 @@ def initialize_scientific_v2_publication(
             "Scientific v2 initialization cannot migrate an existing ledger.",
         )
         require(
-            not (paths.work_dir / publication_namespace(1)).exists()
+            not any(
+                (paths.work_dir / publication_namespace(v)).exists()
+                for v in ((1, 2) if closed_scientific_snapshot else (1, 3))
+            )
             and not any(paths.pipeline_dir.glob("generation_*/manifest.json"))
             and not paths.pipeline_reevaluation_patch_path.exists(),
             "Historical or pending pipeline artifacts cannot enter v2 genesis.",
@@ -79,7 +83,9 @@ def initialize_scientific_v2_publication(
         }
         state = replace(state, metadata=metadata)
         publication = DurableGenerationPublication(
-            paths, scientific_v2_producer=producer
+            paths,
+            scientific_v2_producer=producer,
+            closed_scientific_snapshot=closed_scientific_snapshot,
         )
         publication.config_hash = metadata.get("bootstrap_config_hash")
         require(
@@ -103,9 +109,13 @@ def initialize_scientific_v2_publication(
             ),
             "Genesis cannot use a capsule or abandoned attempt.",
         )
-        catalog_paths(source, 1)
-        destination = publication.staging / "tree_exports_sharded"
-        copy_artifact(source.parent.parent, destination)
+        if closed_scientific_snapshot:
+            destination = publication.staging / "scientific_snapshot"
+            copy_artifact(source.parent, destination)
+        else:
+            catalog_paths(source, 1)
+            destination = publication.staging / "tree_exports_sharded"
+            copy_artifact(source.parent.parent, destination)
         # Pin the initial model epoch using exactly the receipt session's identity.
         session = GrowthPatchReceiptSession(paths, object())
         if paths.pipeline_active_model_path.exists():
@@ -114,7 +124,12 @@ def initialize_scientific_v2_publication(
             state,
             latest_runtime_checkpoint_path=paths.relative_to_work_dir(copied),
             latest_tree_snapshot_path=paths.relative_to_work_dir(
-                destination / "generation_000001/generation.json"
+                destination
+                / (
+                    "generation.json"
+                    if closed_scientific_snapshot
+                    else "generation_000001/generation.json"
+                )
             ),
         )
         state = publication.publish(state)

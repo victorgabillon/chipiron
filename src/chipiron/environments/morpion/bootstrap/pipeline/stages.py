@@ -408,6 +408,7 @@ def run_pipeline_growth_stage(
     checkpoint_bound_receipts: bool = False,
     durable_generation_publication: bool = False,
     scientific_v2_producer: Mapping[str, str] | None = None,
+    closed_scientific_snapshot: bool = False,
 ) -> MorpionBootstrapRunState:
     """Run Growth, with explicit experimental checkpoint-bound receipt activation.
 
@@ -420,6 +421,11 @@ def run_pipeline_growth_stage(
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    if closed_scientific_snapshot and (
+        scientific_v2_producer is None or not durable_generation_publication
+    ):
+        message = "Closed snapshots require explicit scientific durable publication."
+        raise CheckpointPatchReceiptError(message)
     if scientific_v2_producer is not None and not durable_generation_publication:
         message = "Scientific v2 requires durable publication."
         raise CheckpointPatchReceiptError(message)
@@ -437,6 +443,7 @@ def run_pipeline_growth_stage(
                 runner,
                 durable_generation_publication=durable_generation_publication,
                 scientific_v2_producer=scientific_v2_producer,
+                closed_scientific_snapshot=closed_scientific_snapshot,
             )
             if checkpoint_bound_receipts
             else None
@@ -452,7 +459,11 @@ def run_pipeline_growth_stage(
             )
         finally:
             if session is not None:
-                session.discard_runtime()
+                try:
+                    session.discard_runtime()
+                finally:
+                    if session.publication is not None:
+                        session.publication.close()
 
 
 def _run_pipeline_growth_stage_owned(
@@ -519,7 +530,7 @@ def _run_pipeline_growth_stage_owned(
         if (
             receipt_session is not None
             and receipt_session.publication is not None
-            and receipt_session.publication.version == 2
+            and receipt_session.publication.version in (2, 3)
         ):
             receipt_session.validate_options(effective_args)
         run_state = _run_one_pipeline_growth_cycle(
@@ -1126,6 +1137,17 @@ def _run_one_pipeline_growth_cycle_impl(
             generation, args.runtime_checkpoint_format
         )
     )
+    closed_export_path: Path | None = None
+    closed_export_observation: dict[str, object] | None = None
+    if (
+        receipt_session is not None
+        and receipt_session.publication is not None
+        and receipt_session.publication.version == 3
+    ):
+        closed_measurement = StageMeasurement()
+        closed_export_path = receipt_session.export_scientific(generation)
+        closed_export_observation = closed_measurement.finish()
+
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
@@ -1268,9 +1290,9 @@ def _run_one_pipeline_growth_cycle_impl(
         scientific_publication = (
             receipt_session is not None
             and receipt_session.publication is not None
-            and receipt_session.publication.version == 2
+            and receipt_session.publication.version in (2, 3)
         )
-        tree_snapshot_path = (
+        tree_snapshot_path = closed_export_path or (
             receipt_session.export_scientific(generation)
             if scientific_publication and receipt_session is not None
             else _export_training_snapshot_for_generation(
@@ -1288,18 +1310,19 @@ def _run_one_pipeline_growth_cycle_impl(
             paths.work_dir,
             generation,
             "export",
-            export_measurement.finish(
-                components=optional_runner_mapping(
+            {
+                **(closed_export_observation or export_measurement.finish()),
+                "components": optional_runner_mapping(
                     runner, "latest_training_export_stats"
                 ),
-                profile=optional_runner_mapping(
+                "profile": optional_runner_mapping(
                     runner, "latest_training_export_profile"
                 ),
-                state_eviction=optional_runner_mapping(
+                "state_eviction": optional_runner_mapping(
                     runner, "profile_state_eviction_runtime"
                 ),
-                node_count=current_tree_size,
-            ),
+                "node_count": current_tree_size,
+            },
         )
         if not tree_snapshot_path.is_file():
             raise MissingSavedBootstrapArtifactError(

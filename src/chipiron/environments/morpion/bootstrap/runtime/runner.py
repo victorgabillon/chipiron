@@ -1297,6 +1297,33 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         return path
 
+    def export_closed_scientific_snapshot(
+        self,
+        destination: str | Path,
+        *,
+        generation: int,
+        producer: Mapping[str, str],
+        committed_source: Path | None = None,
+        _validation_result: dict[str, Any] | None = None,
+    ) -> Path:
+        """Explicit closed export from the same frozen runtime as its checkpoint."""
+        from chipiron.environments.morpion.bootstrap.closed_scientific_snapshot import (
+            save_closed_scientific_snapshot,
+        )
+
+        runtime = self._require_runtime()
+        path, stats = save_closed_scientific_snapshot(
+            nodes=runtime._all_nodes_in_tree_order(),  # pylint: disable=protected-access
+            root_node_id=str(runtime.tree.root_node.id),
+            destination=Path(destination),
+            generation=generation,
+            producer=producer,
+            committed_source=committed_source,
+            _validation_result=_validation_result,
+        )
+        self._latest_training_export_stats = stats
+        return path
+
     def build_training_tree_snapshot_payload(
         self,
     ) -> tuple[TrainingTreeSnapshot, MorpionTrainingExportProfile]:

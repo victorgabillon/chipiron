@@ -146,3 +146,86 @@ def validate_scientific_export(
         validator=validator,
         reused_from=reused_from,
     )
+
+
+def validate_closed_export(
+    path: Path,
+    *,
+    staging: Path,
+    generation: int,
+    producer: Mapping[str, str],
+    checkpoint: Path,
+    config_hash: str,
+    work_dir: Path,
+    parent: dict[str, Any] | None,
+    validated: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Adapt the closed layout to the same seal, inventory and commit protocol.
+
+    A trusted writer can transfer its completed canonical checks in this process.
+    Exact descriptor and byte hashes must still match; mutable rows/topology are
+    always checked in a fresh existing index. Absent transfer means full decoding.
+    No historical scientific descriptor or shard belongs to this closure.
+    """
+    del work_dir, parent  # Shared adapter call shape; no historical closure here.
+
+    from contextlib import nullcontext
+
+    from .scientific_validation_evidence import _validated_record_scope
+    from .sharded_training_reader import read_closed_manifest
+
+    require(
+        path == staging / "scientific_snapshot/generation.json",
+        "Closed export escaped its private layout.",
+    )
+    header = read_closed_manifest(path)
+    require(
+        header["generation"] == generation, "Growth/scientific generation mismatch."
+    )
+    require(header["producer"] == _producer(producer), "Scientific producer changed.")
+    require(
+        producer.get("config_sha256") == config_hash,
+        "Scientific producer/config identity mismatch.",
+    )
+    require(
+        {p.name for p in path.parent.iterdir()}
+        == {"generation.json", "records.jsonl", "updates.jsonl"},
+        "Unexpected closed snapshot dependency.",
+    )
+    if validated:
+        require(
+            validated
+            == {
+                "manifest_sha256": file_digest(path),
+                "producer": header["producer"],
+                "record_shard": header["record_shard"],
+            },
+            "Closed writer validation identity changed.",
+        )
+    with (
+        _validated_record_scope(path, header["producer"], [header["record_shard"]])
+        if validated
+        else nullcontext(),
+        tempfile.TemporaryDirectory(prefix=".validation-index-", dir=staging) as cache,
+        private_generation_validation(staging),
+        ShardedTrainingGenerationView(
+            path, cache_dir=cache, allow_closed_snapshot=True
+        ) as view,
+    ):
+        require(not view.index_reused, "Publication validation requires a fresh index.")
+        view.validate_source_identity()
+        provenance = dict(view.provenance)
+    identity = {
+        **provenance,
+        "growth_generation": generation,
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "producer_sha256": object_digest(header["producer"]),
+        "generation_descriptor_sha256": file_digest(path),
+        "checkpoint_sha256": artifact_digest(checkpoint),
+    }
+    return identity, canonical_validation_evidence(
+        identity=identity,
+        records=[header["record_shard"]],
+        validator=validator_identity(),
+        reused_from=None,
+    )

@@ -245,7 +245,7 @@ def committed_source_validation(path: Path) -> Iterator[None]:
     """
     location = locate_capsule(path)
     require(
-        location is not None and location[2] == 2,
+        location is not None and location[2] in (2, 3),
         "Canonical source must be committed scientific v2.",
     )
     assert location is not None

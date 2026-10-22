@@ -1,0 +1,6730 @@
+{
+  "1000": {
+    "checkpoint": {
+      "exact_node_shell_parity": false,
+      "differing_nodes": 7,
+      "differences": [
+        {
+          "node_id": 82,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 50
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 86,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 53
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 89,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 90,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 97,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            }
+          }
+        },
+        {
+          "node_id": 448,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 449,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        }
+      ],
+      "all_linked_children_and_other_shell_fields_exact": true,
+      "replacement_parent_edges_exist_in_original_graph": true
+    },
+    "metadata": {
+      "evaluator_version": {
+        "before": 0,
+        "after": 2
+      }
+    },
+    "states": {
+      "count": 1003,
+      "mean_replay_moves": 6.942173479561316,
+      "max_replay_moves": 20,
+      "mean_record_bytes": 206.73778664007975
+    }
+  },
+  "5000": {
+    "checkpoint": {
+      "exact_node_shell_parity": false,
+      "differing_nodes": 70,
+      "differences": [
+        {
+          "node_id": 82,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 50
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 84,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 85,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 86,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 53
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 89,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 90,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 91,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 96,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 97,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            }
+          }
+        },
+        {
+          "node_id": 259,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 260,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 265,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 271,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            }
+          }
+        },
+        {
+          "node_id": 444,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 445,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 448,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 449,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 450,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 455,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 456,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 63
+            }
+          }
+        },
+        {
+          "node_id": 584,
+          "fields": {
+            "parent_node_id": {
+              "before": 57,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 585,
+          "fields": {
+            "parent_node_id": {
+              "before": 57,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 662,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 183
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  0,
+                  4,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 664,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 183
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 665,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 71
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 670,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 677,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 678,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 189
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 679,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 680,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 681,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 189
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 967,
+          "fields": {
+            "parent_node_id": {
+              "before": 56,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 968,
+          "fields": {
+            "parent_node_id": {
+              "before": 56,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1168,
+          "fields": {
+            "parent_node_id": {
+              "before": 390,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1410,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1416,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1418,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1577,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1675,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1684,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2266,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2267,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2270,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2274,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2277,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 67
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2323,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2324,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2327,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2332,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2930,
+          "fields": {
+            "parent_node_id": {
+              "before": 52,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3108,
+          "fields": {
+            "parent_node_id": {
+              "before": 63,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3111,
+          "fields": {
+            "parent_node_id": {
+              "before": 63,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 874,
+          "fields": {
+            "parent_node_id": {
+              "before": 782,
+              "after": 772
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1432,
+          "fields": {
+            "parent_node_id": {
+              "before": 1049,
+              "after": 209
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  1,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1476,
+          "fields": {
+            "parent_node_id": {
+              "before": 1244,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1477,
+          "fields": {
+            "parent_node_id": {
+              "before": 1244,
+              "after": 1239
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1628,
+          "fields": {
+            "parent_node_id": {
+              "before": 1239,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1967,
+          "fields": {
+            "parent_node_id": {
+              "before": 1247,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 416,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 359
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 419,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 362
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 424,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 367
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1358,
+          "fields": {
+            "parent_node_id": {
+              "before": 842,
+              "after": 835
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2310,
+          "fields": {
+            "parent_node_id": {
+              "before": 1394,
+              "after": 1391
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  3,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2966,
+          "fields": {
+            "parent_node_id": {
+              "before": 2830,
+              "after": 1622
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  3,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3716,
+          "fields": {
+            "parent_node_id": {
+              "before": 2833,
+              "after": 1622
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -1,
+                  1
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3022,
+          "fields": {
+            "parent_node_id": {
+              "before": 2998,
+              "after": 2996
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  1,
+                  -2,
+                  1
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3088,
+          "fields": {
+            "parent_node_id": {
+              "before": 3080,
+              "after": 3076
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -2,
+                  2,
+                  3
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3150,
+          "fields": {
+            "parent_node_id": {
+              "before": 3142,
+              "after": 3138
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3300,
+          "fields": {
+            "parent_node_id": {
+              "before": 3266,
+              "after": 3255
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -4,
+                  0,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3988,
+          "fields": {
+            "parent_node_id": {
+              "before": 3964,
+              "after": 3963
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -4,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        }
+      ],
+      "all_linked_children_and_other_shell_fields_exact": true,
+      "replacement_parent_edges_exist_in_original_graph": true
+    },
+    "metadata": {
+      "evaluator_version": {
+        "before": 0,
+        "after": 2
+      }
+    },
+    "states": {
+      "count": 5013,
+      "mean_replay_moves": 15.726710552563336,
+      "max_replay_moves": 62,
+      "mean_record_bytes": 383.312986235787
+    }
+  },
+  "10000": {
+    "checkpoint": {
+      "exact_node_shell_parity": false,
+      "differing_nodes": 161,
+      "differences": [
+        {
+          "node_id": 82,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 50
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 84,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 85,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 86,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 53
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 89,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 90,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 91,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 92,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 95,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 96,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 97,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 56
+            }
+          }
+        },
+        {
+          "node_id": 98,
+          "fields": {
+            "parent_node_id": {
+              "before": 66,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 259,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 260,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 265,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 271,
+          "fields": {
+            "parent_node_id": {
+              "before": 53,
+              "after": 51
+            }
+          }
+        },
+        {
+          "node_id": 444,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 445,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 448,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 56
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 449,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 57
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 450,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 451,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 454,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 455,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 456,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 63
+            }
+          }
+        },
+        {
+          "node_id": 457,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 458,
+          "fields": {
+            "parent_node_id": {
+              "before": 69,
+              "after": 68
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 584,
+          "fields": {
+            "parent_node_id": {
+              "before": 57,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 585,
+          "fields": {
+            "parent_node_id": {
+              "before": 57,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 662,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 183
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  0,
+                  4,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 664,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 183
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 665,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 670,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 677,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 678,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 189
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 679,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 680,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 681,
+          "fields": {
+            "parent_node_id": {
+              "before": 191,
+              "after": 189
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 967,
+          "fields": {
+            "parent_node_id": {
+              "before": 56,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 968,
+          "fields": {
+            "parent_node_id": {
+              "before": 56,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1130,
+          "fields": {
+            "parent_node_id": {
+              "before": 183,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1155,
+          "fields": {
+            "parent_node_id": {
+              "before": 390,
+              "after": 376
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1156,
+          "fields": {
+            "parent_node_id": {
+              "before": 390,
+              "after": 377
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1157,
+          "fields": {
+            "parent_node_id": {
+              "before": 390,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1168,
+          "fields": {
+            "parent_node_id": {
+              "before": 390,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1410,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1416,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1418,
+          "fields": {
+            "parent_node_id": {
+              "before": 189,
+              "after": 188
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1563,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1564,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 376
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1565,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 377
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1566,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1577,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1579,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 392
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1583,
+          "fields": {
+            "parent_node_id": {
+              "before": 398,
+              "after": 397
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -3,
+                  -5,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1669,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  0,
+                  4,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1672,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 752
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1675,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 389
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1684,
+          "fields": {
+            "parent_node_id": {
+              "before": 852,
+              "after": 187
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2111,
+          "fields": {
+            "parent_node_id": {
+              "before": 389,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2112,
+          "fields": {
+            "parent_node_id": {
+              "before": 389,
+              "after": 376
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2113,
+          "fields": {
+            "parent_node_id": {
+              "before": 389,
+              "after": 377
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2114,
+          "fields": {
+            "parent_node_id": {
+              "before": 389,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2266,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2267,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2270,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2273,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2274,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2275,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 59
+            }
+          }
+        },
+        {
+          "node_id": 2276,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2277,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 67
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2278,
+          "fields": {
+            "parent_node_id": {
+              "before": 71,
+              "after": 68
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2323,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2324,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 52
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2327,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2328,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2331,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2332,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 63
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2333,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 62
+            }
+          }
+        },
+        {
+          "node_id": 2334,
+          "fields": {
+            "parent_node_id": {
+              "before": 67,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2415,
+          "fields": {
+            "parent_node_id": {
+              "before": 578,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2419,
+          "fields": {
+            "parent_node_id": {
+              "before": 578,
+              "after": 567
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2422,
+          "fields": {
+            "parent_node_id": {
+              "before": 578,
+              "after": 567
+            }
+          }
+        },
+        {
+          "node_id": 2634,
+          "fields": {
+            "parent_node_id": {
+              "before": 2306,
+              "after": 2136
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -4,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2641,
+          "fields": {
+            "parent_node_id": {
+              "before": 2306,
+              "after": 68
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -4,
+                  1,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2930,
+          "fields": {
+            "parent_node_id": {
+              "before": 52,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3108,
+          "fields": {
+            "parent_node_id": {
+              "before": 63,
+              "after": 51
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3111,
+          "fields": {
+            "parent_node_id": {
+              "before": 63,
+              "after": 58
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3112,
+          "fields": {
+            "parent_node_id": {
+              "before": 63,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3821,
+          "fields": {
+            "parent_node_id": {
+              "before": 895,
+              "after": 567
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3825,
+          "fields": {
+            "parent_node_id": {
+              "before": 895,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4687,
+          "fields": {
+            "parent_node_id": {
+              "before": 70,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4690,
+          "fields": {
+            "parent_node_id": {
+              "before": 70,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4691,
+          "fields": {
+            "parent_node_id": {
+              "before": 70,
+              "after": 65
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4692,
+          "fields": {
+            "parent_node_id": {
+              "before": 70,
+              "after": 68
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4792,
+          "fields": {
+            "parent_node_id": {
+              "before": 1028,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4800,
+          "fields": {
+            "parent_node_id": {
+              "before": 1028,
+              "after": 541
+            }
+          }
+        },
+        {
+          "node_id": 4803,
+          "fields": {
+            "parent_node_id": {
+              "before": 1028,
+              "after": 375
+            }
+          }
+        },
+        {
+          "node_id": 5440,
+          "fields": {
+            "parent_node_id": {
+              "before": 68,
+              "after": 59
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5443,
+          "fields": {
+            "parent_node_id": {
+              "before": 68,
+              "after": 62
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5742,
+          "fields": {
+            "parent_node_id": {
+              "before": 1323,
+              "after": 567
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5749,
+          "fields": {
+            "parent_node_id": {
+              "before": 1323,
+              "after": 392
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 6401,
+          "fields": {
+            "parent_node_id": {
+              "before": 2136,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7002,
+          "fields": {
+            "parent_node_id": {
+              "before": 376,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7204,
+          "fields": {
+            "parent_node_id": {
+              "before": 392,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7205,
+          "fields": {
+            "parent_node_id": {
+              "before": 392,
+              "after": 377
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7206,
+          "fields": {
+            "parent_node_id": {
+              "before": 392,
+              "after": 378
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7642,
+          "fields": {
+            "parent_node_id": {
+              "before": 378,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -5,
+                  -1,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7643,
+          "fields": {
+            "parent_node_id": {
+              "before": 378,
+              "after": 377
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7904,
+          "fields": {
+            "parent_node_id": {
+              "before": 567,
+              "after": 375
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 8891,
+          "fields": {
+            "parent_node_id": {
+              "before": 196,
+              "after": 195
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 8893,
+          "fields": {
+            "parent_node_id": {
+              "before": 196,
+              "after": 195
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -2,
+                  4,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 874,
+          "fields": {
+            "parent_node_id": {
+              "before": 782,
+              "after": 772
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1432,
+          "fields": {
+            "parent_node_id": {
+              "before": 1049,
+              "after": 209
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  1,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1476,
+          "fields": {
+            "parent_node_id": {
+              "before": 1244,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1477,
+          "fields": {
+            "parent_node_id": {
+              "before": 1244,
+              "after": 1239
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1628,
+          "fields": {
+            "parent_node_id": {
+              "before": 1239,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1967,
+          "fields": {
+            "parent_node_id": {
+              "before": 1247,
+              "after": 1238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3998,
+          "fields": {
+            "parent_node_id": {
+              "before": 3885,
+              "after": 3879
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4000,
+          "fields": {
+            "parent_node_id": {
+              "before": 3885,
+              "after": 3881
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4424,
+          "fields": {
+            "parent_node_id": {
+              "before": 1055,
+              "after": 1050
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  4,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7025,
+          "fields": {
+            "parent_node_id": {
+              "before": 3884,
+              "after": 3879
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7027,
+          "fields": {
+            "parent_node_id": {
+              "before": 3884,
+              "after": 3881
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7061,
+          "fields": {
+            "parent_node_id": {
+              "before": 6642,
+              "after": 3879
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -3,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  -5,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7515,
+          "fields": {
+            "parent_node_id": {
+              "before": 7429,
+              "after": 6456
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  0,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7738,
+          "fields": {
+            "parent_node_id": {
+              "before": 3898,
+              "after": 3879
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7740,
+          "fields": {
+            "parent_node_id": {
+              "before": 3898,
+              "after": 3881
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 8562,
+          "fields": {
+            "parent_node_id": {
+              "before": 3881,
+              "after": 3879
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 416,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 359
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 419,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 362
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 424,
+          "fields": {
+            "parent_node_id": {
+              "before": 370,
+              "after": 367
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2768,
+          "fields": {
+            "parent_node_id": {
+              "before": 1823,
+              "after": 1821
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4975,
+          "fields": {
+            "parent_node_id": {
+              "before": 2905,
+              "after": 2890
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  1,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4984,
+          "fields": {
+            "parent_node_id": {
+              "before": 2905,
+              "after": 2899
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5279,
+          "fields": {
+            "parent_node_id": {
+              "before": 2890,
+              "after": 1821
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -5,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  3,
+                  -3,
+                  1,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7767,
+          "fields": {
+            "parent_node_id": {
+              "before": 6300,
+              "after": 6294
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -3,
+                  2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  1,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 9095,
+          "fields": {
+            "parent_node_id": {
+              "before": 7151,
+              "after": 6304
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  0,
+                  4,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  -6,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 9673,
+          "fields": {
+            "parent_node_id": {
+              "before": 6304,
+              "after": 6294
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -3,
+                  2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 1358,
+          "fields": {
+            "parent_node_id": {
+              "before": 842,
+              "after": 835
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  1,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2310,
+          "fields": {
+            "parent_node_id": {
+              "before": 1394,
+              "after": 1391
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -2,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  3,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 6561,
+          "fields": {
+            "parent_node_id": {
+              "before": 6245,
+              "after": 6238
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  -3,
+                  -3,
+                  3
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  4,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 7233,
+          "fields": {
+            "parent_node_id": {
+              "before": 6255,
+              "after": 6250
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  1,
+                  4,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -1,
+                  1
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 2966,
+          "fields": {
+            "parent_node_id": {
+              "before": 2830,
+              "after": 1622
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  3,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3716,
+          "fields": {
+            "parent_node_id": {
+              "before": 2833,
+              "after": 1622
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -6,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -2,
+                  -1,
+                  1
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 6827,
+          "fields": {
+            "parent_node_id": {
+              "before": 6823,
+              "after": 6809
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  0,
+                  1,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -2,
+                  -5,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3022,
+          "fields": {
+            "parent_node_id": {
+              "before": 2998,
+              "after": 2996
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  1,
+                  -2,
+                  1
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3088,
+          "fields": {
+            "parent_node_id": {
+              "before": 3080,
+              "after": 3076
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -2,
+                  2,
+                  3
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3091,
+          "fields": {
+            "parent_node_id": {
+              "before": 3080,
+              "after": 3079
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -3,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -2,
+                  -5,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4633,
+          "fields": {
+            "parent_node_id": {
+              "before": 3083,
+              "after": 3079
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -3,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  2,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3150,
+          "fields": {
+            "parent_node_id": {
+              "before": 3142,
+              "after": 3138
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  0,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3300,
+          "fields": {
+            "parent_node_id": {
+              "before": 3266,
+              "after": 3255
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -2,
+                  -3,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -4,
+                  0,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4916,
+          "fields": {
+            "parent_node_id": {
+              "before": 4902,
+              "after": 4887
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -1,
+                  2,
+                  1
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  -1,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4930,
+          "fields": {
+            "parent_node_id": {
+              "before": 4902,
+              "after": 4899
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  0,
+                  -5,
+                  0,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  -1,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3446,
+          "fields": {
+            "parent_node_id": {
+              "before": 3416,
+              "after": 3399
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -4,
+                  3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  0,
+                  -1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3565,
+          "fields": {
+            "parent_node_id": {
+              "before": 3418,
+              "after": 3399
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -4,
+                  3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -4,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5714,
+          "fields": {
+            "parent_node_id": {
+              "before": 3421,
+              "after": 3399
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -4,
+                  3,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -3,
+                  2,
+                  2
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 8756,
+          "fields": {
+            "parent_node_id": {
+              "before": 8723,
+              "after": 8706
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  3,
+                  -1,
+                  0,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  -1,
+                  -1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 5456,
+          "fields": {
+            "parent_node_id": {
+              "before": 4653,
+              "after": 4057
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -4,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -4,
+                  2,
+                  3
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3912,
+          "fields": {
+            "parent_node_id": {
+              "before": 3905,
+              "after": 3903
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  1,
+                  2,
+                  -6,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 4658,
+          "fields": {
+            "parent_node_id": {
+              "before": 3906,
+              "after": 3903
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  0,
+                  -7,
+                  -3,
+                  0
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        },
+        {
+          "node_id": 3988,
+          "fields": {
+            "parent_node_id": {
+              "before": 3964,
+              "after": 3963
+            },
+            "branch_from_parent": {
+              "before": {
+                "items": [
+                  2,
+                  -6,
+                  -4,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "after": {
+                "items": [
+                  2,
+                  -5,
+                  1,
+                  4
+                ],
+                "type": "tuple"
+              }
+            }
+          }
+        }
+      ],
+      "all_linked_children_and_other_shell_fields_exact": true,
+      "replacement_parent_edges_exist_in_original_graph": true
+    },
+    "metadata": {
+      "evaluator_version": {
+        "before": 0,
+        "after": 2
+      }
+    },
+    "states": {
+      "count": 10018,
+      "mean_replay_moves": 17.653224196446395,
+      "max_replay_moves": 62,
+      "mean_record_bytes": 421.9555799560791
+    }
+  }
+}

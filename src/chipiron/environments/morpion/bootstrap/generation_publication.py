@@ -10,6 +10,7 @@ import hashlib
 import json
 import shutil
 import uuid
+from contextlib import ExitStack
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
@@ -24,6 +25,7 @@ from .generation_publication_io import (
     capsule_path,
     capsule_seal,
     file_digest,
+    generation_read_pin,
     growth_receipt_ownership,
     publication_namespace,
     publication_records,
@@ -246,10 +248,21 @@ class DurableGenerationPublication:
         paths: MorpionBootstrapPaths,
         *,
         scientific_v2_producer: Mapping[str, str] | None = None,
+        closed_scientific_snapshot: bool = False,
     ) -> None:
         """Bind only to the new protocol namespace, never a legacy export root."""
         self.paths = paths
-        self.version = 1 if scientific_v2_producer is None else 2
+        require(
+            not closed_scientific_snapshot or scientific_v2_producer is not None,
+            "Closed publication requires an explicit scientific producer.",
+        )
+        self.version = (
+            3
+            if closed_scientific_snapshot
+            else (1 if scientific_v2_producer is None else 2)
+        )
+        self._source_pin = ExitStack()
+        self.closed_validation: dict[str, Any] = {}
         self.producer = (
             None if scientific_v2_producer is None else dict(scientific_v2_producer)
         )
@@ -270,6 +283,7 @@ class DurableGenerationPublication:
         (self.root / "trash").mkdir(exist_ok=True)
         self.model_pins = []
         self.sharded_path = None
+        self.closed_validation.clear()
         atomic_json(
             self.staging / ATTEMPT_MARKER,
             {
@@ -301,7 +315,7 @@ class DurableGenerationPublication:
             "Run state differs from its committed publication head.",
         )
         descriptor = validate_capsule(self.paths.work_dir, head)
-        if self.version == 2:
+        if self.version in (2, 3):
             from .sharded_training_v2 import _producer
 
             assert self.producer is not None
@@ -388,6 +402,13 @@ class DurableGenerationPublication:
         )
         if PUBLICATION_KEY in state.metadata:
             self.state = state
+            if self.version == 3:
+                assert state.latest_tree_snapshot_path is not None
+                self._source_pin.enter_context(
+                    generation_read_pin(
+                        inside(self.paths.work_dir, state.latest_tree_snapshot_path)
+                    )
+                )
             self.validate_state(state)
             return state
         require(
@@ -437,6 +458,14 @@ class DurableGenerationPublication:
     def begin_cycle(self, model: dict[str, Any] | None) -> Path | None:
         """Create private per-cycle model state; an unsaved cycle remains an orphan."""
         assert self.state is not None
+        if self.version == 3:
+            self.close()
+            assert self.state.latest_tree_snapshot_path is not None
+            self._source_pin.enter_context(
+                generation_read_pin(
+                    inside(self.paths.work_dir, self.state.latest_tree_snapshot_path)
+                )
+            )
         self.start(self.state.generation + 1)
         return None if model is None else self.freeze_model(model)
 
@@ -452,6 +481,9 @@ class DurableGenerationPublication:
         """Seed this attempt only from the selected committed capsule, never an orphan."""
         assert self.staging is not None and self.state is not None
         destination = self.staging / "tree_exports_sharded"
+        require(
+            self.version != 3, "Closed publication has no cumulative catalog to seed."
+        )
         if sharded and not destination.exists():
             for record in reversed(publication_records(self.state.metadata)):
                 descriptor = read_object(
@@ -512,8 +544,11 @@ class DurableGenerationPublication:
         )
         scientific_identity = None
         canonical_validation = None
-        if self.version == 2:
-            from .scientific_generation_publication import validate_scientific_export
+        if self.version in (2, 3):
+            from .scientific_generation_publication import (
+                validate_closed_export,
+                validate_scientific_export,
+            )
 
             require(
                 not baseline
@@ -543,7 +578,12 @@ class DurableGenerationPublication:
                 checkpoint.is_relative_to(self.staging),
                 "Checkpoint escaped private scientific attempt.",
             )
-            scientific_identity, canonical_validation = validate_scientific_export(
+            validate = (
+                validate_closed_export
+                if self.version == 3
+                else validate_scientific_export
+            )
+            scientific_identity, canonical_validation = validate(
                 self.sharded_path,
                 staging=self.staging,
                 generation=state.generation,
@@ -552,6 +592,7 @@ class DurableGenerationPublication:
                 config_hash=self.config_hash,
                 work_dir=self.paths.work_dir,
                 parent=None if not previous else previous[-1],
+                **({"validated": self.closed_validation} if self.version == 3 else {}),
             )
             if previous:
                 assert self.state is not None
@@ -561,7 +602,8 @@ class DurableGenerationPublication:
                 for entry in parent["files"]:
                     relative = entry["path"]
                     if (
-                        relative.startswith("tree_exports_sharded/")
+                        self.version == 2
+                        and relative.startswith("tree_exports_sharded/")
                         and relative != "tree_exports_sharded/manifest.json"
                     ):
                         require(
@@ -601,9 +643,9 @@ class DurableGenerationPublication:
                 for p in files
             ],
         }
-        if self.version == 2:
+        if self.version in (2, 3):
             descriptor.update(
-                publication_version=2,
+                publication_version=self.version,
                 scientific_identity=scientific_identity,
                 canonical_validation=canonical_validation,
             )
@@ -642,10 +684,13 @@ class DurableGenerationPublication:
             "checkpoint_path": state.latest_runtime_checkpoint_path,
             "tree_snapshot_path": state.latest_tree_snapshot_path,
         }
-        if self.version == 2:
+        if self.version in (2, 3):
             record.update(
-                publication_version=2, scientific_identity=scientific_identity
+                publication_version=self.version,
+                scientific_identity=scientific_identity,
             )
+        if self.version == 3:
+            validate_capsule(self.paths.work_dir, record)
         metadata = dict(state.metadata)
         metadata[PUBLICATION_KEY] = {
             "schema_version": self.version,
@@ -658,6 +703,11 @@ class DurableGenerationPublication:
         """Keep volatile context aligned only after the authoritative state commit."""
         self.state = state
         self.validate_state(state)
+        self.close()
+
+    def close(self) -> None:
+        """Release the predecessor only after validation/commit or failed invocation."""
+        self._source_pin.close()
 
     def retention_roots(self, state: MorpionBootstrapRunState) -> set[Path]:
         """Conservatively pin all committed capsules and legacy provenance inputs."""
@@ -774,5 +824,7 @@ def prune_uncommitted_generation_artifacts(paths: MorpionBootstrapPaths) -> list
             ]["identity"]
         )
         return DurableGenerationPublication(
-            paths, scientific_v2_producer=producer
+            paths,
+            scientific_v2_producer=producer,
+            closed_scientific_snapshot=version == 3,
         ).prune_uncommitted(state)
