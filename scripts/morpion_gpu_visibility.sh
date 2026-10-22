@@ -29,7 +29,13 @@ morpion_resolve_gpu_visibility() {
   fi
 
   case "$training_request" in
-    auto) MORPION_TRAINING_CUDA_VISIBLE_DEVICES="$([[ "$gpu_count" -gt 0 ]] && echo 0)" ;;
+    auto)
+      if (( gpu_count >= 1 )); then
+        MORPION_TRAINING_CUDA_VISIBLE_DEVICES="0"
+      else
+        MORPION_TRAINING_CUDA_VISIBLE_DEVICES=""
+      fi
+      ;;
     cpu) MORPION_TRAINING_CUDA_VISIBLE_DEVICES="" ;;
     *) MORPION_TRAINING_CUDA_VISIBLE_DEVICES="$training_request" ;;
   esac
