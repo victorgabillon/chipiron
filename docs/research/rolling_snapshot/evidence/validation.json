@@ -1,0 +1,36 @@
+{
+  "pytest": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "479",
+    "time": "326.514",
+    "timestamp": "2026-10-22T11:43:42.794489+02:00",
+    "hostname": "pompote-AORUS-15P-KD"
+  },
+  "test_files": [
+    "test_morpion_checkpoint_parity.py",
+    "test_morpion_scientific_training_reader.py",
+    "test_morpion_sharded_training_v2.py",
+    "test_morpion_durable_scientific_v2.py",
+    "test_morpion_durable_scientific_v2_crashes.py",
+    "test_morpion_checkpoint_patch_receipts.py",
+    "test_morpion_dataset_target_confidence.py",
+    "test_morpion_value_certainty.py",
+    "test_morpion_selected_generation_verification.py"
+  ],
+  "ruff": {
+    "version": "0.15.2",
+    "format": "pass",
+    "rules": "E4,E7,E9,F,I",
+    "result": "pass"
+  },
+  "production_code_delta": {
+    "added": 0,
+    "removed": 0
+  },
+  "full_repository_ci_run": false,
+  "new_format_implemented": false,
+  "committed_artifact_deletions": 0
+}
