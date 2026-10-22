@@ -138,6 +138,38 @@ visible to every worker.
 
 ### Recommended 4-process artifact-pipeline launch
 
+### GPU visibility for the GNOME and tmux cluster launchers
+
+`scripts/launch_morpion_gnome_cluster.sh` and
+`scripts/launch_morpion_tmux_cluster.sh` resolve worker GPU visibility using
+the selected `PYTHON_BIN` and `torch.cuda.device_count()` (this also works with
+AMD ROCm PyTorch). The defaults are:
+
+* **No detected GPUs:** both workers run on CPU.
+* **One detected GPU:** training and reevaluation can both see GPU 0.
+* **Two or more detected GPUs:** training sees GPU 0 and reevaluation sees GPU 1.
+
+Override the automatic selection per worker using
+`MORPION_TRAINING_CUDA_VISIBLE_DEVICES` or
+`MORPION_REEVALUATION_CUDA_VISIBLE_DEVICES`. Values are `auto` (default),
+`cpu` (hide GPUs), an empty value (also CPU), or a comma-separated list of
+GPU indices such as `0`, `1`, or `0,1`. These are visibility masks, not
+PyTorch device names: inside the worker the first visible GPU is `cuda:0`.
+
+For example, to train on the sole GPU and perform reevaluation on CPU:
+
+```bash
+MORPION_TRAINING_CUDA_VISIBLE_DEVICES=0 \
+MORPION_REEVALUATION_CUDA_VISIBLE_DEVICES=cpu \
+./scripts/launch_morpion_gnome_cluster.sh
+```
+
+To retain separate GPUs on a two-GPU system, set the reevaluation variable
+to `1` (or leave both settings at `auto`). Selecting GPU visibility does not
+install GPU support: the chosen Python environment still needs a compatible
+CUDA or ROCm build of PyTorch. `--training-device auto` controls the model
+device independently of these shell-level masks.
+
 First launch creates `<work_dir>/bootstrap_config.json`. After that, all workers
 must use the same bootstrap config. To change dataset/training/growth parameters,
 edit the persisted config intentionally or start a new `work_dir`.
@@ -283,7 +315,7 @@ Example GPU placement:
 * CPU node: `growth`
 * CPU node or storage-close machine: `dataset_worker`
 * GPU 0: `CUDA_VISIBLE_DEVICES=0 ... --pipeline-stage training_worker`
-* GPU 1: `CUDA_VISIBLE_DEVICES=1 ... --pipeline-stage reevaluation`
+* GPU 1 (when present): `CUDA_VISIBLE_DEVICES=1 ... --pipeline-stage reevaluation`; on a one-GPU host, select GPU 0 or CPU instead.
 
 ### What each worker does
 
