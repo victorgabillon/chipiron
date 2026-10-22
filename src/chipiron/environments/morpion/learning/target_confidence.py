@@ -97,8 +97,16 @@ class DatasetConfidenceContext:
                 "Dataset v2 requires an explicit source generation"
             )
         if (
-            self.provenance.get("source_format_kind")
-            != "morpion_scientific_training_export"
+            not (
+                self.provenance.get("source_format_kind")
+                == "morpion_scientific_training_export"
+                or (
+                    self.provenance.get("source_format_kind")
+                    == "morpion_closed_scientific_snapshot"
+                    and type(self.provenance.get("storage_layout_version")) is int
+                    and self.provenance["storage_layout_version"] == 1
+                )
+            )
             or self.provenance.get("source_format_version") != 2
             or self.provenance.get("scientific_contract") != SCIENTIFIC_CONTRACT
             or not isinstance(self.provenance.get("producer"), dict)

@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import io
 import json
 import logging
+import math
 import os
 import re
 import sqlite3
@@ -63,6 +65,7 @@ from .sharded_training_v2 import (
 from .sharded_training_v2 import (
     VERSION as SCIENTIFIC_VERSION,
 )
+from .sharded_training_v2_contract import CLOSED_KIND, CLOSED_LAYOUT, closed_envelope
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -98,11 +101,19 @@ def _has_surrogate_escape(path: Path) -> bool:
 
 
 def _parser_events(
-    path: Path, *, multiple_values: bool = False, strict_keys: bool = False
+    path: Path,
+    *,
+    multiple_values: bool = False,
+    strict_keys: bool = False,
+    data: bytes | None = None,
 ) -> Iterator[tuple[str, str, object]]:
     """Share the existing lossless bounded ijson backends across both schemas."""
-    lossless_unicode = _has_surrogate_escape(path) or ijson.backend == "python"
-    with path.open("rb") as stream:
+    lossless_unicode = (
+        _has_surrogate_escape(path)
+        if data is None
+        else re.search(rb"\\u[dD][89a-fA-F]", data) is not None
+    ) or ijson.backend == "python"
+    with path.open("rb") if data is None else io.BytesIO(data) as stream:
         backend = ijson.get_backend("python") if lossless_unicode else ijson
         events = backend.parse(
             stream,
@@ -188,7 +199,11 @@ def _closing_events(
 
 
 def iter_shard_rows(
-    path: Path, field: str, *, scientific_generation: int | None = None
+    path: Path,
+    field: str,
+    *,
+    scientific_generation: int | None = None,
+    closed: bool = False,
 ) -> Iterator[dict[str, object]]:
     """Yield validated JSON array records, retaining no complete input array."""
     try:
@@ -200,9 +215,15 @@ def iter_shard_rows(
                 header = next(rows, None)
                 if (
                     not isinstance(header, dict)
-                    or header != _envelope(field, generation=scientific_generation)
+                    or header
+                    != (closed_envelope if closed else _envelope)(
+                        field, generation=scientific_generation
+                    )
                     or not _integer(header.get("format_version"))
                     or not _integer(header.get("generation"))
+                    or (
+                        closed and type(header.get("storage_layout_version")) is not int
+                    )
                 ):
                     raise ValueError(f"Unsupported scientific shard envelope: {path}")
                 for row in rows:
@@ -226,7 +247,7 @@ def _source_kind(path: Path) -> object:
         for prefix, event, value in events:
             if prefix == "format_kind" and event not in ("map_key", "end_map"):
                 kind = value
-                if kind == SCIENTIFIC_KIND:
+                if kind in (SCIENTIFIC_KIND, CLOSED_KIND):
                     return kind
             if prefix in ("scientific_contract", "creation_index"):
                 scientific_fields = True
@@ -235,7 +256,9 @@ def _source_kind(path: Path) -> object:
     return kind
 
 
-def _scientific_manifest(path: Path, role: str) -> dict[str, Any]:
+def _scientific_manifest(
+    path: Path, role: str, *, closed: bool = False
+) -> dict[str, Any]:
     """Bound metadata, streaming past v2's O(N) creation_index without loading it."""
 
     def metadata_events() -> Iterator[tuple[str, str, object]]:
@@ -271,12 +294,99 @@ def _scientific_manifest(path: Path, role: str) -> dict[str, Any]:
     except (ijson.JSONError, StopIteration) as exc:
         raise ValueError(f"Malformed scientific manifest: {path}") from exc
     if not isinstance(data, dict) or any(
-        data.get(key) != value for key, value in _envelope(role).items()
+        data.get(key) != value
+        for key, value in (closed_envelope if closed else _envelope)(role).items()
     ):
         raise ValueError(f"Unsupported scientific format/contract/role: {path}")
     if not _integer(data["format_version"]):
         raise ValueError("Scientific version must be an integer")
     return cast("dict[str, Any]", data)
+
+
+def read_closed_manifest(path: Path) -> dict[str, Any]:
+    """Strict bounded header for layout 1, independent of the historical catalog."""
+    from .sharded_training_v2 import _producer, _require
+
+    manifest = _scientific_manifest(path, "generation", closed=True)
+    _require(
+        set(manifest)
+        == set(closed_envelope("generation"))
+        | {"generation", "snapshot", "producer", "record_shard", "update_shard"},
+        "missing or unknown closed snapshot field",
+    )
+    _require(type(manifest["storage_layout_version"]) is int, "invalid layout version")
+    generation = manifest["generation"]
+    _require(_integer(generation) and generation >= 1, "invalid generation")
+    producer = manifest["producer"]
+    _require(
+        isinstance(producer, dict) and isinstance(producer.get("identity"), dict),
+        "invalid producer",
+    )
+    _require(
+        producer == _producer(producer["identity"]),
+        "incompatible producer/codec identity",
+    )
+    info = manifest["snapshot"]
+    _require(
+        isinstance(info, dict)
+        and set(info)
+        == {"root_node_id", "node_count", "created_at_unix_s", "metadata"},
+        "invalid snapshot header",
+    )
+    _require(
+        isinstance(info["root_node_id"], str) and bool(info["root_node_id"]),
+        "invalid root",
+    )
+    _require(
+        _integer(info["node_count"]) and info["node_count"] > 0, "invalid node count"
+    )
+    _require(isinstance(info["metadata"], dict), "invalid snapshot metadata")
+    _require(
+        info["created_at_unix_s"] is None
+        or (
+            type(info["created_at_unix_s"]) in (int, float)
+            and math.isfinite(info["created_at_unix_s"])
+        ),
+        "invalid snapshot timestamp",
+    )
+    _require(
+        info["metadata"].get("format_kind") == "training_tree_snapshot"
+        and type(info["metadata"].get("format_version")) is int
+        and info["metadata"]["format_version"] == 1
+        and info["metadata"].get("default_target_source")
+        in ("direct_value", "tree_value", "effective_value"),
+        "invalid snapshot metadata contract",
+    )
+    for key, name in (
+        ("record_shard", "records.jsonl"),
+        ("update_shard", "updates.jsonl"),
+    ):
+        item = manifest[key]
+        _require(
+            isinstance(item, dict)
+            and set(item) == {"path", "generation", "count", "sha256"},
+            "invalid closed shard descriptor",
+        )
+        _require(
+            item["path"] == name
+            and type(item["generation"]) is int
+            and item["generation"] == generation,
+            "invalid closed shard path/generation",
+        )
+        _require(
+            type(item["count"]) is int and item["count"] == info["node_count"],
+            "invalid closed shard count",
+        )
+        _require(
+            isinstance(item["sha256"], str)
+            and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None,
+            "invalid closed shard hash",
+        )
+        _require(
+            not (path.parent / name).is_symlink(),
+            "symlinked closed snapshot dependency",
+        )
+    return manifest
 
 
 def _read_manifest_identity(path: Path) -> dict[str, object]:
@@ -365,6 +475,7 @@ class ShardedTrainingGenerationView:
         *,
         cache_dir: str | Path | None = None,
         allow_scientific_v2: bool = False,
+        allow_closed_snapshot: bool = False,
     ) -> None:
         """Initialize/reuse an index without constructing training snapshots."""
         self.index_build_peak_disk_bytes = 0
@@ -395,6 +506,7 @@ class ShardedTrainingGenerationView:
                 generation_manifest_path,
                 cache_dir=cache_dir,
                 allow_scientific_v2=allow_scientific_v2,
+                allow_closed_snapshot=allow_closed_snapshot,
             )
         except BaseException:
             self._publication_pin.__exit__(None, None, None)
@@ -406,6 +518,7 @@ class ShardedTrainingGenerationView:
         *,
         cache_dir: str | Path | None,
         allow_scientific_v2: bool,
+        allow_closed_snapshot: bool,
     ) -> None:
         """Build the selected format's view after acquiring its lifetime pin."""
         measurement = StageMeasurement()
@@ -414,6 +527,7 @@ class ShardedTrainingGenerationView:
         self.manifest_path = Path(generation_manifest_path).resolve()
         self.format_kind = _source_kind(self.manifest_path)
         self.format_version = 1
+        self.storage_layout_version: int | None = None
         self.scientific_contract = None
         self.created_at_unix_s = None
         self.provenance = {}
@@ -425,7 +539,19 @@ class ShardedTrainingGenerationView:
         self._v2_descriptors: dict[Path, dict[str, Any]] = {}
         self._v2_prepared_stats: dict[Path, tuple[int, int, int]] = {}
         self.root = self.manifest_path.parent
-        if self.format_kind == SCIENTIFIC_KIND:
+        if self.format_kind == CLOSED_KIND:
+            if not allow_closed_snapshot:
+                raise ValueError(
+                    "Closed snapshots require explicit allow_closed_snapshot"
+                )
+            stat = self.manifest_path.stat()
+            self._v2_prepared_stats[self.manifest_path] = (
+                stat.st_size,
+                stat.st_mtime_ns,
+                stat.st_ctime_ns,
+            )
+            self._prepare_closed_source()
+        elif self.format_kind == SCIENTIFIC_KIND:
             if not allow_scientific_v2:
                 raise ValueError(
                     "Scientific v2 requires explicit allow_scientific_v2; certainty activation gate remains unresolved"
@@ -452,7 +578,7 @@ class ShardedTrainingGenerationView:
         # Even an explicit override must never place a cache inside the export.
         if directory == self.root or self.root in directory.parents:
             raise ValueError("Reader cache must be outside the source export directory")
-        if self.format_kind == SCIENTIFIC_KIND:
+        if self.format_version == SCIENTIFIC_VERSION:
             assert_artifact_writable(directory)
         directory.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()
@@ -568,6 +694,33 @@ class ShardedTrainingGenerationView:
             raise ValueError("Unpublished scientific generation")
         if manifest["producer"] != catalog["producer"]:
             raise ValueError("Mixed scientific producer identity")
+        self._set_scientific_header(manifest)
+        self._v2_manifest = manifest
+        self._node_shards = []
+        self._source_paths = [self.manifest_path, catalog_path]
+        for descriptor in manifest["record_shards"]:
+            path = self._scientific_descriptor(descriptor)
+            if (
+                descriptor["generation"] > self.generation
+                or path in self._v2_descriptors
+            ):
+                raise ValueError("Future or duplicate scientific record shard")
+            self._node_shards.append(path)
+            self._v2_descriptors[path] = descriptor
+        self._update_shard = self._scientific_descriptor(manifest["update_shard"])
+        if (
+            manifest["update_shard"]["generation"] != self.generation
+            or self._update_shard in self._v2_descriptors
+        ):
+            raise ValueError("Mixed scientific update generation/path")
+        self._v2_descriptors[self._update_shard] = manifest["update_shard"]
+        self._source_paths.extend([*self._node_shards, self._update_shard])
+        self.source_bytes_read += 2 * (
+            self.manifest_path.stat().st_size + catalog_path.stat().st_size
+        )
+
+    def _set_scientific_header(self, manifest: dict[str, Any]) -> None:
+        """Share value semantics across the historical and closed layouts."""
         if (
             importlib.metadata.version("atomheart") != "0.2.11"
             or not isinstance(manifest["producer"], dict)
@@ -596,29 +749,25 @@ class ShardedTrainingGenerationView:
             "source_generation": self.generation,
             "producer": manifest["producer"],
         }
-        self._v2_manifest = manifest
-        self._node_shards = []
-        self._source_paths = [self.manifest_path, catalog_path]
-        for descriptor in manifest["record_shards"]:
-            path = self._scientific_descriptor(descriptor)
-            if (
-                descriptor["generation"] > self.generation
-                or path in self._v2_descriptors
-            ):
-                raise ValueError("Future or duplicate scientific record shard")
-            self._node_shards.append(path)
-            self._v2_descriptors[path] = descriptor
-        self._update_shard = self._scientific_descriptor(manifest["update_shard"])
-        if (
-            manifest["update_shard"]["generation"] != self.generation
-            or self._update_shard in self._v2_descriptors
-        ):
-            raise ValueError("Mixed scientific update generation/path")
-        self._v2_descriptors[self._update_shard] = manifest["update_shard"]
-        self._source_paths.extend([*self._node_shards, self._update_shard])
-        self.source_bytes_read += 2 * (
-            self.manifest_path.stat().st_size + catalog_path.stat().st_size
+
+    def _prepare_closed_source(self) -> None:
+        """Read one self-contained descriptor; there is no historical catalog."""
+        manifest = read_closed_manifest(self.manifest_path)
+        self.root = self.manifest_path.parent
+        self.generation = manifest["generation"]
+        self._set_scientific_header(manifest)
+        self.storage_layout_version = CLOSED_LAYOUT
+        self.provenance.update(
+            source_format_kind=CLOSED_KIND, storage_layout_version=CLOSED_LAYOUT
         )
+        self._v2_manifest = manifest
+        self._node_shards = [self.root / "records.jsonl"]
+        self._update_shard = self.root / "updates.jsonl"
+        self._v2_descriptors = {
+            self._node_shards[0]: manifest["record_shard"],
+            self._update_shard: manifest["update_shard"],
+        }
+        self._source_paths = [self.manifest_path, *self._v2_descriptors]
 
     def _scientific_descriptor(self, descriptor: dict[str, Any]) -> Path:
         if (
@@ -850,7 +999,10 @@ class ShardedTrainingGenerationView:
                 self.manifest_path, self.provenance["producer"], descriptor
             )
             for row in iter_shard_rows(
-                path, "records", scientific_generation=descriptor["generation"]
+                path,
+                "records",
+                scientific_generation=descriptor["generation"],
+                closed=self.storage_layout_version is not None,
             ):
                 if set(row) != {
                     "node_id",
@@ -858,9 +1010,10 @@ class ShardedTrainingGenerationView:
                     "state_ref_payload",
                 } or not isinstance(row["node_id"], str):
                     raise ValueError("Invalid scientific immutable record")
-                if (
-                    not _integer(row["creation_generation"])
-                    or row["creation_generation"] != descriptor["generation"]
+                if not _integer(row["creation_generation"]) or (
+                    not 1 <= cast("int", row["creation_generation"]) <= self.generation
+                    if self.storage_layout_version is not None
+                    else row["creation_generation"] != descriptor["generation"]
                 ):
                     raise ValueError("Invalid scientific creation generation")
                 ref = row["state_ref_payload"]
@@ -885,35 +1038,45 @@ class ShardedTrainingGenerationView:
             if shard_count != descriptor["count"]:
                 raise ValueError("Scientific record shard count mismatch")
             self.source_bytes_read += 2 * path.stat().st_size
-        with _closing_events(
-            _parser_events(self.manifest_path, strict_keys=True)
-        ) as events:
-            for index, (node_id, generation) in enumerate(
-                ijson.kvitems(events, "creation_index"), 1
+        if self.storage_layout_version is not None:
+            if count != self._expected_count:
+                raise ValueError("Closed snapshot record count mismatch")
+        else:
+            with _closing_events(
+                _parser_events(self.manifest_path, strict_keys=True)
+            ) as events:
+                for index, (node_id, generation) in enumerate(
+                    ijson.kvitems(events, "creation_index"), 1
+                ):
+                    if (
+                        not _integer(generation)
+                        or not 1 <= generation <= self.generation
+                    ):
+                        raise ValueError("Invalid scientific creation index entry")
+                    connection.execute(
+                        "INSERT INTO v2_creation VALUES (?, ?)",
+                        (_validated_node_id(node_id), generation),
+                    )
+                    if index % TRANSACTION_ROWS == 0:
+                        connection.commit()
+            self.source_bytes_read += 2 * self.manifest_path.stat().st_size
+            invalid = connection.execute("""
+                SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id
+                WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1
+            """).fetchone()
+            if (
+                invalid
+                or count
+                != connection.execute("SELECT COUNT(*) FROM v2_creation").fetchone()[0]
             ):
-                if not _integer(generation) or not 1 <= generation <= self.generation:
-                    raise ValueError("Invalid scientific creation index entry")
-                connection.execute(
-                    "INSERT INTO v2_creation VALUES (?, ?)",
-                    (_validated_node_id(node_id), generation),
-                )
-                if index % TRANSACTION_ROWS == 0:
-                    connection.commit()
-        self.source_bytes_read += 2 * self.manifest_path.stat().st_size
-        invalid = connection.execute("""
-            SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id
-            WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1
-        """).fetchone()
-        if (
-            invalid
-            or count
-            != connection.execute("SELECT COUNT(*) FROM v2_creation").fetchone()[0]
-        ):
-            raise ValueError("Incomplete or inconsistent scientific creation index")
+                raise ValueError("Incomplete or inconsistent scientific creation index")
         update_count = 0
         for sequence, row in enumerate(
             iter_shard_rows(
-                self._update_shard, "updates", scientific_generation=self.generation
+                self._update_shard,
+                "updates",
+                scientific_generation=self.generation,
+                closed=self.storage_layout_version is not None,
             )
         ):
             _validate_update(row)
@@ -1048,6 +1211,58 @@ class ShardedTrainingGenerationView:
                 raise KeyError(node_id)
             result.append(json.loads(row[0])["value_contract"])
         return tuple(result)
+
+    def load_creation_generations(self, node_ids: Sequence[str]) -> tuple[int, ...]:
+        """Return original scientific creation identities for a bounded window."""
+        if self.format_version != SCIENTIFIC_VERSION:
+            raise ValueError("Scientific creation origins require v2")
+        result = []
+        for node_id in node_ids:
+            row = self._connection.execute(
+                "SELECT payload FROM records WHERE node_id=?", (node_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(node_id)
+            result.append(json.loads(row[0])["creation_generation"])
+        return tuple(result)
+
+    def iter_record_bytes(self) -> Iterator[tuple[str, bytes]]:
+        """Stream exact JSONL record bytes under this view's verified identity.
+
+        Offline copying requires one object per line, as emitted by both writers.
+        Historical multiline JSON remains readable through the ordinary view.
+        The existing strict lossless parser validates each frame; no new parser.
+        """
+        for path in self._node_shards:
+            descriptor = self._v2_descriptors[path]
+            envelope = (
+                closed_envelope
+                if self.storage_layout_version is not None
+                else _envelope
+            )
+            with path.open("rb") as stream:
+                for index, raw in enumerate(stream):
+                    with _closing_events(
+                        _parser_events(path, strict_keys=True, data=raw)
+                    ) as events:
+                        rows = ijson.items(events, "")
+                        row = next(rows, None)
+                        if (
+                            not isinstance(row, dict)
+                            or next(rows, None) is not None
+                            or not raw.endswith(b"\n")
+                        ):
+                            raise ValueError(
+                                "Copy source requires complete single-line JSONL records"
+                            )
+                    if index == 0:
+                        if row != envelope(
+                            "records", generation=descriptor["generation"]
+                        ):
+                            raise ValueError("Copy source header changed")
+                    else:
+                        yield row["node_id"], raw
+        self.validate_source_identity()
 
     def _measure_build_disk(self, temporary: Path) -> None:
         """Sample main/journal bytes at transaction boundaries, without walking disk."""

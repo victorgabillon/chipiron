@@ -19,8 +19,12 @@ from typing import TYPE_CHECKING, Any
 import ijson
 
 from .generation_publication_io import (
+    capsule_path,
+    capsule_seal,
     generation_read_pin,
+    locate_capsule,
     object_digest,
+    read_object,
     require,
     validate_capsule,
 )
@@ -72,6 +76,7 @@ def validator_identity() -> dict[str, Any]:
         "sharded_training_reader.py",
         "sharded_training_v2.py",
         "sharded_training_v2_contract.py",
+        "closed_scientific_snapshot.py",
     ):
         digest.update(name.encode() + b"\0")
         with Path(__file__).with_name(name).open("rb") as handle:
@@ -92,6 +97,27 @@ def validator_identity() -> dict[str, Any]:
         "ijson_backend": ijson.backend,
         "implementation_sha256": digest.hexdigest(),
     }
+
+
+def _validate_evidence(evidence: object) -> None:
+    """Use one schema validator for both existing committed-evidence consumers."""
+    require(
+        isinstance(evidence, dict)
+        and set(evidence)
+        == {
+            "kind",
+            "version",
+            "validator",
+            "scientific_identity",
+            "record_shards",
+            "reused_from",
+        }
+        and evidence["kind"] == EVIDENCE_KIND
+        and isinstance(evidence["version"], int)
+        and not isinstance(evidence["version"], bool)
+        and evidence["version"] == EVIDENCE_VERSION,
+        "Unsupported or malformed canonical validation evidence.",
+    )
 
 
 @contextmanager
@@ -125,23 +151,7 @@ def committed_canonical_validation(
         if evidence is None:
             yield None
             return
-        require(
-            isinstance(evidence, dict)
-            and set(evidence)
-            == {
-                "kind",
-                "version",
-                "validator",
-                "scientific_identity",
-                "record_shards",
-                "reused_from",
-            }
-            and evidence["kind"] == EVIDENCE_KIND
-            and isinstance(evidence["version"], int)
-            and not isinstance(evidence["version"], bool)
-            and evidence["version"] == EVIDENCE_VERSION,
-            "Unsupported or malformed canonical validation evidence.",
-        )
+        _validate_evidence(evidence)
         require(
             evidence["scientific_identity"] == descriptor["scientific_identity"]
             and evidence["scientific_identity"]["producer"] == header["producer"]
@@ -203,3 +213,59 @@ def canonical_validation_evidence(
         "record_shards": records,
         "reused_from": reused_from,
     }
+
+
+@contextmanager
+def _validated_record_scope(
+    manifest: Path, producer: dict[str, Any], records: list[dict[str, Any]]
+) -> Iterator[None]:
+    """Private transfer of completed checks over exact bytes, never persisted.
+
+    Callers must validate canonicality and exact content hashes before entering;
+    the indexed reader still hashes the specified files before/after indexing.
+    """
+    token = _SCOPE.set(
+        _ValidationScope(
+            manifest.resolve(), producer, {row["path"]: row for row in records}
+        )
+    )
+    try:
+        yield
+    finally:
+        _SCOPE.reset(token)
+
+
+@contextmanager
+def committed_source_validation(path: Path) -> Iterator[None]:
+    """Reuse only a pinned current validator's committed canonical assertion.
+
+    The caller already holds generation_read_pin and has verified that path is
+    the committed scientific head dependency. Missing/stale evidence forces
+    the existing full canonical validation. File hashes are never skipped.
+    """
+    location = locate_capsule(path)
+    require(
+        location is not None and location[2] == 2,
+        "Canonical source must be committed scientific v2.",
+    )
+    assert location is not None
+    work_dir, identifier, version = location
+    descriptor = read_object(
+        capsule_path(work_dir, identifier, version) / capsule_seal(version)
+    )
+    evidence = descriptor.get("canonical_validation")
+    if evidence is None:
+        yield
+        return
+    _validate_evidence(evidence)
+    require(
+        evidence["scientific_identity"] == descriptor["scientific_identity"],
+        "Canonical source identity mismatch.",
+    )
+    if evidence["validator"] != validator_identity():
+        yield
+        return
+    with _validated_record_scope(
+        path, evidence["scientific_identity"]["producer"], evidence["record_shards"]
+    ):
+        yield

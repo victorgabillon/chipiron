@@ -15,7 +15,7 @@ import math
 import os
 import shutil
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
@@ -86,6 +86,7 @@ class ScientificGeneration:
     snapshot: TrainingTreeSnapshot
     value_contracts: dict[str, dict[str, Any]]
     provenance: dict[str, Any]
+    creation_generations: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
