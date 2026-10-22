@@ -199,7 +199,7 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
     assert isinstance(records, list)
     ids: set[str] = set()
     generations: set[int] = set()
-    for record in records:
+    for index, record in enumerate(records):
         require(isinstance(record, dict), "Malformed generation root.")
         require(
             isinstance(record.get("publication_version", 1), int)
@@ -227,6 +227,14 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
         )
         ids.add(identifier)
         generations.add(generation)
+        require(
+            index == 0
+            or (
+                generation == records[index - 1]["generation"] + 1
+                and record.get("parent_id") == records[index - 1]["id"]
+            ),
+            "Broken publication ancestry.",
+        )
     require(
         data.get("head_id") == records[-1]["id"],
         "Publication head differs from committed roots.",
@@ -369,7 +377,9 @@ def locate_capsule(path: Path) -> tuple[Path, str, int] | None:
 
 
 @contextmanager
-def generation_read_pin(path: Path) -> Iterator[None]:
+def generation_read_pin(
+    path: Path, *, manifest: MorpionPipelineGenerationManifest | None = None
+) -> Iterator[None]:
     """Read a raw capsule path only after adopting its run-state commit."""
     for ancestor in path.absolute().parents:
         if ancestor.parent.parent.name == publication_namespace(
@@ -395,6 +405,22 @@ def generation_read_pin(path: Path) -> Iterator[None]:
         require(
             len(matching) == 1, "Uncommitted capsule is not a published generation."
         )
+        head = records[-1]
+        require(
+            (
+                state["generation"],
+                state["latest_runtime_checkpoint_path"],
+                state["latest_tree_snapshot_path"],
+            )
+            == (
+                head["generation"],
+                head["checkpoint_path"],
+                head["tree_snapshot_path"],
+            ),
+            "Run state differs from its committed publication head.",
+        )
+        if manifest is not None:
+            _validate_manifest_record(manifest, matching[0], records[0]["generation"])
         validate_capsule(work_dir, matching[0])
         # A writer may have died between complete state replacement and dir fsync.
         sync_artifact(work_dir / "run_state.json", work_dir)
@@ -421,27 +447,12 @@ def pinned_file_hashes(path: Path) -> dict[str, str]:
     return {str(root / entry["path"]): entry["sha256"] for entry in descriptor["files"]}
 
 
-def validate_manifest_publication(
-    work_dir: Path, manifest: MorpionPipelineGenerationManifest
+def _validate_manifest_record(
+    manifest: MorpionPipelineGenerationManifest, record: dict[str, Any], baseline: int
 ) -> None:
-    """Check discovery against the authoritative state, preserving legacy baselines."""
-    if not any((work_dir / publication_namespace(v)).exists() for v in (1, 2)):
-        return
-    state_path = work_dir / "run_state.json"
-    if not state_path.is_file():
-        return
-    state = read_object(state_path)
-    metadata = state.get("metadata", {})
-    if PUBLICATION_KEY not in metadata:
-        return
-    records = publication_records(metadata)
+    """Compare advisory identity with the root observed under the selected pin."""
     generation = manifest.generation
-    baseline = records[0]["generation"]
-    if generation < baseline:
-        return  # Adopted legacy history is retained outside the managed namespace.
-    matching = [r for r in records if r["generation"] == generation]
-    require(len(matching) == 1, "Discovery manifest has no committed generation.")
-    record = matching[0]
+    require(generation == record["generation"], "Discovery generation mismatch.")
     require(
         (
             manifest.runtime_checkpoint_path,
@@ -462,7 +473,69 @@ def validate_manifest_publication(
             ),
             "Discovery projection differs from its committed publication.",
         )
-    validate_capsule(work_dir, record)
+
+
+@contextmanager
+def manifest_read_pin(
+    work_dir: Path, manifest: MorpionPipelineGenerationManifest
+) -> Iterator[None]:
+    """Select a pin from advisory data, then re-observe authority inside that pin.
+
+    Old external baselines have no capsule path; only those need an initial root
+    lookup. It is a hint, never the authoritative observation used for validation.
+    """
+    projection = manifest.metadata.get(DISCOVERY_METADATA_KEY)
+    assert projection is None or isinstance(projection, dict)
+    record = None if projection is None else projection["publication"]
+    path = None
+    if record is not None:
+        path = inside(work_dir, record["descriptor_path"])
+        require(locate_capsule(path) is not None, "Invalid discovery capsule path.")
+    else:
+        for value in (manifest.tree_snapshot_path, manifest.runtime_checkpoint_path):
+            if value is not None and locate_capsule(work_dir / value) is not None:
+                path = work_dir / value
+                break
+    if path is None:
+        state_path = work_dir / "run_state.json"
+        if state_path.is_file():
+            metadata = read_object(state_path).get("metadata", {})
+            if PUBLICATION_KEY in metadata:
+                records = publication_records(metadata)
+                if manifest.generation >= records[0]["generation"]:
+                    matching = [
+                        r for r in records if r["generation"] == manifest.generation
+                    ]
+                    require(
+                        len(matching) == 1,
+                        "Discovery manifest has no committed generation.",
+                    )
+                    path = inside(work_dir, matching[0]["descriptor_path"])
+        if path is None:
+            yield  # Unmanaged history keeps its original interpretation.
+            return
+    with generation_read_pin(path, manifest=manifest):
+        yield
+
+
+def validate_manifest_publication(
+    work_dir: Path, manifest: MorpionPipelineGenerationManifest
+) -> None:
+    """Verify one selected closure; consumers retain manifest_read_pin while using it."""
+    with manifest_read_pin(work_dir, manifest):
+        pass
+
+
+def audit_generation_publications(work_dir: Path) -> None:
+    """Explicitly verify every committed capsule, even without discovery manifests.
+
+    Audit the roots in this run-state observation. Each root is re-adopted under
+    its existing pin; generations committed later belong to a subsequent audit.
+    """
+    state = read_object(work_dir / "run_state.json")
+    for record in publication_records(state["metadata"]):
+        with generation_read_pin(inside(work_dir, record["descriptor_path"])):
+            pass
 
 
 def object_digest(value: object) -> str:

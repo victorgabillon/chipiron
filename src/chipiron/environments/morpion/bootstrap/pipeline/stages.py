@@ -131,6 +131,7 @@ from chipiron.environments.morpion.bootstrap.cycle_validation import (
 )
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
+    validate_manifest_publication,
 )
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapHistoryRecorder,
@@ -233,7 +234,7 @@ from .growth_budget import growth_budget_runtime_config
 from .manifests import (
     MissingPipelineRowsFileError,
     MissingPipelineTreeSnapshotFileError,
-    load_generation_manifest,
+    pinned_generation_manifest,
     pipeline_manifest_path,
     require_manifest_rows_path,
     require_manifest_tree_snapshot_path,
@@ -241,6 +242,7 @@ from .manifests import (
     resolve_previous_pipeline_record_status,
     save_dataset_manifest_status,
     save_training_manifest_status,
+    verified_generation_rows,
 )
 from .observability import (
     build_observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
@@ -1493,11 +1495,37 @@ def run_pipeline_dataset_stage(
     ):
         raise DatasetConfidenceError.missing_source()
     _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        return _run_pipeline_dataset_stage(
+            args,
+            generation=generation,
+            manifest=manifest,
+            claim_ttl_seconds=claim_ttl_seconds,
+            claim_owner=claim_owner,
+            use_streaming_sharded_reader=use_streaming_sharded_reader,
+            reader_cache_dir=reader_cache_dir,
+            allow_scientific_v2=allow_scientific_v2,
+        )
+
+
+def _run_pipeline_dataset_stage(
+    args: MorpionBootstrapArgs,
+    *,
+    generation: int,
+    manifest: MorpionPipelineGenerationManifest,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
+) -> MorpionPipelineGenerationManifest:
+    """Extract supervised rows for one persisted pipeline generation."""
+    _require_artifact_pipeline_mode(args)
     dataset_measurement = StageMeasurement()
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = load_generation_manifest(paths=paths, generation=generation)
     if args.dataset_confidence_policy == "selected_value_v2":
         existing_rows = (
             paths.resolve_work_dir_path(manifest.rows_path)
@@ -1735,7 +1763,9 @@ def run_pipeline_dataset_stage(
             rows_path,
         )
         write_stats = save_morpion_supervised_rows_streaming(
-            rows=streaming_rows.rows,
+            rows=verified_generation_rows(
+                streaming_rows.rows, paths=paths, manifest=manifest
+            ),
             metadata=streaming_rows.metadata,
             path=rows_path,
             progress_callback=lambda row_count: LOGGER.info(
@@ -1906,8 +1936,28 @@ def run_pipeline_training_stage(
     """Train evaluators and select the active model for one pipeline generation."""
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        return _run_pipeline_training_stage(
+            args,
+            generation=generation,
+            manifest=manifest,
+            claim_ttl_seconds=claim_ttl_seconds,
+            claim_owner=claim_owner,
+        )
+
+
+def _run_pipeline_training_stage(
+    args: MorpionBootstrapArgs,
+    *,
+    generation: int,
+    manifest: MorpionPipelineGenerationManifest,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+) -> MorpionPipelineGenerationManifest:
+    """Train evaluators and select the active model for one pipeline generation."""
+    _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = load_generation_manifest(paths=paths, generation=generation)
     lower_bound = training_lower_bound_details(paths)
     stage_lower_bound_generation = lower_bound.generation
     if started_cursor_generation_is_safely_reclaimable(
@@ -2153,6 +2203,7 @@ def run_pipeline_training_stage(
         manifest_metadata["training_evaluator_names"] = list(
             resolved_evaluators_config.evaluators
         )
+        validate_manifest_publication(paths.work_dir, manifest)
         manifest = replace(
             manifest,
             model_bundle_paths=training_result.model_bundle_paths,

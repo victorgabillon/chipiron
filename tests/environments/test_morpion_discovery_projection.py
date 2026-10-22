@@ -206,7 +206,9 @@ def test_existing_capsule_checks_still_run(
         (tmp_path / state.latest_runtime_checkpoint_path).unlink()
     save_pipeline_manifest(manifest, path)
     with pytest.raises(ValueError):
-        load_available_pipeline_manifests(paths)
+        validate_manifest_publication(
+            tmp_path, load_available_pipeline_manifests(paths)[2]
+        )
 
 
 def test_projection_cannot_replace_authority(tmp_path: Path) -> None:
@@ -218,7 +220,9 @@ def test_projection_cannot_replace_authority(tmp_path: Path) -> None:
     metadata[KEY]["publication"]["descriptor_sha256"] = "0" * 64
     save_pipeline_manifest(replace(manifest, metadata=metadata), path)
     with pytest.raises(GenerationPublicationError, match="projection"):
-        load_available_pipeline_manifests(paths)
+        validate_manifest_publication(
+            tmp_path, load_available_pipeline_manifests(paths)[2]
+        )
     with pytest.raises(ValueError, match="projection"):
         GrowthPatchReceiptSession(paths, object()).publish_manifest(state)
 

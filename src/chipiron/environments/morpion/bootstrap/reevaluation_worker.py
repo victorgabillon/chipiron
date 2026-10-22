@@ -23,7 +23,13 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
+from .generation_publication_io import (
+    locate_capsule,
+    require,
+    validate_manifest_publication,
+)
 from .performance import StageMeasurement, persist_stage_measurement
+from .pipeline.manifests import pinned_generation_manifest
 from .pipeline_artifacts import (
     MissingMorpionPipelineArtifactError,
     MorpionPipelineActiveModel,
@@ -513,8 +519,14 @@ def resolve_latest_reevaluation_tree_snapshot(
         if manifest.tree_snapshot_path is None:
             continue
         snapshot_path = paths.resolve_work_dir_path(manifest.tree_snapshot_path)
-        if snapshot_path is None or not snapshot_path.is_file():
+        if snapshot_path is None:
             continue
+        if not snapshot_path.is_file() and locate_capsule(snapshot_path) is None:
+            continue  # Preserve legacy missing-file eligibility.
+        require(
+            manifest.generation == generation, "Selected discovery generation mismatch."
+        )
+        validate_manifest_publication(paths.work_dir, manifest)
         return generation, snapshot_path
     return None
 
@@ -821,6 +833,13 @@ def run_morpion_reevaluation_worker_once(
         tree_snapshot_path=snapshot_path,
     )
     with ExitStack() as reader_stack:
+        manifest = reader_stack.enter_context(
+            pinned_generation_manifest(paths=paths, generation=tree_generation)
+        )
+        require(
+            paths.resolve_work_dir_path(manifest.tree_snapshot_path) == snapshot_path,
+            "Reevaluation source changed after selection.",
+        )
         stage_measurement = StageMeasurement()
         reader_initialization = StageMeasurement()
         view = None
@@ -946,310 +965,313 @@ def run_morpion_reevaluation_worker_once(
         reconstruction_measurement = StageMeasurement()
         selected_nodes = () if view is None else view.load_nodes(selected_node_ids)
         reconstruction_observation = reconstruction_measurement.finish()
-    selected_start_cursor = selected_node_ids[0] if selected_node_ids else None
-    selected_end_cursor = selected_node_ids[-1] if selected_node_ids else None
-    _record_reevaluation_action(paths, status="STARTED", now_unix_s=now_unix_s)
-    _log_reevaluation_start_block(
-        active_model=active_model,
-        tree_generation=tree_generation,
-        snapshot_path=snapshot_log_path or str(snapshot_path),
-        max_nodes_per_patch=max_nodes_per_patch,
-        selected_rows=len(selected_node_ids),
-        total_rows=total_node_count,
-    )
-
-    log_pipeline_memory(
-        stage="reevaluation",
-        generation=tree_generation,
-        event="before_patch_rows_build",
-        rows=len(selected_node_ids),
-    )
-    inference_measurement = StageMeasurement(cuda_device="auto")
-    active_model_evaluator = None
-    patch_rows_start_unix_s = time.time()
-    if evaluator is not None:
-        if isinstance(evaluator, MorpionWindowNodeReevaluationEvaluator):
-            if snapshot is not None:
-                nodes_by_id = {node.node_id: node for node in snapshot.nodes}
-                selected_nodes = tuple(
-                    nodes_by_id[node_id] for node_id in selected_node_ids
-                )
-            patch_rows = tuple(evaluator.evaluate_node_window(selected_nodes))
-        else:
-            assert snapshot is not None
-            patch_rows = tuple(
-                evaluator.evaluate_patch_rows(snapshot, selected_node_ids)
-            )
-    elif use_snapshot_value_fallback:
-        patch_rows = (
-            node_values_to_patch_rows(selected_nodes)
-            if view is not None
-            else snapshot_values_to_patch_rows(
-                cast("TrainingTreeSnapshot", snapshot), selected_node_ids
-            )
-        )
-    else:
-        active_model_evaluator = build_active_model_reevaluation_evaluator(
-            paths=paths,
+        selected_start_cursor = selected_node_ids[0] if selected_node_ids else None
+        selected_end_cursor = selected_node_ids[-1] if selected_node_ids else None
+        _record_reevaluation_action(paths, status="STARTED", now_unix_s=now_unix_s)
+        _log_reevaluation_start_block(
             active_model=active_model,
+            tree_generation=tree_generation,
+            snapshot_path=snapshot_log_path or str(snapshot_path),
+            max_nodes_per_patch=max_nodes_per_patch,
+            selected_rows=len(selected_node_ids),
+            total_rows=total_node_count,
         )
-        if view is not None:
-            patch_rows = active_model_evaluator.evaluate_node_window(selected_nodes)
-        else:
-            assert snapshot is not None
-            patch_rows = active_model_evaluator.evaluate_patch_rows(
-                snapshot, selected_node_ids
+
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="before_patch_rows_build",
+            rows=len(selected_node_ids),
+        )
+        inference_measurement = StageMeasurement(cuda_device="auto")
+        active_model_evaluator = None
+        patch_rows_start_unix_s = time.time()
+        if evaluator is not None:
+            if isinstance(evaluator, MorpionWindowNodeReevaluationEvaluator):
+                if snapshot is not None:
+                    nodes_by_id = {node.node_id: node for node in snapshot.nodes}
+                    selected_nodes = tuple(
+                        nodes_by_id[node_id] for node_id in selected_node_ids
+                    )
+                patch_rows = tuple(evaluator.evaluate_node_window(selected_nodes))
+            else:
+                assert snapshot is not None
+                patch_rows = tuple(
+                    evaluator.evaluate_patch_rows(snapshot, selected_node_ids)
+                )
+        elif use_snapshot_value_fallback:
+            patch_rows = (
+                node_values_to_patch_rows(selected_nodes)
+                if view is not None
+                else snapshot_values_to_patch_rows(
+                    cast("TrainingTreeSnapshot", snapshot), selected_node_ids
+                )
             )
-    log_pipeline_memory(
-        stage="reevaluation",
-        generation=tree_generation,
-        event="after_patch_rows_build",
-        rows=len(patch_rows),
-    )
-    inference_observation = inference_measurement.finish()
-    patch_rows_elapsed_s = max(time.time() - patch_rows_start_unix_s, 0.0)
-    rows_per_s = (
-        len(patch_rows) / patch_rows_elapsed_s if patch_rows_elapsed_s > 0.0 else 0.0
-    )
-    LOGGER.info(
-        "[reevaluation-progress] %s",
-        _format_log_fields(
-            generation=active_model.generation,
-            evaluator=active_model.evaluator_name,
-            rows=f"{len(patch_rows)}/{len(selected_node_ids)}",
-            percent=100.0 if selected_node_ids else 0.0,
-            elapsed=f"{patch_rows_elapsed_s:.1f}s",
-            rows_per_s=f"{rows_per_s:.1f}",
-        ),
-    )
-
-    if paths.pipeline_reevaluation_patch_path.exists():
-        pending_patch_path = _relative_to_work_dir(
-            paths,
-            paths.pipeline_reevaluation_patch_path,
-        )
-        LOGGER.info(
-            "[reevaluation-cycle] %s",
-            _format_log_fields(
-                status="BLOCKED",
-                reason="pending_patch_exists",
-                active_model=active_model.evaluator_name,
-                source_generation=active_model.generation,
-                latest_generation=tree_generation,
-                pending_patch=pending_patch_path,
-                action="waiting_for_growth_to_consume_patch",
-            ),
-        )
+        else:
+            active_model_evaluator = build_active_model_reevaluation_evaluator(
+                paths=paths,
+                active_model=active_model,
+            )
+            if view is not None:
+                patch_rows = active_model_evaluator.evaluate_node_window(selected_nodes)
+            else:
+                assert snapshot is not None
+                patch_rows = active_model_evaluator.evaluate_patch_rows(
+                    snapshot, selected_node_ids
+                )
         log_pipeline_memory(
             stage="reevaluation",
             generation=tree_generation,
-            event="done",
-            rows=0,
-            reason="pending_patch_exists",
+            event="after_patch_rows_build",
+            rows=len(patch_rows),
         )
-        return MorpionReevaluationWorkerResult(
-            patch_written=False,
-            reason="pending_patch_exists",
-            patch_id=None,
-            num_rows=0,
-            evaluator_generation=active_model.generation,
-            evaluator_name=active_model.evaluator_name,
-            start_cursor=None,
-            end_cursor=None,
-            completed_full_pass_count=None,
-            tree_generation=tree_generation,
-            pending_patch_path=pending_patch_path,
-            model_bundle_path=active_model.model_bundle_path,
-        )
-
-    resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
-    timestamp_utc = timestamp_utc_from_unix_s(resolved_now_unix_s)
-    resolved_patch_id = str(uuid.uuid4()) if patch_id is None else patch_id
-    patch_write_started = time.perf_counter()
-    patch = MorpionReevaluationPatch(
-        patch_id=resolved_patch_id,
-        created_at_utc=timestamp_utc,
-        evaluator_generation=active_model.generation,
-        evaluator_name=active_model.evaluator_name,
-        model_bundle_path=active_model.model_bundle_path,
-        rows=patch_rows,
-        tree_generation=tree_generation,
-        start_cursor=selected_start_cursor,
-        end_cursor=selected_end_cursor,
-        metadata={
-            "completed_full_pass": completed_full_pass,
-            "max_nodes_per_patch": max_nodes_per_patch,
-            "next_node_cursor": next_node_cursor,
-            "source": "reevaluation_worker",
-        },
-    )
-    from .generation_publication_io import committed_scientific_source
-
-    committed_source = committed_scientific_source(snapshot_path)
-    if committed_source is not None:
-        patch = replace(
-            patch,
-            metadata={**patch.metadata, "scientific_publication": committed_source},
-        )
-    if view is not None and view.format_version == 2:
-        view.validate_source_identity()
-    if not _save_reevaluation_patch_exclusive(
-        patch,
-        paths.pipeline_reevaluation_patch_path,
-    ):
-        pending_patch_path = _relative_to_work_dir(
-            paths,
-            paths.pipeline_reevaluation_patch_path,
+        inference_observation = inference_measurement.finish()
+        patch_rows_elapsed_s = max(time.time() - patch_rows_start_unix_s, 0.0)
+        rows_per_s = (
+            len(patch_rows) / patch_rows_elapsed_s
+            if patch_rows_elapsed_s > 0.0
+            else 0.0
         )
         LOGGER.info(
-            "[reevaluation-cycle] %s",
+            "[reevaluation-progress] %s",
             _format_log_fields(
-                status="BLOCKED",
+                generation=active_model.generation,
+                evaluator=active_model.evaluator_name,
+                rows=f"{len(patch_rows)}/{len(selected_node_ids)}",
+                percent=100.0 if selected_node_ids else 0.0,
+                elapsed=f"{patch_rows_elapsed_s:.1f}s",
+                rows_per_s=f"{rows_per_s:.1f}",
+            ),
+        )
+
+        if paths.pipeline_reevaluation_patch_path.exists():
+            pending_patch_path = _relative_to_work_dir(
+                paths,
+                paths.pipeline_reevaluation_patch_path,
+            )
+            LOGGER.info(
+                "[reevaluation-cycle] %s",
+                _format_log_fields(
+                    status="BLOCKED",
+                    reason="pending_patch_exists",
+                    active_model=active_model.evaluator_name,
+                    source_generation=active_model.generation,
+                    latest_generation=tree_generation,
+                    pending_patch=pending_patch_path,
+                    action="waiting_for_growth_to_consume_patch",
+                ),
+            )
+            log_pipeline_memory(
+                stage="reevaluation",
+                generation=tree_generation,
+                event="done",
+                rows=0,
                 reason="pending_patch_exists",
-                active_model=active_model.evaluator_name,
-                source_generation=active_model.generation,
-                latest_generation=tree_generation,
-                pending_patch=pending_patch_path,
-                action="waiting_for_growth_to_consume_patch",
-            ),
-        )
-        log_pipeline_memory(
-            stage="reevaluation",
-            generation=tree_generation,
-            event="done",
-            rows=0,
-            reason="pending_patch_exists",
-        )
-        return MorpionReevaluationWorkerResult(
-            patch_written=False,
-            reason="pending_patch_exists",
-            patch_id=None,
-            num_rows=0,
-            evaluator_generation=active_model.generation,
-            evaluator_name=active_model.evaluator_name,
-            start_cursor=None,
-            end_cursor=None,
-            completed_full_pass_count=None,
-            tree_generation=tree_generation,
-            pending_patch_path=pending_patch_path,
-            model_bundle_path=active_model.model_bundle_path,
-        )
+            )
+            return MorpionReevaluationWorkerResult(
+                patch_written=False,
+                reason="pending_patch_exists",
+                patch_id=None,
+                num_rows=0,
+                evaluator_generation=active_model.generation,
+                evaluator_name=active_model.evaluator_name,
+                start_cursor=None,
+                end_cursor=None,
+                completed_full_pass_count=None,
+                tree_generation=tree_generation,
+                pending_patch_path=pending_patch_path,
+                model_bundle_path=active_model.model_bundle_path,
+            )
 
-    patch_build_write_s = time.perf_counter() - patch_write_started
-    LOGGER.info(
-        "[reevaluation-patch] create_done patch_id=%s rows=%s direct_updates=%s tree_generation=%s start_cursor=%s end_cursor=%s",
-        patch.patch_id,
-        len(patch.rows),
-        len(patch.rows),
-        _metric_value(patch.tree_generation),
-        _metric_value(patch.start_cursor),
-        _metric_value(patch.end_cursor),
-    )
-    patch_output_path = _relative_to_work_dir(
-        paths, paths.pipeline_reevaluation_patch_path
-    )
-    LOGGER.info(
-        "[reevaluation-patch] %s",
-        _format_log_fields(
-            status="WRITTEN",
-            generation=patch.evaluator_generation,
-            evaluator=patch.evaluator_name,
-            rows=len(patch.rows),
-            output=patch_output_path,
-            patch_id=patch.patch_id,
-        ),
-    )
-    LOGGER.info(
-        "[reevaluation-cycle] %s",
-        _format_log_fields(
-            generation=patch.evaluator_generation,
-            evaluator=patch.evaluator_name,
-            status="PATCH_WRITTEN",
-            rows=len(patch.rows),
-            output=patch_output_path,
-            latest_tree_generation=tree_generation,
-        ),
-    )
-    _record_reevaluation_action(
-        paths,
-        status="PATCH_WRITTEN",
-        now_unix_s=now_unix_s,
-    )
-
-    next_completed_full_pass_count = completed_full_pass_count + int(
-        completed_full_pass
-    )
-    cursor_measurement = StageMeasurement()
-    save_reevaluation_cursor(
-        MorpionReevaluationCursor(
+        resolved_now_unix_s = time.time() if now_unix_s is None else now_unix_s
+        timestamp_utc = timestamp_utc_from_unix_s(resolved_now_unix_s)
+        resolved_patch_id = str(uuid.uuid4()) if patch_id is None else patch_id
+        patch_write_started = time.perf_counter()
+        patch = MorpionReevaluationPatch(
+            patch_id=resolved_patch_id,
+            created_at_utc=timestamp_utc,
             evaluator_generation=active_model.generation,
             evaluator_name=active_model.evaluator_name,
             model_bundle_path=active_model.model_bundle_path,
-            next_node_cursor=next_node_cursor,
-            updated_at_utc=timestamp_utc,
+            rows=patch_rows,
             tree_generation=tree_generation,
-            completed_full_pass_count=next_completed_full_pass_count,
-            last_patch_id=patch.patch_id,
-            metadata={"source": "reevaluation_worker"},
-        ),
-        paths.pipeline_reevaluation_cursor_path,
-    )
-    cursor_observation = cursor_measurement.finish()
-    log_pipeline_memory(
-        stage="reevaluation",
-        generation=tree_generation,
-        event="done",
-        rows=len(patch.rows),
-        reader_mode=reader_mode,
-    )
-
-    persist_stage_measurement(
-        paths.work_dir,
-        tree_generation,
-        "reevaluation",
-        stage_measurement.finish(
-            model_generation=active_model.generation,
-            evaluator_name=active_model.evaluator_name,
-            patch_id=patch.patch_id,
-            rows_requested=len(selected_node_ids),
-            rows_reevaluated=len(patch.rows),
-            node_count=total_node_count,
-            reader_mode=reader_mode,
-            reader_fallback_reason=fallback_reason,
-            reader_initialization=reader_observation,
-            sorted_id_selection=selection_observation,
-            selected_node_reconstruction=reconstruction_observation,
-            cursor_publication=cursor_observation,
-            nodes_per_s=rows_per_s,
-            inference_window=inference_observation,
-            model_inference_s=getattr(
-                active_model_evaluator or evaluator, "last_inference_s", None
-            ),
-            model_load_s=getattr(
-                active_model_evaluator or evaluator, "last_model_load_s", None
-            ),
-            patch_rows_build_s=patch_rows_elapsed_s,
-            patch_build_write_s=patch_build_write_s,
             start_cursor=selected_start_cursor,
             end_cursor=selected_end_cursor,
-            next_node_cursor=next_node_cursor,
+            metadata={
+                "completed_full_pass": completed_full_pass,
+                "max_nodes_per_patch": max_nodes_per_patch,
+                "next_node_cursor": next_node_cursor,
+                "source": "reevaluation_worker",
+            },
+        )
+        from .generation_publication_io import committed_scientific_source
+
+        committed_source = committed_scientific_source(snapshot_path)
+        if committed_source is not None:
+            patch = replace(
+                patch,
+                metadata={**patch.metadata, "scientific_publication": committed_source},
+            )
+        if view is not None and view.format_version == 2:
+            view.validate_source_identity()
+        validate_manifest_publication(paths.work_dir, manifest)
+        if not _save_reevaluation_patch_exclusive(
+            patch,
+            paths.pipeline_reevaluation_patch_path,
+        ):
+            pending_patch_path = _relative_to_work_dir(
+                paths,
+                paths.pipeline_reevaluation_patch_path,
+            )
+            LOGGER.info(
+                "[reevaluation-cycle] %s",
+                _format_log_fields(
+                    status="BLOCKED",
+                    reason="pending_patch_exists",
+                    active_model=active_model.evaluator_name,
+                    source_generation=active_model.generation,
+                    latest_generation=tree_generation,
+                    pending_patch=pending_patch_path,
+                    action="waiting_for_growth_to_consume_patch",
+                ),
+            )
+            log_pipeline_memory(
+                stage="reevaluation",
+                generation=tree_generation,
+                event="done",
+                rows=0,
+                reason="pending_patch_exists",
+            )
+            return MorpionReevaluationWorkerResult(
+                patch_written=False,
+                reason="pending_patch_exists",
+                patch_id=None,
+                num_rows=0,
+                evaluator_generation=active_model.generation,
+                evaluator_name=active_model.evaluator_name,
+                start_cursor=None,
+                end_cursor=None,
+                completed_full_pass_count=None,
+                tree_generation=tree_generation,
+                pending_patch_path=pending_patch_path,
+                model_bundle_path=active_model.model_bundle_path,
+            )
+
+        patch_build_write_s = time.perf_counter() - patch_write_started
+        LOGGER.info(
+            "[reevaluation-patch] create_done patch_id=%s rows=%s direct_updates=%s tree_generation=%s start_cursor=%s end_cursor=%s",
+            patch.patch_id,
+            len(patch.rows),
+            len(patch.rows),
+            _metric_value(patch.tree_generation),
+            _metric_value(patch.start_cursor),
+            _metric_value(patch.end_cursor),
+        )
+        patch_output_path = _relative_to_work_dir(
+            paths, paths.pipeline_reevaluation_patch_path
+        )
+        LOGGER.info(
+            "[reevaluation-patch] %s",
+            _format_log_fields(
+                status="WRITTEN",
+                generation=patch.evaluator_generation,
+                evaluator=patch.evaluator_name,
+                rows=len(patch.rows),
+                output=patch_output_path,
+                patch_id=patch.patch_id,
+            ),
+        )
+        LOGGER.info(
+            "[reevaluation-cycle] %s",
+            _format_log_fields(
+                generation=patch.evaluator_generation,
+                evaluator=patch.evaluator_name,
+                status="PATCH_WRITTEN",
+                rows=len(patch.rows),
+                output=patch_output_path,
+                latest_tree_generation=tree_generation,
+            ),
+        )
+        _record_reevaluation_action(
+            paths,
+            status="PATCH_WRITTEN",
+            now_unix_s=now_unix_s,
+        )
+
+        next_completed_full_pass_count = completed_full_pass_count + int(
+            completed_full_pass
+        )
+        cursor_measurement = StageMeasurement()
+        save_reevaluation_cursor(
+            MorpionReevaluationCursor(
+                evaluator_generation=active_model.generation,
+                evaluator_name=active_model.evaluator_name,
+                model_bundle_path=active_model.model_bundle_path,
+                next_node_cursor=next_node_cursor,
+                updated_at_utc=timestamp_utc,
+                tree_generation=tree_generation,
+                completed_full_pass_count=next_completed_full_pass_count,
+                last_patch_id=patch.patch_id,
+                metadata={"source": "reevaluation_worker"},
+            ),
+            paths.pipeline_reevaluation_cursor_path,
+        )
+        cursor_observation = cursor_measurement.finish()
+        log_pipeline_memory(
+            stage="reevaluation",
+            generation=tree_generation,
+            event="done",
+            rows=len(patch.rows),
+            reader_mode=reader_mode,
+        )
+
+        persist_stage_measurement(
+            paths.work_dir,
+            tree_generation,
+            "reevaluation",
+            stage_measurement.finish(
+                model_generation=active_model.generation,
+                evaluator_name=active_model.evaluator_name,
+                patch_id=patch.patch_id,
+                rows_requested=len(selected_node_ids),
+                rows_reevaluated=len(patch.rows),
+                node_count=total_node_count,
+                reader_mode=reader_mode,
+                reader_fallback_reason=fallback_reason,
+                reader_initialization=reader_observation,
+                sorted_id_selection=selection_observation,
+                selected_node_reconstruction=reconstruction_observation,
+                cursor_publication=cursor_observation,
+                nodes_per_s=rows_per_s,
+                inference_window=inference_observation,
+                model_inference_s=getattr(
+                    active_model_evaluator or evaluator, "last_inference_s", None
+                ),
+                model_load_s=getattr(
+                    active_model_evaluator or evaluator, "last_model_load_s", None
+                ),
+                patch_rows_build_s=patch_rows_elapsed_s,
+                patch_build_write_s=patch_build_write_s,
+                start_cursor=selected_start_cursor,
+                end_cursor=selected_end_cursor,
+                next_node_cursor=next_node_cursor,
+                completed_full_pass_count=next_completed_full_pass_count,
+            ),
+        )
+        return MorpionReevaluationWorkerResult(
+            patch_written=True,
+            reason=None,
+            patch_id=patch.patch_id,
+            num_rows=len(patch.rows),
+            evaluator_generation=patch.evaluator_generation,
+            evaluator_name=patch.evaluator_name,
+            start_cursor=patch.start_cursor,
+            end_cursor=patch.end_cursor,
             completed_full_pass_count=next_completed_full_pass_count,
-        ),
-    )
-    return MorpionReevaluationWorkerResult(
-        patch_written=True,
-        reason=None,
-        patch_id=patch.patch_id,
-        num_rows=len(patch.rows),
-        evaluator_generation=patch.evaluator_generation,
-        evaluator_name=patch.evaluator_name,
-        start_cursor=patch.start_cursor,
-        end_cursor=patch.end_cursor,
-        completed_full_pass_count=next_completed_full_pass_count,
-        tree_generation=tree_generation,
-        pending_patch_path=patch_output_path,
-        model_bundle_path=patch.model_bundle_path,
-    )
+            tree_generation=tree_generation,
+            pending_patch_path=patch_output_path,
+            model_bundle_path=patch.model_bundle_path,
+        )
 
 
 __all__ = [

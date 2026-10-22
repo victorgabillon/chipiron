@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    manifest_read_pin,
+    require,
     validate_manifest_publication,
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
@@ -23,6 +26,7 @@ from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
     from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
@@ -83,6 +87,30 @@ def load_generation_manifest(
     manifest = load_pipeline_manifest(pipeline_manifest_path(paths, generation))
     validate_manifest_publication(paths.work_dir, manifest)
     return manifest
+
+
+@contextmanager
+def pinned_generation_manifest(
+    *, paths: MorpionBootstrapPaths, generation: int
+) -> Iterator[MorpionPipelineGenerationManifest]:
+    """Keep one selected generation pinned through its consuming operation."""
+    manifest = load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    require(
+        manifest.generation == generation, "Selected discovery generation mismatch."
+    )
+    with manifest_read_pin(paths.work_dir, manifest):
+        yield manifest
+
+
+def verified_generation_rows[T](
+    rows: Iterable[T],
+    *,
+    paths: MorpionBootstrapPaths,
+    manifest: MorpionPipelineGenerationManifest,
+) -> Iterator[T]:
+    """Recheck source bytes before the existing streaming writer replaces its output."""
+    yield from rows
+    validate_manifest_publication(paths.work_dir, manifest)
 
 
 def latest_prior_dataset_status_artifact(

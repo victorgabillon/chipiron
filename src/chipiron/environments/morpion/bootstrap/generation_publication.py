@@ -300,15 +300,6 @@ class DurableGenerationPublication:
             and head["tree_snapshot_path"] == state.latest_tree_snapshot_path,
             "Run state differs from its committed publication head.",
         )
-        for index, record in enumerate(records):
-            require(
-                index == 0
-                or (
-                    record["generation"] == records[index - 1]["generation"] + 1
-                    and record["parent_id"] == records[index - 1]["id"]
-                ),
-                "Broken publication ancestry.",
-            )
         descriptor = validate_capsule(self.paths.work_dir, head)
         if self.version == 2:
             from .sharded_training_v2 import _producer
