@@ -46,6 +46,7 @@ from tests.environments.test_morpion_closed_scientific_snapshot import committed
 
 
 def scientific_digest(nodes: Any, contracts: Any, origins: Any) -> str:
+    """Run scientific digest for the isolated synthetic study."""
     digest = hashlib.sha256()
     for node in nodes:
         digest.update(
@@ -59,6 +60,7 @@ def scientific_digest(nodes: Any, contracts: Any, origins: Any) -> str:
 
 
 def main() -> None:
+    """Run main for the isolated synthetic study."""
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument(
@@ -236,7 +238,11 @@ def main() -> None:
                         rows=expected.rows, metadata=expected.metadata, path=oracle_path
                     )
 
-                    def extract() -> Any:
+                    def extract(
+                        args: Any = args,
+                        expected: Any = expected,
+                        indexed_path: Path = indexed_path,
+                    ) -> Any:
                         with disk_dataset_context(
                             IndexedDatasetSource(view), args
                         ) as context:

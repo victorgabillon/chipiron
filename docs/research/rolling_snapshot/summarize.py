@@ -12,6 +12,7 @@ from scripts.measure_morpion_generation_publication import disk_usage
 
 
 def summarize(root: Path, destination: Path) -> dict:
+    """Run summarize for the isolated synthetic study."""
     runs = root / "runs"
     raw = {p.parent.name: json.loads(p.read_text()) for p in runs.glob("*/result.json")}
     result = {
@@ -85,8 +86,9 @@ def summarize(root: Path, destination: Path) -> dict:
             lengths = []
             with (source_a / "records.jsonl").open() as stream:
                 next(stream)
-                for line in stream:
-                    lengths.append(len(json.loads(line)["state_ref_payload"][1]))
+                lengths.extend(
+                    len(json.loads(line)["state_ref_payload"][1]) for line in stream
+                )
             a_bytes = sum(
                 disk_usage(runs / (name + "-complete") / f"complete-{i}")[
                     "unique_file_bytes"

@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Run main for the isolated synthetic study."""
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("evidence", type=Path)
     parser.add_argument("output", type=Path)

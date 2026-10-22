@@ -95,6 +95,7 @@ def checkpoint_digest(path: Path) -> dict[str, str]:
 
 
 def runner() -> AnemoneMorpionSearchRunner:
+    """Run runner for the isolated synthetic study."""
     return AnemoneMorpionSearchRunner(
         AnemoneMorpionSearchRunnerArgs(
             random_seed=4, runtime_checkpoint_format="sharded"
@@ -103,11 +104,13 @@ def runner() -> AnemoneMorpionSearchRunner:
 
 
 def save_checkpoint(instance: Any, path: Path, root: Path) -> None:
+    """Run save checkpoint for the isolated synthetic study."""
     instance.save_checkpoint(path)
     sync_artifact(path, root)
 
 
 def prepare(root: Path, count: int) -> dict[str, Any]:
+    """Run prepare for the isolated synthetic study."""
     instance = runner()
     instance.load_or_create(
         None, None, MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=100000)
@@ -130,6 +133,7 @@ def prepare(root: Path, count: int) -> dict[str, Any]:
 
 
 def checkpoint(root: Path, source: Path) -> dict[str, Any]:
+    """Run checkpoint for the isolated synthetic study."""
     instance = runner()
     _, restore = measured(
         "restore", root, lambda: instance.load_or_create(source, None)
@@ -139,7 +143,7 @@ def checkpoint(root: Path, source: Path) -> dict[str, Any]:
     for g in (1, 2, 3):
         path = root / f"checkpoint-{g}"
         _, observation = measured(
-            f"save-{g}", root, lambda: save_checkpoint(instance, path, root)
+            f"save-{g}", root, lambda path=path: save_checkpoint(instance, path, root)
         )
         actual = checkpoint_digest(path)
         observation.update(
@@ -161,6 +165,7 @@ def checkpoint(root: Path, source: Path) -> dict[str, Any]:
 
 
 def synthetic_nodes(count: int, offset: int) -> list[Any]:
+    """Run synthetic nodes for the isolated synthetic study."""
     nodes: list[Any] = []
 
     def capture(**kwargs: Any) -> Any:
@@ -185,6 +190,7 @@ def synthetic_nodes(count: int, offset: int) -> list[Any]:
 def scientific(
     root: Path, source: Path | None, count: int, mode: str, offset: int
 ) -> dict[str, Any]:
+    """Run scientific for the isolated synthetic study."""
     if source:
         instance = runner()
         instance.load_or_create(source, None)
@@ -196,7 +202,7 @@ def scientific(
         export = root / (f"complete-{repeat}" if mode == "complete" else "shared")
         generation = 1 if mode == "complete" else repeat
 
-        def save() -> Any:
+        def save(export: Path = export, generation: int = generation) -> Any:
             result = save_scientific_training_generation(
                 nodes=nodes,
                 root_node_id=str(nodes[0].id),
@@ -219,7 +225,11 @@ def scientific(
             for link in (False, True):
                 target = root / f"record-{'links' if link else 'copies'}-{repeat}"
 
-                def materialize() -> None:
+                def materialize(
+                    target: Path = target,
+                    record_paths: list[Path] = record_paths,
+                    link: bool = link,
+                ) -> None:
                     target.mkdir()
                     for index, record in enumerate(record_paths):
                         copy_artifact(record, target / str(index), link=link)
@@ -258,6 +268,7 @@ def scientific(
 
 
 def oracle(root: Path, source: Path) -> dict[str, Any]:
+    """Run oracle for the isolated synthetic study."""
     reference, observation = measured(
         "reference", root, lambda: load_scientific_training_generation(source)
     )
@@ -290,6 +301,8 @@ def oracle(root: Path, source: Path) -> dict[str, Any]:
 
 
 def indexed_only(root: Path, source: Path) -> dict[str, Any]:
+    """Run indexed only for the isolated synthetic study."""
+
     def consume() -> dict[str, Any]:
         with ShardedTrainingGenerationView(
             source,
@@ -311,6 +324,7 @@ def indexed_only(root: Path, source: Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    """Run main for the isolated synthetic study."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "action", choices=["prepare", "checkpoint", "scientific", "oracle", "indexed"]

@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Run main for the isolated synthetic study."""
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--count", type=int, required=True)
@@ -58,7 +59,8 @@ def main() -> None:
         completed.append({"command": [*command, *job], "returncode": result.returncode})
         (args.root / "commands.json").write_text(json.dumps(completed, indent=2) + "\n")
         if result.returncode:
-            raise SystemExit(f"failed stage {index}: {job}; see log")
+            message = f"failed stage {index}: {job}; see log"
+            raise SystemExit(message)
     print(json.dumps({"completed": len(completed), "root": str(args.root)}), flush=True)
 
 

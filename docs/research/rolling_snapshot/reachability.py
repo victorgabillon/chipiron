@@ -36,6 +36,7 @@ from tests.environments.morpion_patch_receipt_helpers import (
 
 
 def demonstrate(root: Path) -> dict:
+    """Run demonstrate for the isolated synthetic study."""
     root.mkdir(parents=True, exist_ok=False)
     args, paths, state = setup_scientific_baseline(root / "work")
     for generation in range(2, 9):
@@ -97,7 +98,8 @@ def demonstrate(root: Path) -> dict:
                 exclusive=True,
                 nonblocking=True,
             ):
-                raise AssertionError("Exclusive lease acquired over a live reader")
+                message = "Exclusive lease acquired over a live reader"
+                raise AssertionError(message)
         except BlockingIOError:
             refused = True
     with capsule_lease(

@@ -18,6 +18,7 @@ from tests.environments.test_morpion_checkpoint_parity import _selection_signatu
 
 
 def rows(root: Path, kind: str) -> list[dict]:
+    """Run rows for the isolated synthetic study."""
     result = []
     for item in json.loads((root / "manifest.json").read_text())["shards"]:
         if item["kind"] == kind:
@@ -27,6 +28,7 @@ def rows(root: Path, kind: str) -> list[dict]:
 
 
 def checkpoint_differences(before: Path, after: Path) -> dict:
+    """Run checkpoint differences for the isolated synthetic study."""
     a, b = rows(before, "node_shells"), rows(after, "node_shells")
     differences = [
         {
@@ -64,6 +66,7 @@ def checkpoint_differences(before: Path, after: Path) -> dict:
 
 
 def continuation(root: Path) -> dict:
+    """Run continuation for the isolated synthetic study."""
     root.mkdir(parents=True, exist_ok=False)
     continuous = runner()
     continuous.load_or_create(

@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 def main(root: Path) -> None:
+    """Run main for the isolated synthetic study."""
     assert root.resolve().is_relative_to(
         Path(
             "/home/pompote/oldata/victor/morpion-scratch/rolling-snapshot-design-20261022"

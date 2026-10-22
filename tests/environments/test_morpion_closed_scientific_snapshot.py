@@ -5,8 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import replace
-from pathlib import Path
-from typing import Any, get_args
+from typing import TYPE_CHECKING, Any, get_args
 
 import pytest
 from anemone.node_evaluation.common.canonical_value import make_estimate_value
@@ -61,8 +60,12 @@ from tests.environments.test_morpion_sharded_training_v2 import (
     nodes_fixture,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def closed(root: Path, nodes: Any = None, **kwargs: Any) -> Path:
+    """Run closed for the isolated synthetic study."""
     return save_closed_scientific_snapshot(
         nodes=nodes_fixture() if nodes is None else nodes,
         root_node_id="0",
@@ -74,6 +77,7 @@ def closed(root: Path, nodes: Any = None, **kwargs: Any) -> Path:
 
 
 def view(path: Path) -> ShardedTrainingGenerationView:
+    """Run view for the isolated synthetic study."""
     return ShardedTrainingGenerationView(
         path, cache_dir=path.parent.parent / "cache", allow_closed_snapshot=True
     )
@@ -100,6 +104,7 @@ def committed(root: Path, nodes: Any) -> tuple[Path, dict[str, str]]:
 
 
 def assert_reference(path: Path) -> None:
+    """Run assert reference for the isolated synthetic study."""
     oracle = load_closed_scientific_snapshot(path)
     ids = tuple(n.node_id for n in oracle.snapshot.nodes)
     with view(path) as actual:
@@ -133,6 +138,7 @@ def assert_reference(path: Path) -> None:
 
 
 def test_initial_closed_exact_deterministic_and_independent(tmp_path: Path) -> None:
+    """Verify initial closed exact deterministic and independent."""
     nodes = nodes_fixture()
     path = closed(
         tmp_path / "first", nodes, created_at_unix_s=123.5, metadata={"extra": None}
@@ -178,6 +184,7 @@ def test_initial_closed_exact_deterministic_and_independent(tmp_path: Path) -> N
 def test_committed_copy_changed_values_parents_and_new_origins(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify committed copy changed values parents and new origins."""
     nodes = nodes_fixture()
     nodes[1].child_ids = ()
     source, producer = committed(tmp_path / "run", nodes[:3])
@@ -228,6 +235,7 @@ def test_committed_copy_changed_values_parents_and_new_origins(
 def test_all_policies_rows_metadata_and_jsonl(
     tmp_path: Path, policy: str, confidence: str
 ) -> None:
+    """Verify all policies rows metadata and jsonl."""
     nodes = nodes_fixture()
     advance(nodes)
     path = closed(tmp_path / "source", nodes)
@@ -249,7 +257,7 @@ def test_all_policies_rows_metadata_and_jsonl(
                     **criteria,
                 )
 
-                def extract() -> Any:
+                def extract(args: Any = args) -> Any:
                     return extract_rows_from_training_snapshot(
                         args=args,
                         snapshot=oracle.snapshot,
@@ -312,6 +320,7 @@ def test_all_policies_rows_metadata_and_jsonl(
     ],
 )
 def test_corrupt_output_rejected_by_both_readers(tmp_path: Path, change: str) -> None:
+    """Verify corrupt output rejected by both readers."""
     path = closed(tmp_path / "source")
     header = json.loads(path.read_bytes())
     role = "records" if change in ("origin", "duplicate", "null") else "updates"
@@ -355,6 +364,7 @@ def test_corrupt_output_rejected_by_both_readers(tmp_path: Path, change: str) ->
 def test_offline_source_rejected_and_interruption_leaves_no_snapshot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify offline source rejected and interruption leaves no snapshot."""
     path = closed(tmp_path / "offline")
     with pytest.raises(ValueError, match="actual committed"):
         save_closed_scientific_snapshot(
@@ -368,7 +378,8 @@ def test_offline_source_rejected_and_interruption_leaves_no_snapshot(
     import chipiron.environments.morpion.bootstrap.closed_scientific_snapshot as implementation
 
     def interrupted(*args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError("interrupted")
+        message = "interrupted"
+        raise RuntimeError(message)
 
     with monkeypatch.context() as patch:
         patch.setattr(implementation, "_validate_update", interrupted)
@@ -380,6 +391,7 @@ def test_offline_source_rejected_and_interruption_leaves_no_snapshot(
 
 
 def test_cache_corruption_reuse_and_source_change(tmp_path: Path) -> None:
+    """Verify cache corruption reuse and source change."""
     path = closed(tmp_path / "source")
     with view(path) as current:
         cache = current.index_path
@@ -395,6 +407,7 @@ def test_cache_corruption_reuse_and_source_change(tmp_path: Path) -> None:
 
 
 def test_unchanged_copy_never_accesses_old_states(tmp_path: Path) -> None:
+    """Verify unchanged copy never accesses old states."""
     nodes = nodes_fixture()
     source, producer = committed(tmp_path / "run", nodes)
     before = [n.accesses for n in nodes]
@@ -419,6 +432,7 @@ def test_unchanged_copy_never_accesses_old_states(tmp_path: Path) -> None:
 
 
 def test_corrupt_committed_source_and_wrong_identity_refused(tmp_path: Path) -> None:
+    """Verify corrupt committed source and wrong identity refused."""
     nodes = nodes_fixture()
     source, producer = committed(tmp_path / "run", nodes)
     with pytest.raises(ValueError, match="producer/codec"):
@@ -450,6 +464,7 @@ def test_corrupt_committed_source_and_wrong_identity_refused(tmp_path: Path) -> 
 def test_real_forced35_estimate42_all_policies(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify real forced35 estimate42 all policies."""
     from tests.environments.test_morpion_value_certainty import (
         endgame,
         make_runner,
@@ -518,6 +533,7 @@ def test_real_forced35_estimate42_all_policies(
 def test_corruption_before_descriptor_cannot_inherit_canonical_proof(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str
 ) -> None:
+    """Verify corruption before descriptor cannot inherit canonical proof."""
     import chipiron.environments.morpion.bootstrap.closed_scientific_snapshot as implementation
 
     original = implementation._descriptor
@@ -540,6 +556,7 @@ def test_corruption_before_descriptor_cannot_inherit_canonical_proof(
 
 
 def test_late_parent_and_current_membership(tmp_path: Path) -> None:
+    """Verify late parent and current membership."""
     nodes = nodes_fixture()
     source, producer = committed(tmp_path / "run", nodes)
     advance(nodes)
@@ -574,6 +591,7 @@ def test_late_parent_and_current_membership(tmp_path: Path) -> None:
 def test_stale_validator_falls_back_to_full_canonical_checks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify stale validator falls back to full canonical checks."""
     from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
     from chipiron.environments.morpion.bootstrap import (
@@ -604,6 +622,7 @@ def test_stale_validator_falls_back_to_full_canonical_checks(
 
 
 def test_multiple_creation_generations(tmp_path: Path) -> None:
+    """Verify multiple creation generations."""
     from tests.environments.morpion_durable_v2_helpers import (
         ScientificPublicationRunner,
         publish_scientific_patch,
@@ -638,6 +657,7 @@ def test_multiple_creation_generations(tmp_path: Path) -> None:
 
 
 def test_abrupt_writer_exit_is_not_a_snapshot_commit(tmp_path: Path) -> None:
+    """Verify abrupt writer exit is not a snapshot commit."""
     import os
     import subprocess
     import sys
@@ -667,13 +687,15 @@ impl.save_closed_scientific_snapshot(nodes=nodes_fixture(), root_node_id='0', de
 def test_error_after_atomic_rename_preserves_complete_offline_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify error after atomic rename preserves complete offline output."""
     import chipiron.environments.morpion.bootstrap.closed_scientific_snapshot as implementation
 
     original = implementation.publish_directory_if_absent
 
     def interrupted(*args: Any) -> None:
         original(*args)
-        raise OSError("interrupted after rename")
+        message = "interrupted after rename"
+        raise OSError(message)
 
     with monkeypatch.context() as patch:
         patch.setattr(implementation, "publish_directory_if_absent", interrupted)
@@ -686,6 +708,7 @@ def test_error_after_atomic_rename_preserves_complete_offline_output(
 
 
 def test_declared_model_identity_is_retained_exactly(tmp_path: Path) -> None:
+    """Verify declared model identity is retained exactly."""
     producer = {**PRODUCER, "model_sha256": "d" * 64, "model_generation": "7"}
     path, _ = save_closed_scientific_snapshot(
         nodes=nodes_fixture(),
