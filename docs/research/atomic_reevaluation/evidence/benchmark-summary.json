@@ -1,0 +1,211 @@
+{
+  "atomic": {
+    "accept": {
+      "active_cursor_bytes": 551,
+      "counters": {
+        "directory_fsync_count": 75,
+        "directory_fsync_seconds": 0.10607027699006721,
+        "file_fsync_count": 32,
+        "file_fsync_seconds": 0.12016174700693227,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 307200,
+        "apparent_file_bytes": 71453,
+        "file_names": 40,
+        "unique_file_bytes": 71428,
+        "unique_inodes": 71
+      },
+      "elapsed_s": {
+        "max": 1.0204448719996435,
+        "median": 1.0197237050015246,
+        "min": 1.0123813179998251
+      },
+      "hashing": {
+        "bytes": 3193338,
+        "calls": 447
+      },
+      "process_peak_rss_mb": {
+        "max": 291.94921875,
+        "median": 291.9375,
+        "min": 291.76953125
+      },
+      "receipt_bytes": 1000,
+      "run_state_bytes": 9762
+    },
+    "prepare": {
+      "active_cursor_bytes": 242,
+      "counters": {
+        "directory_fsync_count": 4,
+        "directory_fsync_seconds": 0.025879481003357796,
+        "file_fsync_count": 2,
+        "file_fsync_seconds": 0.009422291001101257,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 192512,
+        "apparent_file_bytes": 38855,
+        "file_names": 24,
+        "unique_file_bytes": 38855,
+        "unique_inodes": 47
+      },
+      "elapsed_s": {
+        "max": 0.04057185199781088,
+        "median": 0.03929345299911802,
+        "min": 0.039130006000050344
+      },
+      "hashing": {
+        "bytes": 15132,
+        "calls": 12
+      },
+      "process_peak_rss_mb": {
+        "max": 292.05859375,
+        "median": 291.78125,
+        "min": 291.7421875
+      },
+      "receipt_bytes": 271,
+      "run_state_bytes": 4019
+    },
+    "recover": {
+      "active_cursor_bytes": 551,
+      "counters": {
+        "directory_fsync_count": 16,
+        "directory_fsync_seconds": 0.034816337007214315,
+        "file_fsync_count": 6,
+        "file_fsync_seconds": 0.020229460998962168,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 299008,
+        "apparent_file_bytes": 65575,
+        "file_names": 40,
+        "unique_file_bytes": 65550,
+        "unique_inodes": 71
+      },
+      "elapsed_s": {
+        "max": 0.08201459300107672,
+        "median": 0.0819693030025519,
+        "min": 0.08005593500274699
+      },
+      "hashing": {
+        "bytes": 340438,
+        "calls": 86
+      },
+      "process_peak_rss_mb": {
+        "max": 291.65625,
+        "median": 291.19140625,
+        "min": 291.04296875
+      },
+      "receipt_bytes": 1000,
+      "run_state_bytes": 9762
+    }
+  },
+  "legacy": {
+    "accept": {
+      "active_cursor_bytes": 4,
+      "counters": {
+        "directory_fsync_count": 75,
+        "directory_fsync_seconds": 0.10323411698118434,
+        "file_fsync_count": 32,
+        "file_fsync_seconds": 0.11088165801629657,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 307200,
+        "apparent_file_bytes": 67753,
+        "file_names": 41,
+        "unique_file_bytes": 67728,
+        "unique_inodes": 72
+      },
+      "elapsed_s": {
+        "max": 1.0333486099989386,
+        "median": 1.0071324890013784,
+        "min": 1.001168646998849
+      },
+      "hashing": {
+        "bytes": 3193338,
+        "calls": 447
+      },
+      "process_peak_rss_mb": {
+        "max": 291.8671875,
+        "median": 291.59375,
+        "min": 291.47265625
+      },
+      "receipt_bytes": 903,
+      "run_state_bytes": 8934
+    },
+    "prepare": {
+      "active_cursor_bytes": 4,
+      "counters": {
+        "directory_fsync_count": 4,
+        "directory_fsync_seconds": 0.02605852500346373,
+        "file_fsync_count": 2,
+        "file_fsync_seconds": 0.009053553996636765,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 192512,
+        "apparent_file_bytes": 35682,
+        "file_names": 25,
+        "unique_file_bytes": 35682,
+        "unique_inodes": 48
+      },
+      "elapsed_s": {
+        "max": 0.04210407700156793,
+        "median": 0.04051636599979247,
+        "min": 0.04013414300061413
+      },
+      "hashing": {
+        "bytes": 15107,
+        "calls": 11
+      },
+      "process_peak_rss_mb": {
+        "max": 292.08203125,
+        "median": 291.375,
+        "min": 291.33984375
+      },
+      "receipt_bytes": 271,
+      "run_state_bytes": 3706
+    },
+    "recover": {
+      "active_cursor_bytes": 4,
+      "counters": {
+        "directory_fsync_count": 19,
+        "directory_fsync_seconds": 0.03477212299912935,
+        "file_fsync_count": 7,
+        "file_fsync_seconds": 0.029005065003730124,
+        "state_decode_seconds": 0.0,
+        "state_decodes": 0
+      },
+      "disk": {
+        "allocated_bytes_unique_inodes": 303104,
+        "apparent_file_bytes": 65042,
+        "file_names": 41,
+        "unique_file_bytes": 65017,
+        "unique_inodes": 72
+      },
+      "elapsed_s": {
+        "max": 0.09333130899904063,
+        "median": 0.09050442100124201,
+        "min": 0.07869033399765613
+      },
+      "hashing": {
+        "bytes": 340438,
+        "calls": 86
+      },
+      "process_peak_rss_mb": {
+        "max": 291.40625,
+        "median": 291.0078125,
+        "min": 290.58203125
+      },
+      "receipt_bytes": 903,
+      "run_state_bytes": 8934
+    }
+  },
+  "matched_scientific_records_and_updates": true
+}

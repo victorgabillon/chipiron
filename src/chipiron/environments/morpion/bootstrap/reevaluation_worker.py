@@ -43,6 +43,13 @@ from .pipeline_artifacts import (
 from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
 from .reevaluation_publication import publish_reevaluation_patch_if_absent
+from .reevaluation_transaction import (
+    complete_cursor,
+    proposal_patch,
+    source_identity,
+    transaction_state,
+)
+from .run_state import load_bootstrap_run_state
 from .runtime.runner import load_morpion_evaluator_from_model_bundle
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 from .sharded_training_reader import (
@@ -643,7 +650,7 @@ def run_morpion_reevaluation_worker_once(
     reader_cache_dir: str | Path | None = None,
     allow_scientific_v2: bool = False,
 ) -> MorpionReevaluationWorkerResult:
-    """Produce at most one reevaluation patch and advance the reevaluation cursor."""
+    """Propose one bounded batch; atomic-mode continuation advances only at Growth commit."""
     if max_nodes_per_patch < 0:
         raise _negative_max_nodes_per_patch_error()
 
@@ -840,6 +847,44 @@ def run_morpion_reevaluation_worker_once(
             paths.resolve_work_dir_path(manifest.tree_snapshot_path) == snapshot_path,
             "Reevaluation source changed after selection.",
         )
+        from .checkpoint_patch_receipts import (
+            RECEIPTS_METADATA_KEY,
+            current_model_identity,
+            receipt_ledger,
+        )
+        from .generation_publication_io import committed_scientific_source
+
+        captured_state = (
+            load_bootstrap_run_state(paths.run_state_path)
+            if paths.run_state_path.exists()
+            else None
+        )
+        captured = None if captured_state is None else transaction_state(captured_state)
+        if (
+            captured_state is not None
+            and RECEIPTS_METADATA_KEY in captured_state.metadata
+        ):
+            receipt_ledger(captured_state)
+        captured_model = None
+        captured_source = None
+        if captured is not None:
+            assert captured_state is not None
+            captured_source = source_identity(captured_state, tree_generation)
+            captured_model = current_model_identity(paths)
+            require(
+                (
+                    captured_model["generation"],
+                    captured_model["name"],
+                    captured_model["path"],
+                )
+                == (
+                    active_model.generation,
+                    active_model.evaluator_name,
+                    active_model.model_bundle_path,
+                ),
+                "Active model changed before proposal admission.",
+            )
+        committed_source = committed_scientific_source(snapshot_path)
         stage_measurement = StageMeasurement()
         reader_initialization = StageMeasurement()
         view = None
@@ -926,12 +971,19 @@ def run_morpion_reevaluation_worker_once(
                 model_bundle_path=active_model.model_bundle_path,
             )
 
-        try:
-            persisted_cursor = load_reevaluation_cursor(
-                paths.pipeline_reevaluation_cursor_path
+        if captured is not None:
+            persisted_cursor = (
+                None
+                if captured["accepted_cursor"] is None
+                else complete_cursor(captured["accepted_cursor"])
             )
-        except MissingMorpionPipelineArtifactError:
-            persisted_cursor = None
+        else:
+            try:
+                persisted_cursor = load_reevaluation_cursor(
+                    paths.pipeline_reevaluation_cursor_path
+                )
+            except MissingMorpionPipelineArtifactError:
+                persisted_cursor = None
 
         if persisted_cursor is None or not cursor_matches_active_model(
             persisted_cursor,
@@ -1104,13 +1156,33 @@ def run_morpion_reevaluation_worker_once(
                 "source": "reevaluation_worker",
             },
         )
-        from .generation_publication_io import committed_scientific_source
-
-        committed_source = committed_scientific_source(snapshot_path)
         if committed_source is not None:
             patch = replace(
                 patch,
                 metadata={**patch.metadata, "scientific_publication": committed_source},
+            )
+        next_completed_full_pass_count = completed_full_pass_count + int(
+            completed_full_pass
+        )
+        next_cursor = MorpionReevaluationCursor(
+            evaluator_generation=active_model.generation,
+            evaluator_name=active_model.evaluator_name,
+            model_bundle_path=active_model.model_bundle_path,
+            next_node_cursor=next_node_cursor,
+            updated_at_utc=timestamp_utc,
+            tree_generation=tree_generation,
+            completed_full_pass_count=next_completed_full_pass_count,
+            last_patch_id=patch.patch_id,
+            metadata={"source": "reevaluation_worker"},
+        )
+        if captured is not None:
+            assert captured_source is not None and captured_model is not None
+            require(
+                current_model_identity(paths) == captured_model,
+                "Model changed during proposal computation.",
+            )
+            patch = proposal_patch(
+                patch, captured, captured_source, captured_model, next_cursor
             )
         if view is not None and view.format_version == 2:
             view.validate_source_identity()
@@ -1198,24 +1270,11 @@ def run_morpion_reevaluation_worker_once(
             now_unix_s=now_unix_s,
         )
 
-        next_completed_full_pass_count = completed_full_pass_count + int(
-            completed_full_pass
-        )
         cursor_measurement = StageMeasurement()
-        save_reevaluation_cursor(
-            MorpionReevaluationCursor(
-                evaluator_generation=active_model.generation,
-                evaluator_name=active_model.evaluator_name,
-                model_bundle_path=active_model.model_bundle_path,
-                next_node_cursor=next_node_cursor,
-                updated_at_utc=timestamp_utc,
-                tree_generation=tree_generation,
-                completed_full_pass_count=next_completed_full_pass_count,
-                last_patch_id=patch.patch_id,
-                metadata={"source": "reevaluation_worker"},
-            ),
-            paths.pipeline_reevaluation_cursor_path,
-        )
+        if captured is None:
+            save_reevaluation_cursor(
+                next_cursor, paths.pipeline_reevaluation_cursor_path
+            )
         cursor_observation = cursor_measurement.finish()
         log_pipeline_memory(
             stage="reevaluation",

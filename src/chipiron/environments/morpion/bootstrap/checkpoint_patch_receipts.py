@@ -1,8 +1,8 @@
 """Opt-in checkpoint-bound patch consumption; run state is the only commit record.
 
-One Growth owner serializes restore, commit and acknowledgement. The unchanged
-create-only producer may run independently. No final patch is removed before
-both checkpoint commitment and producer cursor durability have been verified.
+One Growth owner serializes restore, commit and acknowledgement. The
+create-only producer may run independently. Atomic protocol receipts bind the
+accepted cursor to this commit; legacy receipts retain their old cursor barrier.
 """
 
 from __future__ import annotations
@@ -36,6 +36,12 @@ from .pipeline_artifacts import (
 from .reevaluation_patch_consumer import (
     MorpionReevaluationPatchConsumptionResult,
     apply_pending_reevaluation_patch_to_runner,
+)
+from .reevaluation_transaction import (
+    TRANSACTION_KEY,
+    cursor_digest,
+    transaction_state,
+    validate_proposal,
 )
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 
@@ -104,6 +110,21 @@ def artifact_sha256(path: Path) -> str:
     ).hexdigest()
 
 
+def current_model_identity(paths: MorpionBootstrapPaths) -> dict[str, Any]:
+    """Share the exact bundle and active-model identity between producer and consumer."""
+    active = load_pipeline_active_model(paths.pipeline_active_model_path)
+    bundle = inside(paths.work_dir, active.model_bundle_path)
+    return {
+        "generation": active.generation,
+        "name": active.evaluator_name,
+        "path": active.model_bundle_path,
+        "sha256": artifact_sha256(bundle),
+        "source": active.source,
+        "source_generation": active.source_generation,
+        "local_trained_generation": active.local_trained_generation,
+    }
+
+
 @dataclass(frozen=True)
 class PendingPatch:
     """The exact validated bytes observed once, before any runtime mutation."""
@@ -149,6 +170,7 @@ class CheckpointPatchReceipt:
     rows_requested: int
     rows_applied: int
     blend_alpha: float
+    accepted_cursor_sha256: str | None = None
 
     def __post_init__(self) -> None:
         """Validate recovery evidence instead of accepting default scientific values."""
@@ -158,6 +180,13 @@ class CheckpointPatchReceipt:
                 and len(value) == 64
                 and all(c in "0123456789abcdef" for c in value),
                 "Malformed receipt content identity.",
+            )
+        if self.accepted_cursor_sha256 is not None:
+            _require(
+                isinstance(self.accepted_cursor_sha256, str)
+                and len(self.accepted_cursor_sha256) == 64
+                and all(c in "0123456789abcdef" for c in self.accepted_cursor_sha256),
+                "Malformed receipt cursor identity.",
             )
         for count in [
             self.tree_generation,
@@ -204,10 +233,18 @@ def receipt_ledger(
     """Parse the cumulative receipt ledger carried by the committed checkpoint head."""
     data = state.metadata.get(RECEIPTS_METADATA_KEY)
     _require(
-        isinstance(data, dict) and data.get("schema_version") == 1,
+        isinstance(data, dict)
+        and isinstance(data.get("schema_version"), int)
+        and not isinstance(data["schema_version"], bool)
+        and data["schema_version"] in (1, 2),
         "Missing or unsupported checkpoint receipt protocol.",
     )
     assert isinstance(data, dict)
+    transaction = transaction_state(state)
+    _require(
+        (data["schema_version"] == 2) == (transaction is not None),
+        "Receipt/cursor protocol mismatch.",
+    )
     raw_receipts = data.get("receipts")
     _require(isinstance(raw_receipts, list), "Malformed receipt ledger.")
     assert isinstance(raw_receipts, list)
@@ -223,13 +260,33 @@ def receipt_ledger(
             receipt.committed_generation <= state.generation,
             "Receipt is ahead of checkpoint.",
         )
+        _require(
+            (receipt.accepted_cursor_sha256 is not None) == (transaction is not None),
+            "Missing or unexpected committed cursor evidence.",
+        )
         ledger[receipt.patch_id] = receipt
+    if transaction is not None:
+        cursor = transaction["accepted_cursor"]
+        _require(
+            (cursor is None) == (not ledger),
+            "Committed receipts require an accepted cursor.",
+        )
+        if ledger:
+            latest = max(ledger.values(), key=lambda r: r.committed_generation)
+            _require(
+                cursor["last_patch_id"] == latest.patch_id
+                and cursor_digest(cursor) == latest.accepted_cursor_sha256,
+                "Accepted cursor differs from the latest committed receipt.",
+            )
     return ledger
 
 
 def _discovery_metadata(state: MorpionBootstrapRunState) -> dict[str, object]:
     """Project one committed reference, retaining diagnostics but no history ledgers."""
     metadata = dict(state.metadata)
+    metadata.pop(
+        TRANSACTION_KEY, None
+    )  # Continuation is authoritative only in run_state.
     publication = metadata.pop(PUBLICATION_KEY, None)
     receipts = metadata.pop(RECEIPTS_METADATA_KEY)
     metadata[DISCOVERY_METADATA_KEY] = {
@@ -532,17 +589,7 @@ class GrowthPatchReceiptSession:
 
     def current_model(self) -> dict[str, Any]:
         """Bind model identity to exact bundle bytes, not a mutable directory name."""
-        active = load_pipeline_active_model(self.paths.pipeline_active_model_path)
-        bundle = inside(self.paths.work_dir, active.model_bundle_path)
-        return {
-            "generation": active.generation,
-            "name": active.evaluator_name,
-            "path": active.model_bundle_path,
-            "sha256": artifact_sha256(bundle),
-            "source": active.source,
-            "source_generation": active.source_generation,
-            "local_trained_generation": active.local_trained_generation,
-        }
+        return current_model_identity(self.paths)
 
     def apply(
         self,
@@ -556,11 +603,22 @@ class GrowthPatchReceiptSession:
                 False, False, None, 0, "missing_patch"
             )
         existing = receipt_ledger(state).get(pending.patch.patch_id)
+        transaction = transaction_state(state)
+        _require(
+            transaction is not None or TRANSACTION_KEY not in pending.patch.metadata,
+            "Atomic proposal cannot enter a legacy consumer.",
+        )
         if existing is not None:
             _require(
                 existing.content_sha256 == pending.content_sha256,
                 "Conflicting reused patch ID.",
             )
+            if transaction is not None:
+                validate_proposal(
+                    state,
+                    pending.patch,
+                    duplicate_cursor_digest=existing.accepted_cursor_sha256,
+                )
             self.acknowledge_pending(state)
             return MorpionReevaluationPatchConsumptionResult(
                 True, False, existing.patch_id, 0, "already_committed"
@@ -609,6 +667,11 @@ class GrowthPatchReceiptSession:
             == (model["generation"], model["name"], model["path"]),
             "Patch model/generation does not match the selected evaluator.",
         )
+        if transaction is not None:
+            envelope = validate_proposal(state, patch)
+            _require(
+                envelope["model"] == model, "Proposal exact model identity mismatch."
+            )
         self.pending, self.model = pending, model
         self.blend_alpha = runtime_config.reevaluation_blend_alpha
         try:
@@ -654,7 +717,11 @@ class GrowthPatchReceiptSession:
         persisted = load_bootstrap_run_state(self.paths.run_state_path)
         _require(
             persisted.metadata.get(RECEIPTS_METADATA_KEY)
-            == previous.metadata.get(RECEIPTS_METADATA_KEY),
+            == previous.metadata.get(RECEIPTS_METADATA_KEY)
+            and persisted.metadata.get(TRANSACTION_KEY)
+            == previous.metadata.get(TRANSACTION_KEY)
+            and state.metadata.get(TRANSACTION_KEY)
+            == previous.metadata.get(TRANSACTION_KEY),
             "Run state changed outside the Growth ownership lock.",
         )
         self.validate_state(previous)
@@ -695,6 +762,7 @@ class GrowthPatchReceiptSession:
             )
         checkpoint_hash = artifact_sha256(checkpoint)
         ledger = receipt_ledger(previous)
+        transaction = transaction_state(previous)
         if self.pending is not None:
             _require(
                 self.applied_count is not None and self.model is not None,
@@ -713,6 +781,12 @@ class GrowthPatchReceiptSession:
             )
             patch = self.pending.patch
             assert patch.tree_generation is not None
+            if transaction is not None:
+                envelope = validate_proposal(previous, patch)
+                transaction = {
+                    **transaction,
+                    "accepted_cursor": envelope["next_cursor"],
+                }
             receipt = CheckpointPatchReceipt(
                 patch.patch_id,
                 self.pending.content_sha256,
@@ -727,17 +801,32 @@ class GrowthPatchReceiptSession:
                 len(patch.rows),
                 self.applied_count,
                 self.blend_alpha,
+                None
+                if transaction is None
+                else cursor_digest(transaction["accepted_cursor"]),
             )
             ledger[receipt.patch_id] = receipt
         metadata = dict(state.metadata)
+        if transaction is not None:
+            metadata[TRANSACTION_KEY] = transaction
         metadata[RECEIPTS_METADATA_KEY] = {
-            "schema_version": 1,
+            "schema_version": 2 if transaction is not None else 1,
             "generation": state.generation,
             "checkpoint_path": state.latest_runtime_checkpoint_path,
             "checkpoint_sha256": checkpoint_hash,
-            "receipts": [asdict(r) for r in ledger.values()],
+            "receipts": [
+                {
+                    k: v
+                    for k, v in asdict(r).items()
+                    if k != "accepted_cursor_sha256" or v is not None
+                }
+                for r in ledger.values()
+            ],
         }
         state = replace(state, metadata=metadata)
+        receipt_ledger(
+            state
+        )  # Validate cursor/receipt coherence before the sole commit.
         # This durable replacement, not checkpoint creation, is the commit point.
         save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
         if self.publication is not None:
@@ -807,11 +896,13 @@ class GrowthPatchReceiptSession:
         self.sync_artifact(path)
 
     def acknowledge_pending(self, state: MorpionBootstrapRunState) -> bool:
-        """Acknowledge only exact committed bytes, after durable producer cursor observation."""
+        """Acknowledge exact committed bytes with validated continuation evidence."""
         persisted = load_bootstrap_run_state(self.paths.run_state_path)
         _require(
             persisted.metadata.get(RECEIPTS_METADATA_KEY)
-            == state.metadata.get(RECEIPTS_METADATA_KEY),
+            == state.metadata.get(RECEIPTS_METADATA_KEY)
+            and persisted.metadata.get(TRANSACTION_KEY)
+            == state.metadata.get(TRANSACTION_KEY),
             "Run state changed outside the Growth ownership lock.",
         )
         self.validate_state(persisted)
@@ -838,32 +929,44 @@ class GrowthPatchReceiptSession:
             == receipt.model_sha256,
             "Committed patch model content changed.",
         )
-        try:
-            cursor = load_reevaluation_cursor(
-                self.paths.pipeline_reevaluation_cursor_path
+        transaction = transaction_state(persisted)
+        if transaction is not None:
+            envelope = validate_proposal(
+                persisted,
+                pending.patch,
+                duplicate_cursor_digest=receipt.accepted_cursor_sha256,
             )
-        except MissingMorpionPipelineArtifactError:
-            return False
-        if (
-            cursor.last_patch_id,
-            cursor.tree_generation,
-            cursor.evaluator_generation,
-            cursor.evaluator_name,
-            cursor.model_bundle_path,
-        ) != (
-            receipt.patch_id,
-            receipt.tree_generation,
-            receipt.evaluator_generation,
-            receipt.evaluator_name,
-            receipt.model_bundle_path,
-        ):
-            return False
-        self.sync_artifact(self.paths.pipeline_reevaluation_cursor_path)
-        _require(
-            load_reevaluation_cursor(self.paths.pipeline_reevaluation_cursor_path)
-            == cursor,
-            "Producer cursor changed during acknowledgement.",
-        )
+            _require(
+                envelope["model"]["sha256"] == receipt.model_sha256,
+                "Committed proposal model mismatch.",
+            )
+        else:
+            try:
+                cursor = load_reevaluation_cursor(
+                    self.paths.pipeline_reevaluation_cursor_path
+                )
+            except MissingMorpionPipelineArtifactError:
+                return False
+            if (
+                cursor.last_patch_id,
+                cursor.tree_generation,
+                cursor.evaluator_generation,
+                cursor.evaluator_name,
+                cursor.model_bundle_path,
+            ) != (
+                receipt.patch_id,
+                receipt.tree_generation,
+                receipt.evaluator_generation,
+                receipt.evaluator_name,
+                receipt.model_bundle_path,
+            ):
+                return False
+            self.sync_artifact(self.paths.pipeline_reevaluation_cursor_path)
+            _require(
+                load_reevaluation_cursor(self.paths.pipeline_reevaluation_cursor_path)
+                == cursor,
+                "Producer cursor changed during acknowledgement.",
+            )
         # No other consumer can unlink under this lease; create-only producers
         # cannot replace this entry between the identity check and unlink.
         _require(

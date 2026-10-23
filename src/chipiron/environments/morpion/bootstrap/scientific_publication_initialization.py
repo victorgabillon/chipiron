@@ -29,6 +29,7 @@ def initialize_scientific_v2_publication(
     *,
     producer: Mapping[str, str],
     closed_scientific_snapshot: bool = False,
+    atomic_reevaluation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -72,10 +73,26 @@ def initialize_scientific_v2_publication(
             and not paths.pipeline_reevaluation_patch_path.exists(),
             "Historical or pending pipeline artifacts cannot enter v2 genesis.",
         )
+        from .reevaluation_transaction import TRANSACTION_KEY, initial_transaction
+
+        require(
+            TRANSACTION_KEY not in state.metadata,
+            "Cannot import an existing producer authority.",
+        )
+        require(
+            not atomic_reevaluation
+            or (
+                closed_scientific_snapshot
+                and not paths.pipeline_reevaluation_cursor_path.exists()
+            ),
+            "Atomic Reevaluation requires fresh closed genesis without a legacy cursor.",
+        )
         checkpoint = inside(paths.work_dir, state.latest_runtime_checkpoint_path)
         metadata = dict(state.metadata)
+        if atomic_reevaluation:
+            metadata[TRANSACTION_KEY] = initial_transaction()
         metadata[RECEIPTS_METADATA_KEY] = {
-            "schema_version": 1,
+            "schema_version": 2 if atomic_reevaluation else 1,
             "generation": 1,
             "checkpoint_path": state.latest_runtime_checkpoint_path,
             "checkpoint_sha256": artifact_digest(checkpoint),

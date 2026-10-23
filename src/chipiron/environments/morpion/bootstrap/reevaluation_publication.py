@@ -2,7 +2,8 @@
 
 The hard link is the visibility point. A later failure never rolls it back:
 callers must inspect the final path, and must not advance a cursor on an error.
-This module does not make patch publication and cursor updates transactional.
+Atomic-mode proposals carry their next cursor; only Growth accepts it in the
+checkpoint/receipt run-state commit. Publication alone never advances that cursor.
 """
 
 from __future__ import annotations
