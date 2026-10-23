@@ -1,0 +1,50 @@
+[
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py",
+    "added": 8,
+    "removed": 1,
+    "sha256": "d0055629d58c6b2c339a355be9e3621144030e03337e090bab0e7a92ec2e4a93"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/dataset_publication.py",
+    "added": 491,
+    "removed": 0,
+    "sha256": "c2ac67b8673083675f53a6c90c62daea0a333e8382fbe4777a6b8932e4ae41f4"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+    "added": 9,
+    "removed": 1,
+    "sha256": "a5176355990234e74611d123853405d900b6d0d23c268281b3031b2bc54a426f"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/pipeline/manifests.py",
+    "added": 23,
+    "removed": 1,
+    "sha256": "79bf1cce53d9daaeb13569811277559e04d7c3c99e7fc51b27fe04d61ae2b767"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py",
+    "added": 110,
+    "removed": 43,
+    "sha256": "7e2b8fc30d4edcaf9439c72bed52a57b3cc743f69a9c2994e8a49ff092ae7f8f"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/pipeline_orchestrator.py",
+    "added": 22,
+    "removed": 1,
+    "sha256": "689f9f459dea2893d8a2edfdbfc1b2acf343a378361f38511de9bca15b926f0d"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/bootstrap/scientific_publication_initialization.py",
+    "added": 9,
+    "removed": 0,
+    "sha256": "0f61e8ad6914e4e8b926d2f4653a4c50cc628a31a5ada7ad80f1fd699297c74b"
+  },
+  {
+    "path": "src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+    "added": 10,
+    "removed": 0,
+    "sha256": "0c18fb607e3f89b52bcd820c8a47111a666a399d573e7c6fb4372ca0a262f592"
+  }
+]

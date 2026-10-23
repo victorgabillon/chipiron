@@ -1,0 +1,29 @@
+{
+  "legacy": {
+    "elapsed_s": 0.2781808580039069,
+    "process_peak_rss_mb": 292.42578125,
+    "rows_bytes": 2291,
+    "rows": 2,
+    "run_state_bytes": 4019,
+    "cpu_seconds": 0.02620699999999991,
+    "throughput_rows_per_second": 7.189567299313999,
+    "elapsed_range": [
+      0.2751083809998818,
+      0.2991505030004191
+    ]
+  },
+  "fenced": {
+    "elapsed_s": 0.36564506799913943,
+    "process_peak_rss_mb": 292.5234375,
+    "rows_bytes": 2291,
+    "rows": 2,
+    "run_state_bytes": 4283,
+    "cpu_seconds": 0.044428000000000106,
+    "throughput_rows_per_second": 5.469785250883535,
+    "elapsed_range": [
+      0.36479038600373315,
+      0.4231979680043878
+    ]
+  },
+  "row_sha256": "4d8cf7e0ab20aca5f359e0bbbf47230e15ab1e6c526e6fd0ecc0ab1c6d300acd"
+}
