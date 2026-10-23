@@ -1,0 +1,226 @@
+{
+  "implementation_base": "089fec3106bdbc690435e61a5b0ce236a5b4821e",
+  "parent": "ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3",
+  "scope": "new fixed five-node synthetic history; no epoch fork implemented",
+  "rows": [
+    {
+      "generation": 8,
+      "nodes": 5,
+      "active_root_bytes": 584,
+      "receipt_count": 7,
+      "receipt_bytes": 4502,
+      "publication_metadata_bytes": 15596,
+      "current_epoch_metadata_bytes": 0,
+      "modeled_epoch_metadata_bytes_not_implemented": 592,
+      "modeled_epoch": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "forked_from": {
+          "epoch_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "generation": 8,
+          "capsule_id": "4f3ca66b9e7249e9992200f43567cf97",
+          "descriptor_sha256": "6944d3df3e9be6208effb4662b02229887bdbe782a07ae43191c51cb32681f22",
+          "checkpoint_sha256": "9d66c65293f0f646920f660ca6326c2fc4cdf68caf0dd3ee91617b89d44f1480",
+          "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+          "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+          "model_sha256": "a8996f75aadb184a3d57b69f44770b083e147d0405c7960acfcd0a2fdee65e28"
+        }
+      },
+      "retained_heavy_generations": 8,
+      "scientific_file_blocks": 131072,
+      "conditional_reclaimable_file_blocks": 307200,
+      "current_reclaimable_bytes": 0,
+      "workspace_allocated_bytes": 1380352,
+      "historical_metrics_bytes": 36835,
+      "historical_stage_metrics_bytes": 35934,
+      "analysis_seconds": 0.04415878600048018,
+      "analysis_cpu_seconds": 0.04401200000000012,
+      "analysis_peak_rss_mib": 291.0703125,
+      "analysis_hashing": {
+        "calls": 329,
+        "bytes": 685416
+      },
+      "publication_seconds": 1.3682732909983315,
+      "publication_peak_rss_mib": 294.86328125,
+      "publication_hashing": {
+        "calls": 890,
+        "bytes": 4049908
+      },
+      "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+      "selector_rng_continuation": true,
+      "raw_checkpoint_sections_differing": [
+        "metadata"
+      ]
+    },
+    {
+      "generation": 16,
+      "nodes": 5,
+      "active_root_bytes": 587,
+      "receipt_count": 15,
+      "receipt_bytes": 9371,
+      "publication_metadata_bytes": 31161,
+      "current_epoch_metadata_bytes": 0,
+      "modeled_epoch_metadata_bytes_not_implemented": 593,
+      "modeled_epoch": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "forked_from": {
+          "epoch_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "generation": 16,
+          "capsule_id": "b963c840792542e2b1071b2142b73075",
+          "descriptor_sha256": "6b5b1d6cdfc968abf11b75380165ed0bd01b02b772f6d0847573f6a68b94d3ed",
+          "checkpoint_sha256": "d28e70820d63761a7cf0656516156a9da62cfc054bea6d4474e3c92a071d54eb",
+          "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+          "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+          "model_sha256": "a8996f75aadb184a3d57b69f44770b083e147d0405c7960acfcd0a2fdee65e28"
+        }
+      },
+      "retained_heavy_generations": 16,
+      "scientific_file_blocks": 262144,
+      "conditional_reclaimable_file_blocks": 798720,
+      "current_reclaimable_bytes": 0,
+      "workspace_allocated_bytes": 2600960,
+      "historical_metrics_bytes": 78958,
+      "historical_stage_metrics_bytes": 77048,
+      "analysis_seconds": 0.0846317600007751,
+      "analysis_cpu_seconds": 0.0844819999999995,
+      "analysis_peak_rss_mib": 290.83203125,
+      "analysis_hashing": {
+        "calls": 641,
+        "bytes": 1354850
+      },
+      "publication_seconds": 1.4035417459999735,
+      "publication_peak_rss_mib": 294.50390625,
+      "publication_hashing": {
+        "calls": 890,
+        "bytes": 4050312
+      },
+      "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+      "selector_rng_continuation": true,
+      "raw_checkpoint_sections_differing": [
+        "metadata"
+      ]
+    },
+    {
+      "generation": 32,
+      "nodes": 5,
+      "active_root_bytes": 587,
+      "receipt_count": 31,
+      "receipt_bytes": 19115,
+      "publication_metadata_bytes": 62297,
+      "current_epoch_metadata_bytes": 0,
+      "modeled_epoch_metadata_bytes_not_implemented": 593,
+      "modeled_epoch": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "forked_from": {
+          "epoch_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "generation": 32,
+          "capsule_id": "35129134e20a42afa3c072d70a3512fd",
+          "descriptor_sha256": "a0cfc49d05b842c7f6a00f759fb624e46ad40addc3489451e2a5a2e5d8ce3a3d",
+          "checkpoint_sha256": "b98053241d2bc3646d4b146f8d9a278cf1730b22b607bb2b6c5b1ace86e900be",
+          "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+          "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+          "model_sha256": "a8996f75aadb184a3d57b69f44770b083e147d0405c7960acfcd0a2fdee65e28"
+        }
+      },
+      "retained_heavy_generations": 32,
+      "scientific_file_blocks": 524288,
+      "conditional_reclaimable_file_blocks": 1781760,
+      "current_reclaimable_bytes": 0,
+      "workspace_allocated_bytes": 5033984,
+      "historical_metrics_bytes": 163192,
+      "historical_stage_metrics_bytes": 159303,
+      "analysis_seconds": 0.1723747700016247,
+      "analysis_cpu_seconds": 0.17217700000000039,
+      "analysis_peak_rss_mib": 291.53125,
+      "analysis_hashing": {
+        "calls": 1265,
+        "bytes": 2693729
+      },
+      "publication_seconds": 1.4378173999975843,
+      "publication_peak_rss_mib": 294.7734375,
+      "publication_hashing": {
+        "calls": 890,
+        "bytes": 4050298
+      },
+      "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+      "selector_rng_continuation": true,
+      "raw_checkpoint_sections_differing": [
+        "metadata"
+      ]
+    },
+    {
+      "generation": 64,
+      "nodes": 5,
+      "active_root_bytes": 587,
+      "receipt_count": 63,
+      "receipt_bytes": 38603,
+      "publication_metadata_bytes": 124569,
+      "current_epoch_metadata_bytes": 0,
+      "modeled_epoch_metadata_bytes_not_implemented": 593,
+      "modeled_epoch": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "forked_from": {
+          "epoch_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "generation": 64,
+          "capsule_id": "a52474a3f4d64c18be0e718141c99680",
+          "descriptor_sha256": "271171e83c35a9a70a087955d7e5fe889f4ba3bec620f3fba2707ee0129b7540",
+          "checkpoint_sha256": "340fde6b5d7439c61e100686149b7b698c8523e4307acdc64e3b51bcc97d8d52",
+          "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+          "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+          "model_sha256": "a8996f75aadb184a3d57b69f44770b083e147d0405c7960acfcd0a2fdee65e28"
+        }
+      },
+      "retained_heavy_generations": 64,
+      "scientific_file_blocks": 1048576,
+      "conditional_reclaimable_file_blocks": 3747840,
+      "current_reclaimable_bytes": 0,
+      "workspace_allocated_bytes": 9895936,
+      "historical_metrics_bytes": 331639,
+      "historical_stage_metrics_bytes": 323652,
+      "analysis_seconds": 0.35414143900197814,
+      "analysis_cpu_seconds": 0.34208200000000005,
+      "analysis_peak_rss_mib": 293.203125,
+      "analysis_hashing": {
+        "calls": 2513,
+        "bytes": 5371472
+      },
+      "publication_seconds": 1.370579848997295,
+      "publication_peak_rss_mib": 295.625,
+      "publication_hashing": {
+        "calls": 890,
+        "bytes": 4050280
+      },
+      "scientific_sha256": "8c7f4cceb72854fe4c3b5aa3cc03f25638bb9ca10bf721b93de84b431f6847da",
+      "selector_rng_continuation": true,
+      "raw_checkpoint_sections_differing": [
+        "metadata"
+      ]
+    }
+  ],
+  "g64_selected_discovery": {
+    "seconds": 0.02617356599876075,
+    "hashing": {
+      "calls": 29,
+      "bytes": 47611
+    },
+    "peak_rss_mib": 290.28515625,
+    "costs": {
+      "cpu_user_s": 0.006958999999999271,
+      "cpu_system_s": 0.0019920000000000077,
+      "io": {
+        "rchar": 795560,
+        "wchar": 0,
+        "syscr": 227,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    }
+  },
+  "production_line_delta": {
+    "added": 0,
+    "removed": 0,
+    "changed": 0
+  },
+  "deletion_authorized": false
+}
