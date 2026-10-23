@@ -493,7 +493,12 @@ def save_morpion_supervised_rows(
     The saved payload is JSON, so row contents, especially ``state_ref_payload``,
     must already be JSON-serializable.
     """
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        assert_artifact_writable,
+    )
+
     target = Path(path)
+    assert_artifact_writable(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps(morpion_supervised_rows_to_dict(data), indent=2) + "\n",
@@ -510,7 +515,12 @@ def save_morpion_supervised_rows_streaming(
     progress_interval: int = 10_000,
 ) -> MorpionSupervisedRowsWriteStats:
     """Stream raw Morpion supervised rows as atomic UTF-8 JSON Lines."""
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        assert_artifact_writable,
+    )
+
     target = Path(path)
+    assert_artifact_writable(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
     row_count = 0

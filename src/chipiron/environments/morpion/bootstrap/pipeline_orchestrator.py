@@ -430,12 +430,33 @@ def load_available_pipeline_manifests(
     This is not an archive audit. Malformed manifests still fail decoding; capsule
     integrity is checked under a lifetime pin after the existing selection rules.
     """
-    return {
+    from .dataset_publication import enabled, project_dataset
+    from .generation_publication_io import publication_records
+    from .run_state import load_bootstrap_run_state
+
+    state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.exists()
+        else None
+    )
+    manifests = {
         generation: load_pipeline_manifest(
             paths.pipeline_manifest_path_for_generation(generation)
         )
         for generation in list_pipeline_manifest_generations(paths)
     }
+    if state is not None and enabled(state):
+        return {
+            record["generation"]: project_dataset(
+                paths,
+                state,
+                record["generation"],
+                manifests.get(record["generation"]),
+                record=record,
+            )
+            for record in publication_records(state.metadata)
+        }
+    return manifests
 
 
 def _recover_stale_training_states(

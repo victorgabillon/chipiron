@@ -287,12 +287,19 @@ def _discovery_metadata(state: MorpionBootstrapRunState) -> dict[str, object]:
     metadata.pop(
         TRANSACTION_KEY, None
     )  # Continuation is authoritative only in run_state.
+    metadata.pop("fenced_dataset", None)
     publication = metadata.pop(PUBLICATION_KEY, None)
     receipts = metadata.pop(RECEIPTS_METADATA_KEY)
     metadata[DISCOVERY_METADATA_KEY] = {
         "schema_version": 2,
         "generation": state.generation,
-        "publication": None if publication is None else publication["generations"][-1],
+        "publication": None
+        if publication is None
+        else {
+            k: v
+            for k, v in publication["generations"][-1].items()
+            if k != "accepted_dataset"
+        },
         "checkpoint": {
             "path": state.latest_runtime_checkpoint_path,
             "sha256": receipts["checkpoint_sha256"],

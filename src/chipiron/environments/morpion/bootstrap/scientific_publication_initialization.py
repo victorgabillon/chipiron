@@ -30,6 +30,7 @@ def initialize_scientific_v2_publication(
     producer: Mapping[str, str],
     closed_scientific_snapshot: bool = False,
     atomic_reevaluation: bool = False,
+    fenced_dataset: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -87,8 +88,16 @@ def initialize_scientific_v2_publication(
             ),
             "Atomic Reevaluation requires fresh closed genesis without a legacy cursor.",
         )
+        from .dataset_publication import CONTRACT, KEY
+
+        require(
+            KEY not in state.metadata and (not fenced_dataset or atomic_reevaluation),
+            "Fenced Dataset requires fresh atomic genesis; no historical adoption.",
+        )
         checkpoint = inside(paths.work_dir, state.latest_runtime_checkpoint_path)
         metadata = dict(state.metadata)
+        if fenced_dataset:
+            metadata[KEY] = dict(CONTRACT)
         if atomic_reevaluation:
             metadata[TRANSACTION_KEY] = initial_transaction()
         metadata[RECEIPTS_METADATA_KEY] = {

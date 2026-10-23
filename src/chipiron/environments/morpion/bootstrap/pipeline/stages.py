@@ -129,6 +129,15 @@ from chipiron.environments.morpion.bootstrap.cycle_validation import (
 from chipiron.environments.morpion.bootstrap.cycle_validation import (
     validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
 )
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    DatasetAttempt,
+    accept_dataset,
+    admit_dataset,
+    publish_dataset,
+)
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    enabled as fenced_dataset_enabled,
+)
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
     validate_manifest_publication,
@@ -142,6 +151,7 @@ from chipiron.environments.morpion.bootstrap.performance import (
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
@@ -1520,6 +1530,31 @@ def run_pipeline_dataset_stage(
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        if paths.run_state_path.exists() and fenced_dataset_enabled(
+            load_bootstrap_run_state(paths.run_state_path)
+        ):
+            if not (
+                use_streaming_sharded_reader
+                and allow_scientific_v2
+                and args.training_export_mode == "sharded"
+            ):
+                raise DatasetConfidenceError.missing_source()
+            # Dataset options are scalar fields; capture a separate immutable-in-use copy.
+            args = replace(args)
+            with admit_dataset(
+                paths, args, manifest, ttl_seconds=claim_ttl_seconds, owner=claim_owner
+            ) as attempt:
+                if isinstance(attempt, MorpionPipelineGenerationManifest):
+                    return attempt
+                return _run_pipeline_dataset_stage(
+                    args,
+                    generation=generation,
+                    manifest=manifest,
+                    use_streaming_sharded_reader=True,
+                    reader_cache_dir=reader_cache_dir,
+                    allow_scientific_v2=True,
+                    dataset_attempt=attempt,
+                )
         return _run_pipeline_dataset_stage(
             args,
             generation=generation,
@@ -1542,6 +1577,7 @@ def _run_pipeline_dataset_stage(
     use_streaming_sharded_reader: bool = False,
     reader_cache_dir: str | Path | None = None,
     allow_scientific_v2: bool = False,
+    dataset_attempt: DatasetAttempt | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
@@ -1549,7 +1585,10 @@ def _run_pipeline_dataset_stage(
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    if args.dataset_confidence_policy == "selected_value_v2":
+    if (
+        dataset_attempt is None
+        and args.dataset_confidence_policy == "selected_value_v2"
+    ):
         existing_rows = (
             paths.resolve_work_dir_path(manifest.rows_path)
             if manifest.rows_path is not None
@@ -1590,21 +1629,23 @@ def _run_pipeline_dataset_stage(
             reason="low_available_ram",
         )
         return manifest
-    claim = claim_pipeline_stage(
-        generation=generation,
-        stage="dataset",
-        claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
-        ttl_seconds=claim_ttl_seconds,
-        owner=claim_owner,
-        metadata={"entrypoint": "run_pipeline_dataset_stage"},
-    )
-    LOGGER.info(
-        "[pipeline] dataset_claim_created generation=%s claim_path=%s owner=%s expires_at=%s",
-        generation,
-        paths.pipeline_dataset_claim_path_for_generation(generation),
-        "none" if claim.owner is None else claim.owner,
-        claim.expires_at_utc,
-    )
+    claim = None
+    if dataset_attempt is None:
+        claim = claim_pipeline_stage(
+            generation=generation,
+            stage="dataset",
+            claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+            ttl_seconds=claim_ttl_seconds,
+            owner=claim_owner,
+            metadata={"entrypoint": "run_pipeline_dataset_stage"},
+        )
+        LOGGER.info(
+            "[pipeline] dataset_claim_created generation=%s claim_path=%s owner=%s expires_at=%s",
+            generation,
+            paths.pipeline_dataset_claim_path_for_generation(generation),
+            "none" if claim.owner is None else claim.owner,
+            claim.expires_at_utc,
+        )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] dataset_start generation=%s", generation)
     log_pipeline_memory(
@@ -1612,12 +1653,13 @@ def _run_pipeline_dataset_stage(
         generation=generation,
         event="start",
     )
-    manifest = save_dataset_manifest_status(
-        paths=paths,
-        manifest=manifest,
-        dataset_status="extracting_rows",
-        timestamp_utc=timestamp_utc,
-    )
+    if dataset_attempt is None:
+        manifest = save_dataset_manifest_status(
+            paths=paths,
+            manifest=manifest,
+            dataset_status="extracting_rows",
+            timestamp_utc=timestamp_utc,
+        )
     resources = ExitStack()
     reader_mode = "legacy_full_snapshot"
     reader_observation: dict[str, object] = {}
@@ -1632,6 +1674,8 @@ def _run_pipeline_dataset_stage(
         )
         if rows_path is None:
             rows_path = paths.rows_jsonl_path_for_generation(generation)
+        if dataset_attempt is not None:
+            rows_path = dataset_attempt.rows_path
         LOGGER.info(
             "[pipeline] dataset_export_start generation=%s tree_export=%s rows_output=%s config={min_depth=%s, min_visit_count=%s, max_rows=%s, target_policy=%s, use_backed_up_value=%s, require_exact_or_terminal=%s}",
             generation,
@@ -1675,7 +1719,10 @@ def _run_pipeline_dataset_stage(
             if (
                 args.training_export_mode == "sharded"
                 and rows_path.suffix == ".jsonl"
-                and is_sharded_generation_manifest(tree_snapshot_path)
+                and (
+                    dataset_attempt is not None
+                    or is_sharded_generation_manifest(tree_snapshot_path)
+                )
             ):
                 try:
                     view = resources.enter_context(
@@ -1683,6 +1730,7 @@ def _run_pipeline_dataset_stage(
                             tree_snapshot_path,
                             cache_dir=reader_cache_dir,
                             allow_scientific_v2=allow_scientific_v2,
+                            allow_closed_snapshot=dataset_attempt is not None,
                         )
                     )
                     # Check root reconstruction via the shared keyed loading API.
@@ -1854,7 +1902,23 @@ def _run_pipeline_dataset_stage(
             dataset_status="done",
             metadata=manifest_metadata,
         )
-        save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
+        if dataset_attempt is None:
+            save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
+        else:
+            reference = publish_dataset(
+                paths,
+                dataset_attempt,
+                manifest,
+                MorpionPipelineDatasetStatusArtifact(
+                    generation=generation,
+                    status="done",
+                    updated_at_utc=timestamp_utc,
+                    metadata=manifest.metadata,
+                    record_status=record_status,
+                    frontier_status=frontier_status,
+                ),
+            )
+            manifest = accept_dataset(paths, reference)
         LOGGER.info(
             "[leaderboard] persist_start generation=%s cycle=%s",
             generation,
@@ -1897,15 +1961,16 @@ def _run_pipeline_dataset_stage(
         persist_stage_measurement(
             paths.work_dir, generation, "dataset", dataset_observation
         )
-        save_pipeline_dataset_status_file(
-            generation=generation,
-            dataset_status=manifest.dataset_status,
-            updated_at_utc=timestamp_utc,
-            metadata=manifest.metadata,
-            record_status=record_status,
-            frontier_status=frontier_status,
-            path=paths.pipeline_dataset_status_path_for_generation(generation),
-        )
+        if dataset_attempt is None:
+            save_pipeline_dataset_status_file(
+                generation=generation,
+                dataset_status=manifest.dataset_status,
+                updated_at_utc=timestamp_utc,
+                metadata=manifest.metadata,
+                record_status=record_status,
+                frontier_status=frontier_status,
+                path=paths.pipeline_dataset_status_path_for_generation(generation),
+            )
         LOGGER.info(
             "[pipeline] dataset_manifest_written generation=%s manifest=%s created_at=%s rows=%s",
             generation,
@@ -1926,12 +1991,13 @@ def _run_pipeline_dataset_stage(
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
-        save_dataset_manifest_status(
-            paths=paths,
-            manifest=manifest,
-            dataset_status="failed",
-            timestamp_utc=timestamp_utc,
-        )
+        if dataset_attempt is None:
+            save_dataset_manifest_status(
+                paths=paths,
+                manifest=manifest,
+                dataset_status="failed",
+                timestamp_utc=timestamp_utc,
+            )
         LOGGER.exception("[pipeline] dataset_fail generation=%s", generation)
         raise
     else:
@@ -1943,10 +2009,11 @@ def _run_pipeline_dataset_stage(
         return manifest
     finally:
         resources.close()
-        release_pipeline_stage_claim(
-            claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
-            claim_id=claim.claim_id,
-        )
+        if claim is not None:
+            release_pipeline_stage_claim(
+                claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+                claim_id=claim.claim_id,
+            )
 
 
 def run_pipeline_training_stage(

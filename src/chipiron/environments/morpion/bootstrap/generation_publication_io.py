@@ -448,6 +448,13 @@ def generation_read_pin(
 
 def assert_artifact_writable(path: Path) -> None:
     """Cooperative serializers cannot overwrite a sealed capsule or its hard links."""
+    require(
+        not any(
+            parent.name == "objects" and parent.parent.name == "dataset_publications_v1"
+            for parent in path.parents
+        ),
+        "Cannot write into an immutable Dataset publication.",
+    )
     for ancestor in [path, *path.parents]:
         require(
             not any((ancestor / capsule_seal(v)).exists() for v in (1, 2, 3)),
@@ -484,7 +491,8 @@ def _validate_manifest_record(
     if projection is not None:
         assert isinstance(projection, dict)  # Validated by the manifest type.
         require(
-            projection["publication"] == record
+            projection["publication"]
+            == {k: v for k, v in record.items() if k != "accepted_dataset"}
             or (
                 generation == baseline
                 and projection["publication"] is None

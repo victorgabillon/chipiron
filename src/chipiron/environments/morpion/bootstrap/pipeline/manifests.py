@@ -7,6 +7,10 @@ from contextlib import contextmanager
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    enabled,
+    project_dataset,
+)
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     manifest_read_pin,
     require,
@@ -94,11 +98,29 @@ def pinned_generation_manifest(
     *, paths: MorpionBootstrapPaths, generation: int
 ) -> Iterator[MorpionPipelineGenerationManifest]:
     """Keep one selected generation pinned through its consuming operation."""
-    manifest = load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    path = pipeline_manifest_path(paths, generation)
+    state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.exists()
+        else None
+    )
+    fenced = state is not None and enabled(state)
+    manifest = load_pipeline_manifest(path) if path.exists() else None
+    if fenced:
+        assert state is not None
+        manifest = project_dataset(paths, state, generation, manifest)
+    require(manifest is not None, "Missing selected generation discovery manifest.")
+    assert manifest is not None
     require(
         manifest.generation == generation, "Selected discovery generation mismatch."
     )
     with manifest_read_pin(paths.work_dir, manifest):
+        if fenced:
+            # Re-observe acceptance while holding the scientific lifetime pin.
+            state = load_bootstrap_run_state(paths.run_state_path)
+            manifest = project_dataset(
+                paths, state, generation, manifest, verify_rows=True
+            )
         yield manifest
 
 
