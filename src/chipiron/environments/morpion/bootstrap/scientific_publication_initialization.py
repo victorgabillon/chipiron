@@ -31,6 +31,7 @@ def initialize_scientific_v2_publication(
     closed_scientific_snapshot: bool = False,
     atomic_reevaluation: bool = False,
     fenced_dataset: bool = False,
+    durable_training: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -94,8 +95,18 @@ def initialize_scientific_v2_publication(
             KEY not in state.metadata and (not fenced_dataset or atomic_reevaluation),
             "Fenced Dataset requires fresh atomic genesis; no historical adoption.",
         )
+        from .training_publication import CONTRACT as TRAINING_CONTRACT
+        from .training_publication import KEY as TRAINING_KEY
+
+        require(
+            TRAINING_KEY not in state.metadata
+            and (not durable_training or fenced_dataset),
+            "Durable Training requires fresh fenced genesis.",
+        )
         checkpoint = inside(paths.work_dir, state.latest_runtime_checkpoint_path)
         metadata = dict(state.metadata)
+        if durable_training:
+            metadata[TRAINING_KEY] = dict(TRAINING_CONTRACT)
         if fenced_dataset:
             metadata[KEY] = dict(CONTRACT)
         if atomic_reevaluation:

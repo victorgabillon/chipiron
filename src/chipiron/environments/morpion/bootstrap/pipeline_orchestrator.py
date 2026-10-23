@@ -446,16 +446,20 @@ def load_available_pipeline_manifests(
         for generation in list_pipeline_manifest_generations(paths)
     }
     if state is not None and enabled(state):
-        return {
-            record["generation"]: project_dataset(
-                paths,
-                state,
-                record["generation"],
-                manifests.get(record["generation"]),
-                record=record,
+        from .training_publication import enabled as training_enabled
+        from .training_publication import project_training
+
+        training = training_enabled(state)
+        for record in publication_records(state.metadata):
+            generation = record["generation"]
+            manifest = project_dataset(
+                paths, state, generation, manifests.get(generation), record=record
             )
-            for record in publication_records(state.metadata)
-        }
+            manifests[generation] = (
+                project_training(paths, state, manifest, record=record)
+                if training
+                else manifest
+            )
     return manifests
 
 
@@ -466,6 +470,13 @@ def _recover_stale_training_states(
     now_unix_s: float | None,
 ) -> tuple[StaleTrainingState, ...]:
     """Recover safely stale training state before selection."""
+    from .run_state import load_bootstrap_run_state
+    from .training_publication import enabled as training_enabled
+
+    if paths.run_state_path.exists() and training_enabled(
+        load_bootstrap_run_state(paths.run_state_path)
+    ):
+        return ()  # Claims can expire; legacy recovery must not unlink a replacement.
     auto_recover = _bool_env("MORPION_TRAINING_AUTO_RECOVER_STALE_CLAIMS", default=True)
     stale_grace_seconds = _int_env(
         "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",

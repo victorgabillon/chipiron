@@ -18,12 +18,9 @@ from chipiron.environments.morpion.learning.tree_to_dataset import (
 
 from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
-    PUBLICATION_KEY,
     file_digest,
     generation_read_pin,
-    publication_records,
     publish_directory_if_absent,
-    read_object,
     require,
     sync_artifact,
     validate_capsule,
@@ -39,8 +36,16 @@ from .pipeline_artifacts import (
     pipeline_manifest_to_dict,
 )
 from .pipeline_claims import claim_pipeline_stage, release_pipeline_stage_claim
-from .reevaluation_transaction import source_identity, transaction_state
+from .reevaluation_transaction import source_identity
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
+from .worker_result_io import (
+    attempt_directory,
+    read_proposal,
+    result_protocol_enabled,
+    with_accepted_result,
+)
+from .worker_result_io import publication_record as _record
+from .worker_result_io import workspace_epoch as _identity
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -69,75 +74,19 @@ OPTIONS = (
 
 def enabled(state: MorpionBootstrapRunState) -> bool:
     """Require explicit fresh genesis; unsupported markers never become legacy mode."""
-    if KEY not in state.metadata:
-        require(
-            not any(
-                ACCEPTED in r
-                for r in state.metadata.get(PUBLICATION_KEY, {}).get("generations", [])
-            ),
-            "Accepted Dataset references require their versioned protocol.",
-        )
-        return False
-    require(
-        state.metadata[KEY] == CONTRACT
-        and isinstance(state.metadata[KEY].get("schema_version"), int)
-        and not isinstance(state.metadata[KEY]["schema_version"], bool)
-        and transaction_state(state) is not None,
-        "Unsupported fenced Dataset protocol or missing workspace/epoch.",
-    )
-    return True
-
-
-def _record(state: MorpionBootstrapRunState, generation: int) -> dict[str, Any]:
-    records = [
-        r for r in publication_records(state.metadata) if r["generation"] == generation
-    ]
-    require(len(records) == 1, "Dataset source is not a committed generation.")
-    return records[0]
-
-
-def _identity(state: MorpionBootstrapRunState) -> dict[str, str]:
-    data = transaction_state(state)
-    require(data is not None, "Dataset requires an authoritative workspace/epoch.")
-    assert data is not None
-    return {key: data[key] for key in ("workspace_id", "epoch_id")}
+    return result_protocol_enabled(state, KEY, ACCEPTED)
 
 
 def _directory(
     paths: MorpionBootstrapPaths, attempt_id: str, *, private: bool = False
 ) -> Path:
-    require(
-        isinstance(attempt_id, str)
-        and len(attempt_id) == 32
-        and all(c in "0123456789abcdef" for c in attempt_id),
-        "Malformed Dataset attempt identity.",
-    )
-    return (
-        paths.work_dir / NAMESPACE / ("staging" if private else "objects") / attempt_id
-    )
+    return attempt_directory(paths, attempt_id, namespace=NAMESPACE, private=private)
 
 
 def _proposal(
     paths: MorpionBootstrapPaths, reference: dict[str, Any]
 ) -> dict[str, Any]:
-    require(
-        set(reference) == {"attempt_id", "descriptor_sha256"},
-        "Malformed accepted Dataset reference.",
-    )
-    directory = _directory(paths, reference["attempt_id"])
-    path = inside(
-        paths.work_dir, paths.relative_to_work_dir(directory / "proposal.json")
-    )
-    require(
-        file_digest(path) == reference["descriptor_sha256"],
-        "Dataset descriptor changed.",
-    )
-    proposal = read_object(path)
-    require(
-        proposal["admission"]["attempt_id"] == reference["attempt_id"],
-        "Dataset attempt identity mismatch.",
-    )
-    return proposal
+    return read_proposal(paths, reference, namespace=NAMESPACE)
 
 
 def _validate_binding(
@@ -466,22 +415,7 @@ def accept_dataset(
                 and manifest.training_status in {"not_started", "failed"},
                 "Dataset stage is not eligible.",
             )
-            publication = state.metadata[PUBLICATION_KEY]
-            state = replace(
-                state,
-                metadata={
-                    **state.metadata,
-                    PUBLICATION_KEY: {
-                        **publication,
-                        "generations": [
-                            {**r, ACCEPTED: reference}
-                            if r["generation"] == generation
-                            else r
-                            for r in publication["generations"]
-                        ],
-                    },
-                },
-            )
+            state = with_accepted_result(state, generation, ACCEPTED, reference)
             # Only Dataset references change; the existing run-state serializer still rewrites its cumulative metadata.
             save_bootstrap_run_state(state, paths.run_state_path, durable=True)
         else:
@@ -489,3 +423,23 @@ def accept_dataset(
         result = project_dataset(paths, state, generation, manifest)
         _repair(paths, result, proposal)
         return result
+
+
+def accepted_dataset_identity(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, generation: int
+) -> dict[str, Any]:
+    """Expose verified accepted Dataset input identity to downstream Training."""
+    record = _record(state, generation)
+    reference = record.get(ACCEPTED)
+    require(reference is not None, "Training requires an accepted Dataset.")
+    assert reference is not None
+    proposal = _proposal(paths, reference)
+    _validate_binding(state, proposal["admission"], record)
+    _completion(paths, proposal)
+    _validate_rows(paths, proposal)
+    return {
+        "reference": reference,
+        "source": proposal["admission"]["source"],
+        "rows_sha256": proposal["rows_sha256"],
+        "rows_bytes": proposal["rows_bytes"],
+    }

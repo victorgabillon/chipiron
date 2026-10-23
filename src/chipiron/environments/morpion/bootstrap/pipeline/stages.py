@@ -2026,7 +2026,31 @@ def run_pipeline_training_stage(
     """Train evaluators and select the active model for one pipeline generation."""
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    from chipiron.environments.morpion.bootstrap.training_publication import (
+        enabled as training_enabled,
+    )
+    from chipiron.environments.morpion.bootstrap.training_publication import (
+        run_training,
+    )
+
     with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        if paths.run_state_path.exists() and training_enabled(
+            load_bootstrap_run_state(paths.run_state_path)
+        ):
+            if not log_available_ram_guard(
+                stage="training",
+                generation=generation,
+                action="rows_load",
+                required_mb=args.min_available_ram_mb,
+            ):
+                return manifest
+            return run_training(
+                replace(args),
+                paths,
+                manifest,
+                ttl_seconds=claim_ttl_seconds,
+                owner=claim_owner,
+            )
         return _run_pipeline_training_stage(
             args,
             generation=generation,

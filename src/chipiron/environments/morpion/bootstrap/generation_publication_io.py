@@ -450,10 +450,12 @@ def assert_artifact_writable(path: Path) -> None:
     """Cooperative serializers cannot overwrite a sealed capsule or its hard links."""
     require(
         not any(
-            parent.name == "objects" and parent.parent.name == "dataset_publications_v1"
+            parent.name == "objects"
+            and parent.parent.name
+            in {"dataset_publications_v1", "training_publications_v1"}
             for parent in path.parents
         ),
-        "Cannot write into an immutable Dataset publication.",
+        "Cannot write into an immutable Dataset or Training publication.",
     )
     for ancestor in [path, *path.parents]:
         require(
@@ -492,7 +494,11 @@ def _validate_manifest_record(
         assert isinstance(projection, dict)  # Validated by the manifest type.
         require(
             projection["publication"]
-            == {k: v for k, v in record.items() if k != "accepted_dataset"}
+            == {
+                k: v
+                for k, v in record.items()
+                if k not in {"accepted_dataset", "accepted_training"}
+            }
             or (
                 generation == baseline
                 and projection["publication"] is None

@@ -130,6 +130,14 @@ def recover_stale_training_state(
     dry_run: bool = False,
 ) -> bool:
     """Recover one safely classified stale training state."""
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        load_bootstrap_run_state,
+    )
+    from chipiron.environments.morpion.bootstrap.training_publication import enabled
+
+    authority = generation_dir.parent.parent / "run_state.json"
+    if authority.exists() and enabled(load_bootstrap_run_state(authority)):
+        return False  # Recovery derives from authority; never delete live replacement claims.
     if not stale_state.is_stale:
         return False
     if dry_run:

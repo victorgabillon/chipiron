@@ -11,6 +11,7 @@ from chipiron.environments.morpion.bootstrap import load_bootstrap_run_state
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
     publication_records,
+    read_object,
 )
 from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.pipeline.manifests import (
@@ -212,7 +213,7 @@ def test_invalid_proposals_never_enter_authority(
     def corrupt(p: Any, ref: Any) -> Any:
         directory = tmp_path / publication.NAMESPACE / "objects" / ref["attempt_id"]
         proposal_path = directory / "proposal.json"
-        data = publication.read_object(proposal_path)
+        data = read_object(proposal_path)
         admission = data["admission"]
         if fault == "foreign_epoch":
             admission["identity"]["epoch_id"] = "f" * 32
@@ -356,7 +357,7 @@ def test_source_and_epoch_changed_during_compute(
     writer = stages.save_morpion_supervised_rows_streaming
     record = publication_records(initial.metadata)[0]
     descriptor_path = tmp_path / record["descriptor_path"]
-    descriptor = publication.read_object(descriptor_path)
+    descriptor = read_object(descriptor_path)
     before = paths.run_state_path.read_bytes()
     mutated_authority = []
 

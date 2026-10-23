@@ -134,6 +134,63 @@ def training_lower_bound_details(
     paths: MorpionBootstrapPaths,
 ) -> MorpionTrainingLowerBound:
     """Return local training lower-bound details with active-model provenance split."""
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        publication_records,
+    )
+    from chipiron.environments.morpion.bootstrap.pipeline_claims import (
+        load_active_pipeline_stage_claim,
+    )
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        load_bootstrap_run_state,
+    )
+    from chipiron.environments.morpion.bootstrap.worker_result_io import (
+        result_protocol_enabled,
+    )
+
+    state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.exists()
+        else None
+    )
+    if state is not None and result_protocol_enabled(
+        state, "durable_training", "accepted_training"
+    ):
+        records = publication_records(state.metadata)
+        completed = max(
+            (r["generation"] for r in records if "accepted_training" in r), default=0
+        )
+        started = max(
+            (
+                r["generation"]
+                for r in records
+                if load_active_pipeline_stage_claim(
+                    paths.pipeline_training_claim_path_for_generation(r["generation"])
+                )
+                is not None
+            ),
+            default=0,
+        )
+        active = (
+            load_pipeline_active_model(paths.pipeline_active_model_path)
+            if paths.pipeline_active_model_path.exists()
+            else None
+        )
+        source = _active_model_source_for_local_training_bound(
+            paths=paths, active_model=active
+        )
+        local = (
+            0
+            if active is None or source == "external_seed"
+            else (active.local_trained_generation or 0)
+        )
+        return MorpionTrainingLowerBound(
+            active_model_generation=active.generation if active else None,
+            active_model_source_generation=active.source_generation if active else None,
+            active_model_source=source,
+            cursor_started_generation=started or None,
+            cursor_completed_generation=completed or None,
+            generation=max(completed, started, local),
+        )
     cursor = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
     active_model = (
         load_pipeline_active_model(paths.pipeline_active_model_path)

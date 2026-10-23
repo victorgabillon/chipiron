@@ -11,6 +11,9 @@ import pytest
 
 from chipiron.environments.morpion.bootstrap import dataset_publication as publication
 from chipiron.environments.morpion.bootstrap import load_bootstrap_run_state
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    publication_records,
+)
 from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     load_pipeline_stage_claim,
@@ -116,7 +119,7 @@ def test_crash_recovery(
         pytest.fail("Dataset crash probe hung")
     assert process.exitcode == 81
     state = load_bootstrap_run_state(paths.run_state_path)
-    record = publication.publication_records(state.metadata)[0]
+    record = publication_records(state.metadata)[0]
     assert (publication.ACCEPTED in record) == (point in POST)
     if point in PRE:
         assert paths.run_state_path.read_bytes() == before
@@ -137,7 +140,7 @@ def test_crash_recovery(
     if point in POST:
         assert paths.run_state_path.read_bytes() == before
         assert (
-            publication.publication_records(
+            publication_records(
                 load_bootstrap_run_state(paths.run_state_path).metadata
             )[0][publication.ACCEPTED]
             == record[publication.ACCEPTED]

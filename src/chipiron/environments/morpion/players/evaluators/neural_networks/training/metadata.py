@@ -50,7 +50,12 @@ def update_saved_manifest_metadata(
     metadata: dict[str, object],
 ) -> None:
     """Update a saved Morpion manifest with final post-save metadata."""
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        assert_artifact_writable,
+    )
+
     manifest_path = Path(output_dir) / MORPION_MANIFEST_FILE_NAME
+    assert_artifact_writable(manifest_path)
     with open(manifest_path, encoding="utf-8") as handle:
         manifest_payload = json.load(handle)
     if isinstance(manifest_payload, dict):

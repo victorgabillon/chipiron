@@ -121,6 +121,15 @@ def pinned_generation_manifest(
             manifest = project_dataset(
                 paths, state, generation, manifest, verify_rows=True
             )
+        from chipiron.environments.morpion.bootstrap.training_publication import (
+            enabled as training_enabled,
+        )
+        from chipiron.environments.morpion.bootstrap.training_publication import (
+            project_training,
+        )
+
+        if state is not None and training_enabled(state):
+            manifest = project_training(paths, state, manifest, verify=True)
         yield manifest
 
 

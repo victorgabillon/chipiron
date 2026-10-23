@@ -335,7 +335,12 @@ def save_morpion_model_bundle(
     metadata: dict[str, object] | None = None,
 ) -> None:
     """Save one Morpion model bundle with weights, args, and manifest."""
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        assert_artifact_writable,
+    )
+
     bundle_dir = Path(output_dir)
+    assert_artifact_writable(bundle_dir)
     bundle_dir.mkdir(parents=True, exist_ok=True)
 
     weights_path = bundle_dir / MORPION_MODEL_WEIGHTS_FILE_NAME
