@@ -37,11 +37,20 @@ def test_normal_restart(tmp_path: Path, monkeypatch: Any) -> None:
     before = load_bootstrap_run_state(paths.run_state_path)
     active = paths.pipeline_active_model_path.read_bytes()
     torch.manual_seed(31)
+    rng = bytes(torch.get_rng_state().tolist())
     result = run_pipeline_training_stage(args, generation=1)
     assert result.training_status == "done"
     after = load_bootstrap_run_state(paths.run_state_path)
     record = publication_record(after, 1)
     reference = record[publication.ACCEPTED]
+    assert (
+        bytes.fromhex(
+            publication._proposal(paths, reference)["admission"]["reproducibility"][
+                "torch_rng_hex"
+            ]
+        )
+        == rng
+    )
     assert set(result.model_bundle_paths) == {"linear", "small_mlp"}
     assert paths.pipeline_active_model_path.read_bytes() == active
     assert not paths.pipeline_training_cursor_path.exists()

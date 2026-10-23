@@ -123,8 +123,10 @@ def reproducibility() -> dict[str, Any]:
         "python": platform.python_version(),
         "torch": torch.__version__,
         "torch_initial_seed": torch.initial_seed(),
-        "torch_rng": torch.get_rng_state().tolist(),
-        "cuda_rng": [r.tolist() for r in torch.cuda.get_rng_state_all()]
+        "torch_rng_hex": bytes(torch.get_rng_state().tolist()).hex(),
+        "cuda_rng_hex": [
+            bytes(r.tolist()).hex() for r in torch.cuda.get_rng_state_all()
+        ]
         if torch.cuda.is_available()
         else [],
         "deterministic": torch.are_deterministic_algorithms_enabled(),
