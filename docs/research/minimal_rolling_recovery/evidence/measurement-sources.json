@@ -1,0 +1,10 @@
+{
+  "base": "ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3",
+  "measurement_source_sha256": {
+    "scripts/report_morpion_rolling_recovery.py": "2762f90b12be16bbd719fd8ebe9846313415ac58895fdb61024cd0ad37e25987",
+    "docs/research/minimal_rolling_recovery/observe.py": "9f5932275dfbe11c1cf291d30e20259f538f010f84c3bb47aaf6118b739c09d5",
+    "docs/research/minimal_rolling_recovery/reproduce.py": "09b66bdbceb38001e852e5b0349451e0eb57a2da42f2b745e8a889bb2211d46c",
+    "src/chipiron/environments/morpion/bootstrap/generation_publication_io.py": "39510dbb9ecf1c1476142f298215f77105036de83605ec4fa120989e4cc3457a"
+  },
+  "note": "Final source including fail-closed external-link, genesis and pending-receipt identity guards; captured before validated-history serial run."
+}

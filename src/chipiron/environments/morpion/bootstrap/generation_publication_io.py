@@ -98,12 +98,18 @@ def file_digest(path: Path) -> str:
 
 
 @contextmanager
-def growth_receipt_ownership(paths: MorpionBootstrapPaths) -> Iterator[None]:
+def growth_receipt_ownership(
+    paths: MorpionBootstrapPaths, *, create: bool = True
+) -> Iterator[None]:
     """Keep a stable kernel lock across the whole Growth invocation, never a TTL."""
     import fcntl
 
-    paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
-    with (paths.pipeline_dir / ".growth_patch_consumer.lock").open("a+") as lock:
+    if create:
+        paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
+    path = paths.pipeline_dir / ".growth_patch_consumer.lock"
+    if not create:
+        inside(paths.work_dir, path.relative_to(paths.work_dir).as_posix())
+    with path.open("a+" if create else "rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
             yield
@@ -347,6 +353,7 @@ def capsule_lease(
     exclusive: bool = False,
     nonblocking: bool = False,
     version: int = 1,
+    create: bool = True,
 ) -> Iterator[None]:
     """Stable inode pins are never unlinked, including by orphan collection."""
     import fcntl
@@ -355,8 +362,12 @@ def capsule_lease(
         work_dir, identifier, version
     )  # Validate before using the ID as a filename.
     directory = work_dir / publication_namespace(version) / "pins"
-    directory.mkdir(parents=True, exist_ok=True)
-    with (directory / f"{identifier}.lock").open("a+") as handle:
+    if create:
+        directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{identifier}.lock"
+    if not create:
+        inside(work_dir, path.relative_to(work_dir).as_posix())
+    with path.open("a+" if create else "rb") as handle:
         flags = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
         if nonblocking:
             flags |= fcntl.LOCK_NB
