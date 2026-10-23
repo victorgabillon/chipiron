@@ -1,0 +1,210 @@
+mypy: src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py:83: call-overload: No overload variant of "asdict" matches argument types "object", "Callable[[Iterable[tuple[Any, Any]]], dict[Any, Any]]"
+mypy: src/chipiron/scripts/script_gui/script_gui.py:34: valid-type: Variable "chipiron.scripts.ScriptType" is not valid as a type
+mypy: src/chipiron/scripts/script_gui/script_gui.py:155: valid-type: Variable "chipiron.scripts.ScriptType" is not valid as a type
+mypy: src/chipiron/scripts/script_gui/script_gui.py:181: attr-defined: "object" has no attribute "ONE_MATCH"
+mypy: src/chipiron/scripts/script_gui/script_gui.py:191: attr-defined: "object" has no attribute "ONE_MATCH"
+mypy: src/chipiron/scripts/script_gui/script_gui.py:196: attr-defined: "object" has no attribute "TREE_VISUALIZATION"
+mypy: src/chipiron/utils/communication/player_ui_info.py:14: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/utils/communication/player_ui_info.py:16: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/utils/communication/player_ui_info.py:19: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/utils/communication/player_ui_info.py:30: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/utils/communication/player_ui_info.py:46: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/utils/communication/player_ui_info.py:54: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/utils/communication/player_ui_info.py:57: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_args.py:23: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_args.py:24: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:17: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:18: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:25: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:26: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:46: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:64: operator: "object" not callable
+mypy: src/chipiron/games/domain/game/game_args_factory.py:68: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_args_factory.py:71: unreachable: Statement is unreachable
+mypy: src/chipiron/environments/morpion/players/wiring/morpion_wiring.py:157: operator: "object" not callable
+mypy: src/chipiron/environments/integer_reduction/players/wiring/integer_reduction_wiring.py:146: operator: "object" not callable
+mypy: src/chipiron/games/domain/game/game_manager.py:83: valid-type: Variable "chipiron.players.PlayerHandle" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager.py:106: valid-type: Variable "chipiron.players.PlayerHandle" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager.py:469: attr-defined: players_m.PlayerHandle? has no attribute "close"
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:119: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:226: valid-type: Variable "chipiron.players.PlayerHandle" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:234: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:238: valid-type: Variable "chipiron.players.PlayerHandle" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:249: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:277: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:278: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/game/game_manager_factory.py:280: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_manager.py:104: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_manager.py:142: attr-defined: PlayerFactoryArgs? has no attribute "player_args"
+mypy: src/chipiron/games/domain/match/match_manager.py:180: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_manager.py:220: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_manager.py:221: valid-type: Variable "chipiron.players.PlayerFactoryArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:55: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:56: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:60: attr-defined: players.PlayerArgs? has no attribute "name"
+mypy: src/chipiron/games/domain/match/match_factories.py:61: unreachable: Statement is unreachable
+mypy: src/chipiron/games/domain/match/match_factories.py:66: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:67: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:110: attr-defined: players.PlayerArgs? has no attribute "name"
+mypy: src/chipiron/games/domain/match/match_factories.py:111: unreachable: Right operand of "or" is never evaluated
+mypy: src/chipiron/games/domain/match/match_factories.py:203: arg-type: Argument 2 to "isinstance" has incompatible type "object"; expected "_ClassInfo"
+mypy: src/chipiron/games/domain/match/match_factories.py:205: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:206: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/games/domain/match/match_factories.py:210: arg-type: Argument 2 to "isinstance" has incompatible type "object"; expected "_ClassInfo"
+mypy: src/chipiron/games/domain/match/match_factories.py:221: attr-defined: players.PlayerArgs? has no attribute "name"
+mypy: src/chipiron/scripts/gui_launcher/builders.py:160: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/scripts/gui_launcher/builders.py:163: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/scripts/gui_launcher/builders.py:183: valid-type: Variable "chipiron.scripts.ScriptType" is not valid as a type
+mypy: src/chipiron/scripts/gui_launcher/builders.py:202: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/scripts/gui_launcher/builders.py:203: arg-type: Argument "cls" to "make_partial_dataclass_with_optional_paths" has incompatible type "object"; expected "type[Any]"
+mypy: src/chipiron/scripts/gui_launcher/builders.py:264: unreachable: Statement is unreachable
+mypy: src/chipiron/scripts/gui_launcher/builders.py:277: unreachable: Statement is unreachable
+mypy: src/chipiron/scripts/gui_launcher/builders.py:279: attr-defined: "object" has no attribute "ONE_MATCH"
+mypy: src/chipiron/scripts/gui_launcher/builders.py:283: attr-defined: "object" has no attribute "TREE_VISUALIZATION"
+mypy: src/chipiron/scripts/gui_launcher/script_gui.py:17: valid-type: Variable "chipiron.scripts.ScriptType" is not valid as a type
+mypy: src/chipiron/environments/morpion/bootstrap/training_recap.py:350: no-any-return: Returning Any from function declared to return "object | None"
+mypy: src/chipiron/environments/morpion/bootstrap/training_recap.py:945: no-any-return: Returning Any from function declared to return "object | None"
+mypy: src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py:148: name-defined: Name "nn.Module" is not defined
+mypy: src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py:501: arg-type: Argument 1 to "safe_nn_trainer_save" has incompatible type "_OptimizerSchedulerCheckpointState"; expected "OptimizerSchedulerHolder"
+mypy: src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py:90: valid-type: Variable "chipiron.players.PlayerArgs" is not valid as a type
+mypy: src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py:91: operator: "object" not callable
+mypy: src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py:236: unreachable: Statement is unreachable
+mypy: src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py:304: has-type: Cannot determine type of "player"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py:106: arg-type: Argument "batch" to "train_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/value_training.py:354: no-untyped-call: Call to untyped function "backward" in typed context
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py:55: arg-type: Argument 1 to "move_supervised_batch_to_device" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:107: arg-type: Argument "batch" to "train_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:181: arg-type: Argument 1 to "infer_batch_sample_count" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:184: arg-type: Argument "batch" to "evaluate_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:177: arg-type: Argument "batch" to "train_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:300: arg-type: Argument 1 to "infer_batch_sample_count" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:303: arg-type: Argument "batch" to "evaluate_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py:168: arg-type: Argument "model_kind" to "MorpionTrainingArgs" has incompatible type "Any | None"; expected "str"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py:212: arg-type: Argument 1 to "move_supervised_batch_to_device" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py:96: arg-type: Argument 1 to "infer_batch_sample_count" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py:99: arg-type: Argument "batch" to "evaluate_regression_batch" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1186: arg-type: Argument 1 to "move_supervised_batch_to_device" has incompatible type "TensorSupervisedBatch"; expected "SupervisedBatch"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1357: redundant-cast: Redundant cast to "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]"
+mypy: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1368: redundant-cast: Redundant cast to "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]"
+mypy: src/chipiron/environments/morpion/bootstrap/evaluator_diagnostics.py:439: return-value: Incompatible return value type (got "list[float]", expected "list[float | None]")
+pyright: src/chipiron/environments/integer_reduction/players/wiring/integer_reduction_wiring.py:146: reportCallIssue: Object of type "object" is not callable Attribute "__call__" is unknown
+pyright: src/chipiron/environments/morpion/bootstrap/evaluator_diagnostics.py:439: reportReturnType: Type "list[float]" is not assignable to return type "list[float | None]" "list[float]" is not assignable to "list[float | None]" Type parameter "_T@list" is invariant, but "float" is not the same as "float | None" Consider switching from "list" to "Sequence" which is covariant
+pyright: src/chipiron/environments/morpion/bootstrap/training_recap.py:241: reportUnnecessaryComparison: Condition will always evaluate to True since the types "str" and "None" have no overlap
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py:168: reportArgumentType: Argument of type "Any | None" cannot be assigned to parameter "model_kind" of type "str" in function "__init__" Type "Any | None" is not assignable to type "str" "None" is not assignable to "str"
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py:212: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "move_supervised_batch_to_device" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:177: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "train_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:300: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "infer_batch_sample_count" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:303: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "evaluate_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py:96: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "infer_batch_sample_count" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py:99: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "evaluate_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:107: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "train_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:181: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "infer_batch_sample_count" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:184: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "evaluate_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py:55: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "move_supervised_batch_to_device" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:357: reportArgumentType: Argument of type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" cannot be assigned to parameter "metadata" of type "dict[str, object] | None" in function "save_morpion_model_bundle" Type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to type "dict[str, object] | None" "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "dict[str, object]" Type parameter "_VT@dict" is invariant, but "str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None" is not the same as "object" Consider switching from "dict" to "Mapping" which is covariant in the value type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "None"
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:368: reportArgumentType: Argument of type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" cannot be assigned to parameter "metadata" of type "dict[str, object]" in function "update_saved_manifest_metadata" "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "dict[str, object]" Type parameter "_VT@dict" is invariant, but "str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None" is not the same as "object" Consider switching from "dict" to "Mapping" which is covariant in the value type
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:950: reportArgumentType: Argument of type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" cannot be assigned to parameter "metadata" of type "dict[str, object] | None" in function "save_morpion_model_bundle" Type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to type "dict[str, object] | None" "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "dict[str, object]" Type parameter "_VT@dict" is invariant, but "str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None" is not the same as "object" Consider switching from "dict" to "Mapping" which is covariant in the value type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "None"
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:961: reportArgumentType: Argument of type "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" cannot be assigned to parameter "metadata" of type "dict[str, object]" in function "update_saved_manifest_metadata" "dict[str, str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None]" is not assignable to "dict[str, object]" Type parameter "_VT@dict" is invariant, but "str | int | float | bool | tuple[str, ...] | tuple[int, ...] | dict[str, object] | None" is not the same as "object" Consider switching from "dict" to "Mapping" which is covariant in the value type
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1186: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "move_supervised_batch_to_device" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1357: reportUnnecessaryCast: Unnecessary "cast" call; type is already "tuple[Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionEntityTokenSupervisedSample]]"
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py:1368: reportUnnecessaryCast: Unnecessary "cast" call; type is already "tuple[Subset[MorpionEntityTokenSupervisedSample], Subset[MorpionEntityTokenSupervisedSample]]"
+pyright: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py:106: reportArgumentType: Argument of type "TensorSupervisedBatch" cannot be assigned to parameter "batch" of type "SupervisedBatch" in function "train_regression_batch" "TensorSupervisedBatch" is incompatible with protocol "SupervisedBatch" "is_batch" is not read-only in protocol "is_batch" is writable in protocol
+pyright: src/chipiron/environments/morpion/players/wiring/morpion_wiring.py:157: reportCallIssue: Object of type "object" is not callable Attribute "__call__" is unknown
+pyright: src/chipiron/games/domain/game/game_args_factory.py:17: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:18: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:25: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:26: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:46: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:64: reportCallIssue: Object of type "object" is not callable Attribute "__call__" is unknown
+pyright: src/chipiron/games/domain/game/game_args_factory.py:68: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_args_factory.py:71: reportCallIssue: Object of type "object" is not callable Attribute "__call__" is unknown
+pyright: src/chipiron/games/domain/game/game_manager.py:83: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager.py:106: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:119: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:226: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:238: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:277: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:278: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/game/game_manager_factory.py:280: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_args.py:23: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_args.py:24: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:55: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:56: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:66: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:67: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:203: reportArgumentType: Argument of type "object" cannot be assigned to parameter "class_or_tuple" of type "_ClassInfo" in function "isinstance" Type "object" is not assignable to type "_ClassInfo" "object" is not assignable to "type" "object" is not assignable to "UnionType" "object" is not assignable to "tuple[_ClassInfo, ...]"
+pyright: src/chipiron/games/domain/match/match_factories.py:205: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:206: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_factories.py:210: reportArgumentType: Argument of type "object" cannot be assigned to parameter "class_or_tuple" of type "_ClassInfo" in function "isinstance" Type "object" is not assignable to type "_ClassInfo" "object" is not assignable to "type" "object" is not assignable to "UnionType" "object" is not assignable to "tuple[_ClassInfo, ...]"
+pyright: src/chipiron/games/domain/match/match_manager.py:104: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_manager.py:180: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_manager.py:220: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/games/domain/match/match_manager.py:221: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/learning/torch_runtime.py:138: reportUnnecessaryComparison: Condition will always evaluate to True since the types "int" and "None" have no overlap
+pyright: src/chipiron/scripts/gui_launcher/builders.py:160: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/gui_launcher/builders.py:163: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/gui_launcher/builders.py:183: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/gui_launcher/builders.py:203: reportArgumentType: Argument of type "object" cannot be assigned to parameter "cls" of type "type[Any]" in function "make_partial_dataclass_with_optional_paths" "object" is not assignable to "type[Any]"
+pyright: src/chipiron/scripts/gui_launcher/builders.py:279: reportAttributeAccessIssue: Cannot access attribute "ONE_MATCH" for class "object" Attribute "ONE_MATCH" is unknown
+pyright: src/chipiron/scripts/gui_launcher/builders.py:283: reportAttributeAccessIssue: Cannot access attribute "TREE_VISUALIZATION" for class "object" Attribute "TREE_VISUALIZATION" is unknown
+pyright: src/chipiron/scripts/gui_launcher/script_gui.py:17: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_value_and_fixed_boards.py:91: reportCallIssue: Object of type "object" is not callable Attribute "__call__" is unknown
+pyright: src/chipiron/scripts/learn_nn_supervised/checkpoint_helpers.py:84: reportArgumentType: Argument of type "object" cannot be assigned to parameter "obj" of type "DataclassInstance" in function "asdict" "object" is incompatible with protocol "DataclassInstance" "__dataclass_fields__" is not present
+pyright: src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py:501: reportArgumentType: Argument of type "_OptimizerSchedulerCheckpointState" cannot be assigned to parameter "training_state" of type "OptimizerSchedulerHolder" in function "safe_nn_trainer_save" "_OptimizerSchedulerCheckpointState" is incompatible with protocol "OptimizerSchedulerHolder" "optimizer" is not read-only in protocol "optimizer" is writable in protocol "scheduler" is not read-only in protocol "scheduler" is writable in protocol
+pyright: src/chipiron/scripts/script_gui/script_gui.py:34: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/script_gui/script_gui.py:155: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/scripts/script_gui/script_gui.py:181: reportAttributeAccessIssue: Cannot access attribute "ONE_MATCH" for class "object" Attribute "ONE_MATCH" is unknown
+pyright: src/chipiron/scripts/script_gui/script_gui.py:191: reportAttributeAccessIssue: Cannot access attribute "ONE_MATCH" for class "object" Attribute "ONE_MATCH" is unknown
+pyright: src/chipiron/scripts/script_gui/script_gui.py:196: reportAttributeAccessIssue: Cannot access attribute "TREE_VISUALIZATION" for class "object" Attribute "TREE_VISUALIZATION" is unknown
+pyright: src/chipiron/utils/communication/player_ui_info.py:14: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/utils/communication/player_ui_info.py:30: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/utils/communication/player_ui_info.py:54: reportGeneralTypeIssues: Expected class but received "object"
+pyright: src/chipiron/utils/communication/player_ui_info.py:57: reportGeneralTypeIssues: Expected class but received "object"
+pylint: src/chipiron/scripts/learn_nn_supervised/learn_nn_from_supervised_datasets.py:148: E0601: Using variable 'nn' before assignment
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:15: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:18: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:21: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:24: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:27: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:30: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:33: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:36: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:39: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:15: W0611: Unused safe_nn_architecture_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_architecture_save
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:18: W0611: Unused safe_nn_param_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_param_save
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:21: W0611: Unused safe_nn_trainer_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_trainer_save
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:24: W0611: Unused GameInputArgs imported from chipiron.scripts.learn_nn_supervised.training_args as GameInputArgs
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:27: W0611: Unused NNTrainerArgs imported from chipiron.scripts.learn_nn_supervised.training_args as NNTrainerArgs
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:30: W0611: Unused NNTrainerConfigError imported from chipiron.scripts.learn_nn_supervised.training_args as NNTrainerConfigError
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:33: W0611: Unused OptimizerType imported from chipiron.scripts.learn_nn_supervised.training_args as OptimizerType
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:36: W0611: Unused SupervisedTrainingArgs imported from chipiron.scripts.learn_nn_supervised.training_args as SupervisedTrainingArgs
+pylint: src/chipiron/learningprocesses/nn_trainer/factory.py:39: W0611: Unused SupervisedTrainingConfigError imported from chipiron.scripts.learn_nn_supervised.training_args as SupervisedTrainingConfigError
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:12: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:15: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:18: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:21: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:24: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:27: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:30: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:33: C0414: Import alias does not rename original package
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:12: W0611: Unused OptimizerSchedulerHolder imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as OptimizerSchedulerHolder
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:15: W0611: Unused ReadableWeightsModule imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as ReadableWeightsModule
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:18: W0611: Unused get_folder_training_copies_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_folder_training_copies_path_from
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:21: W0611: Unused get_optimizer_file_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_optimizer_file_path_from
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:24: W0611: Unused get_scheduler_file_path_from imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as get_scheduler_file_path_from
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:27: W0611: Unused safe_nn_architecture_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_architecture_save
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:30: W0611: Unused safe_nn_param_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_param_save
+pylint: src/chipiron/learningprocesses/nn_trainer/checkpoint_helpers.py:33: W0611: Unused safe_nn_trainer_save imported from chipiron.scripts.learn_nn_supervised.checkpoint_helpers as safe_nn_trainer_save
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_evaluator.py:79: E1111: Assigning result of a function call, where the function has no return
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_evaluator.py:83: E1133: Non-iterable value model_inputs is used in an iterating context
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/value_training.py:17: W0611: Unused Any imported from typing
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py:145: W0613: Unused argument 'row_chunk_size'
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache.py:574: R0916: Too many boolean expressions in if statement (9/5)
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relational_entity_token_cache.py:632: R0916: Too many boolean expressions in if statement (10/5)
+pylint: src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py:268: W0613: Unused argument 'row_chunk_size'
+pylint: src/chipiron/environments/morpion/bootstrap/config.py:314: W0621: Redefining name 'fields' from outer scope (line 9)
+pylint: src/chipiron/environments/morpion/bootstrap/pipeline/training_selection.py:18: W0404: Reimport 'Mapping' (imported line 5)
+mypy: baseline=91 current=89 new=0 removed=2
+pyright: baseline=73 current=73 new=0 removed=0
+pylint: baseline=45 current=44 new=0 removed=1
+Debt decreased: shrink the reviewed baseline in a follow-up; CI never updates it.
