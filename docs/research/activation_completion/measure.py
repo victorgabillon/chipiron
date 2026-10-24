@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import pstats
+import resource
 import statistics
 import time
 from pathlib import Path
@@ -62,7 +63,7 @@ def main() -> None:
         started = time.perf_counter()
         operation()
         samples.append(time.perf_counter() - started)
-    elapsed_costs = delta(before, costs())
+    elapsed_costs = delta(before)
     hashed_files = []
     descriptors = []
     original_hash = hashlib.file_digest
@@ -99,6 +100,7 @@ def main() -> None:
         "authority_sha256": hashlib.sha256(authority).hexdigest(),
         "authority_bytes": len(authority),
         "authority_unchanged": True,
+        "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "uninstrumented_seconds": samples,
         "median_seconds": statistics.median(samples),
         "five_call_costs": elapsed_costs,
