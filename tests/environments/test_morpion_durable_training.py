@@ -340,6 +340,12 @@ def test_growth_and_later_old_completion(tmp_path: Path, monkeypatch: Any) -> No
     assert all(publication.ACCEPTED in publication_record(state, g) for g in (1, 2))
     assert paths.pipeline_active_model_path.read_bytes() == model_before
     assert state.metadata["atomic_reevaluation"]["accepted_cursor"] is not None
+    publish_proposal(paths, identifier="after-training")
+    run_closed_publication(scientific_args(paths.work_dir), ClosedPublicationRunner())
+    advanced = load_bootstrap_run_state(paths.run_state_path)
+    assert advanced.generation == 3
+    assert all(publication.ACCEPTED in publication_record(advanced, g) for g in (1, 2))
+    assert paths.pipeline_active_model_path.read_bytes() == model_before
 
 
 @pytest.mark.parametrize(
