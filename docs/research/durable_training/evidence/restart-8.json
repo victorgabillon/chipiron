@@ -1,0 +1,90 @@
+{
+  "restart": {
+    "costs": {
+      "cpu_user_s": 0.015229999999999855,
+      "cpu_system_s": 0.0019780000000000075,
+      "io": {
+        "rchar": 292474,
+        "wchar": 6126,
+        "syscr": 98,
+        "syscw": 2,
+        "read_bytes": 0,
+        "write_bytes": 8192,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 4,
+      "directory_fsync_count": 6,
+      "file_fsync_seconds": 0.02717484599997988,
+      "directory_fsync_seconds": 0.012177750999398995
+    },
+    "started_unix_s": 1792818502.4525318,
+    "finished_unix_s": 1792818502.5090864,
+    "elapsed_s": 0.05655514699901687,
+    "pid": 440234,
+    "rss_before_mb": 292.72265625,
+    "rss_after_mb": 292.72265625,
+    "process_peak_rss_mb": 291.67578125,
+    "available_ram_before_mb": 75242.97265625,
+    "available_ram_after_mb": 75246.51171875,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method posix.fsync>",
+        "primitive_calls": 10,
+        "calls": 10,
+        "own_seconds": 0.039310089,
+        "cumulative_seconds": 0.039310089
+      },
+      {
+        "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+        "line": 195,
+        "function": "file_digest",
+        "primitive_calls": 24,
+        "calls": 24,
+        "own_seconds": 0.000126625,
+        "cumulative_seconds": 0.00032461
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 270,
+        "function": "validate_capsule",
+        "primitive_calls": 1,
+        "calls": 1,
+        "own_seconds": 6.901200000000001e-05,
+        "cumulative_seconds": 0.00499969
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 141,
+        "function": "sync_directory",
+        "primitive_calls": 2,
+        "calls": 2,
+        "own_seconds": 4.999e-06,
+        "cumulative_seconds": 2.3473e-05
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 94,
+        "function": "file_digest",
+        "primitive_calls": 24,
+        "calls": 24,
+        "own_seconds": 4.0690000000000005e-05,
+        "cumulative_seconds": 0.000512431
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 155979,
+      "unique_file_bytes": 155979,
+      "allocated_bytes_unique_inodes": 417792,
+      "file_names": 40,
+      "unique_inodes": 80
+    }
+  }
+}
