@@ -72,7 +72,9 @@ def main() -> None:
     def hash_file(stream: Any, *args: Any, **kwargs: Any) -> Any:
         path = Path(stream.name)
         hashed_files.append({
-            "path": str(path.relative_to(root)),
+            "path": str(path.relative_to(root))
+            if path.is_relative_to(root)
+            else str(path),
             "bytes": path.stat().st_size,
         })
         return original_hash(stream, *args, **kwargs)
