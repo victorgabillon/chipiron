@@ -1,0 +1,2936 @@
+{
+  "control1000": {
+    "mode": "refresh",
+    "requested_nodes": 1000,
+    "cuda_available": false,
+    "source_verification": {
+      "costs": {
+        "cpu_user_s": 0.0009300000000003195,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 85979,
+          "wchar": 0,
+          "syscr": 23,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837626.3285706,
+      "finished_unix_s": 1792837626.3296192,
+      "elapsed_s": 0.001047798003128264,
+      "pid": 578531,
+      "rss_before_mb": 291.68359375,
+      "rss_after_mb": 291.68359375,
+      "process_peak_rss_mb": 290.671875,
+      "available_ram_before_mb": 74674.28515625,
+      "available_ram_after_mb": 74674.28515625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 3.6644000000000004e-05,
+          "cumulative_seconds": 0.000123762
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 94,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 1.4045e-05,
+          "cumulative_seconds": 0.000174697
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restore": {
+      "costs": {
+        "cpu_user_s": 0.2342500000000003,
+        "cpu_system_s": 0.0019819999999999977,
+        "io": {
+          "rchar": 89632,
+          "wchar": 0,
+          "syscr": 36,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837626.330566,
+      "finished_unix_s": 1792837626.5669065,
+      "elapsed_s": 0.23634073800349142,
+      "pid": 578531,
+      "rss_before_mb": 291.68359375,
+      "rss_after_mb": 300.06640625,
+      "process_peak_rss_mb": 298.99609375,
+      "available_ram_before_mb": 74674.28515625,
+      "available_ram_after_mb": 74671.26171875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restored_link_iteration_sha256": "44cedb3aaf0f7556e4a89c5ae83e702f76bd3a243065fc99ab706a4f4188a169",
+    "ordered_link_parity": false,
+    "accepted_training_verification": {
+      "costs": {
+        "cpu_user_s": 0.003789999999999516,
+        "cpu_system_s": 0.0009959999999999969,
+        "io": {
+          "rchar": 155343,
+          "wchar": 0,
+          "syscr": 43,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 1,
+        "directory_fsync_count": 2,
+        "file_fsync_seconds": 0.008491795000736602,
+        "directory_fsync_seconds": 0.008619136002380401
+      },
+      "started_unix_s": 1792837626.5803323,
+      "finished_unix_s": 1792837626.6023338,
+      "elapsed_s": 0.022001543999067508,
+      "pid": 578531,
+      "rss_before_mb": 300.1953125,
+      "rss_after_mb": 300.203125,
+      "process_peak_rss_mb": 299.18359375,
+      "available_ram_before_mb": 74671.26171875,
+      "available_ram_after_mb": 74670.94921875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.017095111,
+          "cumulative_seconds": 0.017095111
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 5.9617e-05,
+          "cumulative_seconds": 0.000142277
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 94,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 1.7705e-05,
+          "cumulative_seconds": 0.00022225600000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 4.848e-06,
+          "cumulative_seconds": 2.6289000000000002e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "model_loading": {
+      "costs": {
+        "cpu_user_s": 0.003643000000000285,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 80257,
+          "wchar": 0,
+          "syscr": 57,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837626.6044252,
+      "finished_unix_s": 1792837626.6081562,
+      "elapsed_s": 0.0037310259940568358,
+      "pid": 578531,
+      "rss_before_mb": 300.328125,
+      "rss_after_mb": 303.3359375,
+      "process_peak_rss_mb": 302.18359375,
+      "available_ram_before_mb": 74670.94921875,
+      "available_ram_after_mb": 74670.94921875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "inference": {
+      "costs": {
+        "cpu_user_s": 44.904520000000005,
+        "cpu_system_s": 0.0009409999999999974,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837626.6096058,
+      "finished_unix_s": 1792837671.5223584,
+      "elapsed_s": 44.91275274399959,
+      "pid": 578531,
+      "rss_before_mb": 303.3671875,
+      "rss_after_mb": 309.9921875,
+      "process_peak_rss_mb": 308.94921875,
+      "available_ram_before_mb": 74670.94921875,
+      "available_ram_after_mb": 74735.3203125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {
+        "load_anchor_ref": 268,
+        "load_child_from_delta": 735
+      }
+    },
+    "backup": {
+      "costs": {
+        "cpu_user_s": 6.099999999520378e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837671.5247028,
+      "finished_unix_s": 1792837671.5248306,
+      "elapsed_s": 0.00012751000031130388,
+      "pid": 578531,
+      "rss_before_mb": 310.04296875,
+      "rss_after_mb": 310.04296875,
+      "process_peak_rss_mb": 308.94921875,
+      "available_ram_before_mb": 74735.3203125,
+      "available_ram_after_mb": 74735.3203125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "selector": {
+      "costs": {
+        "cpu_user_s": 4.700000000212867e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837671.525088,
+      "finished_unix_s": 1792837671.5251794,
+      "elapsed_s": 9.154199506156147e-05,
+      "pid": 578531,
+      "rss_before_mb": 310.04296875,
+      "rss_after_mb": 310.04296875,
+      "process_peak_rss_mb": 308.94921875,
+      "available_ram_before_mb": 74735.3203125,
+      "available_ram_after_mb": 74735.3203125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "checkpoint": {
+      "costs": {
+        "cpu_user_s": 0.2625269999999986,
+        "cpu_system_s": 0.001995999999999984,
+        "io": {
+          "rchar": 2055,
+          "wchar": 91955,
+          "syscr": 16,
+          "syscw": 7,
+          "read_bytes": 0,
+          "write_bytes": 106496,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 7,
+        "directory_fsync_count": 9,
+        "file_fsync_seconds": 0.06808947799436282,
+        "directory_fsync_seconds": 2.1221014321781695e-05
+      },
+      "started_unix_s": 1792837671.5254295,
+      "finished_unix_s": 1792837671.8578575,
+      "elapsed_s": 0.3324282840039814,
+      "pid": 578531,
+      "rss_before_mb": 310.04296875,
+      "rss_after_mb": 311.4296875,
+      "process_peak_rss_mb": 311.21875,
+      "available_ram_before_mb": 74735.3203125,
+      "available_ram_after_mb": 74734.65234375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 16,
+          "calls": 16,
+          "own_seconds": 0.068065634,
+          "cumulative_seconds": 0.068065634
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 2,
+          "calls": 2,
+          "own_seconds": 5.21e-06,
+          "cumulative_seconds": 3.0176e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 177828,
+        "unique_file_bytes": 177828,
+        "allocated_bytes_unique_inodes": 258048,
+        "file_names": 14,
+        "unique_inodes": 27
+      },
+      "codec_calls": {}
+    },
+    "snapshot": {
+      "costs": {
+        "cpu_user_s": 3.095230000000001,
+        "cpu_system_s": 0.01299900000000001,
+        "io": {
+          "rchar": 6507297,
+          "wchar": 2838898,
+          "syscr": 204,
+          "syscw": 722,
+          "read_bytes": 0,
+          "write_bytes": 2945024,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 1003,
+        "state_decode_seconds": 0.8960155750173726,
+        "file_fsync_count": 6,
+        "directory_fsync_count": 11,
+        "file_fsync_seconds": 0.02704604798782384,
+        "directory_fsync_seconds": 0.016886648983927444
+      },
+      "started_unix_s": 1792837671.8615055,
+      "finished_unix_s": 1792837675.357899,
+      "elapsed_s": 3.4963933170001837,
+      "pid": 578531,
+      "rss_before_mb": 311.4296875,
+      "rss_after_mb": 312.1875,
+      "process_peak_rss_mb": 311.265625,
+      "available_ram_before_mb": 74732.69140625,
+      "available_ram_after_mb": 74718.24609375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 17,
+          "calls": 17,
+          "own_seconds": 0.043902892000000006,
+          "cumulative_seconds": 0.043902892000000006
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 19,
+          "calls": 19,
+          "own_seconds": 0.000159562,
+          "cumulative_seconds": 0.0027490310000000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.00011204800000000001,
+          "cumulative_seconds": 0.002741208
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000147557,
+          "cumulative_seconds": 0.521595793
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 164,
+          "function": "publish_directory_if_absent",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000120187,
+          "cumulative_seconds": 0.008749841000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 8.133e-06,
+          "cumulative_seconds": 0.008463803
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 2006,
+          "calls": 2006,
+          "own_seconds": 0.00061457,
+          "cumulative_seconds": 1.777870837
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.00042119200000000003,
+          "cumulative_seconds": 0.894610722
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 1211338,
+        "unique_file_bytes": 1211338,
+        "allocated_bytes_unique_inodes": 1302528,
+        "file_names": 17,
+        "unique_inodes": 31
+      },
+      "codec_calls": {
+        "dump_state_ref": 2006,
+        "load_anchor_ref": 1003
+      }
+    },
+    "snapshot_validation": {
+      "costs": {
+        "cpu_user_s": 1.9880929999999992,
+        "cpu_system_s": 0.009004000000000012,
+        "io": {
+          "rchar": 6654060,
+          "wchar": 1805388,
+          "syscr": 497,
+          "syscw": 573,
+          "read_bytes": 0,
+          "write_bytes": 1904640,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 1003,
+        "state_decode_seconds": 0.8843578459127457,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837675.3635054,
+      "finished_unix_s": 1792837677.7310574,
+      "elapsed_s": 2.3675520079996204,
+      "pid": 578531,
+      "rss_before_mb": 312.1875,
+      "rss_after_mb": 312.1875,
+      "process_peak_rss_mb": 311.265625,
+      "available_ram_before_mb": 74718.24609375,
+      "available_ram_after_mb": 74708.3359375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 13,
+          "calls": 13,
+          "own_seconds": 0.00012514400000000002,
+          "cumulative_seconds": 0.0018391030000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 9.535400000000001e-05,
+          "cumulative_seconds": 0.0025179390000000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000123552,
+          "cumulative_seconds": 2.3249993420000004
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.000316088,
+          "cumulative_seconds": 0.8708307240000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.00039362500000000004,
+          "cumulative_seconds": 0.883083284
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 2567114,
+        "unique_file_bytes": 2567114,
+        "allocated_bytes_unique_inodes": 2666496,
+        "file_names": 18,
+        "unique_inodes": 33
+      },
+      "codec_calls": {
+        "load_anchor_ref": 1003,
+        "dump_state_ref": 1003
+      }
+    },
+    "evaluations": 1001,
+    "requested": 1003,
+    "skipped_terminal": 2,
+    "skipped_certified": 0,
+    "batch_size": 64,
+    "backed_up_nodes": 0,
+    "nodes": 1003,
+    "edges": 1114,
+    "model_path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/model/work/training_publications_v1/objects/385625294bbf485ca311cd01db0c0b61/models/generation_000001/small_mlp",
+    "model_sha256": "03c3efd3169fa46b4293fc1ae8e7f72e9aaf37d6f336fd21f2fd3351f80044e8",
+    "selected_candidate": "small_mlp",
+    "checkpoint_sha256": "5928a9a9a3b6a7ede88a4b906fbaf179c9d141dfa4ed077071db0ff37f9a80a7",
+    "science_sha256": "b287812fe4cd5b14d62d5f9087a32e42d6bf6bc2a8ce44a294600da027358100",
+    "link_iteration_sha256": "44cedb3aaf0f7556e4a89c5ae83e702f76bd3a243065fc99ab706a4f4188a169",
+    "rng_sha256": "3a843ee03eb0d00e7c1d6c832f65e09ac3b8492870e958da15e9c2eea2f7e026",
+    "checkpoint_disk": {
+      "apparent_file_bytes": 91955,
+      "unique_file_bytes": 91955,
+      "allocated_bytes_unique_inodes": 131072,
+      "file_names": 7,
+      "unique_inodes": 13
+    },
+    "snapshot_disk": {
+      "apparent_file_bytes": 1033510,
+      "unique_file_bytes": 1033510,
+      "allocated_bytes_unique_inodes": 1044480,
+      "file_names": 3,
+      "unique_inodes": 4
+    },
+    "temporary_disk": {
+      "apparent_file_bytes": 2567114,
+      "unique_file_bytes": 2567114,
+      "allocated_bytes_unique_inodes": 2666496,
+      "file_names": 18,
+      "unique_inodes": 33
+    },
+    "snapshot_stats": {
+      "new_state_encodings": 1003,
+      "copied_records": 0,
+      "state_encoding_s": 2.719117188862583,
+      "state_copy_s": 0.0,
+      "updates_s": 0.19092307921528118,
+      "source_verification_s": 3.0999945010989904e-07,
+      "validation_hashing_s": 0.5329742489993805,
+      "total_s": 3.4851583409981686,
+      "node_count": 1003,
+      "bytes_written": 1033510
+    },
+    "scientific_commit_performed": false,
+    "cache_phases": [
+      {
+        "wall_seconds": 23.318601569997554,
+        "cpu_seconds": 23.31538,
+        "peak_rss_mib": 308.94921875,
+        "retained": 1003,
+        "cache_hits": 52038,
+        "cache_misses": 1003,
+        "anchor_decodes": 268,
+        "delta_decodes": 735,
+        "canonical_loads": 0,
+        "evictions": 0,
+        "max_retained": 1003,
+        "evaluations": 1001
+      },
+      {
+        "wall_seconds": 21.593868273994303,
+        "cpu_seconds": 21.589942999999998,
+        "peak_rss_mib": 308.94921875,
+        "retained": 1003,
+        "cache_hits": 51038,
+        "cache_misses": 0,
+        "anchor_decodes": 0,
+        "delta_decodes": 0,
+        "canonical_loads": 0,
+        "evictions": 0,
+        "max_retained": 1003,
+        "evaluations": 1001
+      }
+    ],
+    "total_cache_stats": {
+      "hits": 104079,
+      "misses": 1003,
+      "anchors": 2274,
+      "deltas": 735,
+      "canonical_loads": 2006,
+      "max_retained": 1003
+    },
+    "subsequent_growth": {
+      "scientific_sha256": "72137551b934850df0a5062004ad8adac06ae9d9ea4bebbbb05ca763c876e948",
+      "selection": "(607, 19, 'alternating_by_step', 'opened_count_depth_index', 64, 'even', 20, 0.05, 0.023835178893495703, (LinooDepthSelectionRow(depth=19, total_nodes=5, opened_count=1, frontier_count=4, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=20, active=True, selected=True, selection_weight=0.05, selection_probability=0.023835178893495703), LinooDepthSelectionRow(depth=6, total_nodes=112, opened_count=3, frontier_count=109, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=21, active=True, selected=False, selection_weight=0.14285714285714285, selection_probability=0.06810051112427343), LinooDepthSelectionRow(depth=10, total_nodes=50, opened_count=2, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=22, active=True, selected=False, selection_weight=0.09090909090909091, selection_probability=0.04333668889726491), LinooDepthSelectionRow(depth=2, total_nodes=56, opened_count=8, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.3333333333333333, selection_probability=0.15890119262330468), LinooDepthSelectionRow(depth=7, total_nodes=61, opened_count=3, frontier_count=58, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.125, selection_probability=0.05958794723373926), LinooDepthSelectionRow(depth=11, total_nodes=32, opened_count=2, frontier_count=30, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.08333333333333333, selection_probability=0.03972529815582617), LinooDepthSelectionRow(depth=4, total_nodes=160, opened_count=5, frontier_count=155, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=25, active=True, selected=False, selection_weight=0.2, selection_probability=0.09534071557398281), LinooDepthSelectionRow(depth=8, total_nodes=59, opened_count=3, frontier_count=56, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=27, active=True, selected=False, selection_weight=0.1111111111111111, selection_probability=0.05296706420776823), LinooDepthSelectionRow(depth=3, total_nodes=164, opened_count=7, frontier_count=157, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=28, active=True, selected=False, selection_weight=0.25, selection_probability=0.11917589446747852), LinooDepthSelectionRow(depth=13, total_nodes=50, opened_count=2, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=28, active=True, selected=False, selection_weight=0.07142857142857142, selection_probability=0.034050255562136714), LinooDepthSelectionRow(depth=5, total_nodes=106, opened_count=5, frontier_count=101, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.16666666666666666, selection_probability=0.07945059631165234), LinooDepthSelectionRow(depth=9, total_nodes=52, opened_count=3, frontier_count=49, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.1, selection_probability=0.047670357786991406), LinooDepthSelectionRow(depth=14, total_nodes=24, opened_count=2, frontier_count=22, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.06666666666666667, selection_probability=0.031780238524660935), LinooDepthSelectionRow(depth=15, total_nodes=20, opened_count=2, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=32, active=True, selected=False, selection_weight=0.0625, selection_probability=0.02979397361686963), LinooDepthSelectionRow(depth=16, total_nodes=16, opened_count=2, frontier_count=14, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=34, active=True, selected=False, selection_weight=0.058823529411764705, selection_probability=0.028041386933524357), LinooDepthSelectionRow(depth=17, total_nodes=13, opened_count=2, frontier_count=11, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=36, active=True, selected=False, selection_weight=0.05555555555555555, selection_probability=0.026483532103884114), LinooDepthSelectionRow(depth=18, total_nodes=10, opened_count=2, frontier_count=8, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=38, active=True, selected=False, selection_weight=0.05263157894736842, selection_probability=0.02508966199315337), LinooDepthSelectionRow(depth=12, total_nodes=30, opened_count=4, frontier_count=26, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=52, active=True, selected=False, selection_weight=0.07692307692307693, selection_probability=0.03666950598999339), LinooDepthSelectionRow(depth=0, total_nodes=1, opened_count=1, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=1, total_nodes=4, opened_count=4, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=20, total_nodes=2, opened_count=0, frontier_count=0, terminal_count=2, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None)))",
+      "rng_sha256": "9d900d5e694564ab798d0c3e0bdb73a4704b451f4f83c59ed58917f36fa09d32"
+    },
+    "peak_process_rss_mib": 311.265625
+  },
+  "candidate1000": {
+    "mode": "refresh",
+    "requested_nodes": 1000,
+    "cuda_available": false,
+    "source_verification": {
+      "costs": {
+        "cpu_user_s": 0.0009050000000003777,
+        "cpu_system_s": 1.8000000000004124e-05,
+        "io": {
+          "rchar": 85979,
+          "wchar": 0,
+          "syscr": 23,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837681.1047015,
+      "finished_unix_s": 1792837681.1057518,
+      "elapsed_s": 0.0010555820044828579,
+      "pid": 578627,
+      "rss_before_mb": 291.609375,
+      "rss_after_mb": 291.609375,
+      "process_peak_rss_mb": 289.75,
+      "available_ram_before_mb": 74702.9609375,
+      "available_ram_after_mb": 74702.9609375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 3.7074000000000005e-05,
+          "cumulative_seconds": 0.000124454
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 95,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 1.2767000000000002e-05,
+          "cumulative_seconds": 0.00017436800000000002
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restore": {
+      "costs": {
+        "cpu_user_s": 0.23385600000000029,
+        "cpu_system_s": 0.001006999999999994,
+        "io": {
+          "rchar": 89632,
+          "wchar": 0,
+          "syscr": 36,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837681.1066477,
+      "finished_unix_s": 1792837681.3416133,
+      "elapsed_s": 0.23496566899848403,
+      "pid": 578627,
+      "rss_before_mb": 291.6171875,
+      "rss_after_mb": 299.87109375,
+      "process_peak_rss_mb": 298.0546875,
+      "available_ram_before_mb": 74702.9609375,
+      "available_ram_after_mb": 74705.19921875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restored_link_iteration_sha256": "44cedb3aaf0f7556e4a89c5ae83e702f76bd3a243065fc99ab706a4f4188a169",
+    "ordered_link_parity": false,
+    "accepted_training_verification": {
+      "costs": {
+        "cpu_user_s": 0.004817000000000071,
+        "cpu_system_s": 7.999999999994123e-06,
+        "io": {
+          "rchar": 155343,
+          "wchar": 0,
+          "syscr": 43,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 1,
+        "directory_fsync_count": 2,
+        "file_fsync_seconds": 0.00850138399982825,
+        "directory_fsync_seconds": 0.008928736999223474
+      },
+      "started_unix_s": 1792837681.3551235,
+      "finished_unix_s": 1792837681.3774705,
+      "elapsed_s": 0.022346892998029944,
+      "pid": 578627,
+      "rss_before_mb": 300.0078125,
+      "rss_after_mb": 300.015625,
+      "process_peak_rss_mb": 298.2421875,
+      "available_ram_before_mb": 74705.19921875,
+      "available_ram_after_mb": 74705.12890625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.017413027,
+          "cumulative_seconds": 0.017413027
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 5.7022000000000004e-05,
+          "cumulative_seconds": 0.00013790000000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 3.677e-06,
+          "cumulative_seconds": 2.1891e-05
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 95,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 1.6278000000000002e-05,
+          "cumulative_seconds": 0.000215805
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "model_loading": {
+      "costs": {
+        "cpu_user_s": 0.004018000000000299,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 80261,
+          "wchar": 0,
+          "syscr": 57,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837681.3794534,
+      "finished_unix_s": 1792837681.3836002,
+      "elapsed_s": 0.004146516999753658,
+      "pid": 578627,
+      "rss_before_mb": 300.078125,
+      "rss_after_mb": 303.20703125,
+      "process_peak_rss_mb": 301.4296875,
+      "available_ram_before_mb": 74705.12890625,
+      "available_ram_after_mb": 74705.12890625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "inference": {
+      "costs": {
+        "cpu_user_s": 46.378570999999994,
+        "cpu_system_s": 0.002242999999999995,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837681.3853505,
+      "finished_unix_s": 1792837727.7754076,
+      "elapsed_s": 46.39005749199714,
+      "pid": 578627,
+      "rss_before_mb": 303.2421875,
+      "rss_after_mb": 306.8203125,
+      "process_peak_rss_mb": 305.00390625,
+      "available_ram_before_mb": 74705.12890625,
+      "available_ram_after_mb": 74730.68359375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {
+        "load_anchor_ref": 553,
+        "load_child_from_delta": 1512
+      }
+    },
+    "backup": {
+      "costs": {
+        "cpu_user_s": 6.600000000389628e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837727.7781973,
+      "finished_unix_s": 1792837727.7783525,
+      "elapsed_s": 0.0001551809982629493,
+      "pid": 578627,
+      "rss_before_mb": 306.8203125,
+      "rss_after_mb": 306.8203125,
+      "process_peak_rss_mb": 305.00390625,
+      "available_ram_before_mb": 74730.24609375,
+      "available_ram_after_mb": 74730.24609375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "selector": {
+      "costs": {
+        "cpu_user_s": 4.899999999707916e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837727.7786372,
+      "finished_unix_s": 1792837727.7787364,
+      "elapsed_s": 9.930599480867386e-05,
+      "pid": 578627,
+      "rss_before_mb": 306.8203125,
+      "rss_after_mb": 306.8203125,
+      "process_peak_rss_mb": 305.00390625,
+      "available_ram_before_mb": 74730.24609375,
+      "available_ram_after_mb": 74730.24609375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 85873,
+        "unique_file_bytes": 85873,
+        "allocated_bytes_unique_inodes": 126976,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "checkpoint": {
+      "costs": {
+        "cpu_user_s": 0.2676400000000001,
+        "cpu_system_s": 0.0029990000000000017,
+        "io": {
+          "rchar": 2055,
+          "wchar": 91955,
+          "syscr": 16,
+          "syscw": 7,
+          "read_bytes": 0,
+          "write_bytes": 106496,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 7,
+        "directory_fsync_count": 9,
+        "file_fsync_seconds": 0.06903818999126088,
+        "directory_fsync_seconds": 2.0919993403367698e-05
+      },
+      "started_unix_s": 1792837727.7790136,
+      "finished_unix_s": 1792837728.1185308,
+      "elapsed_s": 0.33951759099727497,
+      "pid": 578627,
+      "rss_before_mb": 306.8203125,
+      "rss_after_mb": 307.1328125,
+      "process_peak_rss_mb": 306.2890625,
+      "available_ram_before_mb": 74730.24609375,
+      "available_ram_after_mb": 74730.09765625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 16,
+          "calls": 16,
+          "own_seconds": 0.069010179,
+          "cumulative_seconds": 0.069010179
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 2,
+          "calls": 2,
+          "own_seconds": 4.988e-06,
+          "cumulative_seconds": 2.9645e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 177828,
+        "unique_file_bytes": 177828,
+        "allocated_bytes_unique_inodes": 258048,
+        "file_names": 14,
+        "unique_inodes": 27
+      },
+      "codec_calls": {}
+    },
+    "snapshot": {
+      "costs": {
+        "cpu_user_s": 5.125849000000002,
+        "cpu_system_s": 0.010005000000000014,
+        "io": {
+          "rchar": 6507293,
+          "wchar": 2838898,
+          "syscr": 204,
+          "syscw": 722,
+          "read_bytes": 0,
+          "write_bytes": 2945024,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 1003,
+        "state_decode_seconds": 0.9034974439709913,
+        "file_fsync_count": 6,
+        "directory_fsync_count": 11,
+        "file_fsync_seconds": 0.02737739001167938,
+        "directory_fsync_seconds": 0.016797272000985686
+      },
+      "started_unix_s": 1792837728.1214216,
+      "finished_unix_s": 1792837733.6418643,
+      "elapsed_s": 5.520442865003133,
+      "pid": 578627,
+      "rss_before_mb": 307.1328125,
+      "rss_after_mb": 307.8828125,
+      "process_peak_rss_mb": 306.33984375,
+      "available_ram_before_mb": 74729.65625,
+      "available_ram_after_mb": 74739.3125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 17,
+          "calls": 17,
+          "own_seconds": 0.044127071000000004,
+          "cumulative_seconds": 0.044127071000000004
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 19,
+          "calls": 19,
+          "own_seconds": 0.00013365300000000002,
+          "cumulative_seconds": 0.002516575
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 9.973000000000001e-05,
+          "cumulative_seconds": 0.0024416050000000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.00014295,
+          "cumulative_seconds": 0.522816512
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 165,
+          "function": "publish_directory_if_absent",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000103313,
+          "cumulative_seconds": 0.008811477
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 1.4234000000000001e-05,
+          "cumulative_seconds": 0.008487629
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 2006,
+          "calls": 2006,
+          "own_seconds": 0.000654368,
+          "cumulative_seconds": 1.814126144
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.000488164,
+          "cumulative_seconds": 0.9018919910000001
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 1211338,
+        "unique_file_bytes": 1211338,
+        "allocated_bytes_unique_inodes": 1302528,
+        "file_names": 17,
+        "unique_inodes": 31
+      },
+      "codec_calls": {
+        "dump_state_ref": 2006,
+        "load_anchor_ref": 1267,
+        "load_child_from_delta": 716
+      }
+    },
+    "snapshot_validation": {
+      "costs": {
+        "cpu_user_s": 1.9767810000000026,
+        "cpu_system_s": 0.005997999999999976,
+        "io": {
+          "rchar": 6654060,
+          "wchar": 1805388,
+          "syscr": 497,
+          "syscw": 573,
+          "read_bytes": 0,
+          "write_bytes": 1904640,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 1003,
+        "state_decode_seconds": 0.8825982340058545,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837733.6477456,
+      "finished_unix_s": 1792837736.0098577,
+      "elapsed_s": 2.3621122900003684,
+      "pid": 578627,
+      "rss_before_mb": 307.8828125,
+      "rss_after_mb": 307.8828125,
+      "process_peak_rss_mb": 306.33984375,
+      "available_ram_before_mb": 74739.6953125,
+      "available_ram_after_mb": 74748.91796875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 13,
+          "calls": 13,
+          "own_seconds": 9.095300000000001e-05,
+          "cumulative_seconds": 0.0018235240000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.000104683,
+          "cumulative_seconds": 0.002611172
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 9.6272e-05,
+          "cumulative_seconds": 2.318722471
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.000302162,
+          "cumulative_seconds": 0.859119167
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 1003,
+          "calls": 1003,
+          "own_seconds": 0.00040219100000000004,
+          "cumulative_seconds": 0.8813891530000001
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 2567114,
+        "unique_file_bytes": 2567114,
+        "allocated_bytes_unique_inodes": 2666496,
+        "file_names": 18,
+        "unique_inodes": 33
+      },
+      "codec_calls": {
+        "load_anchor_ref": 1003,
+        "dump_state_ref": 1003
+      }
+    },
+    "evaluations": 1001,
+    "requested": 1003,
+    "skipped_terminal": 2,
+    "skipped_certified": 0,
+    "batch_size": 64,
+    "backed_up_nodes": 0,
+    "nodes": 1003,
+    "edges": 1114,
+    "model_path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/model/work/training_publications_v1/objects/385625294bbf485ca311cd01db0c0b61/models/generation_000001/small_mlp",
+    "model_sha256": "03c3efd3169fa46b4293fc1ae8e7f72e9aaf37d6f336fd21f2fd3351f80044e8",
+    "selected_candidate": "small_mlp",
+    "checkpoint_sha256": "5928a9a9a3b6a7ede88a4b906fbaf179c9d141dfa4ed077071db0ff37f9a80a7",
+    "science_sha256": "b287812fe4cd5b14d62d5f9087a32e42d6bf6bc2a8ce44a294600da027358100",
+    "link_iteration_sha256": "44cedb3aaf0f7556e4a89c5ae83e702f76bd3a243065fc99ab706a4f4188a169",
+    "rng_sha256": "3a843ee03eb0d00e7c1d6c832f65e09ac3b8492870e958da15e9c2eea2f7e026",
+    "checkpoint_disk": {
+      "apparent_file_bytes": 91955,
+      "unique_file_bytes": 91955,
+      "allocated_bytes_unique_inodes": 131072,
+      "file_names": 7,
+      "unique_inodes": 13
+    },
+    "snapshot_disk": {
+      "apparent_file_bytes": 1033510,
+      "unique_file_bytes": 1033510,
+      "allocated_bytes_unique_inodes": 1044480,
+      "file_names": 3,
+      "unique_inodes": 4
+    },
+    "temporary_disk": {
+      "apparent_file_bytes": 2567114,
+      "unique_file_bytes": 2567114,
+      "allocated_bytes_unique_inodes": 2666496,
+      "file_names": 18,
+      "unique_inodes": 33
+    },
+    "snapshot_stats": {
+      "new_state_encodings": 1003,
+      "copied_records": 0,
+      "state_encoding_s": 4.730940923014714,
+      "state_copy_s": 0.0,
+      "updates_s": 0.202497155063611,
+      "source_verification_s": 3.5099947126582265e-07,
+      "validation_hashing_s": 0.5333510039999965,
+      "total_s": 5.509012640999572,
+      "node_count": 1003,
+      "bytes_written": 1033510
+    },
+    "scientific_commit_performed": false,
+    "cache_phases": [
+      {
+        "wall_seconds": 23.099253722997673,
+        "cpu_seconds": 23.095596999999998,
+        "peak_rss_mib": 305.00390625,
+        "retained": 256,
+        "cache_hits": 52026,
+        "cache_misses": 1047,
+        "anchor_decodes": 280,
+        "delta_decodes": 767,
+        "canonical_loads": 0,
+        "evictions": 791,
+        "max_retained": 256,
+        "evaluations": 1001
+      },
+      {
+        "wall_seconds": 23.290510318001907,
+        "cpu_seconds": 23.285075,
+        "peak_rss_mib": 305.00390625,
+        "retained": 256,
+        "cache_hits": 50765,
+        "cache_misses": 1018,
+        "anchor_decodes": 273,
+        "delta_decodes": 745,
+        "canonical_loads": 0,
+        "evictions": 1018,
+        "max_retained": 256,
+        "evaluations": 1001
+      }
+    ],
+    "total_cache_stats": {
+      "hits": 103530,
+      "misses": 3045,
+      "anchors": 2823,
+      "deltas": 2228,
+      "canonical_loads": 2006,
+      "max_retained": 256
+    },
+    "subsequent_growth": {
+      "scientific_sha256": "72137551b934850df0a5062004ad8adac06ae9d9ea4bebbbb05ca763c876e948",
+      "selection": "(607, 19, 'alternating_by_step', 'opened_count_depth_index', 64, 'even', 20, 0.05, 0.023835178893495703, (LinooDepthSelectionRow(depth=19, total_nodes=5, opened_count=1, frontier_count=4, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=20, active=True, selected=True, selection_weight=0.05, selection_probability=0.023835178893495703), LinooDepthSelectionRow(depth=6, total_nodes=112, opened_count=3, frontier_count=109, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=21, active=True, selected=False, selection_weight=0.14285714285714285, selection_probability=0.06810051112427343), LinooDepthSelectionRow(depth=10, total_nodes=50, opened_count=2, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=22, active=True, selected=False, selection_weight=0.09090909090909091, selection_probability=0.04333668889726491), LinooDepthSelectionRow(depth=2, total_nodes=56, opened_count=8, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.3333333333333333, selection_probability=0.15890119262330468), LinooDepthSelectionRow(depth=7, total_nodes=61, opened_count=3, frontier_count=58, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.125, selection_probability=0.05958794723373926), LinooDepthSelectionRow(depth=11, total_nodes=32, opened_count=2, frontier_count=30, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=24, active=True, selected=False, selection_weight=0.08333333333333333, selection_probability=0.03972529815582617), LinooDepthSelectionRow(depth=4, total_nodes=160, opened_count=5, frontier_count=155, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=25, active=True, selected=False, selection_weight=0.2, selection_probability=0.09534071557398281), LinooDepthSelectionRow(depth=8, total_nodes=59, opened_count=3, frontier_count=56, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=27, active=True, selected=False, selection_weight=0.1111111111111111, selection_probability=0.05296706420776823), LinooDepthSelectionRow(depth=3, total_nodes=164, opened_count=7, frontier_count=157, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=28, active=True, selected=False, selection_weight=0.25, selection_probability=0.11917589446747852), LinooDepthSelectionRow(depth=13, total_nodes=50, opened_count=2, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=28, active=True, selected=False, selection_weight=0.07142857142857142, selection_probability=0.034050255562136714), LinooDepthSelectionRow(depth=5, total_nodes=106, opened_count=5, frontier_count=101, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.16666666666666666, selection_probability=0.07945059631165234), LinooDepthSelectionRow(depth=9, total_nodes=52, opened_count=3, frontier_count=49, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.1, selection_probability=0.047670357786991406), LinooDepthSelectionRow(depth=14, total_nodes=24, opened_count=2, frontier_count=22, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=30, active=True, selected=False, selection_weight=0.06666666666666667, selection_probability=0.031780238524660935), LinooDepthSelectionRow(depth=15, total_nodes=20, opened_count=2, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=32, active=True, selected=False, selection_weight=0.0625, selection_probability=0.02979397361686963), LinooDepthSelectionRow(depth=16, total_nodes=16, opened_count=2, frontier_count=14, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=34, active=True, selected=False, selection_weight=0.058823529411764705, selection_probability=0.028041386933524357), LinooDepthSelectionRow(depth=17, total_nodes=13, opened_count=2, frontier_count=11, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=36, active=True, selected=False, selection_weight=0.05555555555555555, selection_probability=0.026483532103884114), LinooDepthSelectionRow(depth=18, total_nodes=10, opened_count=2, frontier_count=8, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=38, active=True, selected=False, selection_weight=0.05263157894736842, selection_probability=0.02508966199315337), LinooDepthSelectionRow(depth=12, total_nodes=30, opened_count=4, frontier_count=26, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=52, active=True, selected=False, selection_weight=0.07692307692307693, selection_probability=0.03666950598999339), LinooDepthSelectionRow(depth=0, total_nodes=1, opened_count=1, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=1, total_nodes=4, opened_count=4, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=20, total_nodes=2, opened_count=0, frontier_count=0, terminal_count=2, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None)))",
+      "rng_sha256": "9d900d5e694564ab798d0c3e0bdb73a4704b451f4f83c59ed58917f36fa09d32"
+    },
+    "peak_process_rss_mib": 306.33984375
+  },
+  "control5000": {
+    "mode": "refresh",
+    "requested_nodes": 5000,
+    "cuda_available": false,
+    "source_verification": {
+      "costs": {
+        "cpu_user_s": 0.0001129999999998077,
+        "cpu_system_s": 0.0010040000000000049,
+        "io": {
+          "rchar": 422124,
+          "wchar": 0,
+          "syscr": 23,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837832.0086777,
+      "finished_unix_s": 1792837832.0099385,
+      "elapsed_s": 0.001260263001313433,
+      "pid": 578918,
+      "rss_before_mb": 291.65234375,
+      "rss_after_mb": 291.65234375,
+      "process_peak_rss_mb": 290.21484375,
+      "available_ram_before_mb": 74743.4140625,
+      "available_ram_after_mb": 74743.4140625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 3.7138e-05,
+          "cumulative_seconds": 0.000287922
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 94,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 1.3443000000000002e-05,
+          "cumulative_seconds": 0.000341373
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restore": {
+      "costs": {
+        "cpu_user_s": 0.9258500000000005,
+        "cpu_system_s": 0.008980000000000002,
+        "io": {
+          "rchar": 425791,
+          "wchar": 0,
+          "syscr": 38,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837832.010926,
+      "finished_unix_s": 1792837832.9459126,
+      "elapsed_s": 0.9349861590017099,
+      "pid": 578918,
+      "rss_before_mb": 291.65234375,
+      "rss_after_mb": 321.109375,
+      "process_peak_rss_mb": 322.08984375,
+      "available_ram_before_mb": 74743.4140625,
+      "available_ram_after_mb": 74717.3984375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restored_link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+    "ordered_link_parity": false,
+    "accepted_training_verification": {
+      "costs": {
+        "cpu_user_s": 0.004082999999999615,
+        "cpu_system_s": 0.0010229999999999961,
+        "io": {
+          "rchar": 155343,
+          "wchar": 0,
+          "syscr": 43,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 1,
+        "directory_fsync_count": 2,
+        "file_fsync_seconds": 0.008581608002714347,
+        "directory_fsync_seconds": 0.008895309001673013
+      },
+      "started_unix_s": 1792837833.0061412,
+      "finished_unix_s": 1792837833.0288467,
+      "elapsed_s": 0.022705412004143,
+      "pid": 578918,
+      "rss_before_mb": 321.11328125,
+      "rss_after_mb": 321.1171875,
+      "process_peak_rss_mb": 322.08984375,
+      "available_ram_before_mb": 74716.9765625,
+      "available_ram_after_mb": 74716.7109375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.017450627,
+          "cumulative_seconds": 0.017450627
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 5.9498000000000005e-05,
+          "cumulative_seconds": 0.00014661600000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 94,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 1.7958e-05,
+          "cumulative_seconds": 0.00023223700000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 3.838e-06,
+          "cumulative_seconds": 2.4066000000000003e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "model_loading": {
+      "costs": {
+        "cpu_user_s": 0.004367000000000232,
+        "cpu_system_s": 7.000000000007001e-06,
+        "io": {
+          "rchar": 80255,
+          "wchar": 0,
+          "syscr": 57,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837833.0318756,
+      "finished_unix_s": 1792837833.0363848,
+      "elapsed_s": 0.004509200996835716,
+      "pid": 578918,
+      "rss_before_mb": 321.2421875,
+      "rss_after_mb": 324.2421875,
+      "process_peak_rss_mb": 322.85546875,
+      "available_ram_before_mb": 74716.7109375,
+      "available_ram_after_mb": 74716.7109375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "inference": {
+      "costs": {
+        "cpu_user_s": 254.00564699999998,
+        "cpu_system_s": 0.03479299999999999,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792837833.0380821,
+      "finished_unix_s": 1792838087.1148076,
+      "elapsed_s": 254.0767256310064,
+      "pid": 578918,
+      "rss_before_mb": 324.2421875,
+      "rss_after_mb": 396.94140625,
+      "process_peak_rss_mb": 395.43359375,
+      "available_ram_before_mb": 74716.7109375,
+      "available_ram_after_mb": 74712.66015625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {
+        "load_anchor_ref": 1372,
+        "load_child_from_delta": 3641
+      }
+    },
+    "backup": {
+      "costs": {
+        "cpu_user_s": 6.500000000642103e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838087.1176054,
+      "finished_unix_s": 1792838087.117767,
+      "elapsed_s": 0.00016158400103449821,
+      "pid": 578918,
+      "rss_before_mb": 396.94140625,
+      "rss_after_mb": 396.94140625,
+      "process_peak_rss_mb": 395.43359375,
+      "available_ram_before_mb": 74712.22265625,
+      "available_ram_after_mb": 74712.22265625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "selector": {
+      "costs": {
+        "cpu_user_s": 0.0,
+        "cpu_system_s": 4.999999999999449e-05,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838087.1180503,
+      "finished_unix_s": 1792838087.1181483,
+      "elapsed_s": 9.807400056160986e-05,
+      "pid": 578918,
+      "rss_before_mb": 396.94140625,
+      "rss_after_mb": 396.94140625,
+      "process_peak_rss_mb": 395.43359375,
+      "available_ram_before_mb": 74712.22265625,
+      "available_ram_after_mb": 74712.22265625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "checkpoint": {
+      "costs": {
+        "cpu_user_s": 1.0446159999999622,
+        "cpu_system_s": 0.010287999999999992,
+        "io": {
+          "rchar": 2069,
+          "wchar": 453979,
+          "syscr": 16,
+          "syscw": 7,
+          "read_bytes": 0,
+          "write_bytes": 466944,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 7,
+        "directory_fsync_count": 9,
+        "file_fsync_seconds": 0.07173709099151893,
+        "directory_fsync_seconds": 1.7431993910577148e-05
+      },
+      "started_unix_s": 1792838087.1184144,
+      "finished_unix_s": 1792838088.2515643,
+      "elapsed_s": 1.1331504219997441,
+      "pid": 578918,
+      "rss_before_mb": 396.94140625,
+      "rss_after_mb": 403.35546875,
+      "process_peak_rss_mb": 409.97265625,
+      "available_ram_before_mb": 74712.22265625,
+      "available_ram_after_mb": 74697.65625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 16,
+          "calls": 16,
+          "own_seconds": 0.07164474800000001,
+          "cumulative_seconds": 0.07164474800000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 2,
+          "calls": 2,
+          "own_seconds": 5.3910000000000006e-06,
+          "cumulative_seconds": 2.7001e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 875997,
+        "unique_file_bytes": 875997,
+        "allocated_bytes_unique_inodes": 954368,
+        "file_names": 14,
+        "unique_inodes": 27
+      },
+      "codec_calls": {}
+    },
+    "snapshot": {
+      "costs": {
+        "cpu_user_s": 42.88774599999999,
+        "cpu_system_s": 0.07100399999999998,
+        "io": {
+          "rchar": 60081562,
+          "wchar": 21159568,
+          "syscr": 6183,
+          "syscw": 7340,
+          "read_bytes": 4096,
+          "write_bytes": 21680128,
+          "cancelled_write_bytes": 3567616
+        }
+      },
+      "counters": {
+        "state_decodes": 5013,
+        "state_decode_seconds": 12.988281459874997,
+        "file_fsync_count": 6,
+        "directory_fsync_count": 11,
+        "file_fsync_seconds": 0.028776708008081187,
+        "directory_fsync_seconds": 0.01826504400378326
+      },
+      "started_unix_s": 1792838088.2551634,
+      "finished_unix_s": 1792838132.4363081,
+      "elapsed_s": 44.18114547600271,
+      "pid": 578918,
+      "rss_before_mb": 403.35546875,
+      "rss_after_mb": 404.10546875,
+      "process_peak_rss_mb": 409.97265625,
+      "available_ram_before_mb": 74697.65625,
+      "available_ram_after_mb": 74691.796875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 17,
+          "calls": 17,
+          "own_seconds": 0.046955323,
+          "cumulative_seconds": 0.046955323
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 19,
+          "calls": 19,
+          "own_seconds": 0.00019970100000000002,
+          "cumulative_seconds": 0.01365875
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 164,
+          "function": "publish_directory_if_absent",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.00015801700000000002,
+          "cumulative_seconds": 0.009857402000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.00015199,
+          "cumulative_seconds": 2.0813243530000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.00013639900000000002,
+          "cumulative_seconds": 0.01126009
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 141,
+          "function": "sync_directory",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 3.0095000000000002e-05,
+          "cumulative_seconds": 0.009403438
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 10026,
+          "calls": 10026,
+          "own_seconds": 0.0033796250000000003,
+          "cumulative_seconds": 27.546382751000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.002661084,
+          "cumulative_seconds": 12.979544006000001
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 6957505,
+        "unique_file_bytes": 6957505,
+        "allocated_bytes_unique_inodes": 7049216,
+        "file_names": 17,
+        "unique_inodes": 31
+      },
+      "codec_calls": {
+        "dump_state_ref": 10026,
+        "load_anchor_ref": 5013
+      }
+    },
+    "snapshot_validation": {
+      "costs": {
+        "cpu_user_s": 28.237729,
+        "cpu_system_s": 0.03799400000000003,
+        "io": {
+          "rchar": 61586481,
+          "wchar": 15078060,
+          "syscr": 8021,
+          "syscw": 6354,
+          "read_bytes": 0,
+          "write_bytes": 15581184,
+          "cancelled_write_bytes": 3567616
+        }
+      },
+      "counters": {
+        "state_decodes": 5013,
+        "state_decode_seconds": 13.003122736838122,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838132.4425268,
+      "finished_unix_s": 1792838162.0778167,
+      "elapsed_s": 29.635290687001543,
+      "pid": 578918,
+      "rss_before_mb": 404.10546875,
+      "rss_after_mb": 404.10546875,
+      "process_peak_rss_mb": 409.97265625,
+      "available_ram_before_mb": 74691.796875,
+      "available_ram_after_mb": 74682.1953125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 13,
+          "calls": 13,
+          "own_seconds": 0.000135997,
+          "cumulative_seconds": 0.010094315000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000162193,
+          "cumulative_seconds": 29.449232309000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.00012544000000000002,
+          "cumulative_seconds": 0.01104809
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.0018430430000000002,
+          "cumulative_seconds": 13.972213139
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.0023182520000000002,
+          "cumulative_seconds": 12.995479412000002
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 14719425,
+        "unique_file_bytes": 14719425,
+        "allocated_bytes_unique_inodes": 14819328,
+        "file_names": 18,
+        "unique_inodes": 33
+      },
+      "codec_calls": {
+        "load_anchor_ref": 5013,
+        "dump_state_ref": 5013
+      }
+    },
+    "evaluations": 5005,
+    "requested": 5013,
+    "skipped_terminal": 8,
+    "skipped_certified": 0,
+    "batch_size": 64,
+    "backed_up_nodes": 0,
+    "nodes": 5013,
+    "edges": 5931,
+    "model_path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/model/work/training_publications_v1/objects/385625294bbf485ca311cd01db0c0b61/models/generation_000001/small_mlp",
+    "model_sha256": "03c3efd3169fa46b4293fc1ae8e7f72e9aaf37d6f336fd21f2fd3351f80044e8",
+    "selected_candidate": "small_mlp",
+    "checkpoint_sha256": "f75bfd25e986651dbd78edf7c9cd3a502148a82939cdddd43651b02598b141d2",
+    "science_sha256": "0df973307bca003bc0f7e7f1fc2a251db8c5b4b6c42224fa9112c83be68a1450",
+    "link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+    "rng_sha256": "7b22ced71ee8a1496e89fe9c9f2e69828dd04eed4e194b0d6930f77ba9d51883",
+    "checkpoint_disk": {
+      "apparent_file_bytes": 453979,
+      "unique_file_bytes": 453979,
+      "allocated_bytes_unique_inodes": 491520,
+      "file_names": 7,
+      "unique_inodes": 13
+    },
+    "snapshot_disk": {
+      "apparent_file_bytes": 6081508,
+      "unique_file_bytes": 6081508,
+      "allocated_bytes_unique_inodes": 6094848,
+      "file_names": 3,
+      "unique_inodes": 4
+    },
+    "temporary_disk": {
+      "apparent_file_bytes": 14719425,
+      "unique_file_bytes": 14719425,
+      "allocated_bytes_unique_inodes": 14819328,
+      "file_names": 18,
+      "unique_inodes": 33
+    },
+    "snapshot_stats": {
+      "new_state_encodings": 5013,
+      "copied_records": 0,
+      "state_encoding_s": 40.908706584901665,
+      "state_copy_s": 0.0,
+      "updates_s": 1.1082431702525355,
+      "source_verification_s": 3.0099909054115415e-07,
+      "validation_hashing_s": 2.100491785997292,
+      "total_s": 44.168205116002355,
+      "node_count": 5013,
+      "bytes_written": 6081508
+    },
+    "scientific_commit_performed": false,
+    "cache_phases": [
+      {
+        "wall_seconds": 132.85079470300116,
+        "cpu_seconds": 132.829665,
+        "peak_rss_mib": 395.05859375,
+        "retained": 5013,
+        "cache_hits": 262568,
+        "cache_misses": 5013,
+        "anchor_decodes": 1372,
+        "delta_decodes": 3641,
+        "canonical_loads": 0,
+        "evictions": 0,
+        "max_retained": 5013,
+        "evaluations": 5005
+      },
+      {
+        "wall_seconds": 121.22562083400408,
+        "cpu_seconds": 121.21062000000002,
+        "peak_rss_mib": 395.43359375,
+        "retained": 5013,
+        "cache_hits": 254834,
+        "cache_misses": 0,
+        "anchor_decodes": 0,
+        "delta_decodes": 0,
+        "canonical_loads": 0,
+        "evictions": 0,
+        "max_retained": 5013,
+        "evaluations": 5005
+      }
+    ],
+    "total_cache_stats": {
+      "hits": 522415,
+      "misses": 5013,
+      "anchors": 11398,
+      "deltas": 3641,
+      "canonical_loads": 10026,
+      "max_retained": 5013
+    },
+    "subsequent_growth": {
+      "scientific_sha256": "846a30a9ca87fa5d5f33fb1f116e5bd04c3fe860be9885cf7f2917d231c33012",
+      "selection": "(5008, 39, 'alternating_by_step', 'opened_count_depth_index', 368, 'even', 80, 0.025, 0.00782163210849969, (LinooDepthSelectionRow(depth=39, total_nodes=66, opened_count=2, frontier_count=64, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=80, active=True, selected=True, selection_weight=0.025, selection_probability=0.00782163210849969), LinooDepthSelectionRow(depth=8, total_nodes=316, opened_count=9, frontier_count=307, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=81, active=True, selected=False, selection_weight=0.1111111111111111, selection_probability=0.03476280937110973), LinooDepthSelectionRow(depth=26, total_nodes=23, opened_count=3, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=81, active=True, selected=False, selection_weight=0.037037037037037035, selection_probability=0.011587603123703244), LinooDepthSelectionRow(depth=40, total_nodes=46, opened_count=2, frontier_count=44, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=82, active=True, selected=False, selection_weight=0.024390243902439025, selection_probability=0.007630860593658234), LinooDepthSelectionRow(depth=20, total_nodes=18, opened_count=4, frontier_count=9, terminal_count=5, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.047619047619047616, selection_probability=0.014898346873332743), LinooDepthSelectionRow(depth=27, total_nodes=22, opened_count=3, frontier_count=19, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.03571428571428571, selection_probability=0.011173760154999556), LinooDepthSelectionRow(depth=41, total_nodes=43, opened_count=2, frontier_count=41, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.023809523809523808, selection_probability=0.007449173436666371), LinooDepthSelectionRow(depth=42, total_nodes=43, opened_count=2, frontier_count=41, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=86, active=True, selected=False, selection_weight=0.023255813953488372, selection_probability=0.00727593684511599), LinooDepthSelectionRow(depth=21, total_nodes=15, opened_count=4, frontier_count=10, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=88, active=True, selected=False, selection_weight=0.045454545454545456, selection_probability=0.014221149288181256), LinooDepthSelectionRow(depth=29, total_nodes=40, opened_count=3, frontier_count=37, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=90, active=True, selected=False, selection_weight=0.03333333333333333, selection_probability=0.01042884281133292), LinooDepthSelectionRow(depth=44, total_nodes=53, opened_count=2, frontier_count=51, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=90, active=True, selected=False, selection_weight=0.022222222222222223, selection_probability=0.006952561874221947), LinooDepthSelectionRow(depth=22, total_nodes=23, opened_count=4, frontier_count=19, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=92, active=True, selected=False, selection_weight=0.043478260869565216, selection_probability=0.013602838449564678), LinooDepthSelectionRow(depth=30, total_nodes=36, opened_count=3, frontier_count=33, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=93, active=True, selected=False, selection_weight=0.03225806451612903, selection_probability=0.010092428527096374), LinooDepthSelectionRow(depth=31, total_nodes=35, opened_count=3, frontier_count=32, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=96, active=True, selected=False, selection_weight=0.03125, selection_probability=0.009777040135624613), LinooDepthSelectionRow(depth=47, total_nodes=52, opened_count=2, frontier_count=50, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=96, active=True, selected=False, selection_weight=0.020833333333333332, selection_probability=0.006518026757083075), LinooDepthSelectionRow(depth=48, total_nodes=26, opened_count=2, frontier_count=24, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=98, active=True, selected=False, selection_weight=0.02040816326530612, selection_probability=0.0063850058028568895), LinooDepthSelectionRow(depth=32, total_nodes=40, opened_count=3, frontier_count=37, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=99, active=True, selected=False, selection_weight=0.030303030303030304, selection_probability=0.009480766192120836), LinooDepthSelectionRow(depth=4, total_nodes=542, opened_count=20, frontier_count=522, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.2, selection_probability=0.06257305686799752), LinooDepthSelectionRow(depth=9, total_nodes=160, opened_count=10, frontier_count=150, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.1, selection_probability=0.03128652843399876), LinooDepthSelectionRow(depth=24, total_nodes=33, opened_count=4, frontier_count=29, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.04, selection_probability=0.012514611373599504), LinooDepthSelectionRow(depth=49, total_nodes=22, opened_count=2, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.02, selection_probability=0.006257305686799752), LinooDepthSelectionRow(depth=33, total_nodes=51, opened_count=3, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=102, active=True, selected=False, selection_weight=0.029411764705882353, selection_probability=0.009201920127646694), LinooDepthSelectionRow(depth=50, total_nodes=16, opened_count=2, frontier_count=14, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=102, active=True, selected=False, selection_weight=0.0196078431372549, selection_probability=0.00613461341843113), LinooDepthSelectionRow(depth=25, total_nodes=24, opened_count=4, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=104, active=True, selected=False, selection_weight=0.038461538461538464, selection_probability=0.012033280166922601), LinooDepthSelectionRow(depth=51, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=104, active=True, selected=False, selection_weight=0.019230769230769232, selection_probability=0.0060166400834613006), LinooDepthSelectionRow(depth=34, total_nodes=54, opened_count=3, frontier_count=51, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=105, active=True, selected=False, selection_weight=0.02857142857142857, selection_probability=0.008939008123999646), LinooDepthSelectionRow(depth=3, total_nodes=408, opened_count=27, frontier_count=381, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.25, selection_probability=0.0782163210849969), LinooDepthSelectionRow(depth=5, total_nodes=433, opened_count=18, frontier_count=415, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.16666666666666666, selection_probability=0.0521442140566646), LinooDepthSelectionRow(depth=11, total_nodes=157, opened_count=9, frontier_count=148, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.08333333333333333, selection_probability=0.0260721070283323), LinooDepthSelectionRow(depth=35, total_nodes=64, opened_count=3, frontier_count=61, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.027777777777777776, selection_probability=0.008690702342777433), LinooDepthSelectionRow(depth=53, total_nodes=18, opened_count=2, frontier_count=16, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.018518518518518517, selection_probability=0.005793801561851622), LinooDepthSelectionRow(depth=10, total_nodes=164, opened_count=10, frontier_count=154, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=110, active=True, selected=False, selection_weight=0.09090909090909091, selection_probability=0.02844229857636251), LinooDepthSelectionRow(depth=54, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=110, active=True, selected=False, selection_weight=0.01818181818181818, selection_probability=0.005688459715272502), LinooDepthSelectionRow(depth=36, total_nodes=60, opened_count=3, frontier_count=57, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=111, active=True, selected=False, selection_weight=0.02702702702702703, selection_probability=0.008455818495675341), LinooDepthSelectionRow(depth=13, total_nodes=133, opened_count=8, frontier_count=125, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.07142857142857142, selection_probability=0.022347520309999112), LinooDepthSelectionRow(depth=15, total_nodes=88, opened_count=7, frontier_count=81, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.0625, selection_probability=0.019554080271249226), LinooDepthSelectionRow(depth=55, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.017857142857142856, selection_probability=0.005586880077499778), LinooDepthSelectionRow(depth=2, total_nodes=56, opened_count=38, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.3333333333333333, selection_probability=0.1042884281133292), LinooDepthSelectionRow(depth=18, total_nodes=77, opened_count=6, frontier_count=71, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.05263157894736842, selection_probability=0.016466593912630927), LinooDepthSelectionRow(depth=37, total_nodes=48, opened_count=3, frontier_count=45, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.02631578947368421, selection_probability=0.008233296956315464), LinooDepthSelectionRow(depth=28, total_nodes=25, opened_count=4, frontier_count=21, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=116, active=True, selected=False, selection_weight=0.034482758620689655, selection_probability=0.010788458080689227), LinooDepthSelectionRow(depth=38, total_nodes=57, opened_count=3, frontier_count=54, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=117, active=True, selected=False, selection_weight=0.02564102564102564, selection_probability=0.0080221867779484), LinooDepthSelectionRow(depth=58, total_nodes=12, opened_count=2, frontier_count=10, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=118, active=True, selected=False, selection_weight=0.01694915254237288, selection_probability=0.005302801429491315), LinooDepthSelectionRow(depth=14, total_nodes=94, opened_count=8, frontier_count=86, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=120, active=True, selected=False, selection_weight=0.06666666666666667, selection_probability=0.02085768562266584), LinooDepthSelectionRow(depth=60, total_nodes=5, opened_count=2, frontier_count=3, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=122, active=True, selected=False, selection_weight=0.01639344262295082, selection_probability=0.005128939087540781), LinooDepthSelectionRow(depth=6, total_nodes=399, opened_count=18, frontier_count=381, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=126, active=True, selected=False, selection_weight=0.14285714285714285, selection_probability=0.044695040619998225), LinooDepthSelectionRow(depth=7, total_nodes=378, opened_count=16, frontier_count=362, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=128, active=True, selected=False, selection_weight=0.125, selection_probability=0.03910816054249845), LinooDepthSelectionRow(depth=43, total_nodes=38, opened_count=3, frontier_count=35, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=132, active=True, selected=False, selection_weight=0.022727272727272728, selection_probability=0.007110574644090628), LinooDepthSelectionRow(depth=16, total_nodes=68, opened_count=8, frontier_count=60, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=136, active=True, selected=False, selection_weight=0.058823529411764705, selection_probability=0.01840384025529339), LinooDepthSelectionRow(depth=46, total_nodes=66, opened_count=3, frontier_count=63, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=141, active=True, selected=False, selection_weight=0.02127659574468085, selection_probability=0.006656708177446544), LinooDepthSelectionRow(depth=23, total_nodes=24, opened_count=6, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=144, active=True, selected=False, selection_weight=0.041666666666666664, selection_probability=0.01303605351416615), LinooDepthSelectionRow(depth=12, total_nodes=132, opened_count=12, frontier_count=120, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=156, active=True, selected=False, selection_weight=0.07692307692307693, selection_probability=0.024066560333845202), LinooDepthSelectionRow(depth=52, total_nodes=15, opened_count=3, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=159, active=True, selected=False, selection_weight=0.018867924528301886, selection_probability=0.005903118572452596), LinooDepthSelectionRow(depth=19, total_nodes=26, opened_count=8, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=160, active=True, selected=False, selection_weight=0.05, selection_probability=0.01564326421699938), LinooDepthSelectionRow(depth=17, total_nodes=67, opened_count=9, frontier_count=58, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=162, active=True, selected=False, selection_weight=0.05555555555555555, selection_probability=0.017381404685554866), LinooDepthSelectionRow(depth=57, total_nodes=18, opened_count=3, frontier_count=15, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=174, active=True, selected=False, selection_weight=0.017241379310344827, selection_probability=0.0053942290403446135), LinooDepthSelectionRow(depth=59, total_nodes=7, opened_count=3, frontier_count=4, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=180, active=True, selected=False, selection_weight=0.016666666666666666, selection_probability=0.00521442140566646), LinooDepthSelectionRow(depth=45, total_nodes=34, opened_count=4, frontier_count=30, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=184, active=True, selected=False, selection_weight=0.021739130434782608, selection_probability=0.006801419224782339), LinooDepthSelectionRow(depth=56, total_nodes=12, opened_count=4, frontier_count=8, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=228, active=True, selected=False, selection_weight=0.017543859649122806, selection_probability=0.0054888646375436416), LinooDepthSelectionRow(depth=0, total_nodes=1, opened_count=1, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=1, total_nodes=4, opened_count=4, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=61, total_nodes=3, opened_count=2, frontier_count=0, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=62, total_nodes=1, opened_count=0, frontier_count=0, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None)))",
+      "rng_sha256": "5836d1f105dbdf7dfb5f13140394a2e74e40ba4bffb19d84ab9b3b20f1898795"
+    },
+    "peak_process_rss_mib": 409.97265625
+  },
+  "candidate5000": {
+    "mode": "refresh",
+    "requested_nodes": 5000,
+    "cuda_available": false,
+    "source_verification": {
+      "costs": {
+        "cpu_user_s": 0.0010890000000003397,
+        "cpu_system_s": 2.000000000002e-06,
+        "io": {
+          "rchar": 422124,
+          "wchar": 0,
+          "syscr": 23,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838165.8900006,
+      "finished_unix_s": 1792838165.8912137,
+      "elapsed_s": 0.001212640003359411,
+      "pid": 579493,
+      "rss_before_mb": 291.48046875,
+      "rss_after_mb": 291.48046875,
+      "process_peak_rss_mb": 290.1796875,
+      "available_ram_before_mb": 74794.5390625,
+      "available_ram_after_mb": 74794.5390625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 3.6605e-05,
+          "cumulative_seconds": 0.000277882
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 95,
+          "function": "file_digest",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 1.2876e-05,
+          "cumulative_seconds": 0.000328807
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restore": {
+      "costs": {
+        "cpu_user_s": 0.9240719999999998,
+        "cpu_system_s": 0.00999499999999999,
+        "io": {
+          "rchar": 425791,
+          "wchar": 0,
+          "syscr": 38,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838165.8921332,
+      "finished_unix_s": 1792838166.826345,
+      "elapsed_s": 0.9342117099949974,
+      "pid": 579493,
+      "rss_before_mb": 291.48828125,
+      "rss_after_mb": 321.1875,
+      "process_peak_rss_mb": 321.8671875,
+      "available_ram_before_mb": 74794.1015625,
+      "available_ram_after_mb": 74773.1640625,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "restored_link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+    "ordered_link_parity": false,
+    "accepted_training_verification": {
+      "costs": {
+        "cpu_user_s": 0.004882999999999527,
+        "cpu_system_s": 1.1000000000011001e-05,
+        "io": {
+          "rchar": 155343,
+          "wchar": 0,
+          "syscr": 43,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 1,
+        "directory_fsync_count": 2,
+        "file_fsync_seconds": 0.008482965000439435,
+        "directory_fsync_seconds": 0.009141043999989051
+      },
+      "started_unix_s": 1792838166.8859763,
+      "finished_unix_s": 1792838166.9086032,
+      "elapsed_s": 0.022626496000157204,
+      "pid": 579493,
+      "rss_before_mb": 321.19921875,
+      "rss_after_mb": 321.19921875,
+      "process_peak_rss_mb": 321.8671875,
+      "available_ram_before_mb": 74773.1640625,
+      "available_ram_after_mb": 74773.09375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.017611324,
+          "cumulative_seconds": 0.017611324
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 6.4676e-05,
+          "cumulative_seconds": 0.000150695
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 3.226e-06,
+          "cumulative_seconds": 2.1761e-05
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 95,
+          "function": "file_digest",
+          "primitive_calls": 11,
+          "calls": 11,
+          "own_seconds": 1.8432000000000002e-05,
+          "cumulative_seconds": 0.000236516
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "model_loading": {
+      "costs": {
+        "cpu_user_s": 0.0038029999999995567,
+        "cpu_system_s": 1.5999999999988246e-05,
+        "io": {
+          "rchar": 80257,
+          "wchar": 0,
+          "syscr": 57,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838166.9108388,
+      "finished_unix_s": 1792838166.914749,
+      "elapsed_s": 0.003910024002834689,
+      "pid": 579493,
+      "rss_before_mb": 321.26171875,
+      "rss_after_mb": 324.38671875,
+      "process_peak_rss_mb": 322.99609375,
+      "available_ram_before_mb": 74773.09375,
+      "available_ram_after_mb": 74773.09375,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "inference": {
+      "costs": {
+        "cpu_user_s": 273.148073,
+        "cpu_system_s": 0.00392300000000001,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838166.916385,
+      "finished_unix_s": 1792838440.1298513,
+      "elapsed_s": 273.21346655899833,
+      "pid": 579493,
+      "rss_before_mb": 324.38671875,
+      "rss_after_mb": 328.01953125,
+      "process_peak_rss_mb": 326.7578125,
+      "available_ram_before_mb": 74773.09375,
+      "available_ram_after_mb": 74699.13671875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {
+        "load_anchor_ref": 3011,
+        "load_child_from_delta": 7910
+      }
+    },
+    "backup": {
+      "costs": {
+        "cpu_user_s": 6.099999995967664e-05,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838440.1323376,
+      "finished_unix_s": 1792838440.1324697,
+      "elapsed_s": 0.00013192799815442413,
+      "pid": 579493,
+      "rss_before_mb": 328.01953125,
+      "rss_after_mb": 328.01953125,
+      "process_peak_rss_mb": 326.7578125,
+      "available_ram_before_mb": 74699.13671875,
+      "available_ram_after_mb": 74699.13671875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "selector": {
+      "costs": {
+        "cpu_user_s": 0.0,
+        "cpu_system_s": 4.899999999999349e-05,
+        "io": {
+          "rchar": 113,
+          "wchar": 0,
+          "syscr": 2,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838440.1327286,
+      "finished_unix_s": 1792838440.1328282,
+      "elapsed_s": 9.954699635272846e-05,
+      "pid": 579493,
+      "rss_before_mb": 328.01953125,
+      "rss_after_mb": 328.01953125,
+      "process_peak_rss_mb": 326.7578125,
+      "available_ram_before_mb": 74699.13671875,
+      "available_ram_after_mb": 74699.13671875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [],
+      "disk": {
+        "apparent_file_bytes": 422018,
+        "unique_file_bytes": 422018,
+        "allocated_bytes_unique_inodes": 462848,
+        "file_names": 7,
+        "unique_inodes": 14
+      },
+      "codec_calls": {}
+    },
+    "checkpoint": {
+      "costs": {
+        "cpu_user_s": 1.032308999999998,
+        "cpu_system_s": 0.008362000000000008,
+        "io": {
+          "rchar": 2063,
+          "wchar": 453979,
+          "syscr": 16,
+          "syscw": 7,
+          "read_bytes": 0,
+          "write_bytes": 466944,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "counters": {
+        "state_decodes": 0,
+        "state_decode_seconds": 0.0,
+        "file_fsync_count": 7,
+        "directory_fsync_count": 9,
+        "file_fsync_seconds": 0.0710555569967255,
+        "directory_fsync_seconds": 8.596995030529797e-06
+      },
+      "started_unix_s": 1792838440.1330898,
+      "finished_unix_s": 1792838441.2443411,
+      "elapsed_s": 1.111251506001281,
+      "pid": 579493,
+      "rss_before_mb": 328.01953125,
+      "rss_after_mb": 331.4375,
+      "process_peak_rss_mb": 337.68359375,
+      "available_ram_before_mb": 74699.13671875,
+      "available_ram_after_mb": 74694.92578125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 16,
+          "calls": 16,
+          "own_seconds": 0.071006763,
+          "cumulative_seconds": 0.071006763
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 2,
+          "calls": 2,
+          "own_seconds": 2.234e-06,
+          "cumulative_seconds": 1.1050000000000001e-05
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 875997,
+        "unique_file_bytes": 875997,
+        "allocated_bytes_unique_inodes": 954368,
+        "file_names": 14,
+        "unique_inodes": 27
+      },
+      "codec_calls": {}
+    },
+    "snapshot": {
+      "costs": {
+        "cpu_user_s": 56.916233999999974,
+        "cpu_system_s": 0.07900299999999999,
+        "io": {
+          "rchar": 60081553,
+          "wchar": 21159568,
+          "syscr": 6183,
+          "syscw": 7340,
+          "read_bytes": 0,
+          "write_bytes": 21680128,
+          "cancelled_write_bytes": 3567616
+        }
+      },
+      "counters": {
+        "state_decodes": 5013,
+        "state_decode_seconds": 13.160864089157258,
+        "file_fsync_count": 6,
+        "directory_fsync_count": 11,
+        "file_fsync_seconds": 0.027665754991176073,
+        "directory_fsync_seconds": 0.01720093100448139
+      },
+      "started_unix_s": 1792838441.2477126,
+      "finished_unix_s": 1792838499.52223,
+      "elapsed_s": 58.274517450998246,
+      "pid": 579493,
+      "rss_before_mb": 331.4375,
+      "rss_after_mb": 332.6953125,
+      "process_peak_rss_mb": 337.68359375,
+      "available_ram_before_mb": 74694.92578125,
+      "available_ram_after_mb": 74674.171875,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.fsync>",
+          "primitive_calls": 17,
+          "calls": 17,
+          "own_seconds": 0.044844788000000003,
+          "cumulative_seconds": 0.044844788000000003
+        },
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 19,
+          "calls": 19,
+          "own_seconds": 0.00021349700000000002,
+          "cumulative_seconds": 0.015042873000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 165,
+          "function": "publish_directory_if_absent",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 8.385800000000001e-05,
+          "cumulative_seconds": 0.008697499000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.00012896400000000002,
+          "cumulative_seconds": 0.011967075
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000160423,
+          "cumulative_seconds": 2.131094955
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+          "line": 142,
+          "function": "sync_directory",
+          "primitive_calls": 7,
+          "calls": 7,
+          "own_seconds": 5.436e-06,
+          "cumulative_seconds": 0.008484279
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 10026,
+          "calls": 10026,
+          "own_seconds": 0.0036743390000000004,
+          "cumulative_seconds": 28.235253726000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.003113826,
+          "cumulative_seconds": 13.150693203000001
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 6957505,
+        "unique_file_bytes": 6957505,
+        "allocated_bytes_unique_inodes": 7049216,
+        "file_names": 17,
+        "unique_inodes": 31
+      },
+      "codec_calls": {
+        "dump_state_ref": 10026,
+        "load_anchor_ref": 6433,
+        "load_child_from_delta": 3650
+      }
+    },
+    "snapshot_validation": {
+      "costs": {
+        "cpu_user_s": 28.39110199999999,
+        "cpu_system_s": 0.03800400000000001,
+        "io": {
+          "rchar": 61586473,
+          "wchar": 15078060,
+          "syscr": 8021,
+          "syscw": 6354,
+          "read_bytes": 0,
+          "write_bytes": 15581184,
+          "cancelled_write_bytes": 3567616
+        }
+      },
+      "counters": {
+        "state_decodes": 5013,
+        "state_decode_seconds": 13.027974819175142,
+        "file_fsync_count": 0,
+        "directory_fsync_count": 0,
+        "file_fsync_seconds": 0.0,
+        "directory_fsync_seconds": 0.0
+      },
+      "started_unix_s": 1792838499.5267487,
+      "finished_unix_s": 1792838529.2857773,
+      "elapsed_s": 29.759029560998897,
+      "pid": 579493,
+      "rss_before_mb": 332.6953125,
+      "rss_after_mb": 332.6953125,
+      "process_peak_rss_mb": 337.68359375,
+      "available_ram_before_mb": 74674.171875,
+      "available_ram_after_mb": 74695.6953125,
+      "cuda_before": null,
+      "cuda_after": null,
+      "profile": [
+        {
+          "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+          "line": 195,
+          "function": "file_digest",
+          "primitive_calls": 13,
+          "calls": 13,
+          "own_seconds": 0.00022612900000000002,
+          "cumulative_seconds": 0.010498326
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 784,
+          "function": "_source_identity",
+          "primitive_calls": 3,
+          "calls": 3,
+          "own_seconds": 0.000130741,
+          "cumulative_seconds": 0.011458047
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+          "line": 868,
+          "function": "_build_index",
+          "primitive_calls": 1,
+          "calls": 1,
+          "own_seconds": 0.000132571,
+          "cumulative_seconds": 29.543366302000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 465,
+          "function": "dump_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.0018552640000000001,
+          "cumulative_seconds": 14.011220292
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+          "line": 469,
+          "function": "load_state_ref",
+          "primitive_calls": 5013,
+          "calls": 5013,
+          "own_seconds": 0.002755923,
+          "cumulative_seconds": 13.01984028
+        }
+      ],
+      "disk": {
+        "apparent_file_bytes": 14719425,
+        "unique_file_bytes": 14719425,
+        "allocated_bytes_unique_inodes": 14819328,
+        "file_names": 18,
+        "unique_inodes": 33
+      },
+      "codec_calls": {
+        "load_anchor_ref": 5013,
+        "dump_state_ref": 5013
+      }
+    },
+    "evaluations": 5005,
+    "requested": 5013,
+    "skipped_terminal": 8,
+    "skipped_certified": 0,
+    "batch_size": 64,
+    "backed_up_nodes": 0,
+    "nodes": 5013,
+    "edges": 5931,
+    "model_path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/model/work/training_publications_v1/objects/385625294bbf485ca311cd01db0c0b61/models/generation_000001/small_mlp",
+    "model_sha256": "03c3efd3169fa46b4293fc1ae8e7f72e9aaf37d6f336fd21f2fd3351f80044e8",
+    "selected_candidate": "small_mlp",
+    "checkpoint_sha256": "f75bfd25e986651dbd78edf7c9cd3a502148a82939cdddd43651b02598b141d2",
+    "science_sha256": "0df973307bca003bc0f7e7f1fc2a251db8c5b4b6c42224fa9112c83be68a1450",
+    "link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+    "rng_sha256": "7b22ced71ee8a1496e89fe9c9f2e69828dd04eed4e194b0d6930f77ba9d51883",
+    "checkpoint_disk": {
+      "apparent_file_bytes": 453979,
+      "unique_file_bytes": 453979,
+      "allocated_bytes_unique_inodes": 491520,
+      "file_names": 7,
+      "unique_inodes": 13
+    },
+    "snapshot_disk": {
+      "apparent_file_bytes": 6081508,
+      "unique_file_bytes": 6081508,
+      "allocated_bytes_unique_inodes": 6094848,
+      "file_names": 3,
+      "unique_inodes": 4
+    },
+    "temporary_disk": {
+      "apparent_file_bytes": 14719425,
+      "unique_file_bytes": 14719425,
+      "allocated_bytes_unique_inodes": 14819328,
+      "file_names": 18,
+      "unique_inodes": 33
+    },
+    "snapshot_stats": {
+      "new_state_encodings": 5013,
+      "copied_records": 0,
+      "state_encoding_s": 54.8881226868034,
+      "state_copy_s": 0.0,
+      "updates_s": 1.1757391967621516,
+      "source_verification_s": 3.00002284348011e-07,
+      "validation_hashing_s": 2.1514415409983485,
+      "total_s": 58.26293720299873,
+      "node_count": 5013,
+      "bytes_written": 6081508
+    },
+    "scientific_commit_performed": false,
+    "cache_phases": [
+      {
+        "wall_seconds": 136.5543562640014,
+        "cpu_seconds": 136.5201,
+        "peak_rss_mib": 326.7578125,
+        "retained": 256,
+        "cache_hits": 262433,
+        "cache_misses": 5499,
+        "anchor_decodes": 1507,
+        "delta_decodes": 3992,
+        "canonical_loads": 0,
+        "evictions": 5243,
+        "max_retained": 256,
+        "evaluations": 5005
+      },
+      {
+        "wall_seconds": 136.65879147500527,
+        "cpu_seconds": 136.63174,
+        "peak_rss_mib": 326.7578125,
+        "retained": 256,
+        "cache_hits": 253330,
+        "cache_misses": 5422,
+        "anchor_decodes": 1504,
+        "delta_decodes": 3918,
+        "canonical_loads": 0,
+        "evictions": 5422,
+        "max_retained": 256,
+        "evaluations": 5005
+      }
+    ],
+    "total_cache_stats": {
+      "hits": 519356,
+      "misses": 15991,
+      "anchors": 14457,
+      "deltas": 11560,
+      "canonical_loads": 10026,
+      "max_retained": 256
+    },
+    "subsequent_growth": {
+      "scientific_sha256": "846a30a9ca87fa5d5f33fb1f116e5bd04c3fe860be9885cf7f2917d231c33012",
+      "selection": "(5008, 39, 'alternating_by_step', 'opened_count_depth_index', 368, 'even', 80, 0.025, 0.00782163210849969, (LinooDepthSelectionRow(depth=39, total_nodes=66, opened_count=2, frontier_count=64, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=80, active=True, selected=True, selection_weight=0.025, selection_probability=0.00782163210849969), LinooDepthSelectionRow(depth=8, total_nodes=316, opened_count=9, frontier_count=307, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=81, active=True, selected=False, selection_weight=0.1111111111111111, selection_probability=0.03476280937110973), LinooDepthSelectionRow(depth=26, total_nodes=23, opened_count=3, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=81, active=True, selected=False, selection_weight=0.037037037037037035, selection_probability=0.011587603123703244), LinooDepthSelectionRow(depth=40, total_nodes=46, opened_count=2, frontier_count=44, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=82, active=True, selected=False, selection_weight=0.024390243902439025, selection_probability=0.007630860593658234), LinooDepthSelectionRow(depth=20, total_nodes=18, opened_count=4, frontier_count=9, terminal_count=5, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.047619047619047616, selection_probability=0.014898346873332743), LinooDepthSelectionRow(depth=27, total_nodes=22, opened_count=3, frontier_count=19, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.03571428571428571, selection_probability=0.011173760154999556), LinooDepthSelectionRow(depth=41, total_nodes=43, opened_count=2, frontier_count=41, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=84, active=True, selected=False, selection_weight=0.023809523809523808, selection_probability=0.007449173436666371), LinooDepthSelectionRow(depth=42, total_nodes=43, opened_count=2, frontier_count=41, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=86, active=True, selected=False, selection_weight=0.023255813953488372, selection_probability=0.00727593684511599), LinooDepthSelectionRow(depth=21, total_nodes=15, opened_count=4, frontier_count=10, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=88, active=True, selected=False, selection_weight=0.045454545454545456, selection_probability=0.014221149288181256), LinooDepthSelectionRow(depth=29, total_nodes=40, opened_count=3, frontier_count=37, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=90, active=True, selected=False, selection_weight=0.03333333333333333, selection_probability=0.01042884281133292), LinooDepthSelectionRow(depth=44, total_nodes=53, opened_count=2, frontier_count=51, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=90, active=True, selected=False, selection_weight=0.022222222222222223, selection_probability=0.006952561874221947), LinooDepthSelectionRow(depth=22, total_nodes=23, opened_count=4, frontier_count=19, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=92, active=True, selected=False, selection_weight=0.043478260869565216, selection_probability=0.013602838449564678), LinooDepthSelectionRow(depth=30, total_nodes=36, opened_count=3, frontier_count=33, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=93, active=True, selected=False, selection_weight=0.03225806451612903, selection_probability=0.010092428527096374), LinooDepthSelectionRow(depth=31, total_nodes=35, opened_count=3, frontier_count=32, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=96, active=True, selected=False, selection_weight=0.03125, selection_probability=0.009777040135624613), LinooDepthSelectionRow(depth=47, total_nodes=52, opened_count=2, frontier_count=50, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=96, active=True, selected=False, selection_weight=0.020833333333333332, selection_probability=0.006518026757083075), LinooDepthSelectionRow(depth=48, total_nodes=26, opened_count=2, frontier_count=24, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=98, active=True, selected=False, selection_weight=0.02040816326530612, selection_probability=0.0063850058028568895), LinooDepthSelectionRow(depth=32, total_nodes=40, opened_count=3, frontier_count=37, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=99, active=True, selected=False, selection_weight=0.030303030303030304, selection_probability=0.009480766192120836), LinooDepthSelectionRow(depth=4, total_nodes=542, opened_count=20, frontier_count=522, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.2, selection_probability=0.06257305686799752), LinooDepthSelectionRow(depth=9, total_nodes=160, opened_count=10, frontier_count=150, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.1, selection_probability=0.03128652843399876), LinooDepthSelectionRow(depth=24, total_nodes=33, opened_count=4, frontier_count=29, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.04, selection_probability=0.012514611373599504), LinooDepthSelectionRow(depth=49, total_nodes=22, opened_count=2, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=100, active=True, selected=False, selection_weight=0.02, selection_probability=0.006257305686799752), LinooDepthSelectionRow(depth=33, total_nodes=51, opened_count=3, frontier_count=48, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=102, active=True, selected=False, selection_weight=0.029411764705882353, selection_probability=0.009201920127646694), LinooDepthSelectionRow(depth=50, total_nodes=16, opened_count=2, frontier_count=14, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=102, active=True, selected=False, selection_weight=0.0196078431372549, selection_probability=0.00613461341843113), LinooDepthSelectionRow(depth=25, total_nodes=24, opened_count=4, frontier_count=20, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=104, active=True, selected=False, selection_weight=0.038461538461538464, selection_probability=0.012033280166922601), LinooDepthSelectionRow(depth=51, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=104, active=True, selected=False, selection_weight=0.019230769230769232, selection_probability=0.0060166400834613006), LinooDepthSelectionRow(depth=34, total_nodes=54, opened_count=3, frontier_count=51, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=105, active=True, selected=False, selection_weight=0.02857142857142857, selection_probability=0.008939008123999646), LinooDepthSelectionRow(depth=3, total_nodes=408, opened_count=27, frontier_count=381, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.25, selection_probability=0.0782163210849969), LinooDepthSelectionRow(depth=5, total_nodes=433, opened_count=18, frontier_count=415, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.16666666666666666, selection_probability=0.0521442140566646), LinooDepthSelectionRow(depth=11, total_nodes=157, opened_count=9, frontier_count=148, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.08333333333333333, selection_probability=0.0260721070283323), LinooDepthSelectionRow(depth=35, total_nodes=64, opened_count=3, frontier_count=61, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.027777777777777776, selection_probability=0.008690702342777433), LinooDepthSelectionRow(depth=53, total_nodes=18, opened_count=2, frontier_count=16, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=108, active=True, selected=False, selection_weight=0.018518518518518517, selection_probability=0.005793801561851622), LinooDepthSelectionRow(depth=10, total_nodes=164, opened_count=10, frontier_count=154, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=110, active=True, selected=False, selection_weight=0.09090909090909091, selection_probability=0.02844229857636251), LinooDepthSelectionRow(depth=54, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=110, active=True, selected=False, selection_weight=0.01818181818181818, selection_probability=0.005688459715272502), LinooDepthSelectionRow(depth=36, total_nodes=60, opened_count=3, frontier_count=57, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=111, active=True, selected=False, selection_weight=0.02702702702702703, selection_probability=0.008455818495675341), LinooDepthSelectionRow(depth=13, total_nodes=133, opened_count=8, frontier_count=125, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.07142857142857142, selection_probability=0.022347520309999112), LinooDepthSelectionRow(depth=15, total_nodes=88, opened_count=7, frontier_count=81, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.0625, selection_probability=0.019554080271249226), LinooDepthSelectionRow(depth=55, total_nodes=14, opened_count=2, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=112, active=True, selected=False, selection_weight=0.017857142857142856, selection_probability=0.005586880077499778), LinooDepthSelectionRow(depth=2, total_nodes=56, opened_count=38, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.3333333333333333, selection_probability=0.1042884281133292), LinooDepthSelectionRow(depth=18, total_nodes=77, opened_count=6, frontier_count=71, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.05263157894736842, selection_probability=0.016466593912630927), LinooDepthSelectionRow(depth=37, total_nodes=48, opened_count=3, frontier_count=45, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=114, active=True, selected=False, selection_weight=0.02631578947368421, selection_probability=0.008233296956315464), LinooDepthSelectionRow(depth=28, total_nodes=25, opened_count=4, frontier_count=21, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=116, active=True, selected=False, selection_weight=0.034482758620689655, selection_probability=0.010788458080689227), LinooDepthSelectionRow(depth=38, total_nodes=57, opened_count=3, frontier_count=54, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=117, active=True, selected=False, selection_weight=0.02564102564102564, selection_probability=0.0080221867779484), LinooDepthSelectionRow(depth=58, total_nodes=12, opened_count=2, frontier_count=10, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=118, active=True, selected=False, selection_weight=0.01694915254237288, selection_probability=0.005302801429491315), LinooDepthSelectionRow(depth=14, total_nodes=94, opened_count=8, frontier_count=86, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=120, active=True, selected=False, selection_weight=0.06666666666666667, selection_probability=0.02085768562266584), LinooDepthSelectionRow(depth=60, total_nodes=5, opened_count=2, frontier_count=3, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=122, active=True, selected=False, selection_weight=0.01639344262295082, selection_probability=0.005128939087540781), LinooDepthSelectionRow(depth=6, total_nodes=399, opened_count=18, frontier_count=381, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=126, active=True, selected=False, selection_weight=0.14285714285714285, selection_probability=0.044695040619998225), LinooDepthSelectionRow(depth=7, total_nodes=378, opened_count=16, frontier_count=362, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=128, active=True, selected=False, selection_weight=0.125, selection_probability=0.03910816054249845), LinooDepthSelectionRow(depth=43, total_nodes=38, opened_count=3, frontier_count=35, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=132, active=True, selected=False, selection_weight=0.022727272727272728, selection_probability=0.007110574644090628), LinooDepthSelectionRow(depth=16, total_nodes=68, opened_count=8, frontier_count=60, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=136, active=True, selected=False, selection_weight=0.058823529411764705, selection_probability=0.01840384025529339), LinooDepthSelectionRow(depth=46, total_nodes=66, opened_count=3, frontier_count=63, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=141, active=True, selected=False, selection_weight=0.02127659574468085, selection_probability=0.006656708177446544), LinooDepthSelectionRow(depth=23, total_nodes=24, opened_count=6, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=144, active=True, selected=False, selection_weight=0.041666666666666664, selection_probability=0.01303605351416615), LinooDepthSelectionRow(depth=12, total_nodes=132, opened_count=12, frontier_count=120, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=156, active=True, selected=False, selection_weight=0.07692307692307693, selection_probability=0.024066560333845202), LinooDepthSelectionRow(depth=52, total_nodes=15, opened_count=3, frontier_count=12, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=159, active=True, selected=False, selection_weight=0.018867924528301886, selection_probability=0.005903118572452596), LinooDepthSelectionRow(depth=19, total_nodes=26, opened_count=8, frontier_count=18, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=160, active=True, selected=False, selection_weight=0.05, selection_probability=0.01564326421699938), LinooDepthSelectionRow(depth=17, total_nodes=67, opened_count=9, frontier_count=58, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=162, active=True, selected=False, selection_weight=0.05555555555555555, selection_probability=0.017381404685554866), LinooDepthSelectionRow(depth=57, total_nodes=18, opened_count=3, frontier_count=15, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=174, active=True, selected=False, selection_weight=0.017241379310344827, selection_probability=0.0053942290403446135), LinooDepthSelectionRow(depth=59, total_nodes=7, opened_count=3, frontier_count=4, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=180, active=True, selected=False, selection_weight=0.016666666666666666, selection_probability=0.00521442140566646), LinooDepthSelectionRow(depth=45, total_nodes=34, opened_count=4, frontier_count=30, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=184, active=True, selected=False, selection_weight=0.021739130434782608, selection_probability=0.006801419224782339), LinooDepthSelectionRow(depth=56, total_nodes=12, opened_count=4, frontier_count=8, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=228, active=True, selected=False, selection_weight=0.017543859649122806, selection_probability=0.0054888646375436416), LinooDepthSelectionRow(depth=0, total_nodes=1, opened_count=1, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=1, total_nodes=4, opened_count=4, frontier_count=0, terminal_count=0, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=61, total_nodes=3, opened_count=2, frontier_count=0, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None), LinooDepthSelectionRow(depth=62, total_nodes=1, opened_count=0, frontier_count=0, terminal_count=1, exact_count=0, uncached_terminal_candidates=0, non_openable_count=0, selection_index=None, active=False, selected=False, selection_weight=None, selection_probability=None)))",
+      "rng_sha256": "5836d1f105dbdf7dfb5f13140394a2e74e40ba4bffb19d84ab9b3b20f1898795"
+    },
+    "peak_process_rss_mib": 337.68359375
+  }
+}

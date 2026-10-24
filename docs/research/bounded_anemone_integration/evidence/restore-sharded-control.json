@@ -1,0 +1,9 @@
+{
+  "checkpoint": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/restore-sharded/generation_publications_v3/objects/9fee26a59fac48ddabc5510d972d8e22/checkpoint/source-checkpoint",
+  "bundle": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/bench/restore-sharded/generation_publications_v3/objects/9fee26a59fac48ddabc5510d972d8e22/models/7a17381205a0180c3256415e5e5f24bafa2e2cc24928f0b5097c327ff58c20d5",
+  "expected_version": 1,
+  "restored_version": 2,
+  "node_id": "1",
+  "depth": 1,
+  "fresh_score_hex": "0x1.5000000000000p+5"
+}

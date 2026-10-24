@@ -1,0 +1,16 @@
+{
+  "chipiron": [
+    "ecccef061fc8ed0198cefaccef7ab95f61d8d33d 1b83dea480d0c9a3a3d53eac02e6737871906f10 c58bac74390481bbf85d4fe9a419e89d81181df3 fix(morpion): bind fresh reevaluation proposals to Growth numeric policy",
+    "1b83dea480d0c9a3a3d53eac02e6737871906f10 1da1c59ae37d901f5c5277a6a2c04149046c49d0 f1a56f528a75ad1ce7644ab663e1a922d6a8af7c fix(morpion): restore the sealed evaluator without changing its version",
+    "1da1c59ae37d901f5c5277a6a2c04149046c49d0 7e29c9f58f2d9559e28565afc9371e963e570311 6a73e935a5a943674729ef66de2f61249ae43ecf docs(morpion): record corrected Anemone parity, CI and resource evidence",
+    "7e29c9f58f2d9559e28565afc9371e963e570311 60fdf85bb26e34f7d502122f34f3208ae2fc19d9 6e69f3994b829e5b3d2639cb65ee16b8c4b6c119 Fence Reevaluation publication and validate corrected Anemone refresh",
+    "60fdf85bb26e34f7d502122f34f3208ae2fc19d9 dc142573a1163178ae8fd5fc9feb90ff8ffee21e a96dc47c4e7356bed8f4981220d50ecc570f444c docs(morpion): establish scientific model activation contract and blockers"
+  ],
+  "anemone": [
+    "c015194533857a52d07bafdd603b762314692cfb 5f43821744c4c4d3944c5da2b20def47cde833b9 e9ab852c4100625505eb0f8e09e7592cf89fa824 refactor(evaluation): expose exact shared nonterminal score transform",
+    "5f43821744c4c4d3944c5da2b20def47cde833b9 74bbd1250f31b72497166e624659d547324a0e5a 155c1132cff3db863e75822846b540db826bd458 fix(checkpoints): bound decoded state retention with configurable LRU",
+    "74bbd1250f31b72497166e624659d547324a0e5a a07fb2fdd75e2020d9795d34ec1cf896eb86f3a0 9385378c43f5d5f55936f8edf977ef0fac2b0e38 fix: preserve certificates and propagate effective value changes",
+    "a07fb2fdd75e2020d9795d34ec1cf896eb86f3a0 ad7cee408b1542bc8bdce6e7d95133876562cb45 6d67209a641ac5d36876b8c2a639c0f2281f738f 4d02c928c61edececabceb43fd7d3765d923e7c9 Merge pull request #76 from victorgabillon/ci/performance-audit"
+  ],
+  "initial_numeric_evidence": "refs/tags/evidence/morpion-scoring-initial-20261024"
+}

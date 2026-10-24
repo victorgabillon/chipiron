@@ -1,0 +1,28 @@
+{
+  "audited_at": "2026-10-24T12:13:29.279657+00:00",
+  "after_final_ci": true,
+  "chipiron": {
+    "checked_registrations": 40,
+    "errors": [],
+    "before_manifest_sha256": "24c7269e19ea08ecd21e1c1181ba05841040f278fde74ccd63984282ffd317f8"
+  },
+  "anemone": {
+    "checked_registrations": 12,
+    "errors": [],
+    "before_manifest_sha256": "a10668b7c84be1190d2d02306c1e960e53290058dfc91067ad5e3d908f329ee2"
+  },
+  "installed_and_checkout_sources": {
+    "anemone": {
+      "modules": 289,
+      "exact_manifest_match": true
+    },
+    "chipiron": {
+      "modules": 476,
+      "exact_manifest_match": true
+    },
+    "checkout": {
+      "modules": 476,
+      "exact_manifest_match": true
+    }
+  }
+}

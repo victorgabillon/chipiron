@@ -170,6 +170,22 @@ def test_committed_neural_restore(
     restored.load_or_create(tmp_path / state.latest_runtime_checkpoint_path, None)
     assert restored._runtime.evaluator_version == current._runtime.evaluator_version
     assert restored._current_evaluator_bundle_path == pinned
+    from chipiron.environments.morpion.bootstrap.closed_scientific_snapshot import (
+        load_closed_scientific_snapshot,
+    )
+
+    restored_source = restored.export_closed_scientific_snapshot(
+        tmp_path / "restored-science",
+        generation=1,
+        producer=scientific_producer(
+            replace(
+                scientific_args(tmp_path), runtime_checkpoint_format=checkpoint_format
+            )
+        ),
+    )
+    assert load_closed_scientific_snapshot(
+        restored_source
+    ) == load_closed_scientific_snapshot(tmp_path / state.latest_tree_snapshot_path)
     assert fingerprint(restored) == fingerprint(current)
     assert restored._random_generator.getstate() == current._random_generator.getstate()
     # Keep ordered-link differences observable instead of normalizing them away.
@@ -222,3 +238,50 @@ def test_committed_dependency_failure(tmp_path: Path, fault: str) -> None:
         AnemoneMorpionSearchRunner(args).load_or_create(
             tmp_path / state.latest_runtime_checkpoint_path, model, **kwargs
         )
+
+
+def test_growth_ignores_mutable_active_projection(tmp_path: Path) -> None:
+    """A saved head remains active even if discovery advertises unrelated Training."""
+    from tests.environments.morpion_durable_closed_helpers import (
+        ClosedPublicationRunner,
+        run_closed_publication,
+        setup_closed_baseline,
+    )
+
+    args, paths, initial = setup_closed_baseline(tmp_path)
+    model, _ = committed_evaluator(tmp_path, initial)
+    paths.pipeline_active_model_path.write_text("invalid mutable model projection")
+    result = run_closed_publication(args, ClosedPublicationRunner())
+    assert committed_evaluator(tmp_path, result)[0] == model
+
+
+@pytest.mark.parametrize("checkpoint_format", ["json-zst", "sharded"])
+def test_both_loaders_use_default_bounded_resolver(
+    tmp_path: Path, checkpoint_format: str
+) -> None:
+    """The real two restore paths inherit Anemone's default; no caller cache needed."""
+    from chipiron.environments.morpion.bootstrap import (
+        MorpionBootstrapEffectiveRuntimeConfig,
+    )
+
+    current = AnemoneMorpionSearchRunner(
+        AnemoneMorpionSearchRunnerArgs(
+            random_seed=4, runtime_checkpoint_format=checkpoint_format
+        )
+    )
+    config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=100000)
+    current.load_or_create(None, None, config)
+    while current.current_tree_size() < 300:
+        current.grow(1)
+    checkpoint = tmp_path / (
+        "checkpoint" if checkpoint_format == "sharded" else "checkpoint.json.zst"
+    )
+    current.save_checkpoint(checkpoint)
+    restored = AnemoneMorpionSearchRunner(current._args)
+    restored.load_or_create(checkpoint, None, config)
+    resolver = next(nodes(restored)).tree_node.state_handle.resolver
+    for node in nodes(restored):
+        assert node.state is not None
+        assert len(resolver._resolved_states) <= 256
+    assert len(resolver._resolved_states) == 256
+    assert fingerprint(restored) == fingerprint(current)

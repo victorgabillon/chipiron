@@ -1,0 +1,37 @@
+{
+  "restore-a": {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/logs/restore-a.log",
+    "sha256": "0d282021f55d77ad525a585f35b47b96917e25c7068f888fde2fe80066244845",
+    "summaries": [
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_neural_restore[False-json-zst]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_neural_restore[False-sharded]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_neural_restore[True-json-zst]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_neural_restore[True-sharded]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[missing]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[corrupt]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[substitute]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[config]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[refresh]",
+      "9 failed in 31.43s"
+    ]
+  },
+  "restore-a2": {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/logs/restore-a2.log",
+    "sha256": "58af2fc0c9c55fa5d5688473318441d8093139f9035fac99eb0b34f417bdf3ae",
+    "summaries": [
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[missing]",
+      "FAILED tests/environments/test_morpion_committed_evaluator_restore.py::test_committed_dependency_failure[config]",
+      "2 failed, 7 passed in 17.33s"
+    ]
+  },
+  "numeric": {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/logs/numeric.log",
+    "sha256": "66e0e34365bd0b1528f312e4d8b6c1921686c474f395cd332a91f820fb06b5ea",
+    "summaries": [
+      "FAILED tests/environments/test_morpion_numeric_policy.py::test_scaled_worker_exact_receipt_retry[False]",
+      "FAILED tests/environments/test_morpion_numeric_policy.py::test_scaled_worker_exact_receipt_retry[True]",
+      "2 failed, 43 passed in 70.63s (0:01:10)"
+    ]
+  },
+  "explanation": "New-test setup corrections: missing required genesis timestamp; correct existing DerivationError for missing dependency; durable=True when deliberately corrupting a synthetic receipt-enabled authority; fixture StateScore is moves+0.125, not moves. An initial import of research profiling code collided with the repository scripts namespace, so its bounded fingerprint comparison is kept in the test helper. No pre-existing scientific expectation or production policy was changed to make these tests pass."
+}

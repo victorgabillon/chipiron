@@ -1,0 +1,21 @@
+{
+  "1b83dea4": {
+    "added": 130,
+    "removed": 27,
+    "files": [
+      "src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py",
+      "src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+      "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py",
+      "src/chipiron/environments/morpion/bootstrap/runtime/runner.py"
+    ]
+  },
+  "ecccef06": {
+    "added": 79,
+    "removed": 4,
+    "files": [
+      "src/chipiron/environments/morpion/bootstrap/reevaluation_transaction.py",
+      "src/chipiron/environments/morpion/bootstrap/reevaluation_worker.py",
+      "src/chipiron/environments/morpion/bootstrap/scientific_publication_initialization.py"
+    ]
+  }
+}
