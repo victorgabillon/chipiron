@@ -175,6 +175,8 @@ def test_recovery_death_with_old_completion(workspace: MorpionBootstrapPaths) ->
         "forged-binding",
         "duplicate-binding",
         "conflicting-request",
+        "historical-checkpoint-pointer",
+        "historical-science-pointer",
         "current-science",
         "current-model",
     ],
@@ -202,6 +204,15 @@ def test_invalid_evidence_or_current_head_refuses(
             entries[0]["activation_request_sha256"] = old["activation_request_sha256"]
         else:
             entries[3]["activation_request_sha256"] = old["activation_request_sha256"]
+        workspace.run_state_path.write_text(json.dumps(raw))
+    elif damage in {"historical-checkpoint-pointer", "historical-science-pointer"}:
+        raw = json.loads(workspace.run_state_path.read_text())
+        key = (
+            "checkpoint_path"
+            if damage == "historical-checkpoint-pointer"
+            else "tree_snapshot_path"
+        )
+        raw["metadata"][PUBLICATION_KEY]["generations"][1][key] = head[key]
         workspace.run_state_path.write_text(json.dumps(raw))
     elif damage == "conflicting-request":
         request["candidate"]["sha256"] = "e" * 64

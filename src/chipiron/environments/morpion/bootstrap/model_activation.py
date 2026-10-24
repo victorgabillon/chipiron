@@ -33,6 +33,7 @@ from .control import (
 from .derived.provenance import inside
 from .generation_publication_io import (
     PUBLICATION_KEY,
+    capsule_path,
     committed_evaluator,
     growth_receipt_ownership,
     object_digest,
@@ -230,6 +231,20 @@ def activation_completion(
         "Unsupported activation completion contract.",
     )
     descriptor = read_committed_descriptor(paths.work_dir, record)
+    root = capsule_path(paths.work_dir, record["id"], 3).relative_to(paths.work_dir)
+    checkpoint_roots = {
+        "/".join(entry["path"].split("/")[:2])
+        for entry in descriptor["files"]
+        if entry["path"].startswith("checkpoint/")
+    }
+    require(
+        len(checkpoint_roots) == 1
+        and record["checkpoint_path"]
+        == f"{root.as_posix()}/{next(iter(checkpoint_roots))}"
+        and record["tree_snapshot_path"]
+        == f"{root.as_posix()}/{descriptor['sharded_snapshot_path']}",
+        "Activation completion payload pointer mismatch.",
+    )
     completion = descriptor.get("model_activation")
     require(isinstance(completion, dict), "Missing activation completion evidence.")
     assert isinstance(completion, dict)
