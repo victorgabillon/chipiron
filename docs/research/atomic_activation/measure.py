@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import cProfile
+import hashlib
 import json
 import logging
+import os
 import pstats
 import time
 from contextlib import ExitStack
@@ -133,6 +135,8 @@ def main() -> None:
                         stack.enter_context(patch.object(owner, name, timed))
 
                     for owner, name, label in (
+                        (hashlib, "file_digest", "file_hashing"),
+                        (os, "fsync", "fsync"),
                         (
                             runner_module.AnemoneMorpionSearchRunner,
                             "load_or_create",
@@ -166,6 +170,7 @@ def main() -> None:
                             "export_scientific",
                             "scientific_snapshot",
                         ),
+                        (GrowthPatchReceiptSession, "commit", "seal_and_commit"),
                         (
                             scientific_generation_publication,
                             "validate_closed_export",
