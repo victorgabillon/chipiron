@@ -1,0 +1,376 @@
+{
+  "seed": 4,
+  "branch_limit": 6,
+  "growth_steps": 2,
+  "controlled_change": "Only state at node 2 receives raw estimate 100; all other M2 outputs equal the previous evaluator",
+  "differences": [
+    {
+      "node_id": 0,
+      "fields": [
+        "tree",
+        "effective"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": 0,
+      "depth": 0,
+      "parents": [],
+      "children": [
+        [
+          "(2, -5, 0, 2)",
+          1
+        ],
+        [
+          "(0, -6, -2, 0)",
+          2
+        ],
+        [
+          "(0, -5, -2, 4)",
+          3
+        ],
+        [
+          "(0, -3, -5, 0)",
+          4
+        ]
+      ],
+      "all_branches_generated": true,
+      "state_ref": [
+        0,
+        []
+      ],
+      "actual": {
+        "direct": {
+          "score": 0.04,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "effective": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 0.04,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "effective": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 1,
+      "depth": 1,
+      "parents": [
+        0
+      ],
+      "children": [],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9222105401607028740
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 1.1400000114000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.1400000114000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 1.1400000114000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.1400000114000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 2,
+      "depth": 1,
+      "parents": [
+        0
+      ],
+      "children": [
+        [
+          "(3, 0, 4, 2)",
+          5
+        ],
+        [
+          "(3, -5, -1, 2)",
+          6
+        ]
+      ],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "effective": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "effective": {
+          "score": 100.00000100000001,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 3,
+      "depth": 1,
+      "parents": [
+        0
+      ],
+      "children": [],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9222105393017094142
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 1.2700000127000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.2700000127000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 1.2700000127000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.2700000127000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 4,
+      "depth": 1,
+      "parents": [
+        0
+      ],
+      "children": [],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9222668330085744635
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 1.2600000126000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.2600000126000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 1.2600000126000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 1.2600000126000002,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 5,
+      "depth": 2,
+      "parents": [
+        2
+      ],
+      "children": [],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950,
+          9223512793670778880
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    },
+    {
+      "id": 6,
+      "depth": 2,
+      "parents": [
+        2
+      ],
+      "children": [],
+      "all_branches_generated": false,
+      "state_ref": [
+        0,
+        [
+          9221823918040317950,
+          9222105397312061435
+        ]
+      ],
+      "actual": {
+        "direct": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      },
+      "reference": {
+        "direct": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        },
+        "tree": null,
+        "effective": {
+          "score": 2.2600000452000004,
+          "certainty": "ESTIMATE",
+          "over_event": null,
+          "line": null
+        }
+      }
+    }
+  ]
+}
