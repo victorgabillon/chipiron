@@ -1,0 +1,92 @@
+{
+  "cpu_user_s": 20.071273,
+  "cpu_system_s": 0.14809599999999998,
+  "io": {
+    "rchar": 67404487,
+    "wchar": 8211286,
+    "syscr": 5035,
+    "syscw": 2130,
+    "read_bytes": 0,
+    "write_bytes": 8658944,
+    "cancelled_write_bytes": 364544
+  },
+  "started_unix_s": 1792862487.2922726,
+  "finished_unix_s": 1792862509.2209964,
+  "elapsed_s": 21.928723991994048,
+  "pid": 985758,
+  "rss_before_mb": 294.25390625,
+  "rss_after_mb": 383.50390625,
+  "process_peak_rss_mb": 381.93359375,
+  "available_ram_before_mb": 71541.8671875,
+  "available_ram_after_mb": 71319.75,
+  "cuda_before": null,
+  "cuda_after": null,
+  "operation": "setup",
+  "profiled": false,
+  "generation": 1,
+  "nodes": 1003,
+  "disk": {
+    "files": 51,
+    "logical_bytes": 2437317,
+    "allocated_bytes": 2551808
+  },
+  "checkpoint_digest": "82a70a98369e99bfa5d9cd3eb9561929412b67d7115c38974c8fa6d22156ce49",
+  "head": {
+    "accepted_dataset": {
+      "attempt_id": "e58fd85554e14709a7314a8033b0b0d1",
+      "descriptor_sha256": "f10a223e678aa8e6853f1a4fbed9d9d6ff36d26a041cd54bec2697de730ea8cb"
+    },
+    "accepted_training": {
+      "attempt_id": "a2455e891aff44c89c00200bd8c7df65",
+      "descriptor_sha256": "40f5d776ef1e67292fceebe6ca8925206ffac266e1415ab2b85d64d55e517530"
+    },
+    "checkpoint_path": "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint",
+    "descriptor_path": "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/.generation_publication_v3.json",
+    "descriptor_sha256": "b663331a99ce9d676f176fec8c3fd305789ca41d52b76391194a627bff00e75e",
+    "generation": 1,
+    "id": "02368a01f2974e71be5c6e7120277568",
+    "parent_id": null,
+    "publication_version": 3,
+    "scientific_identity": {
+      "checkpoint_sha256": "82a70a98369e99bfa5d9cd3eb9561929412b67d7115c38974c8fa6d22156ce49",
+      "generation_descriptor_sha256": "1f85a85cfb657b17f8e3d220d64eb608f53ba8682ae705364c6fb2f0222cbf87",
+      "generation_mapping": "growth-equals-scientific-from-1",
+      "growth_generation": 1,
+      "producer": {
+        "api_sha256": {
+          "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+          "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+          "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+          "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+        },
+        "identity": {
+          "config_sha256": "5ba994b42a1f24de34e72dae53b4eb4b19752006753d88cbb673ff58e33fa8d3",
+          "evaluator": "1548a772aa683040355545d971ce3bd80d360dcd2d35380d70e659aefdf34055",
+          "objective": "maximum_total_moves",
+          "revision": "atomic-activation-synthetic"
+        },
+        "packages": {
+          "algorhino-anemone": "0.2.26",
+          "atomheart": "0.2.11",
+          "chipiron": "0.2.4",
+          "valanga": "0.2.5"
+        },
+        "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+      },
+      "producer_sha256": "2e769ce123c75add2a81c38d9325921bdf8164d02879cb2e9a064bc17d3e12e0",
+      "scientific_contract": "anemone-values-canonical-morpion-1",
+      "source_format_kind": "morpion_closed_scientific_snapshot",
+      "source_format_version": 2,
+      "source_generation": 1,
+      "storage_layout_version": 1
+    },
+    "tree_snapshot_path": "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/scientific_snapshot/generation.json"
+  },
+  "temporary_staging_sampled_peak": {
+    "logical_bytes": 0,
+    "allocated_bytes": 0,
+    "samples": 0
+  },
+  "sample_interval_s": 0.1,
+  "boundaries": {}
+}
