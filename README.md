@@ -263,11 +263,19 @@ development extras into your active Python 3.13 environment:
 python -m pip install -e '.[test,lint,typecheck,dev]'
 ```
 
-Then you can run the normal fast test selection directly:
+For iterative feedback, use the explicit validation levels:
 
 ```bash
-python -m pytest -m "not integration and not external_data"
+make test-fast
+make test-pr
+make test-full
 ```
+
+See [the testing guide](docs/testing.md) for scientific coverage, affected-component
+matrices and when FULL is required. Bare `make` now selects FAST; installation
+remains available through `make requirements` and `make init`. The mandatory tox
+and GitHub gates still run the complete normal selection, equivalent to
+`python -m pytest -m "not integration and not external_data"`.
 
 Ruff does not auto-fix in the default quality gates. To rewrite files
 intentionally, run explicit fix commands:

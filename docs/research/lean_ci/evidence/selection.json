@@ -1,0 +1,131 @@
+{
+  "base_commit": "f7230d13ba6dd5dfba1e5c88fd741907af8286bc",
+  "implementation": "b67bd94572a1398bd82cb6187e70c0e20240a06c",
+  "baseline_log_source": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/baseline-full-tests.json",
+  "baseline_sha256": "94ee4dd93af732244844e13542da319c4781dd66b9dfb2dc4fc4883ed7950341",
+  "missing_original_ids": [],
+  "new_ids": [
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[none-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_blend_mean_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_blend_min_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_exact_then_blend_mean_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_exact_then_blend_min_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_exact_then_mean_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_exact_then_min_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_mean_prediction-30]",
+    "tests/environments/test_morpion_streaming_dataset.py::test_every_policy_generated_scale_exact_parity[pv_min_prediction-30]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[duplicate_identity]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[duplicate_setup]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[extra_call]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[missing_call]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[missing_setup]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[missing_teardown]",
+    "tests/maintenance/test_ci_test_metrics.py::test_execution_guard_refuses_incomplete_or_duplicate_evidence[unexpected_test]",
+    "tests/maintenance/test_ci_test_metrics.py::test_reporter_preserves_real_execution_and_collection[False]",
+    "tests/maintenance/test_ci_test_metrics.py::test_reporter_preserves_real_execution_and_collection[True]"
+  ],
+  "counts": {
+    "base": 2691,
+    "full": 2709,
+    "fast": 145,
+    "pr": 2562
+  },
+  "unchanged_standard_exclusions": true,
+  "standard_exclusions": [
+    "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+  ],
+  "fast_subset_pr_subset_full": true,
+  "slowest_files_seconds": [
+    [
+      "tests/environments/test_morpion_numeric_policy.py",
+      162.16455117090663
+    ],
+    [
+      "tests/environments/test_morpion_streaming_dataset.py",
+      160.77607927615463
+    ],
+    [
+      "tests/environments/test_morpion_atomic_reevaluation_crashes.py",
+      143.3754163770427
+    ],
+    [
+      "tests/environments/test_morpion_durable_closed_crashes.py",
+      126.4434248120233
+    ],
+    [
+      "tests/environments/test_morpion_durable_scientific_v2_crashes.py",
+      122.67103222606238
+    ],
+    [
+      "tests/environments/test_morpion_durable_training_crashes.py",
+      112.0939563709544
+    ],
+    [
+      "tests/environments/test_morpion_checkpoint_patch_receipts.py",
+      100.21137998196355
+    ],
+    [
+      "tests/environments/test_morpion_scientific_training_reader.py",
+      92.71612429605739
+    ],
+    [
+      "tests/environments/test_morpion_generation_publication_crashes.py",
+      91.87397658804548
+    ],
+    [
+      "tests/environments/test_morpion_derived_continuation.py",
+      82.2087635500211
+    ],
+    [
+      "tests/environments/test_morpion_fenced_dataset_science.py",
+      80.25640514996485
+    ],
+    [
+      "tests/environments/test_morpion_durable_training.py",
+      71.98817655905441
+    ],
+    [
+      "tests/environments/test_morpion_durable_closed_snapshot.py",
+      67.0210548320465
+    ],
+    [
+      "tests/environments/test_morpion_atomic_reevaluation.py",
+      58.612709050990816
+    ],
+    [
+      "tests/environments/test_morpion_discovery_projection.py",
+      49.61932919303945
+    ],
+    [
+      "tests/environments/test_morpion_selected_generation_verification.py",
+      44.57197154601454
+    ],
+    [
+      "tests/environments/test_morpion_committed_evaluator_restore.py",
+      41.67425913301122
+    ],
+    [
+      "tests/environments/test_morpion_bootstrap_loop.py",
+      38.17219400709291
+    ],
+    [
+      "tests/environments/test_morpion_anemone_runner.py",
+      38.076682195031026
+    ],
+    [
+      "tests/environments/test_morpion_durable_scientific_v2.py",
+      38.05249357702269
+    ],
+    [
+      "tests/integration_test/one_match/test_integration.py",
+      35.62676381300844
+    ],
+    [
+      "tests/environments/test_morpion_canonical_validation_reuse.py",
+      34.57021489698673
+    ]
+  ]
+}

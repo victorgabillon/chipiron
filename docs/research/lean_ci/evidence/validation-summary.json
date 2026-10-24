@@ -1,0 +1,94 @@
+{
+  "implementation": "b67bd94572a1398bd82cb6187e70c0e20240a06c",
+  "selected": 2709,
+  "passed": 2707,
+  "skipped": [
+    {
+      "nodeid": "tests/environments/test_morpion_relational_model_integration.py::test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "phase": "setup"
+    },
+    {
+      "nodeid": "tests/learning/supervised/test_multi_input.py::test_multi_input_batch_moves_all_inputs_to_cuda",
+      "phase": "setup"
+    }
+  ],
+  "standard_exclusions": [
+    "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+  ],
+  "all_original_selected_ids_retained": true,
+  "execution_errors": [],
+  "worker_ids": [
+    "gw1",
+    "gw0"
+  ],
+  "elapsed_seconds": 1276.5045406999998,
+  "exit_code": 0,
+  "junit": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "2",
+    "tests": "2709",
+    "time": "1276.145",
+    "timestamp": "2026-10-24T15:07:53.283859+02:00",
+    "hostname": "pompote-AORUS-15P-KD"
+  },
+  "coverage": {
+    "covered_lines": 29237,
+    "num_statements": 35109,
+    "percent_covered": 80.27640761030163,
+    "percent_covered_display": "80",
+    "missing_lines": 5872,
+    "excluded_lines": 904,
+    "percent_statements_covered": 83.27494374661768,
+    "percent_statements_covered_display": "83",
+    "num_branches": 8884,
+    "num_partial_branches": 1527,
+    "covered_branches": 6079,
+    "missing_branches": 2805,
+    "percent_branches_covered": 68.42638451148132,
+    "percent_branches_covered_display": "68"
+  },
+  "static": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "artifacts": {
+    "full-tests.json": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/full-tests.json",
+      "sha256": "3b955c56a9eabd0fcdb2653354396389ee0f8f19706b8a02a02ae511286b00d8",
+      "bytes": 3005981
+    },
+    "full.xml": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/worktree/.ci-reports/full.xml",
+      "sha256": "1320a17d042761276be9a912fb870ddcf14c7e826a0adcfb98c35bba6d740dc9",
+      "bytes": 430215
+    },
+    "coverage.json": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/worktree/.ci-reports/coverage.json",
+      "sha256": "822e9267366eaffd3098314a5ac7a956e13787de60cff249a1709d220a688bfd",
+      "bytes": 4086571
+    },
+    "full.log": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/logs/full.log",
+      "sha256": "4637b76e7e7cded10b354d5dc128425178037fac631336e3a079238c7dc74aaa",
+      "bytes": 113910
+    }
+  },
+  "same_skipped_identities_as_baseline": true,
+  "skip_reasons": [
+    {
+      "test": "tests.environments.test_morpion_relational_model_integration::test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "reason": "CUDA unavailable"
+    },
+    {
+      "test": "tests.learning.supervised.test_multi_input::test_multi_input_batch_moves_all_inputs_to_cuda",
+      "reason": "CUDA unavailable"
+    }
+  ]
+}

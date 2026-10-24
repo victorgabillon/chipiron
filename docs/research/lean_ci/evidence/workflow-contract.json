@@ -1,0 +1,15 @@
+{
+  "mandatory_jobs_unchanged": true,
+  "tox_gates_unchanged": true,
+  "coverage_configuration_unchanged": true,
+  "ci_permissions_and_concurrency_unchanged": true,
+  "release_workflow_sha256": "72584212a1cf68a674b31d8ce40ba9d252b9d0012e574927782d73c5b2c1cffa",
+  "new_triggers": {
+    "schedule": [
+      {
+        "cron": "23 2 * * *"
+      }
+    ],
+    "workflow_dispatch": ""
+  }
+}

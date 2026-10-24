@@ -12,6 +12,8 @@ make test-full                 # every normally selected test, with coverage
 
 Set `PYTHON=/path/to/venv/bin/python` when needed. All three commands use the existing
 test-identity reporter and two local pytest processes with `--dist=loadfile`.
+Bare `make` now selects FAST. Use `make requirements` or `make init` explicitly
+for environment setup; those existing targets are unchanged.
 They do not start production pipeline workers. `TEST_COMMON` can override pytest
 concurrency; use `TEST_COMMON='-n 0 --strict-markers'` for serial experiments.
 `TEST_ARGS` passes ordinary pytest arguments, including explicit files and node IDs.

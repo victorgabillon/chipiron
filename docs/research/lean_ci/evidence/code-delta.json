@@ -1,0 +1,56 @@
+{
+  "configuration": {
+    "added": 21,
+    "removed": 0,
+    "files": [
+      ".github/workflows/ci.yaml",
+      "Makefile",
+      "pyproject.toml"
+    ]
+  },
+  "documentation": {
+    "added": 102,
+    "removed": 0,
+    "files": [
+      "docs/testing.md"
+    ]
+  },
+  "reporter": {
+    "added": 37,
+    "removed": 0,
+    "files": [
+      "scripts/ci_test_metrics.py"
+    ]
+  },
+  "tests": {
+    "added": 265,
+    "removed": 12,
+    "files": [
+      "tests/conftest.py",
+      "tests/environments/test_morpion_atomic_reevaluation_crashes.py",
+      "tests/environments/test_morpion_checkpoint_patch_receipts.py",
+      "tests/environments/test_morpion_committed_evaluator_restore.py",
+      "tests/environments/test_morpion_dataset_target_confidence.py",
+      "tests/environments/test_morpion_derived_continuation.py",
+      "tests/environments/test_morpion_durable_closed_crashes.py",
+      "tests/environments/test_morpion_durable_closed_snapshot.py",
+      "tests/environments/test_morpion_durable_scientific_v2_crashes.py",
+      "tests/environments/test_morpion_durable_training.py",
+      "tests/environments/test_morpion_durable_training_crashes.py",
+      "tests/environments/test_morpion_fenced_dataset.py",
+      "tests/environments/test_morpion_fenced_dataset_crashes.py",
+      "tests/environments/test_morpion_generation_publication_crashes.py",
+      "tests/environments/test_morpion_numeric_policy.py",
+      "tests/environments/test_morpion_scientific_training_reader.py",
+      "tests/environments/test_morpion_sharded_training_reader.py",
+      "tests/environments/test_morpion_streaming_dataset.py",
+      "tests/environments/test_morpion_value_certainty.py",
+      "tests/maintenance/test_ci_test_metrics.py"
+    ]
+  },
+  "production": {
+    "added": 0,
+    "removed": 0,
+    "files": []
+  }
+}

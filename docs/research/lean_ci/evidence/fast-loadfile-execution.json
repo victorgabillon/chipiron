@@ -1,0 +1,22 @@
+{
+  "selected_count": 145,
+  "selected_ids_sha256": "cd7bbfd4dc6bac9b9dd3c8ad920409d34f652a37c04e7f8579d4c180b48b7d0f",
+  "setup": {
+    "passed": 145,
+    "skipped": 0,
+    "failed": 0
+  },
+  "call": {
+    "passed": 145,
+    "skipped": 0,
+    "failed": 0
+  },
+  "exit_code": 0,
+  "execution_errors": [],
+  "worker_ids": [
+    "gw0",
+    "gw1"
+  ],
+  "raw_identity_report": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/fast-loadfile-tests.json",
+  "raw_identity_report_sha256": "47aae9f4ca3e32bfa664d0bfcbd8d90fca1756f4868dad5a63e59512b55db5e8"
+}
