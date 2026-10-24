@@ -1,0 +1,19 @@
+{
+  "base": "4ada24712dca95d1114d3e838a13c3447af998ac",
+  "research_executable_head": "46430a0fafa81909c8e3d9e57016fd816dd4866a",
+  "production_added": 0,
+  "production_removed": 0,
+  "ordinary_tests_changed": 0,
+  "runtime_configuration_changed": 0,
+  "research_python_added": 1480,
+  "research_python_files": {
+    "docs/research/e2e_bootstrap/checks.py": 405,
+    "docs/research/e2e_bootstrap/compare.py": 161,
+    "docs/research/e2e_bootstrap/reproduce.py": 157,
+    "docs/research/e2e_bootstrap/retention.py": 213,
+    "docs/research/e2e_bootstrap/scenarios.py": 186,
+    "docs/research/e2e_bootstrap/worker.py": 358
+  },
+  "src_tree": "73c4e69788ff599ce78ae66f08d1a23757a2753c",
+  "tests_tree": "ca9db89329b90340c4250d66f32f587f5685cdd0"
+}
