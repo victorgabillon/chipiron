@@ -46,12 +46,13 @@ def setup_activation(
     count: int = 4,
     layout: str = "sharded",
     seed_score: float | None = None,
+    branch_limit: int = 100000,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
     args = replace(
         scientific_args(root),
         runtime_checkpoint_format=layout,
-        tree_branch_limit=100000,
+        tree_branch_limit=branch_limit,
         max_growth_steps_per_cycle=1,
         save_after_seconds=0.0,
         dataset_confidence_policy="selected_value_v2",
@@ -115,7 +116,9 @@ def setup_activation(
         MorpionBootstrapEffectiveRuntimeConfig,
     )
 
-    runner.load_or_create(None, bundle, MorpionBootstrapEffectiveRuntimeConfig(100000))
+    runner.load_or_create(
+        None, bundle, MorpionBootstrapEffectiveRuntimeConfig(branch_limit)
+    )
     while runner.current_tree_size() < count:
         runner.grow(1)
     checkpoint = root / (
@@ -124,6 +127,7 @@ def setup_activation(
     runner.save_checkpoint(checkpoint)
     producer = {
         "revision": "atomic-activation-synthetic",
+        "objective": "maximum_total_moves",
         "evaluator": artifact_digest(bundle),
         "config_sha256": bootstrap_config_sha256(config),
     }
@@ -140,7 +144,7 @@ def setup_activation(
         metadata={
             "bootstrap_config_hash": bootstrap_config_sha256(config),
             "bootstrap_effective_runtime": {
-                "tree_branch_limit": 100000,
+                "tree_branch_limit": branch_limit,
                 "reevaluation_blend_alpha": 1.0,
             },
         },

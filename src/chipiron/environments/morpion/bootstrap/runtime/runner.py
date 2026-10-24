@@ -2068,6 +2068,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._current_evaluator_bundle_path = model_bundle_path
         return report
 
+    def validate_model_refresh_certificates(self) -> None:
+        """Strict bounded preflight, independent of diagnostic iterator fallbacks."""
+        from anemone.node_evaluation.evaluator_refresh import validate_refresh_node
+        from valanga.evaluations import Certainty
+
+        evaluator = MorpionStateEvaluator()
+        runtime = self._require_runtime()
+        for node in runtime._iter_nodes_by_depth(reverse=True):  # pylint: disable=protected-access
+            direct = node.tree_evaluation.direct_value
+            terminal = node.state.is_game_over()
+            if terminal or (
+                direct is not None and direct.certainty == Certainty.TERMINAL
+            ):
+                require(
+                    terminal and direct == evaluator.evaluate(node.state),
+                    "Terminal certificate disagrees with the actual state or terminal score.",
+                )
+            # Unknown external direct FORCED certificates have no admitted proof.
+            validate_refresh_node(node, None)
+
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
         assert_artifact_writable(Path(output_path))

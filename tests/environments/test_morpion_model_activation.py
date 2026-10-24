@@ -44,6 +44,10 @@ def test_activate_accepted_model(
     head = publication_records(after.metadata)[-1]
     seal = read_object(paths.work_dir / head["descriptor_path"])
     assert seal["active_evaluator"] == m2
+    assert (
+        seal["scientific_identity"]["producer"]["identity"]["objective"]
+        == "maximum_total_moves"
+    )
     assert seal["model_activation"]["request"] == request
     assert len(seal["model_pins"]) == 2
     authority = paths.run_state_path.read_bytes()

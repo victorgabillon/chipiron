@@ -11,17 +11,12 @@ from __future__ import annotations
 import copy
 import time
 from dataclasses import asdict, replace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import torch
-from anemone.node_evaluation.evaluator_refresh import validate_refresh_node
-from valanga.evaluations import Certainty
 
 from chipiron.environments.morpion.learning.target_confidence import (
     validate_confidence_policy,
-)
-from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
-    MorpionStateEvaluator,
 )
 
 from .checkpoint_patch_receipts import (
@@ -60,11 +55,7 @@ from .training_publication import accepted_selected_model
 from .worker_result_io import workspace_epoch
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
-
-    from anemone.nodes.algorithm_node.algorithm_node import AlgorithmNode
-
-    from chipiron.environments.morpion.types import MorpionState
+    from collections.abc import Mapping
 
     from .bootstrap_paths import MorpionBootstrapPaths
     from .run_state import MorpionBootstrapRunState
@@ -103,23 +94,6 @@ def _runner(
     ), runtime_config
 
 
-def _certificates(runner: AnemoneMorpionSearchRunner) -> None:
-    """Verify terminal facts/scores independently; reuse Anemone's tree proof rule."""
-    evaluator = MorpionStateEvaluator()
-    for node in cast(
-        "Iterable[AlgorithmNode[MorpionState]]", runner.iter_profile_nodes()
-    ):
-        direct = node.tree_evaluation.direct_value
-        # The state, not a saved exactness bit, decides terminality.
-        terminal = node.state.is_game_over()
-        if terminal or (direct is not None and direct.certainty == Certainty.TERMINAL):
-            require(
-                terminal and direct == evaluator.evaluate(node.state),
-                "Terminal certificate disagrees with the actual state or terminal score.",
-            )
-        validate_refresh_node(node, None)  # Unknown direct FORCED fails closed.
-
-
 def validate_activation_genesis(
     paths: MorpionBootstrapPaths,
     state: MorpionBootstrapRunState,
@@ -140,7 +114,7 @@ def validate_activation_genesis(
                 inside(paths.work_dir, model["path"]),
                 effective,
             )
-        _certificates(runner)
+        runner.validate_model_refresh_certificates()
     finally:
         runner.discard_uncommitted_runtime()
     return model
@@ -295,7 +269,7 @@ def activate_model(
                     session.runtime_model_path(None),
                     effective,
                 )
-            _certificates(runner)
+            runner.validate_model_refresh_certificates()
             # No nested lease: the existing session methods require caller ownership.
             result = session.apply(state, effective)
             if result.patch_applied:
@@ -308,7 +282,7 @@ def activate_model(
                         session.runtime_model_path(None),
                         effective,
                     )
-                _certificates(runner)
+                runner.validate_model_refresh_certificates()
             require(
                 not paths.pipeline_reevaluation_patch_path.exists(),
                 "Pending proposal was not durably acknowledged.",
