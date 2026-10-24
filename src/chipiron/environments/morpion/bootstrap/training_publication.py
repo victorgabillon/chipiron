@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, replace
@@ -622,6 +623,9 @@ def run_training(
             file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
             "Training input changed during computation.",
         )
+        # The synchronous trainer has returned; only this attempt owned these
+        # inputs/caches. Keep the accepted Dataset as the sole durable row source.
+        shutil.rmtree(rows.parent)
         status = MorpionPipelineTrainingStatusArtifact(
             generation=manifest.generation,
             status="done",

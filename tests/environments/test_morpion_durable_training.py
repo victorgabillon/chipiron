@@ -52,6 +52,9 @@ def test_normal_restart(tmp_path: Path, monkeypatch: Any) -> None:
         == rng
     )
     assert set(result.model_bundle_paths) == {"linear", "small_mlp"}
+    assert not (
+        publication._directory(paths, reference["attempt_id"]) / "input"
+    ).exists()
     assert paths.pipeline_active_model_path.read_bytes() == active
     assert not paths.pipeline_training_cursor_path.exists()
     record.pop(publication.ACCEPTED)

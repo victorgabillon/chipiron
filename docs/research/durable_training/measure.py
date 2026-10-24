@@ -96,7 +96,7 @@ def main(root: Path, *, restart: bool) -> None:
         directory = publication._directory(paths, reference["attempt_id"])
         observations["accepted_output_disk"] = disk_usage(directory)
         observations["descriptor_bytes"] = (directory / "proposal.json").stat().st_size
-        observations["input_and_cache_disk"] = disk_usage(directory / "input")
+        observations["transient_input_retained"] = (directory / "input").exists()
     (root / "measures.json").write_text(json.dumps(observations, indent=2) + "\n")
 
 
