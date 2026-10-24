@@ -10,11 +10,13 @@ import argparse
 import json
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
+    dataset_publication,
     load_bootstrap_run_state,
+    training_publication,
 )
 from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
     RECEIPTS_METADATA_KEY,
@@ -25,14 +27,22 @@ from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
 from chipiron.environments.morpion.bootstrap.derived.provenance import inside
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
+    active_model_projection,
     artifact_digest,
     capsule_lease,
     capsule_path,
+    committed_evaluator,
     file_digest,
     growth_receipt_ownership,
     publication_records,
     require,
     validate_capsule,
+)
+from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
+    load_linoo_selection_table,
+)
+from chipiron.environments.morpion.bootstrap.model_activation import (
+    activation_completion,
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     load_pipeline_active_model,
@@ -43,6 +53,16 @@ from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     load_pipeline_training_status_file,
     load_reevaluation_cursor,
 )
+from chipiron.environments.morpion.bootstrap.reevaluation_transaction import (
+    complete_cursor,
+    transaction_state,
+    validate_proposal,
+)
+
+if TYPE_CHECKING:
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        MorpionBootstrapRunState,
+    )
 
 
 def encoded_bytes(value: Any) -> int:
@@ -65,6 +85,7 @@ def _controls(paths: MorpionBootstrapPaths) -> dict[str, str]:
 
 def _work_roots(
     paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
     records: dict[int, dict[str, Any]],
     reasons: dict[int, list[str]],
     models: dict[str, set[str]],
@@ -85,14 +106,27 @@ def _work_roots(
             digest is None or observed == digest, f"Receipt model changed: {origin}"
         )
 
+    explicit_evaluator = state.metadata[PUBLICATION_KEY].get("evaluator_contract") == 1
+    transaction = transaction_state(state)
+    if explicit_evaluator:
+        active_identity, _ = committed_evaluator(paths.work_dir, state)
+        assert active_identity is not None
+        model(active_identity["path"], active_identity["sha256"])
     if paths.pipeline_active_model_path.exists():
         active = load_pipeline_active_model(paths.pipeline_active_model_path)
         require(
-            active.source == "local_training" and not active.metadata,
+            active == active_model_projection(paths, state)
+            if explicit_evaluator
+            else active.source == "local_training" and not active.metadata,
             "Unknown model ownership.",
         )
         model(active.model_bundle_path)
     for receipt in ledger.values():
+        if explicit_evaluator:
+            retain(
+                receipt.committed_generation, "exact-receipt-checkpoint-conservative"
+            )
+            retain(receipt.tree_generation, "exact-receipt-source-conservative")
         model(receipt.model_bundle_path, receipt.model_sha256)
         record = records.get(receipt.committed_generation)
         require(record is not None, "Missing receipt generation.")
@@ -107,8 +141,14 @@ def _work_roots(
         )
 
     cursor = None
+    if transaction is not None and transaction["accepted_cursor"] is not None:
+        cursor = complete_cursor(transaction["accepted_cursor"])
+        retain(cursor.tree_generation, "authoritative-accepted-cursor")
+        model(cursor.model_bundle_path)
     if paths.pipeline_reevaluation_cursor_path.exists():
-        cursor = load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+        projection = load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+        require(transaction is None or projection == cursor, "Stale cursor projection.")
+        cursor = projection
         require(not cursor.metadata, "Unknown producer cursor dependencies.")
         retain(cursor.tree_generation, "producer-cursor")
         model(cursor.model_bundle_path)
@@ -117,30 +157,44 @@ def _work_roots(
         patch = pending.patch
         retain(patch.tree_generation, "pending-patch")
         record = records[patch.tree_generation]
-        require(
-            patch.metadata.get("scientific_publication")
-            == {
-                "capsule_id": record["id"],
-                "scientific_identity": record["scientific_identity"],
-            },
-            "Pending patch scientific source mismatch.",
-        )
+        if transaction is not None:
+            receipt = ledger.get(patch.patch_id)
+            envelope = validate_proposal(
+                state,
+                patch,
+                duplicate_cursor_digest=None
+                if receipt is None
+                else receipt.accepted_cursor_sha256,
+            )
+            model(envelope["model"]["path"], envelope["model"]["sha256"])
+        else:
+            require(
+                patch.metadata.get("scientific_publication")
+                == {
+                    "capsule_id": record["id"],
+                    "scientific_identity": record["scientific_identity"],
+                },
+                "Pending patch scientific source mismatch.",
+            )
         model(patch.model_bundle_path)
         require(
-            cursor is not None
-            and (
-                cursor.last_patch_id,
-                cursor.tree_generation,
-                cursor.evaluator_generation,
-                cursor.evaluator_name,
-                cursor.model_bundle_path,
-            )
-            == (
-                patch.patch_id,
-                patch.tree_generation,
-                patch.evaluator_generation,
-                patch.evaluator_name,
-                patch.model_bundle_path,
+            transaction is not None
+            or (
+                cursor is not None
+                and (
+                    cursor.last_patch_id,
+                    cursor.tree_generation,
+                    cursor.evaluator_generation,
+                    cursor.evaluator_name,
+                    cursor.model_bundle_path,
+                )
+                == (
+                    patch.patch_id,
+                    patch.tree_generation,
+                    patch.evaluator_generation,
+                    patch.evaluator_name,
+                    patch.model_bundle_path,
+                )
             ),
             "Pending patch lacks matching producer cursor.",
         )
@@ -165,6 +219,14 @@ def _work_roots(
                 ),
                 "Conflicting pending receipt identity.",
             )
+
+    for generation, record in records.items():
+        if "accepted_dataset" in record:
+            dataset_publication.accepted_dataset_identity(paths, state, generation)
+            retain(generation, "accepted-dataset-source-and-results")
+        if "accepted_training" in record:
+            training_publication.accepted_selected_model(paths, state, generation)
+            retain(generation, "accepted-training-source-and-all-candidates")
 
     if paths.pipeline_training_cursor_path.exists():
         training = load_pipeline_training_cursor(paths.pipeline_training_cursor_path)
@@ -234,7 +296,14 @@ def _work_roots(
         "reevaluation_cursor.json",
         "reevaluation_patch.json",
         "training_cursor.json",
+        paths.latest_linoo_selection_table_path.name,
     }
+    if paths.latest_linoo_selection_table_path.exists():
+        require(
+            load_linoo_selection_table(paths.latest_linoo_selection_table_path)
+            is not None,
+            "Malformed diagnostic selection table.",
+        )
     require(
         all(p.name in known for p in paths.pipeline_dir.glob("*.json")),
         "Unknown pipeline control.",
@@ -315,6 +384,10 @@ def _inspect(
     models: dict[str, set[str]] = {}
     model_holders: dict[tuple[str, str], list[int]] = {}
     blockers = []
+    completion_evidence = []
+    # Publication still reads the genesis descriptor; it need not keep its tree
+    # merely for that metadata. This analysis never retires either artifact.
+    retained_commitments = {ordered[0]["descriptor_path"]}
     for record in ordered:
         generation, identifier = record["generation"], record["id"]
         pin = namespace / "pins" / f"{identifier}.lock"
@@ -349,6 +422,21 @@ def _inspect(
                 reader = True
                 reasons[generation].append("observed-reader-pin")
         descriptor = validate_capsule(paths.work_dir, record)
+        require(
+            ("model_activation" in descriptor)
+            == ("activation_request_sha256" in record),
+            "Missing activation completion binding.",
+        )
+        if "activation_request_sha256" in record:
+            completion = activation_completion(paths, state, record)
+            retained_commitments.add(record["descriptor_path"])
+            completion_evidence.append({
+                "generation": generation,
+                "request_sha256": completion["request_sha256"],
+                "descriptor_path": record["descriptor_path"],
+                "descriptor_sha256": record["descriptor_sha256"],
+                "historical_payload_required_for_acknowledgement": False,
+            })
         root = capsule_path(paths.work_dir, identifier, 3)
         model_pins = descriptor["model_pins"]
         for model in model_pins:
@@ -399,7 +487,7 @@ def _inspect(
             "files": [str(p.relative_to(paths.work_dir)) for p in files],
             "models": model_pins,
         })
-    _work_roots(paths, records, reasons, models, ledger)
+    _work_roots(paths, state, records, reasons, models, ledger)
     # Every unique receipt model must survive in a selected capsule, even if its
     # original logical path is kept outside the candidate namespace.
     live = {g for g, why in reasons.items() if why}
@@ -411,7 +499,9 @@ def _inspect(
     candidate_inodes = [
         i
         for i in inodes.values()
-        if live.isdisjoint(i["generations"]) and len(i["paths"]) == i["nlink"]
+        if live.isdisjoint(i["generations"])
+        and len(i["paths"]) == i["nlink"]
+        and retained_commitments.isdisjoint(i["paths"])
     ]
     require(
         all(len(i["paths"]) == i["nlink"] for i in inodes.values()),
@@ -447,6 +537,8 @@ def _inspect(
             state.metadata[PUBLICATION_KEY]
         ),
         "generations": generations,
+        "activation_completion_evidence": completion_evidence,
+        "retained_commitment_files": sorted(retained_commitments),
         "conditional_candidates": [] if blockers else sorted(set(records) - live),
         "conditional_reclaimable_files": [] if blockers else candidate_inodes,
         "conditional_reclaimable_file_blocks": 0
@@ -465,6 +557,8 @@ def _inspect(
         "outside_capsules": "all retained; not inventoried for reclamation",
         "limitations": [
             "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
+            "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
+            "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
             "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
             "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
             "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing.",

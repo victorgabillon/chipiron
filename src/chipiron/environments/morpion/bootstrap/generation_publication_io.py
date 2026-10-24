@@ -370,8 +370,13 @@ def _active_evaluator_pin(descriptor: dict[str, Any]) -> dict[str, Any]:
     return dict(matches[0])
 
 
-def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
-    """Verify every dependency before exposing scientific rows or acknowledging a patch."""
+def read_committed_descriptor(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
+    """Authenticate sealed metadata against a committed root, without reading payloads.
+
+    This proves only the recorded commitment. Scientific consumers and current-head
+    recovery must still use validate_capsule to verify every actual dependency.
+    The caller must obtain record from the authoritative run_state under ownership.
+    """
     version = record.get("publication_version", 1)
     root = capsule_path(work_dir, record["id"], version)
     seal = inside(work_dir, record["descriptor_path"])
@@ -401,6 +406,22 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
             and isinstance(record.get("scientific_identity"), dict),
             "Scientific publication identity mismatch.",
         )
+    require(
+        descriptor.get("parent_id") == record.get("parent_id"),
+        "Capsule parent identity mismatch.",
+    )
+    if "evaluator_contract" in descriptor:
+        require(version == 3, "Evaluator binding requires closed publication.")
+        _active_evaluator_pin(descriptor)
+    return descriptor
+
+
+def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
+    """Verify every dependency before exposing scientific rows or acknowledging a patch."""
+    descriptor = read_committed_descriptor(work_dir, record)
+    version = record.get("publication_version", 1)
+    root = capsule_path(work_dir, record["id"], version)
+    seal = root / capsule_seal(version)
     entries = descriptor.get("files")
     require(
         isinstance(entries, list) and bool(entries),
@@ -445,9 +466,6 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
                 )
     if version in (2, 3):
         validate_committed_identity(work_dir, root, record, descriptor)
-    if "evaluator_contract" in descriptor:
-        require(version == 3, "Evaluator binding requires closed publication.")
-        _active_evaluator_pin(descriptor)
     return descriptor
 
 

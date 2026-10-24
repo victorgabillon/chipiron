@@ -37,8 +37,8 @@ from .generation_publication_io import (
     growth_receipt_ownership,
     object_digest,
     publication_records,
+    read_committed_descriptor,
     require,
-    validate_capsule,
 )
 from .reevaluation_transaction import (
     GROWTH_NUMERIC_POLICY,
@@ -207,6 +207,70 @@ def _save(
     )
 
 
+def activation_completion(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify publication-v3/request-v1 completion, not historical scientific data.
+
+    The atomic authority binds the exact sealed descriptor and request digest.
+    Its retained metadata proves the committed transition even when old payloads
+    are unavailable. It does not authorize reading, restoring or deleting them.
+    A coherent malicious rewrite of the authority is outside its existing trust
+    boundary; this is a hash commitment, not a cryptographic signature.
+    """
+    records = publication_records(state.metadata)
+    require(record in records, "Activation completion is not committed.")
+    index = records.index(record)
+    require(
+        index > 0
+        and record.get("publication_version") == 3
+        and state.metadata[PUBLICATION_KEY].get("evaluator_contract") == 1,
+        "Unsupported activation completion contract.",
+    )
+    descriptor = read_committed_descriptor(paths.work_dir, record)
+    completion = descriptor.get("model_activation")
+    require(isinstance(completion, dict), "Missing activation completion evidence.")
+    assert isinstance(completion, dict)
+    request = completion.get("request")
+    require(isinstance(request, dict), "Missing completed activation request.")
+    assert isinstance(request, dict)
+    require(
+        type(request.get("schema_version")) is int
+        and request["schema_version"] == 1
+        and completion.get("request_sha256")
+        == record.get("activation_request_sha256")
+        == object_digest(request)
+        and request.get("identity") == workspace_epoch(state)
+        and object_digest(request.get("policy")) == object_digest(POLICY)
+        and request.get("config_sha256")
+        == descriptor["bootstrap_config_hash"]
+        == state.metadata.get("bootstrap_config_hash"),
+        "Activation completion request binding mismatch.",
+    )
+    parent = records[index - 1]
+    producer = parent["scientific_identity"]["producer"]["identity"]
+    require(
+        completion.get("previous_head") == record["parent_id"] == parent["id"]
+        and completion.get("previous_producer") == producer
+        and request["previous_model"]["sha256"] == producer["evaluator"]
+        and descriptor.get("active_evaluator") == request["candidate"]
+        and descriptor["scientific_identity"]["producer"]["identity"]
+        == {**producer, "evaluator": request["candidate"]["sha256"]}
+        and request["expected_head"]
+        in {r["id"] for r in records[max(0, index - 2) : index]}
+        and any(
+            r["generation"] == request["training_generation"]
+            and r.get("accepted_training") == request["accepted_training"]
+            for r in records[:index]
+        )
+        and isinstance(completion.get("refresh"), dict),
+        "Activation completion transition mismatch.",
+    )
+    return completion
+
+
 def activate_model(
     paths: MorpionBootstrapPaths, request: dict[str, Any]
 ) -> MorpionBootstrapRunState:
@@ -215,32 +279,34 @@ def activate_model(
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
         digest = object_digest(request)
-        for record in publication_records(state.metadata):
-            if record.get("activation_request_sha256") == digest:
-                descriptor = validate_capsule(paths.work_dir, record)
-                require(
-                    descriptor["model_activation"]["request"] == request,
-                    "Activation receipt mismatch.",
-                )
-                # Exact retry repairs only projections; it never reactivates an old M2.
-                producer = publication_records(state.metadata)[-1][
-                    "scientific_identity"
-                ]["producer"]["identity"]
-                repair = GrowthPatchReceiptSession(
-                    paths,
-                    object(),
-                    durable_generation_publication=True,
-                    scientific_v2_producer=producer,
-                    closed_scientific_snapshot=True,
-                )
-                assert repair.publication is not None
-                try:
-                    repair.publication.prepare(state)
-                    repair.publish_manifest(state)
-                    repair.acknowledge_pending(state)
-                finally:
-                    repair.publication.close()
-                return state
+        records = publication_records(state.metadata)
+        matching = [r for r in records if r.get("activation_request_sha256") == digest]
+        require(len(matching) <= 1, "Duplicate committed activation request.")
+        if matching:
+            completion = activation_completion(paths, state, matching[0])
+            require(
+                completion["request"] == request,
+                "Activation receipt mismatch.",
+            )
+            # Exact retry repairs only projections; it never reactivates an old M2.
+            producer = publication_records(state.metadata)[-1]["scientific_identity"][
+                "producer"
+            ]["identity"]
+            repair = GrowthPatchReceiptSession(
+                paths,
+                object(),
+                durable_generation_publication=True,
+                scientific_v2_producer=producer,
+                closed_scientific_snapshot=True,
+            )
+            assert repair.publication is not None
+            try:
+                repair.publication.prepare(state)
+                repair.publish_manifest(state)
+                repair.acknowledge_pending(state)
+            finally:
+                repair.publication.close()
+            return state
         require(
             digest
             == object_digest(_request(paths, state, request["training_generation"])),
