@@ -178,7 +178,14 @@ def audit(root: Path) -> dict:
             "discovery_projection_bytes": sum(
                 p.stat().st_size
                 for p in paths.pipeline_dir.rglob("*.json")
-                if p.is_file() and "results" not in p.parts
+                if p.is_file()
+                and p.name
+                in {
+                    "manifest.json",
+                    "dataset_status.json",
+                    "training_status.json",
+                    "active_model.json",
+                }
             ),
             "limitations": [
                 "All committed capsules remain required by protocol 3.",

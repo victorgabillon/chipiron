@@ -76,6 +76,7 @@ def main() -> None:
         paths = MorpionBootstrapPaths.from_work_dir(root)
         before = authority(paths)
         if case == "late":
+            old_projection = paths.pipeline_active_model_path.read_bytes()
             # Preserve original pending bytes as test evidence; only the cloned,
             # unpublished proposal is moved. No committed artifact is changed.
             paths.pipeline_reevaluation_patch_path.rename(
@@ -125,6 +126,29 @@ def main() -> None:
                     assert process.wait(timeout=60) == 0
                     assert authority(paths) == after
                     assert not paths.pipeline_reevaluation_patch_path.exists()
+                    paths.pipeline_active_model_path.write_bytes(old_projection)
+                    with (root.parent / "stale-projection-restart.log").open(
+                        "w"
+                    ) as restart_log:
+                        subprocess.run(
+                            [
+                                sys.executable,
+                                "-m",
+                                "docs.research.e2e_bootstrap.worker",
+                                "restart",
+                                str(root),
+                                "--label",
+                                "stale-projection",
+                            ],
+                            stdout=restart_log,
+                            stderr=subprocess.STDOUT,
+                            check=True,
+                        )
+                    assert authority(paths) == after
+                    evidence["stale_projection"] = {
+                        "authority_unchanged": True,
+                        "cold_restored_model": after["model"],
+                    }
                     evidence[case] = {
                         "before": before,
                         "after": after,
