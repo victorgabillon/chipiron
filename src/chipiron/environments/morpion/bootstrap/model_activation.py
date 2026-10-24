@@ -237,7 +237,8 @@ def activation_completion(
     require(isinstance(request, dict), "Missing completed activation request.")
     assert isinstance(request, dict)
     require(
-        type(request.get("schema_version")) is int
+        isinstance(request.get("schema_version"), int)
+        and not isinstance(request["schema_version"], bool)
         and request["schema_version"] == 1
         and completion.get("request_sha256")
         == record.get("activation_request_sha256")
