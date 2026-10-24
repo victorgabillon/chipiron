@@ -80,6 +80,7 @@ def save_closed_scientific_snapshot(
     metadata: Mapping[str, object] | None = None,
     created_at_unix_s: float | None = None,
     _validation_result: dict[str, Any] | None = None,
+    previous_producer: Mapping[str, str] | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     """Create a new standalone directory atomically, without committing a run.
 
@@ -156,7 +157,20 @@ def save_closed_scientific_snapshot(
                     )
                 )
                 _require(
-                    source.provenance["producer"] == identity,
+                    source.provenance["producer"]
+                    == (
+                        identity
+                        if previous_producer is None
+                        else _producer(previous_producer)
+                    )
+                    and (
+                        previous_producer is None
+                        or _producer({
+                            **previous_producer,
+                            "evaluator": producer["evaluator"],
+                        })
+                        == identity
+                    ),
                     "source producer/codec identity changed",
                 )
                 _require(

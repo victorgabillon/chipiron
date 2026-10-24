@@ -33,6 +33,7 @@ def initialize_scientific_v2_publication(
     fenced_dataset: bool = False,
     durable_training: bool = False,
     growth_scoring: bool = False,
+    model_activation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -132,6 +133,21 @@ def initialize_scientific_v2_publication(
             closed_scientific_snapshot=closed_scientific_snapshot,
         )
         publication.config_hash = metadata.get("bootstrap_config_hash")
+        if model_activation:
+            from .model_activation import validate_activation_genesis
+
+            require(
+                closed_scientific_snapshot
+                and atomic_reevaluation
+                and fenced_dataset
+                and durable_training
+                and growth_scoring,
+                "Model activation requires the complete fresh scientific protocol.",
+            )
+            publication.active_evaluator = validate_activation_genesis(
+                paths, state, producer
+            )
+            publication.evaluator_contract = True
         require(
             isinstance(publication.config_hash, str),
             "Missing baseline config identity.",

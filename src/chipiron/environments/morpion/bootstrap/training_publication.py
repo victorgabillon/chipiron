@@ -365,6 +365,29 @@ def _validate(
     return status
 
 
+def accepted_selected_model(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    generation: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Verify the accepted result and all its original Dataset/model dependencies."""
+    record = publication_record(state, generation)
+    reference = record.get(ACCEPTED)
+    require(reference is not None, "No exactly accepted Training result.")
+    assert isinstance(reference, dict)
+    proposal = _proposal(paths, reference)
+    status = _validate(paths, state, proposal, verify=True, record=record)
+    name = status.selected_evaluator_name
+    return reference, {
+        **proposal["models"][name],
+        "generation": generation,
+        "name": name,
+        "source": "local_training",
+        "source_generation": generation,
+        "local_trained_generation": generation,
+    }
+
+
 def project_training(
     paths: MorpionBootstrapPaths,
     state: MorpionBootstrapRunState,

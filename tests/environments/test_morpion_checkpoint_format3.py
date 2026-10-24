@@ -75,6 +75,6 @@ def test_format2_is_rejected_without_rewriting(tmp_path: Path, layout: str) -> N
         write_checkpoint_json_payload(payload, path)
         original = path.read_bytes()
     restored = AnemoneMorpionSearchRunner(live._args)
-    with pytest.raises(ValueError, match="(?i)(format|version)"):
+    with pytest.raises(ValueError, match=r"(?i)(format|version)"):
         restored.load_or_create(path, None)
     assert (manifest if layout == "sharded" else path).read_bytes() == original

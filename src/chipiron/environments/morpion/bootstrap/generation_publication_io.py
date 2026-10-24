@@ -15,8 +15,9 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
 
+from .cycle_timing import timestamp_utc_from_unix_s
 from .derived.provenance import inside, sync_checkpoint
-from .pipeline_artifacts import DISCOVERY_METADATA_KEY
+from .pipeline_artifacts import DISCOVERY_METADATA_KEY, MorpionPipelineActiveModel
 from .sharded_training_v2_contract import (
     CLOSED_KIND,
     CLOSED_LAYOUT,
@@ -295,7 +296,25 @@ def committed_evaluator(
         == state.metadata.get("bootstrap_config_hash"),
         "Committed evaluator configuration changed.",
     )
+    require(
+        ("evaluator_contract" in descriptor)
+        == ("evaluator_contract" in state.metadata[PUBLICATION_KEY]),
+        "Committed evaluator contract downgrade or mismatch.",
+    )
     pins = descriptor["model_pins"]
+    if "evaluator_contract" in state.metadata[PUBLICATION_KEY]:
+        require(
+            isinstance(state.metadata[PUBLICATION_KEY]["evaluator_contract"], int)
+            and not isinstance(
+                state.metadata[PUBLICATION_KEY]["evaluator_contract"], bool
+            )
+            and state.metadata[PUBLICATION_KEY]["evaluator_contract"] == 1
+            and descriptor.get("evaluator_contract") == 1,
+            "Unsupported committed evaluator contract.",
+        )
+        model = descriptor["active_evaluator"]
+        pin = _active_evaluator_pin(descriptor)
+        return model, inside(capsule_path(work_dir, head["id"], version), pin["path"])
     require(isinstance(pins, list) and len(pins) <= 1, "Ambiguous committed evaluator.")
     if not pins:
         return None, None
@@ -303,6 +322,52 @@ def committed_evaluator(
     model = {k: v for k, v in pin.items() if k != "origin"}
     model["path"] = pin["origin"]
     return model, inside(capsule_path(work_dir, head["id"], version), pin["path"])
+
+
+def active_model_projection(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> MorpionPipelineActiveModel:
+    """Derive advisory discovery from the sealed binding; do not infer activation."""
+    model, _ = committed_evaluator(paths.work_dir, state)
+    require(model is not None, "Missing explicitly committed evaluator.")
+    assert model is not None
+    assert state.last_save_unix_s is not None
+    return MorpionPipelineActiveModel(
+        generation=model["generation"],
+        evaluator_name=model["name"],
+        model_bundle_path=model["path"],
+        source=model["source"],
+        source_generation=model["source_generation"],
+        local_trained_generation=model["local_trained_generation"],
+        updated_at_utc=timestamp_utc_from_unix_s(state.last_save_unix_s),
+        metadata={"committed_head": state.metadata[PUBLICATION_KEY]["head_id"]},
+    )
+
+
+def _active_evaluator_pin(descriptor: dict[str, Any]) -> dict[str, Any]:
+    """One explicit scientific model binding, shared by sealing and restoration."""
+    require(
+        isinstance(descriptor.get("evaluator_contract"), int)
+        and not isinstance(descriptor["evaluator_contract"], bool)
+        and descriptor["evaluator_contract"] == 1,
+        "Unsupported evaluator contract.",
+    )
+    model = descriptor.get("active_evaluator")
+    require(isinstance(model, dict), "Missing active evaluator binding.")
+    assert isinstance(model, dict)
+    matches = [
+        pin
+        for pin in descriptor["model_pins"]
+        if {**{k: v for k, v in pin.items() if k != "origin"}, "path": pin["origin"]}
+        == model
+    ]
+    require(len(matches) == 1, "Active evaluator has no unique immutable binding.")
+    require(
+        descriptor["scientific_identity"]["producer"]["identity"]["evaluator"]
+        == model["sha256"],
+        "Scientific producer differs from active evaluator.",
+    )
+    return dict(matches[0])
 
 
 def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
@@ -380,6 +445,9 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
                 )
     if version in (2, 3):
         validate_committed_identity(work_dir, root, record, descriptor)
+    if "evaluator_contract" in descriptor:
+        require(version == 3, "Evaluator binding requires closed publication.")
+        _active_evaluator_pin(descriptor)
     return descriptor
 
 

@@ -112,6 +112,13 @@ def artifact_sha256(path: Path) -> str:
 
 def current_model_identity(paths: MorpionBootstrapPaths) -> dict[str, Any]:
     """Share the exact bundle and active-model identity between producer and consumer."""
+    if paths.run_state_path.exists():
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if "evaluator_contract" in state.metadata.get(PUBLICATION_KEY, {}):
+            model, _ = committed_evaluator(paths.work_dir, state)
+            _require(model is not None, "Missing committed active model.")
+            assert model is not None
+            return model
     active = load_pipeline_active_model(paths.pipeline_active_model_path)
     bundle = inside(paths.work_dir, active.model_bundle_path)
     return {
@@ -523,6 +530,15 @@ class GrowthPatchReceiptSession:
                         self.publication.state.latest_tree_snapshot_path,
                     ),
                     _validation_result=self.publication.closed_validation,
+                    **(
+                        {
+                            "previous_producer": self.publication.activation[
+                                "previous_producer"
+                            ]
+                        }
+                        if self.publication.activation is not None
+                        else {}
+                    ),
                 )
                 _require(
                     isinstance(result, str | Path),
@@ -853,6 +869,14 @@ class GrowthPatchReceiptSession:
 
     def publish_manifest(self, state: MorpionBootstrapRunState) -> None:
         """Repair a missing discovery projection after the authoritative state commit."""
+        if "evaluator_contract" in state.metadata.get(PUBLICATION_KEY, {}):
+            from .generation_publication_io import active_model_projection
+            from .pipeline_artifacts import save_pipeline_active_model
+
+            save_pipeline_active_model(
+                active_model_projection(self.paths, state),
+                self.paths.pipeline_active_model_path,
+            )
         if state.latest_tree_snapshot_path is None:
             return
         path = self.paths.pipeline_manifest_path_for_generation(state.generation)

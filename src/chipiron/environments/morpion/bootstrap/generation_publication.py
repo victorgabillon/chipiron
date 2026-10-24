@@ -273,6 +273,9 @@ class DurableGenerationPublication:
         self.model_pins: list[dict[str, Any]] = []
         self.sharded_path: Path | None = None
         self.config_hash: str | None = None
+        self.evaluator_contract = False
+        self.active_evaluator: dict[str, Any] | None = None
+        self.activation: dict[str, Any] | None = None
 
     def start(self, generation: int) -> None:
         """Reserve a unique private attempt; incomplete attempts are never discovery."""
@@ -315,13 +318,34 @@ class DurableGenerationPublication:
             "Run state differs from its committed publication head.",
         )
         descriptor = validate_capsule(self.paths.work_dir, head)
+        if state.metadata[PUBLICATION_KEY].get("evaluator_contract") is not None:
+            from .generation_publication_io import committed_evaluator
+
+            model, _ = committed_evaluator(self.paths.work_dir, state)
+            require(self.version == 3, "Evaluator binding requires closed publication.")
+            self.evaluator_contract = True
+            if self.activation is None:
+                self.active_evaluator = model
+                current = head["scientific_identity"]["producer"]["identity"]
+                require(
+                    self.producer is not None
+                    and {k: v for k, v in self.producer.items() if k != "evaluator"}
+                    == {k: v for k, v in current.items() if k != "evaluator"},
+                    "Scientific configuration or revision changed.",
+                )
+                self.producer = dict(current)
         if self.version in (2, 3):
             from .sharded_training_v2 import _producer
 
             assert self.producer is not None
             require(
                 records[0]["generation"] == 1
-                and head["scientific_identity"]["producer"] == _producer(self.producer),
+                and head["scientific_identity"]["producer"]
+                == _producer(
+                    self.producer
+                    if self.activation is None
+                    else self.activation["previous_producer"]
+                ),
                 "Scientific publication producer or genesis changed.",
             )
         return descriptor
@@ -613,10 +637,17 @@ class DurableGenerationPublication:
                 initial = read_object(
                     inside(self.paths.work_dir, previous[0]["descriptor_path"])
                 )
-                require(
-                    self.model_pins == initial["model_pins"],
-                    "Scientific publication model epoch changed; explicit new lineage required.",
-                )
+                if self.evaluator_contract:
+                    require(
+                        self.active_evaluator == parent["active_evaluator"]
+                        or self.activation is not None,
+                        "Evaluator changed without explicit activation.",
+                    )
+                else:
+                    require(
+                        self.model_pins == initial["model_pins"],
+                        "Scientific publication model epoch changed; explicit new lineage required.",
+                    )
         parent_id = None if not previous else previous[-1]["id"]
         files = [p for p in sorted(self.staging.rglob("*")) if p.is_file()]
         require(
@@ -649,6 +680,15 @@ class DurableGenerationPublication:
                 scientific_identity=scientific_identity,
                 canonical_validation=canonical_validation,
             )
+        if self.evaluator_contract:
+            require(
+                self.active_evaluator is not None, "Missing explicit active evaluator."
+            )
+            descriptor.update(
+                evaluator_contract=1, active_evaluator=self.active_evaluator
+            )
+            if self.activation is not None:
+                descriptor["model_activation"] = self.activation
         seal_name = capsule_seal(self.version)
         atomic_json(self.staging / seal_name, descriptor)
         sync_artifact(self.staging, self.paths.work_dir)
@@ -689,6 +729,8 @@ class DurableGenerationPublication:
                 publication_version=self.version,
                 scientific_identity=scientific_identity,
             )
+        if self.activation is not None:
+            record["activation_request_sha256"] = self.activation["request_sha256"]
         if self.version == 3:
             validate_capsule(self.paths.work_dir, record)
         metadata = dict(state.metadata)
@@ -696,12 +738,14 @@ class DurableGenerationPublication:
             "schema_version": self.version,
             "head_id": self.identifier,
             "generations": [*previous, record],
+            **({"evaluator_contract": 1} if self.evaluator_contract else {}),
         }
         return replace(state, metadata=metadata)
 
     def committed(self, state: MorpionBootstrapRunState) -> None:
         """Keep volatile context aligned only after the authoritative state commit."""
         self.state = state
+        self.activation = None
         self.validate_state(state)
         self.close()
 

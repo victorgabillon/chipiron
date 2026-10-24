@@ -417,6 +417,7 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         repr=False,
     )
     _evaluator: object | None = field(default=None, init=False, repr=False)
+    sealed_model_bundle_path: Path | None = None
     last_inference_s: float = field(default=0.0, init=False)
     last_model_load_s: float = field(default=0.0, init=False)
 
@@ -429,7 +430,7 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         """Load and memoize the active-model evaluator bundle."""
         if self._evaluator is None:
             self._evaluator = load_morpion_evaluator_from_model_bundle(
-                self.model_bundle_path
+                self.sealed_model_bundle_path or self.model_bundle_path
             )
         return self._evaluator
 
@@ -511,7 +512,29 @@ def build_active_model_reevaluation_evaluator(
 ) -> MorpionActiveModelNodeReevaluationEvaluator:
     """Resolve one active-model bundle path into the default reevaluation adapter."""
     model_bundle_path = paths.resolve_work_dir_path(active_model.model_bundle_path)
-    if model_bundle_path is None or not model_bundle_path.is_dir():
+    sealed_path = None
+    if paths.run_state_path.exists():
+        from .generation_publication_io import (
+            PUBLICATION_KEY,
+            committed_evaluator,
+        )
+
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if "evaluator_contract" in state.metadata.get(PUBLICATION_KEY, {}):
+            model, sealed_path = committed_evaluator(paths.work_dir, state)
+            require(
+                model is not None
+                and (model["generation"], model["name"], model["path"])
+                == (
+                    active_model.generation,
+                    active_model.evaluator_name,
+                    active_model.model_bundle_path,
+                ),
+                "Reevaluation model differs from its committed binding.",
+            )
+    if model_bundle_path is None or (
+        sealed_path is None and not model_bundle_path.is_dir()
+    ):
         missing_path = (
             active_model.model_bundle_path
             if model_bundle_path is None
@@ -520,6 +543,7 @@ def build_active_model_reevaluation_evaluator(
         raise _reevaluation_bundle_missing_error(missing_path)
     return MorpionActiveModelNodeReevaluationEvaluator(
         model_bundle_path=model_bundle_path,
+        sealed_model_bundle_path=sealed_path,
     )
 
 
@@ -711,7 +735,28 @@ def run_morpion_reevaluation_worker_once(
         )
 
     try:
-        active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+        from .generation_publication_io import PUBLICATION_KEY
+
+        authority = (
+            load_bootstrap_run_state(paths.run_state_path)
+            if paths.run_state_path.exists()
+            else None
+        )
+        if authority is not None and "evaluator_contract" in authority.metadata.get(
+            PUBLICATION_KEY, {}
+        ):
+            from .generation_publication_io import active_model_projection
+
+            require(
+                not use_snapshot_value_fallback
+                and evaluator is None
+                and use_streaming_sharded_reader
+                and allow_scientific_v2,
+                "Activation workspaces require built-in neural Reevaluation; saved-value fallback is disabled.",
+            )
+            active_model = active_model_projection(paths, authority)
+        else:
+            active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
     except MissingMorpionPipelineArtifactError:
         _maybe_log_reevaluation_idle(
             paths=paths,
@@ -942,7 +987,13 @@ def run_morpion_reevaluation_worker_once(
                 evaluator, MorpionWindowNodeReevaluationEvaluator
             ):
                 fallback_reason = "custom_evaluator_requires_complete_snapshot"
-            elif not is_sharded_generation_manifest(snapshot_path):
+            elif not (
+                captured_state is not None
+                and captured_state.metadata.get(PUBLICATION_KEY, {}).get(
+                    "evaluator_contract"
+                )
+                == 1
+            ) and not is_sharded_generation_manifest(snapshot_path):
                 fallback_reason = "legacy_flat_snapshot"
             else:
                 view = reader_stack.enter_context(
@@ -950,6 +1001,15 @@ def run_morpion_reevaluation_worker_once(
                         snapshot_path,
                         cache_dir=reader_cache_dir,
                         allow_scientific_v2=allow_scientific_v2,
+                        **(
+                            {"allow_closed_snapshot": True}
+                            if captured_state is not None
+                            and captured_state.metadata.get(PUBLICATION_KEY, {}).get(
+                                "evaluator_contract"
+                            )
+                            == 1
+                            else {}
+                        ),
                     )
                 )
                 reader_mode = "sharded_indexed"
@@ -1233,6 +1293,14 @@ def run_morpion_reevaluation_worker_once(
                     current_model_identity(paths) == captured_model,
                     "Model changed during proposal computation.",
                 )
+                if "evaluator_contract" in publication_state.metadata.get(
+                    PUBLICATION_KEY, {}
+                ):
+                    from .generation_publication_io import sync_artifact
+
+                    # Adopt an observed post-replace head before publishing work
+                    # derived from it, including after the previous owner died.
+                    sync_artifact(paths.run_state_path, paths.work_dir)
             published = _save_reevaluation_patch_exclusive(
                 patch, paths.pipeline_reevaluation_patch_path
             )

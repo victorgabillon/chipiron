@@ -18,6 +18,7 @@ from chipiron.environments.morpion.learning.tree_to_dataset import (
 
 from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
+    PUBLICATION_KEY,
     file_digest,
     generation_read_pin,
     publish_directory_if_absent,
@@ -242,6 +243,11 @@ def admit_dataset(
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Dataset publication is not enabled.")
+        if state.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract"):
+            require(
+                options["dataset_confidence_policy"] == "selected_value_v2",
+                "Activation workspaces require selected-value-v2 Dataset confidence.",
+            )
         record = _record(state, generation)
         if ACCEPTED in record:
             proposal = _proposal(paths, record[ACCEPTED])

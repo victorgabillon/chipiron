@@ -70,6 +70,7 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     committed_evaluator,
     generation_read_pin,
     locate_capsule,
+    read_object,
     require,
 )
 from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTreeStatus
@@ -1348,6 +1349,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         producer: Mapping[str, str],
         committed_source: Path | None = None,
         _validation_result: dict[str, Any] | None = None,
+        previous_producer: Mapping[str, str] | None = None,
     ) -> Path:
         """Explicit closed export from the same frozen runtime as its checkpoint."""
         from chipiron.environments.morpion.bootstrap.closed_scientific_snapshot import (
@@ -1363,6 +1365,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             producer=producer,
             committed_source=committed_source,
             _validation_result=_validation_result,
+            previous_producer=previous_producer,
         )
         self._latest_training_export_stats = stats
         return path
@@ -1896,6 +1899,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         model_bundle_path: Path | None = None,
     ) -> object:
         """Restore one live runtime from an opt-in sharded checkpoint directory."""
+        require(
+            read_object(tree_snapshot_path / "manifest.json").get(
+                "checkpoint_format_version"
+            )
+            == 3,
+            "Explicit checkpoint format 3 required; no historical conversion.",
+        )
         manifest = read_sharded_checkpoint_manifest(
             tree_snapshot_path / "manifest.json"
         )
@@ -2038,6 +2048,25 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if self._runtime is None:
             raise UninitializedMorpionSearchRunnerError
         return self._runtime
+
+    def refresh_model_estimates(self, model_bundle_path: Path) -> Any:
+        """One bounded full scientific refresh in a private, quiescent runtime.
+
+        The owning transaction must verify terminal facts/scores first and discard
+        this runtime on any failure.
+        Loading weights must not consume the caller's unrelated Torch RNG.
+        """
+        import torch
+
+        with torch.random.fork_rng(devices=[]):
+            evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
+        report = self._require_runtime().refresh_with_evaluator(
+            evaluator,
+            scope="all",
+            batch_size=64,
+        )
+        self._current_evaluator_bundle_path = model_bundle_path
+        return report
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
