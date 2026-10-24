@@ -16,6 +16,7 @@ from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
 from anemone.checkpoints import (
+    CHECKPOINT_FORMAT_VERSION,
     AnchorCheckpointStatePayload,
     CheckpointAtomPayload,
     DeltaCheckpointStatePayload,
@@ -267,6 +268,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         args: AnemoneMorpionSearchRunnerArgs | None = None,
     ) -> None:
         """Initialize the real runner with explicit or default runtime settings."""
+        require(
+            CHECKPOINT_FORMAT_VERSION == 3,
+            "Morpion requires Anemone checkpoint format 3 (90c7ef4454ed or its validated successor).",
+        )
         self._args = args if args is not None else AnemoneMorpionSearchRunnerArgs()
         self._runtime: object | None = None
         self._random_generator = Random(self._args.random_seed)
