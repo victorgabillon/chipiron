@@ -67,6 +67,7 @@ def setup_scaled(root: Path) -> Any:
     return args, paths, state
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("score", [42.0, -42.0, 0.0, -0.0, 1.25])
 def test_same_neural_states_depths_and_dag(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, score: float
@@ -117,6 +118,7 @@ def test_same_neural_states_depths_and_dag(
     ]
 
 
+@pytest.mark.fast
 def test_real_move34_root_and_terminal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -140,6 +142,7 @@ def test_real_move34_root_and_terminal(
     assert rows[1].direct_value == 35 and rows[1].is_terminal and rows[1].is_exact
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("streaming", [False, True])
 def test_scaled_worker_exact_receipt_retry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, streaming: bool
@@ -166,6 +169,7 @@ def test_scaled_worker_exact_receipt_retry(
     assert not paths.pipeline_reevaluation_patch_path.exists()
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize(
     "fault",
     ["old", "policy", "row", "source", "model", "unknown_exact", "unknown_terminal"],
@@ -215,6 +219,7 @@ def test_incompatible_proposals_rejected(tmp_path: Path, fault: str) -> None:
     assert paths.pipeline_reevaluation_patch_path.exists()
 
 
+@pytest.mark.fast
 def test_scoring_requires_explicit_atomic_genesis(tmp_path: Path) -> None:
     """Neither a legacy workspace nor an unversioned producer can silently switch."""
     args, paths, state = setup_closed_baseline(tmp_path, initialize=False)
@@ -224,6 +229,7 @@ def test_scoring_requires_explicit_atomic_genesis(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.fast
 def test_scaled_full_and_bounded_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -235,7 +241,16 @@ def test_scaled_full_and_bounded_bytes(
 
 
 @pytest.mark.parametrize(
-    "boundary", crash_boundaries.PRE_COMMIT + crash_boundaries.POST_COMMIT
+    "boundary",
+    [
+        pytest.param(
+            value,
+            marks=pytest.mark.fast
+            if value in ["after_state", "before_state"]
+            else pytest.mark.exhaustive,
+        )
+        for value in crash_boundaries.PRE_COMMIT + crash_boundaries.POST_COMMIT
+    ],
 )
 def test_scaled_consumer_process_death(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boundary: str

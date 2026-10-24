@@ -146,6 +146,7 @@ def committed_neural(
     return paths, state, current, runner_args
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("checkpoint_format", ["json-zst", "sharded"])
 @pytest.mark.parametrize("rollout", [False, True])
 def test_committed_neural_restore(
@@ -208,6 +209,7 @@ def test_committed_neural_restore(
             )
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize(
     "fault", ["missing", "corrupt", "substitute", "config", "refresh"]
 )
@@ -240,6 +242,7 @@ def test_committed_dependency_failure(tmp_path: Path, fault: str) -> None:
         )
 
 
+@pytest.mark.fast
 def test_growth_ignores_mutable_active_projection(tmp_path: Path) -> None:
     """A saved head remains active even if discovery advertises unrelated Training."""
     from tests.environments.morpion_durable_closed_helpers import (

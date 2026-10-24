@@ -233,7 +233,18 @@ def run_crash(root: Path, boundary: str) -> None:
     assert result.returncode == 73, result.stderr.decode()
 
 
-@pytest.mark.parametrize("boundary", PRE_COMMIT + POST_COMMIT)
+@pytest.mark.parametrize(
+    "boundary",
+    [
+        pytest.param(
+            value,
+            marks=()
+            if value in ["after_state", "before_state"]
+            else pytest.mark.exhaustive,
+        )
+        for value in PRE_COMMIT + POST_COMMIT
+    ],
+)
 def test_closed_crash_recovery(tmp_path: Path, boundary: str) -> None:
     """Verify closed crash recovery."""
     args, paths, initial = setup_closed_baseline(tmp_path)

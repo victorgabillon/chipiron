@@ -30,6 +30,7 @@ from tests.environments.morpion_durable_training_helpers import setup_training
 from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
 
 
+@pytest.mark.fast
 def test_normal_restart(tmp_path: Path, monkeypatch: Any) -> None:
     """Accept both models, repair status and keep all unrelated authority exact."""
     local_leaderboard(monkeypatch, tmp_path)
@@ -157,6 +158,7 @@ def test_refuse_changed_result(tmp_path: Path, monkeypatch: Any, damage: str) ->
     )
 
 
+@pytest.mark.fast
 def test_claim_takeover_and_conflicting_attempt(
     tmp_path: Path, monkeypatch: Any
 ) -> None:

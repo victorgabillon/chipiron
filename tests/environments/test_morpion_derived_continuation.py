@@ -277,6 +277,7 @@ def test_external_publication_is_derived_only(historical: Path, tmp_path: Path) 
     assert active["local_trained_generation"] is None
 
 
+@pytest.mark.exhaustive
 @pytest.mark.parametrize("failed_stage", STAGES)
 def test_ten_generation_barriers_resume_without_skipping(
     historical: Path, tmp_path: Path, failed_stage: str
@@ -325,6 +326,7 @@ def test_strict_restore_never_creates_fresh_tree(
         )
 
 
+@pytest.mark.exhaustive
 @pytest.mark.parametrize("interruption", ["before_commit", "after_commit"])
 def test_real_tiny_two_generation_pipeline_promotes_and_drains(
     historical: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interruption: str

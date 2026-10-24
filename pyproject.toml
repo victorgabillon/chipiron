@@ -127,6 +127,8 @@ addopts = "--cov=chipiron --cov-config=pyproject.toml --cov-report=term-missing"
 testpaths = ["tests"]
 norecursedirs = ["src"]
 markers = [
+  "fast: representative scientific and recovery checks for developer feedback",
+  "exhaustive: expensive scale or fault matrix; retained in unfiltered FULL validation",
   "integration: marks integration tests (deselect with '-m \"not integration\"')",
   "external_data: tests requiring external downloaded data",
 ]

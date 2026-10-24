@@ -78,6 +78,7 @@ def view(path: Path, **kwargs: Any) -> ShardedTrainingGenerationView:
     )
 
 
+@pytest.mark.fast
 def test_scientific_windows_export_order_and_contracts(tmp_path: Path) -> None:
     """Every scientific field/contract/provenance survives, including late parents."""
     path = source(tmp_path / "source")
@@ -113,6 +114,7 @@ def test_scientific_windows_export_order_and_contracts(tmp_path: Path) -> None:
         assert reused.index_reused
 
 
+@pytest.mark.fast
 def test_no_full_reader_snapshot_or_source_json_load(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -142,6 +144,7 @@ def test_no_full_reader_snapshot_or_source_json_load(
         )
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("policy", get_args(PvFamilyTargetPolicy))
 @pytest.mark.parametrize("backups", [False, True])
 def test_dataset_all_policy_exact_rows_metadata_jsonl(
@@ -276,6 +279,7 @@ def test_interrupted_build_not_reused(
         assert not actual.index_reused
 
 
+@pytest.mark.exhaustive
 def test_creation_map_larger_than_manifest_cap_is_streamed(tmp_path: Path) -> None:
     """A multi-MiB O(N) creation map never enters a Python dictionary."""
     path = generated_scientific_source(tmp_path / "source", 3000, id_padding=1500)
@@ -292,6 +296,7 @@ def test_creation_map_larger_than_manifest_cap_is_streamed(tmp_path: Path) -> No
     assert peak < 8 * 1024 * 1024
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize(
     "field",
     ["target_value_scalar", "effective_value_source", "parent_ids", "value_contract"],
@@ -747,6 +752,7 @@ def test_real_terminal_reference_and_reevaluation(
         assert rows[0].metadata["source"] == "terminal_existing_value"
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("target", ["DIRECT_VALUE", "TREE_VALUE", "EFFECTIVE_VALUE"])
 def test_selected_target_contract_payload_and_signed_zero(
     tmp_path: Path, target: str

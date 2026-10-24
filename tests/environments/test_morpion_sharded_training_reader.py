@@ -149,6 +149,7 @@ def test_every_snapshot_field_and_export_order_match(
             view.load_nodes(["absent"])
 
 
+@pytest.mark.exhaustive
 def test_randomized_cursor_parity_and_unicode_collation(tmp_path: Path) -> None:
     """Thousands of edge cases compare directly with the unchanged legacy selector."""
     rng = random.Random(1427)

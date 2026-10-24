@@ -156,6 +156,7 @@ def values(runner: Any) -> dict[str, Any]:
     }
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("alpha", [1.0, 0.25])
 @pytest.mark.parametrize("prediction", [35.0, 42.0])
 def test_model_prediction_keeps_its_own_certainty(
@@ -229,6 +230,7 @@ def test_partial_estimated_tree_still_updates_and_blends(
     assert evaluation.effective_value_source.value == "direct_self"
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("alpha", [1.0, 0.25])
 def test_model_does_not_replace_explicit_direct_proof(
     tmp_path: Path,
@@ -255,6 +257,7 @@ def test_model_does_not_replace_explicit_direct_proof(
     assert values(restored) == values(runner)
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("alpha", [1.0, 0.25])
 @pytest.mark.parametrize("direct_score", [2.0, 42.0])
 def test_partial_tree_proof_is_protected_independently_of_effective_exactness(
@@ -376,6 +379,7 @@ def test_proof_conditions_and_selector_remain_unchanged(
         )
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("alpha", [1.0, 0.25])
 def test_estimated_child_update_recomputes_parent_without_proof(
     tmp_path: Path,
@@ -397,6 +401,7 @@ def test_estimated_child_update_recomputes_parent_without_proof(
     assert runner._runtime.node_selector.base._classify_node(root) == "frontier"
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("complete", [False, True])
 def test_equal_score_candidates_keep_the_selected_certainty(
     monkeypatch: pytest.MonkeyPatch,

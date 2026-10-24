@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import replace
 from typing import TYPE_CHECKING, get_args
@@ -30,6 +31,7 @@ from chipiron.environments.morpion.learning import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
     from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
@@ -146,15 +148,50 @@ def assert_parity(path: Path, args: MorpionBootstrapArgs, root: Path) -> None:
         ).fetchall()
 
 
-@pytest.mark.parametrize("count", [1000, 5000, 10000])
+@pytest.fixture(scope="module")
+def dataset_source(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+) -> Iterator[Path]:
+    """One immutable input per size and worker; every policy owns its index/output."""
+    path = generated_dataset(tmp_path_factory.mktemp("dataset-source"), request.param)
+
+    def fingerprints() -> dict[str, str]:
+        result = {}
+        for source in path.parent.iterdir():
+            with source.open("rb") as stream:
+                result[source.name] = hashlib.file_digest(stream, "sha256").hexdigest()
+        return result
+
+    before = fingerprints()
+    for source in path.parent.iterdir():
+        source.chmod(0o444)
+    path.parent.chmod(0o555)
+    try:
+        yield path
+        assert fingerprints() == before
+    finally:
+        path.parent.chmod(0o755)
+        for source in path.parent.iterdir():
+            source.chmod(0o644)
+
+
+@pytest.mark.parametrize(
+    "dataset_source",
+    [
+        pytest.param(30, marks=pytest.mark.fast),
+        1000,
+        pytest.param(5000, marks=pytest.mark.exhaustive),
+        pytest.param(10000, marks=pytest.mark.exhaustive),
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize("policy", get_args(PvFamilyTargetPolicy))
 def test_every_policy_generated_scale_exact_parity(
-    tmp_path: Path, count: int, policy: PvFamilyTargetPolicy
+    tmp_path: Path, dataset_source: Path, policy: PvFamilyTargetPolicy
 ) -> None:
     """All nine scientific policies compare exactly at every requested population."""
-    path = generated_dataset(tmp_path / "export", count)
     assert_parity(
-        path,
+        dataset_source,
         MorpionBootstrapArgs(work_dir=tmp_path, dataset_family_target_policy=policy),
         tmp_path,
     )

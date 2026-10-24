@@ -76,6 +76,7 @@ def extract(args: MorpionBootstrapArgs, oracle: Any) -> MorpionSupervisedRows:
     )
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("policy", get_args(PvFamilyTargetPolicy))
 @pytest.mark.parametrize("backup", [False, True])
 @pytest.mark.parametrize("exact_only", [False, True])
@@ -162,6 +163,7 @@ def test_actual_endgame_all_nine_policies(
         assert load_morpion_supervised_rows(path) == expected
 
 
+@pytest.mark.fast
 def test_family_membership_does_not_prove_equal_state_values(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -216,6 +218,7 @@ def test_estimated_backup_does_not_inherit_direct_proof(
     assert proved.metadata["target_confidence"]["training_target_certainty"] == "FORCED"
 
 
+@pytest.mark.fast
 def test_missing_confidence_never_uses_node_flag(
     tmp_path: Path, sources: dict[str, Any]
 ) -> None:
@@ -244,6 +247,7 @@ def test_missing_confidence_never_uses_node_flag(
         )
 
 
+@pytest.mark.fast
 def test_same_state_contradiction_is_rejected(
     tmp_path: Path, sources: dict[str, Any]
 ) -> None:
@@ -297,6 +301,7 @@ def test_v1_stays_frozen_and_v2_rejects_corrupt_confidence(
         morpion_supervised_rows_from_dict(payload)
 
 
+@pytest.mark.fast
 def test_equal_number_does_not_certify_estimate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -316,6 +321,7 @@ def test_equal_number_does_not_certify_estimate(
     assert row.metadata["target_confidence"]["raw_target_certainty"] == "ESTIMATE"
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("policy", sorted(SAFE_FAMILY_POLICIES))
 def test_distinct_states_can_have_different_certificates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, policy: Any

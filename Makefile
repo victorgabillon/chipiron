@@ -70,6 +70,22 @@ DATA_DESTINATION?=${ROOT_DIR}/$(EXTERNAL_DATA_DIR)
 
 .PHONY: requirements init init-no-syzygy
 
+# These selections are additive developer entry points. CI/release retain FULL.
+# TEST_ARGS can name affected components; test-pr must be followed by their FULL
+# matrix for scientific/recovery changes (see docs/testing.md).
+PYTHON?=python
+TEST_ARGS?=
+TEST_COMMON=-n 2 --dist=loadfile --strict-markers
+.PHONY: test-fast test-pr test-full
+test-fast:
+	$(PYTHON) scripts/ci_test_metrics.py $(TEST_COMMON) --no-cov -m 'fast and not integration and not external_data' $(TEST_ARGS)
+
+test-pr:
+	$(PYTHON) scripts/ci_test_metrics.py $(TEST_COMMON) --no-cov -m 'not exhaustive and not integration and not external_data' $(TEST_ARGS)
+
+test-full:
+	$(PYTHON) scripts/ci_test_metrics.py $(TEST_COMMON) -m 'not integration and not external_data' $(TEST_ARGS)
+
 requirements:
 	pip install -e .
 

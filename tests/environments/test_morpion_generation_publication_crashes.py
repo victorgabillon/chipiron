@@ -200,7 +200,18 @@ def _crash_child(work_dir: Path, boundary: str) -> None:
     raise AssertionError(message)
 
 
-@pytest.mark.parametrize("boundary", BOUNDARIES)
+@pytest.mark.parametrize(
+    "boundary",
+    [
+        pytest.param(
+            value,
+            marks=()
+            if value in ["after_state", "before_state"]
+            else pytest.mark.exhaustive,
+        )
+        for value in BOUNDARIES
+    ],
+)
 def test_crash_recovery_at_publication_boundaries(
     tmp_path: Path, boundary: str
 ) -> None:

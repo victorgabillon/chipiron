@@ -35,6 +35,7 @@ from tests.environments.morpion_durable_closed_helpers import (
 from tests.environments.morpion_durable_v2_helpers import publish_scientific_patch
 
 
+@pytest.mark.fast
 def test_closed_commit_retry(tmp_path: Path) -> None:
     """Verify closed commit retry."""
     args, paths, initial = setup_closed_baseline(tmp_path)

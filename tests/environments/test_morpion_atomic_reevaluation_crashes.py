@@ -27,7 +27,18 @@ from tests.environments.morpion_durable_closed_helpers import (
 )
 
 
-@pytest.mark.parametrize("boundary", old.PRE_COMMIT + old.POST_COMMIT)
+@pytest.mark.parametrize(
+    "boundary",
+    [
+        pytest.param(
+            value,
+            marks=()
+            if value in ["after_state", "before_state"]
+            else pytest.mark.exhaustive,
+        )
+        for value in old.PRE_COMMIT + old.POST_COMMIT
+    ],
+)
 def test_atomic_consumer_death(tmp_path: Path, boundary: str) -> None:
     """Reuse every real closed-capsule kill point, including replace-before-fsync."""
     args, paths, initial = setup_atomic(tmp_path)

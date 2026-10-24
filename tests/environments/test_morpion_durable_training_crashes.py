@@ -131,7 +131,18 @@ def crashed_worker(args: Any, point: str) -> None:
     os._exit(82)
 
 
-@pytest.mark.parametrize("point", PRE + POST)
+@pytest.mark.parametrize(
+    "point",
+    [
+        pytest.param(
+            value,
+            marks=pytest.mark.fast
+            if value in ["after_replace", "before_replace"]
+            else pytest.mark.exhaustive,
+        )
+        for value in PRE + POST
+    ],
+)
 def test_actual_crash_recovery(tmp_path: Path, monkeypatch: Any, point: str) -> None:
     """Only the observed authoritative replacement determines acceptance on restart."""
     local_leaderboard(monkeypatch, tmp_path)

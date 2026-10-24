@@ -270,6 +270,7 @@ def test_active_model_change_before_commit_aborts(
     assert load_bootstrap_run_state(paths.run_state_path).generation == 1
 
 
+@pytest.mark.fast
 def test_duplicate_content_is_deduplicated_and_conflict_fails_closed(
     tmp_path: Path,
 ) -> None:
@@ -297,6 +298,7 @@ def test_duplicate_content_is_deduplicated_and_conflict_fails_closed(
     _assert_committed(paths)
 
 
+@pytest.mark.fast
 def test_old_receipt_cannot_delete_new_patch(tmp_path: Path) -> None:
     """Startup acknowledgement inspects the current mailbox rather than deleting by path."""
     args, paths = setup_receipt_baseline(tmp_path)
@@ -370,6 +372,7 @@ def test_activation_and_downgrade_guards(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.exhaustive
 def test_all_fsync_failures_preserve_recoverable_head(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -809,6 +812,7 @@ def _crash_growth(work_dir: Path, boundary: str) -> None:
     raise AssertionError(message)
 
 
+@pytest.mark.exhaustive
 @pytest.mark.parametrize("boundary", CRASH_BOUNDARIES)
 def test_process_crash_recovery(tmp_path: Path, boundary: str) -> None:
     """SIGKILL-equivalent exit cannot run cleanup; restart uses only persisted evidence."""

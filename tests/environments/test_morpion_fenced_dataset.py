@@ -44,6 +44,7 @@ def reference(paths: Any, generation: int = 1) -> Any:
     )[publication.ACCEPTED]
 
 
+@pytest.mark.fast
 def test_normal_restart_and_exact_retry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -69,6 +70,7 @@ def test_normal_restart_and_exact_retry(
     assert paths.run_state_path.read_bytes() == before
 
 
+@pytest.mark.fast
 def test_unaccepted_visible_rows_cannot_feed_training(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -149,6 +151,7 @@ def test_recovery_projections_and_artifact_integrity(
     assert paths.run_state_path.read_bytes() == before
 
 
+@pytest.mark.fast
 def test_expired_old_worker_cannot_replace_winner(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -10,7 +10,9 @@ from pathlib import Path
 
 TESTS_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = TESTS_ROOT.parent
-TEST_OUTPUT_DIR = Path("/tmp/chipiron-test-output")
+TEST_OUTPUT_DIR = Path(
+    os.environ.get("CHIPIRON_OUTPUT_DIR", "/tmp/chipiron-test-output")
+)
 
 if str(TESTS_ROOT) not in sys.path:
     sys.path.insert(0, str(TESTS_ROOT))
