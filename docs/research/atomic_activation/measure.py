@@ -90,9 +90,89 @@ def main() -> None:
         try:
             with ExitStack() as stack:
                 if options.profile:
+                    from anemone.node_evaluation.tree.node_tree_evaluation import (
+                        NodeTreeEvaluationState,
+                    )
+                    from anemone.node_selector.composed.composed_node_selector import (
+                        ComposedNodeSelector,
+                    )
+                    from anemone.tree_exploration import TreeExploration
+
+                    from chipiron.environments.morpion.bootstrap import (
+                        scientific_generation_publication,
+                    )
+                    from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
+                        GrowthPatchReceiptSession,
+                    )
                     from chipiron.environments.morpion.bootstrap.runtime import (
                         runner as runner_module,
                     )
+                    from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
+                        MorpionRegressor,
+                    )
+                    from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
+                        MorpionFeatureTensorConverter,
+                    )
+
+                    # Explicit wall clocks complement cProfile: parent cumulative
+                    # totals can be non-additive with this Python/Torch toolchain.
+                    def observe(owner: Any, name: str, label: str) -> None:
+                        original_method = getattr(owner, name)
+
+                        def timed(*args: Any, **kwargs: Any) -> Any:
+                            started = time.perf_counter()
+                            try:
+                                return original_method(*args, **kwargs)
+                            finally:
+                                row = boundaries.setdefault(
+                                    label, {"calls": 0, "wall_s": 0.0}
+                                )
+                                row["calls"] += 1
+                                row["wall_s"] += time.perf_counter() - started
+
+                        stack.enter_context(patch.object(owner, name, timed))
+
+                    for owner, name, label in (
+                        (
+                            runner_module.AnemoneMorpionSearchRunner,
+                            "load_or_create",
+                            "cold_restore",
+                        ),
+                        (
+                            runner_module.AnemoneMorpionSearchRunner,
+                            "validate_model_refresh_certificates",
+                            "certificate_preflight",
+                        ),
+                        (TreeExploration, "refresh_with_evaluator", "anemone_refresh"),
+                        (
+                            MorpionFeatureTensorConverter,
+                            "state_to_model_input_tensors",
+                            "feature_preparation",
+                        ),
+                        (MorpionRegressor, "forward", "model_forward"),
+                        (NodeTreeEvaluationState, "backup_from_children", "backup"),
+                        (
+                            ComposedNodeSelector,
+                            "refresh_state_for_checkpoint",
+                            "selector",
+                        ),
+                        (
+                            runner_module.AnemoneMorpionSearchRunner,
+                            "save_checkpoint",
+                            "checkpoint",
+                        ),
+                        (
+                            GrowthPatchReceiptSession,
+                            "export_scientific",
+                            "scientific_snapshot",
+                        ),
+                        (
+                            scientific_generation_publication,
+                            "validate_closed_export",
+                            "output_validation",
+                        ),
+                    ):
+                        observe(owner, name, label)
 
                     original = runner_module.load_morpion_evaluator_from_model_bundle
 
