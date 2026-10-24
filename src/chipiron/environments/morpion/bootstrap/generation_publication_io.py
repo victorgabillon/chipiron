@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
     from .bootstrap_paths import MorpionBootstrapPaths
     from .pipeline_artifacts import MorpionPipelineGenerationManifest
+    from .run_state import MorpionBootstrapRunState
 
 PUBLICATION_KEY = "durable_generation_publication_v1"
 PUBLICATION_NAMESPACE = "generation_publications_v1"
@@ -265,6 +266,43 @@ def capsule_path(work_dir: Path, identifier: str, version: int = 1) -> Path:
         "Malformed capsule identity.",
     )
     return work_dir / publication_namespace(version) / "objects" / identifier
+
+
+def committed_evaluator(
+    work_dir: Path, state: MorpionBootstrapRunState
+) -> tuple[dict[str, Any] | None, Path | None]:
+    """Resolve the evaluator from the verified scientific head, never a projection.
+
+    The logical identity retains the original model path for exact patch receipts;
+    only the sealed physical bundle is used for restoration. No model transition
+    is inferred from a Training result or active_model.json.
+    """
+    head = publication_records(state.metadata)[-1]
+    version = state.metadata[PUBLICATION_KEY]["schema_version"]
+    require(version in (2, 3), "Committed evaluator requires scientific publication.")
+    require(
+        (head["generation"], head["checkpoint_path"], head["tree_snapshot_path"])
+        == (
+            state.generation,
+            state.latest_runtime_checkpoint_path,
+            state.latest_tree_snapshot_path,
+        ),
+        "Run state differs from its committed publication head.",
+    )
+    descriptor = validate_capsule(work_dir, head)
+    require(
+        descriptor["bootstrap_config_hash"]
+        == state.metadata.get("bootstrap_config_hash"),
+        "Committed evaluator configuration changed.",
+    )
+    pins = descriptor["model_pins"]
+    require(isinstance(pins, list) and len(pins) <= 1, "Ambiguous committed evaluator.")
+    if not pins:
+        return None, None
+    pin = pins[0]
+    model = {k: v for k, v in pin.items() if k != "origin"}
+    model["path"] = pin["origin"]
+    return model, inside(capsule_path(work_dir, head["id"], version), pin["path"])
 
 
 def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:

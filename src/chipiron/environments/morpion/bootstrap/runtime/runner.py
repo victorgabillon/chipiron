@@ -64,7 +64,12 @@ from chipiron.environments.morpion.bootstrap.cycle_timing import (
     timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
 )
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    artifact_digest,
     assert_artifact_writable,
+    committed_evaluator,
+    generation_read_pin,
+    locate_capsule,
+    require,
 )
 from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTreeStatus
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
@@ -387,17 +392,50 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "none" if resolved_bundle_path is None else str(resolved_bundle_path),
         )
         started_at = time.perf_counter()
-        runtime = self._load_runtime_from_checkpoint(
-            Path(tree_snapshot_path),
-            search_args=self._args.search_args,
-        )
+        checkpoint_path = Path(tree_snapshot_path)
+        location = locate_capsule(checkpoint_path)
+        committed = location is not None and location[2] in (2, 3)
+        with generation_read_pin(checkpoint_path):
+            if committed:
+                from chipiron.environments.morpion.bootstrap.run_state import (
+                    load_bootstrap_run_state,
+                )
+
+                assert location is not None
+                work_dir = location[0]
+                authority = load_bootstrap_run_state(work_dir / "run_state.json")
+                require(
+                    checkpoint_path.absolute()
+                    == work_dir / str(authority.latest_runtime_checkpoint_path),
+                    "Only the committed head can restore the Growth runtime.",
+                )
+                model, pinned = committed_evaluator(work_dir, authority)
+                require(not reevaluate_tree, "Committed restore is not model refresh.")
+                require(
+                    resolved_bundle_path is None
+                    or (
+                        model is not None
+                        and artifact_digest(resolved_bundle_path) == model["sha256"]
+                    ),
+                    "Requested evaluator differs from the committed model.",
+                )
+                resolved_bundle_path = pinned
+            runtime = self._load_runtime_from_checkpoint(
+                checkpoint_path,
+                search_args=self._args.search_args,
+                model_bundle_path=resolved_bundle_path if committed else None,
+            )
         elapsed_s = time.perf_counter() - started_at
         self._runtime = runtime
         apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
         self._install_state_rematerialization_phase_hooks(runtime)
         LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
-        self._current_evaluator_bundle_path = None
-        if resolved_bundle_path is not None:
+        self._current_evaluator_bundle_path = (
+            resolved_bundle_path if committed else None
+        )
+        if committed:
+            LOGGER.info("[runtime] evaluator_restored_from_committed_head")
+        elif resolved_bundle_path is not None:
             if not reevaluate_tree:
                 LOGGER.info("[reeval] skipped reason=resume_restore")
             self._set_runtime_evaluator_from_bundle(
@@ -1664,6 +1702,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         tree_snapshot_path: Path,
         *,
         search_args: SearchArgs,
+        model_bundle_path: Path | None = None,
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
         LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
@@ -1691,6 +1730,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 search_args=search_args,
                 started_at=started_at,
                 restore_memory_logger=restore_memory_logger,
+                model_bundle_path=model_bundle_path,
             )
         cached_payload = _pop_cached_morpion_search_checkpoint_payload_for_restore(
             tree_snapshot_path
@@ -1766,7 +1806,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     dynamics=self._dynamics,
                     args=search_args,
                     state_type=MorpionState,
-                    master_state_value_evaluator=self._build_master_evaluator(None),
+                    master_state_value_evaluator=self._build_master_evaluator(
+                        model_bundle_path
+                    ),
                     random_generator=self._random_generator,
                     state_representation_factory=None,
                     node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
@@ -1846,6 +1888,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         search_args: SearchArgs,
         started_at: float,
         restore_memory_logger: RestoreMemoryLogger | None,
+        model_bundle_path: Path | None = None,
     ) -> object:
         """Restore one live runtime from an opt-in sharded checkpoint directory."""
         manifest = read_sharded_checkpoint_manifest(
@@ -1863,7 +1906,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 dynamics=self._dynamics,
                 args=search_args,
                 state_type=MorpionState,
-                master_state_value_evaluator=self._build_master_evaluator(None),
+                master_state_value_evaluator=self._build_master_evaluator(
+                    model_bundle_path
+                ),
                 random_generator=self._random_generator,
                 state_representation_factory=None,
                 node_tree_evaluation_factory=NodeMaxEvaluationFactory(),

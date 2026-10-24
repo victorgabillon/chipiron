@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 from .cycle_timing import timestamp_utc_from_unix_s
 from .derived.provenance import PROVENANCE_NAME, atomic_json, inside, sync_checkpoint
 from .generation_publication import DurableGenerationPublication
-from .generation_publication_io import PUBLICATION_KEY
+from .generation_publication_io import PUBLICATION_KEY, committed_evaluator
 from .generation_publication_io import (
     growth_receipt_ownership as _growth_receipt_ownership,
 )
@@ -354,22 +354,27 @@ class GrowthPatchReceiptSession:
         self.model = None
         self.applied_count = None
         self.attempt_id = uuid.uuid4().hex
-        self.runtime_model = (
-            self.current_model() if model_bundle_path is not None else None
-        )
-        _require(
-            (
-                self.runtime_model is None
-                and not self.paths.pipeline_active_model_path.exists()
+        if self.publication is not None and self.publication.version in (2, 3):
+            self.runtime_model, _ = committed_evaluator(
+                self.paths.work_dir, load_bootstrap_run_state(self.paths.run_state_path)
             )
-            or (
-                self.runtime_model is not None
-                and model_bundle_path is not None
-                and Path(model_bundle_path)
-                == inside(self.paths.work_dir, self.runtime_model["path"])
-            ),
-            "Selected runtime model differs from the active model identity.",
-        )
+        else:
+            self.runtime_model = (
+                self.current_model() if model_bundle_path is not None else None
+            )
+            _require(
+                (
+                    self.runtime_model is None
+                    and not self.paths.pipeline_active_model_path.exists()
+                )
+                or (
+                    self.runtime_model is not None
+                    and model_bundle_path is not None
+                    and Path(model_bundle_path)
+                    == inside(self.paths.work_dir, self.runtime_model["path"])
+                ),
+                "Selected runtime model differs from the active model identity.",
+            )
         if self.publication is not None:
             self.frozen_model_path = self.publication.begin_cycle(self.runtime_model)
 

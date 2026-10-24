@@ -73,6 +73,7 @@ from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
     GROWTH_STATUS_METADATA_KEY,
     CandidateCheckpointLoadDeferredError,
+    ResolvedActiveMorpionModelBundle,
 )
 from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
@@ -695,15 +696,29 @@ def _run_one_pipeline_growth_cycle_impl(
         event="start",
     )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
-    resolved_active_model = resolve_pipeline_active_model_for_growth(
-        paths=paths,
-        force_evaluator=resolved_control.force_evaluator,
+    committed_model = (
+        receipt_session is not None
+        and receipt_session.publication is not None
+        and receipt_session.publication.version in (2, 3)
+    )
+    resolved_active_model = (
+        ResolvedActiveMorpionModelBundle(None, None)
+        if committed_model
+        else resolve_pipeline_active_model_for_growth(
+            paths=paths, force_evaluator=resolved_control.force_evaluator
+        )
     )
     restore_tree_path: Path | None
     try:
         if receipt_session is not None:
             receipt_session.validate_options(args)
             receipt_session.begin_cycle(resolved_active_model.model_bundle_path)
+            if committed_model:
+                model = receipt_session.runtime_model
+                resolved_active_model = ResolvedActiveMorpionModelBundle(
+                    None if model is None else model["name"],
+                    None if model is None else paths.work_dir / model["path"],
+                )
             restore_tree_path = receipt_session.validate_state(run_state)
         else:
             restore_tree_path = _resolve_runtime_restore_path(
