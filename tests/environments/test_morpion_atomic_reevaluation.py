@@ -279,6 +279,7 @@ def test_captured_epoch_is_not_retagged_at_completion(
     from tests.environments.morpion_atomic_reevaluation_helpers import atomic_worker
 
     args, paths, initial = setup_atomic(tmp_path)
+    old_proposal = make_proposal(paths)
     original = worker.MorpionActiveModelNodeReevaluationEvaluator.evaluate_patch_rows
 
     def evaluate(evaluator: Any, *positional: Any, **kwargs: Any) -> Any:
@@ -292,7 +293,14 @@ def test_captured_epoch_is_not_retagged_at_completion(
         "evaluate_patch_rows",
         evaluate,
     )
-    atomic_worker(tmp_path, monkeypatch, streaming=False)
+    with pytest.raises(ValueError, match="epoch/producer mismatch"):
+        atomic_worker(tmp_path, monkeypatch, streaming=False)
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+    assert not paths.pipeline_reevaluation_cursor_path.exists()
+    # A stale proposal from an older producer must still be rejected by Growth.
+    assert publish_reevaluation_patch_if_absent(
+        old_proposal, paths.pipeline_reevaluation_patch_path
+    )
     raw = json.loads(paths.pipeline_reevaluation_patch_path.read_text())
     assert (
         raw["metadata"][TRANSACTION_KEY]["epoch_id"]

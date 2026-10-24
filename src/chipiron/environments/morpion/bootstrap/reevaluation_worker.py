@@ -24,6 +24,7 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
 from .generation_publication_io import (
+    growth_receipt_ownership,
     locate_capsule,
     require,
     validate_manifest_publication,
@@ -48,6 +49,7 @@ from .reevaluation_transaction import (
     proposal_patch,
     source_identity,
     transaction_state,
+    validate_proposal,
 )
 from .run_state import load_bootstrap_run_state
 from .runtime.runner import load_morpion_evaluator_from_model_bundle
@@ -1177,20 +1179,27 @@ def run_morpion_reevaluation_worker_once(
         )
         if captured is not None:
             assert captured_source is not None and captured_model is not None
-            require(
-                current_model_identity(paths) == captured_model,
-                "Model changed during proposal computation.",
-            )
             patch = proposal_patch(
                 patch, captured, captured_source, captured_model, next_cursor
             )
         if view is not None and view.format_version == 2:
             view.validate_source_identity()
         validate_manifest_publication(paths.work_dir, manifest)
-        if not _save_reevaluation_patch_exclusive(
-            patch,
-            paths.pipeline_reevaluation_patch_path,
-        ):
+        with ExitStack() as publication_stack:
+            if captured is not None:
+                # Inference stays outside ownership. Recheck the captured proposal
+                # and publish under the same lease used by Growth commits.
+                publication_stack.enter_context(growth_receipt_ownership(paths))
+                publication_state = load_bootstrap_run_state(paths.run_state_path)
+                validate_proposal(publication_state, patch)
+                require(
+                    current_model_identity(paths) == captured_model,
+                    "Model changed during proposal computation.",
+                )
+            published = _save_reevaluation_patch_exclusive(
+                patch, paths.pipeline_reevaluation_patch_path
+            )
+        if not published:
             pending_patch_path = _relative_to_work_dir(
                 paths,
                 paths.pipeline_reevaluation_patch_path,
