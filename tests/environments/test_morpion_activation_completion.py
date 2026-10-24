@@ -311,3 +311,56 @@ def test_old_reader_and_explicit_pin_still_protect_payload(
         assert report["generations"][1]["observed_reader"]
     report = analyze(workspace, retain=(1, 2))
     assert report["validated"] and report["conditional_candidates"] == []
+
+
+def test_receipt_model_lookup_still_pins_old_activation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An alternate surviving M1 bundle does not bypass the actual model-pin scan."""
+    from chipiron.environments.morpion.bootstrap import generation_publication
+    from tests.environments.test_morpion_model_activation_edges import propose
+
+    local_leaderboard(monkeypatch, tmp_path)
+    args, paths, _ = setup_activation(tmp_path / "work")
+    request = prepare_model_activation_request(paths, training_generation=1)
+    assert propose(args).patch_written
+    original_patch = paths.pipeline_reevaluation_patch_path.read_bytes()
+    state = activate_model(paths, request)
+    old_generation = state.generation
+    for _ in range(3):
+        runner, _ = _runner(paths, state)
+        producer = publication_records(state.metadata)[-1]["scientific_identity"][
+            "producer"
+        ]["identity"]
+        run_pipeline_growth_stage(
+            args,
+            runner,
+            max_cycles=1,
+            checkpoint_bound_receipts=True,
+            durable_generation_publication=True,
+            scientific_v2_producer=producer,
+            closed_scientific_snapshot=True,
+        )
+        state = load_bootstrap_run_state(paths.run_state_path)
+    with generation_read_pin(paths.work_dir / state.latest_tree_snapshot_path):
+        pass
+    report = analyze(paths, retain=(1,))
+    assert report["validated"], report
+    assert old_generation not in report["conditional_candidates"]
+    old = next(g for g in report["generations"] if g["generation"] == old_generation)
+    assert "exact-receipt-model-lookup" in old["rolling_reasons"]
+    # Trace actual validation, retaining every byte: no simulated receipt or deletion.
+    seen = []
+    original_validate = generation_publication.validate_capsule
+
+    def observe(root: Path, record: dict[str, Any]) -> dict[str, Any]:
+        seen.append(record["generation"])
+        return original_validate(root, record)
+
+    monkeypatch.setattr(generation_publication, "validate_capsule", observe)
+    authority = paths.run_state_path.read_bytes()
+    paths.pipeline_reevaluation_patch_path.write_bytes(original_patch)
+    activate_model(paths, request)
+    assert old_generation in seen
+    assert paths.run_state_path.read_bytes() == authority
+    assert not paths.pipeline_reevaluation_patch_path.exists()

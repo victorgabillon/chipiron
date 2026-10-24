@@ -488,6 +488,17 @@ def _inspect(
             "models": model_pins,
         })
     _work_roots(paths, state, records, reasons, models, ledger)
+    # Exact receipt acknowledgement calls model_pin(), which validates EVERY
+    # capsule from the current head down to the newest matching model holder.
+    # Another surviving copy of the weights does not remove that runtime edge.
+    if ledger:
+        lookup_floor = min(
+            max(model_holders[(r.model_bundle_path, r.model_sha256)])
+            for r in ledger.values()
+        )
+        for generation in records:
+            if generation >= lookup_floor:
+                reasons[generation].append("exact-receipt-model-lookup")
     # Every unique receipt model must survive in a selected capsule, even if its
     # original logical path is kept outside the candidate namespace.
     live = {g for g, why in reasons.items() if why}
@@ -559,6 +570,7 @@ def _inspect(
             "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
             "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
             "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
+            "Exact receipt model lookup still validates its historical capsule scan; alternate model copies do not authorize skipping it.",
             "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
             "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
             "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing.",

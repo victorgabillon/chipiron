@@ -9,6 +9,7 @@ from pathlib import Path
 from chipiron.environments.morpion.bootstrap import MorpionBootstrapPaths
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     committed_evaluator,
+    object_digest,
     publication_records,
 )
 from chipiron.environments.morpion.bootstrap.model_activation import activate_model
@@ -29,17 +30,27 @@ def main() -> None:
     paths = MorpionBootstrapPaths.from_work_dir(root)
     report = analyze(paths, retain=(1,))
     assert report["validated"], report["blockers"]
-    # This is the fresh E2E G1-G8 population, not an arbitrary user's workspace.
-    assert report["conditional_candidates"] == [4]
+    # Only a generated fixture with an independently unpinned activation is admissible.
     assert report["current_contract_reclaimable_bytes"] == 0
     state = load_bootstrap_run_state(paths.run_state_path)
-    assert state.generation == 8
-    old = publication_records(state.metadata)[3]
     request = json.loads(options.request.read_text())
-    assert old["activation_request_sha256"]
+    records = publication_records(state.metadata)
+    matches = [
+        r
+        for r in records
+        if r.get("activation_request_sha256") == object_digest(request)
+    ]
+    assert len(matches) == 1
+    old = matches[0]
+    assert state.generation > old["generation"]
+    assert report["conditional_candidates"] == [old["generation"]], report
     assert old["descriptor_path"] in report["retained_commitment_files"]
     authority = paths.run_state_path.read_bytes()
-    pending = paths.pipeline_reevaluation_patch_path.read_bytes()
+    pending = (
+        paths.pipeline_reevaluation_patch_path.read_bytes()
+        if paths.pipeline_reevaluation_patch_path.exists()
+        else None
+    )
     payload = cold_state(paths)
     model = committed_evaluator(root, state)[0]
     assert model != request["candidate"]
@@ -58,7 +69,11 @@ def main() -> None:
         moved.append(str(source.relative_to(root)))
     assert activate_model(paths, request) == state
     assert paths.run_state_path.read_bytes() == authority
-    assert paths.pipeline_reevaluation_patch_path.read_bytes() == pending
+    assert (
+        paths.pipeline_reevaluation_patch_path.read_bytes()
+        if paths.pipeline_reevaluation_patch_path.exists()
+        else None
+    ) == pending
     assert cold_state(paths) == payload
     assert committed_evaluator(root, state)[0] == model
     growth_oracle(root, root.parent / "oracle-after")
