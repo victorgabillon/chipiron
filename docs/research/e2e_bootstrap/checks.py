@@ -364,6 +364,9 @@ def verify(root: Path, out: Path, *, full: bool) -> dict:
                 value_contracts=scientific.value_contracts,
                 source_provenance=scientific.provenance,
             )
+            assert len(extracted.rows) > 0, (
+                "E2E learning requires nonempty accepted data"
+            )
             expected_rows_path = out / f"rows-{generation}.jsonl"
             save_morpion_supervised_rows_streaming(
                 rows=extracted.rows,
@@ -387,6 +390,10 @@ def verify(root: Path, out: Path, *, full: bool) -> dict:
                 assert [
                     c["name"] for c in admission["configuration"]["candidates"]
                 ] == ["linear_a", "linear_b"]
+                assert all(
+                    r["num_train_samples"] > 0
+                    for r in training_proposal["status"]["evaluator_results"].values()
+                ), "Initialized weights are not trained models"
                 item["training"] = {
                     "reference": accepted_ref,
                     "selected": selected,
