@@ -141,7 +141,11 @@ def growth_oracle(root: Path, out: Path) -> None:
     runner.grow(1)
     expected = payload(runner)
     source = science(
-        runner, paths, state, out / "scientific", generation=state.generation + 1
+        runner,
+        paths,
+        state,
+        out / "scientific",
+        generation=state.generation + 1 if runner.last_growth_steps else None,
     )
     runner.discard_uncommitted_runtime()
     (out / "expected.json").write_text(
