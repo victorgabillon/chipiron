@@ -1,0 +1,690 @@
+{
+  "mode": "refresh",
+  "requested_nodes": 5000,
+  "cuda_available": false,
+  "source_verification": {
+    "costs": {
+      "cpu_user_s": 0.0011309999999999931,
+      "cpu_system_s": 3.0000000000030003e-06,
+      "io": {
+        "rchar": 422124,
+        "wchar": 0,
+        "syscr": 23,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831274.187033,
+    "finished_unix_s": 1792831274.1883025,
+    "elapsed_s": 0.0012697300044237636,
+    "pid": 529917,
+    "rss_before_mb": 292.359375,
+    "rss_after_mb": 292.359375,
+    "process_peak_rss_mb": 290.84765625,
+    "available_ram_before_mb": 74511.39453125,
+    "available_ram_after_mb": 74511.39453125,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+        "line": 195,
+        "function": "file_digest",
+        "primitive_calls": 7,
+        "calls": 7,
+        "own_seconds": 3.9364000000000005e-05,
+        "cumulative_seconds": 0.000282891
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 94,
+        "function": "file_digest",
+        "primitive_calls": 7,
+        "calls": 7,
+        "own_seconds": 1.3523e-05,
+        "cumulative_seconds": 0.00033730100000000003
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "restore": {
+    "costs": {
+      "cpu_user_s": 0.9412490000000009,
+      "cpu_system_s": 0.011996999999999994,
+      "io": {
+        "rchar": 425791,
+        "wchar": 0,
+        "syscr": 38,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831274.1894126,
+    "finished_unix_s": 1792831275.1428385,
+    "elapsed_s": 0.9534256729966728,
+    "pid": 529917,
+    "rss_before_mb": 292.359375,
+    "rss_after_mb": 321.390625,
+    "process_peak_rss_mb": 322.16015625,
+    "available_ram_before_mb": 74511.39453125,
+    "available_ram_after_mb": 74471.015625,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "restored_link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+  "ordered_link_parity": false,
+  "accepted_training_verification": {
+    "costs": {
+      "cpu_user_s": 0.0020009999999999195,
+      "cpu_system_s": 0.0029929999999999957,
+      "io": {
+        "rchar": 155403,
+        "wchar": 0,
+        "syscr": 43,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 1,
+      "directory_fsync_count": 2,
+      "file_fsync_seconds": 0.008464585000183433,
+      "directory_fsync_seconds": 0.009497682003711816
+    },
+    "started_unix_s": 1792831275.204834,
+    "finished_unix_s": 1792831275.227948,
+    "elapsed_s": 0.0231133229972329,
+    "pid": 529917,
+    "rss_before_mb": 321.390625,
+    "rss_after_mb": 321.3984375,
+    "process_peak_rss_mb": 322.16015625,
+    "available_ram_before_mb": 74472.51953125,
+    "available_ram_after_mb": 74473.8203125,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method posix.fsync>",
+        "primitive_calls": 3,
+        "calls": 3,
+        "own_seconds": 0.017949043,
+        "cumulative_seconds": 0.017949043
+      },
+      {
+        "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+        "line": 195,
+        "function": "file_digest",
+        "primitive_calls": 11,
+        "calls": 11,
+        "own_seconds": 6.552000000000001e-05,
+        "cumulative_seconds": 0.00015997
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 94,
+        "function": "file_digest",
+        "primitive_calls": 11,
+        "calls": 11,
+        "own_seconds": 1.8386e-05,
+        "cumulative_seconds": 0.00025113
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 141,
+        "function": "sync_directory",
+        "primitive_calls": 1,
+        "calls": 1,
+        "own_seconds": 3.837e-06,
+        "cumulative_seconds": 2.1169e-05
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "model_loading": {
+    "costs": {
+      "cpu_user_s": 0.003680999999999379,
+      "cpu_system_s": 0.0,
+      "io": {
+        "rchar": 80302,
+        "wchar": 0,
+        "syscr": 57,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831275.2301884,
+    "finished_unix_s": 1792831275.2339604,
+    "elapsed_s": 0.0037722810011473484,
+    "pid": 529917,
+    "rss_before_mb": 321.4609375,
+    "rss_after_mb": 324.46484375,
+    "process_peak_rss_mb": 322.9375,
+    "available_ram_before_mb": 74473.8203125,
+    "available_ram_after_mb": 74473.8203125,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "inference": {
+    "costs": {
+      "cpu_user_s": 135.04695900000002,
+      "cpu_system_s": 0.032261,
+      "io": {
+        "rchar": 113,
+        "wchar": 0,
+        "syscr": 2,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831275.2357163,
+    "finished_unix_s": 1792831410.3545191,
+    "elapsed_s": 135.11880283200298,
+    "pid": 529917,
+    "rss_before_mb": 324.46484375,
+    "rss_after_mb": 393.84375,
+    "process_peak_rss_mb": 392.328125,
+    "available_ram_before_mb": 74473.8203125,
+    "available_ram_after_mb": 74475.140625,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {
+      "load_anchor_ref": 1372,
+      "load_child_from_delta": 3641
+    }
+  },
+  "backup": {
+    "costs": {
+      "cpu_user_s": 1.601731000000001,
+      "cpu_system_s": 0.0020010000000000028,
+      "io": {
+        "rchar": 113,
+        "wchar": 0,
+        "syscr": 2,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831410.3560207,
+    "finished_unix_s": 1792831411.9601953,
+    "elapsed_s": 1.604174886997498,
+    "pid": 529917,
+    "rss_before_mb": 393.87890625,
+    "rss_after_mb": 397.2578125,
+    "process_peak_rss_mb": 395.703125,
+    "available_ram_before_mb": 74475.140625,
+    "available_ram_after_mb": 74470.79296875,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "selector": {
+    "costs": {
+      "cpu_user_s": 0.09145000000000891,
+      "cpu_system_s": 1.000000000001e-06,
+      "io": {
+        "rchar": 113,
+        "wchar": 0,
+        "syscr": 2,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831411.9618142,
+    "finished_unix_s": 1792831412.0534422,
+    "elapsed_s": 0.09162828500120668,
+    "pid": 529917,
+    "rss_before_mb": 397.29296875,
+    "rss_after_mb": 397.29296875,
+    "process_peak_rss_mb": 395.703125,
+    "available_ram_before_mb": 74470.79296875,
+    "available_ram_after_mb": 74470.79296875,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [],
+    "disk": {
+      "apparent_file_bytes": 422018,
+      "unique_file_bytes": 422018,
+      "allocated_bytes_unique_inodes": 462848,
+      "file_names": 7,
+      "unique_inodes": 14
+    },
+    "codec_calls": {}
+  },
+  "checkpoint": {
+    "costs": {
+      "cpu_user_s": 1.0652510000000177,
+      "cpu_system_s": 0.0050020000000000064,
+      "io": {
+        "rchar": 2069,
+        "wchar": 453979,
+        "syscr": 16,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 466944,
+        "cancelled_write_bytes": 0
+      }
+    },
+    "counters": {
+      "state_decodes": 0,
+      "state_decode_seconds": 0.0,
+      "file_fsync_count": 7,
+      "directory_fsync_count": 9,
+      "file_fsync_seconds": 0.07160657699569128,
+      "directory_fsync_seconds": 2.0468010916374624e-05
+    },
+    "started_unix_s": 1792831412.0542986,
+    "finished_unix_s": 1792831413.1959386,
+    "elapsed_s": 1.1416403670009458,
+    "pid": 529917,
+    "rss_before_mb": 397.29296875,
+    "rss_after_mb": 404.734375,
+    "process_peak_rss_mb": 410.95703125,
+    "available_ram_before_mb": 74470.79296875,
+    "available_ram_after_mb": 74449.703125,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method posix.fsync>",
+        "primitive_calls": 16,
+        "calls": 16,
+        "own_seconds": 0.071585328,
+        "cumulative_seconds": 0.071585328
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 141,
+        "function": "sync_directory",
+        "primitive_calls": 2,
+        "calls": 2,
+        "own_seconds": 4.6300000000000006e-06,
+        "cumulative_seconds": 2.5087000000000002e-05
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 875997,
+      "unique_file_bytes": 875997,
+      "allocated_bytes_unique_inodes": 954368,
+      "file_names": 14,
+      "unique_inodes": 27
+    },
+    "codec_calls": {}
+  },
+  "snapshot": {
+    "costs": {
+      "cpu_user_s": 43.664720999999986,
+      "cpu_system_s": 0.07399799999999998,
+      "io": {
+        "rchar": 60081343,
+        "wchar": 21159568,
+        "syscr": 6183,
+        "syscw": 7340,
+        "read_bytes": 0,
+        "write_bytes": 21680128,
+        "cancelled_write_bytes": 3567616
+      }
+    },
+    "counters": {
+      "state_decodes": 5013,
+      "state_decode_seconds": 13.252558227919508,
+      "file_fsync_count": 6,
+      "directory_fsync_count": 11,
+      "file_fsync_seconds": 0.02795821200561477,
+      "directory_fsync_seconds": 0.017312380019575357
+    },
+    "started_unix_s": 1792831413.1993182,
+    "finished_unix_s": 1792831458.1777763,
+    "elapsed_s": 44.978458689001855,
+    "pid": 529917,
+    "rss_before_mb": 404.734375,
+    "rss_after_mb": 405.5078125,
+    "process_peak_rss_mb": 410.95703125,
+    "available_ram_before_mb": 74449.703125,
+    "available_ram_after_mb": 74493.75390625,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method posix.fsync>",
+        "primitive_calls": 17,
+        "calls": 17,
+        "own_seconds": 0.045223225000000006,
+        "cumulative_seconds": 0.045223225000000006
+      },
+      {
+        "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+        "line": 195,
+        "function": "file_digest",
+        "primitive_calls": 19,
+        "calls": 19,
+        "own_seconds": 0.000180163,
+        "cumulative_seconds": 0.013529222
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+        "line": 784,
+        "function": "_source_identity",
+        "primitive_calls": 3,
+        "calls": 3,
+        "own_seconds": 0.000122077,
+        "cumulative_seconds": 0.010477789000000001
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 164,
+        "function": "publish_directory_if_absent",
+        "primitive_calls": 1,
+        "calls": 1,
+        "own_seconds": 9.2893e-05,
+        "cumulative_seconds": 0.008982547
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+        "line": 868,
+        "function": "_build_index",
+        "primitive_calls": 1,
+        "calls": 1,
+        "own_seconds": 0.00013128600000000002,
+        "cumulative_seconds": 2.087612458
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+        "line": 141,
+        "function": "sync_directory",
+        "primitive_calls": 7,
+        "calls": 7,
+        "own_seconds": 1.7140000000000002e-05,
+        "cumulative_seconds": 0.008761853
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+        "line": 465,
+        "function": "dump_state_ref",
+        "primitive_calls": 10026,
+        "calls": 10026,
+        "own_seconds": 0.003415271,
+        "cumulative_seconds": 28.083974797000003
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+        "line": 469,
+        "function": "load_state_ref",
+        "primitive_calls": 5013,
+        "calls": 5013,
+        "own_seconds": 0.0030796340000000004,
+        "cumulative_seconds": 13.248092854000001
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 6957505,
+      "unique_file_bytes": 6957505,
+      "allocated_bytes_unique_inodes": 7049216,
+      "file_names": 17,
+      "unique_inodes": 31
+    },
+    "codec_calls": {
+      "dump_state_ref": 10026,
+      "load_anchor_ref": 5013
+    }
+  },
+  "snapshot_validation": {
+    "costs": {
+      "cpu_user_s": 29.107876000000005,
+      "cpu_system_s": 0.044015000000000026,
+      "io": {
+        "rchar": 61586478,
+        "wchar": 15078060,
+        "syscr": 8021,
+        "syscw": 6354,
+        "read_bytes": 0,
+        "write_bytes": 15581184,
+        "cancelled_write_bytes": 3567616
+      }
+    },
+    "counters": {
+      "state_decodes": 5013,
+      "state_decode_seconds": 13.547947176761227,
+      "file_fsync_count": 0,
+      "directory_fsync_count": 0,
+      "file_fsync_seconds": 0.0,
+      "directory_fsync_seconds": 0.0
+    },
+    "started_unix_s": 1792831458.183734,
+    "finished_unix_s": 1792831488.67401,
+    "elapsed_s": 30.490276196003833,
+    "pid": 529917,
+    "rss_before_mb": 405.5078125,
+    "rss_after_mb": 405.5078125,
+    "process_peak_rss_mb": 410.95703125,
+    "available_ram_before_mb": 74493.84375,
+    "available_ram_after_mb": 74460.61328125,
+    "cuda_before": null,
+    "cuda_after": null,
+    "profile": [
+      {
+        "file": "/home/pompote/miniconda3/lib/python3.13/hashlib.py",
+        "line": 195,
+        "function": "file_digest",
+        "primitive_calls": 13,
+        "calls": 13,
+        "own_seconds": 0.00011751900000000001,
+        "cumulative_seconds": 0.009648246000000001
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+        "line": 784,
+        "function": "_source_identity",
+        "primitive_calls": 3,
+        "calls": 3,
+        "own_seconds": 0.000109098,
+        "cumulative_seconds": 0.010425051000000001
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+        "line": 868,
+        "function": "_build_index",
+        "primitive_calls": 1,
+        "calls": 1,
+        "own_seconds": 0.000105605,
+        "cumulative_seconds": 30.297108488000003
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+        "line": 465,
+        "function": "dump_state_ref",
+        "primitive_calls": 5013,
+        "calls": 5013,
+        "own_seconds": 0.001856575,
+        "cumulative_seconds": 14.303467925000001
+      },
+      {
+        "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+        "line": 469,
+        "function": "load_state_ref",
+        "primitive_calls": 5013,
+        "calls": 5013,
+        "own_seconds": 0.0029317930000000002,
+        "cumulative_seconds": 13.543556736000001
+      }
+    ],
+    "disk": {
+      "apparent_file_bytes": 14719425,
+      "unique_file_bytes": 14719425,
+      "allocated_bytes_unique_inodes": 14819328,
+      "file_names": 18,
+      "unique_inodes": 33
+    },
+    "codec_calls": {
+      "load_anchor_ref": 5013,
+      "dump_state_ref": 5013
+    }
+  },
+  "evaluations": 5005,
+  "windows": 79,
+  "max_window": 64,
+  "decoded_cache_before": 0,
+  "decoded_cache_after": 5013,
+  "engine": "prior_kernel",
+  "backed_up_nodes": 366,
+  "nodes": 5013,
+  "edges": 5931,
+  "model_path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/accepted-model/work/training_publications_v1/objects/0fdce8ac0a194bd294a9037dac868e05/models/generation_000001/small_mlp",
+  "model_sha256": "d47316f829e057191e8cf71c61b89dc6760f243f9f3b281dd6b9b39bda1597ba",
+  "selected_candidate": "small_mlp",
+  "checkpoint_sha256": "e2e149a7b85561cc4074b8ce5097190bc09677d1f97872f0e927b1c8b50442ab",
+  "science_sha256": "b7d161d9c295b7a2fa3dfa86ff5749e76939a62152359bdacc385a039cd66e55",
+  "link_iteration_sha256": "2cafa21e7c534df2153e581a18afcf7d335f407cdd2bce00ded5ddc95092607e",
+  "rng_sha256": "7b22ced71ee8a1496e89fe9c9f2e69828dd04eed4e194b0d6930f77ba9d51883",
+  "checkpoint_disk": {
+    "apparent_file_bytes": 453979,
+    "unique_file_bytes": 453979,
+    "allocated_bytes_unique_inodes": 491520,
+    "file_names": 7,
+    "unique_inodes": 13
+  },
+  "snapshot_disk": {
+    "apparent_file_bytes": 6081508,
+    "unique_file_bytes": 6081508,
+    "allocated_bytes_unique_inodes": 6094848,
+    "file_names": 3,
+    "unique_inodes": 4
+  },
+  "temporary_disk": {
+    "apparent_file_bytes": 14719425,
+    "unique_file_bytes": 14719425,
+    "allocated_bytes_unique_inodes": 14819328,
+    "file_names": 18,
+    "unique_inodes": 33
+  },
+  "snapshot_stats": {
+    "new_state_encodings": 5013,
+    "copied_records": 0,
+    "state_encoding_s": 41.698651416169014,
+    "state_copy_s": 0.0,
+    "updates_s": 1.1106886010820745,
+    "source_verification_s": 2.800006768666208e-07,
+    "validation_hashing_s": 2.106969050000771,
+    "total_s": 44.964688449006644,
+    "node_count": 5013,
+    "bytes_written": 6081508
+  },
+  "scientific_commit_performed": false
+}

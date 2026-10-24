@@ -1,0 +1,90 @@
+{
+  "research-all": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [],
+    "skipped": "0",
+    "tests": "63",
+    "time": "56.836",
+    "timestamp": "2026-10-24T10:20:20.792852+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "a1fd49a30da08d12d02fa7101e0f486e10d18af9ed00ead2a00bdd585f012522"
+  },
+  "fence-complete": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [],
+    "skipped": "0",
+    "tests": "6",
+    "time": "9.114",
+    "timestamp": "2026-10-24T10:27:20.318746+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "7c098bf66bebd60f237f33a04db2595f55bca643548d1c8ed14a2ca16c293f1d"
+  },
+  "race-real-baseline": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [
+      {
+        "class": "tests.environments.test_morpion_reevaluation_publication_fence",
+        "name": "test_changed_identity_cannot_publish_old_proposal[model]",
+        "message": "AssertionError: {'result': MorpionReevaluationWorkerResult(patch_written=True, reason=None, patch_id='worker-proposal', num_rows=1, ev...ration=1, pending_patch_path='pipeline/reevaluation_patch.json', model_bundle_path='models/generation_000001/default')}\nassert 'error' in {'result': MorpionReevaluationWorkerResult(patch_written=True, reason=None, patch_id='worker-proposal', num_rows=1, ev...ration=1, pending_patch_path='pipeline/reevaluation_patch.json', model_bundle_path='models/generation_000001/default')}"
+      },
+      {
+        "class": "tests.environments.test_morpion_reevaluation_publication_fence",
+        "name": "test_changed_identity_cannot_publish_old_proposal[cursor]",
+        "message": "AssertionError: {'result': MorpionReevaluationWorkerResult(patch_written=True, reason=None, patch_id='worker-proposal', num_rows=1, ev...ration=1, pending_patch_path='pipeline/reevaluation_patch.json', model_bundle_path='models/generation_000001/default')}\nassert 'error' in {'result': MorpionReevaluationWorkerResult(patch_written=True, reason=None, patch_id='worker-proposal', num_rows=1, ev...ration=1, pending_patch_path='pipeline/reevaluation_patch.json', model_bundle_path='models/generation_000001/default')}"
+      },
+      {
+        "class": "tests.environments.test_morpion_reevaluation_publication_fence",
+        "name": "test_publication_excludes_concurrent_growth",
+        "message": "Failed: Growth entered during proposal publication"
+      }
+    ],
+    "skipped": "0",
+    "tests": "3",
+    "time": "6.442",
+    "timestamp": "2026-10-24T10:22:28.238560+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "a75d60b9fcb3d182d292392406e156baed5e05610a57f4ce75753ffe8c87e1ae"
+  },
+  "race-fixed-corrected": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [],
+    "skipped": "0",
+    "tests": "3",
+    "time": "6.420",
+    "timestamp": "2026-10-24T10:22:11.583888+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "5863bd1f87cea030a312765f737b52b17839f263e7dc162393b882dc380ff9da"
+  },
+  "focused": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [
+      {
+        "class": "tests.environments.test_morpion_atomic_reevaluation",
+        "name": "test_captured_epoch_is_not_retagged_at_completion",
+        "message": "chipiron.environments.morpion.bootstrap.generation_publication_io.GenerationPublicationError: Proposal protocol/workspace/epoch/producer mismatch."
+      }
+    ],
+    "skipped": "0",
+    "tests": "173",
+    "time": "210.134",
+    "timestamp": "2026-10-24T10:28:32.573510+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "e1a0bf095f0a96d5e762d4f3e21c45bdac21e33fbd657eab05d50aa2ad760ddf"
+  },
+  "fence-epoch-final": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": [],
+    "skipped": "0",
+    "tests": "7",
+    "time": "10.784",
+    "timestamp": "2026-10-24T10:32:51.414367+02:00",
+    "hostname": "pompote-AORUS-15P-KD",
+    "sha256": "d60ced43c698764d83acb09124eb91e6b9f2b05cf6e42f464147edb8301832c1"
+  }
+}
