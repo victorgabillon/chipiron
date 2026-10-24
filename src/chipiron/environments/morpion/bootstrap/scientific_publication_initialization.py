@@ -32,6 +32,7 @@ def initialize_scientific_v2_publication(
     atomic_reevaluation: bool = False,
     fenced_dataset: bool = False,
     durable_training: bool = False,
+    growth_scoring: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -109,8 +110,14 @@ def initialize_scientific_v2_publication(
             metadata[TRAINING_KEY] = dict(TRAINING_CONTRACT)
         if fenced_dataset:
             metadata[KEY] = dict(CONTRACT)
+        require(
+            not growth_scoring or atomic_reevaluation,
+            "Growth scoring requires explicit fresh atomic genesis.",
+        )
         if atomic_reevaluation:
-            metadata[TRANSACTION_KEY] = initial_transaction()
+            metadata[TRANSACTION_KEY] = initial_transaction(
+                growth_scoring=growth_scoring
+            )
         metadata[RECEIPTS_METADATA_KEY] = {
             "schema_version": 2 if atomic_reevaluation else 1,
             "generation": 1,

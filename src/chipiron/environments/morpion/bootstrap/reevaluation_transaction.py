@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 TRANSACTION_KEY = "atomic_reevaluation"
 PROTOCOL = "morpion_reevaluation_proposal"
 VERSION = 1
+RAW_NUMERIC_POLICY = "raw_nonterminal_v1"
+GROWTH_NUMERIC_POLICY = "anemone_depth_scaled_nonterminal_v1"
 
 
 def cursor_digest(cursor: object) -> str:
@@ -37,11 +39,12 @@ def cursor_digest(cursor: object) -> str:
     ).hexdigest()
 
 
-def initial_transaction() -> dict[str, Any]:
+def initial_transaction(*, growth_scoring: bool = False) -> dict[str, Any]:
     """Create identities only for a new workspace's existing durable genesis commit."""
     return {
         "protocol": PROTOCOL,
-        "schema_version": VERSION,
+        "schema_version": 2 if growth_scoring else VERSION,
+        **({"numeric_policy": GROWTH_NUMERIC_POLICY} if growth_scoring else {}),
         "workspace_id": uuid.uuid4().hex,
         "epoch_id": uuid.uuid4().hex,
         "producer_id": uuid.uuid4().hex,
@@ -86,10 +89,15 @@ def transaction_state(state: MorpionBootstrapRunState) -> dict[str, Any] | None:
             "producer_id",
             "accepted_cursor",
         }
+        | ({"numeric_policy"} if data.get("schema_version") == 2 else set())
         and data["protocol"] == PROTOCOL
         and isinstance(data["schema_version"], int)
         and not isinstance(data["schema_version"], bool)
-        and data["schema_version"] == VERSION,
+        and data["schema_version"] in (VERSION, 2)
+        and (
+            data["schema_version"] == VERSION
+            or data.get("numeric_policy") == GROWTH_NUMERIC_POLICY
+        ),
         "Unsupported atomic Reevaluation protocol.",
     )
     assert isinstance(data, dict)
@@ -174,6 +182,29 @@ def validate_proposal(
         envelope["source"] == source_identity(state, patch.tree_generation),
         "Proposal scientific source identity mismatch.",
     )
+    if data.get("numeric_policy") == GROWTH_NUMERIC_POLICY:
+        for row in patch.rows:
+            source = row.metadata.get("source")
+            require(
+                source
+                in (
+                    "active_model_reevaluation",
+                    "terminal_existing_value",
+                    "snapshot_existing_values",
+                ),
+                "Undeclared numeric source in scaled proposal.",
+            )
+            if source == "active_model_reevaluation":
+                depth = row.metadata.get("tree_depth")
+                require(
+                    row.metadata.get("numeric_policy") == GROWTH_NUMERIC_POLICY
+                    and isinstance(depth, int)
+                    and not isinstance(depth, bool)
+                    and depth >= 0
+                    and row.is_exact is False
+                    and row.is_terminal is False,
+                    "Fresh estimate has incompatible numeric policy or certainty.",
+                )
     next_cursor = complete_cursor(envelope["next_cursor"])
     require(
         (

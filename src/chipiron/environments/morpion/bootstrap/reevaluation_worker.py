@@ -11,6 +11,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
 
+from anemone.node_evaluation.direct import scale_nonterminal_score
 from anemone.training_export import (
     TrainingNodeSnapshot,
     TrainingTreeSnapshot,
@@ -45,6 +46,8 @@ from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
 from .reevaluation_publication import publish_reevaluation_patch_if_absent
 from .reevaluation_transaction import (
+    GROWTH_NUMERIC_POLICY,
+    RAW_NUMERIC_POLICY,
     complete_cursor,
     proposal_patch,
     source_identity,
@@ -402,6 +405,7 @@ class MorpionActiveModelNodeReevaluationEvaluator:
     """Reevaluation adapter backed by the currently selected active model bundle."""
 
     model_bundle_path: Path
+    numeric_policy: str = RAW_NUMERIC_POLICY
     _dynamics: MorpionDynamics = field(
         default_factory=MorpionDynamics,
         init=False,
@@ -445,6 +449,10 @@ class MorpionActiveModelNodeReevaluationEvaluator:
         nodes: Sequence[TrainingNodeSnapshot],
     ) -> tuple[MorpionReevaluationPatchRow, ...]:
         """Evaluate selected nodes with the same codec and value semantics."""
+        require(
+            self.numeric_policy in (RAW_NUMERIC_POLICY, GROWTH_NUMERIC_POLICY),
+            "Unsupported Reevaluation numeric policy.",
+        )
         load_started = time.perf_counter()
         evaluator = self._resolved_evaluator()
         self.last_model_load_s = time.perf_counter() - load_started
@@ -466,6 +474,8 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                 raw_evaluation = cast("Any", evaluator).evaluate(state)
                 self.last_inference_s += time.perf_counter() - inference_started
                 direct_value = _extract_score(raw_evaluation, node_id=node_id)
+                if self.numeric_policy == GROWTH_NUMERIC_POLICY:
+                    direct_value = scale_nonterminal_score(direct_value, node.depth)
                 source = "active_model_reevaluation"
             rows.append(
                 MorpionReevaluationPatchRow(
@@ -480,6 +490,14 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                     metadata={
                         "model_bundle_path": str(self.model_bundle_path),
                         "source": source,
+                        **(
+                            {
+                                "numeric_policy": self.numeric_policy,
+                                "tree_depth": node.depth,
+                            }
+                            if self.numeric_policy == GROWTH_NUMERIC_POLICY
+                            else {}
+                        ),
                     },
                 )
             )
@@ -886,6 +904,24 @@ def run_morpion_reevaluation_worker_once(
                 ),
                 "Active model changed before proposal admission.",
             )
+        numeric_policy = (
+            RAW_NUMERIC_POLICY
+            if captured is None
+            else captured.get("numeric_policy", RAW_NUMERIC_POLICY)
+        )
+        if numeric_policy == GROWTH_NUMERIC_POLICY:
+            from .generation_publication_io import committed_evaluator
+
+            assert captured_state is not None
+            model, _ = committed_evaluator(paths.work_dir, captured_state)
+            require(
+                captured_model == model,
+                "Scaled proposals require the committed Growth model.",
+            )
+            require(
+                evaluator is None,
+                "Scaled proposals require the built-in model adapter or saved-value fallback.",
+            )
         committed_source = committed_scientific_source(snapshot_path)
         stage_measurement = StageMeasurement()
         reader_initialization = StageMeasurement()
@@ -1066,6 +1102,7 @@ def run_morpion_reevaluation_worker_once(
                 paths=paths,
                 active_model=active_model,
             )
+            active_model_evaluator.numeric_policy = numeric_policy
             if view is not None:
                 patch_rows = active_model_evaluator.evaluate_node_window(selected_nodes)
             else:
