@@ -26,7 +26,6 @@ from chipiron.environments.morpion.bootstrap.config import (
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     bootstrap_config_to_dict,
-    load_bootstrap_config,
 )
 from chipiron.environments.morpion.bootstrap.control import (
     MorpionBootstrapControl,
@@ -83,12 +82,6 @@ from scripts.benchmark_morpion_scientific_reader import costs, delta
 
 def arguments(root: Path) -> MorpionBootstrapArgs:
     """Reconstruct the same explicit frozen configuration in each fresh process."""
-    config_path = MorpionBootstrapPaths.from_work_dir(root).bootstrap_config_path
-    min_visits = (
-        load_bootstrap_config(config_path).dataset.min_visit_count
-        if config_path.exists()
-        else 0
-    )
     return MorpionBootstrapArgs(
         work_dir=root,
         pipeline_mode="artifact_pipeline",
@@ -103,7 +96,7 @@ def arguments(root: Path) -> MorpionBootstrapArgs:
         dataset_family_target_policy="none",
         require_exact_or_terminal=False,
         use_backed_up_value=False,
-        min_visit_count=min_visits,
+        min_visit_count=None,
         max_rows=16,
         validation_seed=17,
         validation_fraction=0.25,
@@ -136,8 +129,6 @@ def initialize(root: Path, count: int, endgame: bool) -> None:
     from contextlib import nullcontext
 
     args = arguments(root)
-    if endgame:
-        args = replace(args, min_visit_count=None)
     paths = MorpionBootstrapPaths.from_work_dir(root)
     assert not paths.run_state_path.exists()
     paths.ensure_directories()
