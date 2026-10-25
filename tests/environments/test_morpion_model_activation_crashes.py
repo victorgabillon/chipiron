@@ -37,6 +37,8 @@ PRE = [
     "stream_before_manifest",
     "stream_complete",
     "science",
+    "compressed_block",
+    "compressed_finish",
     "validation",
     "hash_validation",
     "file_fsync",
@@ -155,6 +157,21 @@ def crash_child(root: Path, phase: str) -> None:
         return result
 
     Path.write_bytes = write
+    from chipiron.environments.morpion.bootstrap.scientific_stream import (
+        ScientificRowsWriter,
+    )
+
+    original_emit = ScientificRowsWriter._emit
+
+    def emit(writer: Any, data: bytes) -> None:
+        if armed and phase == "compressed_block" and writer.encoding and data:
+            writer.stream.write(data[: max(1, len(data) // 2)])
+            writer.stream.flush()
+            os._exit(73)
+        original_emit(writer, data)
+
+    ScientificRowsWriter._emit = emit
+    after(ScientificRowsWriter, "finish", "compressed_finish")
     original_encode = closed._encode
 
     def encode(row: Any) -> Any:
@@ -173,7 +190,10 @@ def crash_child(root: Path, phase: str) -> None:
     def fsync(fd: int) -> Any:
         path = Path(os.readlink(f"/proc/self/fd/{fd}"))
         if armed and (
-            (phase == "file_fsync" and path.name == "records.jsonl")
+            (
+                phase == "file_fsync"
+                and path.name in ("records.jsonl", "records.jsonl.zst")
+            )
             or (phase == "directory_fsync" and path.name == "scientific_snapshot")
             or (phase == "commit_directory_fsync" and committed and path == root)
         ):
@@ -251,13 +271,21 @@ def run_child(root: Path, phase: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-@pytest.mark.parametrize("phase", PRE + POST)
+@pytest.mark.parametrize(
+    "phase,encoding",
+    [
+        (phase, encoding)
+        for phase in PRE + POST
+        for encoding in (None, "jsonl-zstd-1")
+        if encoding or not phase.startswith("compressed_")
+    ],
+)
 def test_process_death_is_one_complete_model(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str, encoding: str | None
 ) -> None:
     """Every boundary restores M1 or M2, then exact retry completes/repairs once."""
     local_leaderboard(monkeypatch, tmp_path)
-    _, paths, _ = setup_activation(tmp_path / "workspace")
+    _, paths, _ = setup_activation(tmp_path / "workspace", encoding=encoding)
     request = prepare_model_activation_request(paths, training_generation=1)
     (paths.work_dir / "request.json").write_text(json.dumps(request))
     before = paths.run_state_path.read_bytes()

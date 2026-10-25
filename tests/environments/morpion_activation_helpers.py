@@ -47,6 +47,7 @@ def setup_activation(
     layout: str = "sharded",
     seed_score: float | None = None,
     branch_limit: int = 100000,
+    encoding: str | None = None,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
     args = replace(
@@ -132,7 +133,7 @@ def setup_activation(
         "config_sha256": bootstrap_config_sha256(config),
     }
     science = runner.export_closed_scientific_snapshot(
-        root / "source-science", generation=1, producer=producer
+        root / "source-science", generation=1, producer=producer, encoding=encoding
     )
     state = replace(
         initialize_bootstrap_run_state(),

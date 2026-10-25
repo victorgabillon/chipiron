@@ -9,7 +9,6 @@ parser buffers and the existing SQLite cache (TEMP membership/topology on disk).
 
 from __future__ import annotations
 
-import hashlib
 import shutil
 import tempfile
 from contextlib import ExitStack
@@ -31,6 +30,7 @@ from .generation_publication_io import (
     publish_directory_if_absent,
     sync_artifact,
 )
+from .scientific_stream import ENCODING, ScientificRowsWriter
 from .scientific_validation_evidence import (
     _validated_record_scope,
     committed_source_validation,
@@ -43,7 +43,6 @@ from .sharded_training_reader import (
 from .sharded_training_v2 import (
     _CODEC,
     ScientificGeneration,
-    _descriptor,
     _encode,
     _integer,
     _producer,
@@ -81,6 +80,7 @@ def save_closed_scientific_snapshot(
     created_at_unix_s: float | None = None,
     _validation_result: dict[str, Any] | None = None,
     previous_producer: Mapping[str, str] | None = None,
+    encoding: str | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     """Create a new standalone directory atomically, without committing a run.
 
@@ -91,6 +91,7 @@ def save_closed_scientific_snapshot(
     Identical inputs produce identical payload bytes; a destination is never
     replaced. On interruption any private staging directory is non-authoritative.
     """
+    _require(encoding in (None, ENCODING), "unsupported scientific encoding")
     started = perf_counter()
     identity = _producer(producer)
     _require(_integer(generation) and generation >= 1, "invalid generation")
@@ -177,31 +178,33 @@ def save_closed_scientific_snapshot(
                     generation == source.generation + 1,
                     "non-consecutive source generation",
                 )
+                source_encoding = source.scientific_encoding
+                _require(
+                    encoding is None or encoding == source_encoding,
+                    "committed scientific encoding cannot change",
+                )
+                encoding = source_encoding
                 connection = stack.enter_context(source.temporary_workspace())
                 connection.execute(
                     "CREATE TEMP TABLE closed_current (id TEXT PRIMARY KEY)"
                 )
             timings["source_verification_s"] = perf_counter() - verification
-            records_digest = hashlib.sha256()
-            updates_digest = hashlib.sha256()
-            records_path = staging / "records.jsonl"
+            suffix = ".jsonl.zst" if encoding else ".jsonl"
+            records_path = staging / f"records{suffix}"
+            updates_path = staging / f"updates{suffix}"
             with (
-                records_path.open("wb") as records,
-                (staging / "updates.jsonl").open("w", encoding="utf-8") as updates,
+                records_path.open("wb") as records_file,
+                updates_path.open("wb") as updates_file,
             ):
-
-                def write_record(raw: bytes) -> None:
-                    records.write(raw)
-                    records_digest.update(raw)
-
+                records = ScientificRowsWriter(records_file, encoding)
+                updates = ScientificRowsWriter(updates_file, encoding)
+                write_record = records.write
                 write_record(
                     _encode(closed_envelope("records", generation=generation)).encode()
                 )
-                update_header = _encode(
-                    closed_envelope("updates", generation=generation)
+                updates.write(
+                    _encode(closed_envelope("updates", generation=generation)).encode()
                 )
-                updates.write(update_header)
-                updates_digest.update(update_header.encode())
                 for order, node in enumerate(nodes):
                     update_started = perf_counter()
                     snapshot = build_training_node_snapshot(
@@ -221,8 +224,7 @@ def save_closed_scientific_snapshot(
                     )
                     _validate_update(row)
                     encoded_update = _encode(row)
-                    updates.write(encoded_update)
-                    updates_digest.update(encoded_update.encode())
+                    updates.write(encoded_update.encode())
                     timings["updates_s"] += perf_counter() - update_started
                     if (
                         connection is not None
@@ -274,6 +276,12 @@ def save_closed_scientific_snapshot(
                     )
                     connection.execute("DROP TABLE closed_current")
                     timings["state_copy_s"] = perf_counter() - copying
+                record_descriptor = records.finish(
+                    records_path.name, generation, len(nodes)
+                )
+                update_descriptor = updates.finish(
+                    updates_path.name, generation, len(nodes)
+                )
             validation = perf_counter()
             header = closed_envelope(
                 "generation",
@@ -285,17 +293,15 @@ def save_closed_scientific_snapshot(
                     "metadata": snapshot_metadata,
                 },
                 producer=identity,
-                record_shard=_descriptor(records_path, staging, generation, len(nodes)),
-                update_shard=_descriptor(
-                    staging / "updates.jsonl", staging, generation, len(nodes)
-                ),
+                record_shard=record_descriptor,
+                update_shard=update_descriptor,
             )
             _require(
-                header["record_shard"]["sha256"] == records_digest.hexdigest(),
+                header["record_shard"]["sha256"] == _sha(records_path),
                 "written records differ from validated bytes",
             )
             _require(
-                header["update_shard"]["sha256"] == updates_digest.hexdigest(),
+                header["update_shard"]["sha256"] == _sha(updates_path),
                 "written updates differ from regenerated bytes",
             )
             manifest = staging / "generation.json"
@@ -348,7 +354,11 @@ def load_closed_scientific_snapshot(path: Path) -> ScientificGeneration:
             _require(_sha(shard) == descriptor["sha256"], "closed shard hash mismatch")
             count = 0
             for parsed in iter_shard_rows(
-                shard, role, scientific_generation=generation, closed=True
+                shard,
+                role,
+                scientific_generation=generation,
+                closed=True,
+                descriptor=descriptor,
             ):
                 row = cast("dict[str, Any]", parsed)
                 if role == "records":

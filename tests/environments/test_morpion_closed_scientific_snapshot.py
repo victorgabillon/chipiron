@@ -230,16 +230,18 @@ def test_committed_copy_changed_values_parents_and_new_origins(
     assert_reference(path)
 
 
+@pytest.mark.parametrize("encoding", [None, "jsonl-zstd-1"])
 @pytest.mark.parametrize("policy", get_args(PvFamilyTargetPolicy))
 @pytest.mark.parametrize("confidence", ["legacy_v1", "selected_value_v2"])
 def test_all_policies_rows_metadata_and_jsonl(
-    tmp_path: Path, policy: str, confidence: str
+    tmp_path: Path, policy: str, confidence: str, encoding: str | None
 ) -> None:
     """Verify all policies rows metadata and jsonl."""
     nodes = nodes_fixture()
     advance(nodes)
-    path = closed(tmp_path / "source", nodes)
-    oracle = load_closed_scientific_snapshot(path)
+    path = closed(tmp_path / "source", nodes, encoding=encoding)
+    raw = closed(tmp_path / "raw", nodes) if encoding else path
+    oracle = load_closed_scientific_snapshot(raw)
     with view(path) as actual:
         for backup in (False, True):
             for criteria in (
@@ -390,9 +392,12 @@ def test_offline_source_rejected_and_interruption_leaves_no_snapshot(
     assert_reference(closed(tmp_path / "retry"))
 
 
-def test_cache_corruption_reuse_and_source_change(tmp_path: Path) -> None:
+@pytest.mark.parametrize("encoding", [None, "jsonl-zstd-1"])
+def test_cache_corruption_reuse_and_source_change(
+    tmp_path: Path, encoding: str | None
+) -> None:
     """Verify cache corruption reuse and source change."""
-    path = closed(tmp_path / "source")
+    path = closed(tmp_path / "source", encoding=encoding)
     with view(path) as current:
         cache = current.index_path
     with view(path) as reused:
@@ -401,7 +406,9 @@ def test_cache_corruption_reuse_and_source_change(tmp_path: Path) -> None:
         connection.execute("UPDATE records SET payload='{}'")
     with view(path) as rebuilt:
         assert not rebuilt.index_reused
-        (path.parent / "records.jsonl").write_bytes(b"corrupt")
+        (
+            path.parent / ("records.jsonl.zst" if encoding else "records.jsonl")
+        ).write_bytes(b"corrupt")
         with pytest.raises(ValueError, match="hash mismatch"):
             rebuilt.validate_source_identity()
 
@@ -461,8 +468,9 @@ def test_corrupt_committed_source_and_wrong_identity_refused(tmp_path: Path) -> 
     assert not (tmp_path / "corrupt").exists()
 
 
+@pytest.mark.parametrize("encoding", [None, "jsonl-zstd-1"])
 def test_real_forced35_estimate42_all_policies(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, encoding: str | None
 ) -> None:
     """Verify real forced35 estimate42 all policies."""
     from tests.environments.test_morpion_value_certainty import (
@@ -474,7 +482,9 @@ def test_real_forced35_estimate42_all_policies(
     late, _ = endgame.__wrapped__()
     runner = make_runner(monkeypatch, state=late)
     runner.apply_reevaluation_patch(model_patch(runner, monkeypatch, 42, tmp_path))
-    path = closed(tmp_path / "source", tuple(runner.iter_profile_nodes()))
+    path = closed(
+        tmp_path / "source", tuple(runner.iter_profile_nodes()), encoding=encoding
+    )
     oracle = load_closed_scientific_snapshot(path)
     assert oracle.value_contracts["0"]["certainties"] == {
         "direct": "ESTIMATE",
@@ -536,7 +546,7 @@ def test_corruption_before_descriptor_cannot_inherit_canonical_proof(
     """Verify corruption before descriptor cannot inherit canonical proof."""
     import chipiron.environments.morpion.bootstrap.closed_scientific_snapshot as implementation
 
-    original = implementation._descriptor
+    original = implementation._sha
 
     def corrupt(path: Path, *args: Any) -> Any:
         if path.name == f"{role}.jsonl":
@@ -549,7 +559,7 @@ def test_corruption_before_descriptor_cannot_inherit_canonical_proof(
             path.write_text("".join(json.dumps(row) + "\n" for row in rows))
         return original(path, *args)
 
-    monkeypatch.setattr(implementation, "_descriptor", corrupt)
+    monkeypatch.setattr(implementation, "_sha", corrupt)
     with pytest.raises(ValueError, match="differ from"):
         closed(tmp_path / "corrupt")
     assert not (tmp_path / "corrupt").exists()

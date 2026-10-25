@@ -77,6 +77,7 @@ def validator_identity() -> dict[str, Any]:
         "sharded_training_v2.py",
         "sharded_training_v2_contract.py",
         "closed_scientific_snapshot.py",
+        "scientific_stream.py",
     ):
         digest.update(name.encode() + b"\0")
         with Path(__file__).with_name(name).open("rb") as handle:

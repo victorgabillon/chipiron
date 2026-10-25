@@ -36,6 +36,7 @@ from .generation_publication_io import (
 )
 from .performance import StageMeasurement
 from .pipeline_memory import log_pipeline_memory
+from .scientific_stream import ENCODING, open_scientific_stream
 from .scientific_validation_evidence import canonical_record_is_validated
 from .sharded_training_export import (
     MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
@@ -83,7 +84,7 @@ MANIFEST_MAX_BYTES = 4 * 1024 * 1024
 type WindowSelection = tuple[tuple[str, ...], str | None, bool]
 
 
-def _has_surrogate_escape(path: Path) -> bool:
+def _has_surrogate_escape(path: Path, descriptor: dict[str, Any] | None = None) -> bool:
     """Conservatively choose a lossless library backend, without parsing JSON.
 
     YAJL replaces unpaired high-surrogate escapes with '?'. Detect all possible
@@ -92,7 +93,7 @@ def _has_surrogate_escape(path: Path) -> bool:
     """
     found = False
     previous = b""
-    with path.open("rb") as stream:
+    with open_scientific_stream(path, descriptor) as stream:
         while chunk := stream.read(PARSER_BUFFER_BYTES):
             data = previous + chunk
             found = found or re.search(rb"\\u[dD][89a-fA-F]", data) is not None
@@ -106,14 +107,19 @@ def _parser_events(
     multiple_values: bool = False,
     strict_keys: bool = False,
     data: bytes | None = None,
+    descriptor: dict[str, Any] | None = None,
 ) -> Iterator[tuple[str, str, object]]:
     """Share the existing lossless bounded ijson backends across both schemas."""
     lossless_unicode = (
-        _has_surrogate_escape(path)
+        _has_surrogate_escape(path, descriptor)
         if data is None
         else re.search(rb"\\u[dD][89a-fA-F]", data) is not None
     ) or ijson.backend == "python"
-    with path.open("rb") if data is None else io.BytesIO(data) as stream:
+    with (
+        open_scientific_stream(path, descriptor)
+        if data is None
+        else io.BytesIO(data) as stream
+    ):
         backend = ijson.get_backend("python") if lossless_unicode else ijson
         events = backend.parse(
             stream,
@@ -204,12 +210,15 @@ def iter_shard_rows(
     *,
     scientific_generation: int | None = None,
     closed: bool = False,
+    descriptor: dict[str, Any] | None = None,
 ) -> Iterator[dict[str, object]]:
     """Yield validated JSON array records, retaining no complete input array."""
     try:
         if scientific_generation is not None:
             with _closing_events(
-                _parser_events(path, multiple_values=True, strict_keys=True)
+                _parser_events(
+                    path, multiple_values=True, strict_keys=True, descriptor=descriptor
+                )
             ) as events:
                 rows = ijson.items(events, "")
                 header = next(rows, None)
@@ -361,9 +370,28 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
         ("update_shard", "updates.jsonl"),
     ):
         item = manifest[key]
+        compressed = isinstance(item, dict) and "encoding" in item
+        if compressed:
+            _require(item["encoding"] == ENCODING, "unsupported scientific encoding")
+            name += ".zst"
+            _require(
+                all(
+                    _integer(item.get(k)) and item[k] > 0
+                    for k in ("bytes", "decoded_bytes")
+                )
+                and isinstance(item.get("decoded_sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", item["decoded_sha256"]) is not None,
+                "invalid compressed content identity",
+            )
         _require(
             isinstance(item, dict)
-            and set(item) == {"path", "generation", "count", "sha256"},
+            and set(item)
+            == {"path", "generation", "count", "sha256"}
+            | (
+                {"encoding", "bytes", "decoded_bytes", "decoded_sha256"}
+                if compressed
+                else set()
+            ),
             "invalid closed shard descriptor",
         )
         _require(
@@ -385,6 +413,11 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
             not (path.parent / name).is_symlink(),
             "symlinked closed snapshot dependency",
         )
+    _require(
+        manifest["record_shard"].get("encoding")
+        == manifest["update_shard"].get("encoding"),
+        "mixed scientific encodings",
+    )
     return manifest
 
 
@@ -489,6 +522,7 @@ class ShardedTrainingGenerationView:
         self._v2_manifest: dict[str, Any]
         self._v2_descriptors: dict[Path, dict[str, Any]]
         self.storage_layout_version: int | None
+        self.scientific_encoding: str | None
         self.root: Path
         self.manifest: MorpionShardedTrainingGenerationManifest
         self.root_node_id: str
@@ -529,6 +563,7 @@ class ShardedTrainingGenerationView:
         self.format_kind = _source_kind(self.manifest_path)
         self.format_version = 1
         self.storage_layout_version = None
+        self.scientific_encoding = None
         self.scientific_contract = None
         self.created_at_unix_s = None
         self.provenance = {}
@@ -754,6 +789,7 @@ class ShardedTrainingGenerationView:
     def _prepare_closed_source(self) -> None:
         """Read one self-contained descriptor; there is no historical catalog."""
         manifest = read_closed_manifest(self.manifest_path)
+        self.scientific_encoding = manifest["record_shard"].get("encoding")
         self.root = self.manifest_path.parent
         self.generation = manifest["generation"]
         self._set_scientific_header(manifest)
@@ -762,8 +798,8 @@ class ShardedTrainingGenerationView:
             source_format_kind=CLOSED_KIND, storage_layout_version=CLOSED_LAYOUT
         )
         self._v2_manifest = manifest
-        self._node_shards = [self.root / "records.jsonl"]
-        self._update_shard = self.root / "updates.jsonl"
+        self._node_shards = [self.root / manifest["record_shard"]["path"]]
+        self._update_shard = self.root / manifest["update_shard"]["path"]
         self._v2_descriptors = {
             self._node_shards[0]: manifest["record_shard"],
             self._update_shard: manifest["update_shard"],
@@ -1004,6 +1040,7 @@ class ShardedTrainingGenerationView:
                 "records",
                 scientific_generation=descriptor["generation"],
                 closed=self.storage_layout_version is not None,
+                descriptor=self._v2_descriptors[path],
             ):
                 if set(row) != {
                     "node_id",
@@ -1078,6 +1115,7 @@ class ShardedTrainingGenerationView:
                 "updates",
                 scientific_generation=self.generation,
                 closed=self.storage_layout_version is not None,
+                descriptor=self._v2_descriptors[self._update_shard],
             )
         ):
             _validate_update(row)
@@ -1241,7 +1279,8 @@ class ShardedTrainingGenerationView:
                 if self.storage_layout_version is not None
                 else _envelope
             )
-            with path.open("rb") as stream:
+            # Exhaustion or generator.close() exits this context, including on copy failure.
+            with open_scientific_stream(path, descriptor) as stream:  # pylint: disable=contextmanager-generator-missing-cleanup
                 for index, raw in enumerate(stream):
                     with _closing_events(
                         _parser_events(path, strict_keys=True, data=raw)

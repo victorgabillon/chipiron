@@ -189,7 +189,11 @@ def validate_closed_export(
     )
     require(
         {p.name for p in path.parent.iterdir()}
-        == {"generation.json", "records.jsonl", "updates.jsonl"},
+        == {
+            "generation.json",
+            header["record_shard"]["path"],
+            header["update_shard"]["path"],
+        },
         "Unexpected closed snapshot dependency.",
     )
     if validated:

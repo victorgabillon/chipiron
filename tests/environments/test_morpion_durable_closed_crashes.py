@@ -96,7 +96,7 @@ def crash_child(root: Path, boundary: str) -> None:
             and "value_contract" in row
         ):
             for p in (root / "generation_publications_v3/staging").glob(
-                "*/.closed-pending-*/updates.jsonl"
+                "*/.closed-pending-*/updates.jsonl*"
             ):
                 with p.open("a") as f:
                     f.write('{"node_id":')
@@ -137,7 +137,11 @@ def crash_child(root: Path, boundary: str) -> None:
         """Fsync."""
         path = Path(os.readlink(f"/proc/self/fd/{fd}"))
         private = "staging" in path.parts
-        if boundary == "file_fsync" and private and path.name == "records.jsonl":
+        if (
+            boundary == "file_fsync"
+            and private
+            and path.name in ("records.jsonl", "records.jsonl.zst")
+        ):
             die()
         if (
             boundary == "directory_fsync"
@@ -245,9 +249,12 @@ def run_crash(root: Path, boundary: str) -> None:
         for value in PRE_COMMIT + POST_COMMIT
     ],
 )
-def test_closed_crash_recovery(tmp_path: Path, boundary: str) -> None:
+@pytest.mark.parametrize("encoding", [None, "jsonl-zstd-1"])
+def test_closed_crash_recovery(
+    tmp_path: Path, boundary: str, encoding: str | None
+) -> None:
     """Verify closed crash recovery."""
-    args, paths, initial = setup_closed_baseline(tmp_path)
+    args, paths, initial = setup_closed_baseline(tmp_path, encoding=encoding)
     publish_scientific_patch(paths)
     old = capsule_path(tmp_path, publication_records(initial.metadata)[0]["id"], 3)
     digest = artifact_digest(old)

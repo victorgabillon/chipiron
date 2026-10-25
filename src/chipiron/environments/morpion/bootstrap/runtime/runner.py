@@ -1353,6 +1353,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         committed_source: Path | None = None,
         _validation_result: dict[str, Any] | None = None,
         previous_producer: Mapping[str, str] | None = None,
+        encoding: str | None = None,
     ) -> Path:
         """Explicit closed export from the same frozen runtime as its checkpoint."""
         from chipiron.environments.morpion.bootstrap.closed_scientific_snapshot import (
@@ -1369,6 +1370,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             committed_source=committed_source,
             _validation_result=_validation_result,
             previous_producer=previous_producer,
+            encoding=encoding,
         )
         self._latest_training_export_stats = stats
         return path

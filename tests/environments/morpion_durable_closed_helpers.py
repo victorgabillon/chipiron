@@ -30,6 +30,7 @@ class ClosedPublicationRunner(ScientificPublicationRunner):
         producer: Any,
         committed_source: Any = None,
         _validation_result: Any = None,
+        encoding: str | None = None,
     ) -> Any:
         """Export closed scientific snapshot."""
         path, self.closed_stats = save_closed_scientific_snapshot(
@@ -40,11 +41,14 @@ class ClosedPublicationRunner(ScientificPublicationRunner):
             producer=producer,
             committed_source=committed_source,
             _validation_result=_validation_result,
+            encoding=encoding,
         )
         return path
 
 
-def setup_closed_baseline(root: Path, *, initialize: Any = True) -> Any:
+def setup_closed_baseline(
+    root: Path, *, initialize: Any = True, encoding: str | None = None
+) -> Any:
     """Prepare a new closed snapshot and matching scalar fixture checkpoint."""
     args, paths, state = setup_scientific_baseline(root, initialize=False)
     runner = ClosedPublicationRunner()
@@ -52,7 +56,10 @@ def setup_closed_baseline(root: Path, *, initialize: Any = True) -> Any:
 
     runner.values = dict(BASELINE)
     source = runner.export_closed_scientific_snapshot(
-        root / "genesis-closed", generation=1, producer=scientific_producer(args)
+        root / "genesis-closed",
+        generation=1,
+        producer=scientific_producer(args),
+        encoding=encoding,
     )
     state = replace(state, latest_tree_snapshot_path=paths.relative_to_work_dir(source))
     if initialize:
