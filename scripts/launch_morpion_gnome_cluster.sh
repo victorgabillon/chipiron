@@ -18,6 +18,8 @@ MORPION_CLUSTER_MAX_SECONDS="${MORPION_CLUSTER_MAX_SECONDS:-42900}"
 MORPION_CLUSTER_STOP_GRACE_SECONDS="${MORPION_CLUSTER_STOP_GRACE_SECONDS:-60}"
 CLUSTER_PIDS=()
 CLUSTER_STOPPED=0
+# SIGKILL is asynchronous; reserve a bounded confirmation phase after TERM grace.
+CLUSTER_KILL_CONFIRM_SECONDS=5
 
 # Run identity and local source roots.
 # MORPION_WORK_DIR is the self-contained run directory. Change it when starting
@@ -147,6 +149,23 @@ if [[ "$MORPION_CLUSTER_HEADLESS" != "1" ]] && ! command -v gnome-terminal >/dev
   exit 1
 fi
 
+# A dead group leader does not imply that its grandchildren have stopped.
+# Zombies cannot execute or retain open files; their reaping belongs to init.
+worker_groups_running() {
+  local pid pgid state group processes
+  processes=$(ps -eo pid=,pgid=,stat=) || { echo "Cannot verify worker shutdown" >&2; exit 1; }
+  while read -r pid pgid state; do
+    case "$state" in Z*|X*) continue ;; esac
+    for group in "${CLUSTER_PIDS[@]}"; do
+      if [[ "$pgid" == "$group" ]]; then
+        echo "[CLUSTER] waiting pid=$pid pgid=$pgid state=$state" >&2
+        return 0
+      fi
+    done
+  done <<< "$processes"
+  return 1
+}
+
 stop_headless_workers() {
   local pid deadline alive
   if [[ "$CLUSTER_STOPPED" == "1" ]]; then return; fi
@@ -164,14 +183,23 @@ stop_headless_workers() {
     sleep 1
   done
   for pid in "${CLUSTER_PIDS[@]}"; do kill -KILL -- "-$pid" 2>/dev/null || true; done
+  deadline=$((SECONDS + CLUSTER_KILL_CONFIRM_SECONDS))
+  while worker_groups_running; do
+    if (( SECONDS >= deadline )); then
+      echo "[CLUSTER] ERROR: worker group still running after SIGKILL; shutdown unconfirmed" >&2
+      exit 1
+    fi
+    sleep 0.05
+  done
   for pid in "${CLUSTER_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
+  echo "[CLUSTER] all worker groups stopped"
 }
 
 if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
   if [[ ! "$MORPION_CLUSTER_MAX_SECONDS" =~ ^[1-9][0-9]*$ ||
         ! "$MORPION_CLUSTER_STOP_GRACE_SECONDS" =~ ^[1-9][0-9]*$ ]] ||
-      (( MORPION_CLUSTER_MAX_SECONDS + MORPION_CLUSTER_STOP_GRACE_SECONDS > 43200 )); then
-    echo "Headless active time plus stop grace must be positive and at most 43200 seconds." >&2
+      (( MORPION_CLUSTER_MAX_SECONDS + MORPION_CLUSTER_STOP_GRACE_SECONDS + CLUSTER_KILL_CONFIRM_SECONDS > 43200 )); then
+    echo "Headless active time plus stop grace and kill confirmation must be positive and at most 43200 seconds." >&2
     exit 1
   fi
   command -v setsid >/dev/null || exit 1

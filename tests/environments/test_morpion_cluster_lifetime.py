@@ -22,7 +22,7 @@ def _process_has_exited(pid: int) -> bool:
         status = Path(f"/proc/{pid}/stat").read_text()
     except (FileNotFoundError, ProcessLookupError):
         return True
-    return status.rsplit(") ", 1)[1].startswith("Z")
+    return status.rsplit(") ", 1)[1].startswith(("Z", "X"))
 
 
 @pytest.mark.parametrize("interrupt", [False, True])
@@ -74,19 +74,18 @@ time.sleep(60)
         assert all((tmp_path / f"{stage}.json").exists() for stage in stages)
         if interrupt:
             process.send_signal(signal.SIGTERM)
-        output, _ = process.communicate(timeout=8)
+        output, _ = process.communicate(timeout=13)
         assert process.returncode == (143 if interrupt else 0), output
+        assert "all worker groups stopped" in output
         for stage in stages:
             for pid in json.loads((tmp_path / f"{stage}.json").read_text()).values():
-                # SIGKILL delivery is asynchronous for grandchildren we cannot waitpid.
-                exit_deadline = time.monotonic() + 1
-                while not _process_has_exited(pid) and time.monotonic() < exit_deadline:
-                    time.sleep(0.01)
+                # Successful launcher exit itself confirms quiescence, without a
+                # second test-only grace period that hides incomplete shutdown.
                 assert _process_has_exited(pid), (pid, output)
     finally:
         if process.poll() is None:
             process.send_signal(signal.SIGTERM)
-            process.communicate(timeout=8)
+            process.communicate(timeout=13)
 
 
 def test_cluster_rejects_horizon_over_twelve_hours(tmp_path: Path) -> None:
