@@ -1895,15 +1895,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         # A single CLI call owns its readers. The supervisor passes its explicit
         # source scope when repeated calls should reuse an index instead.
-        private_cache = (
+        with (
             TemporaryDirectory(prefix="morpion-reader-")
             if launcher_args.scientific
             and launcher_args.reader_cache_dir is None
             and launcher_args.pipeline_stage
             in {"dataset", "dataset_worker", "reevaluation"}
             else nullcontext(None)
-        )
-        with private_cache as directory:
+        ) as directory:
             if directory is not None:
                 launcher_args = replace(launcher_args, reader_cache_dir=Path(directory))
                 LOGGER.info("[reader-cache] private invocation scope=%s", directory)
