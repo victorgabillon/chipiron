@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import ijson
+import zstandard
 from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot
 from platformdirs import user_cache_path
@@ -75,7 +76,7 @@ if TYPE_CHECKING:
     from .sharded_training_export import MorpionShardedTrainingGenerationManifest
 
 LOGGER = logging.getLogger(__name__)
-INDEX_SCHEMA_VERSION = 2
+INDEX_SCHEMA_VERSION = 3
 PARSER_BUFFER_BYTES = 64 * 1024
 SQLITE_CACHE_KIB = 2048
 TRANSACTION_ROWS = 256
@@ -574,6 +575,7 @@ class ShardedTrainingGenerationView:
         self._v2_manifest = {}
         self._v2_descriptors = {}
         self._v2_prepared_stats: dict[Path, tuple[int, int, int]] = {}
+        self._payload_decoder = zstandard.ZstdDecompressor()
         self.root = self.manifest_path.parent
         if self.format_kind == CLOSED_KIND:
             if not allow_closed_snapshot:
@@ -898,7 +900,7 @@ class ShardedTrainingGenerationView:
                 return valid
             finally:
                 connection.close()
-        except sqlite3.DatabaseError:
+        except (sqlite3.DatabaseError, TypeError, ValueError):
             return False
 
     def _build_index(self) -> None:
@@ -1005,7 +1007,7 @@ class ShardedTrainingGenerationView:
 
     @staticmethod
     def _cache_digest(connection: sqlite3.Connection) -> str:
-        """Detect scientifically meaningful cache corruption in bounded scans."""
+        """Verify compressed bytes before decoding any cached scientific payload."""
         digest = hashlib.sha256()
         for table, fields in (
             ("records", "node_id,payload"),
@@ -1015,14 +1017,23 @@ class ShardedTrainingGenerationView:
             for row in connection.execute(
                 f"SELECT {fields} FROM {table} ORDER BY node_id"
             ):
-                digest.update(json.dumps(row, ensure_ascii=True).encode("utf-8"))
-                digest.update(b"\n")
+                payload = row[-1]
+                if not isinstance(payload, bytes):
+                    raise TypeError("Scientific cache payload is not a BLOB")
+                digest.update(json.dumps(row[:-1], ensure_ascii=True).encode("utf-8"))
+                digest.update(len(payload).to_bytes(8, "big"))
+                digest.update(payload)
         return digest.hexdigest()
 
     def _build_scientific_rows(
         self, connection: sqlite3.Connection, temporary: Path
     ) -> None:
         """Use the same index and parser, with disk-backed v2 contract checks."""
+        compressor = zstandard.ZstdCompressor(level=3, write_checksum=True)
+
+        def pack(row: dict[str, Any]) -> bytes:
+            return compressor.compress(json.dumps(row, allow_nan=False).encode())
+
         connection.executescript("""
             CREATE TEMP TABLE v2_creation (id TEXT PRIMARY KEY, generation INTEGER NOT NULL);
             CREATE TEMP TABLE v2_parents (parent TEXT, child TEXT, PRIMARY KEY(parent,child));
@@ -1065,7 +1076,7 @@ class ShardedTrainingGenerationView:
                     "INSERT INTO records VALUES (?, ?)",
                     (
                         _validated_node_id(row["node_id"]),
-                        json.dumps(row, allow_nan=False),
+                        pack(row),
                     ),
                 )
                 count += 1
@@ -1098,10 +1109,14 @@ class ShardedTrainingGenerationView:
                     if index % TRANSACTION_ROWS == 0:
                         connection.commit()
             self.source_bytes_read += 2 * self.manifest_path.stat().st_size
-            invalid = connection.execute("""
-                SELECT 1 FROM records LEFT JOIN v2_creation ON records.node_id=v2_creation.id
-                WHERE v2_creation.id IS NULL OR json_extract(records.payload,'$.creation_generation') != v2_creation.generation LIMIT 1
-            """).fetchone()
+            invalid = any(
+                generation is None
+                or self._decode_payload(payload)["creation_generation"] != generation
+                for payload, generation in connection.execute("""
+                    SELECT records.payload, v2_creation.generation FROM records
+                    LEFT JOIN v2_creation ON records.node_id=v2_creation.id
+                """)
+            )
             if (
                 invalid
                 or count
@@ -1124,7 +1139,7 @@ class ShardedTrainingGenerationView:
             node_id = _validated_node_id(cast("str", row["node_id"]))
             connection.execute(
                 "INSERT INTO updates VALUES (?, ?, ?, ?)",
-                (node_id, sequence, sequence, json.dumps(row, allow_nan=False)),
+                (node_id, sequence, sequence, pack(row)),
             )
             connection.executemany(
                 "INSERT OR IGNORE INTO v2_parents VALUES (?, ?)",
@@ -1248,7 +1263,7 @@ class ShardedTrainingGenerationView:
             ).fetchone()
             if row is None:
                 raise KeyError(node_id)
-            result.append(json.loads(row[0])["value_contract"])
+            result.append(self._decode_payload(row[0])["value_contract"])
         return tuple(result)
 
     def load_creation_generations(self, node_ids: Sequence[str]) -> tuple[int, ...]:
@@ -1262,7 +1277,7 @@ class ShardedTrainingGenerationView:
             ).fetchone()
             if row is None:
                 raise KeyError(node_id)
-            result.append(json.loads(row[0])["creation_generation"])
+            result.append(self._decode_payload(row[0])["creation_generation"])
         return tuple(result)
 
     def iter_record_bytes(self) -> Iterator[tuple[str, bytes]]:
@@ -1394,10 +1409,19 @@ class ShardedTrainingGenerationView:
         if row is None:
             raise KeyError(node_id)
         if self.format_version == SCIENTIFIC_VERSION:
-            return self._scientific_node(json.loads(row[0]), json.loads(row[1]))
+            return self._scientific_node(
+                self._decode_payload(row[0]), self._decode_payload(row[1])
+            )
         return _merge_node_record_and_update(
             _node_record_from_dict(json.loads(row[0])),
             _node_update_from_dict(json.loads(row[1])),
+        )
+
+    def _decode_payload(self, payload: bytes) -> dict[str, Any]:
+        """Decode one scientific row; never decompress a complete index."""
+        return cast(
+            "dict[str, Any]",
+            json.loads(self._payload_decoder.decompress(payload, allow_extra_data=False)),
         )
 
     def iter_nodes_in_export_order(self) -> Iterator[TrainingNodeSnapshot]:
