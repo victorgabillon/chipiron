@@ -40,7 +40,7 @@ def main() -> None:
     parser.add_argument("destination", type=Path)
     parser.add_argument("inputs", type=Path)
     parser.add_argument("--nodes", type=int, default=100)
-    parser.add_argument("--cluster-seconds", type=int, default=45)
+    parser.add_argument("--cluster-seconds", type=int, default=120)
     parser.add_argument("--verify", action="store_true")
     options = parser.parse_args()
     root = options.destination.resolve()
@@ -49,6 +49,8 @@ def main() -> None:
 
         checks.verify(root)
         return
+    if options.cluster_seconds <= 0:
+        parser.error("The real four-worker session requires a positive horizon.")
     root.mkdir(parents=True, exist_ok=False)
     workspace = root / "workspace"
     paths = MorpionBootstrapPaths.from_work_dir(workspace)
@@ -276,69 +278,35 @@ def main() -> None:
     initial = committed_evaluator(
         workspace, load_bootstrap_run_state(paths.run_state_path)
     )[0]
-    if options.cluster_seconds:
+    models = [initial]
+    for era in (2, 3):
+        before = load_bootstrap_run_state(paths.run_state_path).generation
         run(
-            "four-workers",
+            f"M{era - 1}-four-workers",
             ["bash", "scripts/launch_morpion_gnome_cluster.sh"],
             cluster=True,
         )
         concurrent = load_bootstrap_run_state(paths.run_state_path)
-        assert concurrent.generation > 1
-        assert committed_evaluator(workspace, concurrent)[0] == initial
-        assert any(
-            "accepted_dataset" in record and "accepted_training" in record
+        assert concurrent.generation > before
+        assert committed_evaluator(workspace, concurrent)[0] == models[-1]
+        accepted = [
+            record["generation"]
             for record in publication_records(concurrent.metadata)
-        ), "Four-worker session did not durably complete real Dataset and Training."
+            if "accepted_dataset" in record
+            and "accepted_training" in record
+            and record["scientific_identity"]["producer"]["identity"]["evaluator"]
+            == models[-1]["sha256"]
+        ]
+        assert accepted, (
+            "Four-worker session did not durably complete real Dataset and Training for this evaluator."
+        )
+        generation = max(accepted)
         assert (
             paths.pipeline_reevaluation_patch_path.exists()
             or concurrent.metadata["atomic_reevaluation"]["accepted_cursor"] is not None
         )
-        (root / "concurrent-authority.json").write_bytes(
+        (root / f"concurrent-M{era - 1}-authority.json").write_bytes(
             paths.run_state_path.read_bytes()
-        )
-    models = [initial]
-    for era in (2, 3):
-        run(
-            f"M{era - 1}-growth",
-            [*prefix, "--pipeline-stage", "growth", "--max-cycles", "1"],
-        )
-        generation = load_bootstrap_run_state(paths.run_state_path).generation
-        run(
-            f"M{era - 1}-reevaluation",
-            [
-                *prefix,
-                "--pipeline-stage",
-                "reevaluation",
-                "--reevaluation-max-nodes-per-patch",
-                "7",
-            ],
-        )
-        run(
-            f"M{era}-dataset",
-            [
-                *prefix,
-                "--pipeline-stage",
-                "dataset",
-                "--pipeline-generation",
-                str(generation),
-            ],
-        )
-        run(
-            f"M{era}-training",
-            [
-                *prefix,
-                "--pipeline-stage",
-                "training",
-                "--pipeline-generation",
-                str(generation),
-                "--skip-evaluator-diagnostics",
-            ],
-        )
-        assert (
-            committed_evaluator(
-                workspace, load_bootstrap_run_state(paths.run_state_path)
-            )[0]
-            == models[-1]
         )
         request = root / f"M{era}-request.json"
         run(
