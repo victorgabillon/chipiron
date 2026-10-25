@@ -64,12 +64,12 @@ from .sharded_training_v2_contract import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterable, Mapping
 
 
 def save_closed_scientific_snapshot(
     *,
-    nodes: Sequence[object],
+    nodes: Iterable[object],
     root_node_id: str,
     destination: Path,
     generation: int,
@@ -205,7 +205,9 @@ def save_closed_scientific_snapshot(
                 updates.write(
                     _encode(closed_envelope("updates", generation=generation)).encode()
                 )
+                node_count = 0
                 for order, node in enumerate(nodes):
+                    node_count += 1
                     update_started = perf_counter()
                     snapshot = build_training_node_snapshot(
                         node,
@@ -277,10 +279,10 @@ def save_closed_scientific_snapshot(
                     connection.execute("DROP TABLE closed_current")
                     timings["state_copy_s"] = perf_counter() - copying
                 record_descriptor = records.finish(
-                    records_path.name, generation, len(nodes)
+                    records_path.name, generation, node_count
                 )
                 update_descriptor = updates.finish(
-                    updates_path.name, generation, len(nodes)
+                    updates_path.name, generation, node_count
                 )
             validation = perf_counter()
             header = closed_envelope(
@@ -288,7 +290,7 @@ def save_closed_scientific_snapshot(
                 generation=generation,
                 snapshot={
                     "root_node_id": root_node_id,
-                    "node_count": len(nodes),
+                    "node_count": node_count,
                     "created_at_unix_s": created_at_unix_s,
                     "metadata": snapshot_metadata,
                 },
@@ -315,7 +317,7 @@ def save_closed_scientific_snapshot(
                     manifest, cache_dir=cache / "output", allow_closed_snapshot=True
                 ) as view,
             ):
-                _require(view.node_count() == len(nodes), "incomplete closed snapshot")
+                _require(view.node_count() == node_count, "incomplete closed snapshot")
                 view.validate_source_identity()
             if source is not None:
                 source.validate_source_identity()
@@ -333,7 +335,7 @@ def save_closed_scientific_snapshot(
             shutil.rmtree(staging)
     timings.update(
         total_s=perf_counter() - started,
-        node_count=len(nodes),
+        node_count=node_count,
         bytes_written=sum(p.stat().st_size for p in destination.iterdir()),
     )
     return destination / "generation.json", timings

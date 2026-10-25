@@ -732,3 +732,25 @@ def test_declared_model_identity_is_retained_exactly(tmp_path: Path) -> None:
     assert oracle.provenance["producer"]["identity"] == producer
     assert oracle.snapshot.metadata["model"]["checkpoint_sha256"] == "e" * 64
     assert_reference(path)
+
+
+def test_single_pass_nodes_preserve_complete_scientific_bytes(tmp_path: Path) -> None:
+    """The writer never requests a length, retains nodes, or traverses twice."""
+    nodes = nodes_fixture()
+    first, _ = save_closed_scientific_snapshot(
+        nodes=nodes,
+        root_node_id="0",
+        destination=tmp_path / "sequence",
+        generation=1,
+        producer=PRODUCER,
+    )
+    second, stats = save_closed_scientific_snapshot(
+        nodes=iter(nodes),
+        root_node_id="0",
+        destination=tmp_path / "iterator",
+        generation=1,
+        producer=PRODUCER,
+    )
+    assert stats["node_count"] == len(nodes)
+    for name in ("records.jsonl", "updates.jsonl", "generation.json"):
+        assert (first.parent / name).read_bytes() == (second.parent / name).read_bytes()

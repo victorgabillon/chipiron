@@ -1362,7 +1362,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
         runtime = self._require_runtime()
         path, stats = save_closed_scientific_snapshot(
-            nodes=runtime._all_nodes_in_tree_order(),  # pylint: disable=protected-access
+            nodes=runtime._iter_nodes_by_depth(),  # pylint: disable=protected-access
             root_node_id=str(runtime.tree.root_node.id),
             destination=Path(destination),
             generation=generation,
