@@ -1,0 +1,13 @@
+{
+  "chipiron": {
+    "files": 478,
+    "matched_installed_manifest": true,
+    "location": "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/lib/python3.13/site-packages/chipiron"
+  },
+  "anemone": {
+    "files": 289,
+    "matched_installed_manifest": true,
+    "location": "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/lib/python3.13/site-packages/anemone"
+  },
+  "review_wheel_matches_installed": true
+}

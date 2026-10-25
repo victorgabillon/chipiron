@@ -372,8 +372,9 @@ def main() -> None:
                         if reference is not None
                         else None
                     )
-                    left = root / f"{confidence}-{policy}-oracle.jsonl"
-                    right = root / f"{confidence}-{policy}-{opt.mode}.jsonl"
+                    label = f"g{state.generation}-{confidence}-{policy}"
+                    left = root / f"{label}-oracle.jsonl"
+                    right = root / f"{label}-{opt.mode}.jsonl"
                     if expected is not None:
                         save_morpion_supervised_rows_streaming(
                             rows=expected.rows, metadata=expected.metadata, path=left

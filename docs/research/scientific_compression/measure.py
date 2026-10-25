@@ -9,6 +9,7 @@ sampler around each measured operation. Run each invocation in a fresh process.
 from __future__ import annotations
 
 import sqlite3
+import sys
 from pathlib import Path
 from threading import Event, Thread
 from typing import Any
@@ -99,5 +100,10 @@ def measured(name: str, root: Path, operation: Any) -> Any:
 
 
 if __name__ == "__main__":
+    if "--profile" in sys.argv:
+        message = (
+            "Profile with durable_closed_snapshot.measure without the sampling thread."
+        )
+        raise SystemExit(message)
     existing.measured = measured
     existing.main()

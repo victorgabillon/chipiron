@@ -1,0 +1,549 @@
+[
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "init",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "00-init",
+      "--endgame"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.923932876001345
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "01-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.330776030983543
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "02-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.560074777982663
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "03-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.351679294020869
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "04-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.61987425602274
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "05-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.285349063982721
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "06-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.228545260004466
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "07-dataset",
+      "--generation",
+      "1"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.453066228015814
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "08-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.226624153001467
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "09-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.285224522987846
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "10-training",
+      "--generation",
+      "1"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.969205208995845
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "11-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.341916648991173
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "12-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.253116409003269
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "13-prepare",
+      "--generation",
+      "1",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.091620164021151
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "14-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 10.919700232014293
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "15-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.7548670649994165
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "16-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.552810008986853
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "17-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.24053000099957
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "18-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.49474532000022
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "19-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.909738347982056
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "20-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.004394695017254
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "21-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.545990007987712
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "22-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.483086157997604
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "23-dataset",
+      "--generation",
+      "3"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.491915229998995
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "24-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.239282104012091
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "25-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.639531596010784
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "26-training",
+      "--generation",
+      "3"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.611464671004796
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "27-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.187677958980203
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "28-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.072551462013507
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "29-prepare",
+      "--generation",
+      "3",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.358401823003078
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "30-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 10.800167520006653
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "31-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.786980181001127
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "32-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.357341994997114
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "33-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.761890962981852
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "34-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.076480666000862
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "35-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.0801133979985025
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "36-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.679233667004155
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "37-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.086082153982716
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "38-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.454117067012703
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/workspace",
+      "--label",
+      "39-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/experiments/endgame-raw/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.694555069989292
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "identity": {
+    "workspace_id": "4c0a8c914d5d475480d09047a85d67c4",
+    "epoch_id": "4aa43b9dced14648b48623b1a5c2e589"
+  },
+  "expected_head": "5efb454b5cfe457a812cb811453a1e46",
+  "previous_model": {
+    "generation": 1,
+    "local_trained_generation": null,
+    "name": "seed",
+    "path": "seed",
+    "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+    "source": "external_seed",
+    "source_generation": 1
+  },
+  "training_generation": 1,
+  "accepted_training": {
+    "attempt_id": "515e2c1f830941b7ab5c574f3763c192",
+    "descriptor_sha256": "c457ddbb9ec026cf58a44b3dfdeeadfb17897d1cc5178d07795d1c01efb22922"
+  },
+  "candidate": {
+    "path": "training_publications_v1/objects/515e2c1f830941b7ab5c574f3763c192/models/generation_000001/linear_b",
+    "sha256": "318cb5b431c08a8e3fd72be382338da3aec3313365244149f18fcf167fc6b94f",
+    "generation": 1,
+    "name": "linear_b",
+    "source": "local_training",
+    "source_generation": 1,
+    "local_trained_generation": 1
+  },
+  "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+  "effective_runtime": {
+    "reevaluation_blend_alpha": 1.0,
+    "tree_branch_limit": 100000
+  },
+  "policy": {
+    "checkpoint_format": 3,
+    "search": "morpion_default_max_linoo_alternating_all_children_v1",
+    "confidence": "selected_value_v2",
+    "numeric": "anemone_depth_scaled_nonterminal_v1",
+    "refresh_scope": "all",
+    "batch_size": 64
+  },
+  "expected_cursor_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+  "receipt_ledger_sha256": "3c4ed6a53d06fbcb1fd073c814ee326388f222082987bfbb1db598966cff8c8b"
+}

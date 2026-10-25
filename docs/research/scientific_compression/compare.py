@@ -93,11 +93,23 @@ def compare(root: Path) -> dict[str, Any]:
         policies = []
         reference = json.loads((raw / "dataset-g3.json").read_text())
         for item in reference["policies"]:
-            label = f"{item['confidence']}-{item['policy']}"
+            label = f"g3-{item['confidence']}-{item['policy']}"
             expected = (raw / f"{label}-oracle.jsonl").read_bytes()
             assert (compressed / f"{label}-oracle.jsonl").read_bytes() == expected
             for base in (raw, compressed):
-                assert (base / f"{label}-dataset_stream.jsonl").read_bytes() == expected
+                assert (base / f"{label}-dataset.jsonl").read_bytes() == expected
+                # The separate bounded-only process has its own RSS/timing and
+                # output commitment; the oracle process above proves exact bytes.
+                measured = json.loads((base / "dataset_stream-g3.json").read_text())
+                observation = next(
+                    p
+                    for p in measured["policies"]
+                    if (p["confidence"], p["policy"])
+                    == (item["confidence"], item["policy"])
+                )
+                assert (
+                    observation["jsonl_sha256"] == hashlib.sha256(expected).hexdigest()
+                )
             policies.append({
                 "confidence": item["confidence"],
                 "policy": item["policy"],
