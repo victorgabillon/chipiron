@@ -75,11 +75,28 @@ def test_scientific_workers_and_explicit_activation(tmp_path: Path) -> None:
 
 def test_scientific_initialization_is_explicit_and_preserves_source(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Fresh initialization uses a real seed and refuses adoption/reinitialization."""
+    from chipiron.environments.morpion.bootstrap.runtime.runner import (
+        AnemoneMorpionSearchRunner,
+    )
     from tests.environments.morpion_durable_v2_helpers import scientific_args
     from tests.environments.test_morpion_anemone_runner import _make_model_bundle
 
+    # A completed selection/backup step need not create a node. It must not
+    # prevent the next bounded step from extending the graph.
+    original_grow = AnemoneMorpionSearchRunner.grow
+    steps = []
+
+    def grow(runner: AnemoneMorpionSearchRunner, count: int) -> None:
+        steps.append(count)
+        if len(steps) == 1:
+            runner.last_growth_steps = 1
+        else:
+            original_grow(runner, count)
+
+    monkeypatch.setattr(AnemoneMorpionSearchRunner, "grow", grow)
     seed = tmp_path / "seed"
     _make_model_bundle(seed)
     original = {p.name: p.read_bytes() for p in seed.iterdir() if p.is_file()}
@@ -117,6 +134,7 @@ def test_scientific_initialization_is_explicit_and_preserves_source(
         )
     state = run_morpion_bootstrap_experiment(invocation)
     assert state.generation == 1
+    assert steps == [1, 1] and state.tree_size_at_last_save > 1
     assert original == {p.name: p.read_bytes() for p in seed.iterdir() if p.is_file()}
     with pytest.raises(ValueError, match="fresh workspace"):
         run_morpion_bootstrap_experiment(invocation)

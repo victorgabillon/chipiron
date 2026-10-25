@@ -288,9 +288,8 @@ def initialize_scientific_experiment(
             for _ in range(args.max_growth_steps_per_cycle):
                 if runner.current_tree_size() >= initial_nodes:
                     break
-                before = runner.current_tree_size()
                 runner.grow(1)
-                if runner.current_tree_size() == before:
+                if runner.last_growth_steps == 0:
                     break
             checkpoint = genesis / "checkpoint"
             runner.save_checkpoint(checkpoint)
