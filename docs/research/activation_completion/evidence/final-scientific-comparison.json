@@ -1,0 +1,1879 @@
+{
+  "roots": [
+    "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening",
+    "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening"
+  ],
+  "checkpoint_payloads": [
+    "01-check",
+    "04-check",
+    "06-check",
+    "09-check",
+    "12-check",
+    "16-check",
+    "20-check",
+    "22-check",
+    "25-check",
+    "28-check",
+    "32-check",
+    "36-check",
+    "38-check"
+  ],
+  "generations": [
+    {
+      "generation": 1,
+      "checkpoint_sha256": "ad4cdeca432fefe3923a2be017dca95f27f24c8f6b0e5328fba2ffc2e066c6dc",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": []
+    },
+    {
+      "generation": 2,
+      "checkpoint_sha256": "68c4409da4b56d08ad9347297786d90b6e559342245086576b80c18ba78c9ce8",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": []
+    },
+    {
+      "generation": 3,
+      "checkpoint_sha256": "68c4409da4b56d08ad9347297786d90b6e559342245086576b80c18ba78c9ce8",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": []
+    },
+    {
+      "generation": 4,
+      "checkpoint_sha256": "b37f5f26945e4928b4b2b806dff4794bd95fe41eed1b3ec18e399c7fe86bd069",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/producer/identity/evaluator",
+          "left": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+          "right": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2"
+        }
+      ]
+    },
+    {
+      "generation": 5,
+      "checkpoint_sha256": "c7cea197288e50160d2cd0df2b5cf9a74987134980f8f749f0c5fecf82322af5",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/producer/identity/evaluator",
+          "left": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+          "right": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2"
+        }
+      ]
+    },
+    {
+      "generation": 6,
+      "checkpoint_sha256": "c7cea197288e50160d2cd0df2b5cf9a74987134980f8f749f0c5fecf82322af5",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/producer/identity/evaluator",
+          "left": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+          "right": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2"
+        }
+      ]
+    },
+    {
+      "generation": 7,
+      "checkpoint_sha256": "8d0e10232a1314182322b1b5ec36191da82ba015591d85553ff0a170bbcbf0e8",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/producer/identity/evaluator",
+          "left": "0505fab7678592318b0b45ec11363bea4ecc9b4f5e08ef101b8b01eae1c93bf5",
+          "right": "bd587e402189ba1db6c6c72fb9586bb69f7e0577847ab563124849e4f8c7a334"
+        }
+      ]
+    },
+    {
+      "generation": 8,
+      "checkpoint_sha256": "d383336b284d2c25314a15a75a56332536cd8f9aff9d75731957759f7646df73",
+      "complete_records_and_updates_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/producer/identity/evaluator",
+          "left": "0505fab7678592318b0b45ec11363bea4ecc9b4f5e08ef101b8b01eae1c93bf5",
+          "right": "bd587e402189ba1db6c6c72fb9586bb69f7e0577847ab563124849e4f8c7a334"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "training_generation": 2,
+      "candidate": "linear_a",
+      "full_bundle_sha256": [
+        "3504368df529c399abe68fc42ff482015261ace8c710363f8df040044237cd1b",
+        "0e4b21a0531b069b14b37ad30972af53cce4eb28f744d1a175cc824b37bd92cc"
+      ],
+      "weights_and_configuration_bytes_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/metadata/dataset_file",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/rows.jsonl",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/rows.jsonl",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/manifest_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/materialize_s",
+          "left": 0.09870460400998127,
+          "right": 0.10498267399088945,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/output_dir",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/models/generation_000002/linear_a",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_a",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/timing/bundle_save_s",
+          "left": 0.000983705001999624,
+          "right": 0.001027663005515933,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/total_s",
+          "left": 0.10308030099258758,
+          "right": 0.10960473198792897,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/backward",
+          "left": 0.0002532250073272735,
+          "right": 0.000250573008088395,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/batch_transfer",
+          "left": 9.40798781812191e-06,
+          "right": 9.866984328255057e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/chunk_load",
+          "left": 1.7830025171861053e-06,
+          "right": 1.8330028979107738e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/epoch_total",
+          "left": 0.0012749609886668622,
+          "right": 0.0012823740107705817,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/forward",
+          "left": 7.065199315547943e-05,
+          "right": 7.275899406522512e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/loss",
+          "left": 9.21320024644956e-05,
+          "right": 9.516000864095986e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/metric_accumulation",
+          "left": 6.641501386184245e-05,
+          "right": 6.763800047338009e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/optimizer_step",
+          "left": 0.0003920550079783425,
+          "right": 0.0003854889946524054,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/progress_callback",
+          "left": 2.121001307386905e-05,
+          "right": 2.056900120805949e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_batching",
+          "left": 5.710026016458869e-06,
+          "right": 5.8010045904666185e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_to_sample_batch",
+          "left": 3.730099706444889e-05,
+          "right": 3.823100996669382e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/split_select",
+          "left": 2.7932008379139006e-05,
+          "right": 3.2310999813489616e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/zero_grad",
+          "left": 0.00018363399431109428,
+          "right": 0.00018753398035187274,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_epochs_total_s",
+          "left": 0.0012749609886668622,
+          "right": 0.0012823740107705817,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/batch_transfer",
+          "left": 6.912014214321971e-06,
+          "right": 6.532995030283928e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/chunk_load",
+          "left": 2.7001078706234694e-07,
+          "right": 2.600136213004589e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/forward",
+          "left": 1.842400524765253e-05,
+          "right": 1.8905993783846498e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/metric_accumulation",
+          "left": 2.1109983208589256e-05,
+          "right": 2.164101169910282e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_batching",
+          "left": 3.236986231058836e-06,
+          "right": 3.295979695394635e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_to_sample_batch",
+          "left": 2.6829002308659256e-05,
+          "right": 2.8373993700370193e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/split_select",
+          "left": 7.584007107652724e-06,
+          "right": 7.124006515368819e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics_total_s",
+          "left": 0.00014109500625636429,
+          "right": 0.00013858199235983193,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/batch_transfer",
+          "left": 2.0040024537593126e-06,
+          "right": 2.1040032152086496e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/chunk_load",
+          "left": 2.400047378614545e-07,
+          "right": 2.1999585442245007e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/forward",
+          "left": 5.089008482173085e-06,
+          "right": 5.109002813696861e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/metric_accumulation",
+          "left": 6.071000825613737e-06,
+          "right": 6.632006261497736e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_batching",
+          "left": 1.1420052032917738e-06,
+          "right": 1.133012119680643e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_to_sample_batch",
+          "left": 6.9829984568059444e-06,
+          "right": 7.514012395404279e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/split_select",
+          "left": 4.178000381216407e-06,
+          "right": 4.0769955376163125e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics_total_s",
+          "left": 4.763899778481573e-05,
+          "right": 4.830199759453535e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_bundle_save_s",
+          "left": 0.000983705001999624,
+          "right": 0.001027663005515933,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_flat_tensor_cache_materialize_s",
+          "left": 0.09870460400998127,
+          "right": 0.10498267399088945,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_total_s",
+          "left": 0.10308030099258758,
+          "right": 0.10960473198792897,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_backward_s",
+          "left": 0.0002532250073272735,
+          "right": 0.000250573008088395,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_batch_transfer_s",
+          "left": 9.40798781812191e-06,
+          "right": 9.866984328255057e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_chunk_load_s",
+          "left": 1.7830025171861053e-06,
+          "right": 1.8330028979107738e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epoch_total_s",
+          "left": 0.0012749609886668622,
+          "right": 0.0012823740107705817,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epochs_total_s",
+          "left": 0.0012749609886668622,
+          "right": 0.0012823740107705817,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_forward_s",
+          "left": 7.065199315547943e-05,
+          "right": 7.275899406522512e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_loss_s",
+          "left": 9.21320024644956e-05,
+          "right": 9.516000864095986e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metric_accumulation_s",
+          "left": 6.641501386184245e-05,
+          "right": 6.763800047338009e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_batch_transfer_s",
+          "left": 6.912014214321971e-06,
+          "right": 6.532995030283928e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_chunk_load_s",
+          "left": 2.7001078706234694e-07,
+          "right": 2.600136213004589e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_forward_s",
+          "left": 1.842400524765253e-05,
+          "right": 1.8905993783846498e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_metric_accumulation_s",
+          "left": 2.1109983208589256e-05,
+          "right": 2.164101169910282e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_batching_s",
+          "left": 3.236986231058836e-06,
+          "right": 3.295979695394635e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_to_sample_batch_s",
+          "left": 2.6829002308659256e-05,
+          "right": 2.8373993700370193e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_split_select_s",
+          "left": 7.584007107652724e-06,
+          "right": 7.124006515368819e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_total_s",
+          "left": 0.00014109500625636429,
+          "right": 0.00013858199235983193,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_optimizer_step_s",
+          "left": 0.0003920550079783425,
+          "right": 0.0003854889946524054,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_progress_callback_s",
+          "left": 2.121001307386905e-05,
+          "right": 2.056900120805949e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_batching_s",
+          "left": 5.710026016458869e-06,
+          "right": 5.8010045904666185e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_to_sample_batch_s",
+          "left": 3.730099706444889e-05,
+          "right": 3.823100996669382e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_split_select_s",
+          "left": 2.7932008379139006e-05,
+          "right": 3.2310999813489616e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_zero_grad_s",
+          "left": 0.00018363399431109428,
+          "right": 0.00018753398035187274,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_batch_transfer_s",
+          "left": 2.0040024537593126e-06,
+          "right": 2.1040032152086496e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_chunk_load_s",
+          "left": 2.400047378614545e-07,
+          "right": 2.1999585442245007e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_forward_s",
+          "left": 5.089008482173085e-06,
+          "right": 5.109002813696861e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_metric_accumulation_s",
+          "left": 6.071000825613737e-06,
+          "right": 6.632006261497736e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_batching_s",
+          "left": 1.1420052032917738e-06,
+          "right": 1.133012119680643e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_to_sample_batch_s",
+          "left": 6.9829984568059444e-06,
+          "right": 7.514012395404279e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_split_select_s",
+          "left": 4.178000381216407e-06,
+          "right": 4.0769955376163125e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_total_s",
+          "left": 4.763899778481573e-05,
+          "right": 4.830199759453535e-05,
+          "classification": "measured execution time"
+        }
+      ]
+    },
+    {
+      "training_generation": 2,
+      "candidate": "linear_b",
+      "full_bundle_sha256": [
+        "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+        "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2"
+      ],
+      "weights_and_configuration_bytes_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/metadata/dataset_file",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/rows.jsonl",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/rows.jsonl",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/load_s",
+          "left": 0.0007776790007483214,
+          "right": 0.0007451290002791211,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/manifest_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/output_dir",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_b",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/timing/bundle_save_s",
+          "left": 0.0011103930009994656,
+          "right": 0.001080553003703244,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/total_s",
+          "left": 0.0040816260006977245,
+          "right": 0.003972530001192354,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/backward",
+          "left": 0.0001788959780242294,
+          "right": 0.00017719501920510083,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/batch_transfer",
+          "left": 8.266011718660593e-06,
+          "right": 8.386996341869235e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/chunk_load",
+          "left": 1.5229888958856463e-06,
+          "right": 1.4029938029125333e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/epoch_total",
+          "left": 0.0008238949958467856,
+          "right": 0.0008187880011973903,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/forward",
+          "left": 4.256100510247052e-05,
+          "right": 4.168000305071473e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/loss",
+          "left": 5.648599471896887e-05,
+          "right": 5.709800461772829e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/metric_accumulation",
+          "left": 4.102698585484177e-05,
+          "right": 4.119698132853955e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/optimizer_step",
+          "left": 0.0002537959808250889,
+          "right": 0.00025205701240338385,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/progress_callback",
+          "left": 1.7193000530824065e-05,
+          "right": 1.7481987015344203e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_batching",
+          "left": 3.77700780518353e-06,
+          "right": 3.886016202159226e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_to_sample_batch",
+          "left": 2.9394985176622868e-05,
+          "right": 3.0598006560467184e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/split_select",
+          "left": 2.2141000954434276e-05,
+          "right": 2.2032007109373808e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/zero_grad",
+          "left": 8.1061982200481e-05,
+          "right": 7.791700772941113e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_epochs_total_s",
+          "left": 0.0008238949958467856,
+          "right": 0.0008187880011973903,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/batch_transfer",
+          "left": 5.7810102589428425e-06,
+          "right": 6.262998795136809e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/chunk_load",
+          "left": 2.410088200122118e-07,
+          "right": 2.5999906938523054e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/forward",
+          "left": 1.7311976989731193e-05,
+          "right": 1.7112004570662975e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/metric_accumulation",
+          "left": 1.7942991689778864e-05,
+          "right": 1.8884005839936435e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_batching",
+          "left": 2.4149921955540776e-06,
+          "right": 2.4529872462153435e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_to_sample_batch",
+          "left": 2.539699198678136e-05,
+          "right": 2.5096989702433348e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/split_select",
+          "left": 5.590991349890828e-06,
+          "right": 5.731009878218174e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics_total_s",
+          "left": 0.00012875099491793662,
+          "right": 0.00011887399887200445,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/batch_transfer",
+          "left": 1.8330028979107738e-06,
+          "right": 1.8639984773471951e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/chunk_load",
+          "left": 1.7001002561300993e-07,
+          "right": 1.8101127352565527e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/forward",
+          "left": 4.518005880527198e-06,
+          "right": 4.98899316880852e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/metric_accumulation",
+          "left": 5.961002898402512e-06,
+          "right": 6.061003659851849e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_batching",
+          "left": 9.119976311922073e-07,
+          "right": 9.820068953558803e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_to_sample_batch",
+          "left": 6.56300107948482e-06,
+          "right": 6.8129884311929345e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/split_select",
+          "left": 3.396999090909958e-06,
+          "right": 3.567009116522968e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics_total_s",
+          "left": 4.175800131633878e-05,
+          "right": 5.9703001170419157e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_bundle_save_s",
+          "left": 0.0011103930009994656,
+          "right": 0.001080553003703244,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_flat_tensor_cache_load_s",
+          "left": 0.0007776790007483214,
+          "right": 0.0007451290002791211,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_total_s",
+          "left": 0.0040816260006977245,
+          "right": 0.003972530001192354,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_backward_s",
+          "left": 0.0001788959780242294,
+          "right": 0.00017719501920510083,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_batch_transfer_s",
+          "left": 8.266011718660593e-06,
+          "right": 8.386996341869235e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_chunk_load_s",
+          "left": 1.5229888958856463e-06,
+          "right": 1.4029938029125333e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epoch_total_s",
+          "left": 0.0008238949958467856,
+          "right": 0.0008187880011973903,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epochs_total_s",
+          "left": 0.0008238949958467856,
+          "right": 0.0008187880011973903,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_forward_s",
+          "left": 4.256100510247052e-05,
+          "right": 4.168000305071473e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_loss_s",
+          "left": 5.648599471896887e-05,
+          "right": 5.709800461772829e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metric_accumulation_s",
+          "left": 4.102698585484177e-05,
+          "right": 4.119698132853955e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_batch_transfer_s",
+          "left": 5.7810102589428425e-06,
+          "right": 6.262998795136809e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_chunk_load_s",
+          "left": 2.410088200122118e-07,
+          "right": 2.5999906938523054e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_forward_s",
+          "left": 1.7311976989731193e-05,
+          "right": 1.7112004570662975e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_metric_accumulation_s",
+          "left": 1.7942991689778864e-05,
+          "right": 1.8884005839936435e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_batching_s",
+          "left": 2.4149921955540776e-06,
+          "right": 2.4529872462153435e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_to_sample_batch_s",
+          "left": 2.539699198678136e-05,
+          "right": 2.5096989702433348e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_split_select_s",
+          "left": 5.590991349890828e-06,
+          "right": 5.731009878218174e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_total_s",
+          "left": 0.00012875099491793662,
+          "right": 0.00011887399887200445,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_optimizer_step_s",
+          "left": 0.0002537959808250889,
+          "right": 0.00025205701240338385,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_progress_callback_s",
+          "left": 1.7193000530824065e-05,
+          "right": 1.7481987015344203e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_batching_s",
+          "left": 3.77700780518353e-06,
+          "right": 3.886016202159226e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_to_sample_batch_s",
+          "left": 2.9394985176622868e-05,
+          "right": 3.0598006560467184e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_split_select_s",
+          "left": 2.2141000954434276e-05,
+          "right": 2.2032007109373808e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_zero_grad_s",
+          "left": 8.1061982200481e-05,
+          "right": 7.791700772941113e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_batch_transfer_s",
+          "left": 1.8330028979107738e-06,
+          "right": 1.8639984773471951e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_chunk_load_s",
+          "left": 1.7001002561300993e-07,
+          "right": 1.8101127352565527e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_forward_s",
+          "left": 4.518005880527198e-06,
+          "right": 4.98899316880852e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_metric_accumulation_s",
+          "left": 5.961002898402512e-06,
+          "right": 6.061003659851849e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_batching_s",
+          "left": 9.119976311922073e-07,
+          "right": 9.820068953558803e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_to_sample_batch_s",
+          "left": 6.56300107948482e-06,
+          "right": 6.8129884311929345e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_split_select_s",
+          "left": 3.396999090909958e-06,
+          "right": 3.567009116522968e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_total_s",
+          "left": 4.175800131633878e-05,
+          "right": 5.9703001170419157e-05,
+          "classification": "measured execution time"
+        }
+      ]
+    },
+    {
+      "training_generation": 5,
+      "candidate": "linear_a",
+      "full_bundle_sha256": [
+        "c567e351a1e0dd388c5dc5a6abd0b35c7dcd0341d7a8ef77ebaf4d0dbced2de3",
+        "f99eddaecba348173c492bf086f617d1385117ee5ed01e0c50ba96f1e8407891"
+      ],
+      "weights_and_configuration_bytes_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/metadata/dataset_file",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/rows.jsonl",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/rows.jsonl",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/manifest_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/materialize_s",
+          "left": 0.09919874399201944,
+          "right": 0.09895108100317884,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/output_dir",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_a",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/models/generation_000005/linear_a",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/timing/bundle_save_s",
+          "left": 0.0010169070010306314,
+          "right": 0.0010169600136578083,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/total_s",
+          "left": 0.10365468199597672,
+          "right": 0.10362847099895589,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/backward",
+          "left": 0.00026099900424014777,
+          "right": 0.0002429289888823405,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/batch_transfer",
+          "left": 1.0440009646117687e-05,
+          "right": 9.909985237754881e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/chunk_load",
+          "left": 1.6129924915730953e-06,
+          "right": 1.9939907360821962e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/epoch_total",
+          "left": 0.0013323590101208538,
+          "right": 0.0012550490064313635,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/forward",
+          "left": 7.473000732716173e-05,
+          "right": 7.159501546993852e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/loss",
+          "left": 9.952599066309631e-05,
+          "right": 9.147298987954855e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/metric_accumulation",
+          "left": 6.921900785528123e-05,
+          "right": 6.575402221642435e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/optimizer_step",
+          "left": 0.0004014129808638245,
+          "right": 0.00036822502443101257,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/progress_callback",
+          "left": 2.2401989554055035e-05,
+          "right": 2.1030980860814452e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_batching",
+          "left": 6.290996680036187e-06,
+          "right": 5.720008630305529e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_to_sample_batch",
+          "left": 3.709901648107916e-05,
+          "right": 3.765200381167233e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/split_select",
+          "left": 2.8544003725983202e-05,
+          "right": 2.7382004191167653e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/zero_grad",
+          "left": 0.0001927419943967834,
+          "right": 0.00019091101421508938,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_epochs_total_s",
+          "left": 0.0013323590101208538,
+          "right": 0.0012550490064313635,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/batch_transfer",
+          "left": 6.6139764385297894e-06,
+          "right": 6.773014320060611e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/chunk_load",
+          "left": 2.400047378614545e-07,
+          "right": 2.6999623514711857e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/forward",
+          "left": 1.8242993974126875e-05,
+          "right": 1.8414983060210943e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/metric_accumulation",
+          "left": 2.1298998035490513e-05,
+          "right": 2.117999247275293e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_batching",
+          "left": 3.4059921745210886e-06,
+          "right": 3.0259834602475166e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_to_sample_batch",
+          "left": 2.7270987629890442e-05,
+          "right": 2.7071990189142525e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/split_select",
+          "left": 7.695009117014706e-06,
+          "right": 7.263995939865708e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics_total_s",
+          "left": 0.00013573501200880855,
+          "right": 0.0001347150100627914,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/batch_transfer",
+          "left": 1.8530117813497782e-06,
+          "right": 2.2239983081817627e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/chunk_load",
+          "left": 2.00001522898674e-07,
+          "right": 2.0999868866056204e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/forward",
+          "left": 4.739005817100406e-06,
+          "right": 5.149995558895171e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/metric_accumulation",
+          "left": 6.342001142911613e-06,
+          "right": 6.161993951536715e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_batching",
+          "left": 1.1619849829003215e-06,
+          "right": 1.1219963198527694e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_to_sample_batch",
+          "left": 8.605988114140928e-06,
+          "right": 6.853006198070943e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/split_select",
+          "left": 4.237997927702963e-06,
+          "right": 3.8669968489557505e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics_total_s",
+          "left": 4.795999848283827e-05,
+          "right": 4.615799116436392e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_bundle_save_s",
+          "left": 0.0010169070010306314,
+          "right": 0.0010169600136578083,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_flat_tensor_cache_materialize_s",
+          "left": 0.09919874399201944,
+          "right": 0.09895108100317884,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_total_s",
+          "left": 0.10365468199597672,
+          "right": 0.10362847099895589,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_backward_s",
+          "left": 0.00026099900424014777,
+          "right": 0.0002429289888823405,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_batch_transfer_s",
+          "left": 1.0440009646117687e-05,
+          "right": 9.909985237754881e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_chunk_load_s",
+          "left": 1.6129924915730953e-06,
+          "right": 1.9939907360821962e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epoch_total_s",
+          "left": 0.0013323590101208538,
+          "right": 0.0012550490064313635,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epochs_total_s",
+          "left": 0.0013323590101208538,
+          "right": 0.0012550490064313635,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_forward_s",
+          "left": 7.473000732716173e-05,
+          "right": 7.159501546993852e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_loss_s",
+          "left": 9.952599066309631e-05,
+          "right": 9.147298987954855e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metric_accumulation_s",
+          "left": 6.921900785528123e-05,
+          "right": 6.575402221642435e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_batch_transfer_s",
+          "left": 6.6139764385297894e-06,
+          "right": 6.773014320060611e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_chunk_load_s",
+          "left": 2.400047378614545e-07,
+          "right": 2.6999623514711857e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_forward_s",
+          "left": 1.8242993974126875e-05,
+          "right": 1.8414983060210943e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_metric_accumulation_s",
+          "left": 2.1298998035490513e-05,
+          "right": 2.117999247275293e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_batching_s",
+          "left": 3.4059921745210886e-06,
+          "right": 3.0259834602475166e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_to_sample_batch_s",
+          "left": 2.7270987629890442e-05,
+          "right": 2.7071990189142525e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_split_select_s",
+          "left": 7.695009117014706e-06,
+          "right": 7.263995939865708e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_total_s",
+          "left": 0.00013573501200880855,
+          "right": 0.0001347150100627914,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_optimizer_step_s",
+          "left": 0.0004014129808638245,
+          "right": 0.00036822502443101257,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_progress_callback_s",
+          "left": 2.2401989554055035e-05,
+          "right": 2.1030980860814452e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_batching_s",
+          "left": 6.290996680036187e-06,
+          "right": 5.720008630305529e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_to_sample_batch_s",
+          "left": 3.709901648107916e-05,
+          "right": 3.765200381167233e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_split_select_s",
+          "left": 2.8544003725983202e-05,
+          "right": 2.7382004191167653e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_zero_grad_s",
+          "left": 0.0001927419943967834,
+          "right": 0.00019091101421508938,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_batch_transfer_s",
+          "left": 1.8530117813497782e-06,
+          "right": 2.2239983081817627e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_chunk_load_s",
+          "left": 2.00001522898674e-07,
+          "right": 2.0999868866056204e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_forward_s",
+          "left": 4.739005817100406e-06,
+          "right": 5.149995558895171e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_metric_accumulation_s",
+          "left": 6.342001142911613e-06,
+          "right": 6.161993951536715e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_batching_s",
+          "left": 1.1619849829003215e-06,
+          "right": 1.1219963198527694e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_to_sample_batch_s",
+          "left": 8.605988114140928e-06,
+          "right": 6.853006198070943e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_split_select_s",
+          "left": 4.237997927702963e-06,
+          "right": 3.8669968489557505e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_total_s",
+          "left": 4.795999848283827e-05,
+          "right": 4.615799116436392e-05,
+          "classification": "measured execution time"
+        }
+      ]
+    },
+    {
+      "training_generation": 5,
+      "candidate": "linear_b",
+      "full_bundle_sha256": [
+        "0505fab7678592318b0b45ec11363bea4ecc9b4f5e08ef101b8b01eae1c93bf5",
+        "bd587e402189ba1db6c6c72fb9586bb69f7e0577847ab563124849e4f8c7a334"
+      ],
+      "weights_and_configuration_bytes_equal": true,
+      "manifest_differences": [
+        {
+          "path": "/metadata/dataset_file",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/rows.jsonl",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/rows.jsonl",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/load_s",
+          "left": 0.0008133960072882473,
+          "right": 0.0007958030037116259,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/manifest_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.manifest.json",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache/path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/flat_tensor_cache_path",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/input/tensor_cache/rows.flat_features.all.pt",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/input/tensor_cache/rows.flat_features.all.pt",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/output_dir",
+          "left": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/opening/workspace/training_publications_v1/staging/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_b",
+          "right": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/final-opening/workspace/training_publications_v1/staging/cfa23429d9c34aa6819f7fbe76e6711c/models/generation_000005/linear_b",
+          "classification": "per-attempt execution path"
+        },
+        {
+          "path": "/metadata/timing/bundle_save_s",
+          "left": 0.0010595869971439242,
+          "right": 0.0015631309943273664,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/total_s",
+          "left": 0.004104328007088043,
+          "right": 0.005316166992997751,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/backward",
+          "left": 0.00017991701315622777,
+          "right": 0.00029950599127914757,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/batch_transfer",
+          "left": 8.476999937556684e-06,
+          "right": 1.0890988050960004e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/chunk_load",
+          "left": 1.3429962564259768e-06,
+          "right": 1.7230049706995487e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/epoch_total",
+          "left": 0.0008570170029997826,
+          "right": 0.0012549090024549514,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/forward",
+          "left": 4.410298424772918e-05,
+          "right": 7.484099478460848e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/loss",
+          "left": 6.153601862024516e-05,
+          "right": 9.436701657250524e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/metric_accumulation",
+          "left": 4.3441992602311075e-05,
+          "right": 7.927999831736088e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/optimizer_step",
+          "left": 0.0002666809887159616,
+          "right": 0.0003864090103888884,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/progress_callback",
+          "left": 1.76539906533435e-05,
+          "right": 2.3293992853723466e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_batching",
+          "left": 4.087996785528958e-06,
+          "right": 4.930014256387949e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/row_to_sample_batch",
+          "left": 3.045699850190431e-05,
+          "right": 4.929200804326683e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/split_select",
+          "left": 2.4495995603501797e-05,
+          "right": 2.3855012841522694e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train/zero_grad",
+          "left": 8.351601718459278e-05,
+          "right": 9.623200458008796e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_epochs_total_s",
+          "left": 0.0008570170029997826,
+          "right": 0.0012549090024549514,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/batch_transfer",
+          "left": 6.061003659851849e-06,
+          "right": 8.866991265676916e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/chunk_load",
+          "left": 3.00002284348011e-07,
+          "right": 3.210006980225444e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/forward",
+          "left": 1.743300526868552e-05,
+          "right": 2.511800266802311e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/metric_accumulation",
+          "left": 1.8313992768526077e-05,
+          "right": 2.7650996344164014e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_batching",
+          "left": 2.5349872885271907e-06,
+          "right": 2.796004991978407e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/row_to_sample_batch",
+          "left": 2.4294015020132065e-05,
+          "right": 3.5627002944238484e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics/split_select",
+          "left": 6.162008503451943e-06,
+          "right": 8.054994395934045e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/train_metrics_total_s",
+          "left": 0.00012022600276395679,
+          "right": 0.00016652500198688358,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/batch_transfer",
+          "left": 1.8930004443973303e-06,
+          "right": 2.7049973141402006e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/chunk_load",
+          "left": 1.500011421740055e-07,
+          "right": 2.3000757209956646e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/forward",
+          "left": 4.599001840688288e-06,
+          "right": 7.794995326548815e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/metric_accumulation",
+          "left": 6.080997991375625e-06,
+          "right": 1.0529998689889908e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_batching",
+          "left": 9.310024324804544e-07,
+          "right": 1.3629905879497528e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/row_to_sample_batch",
+          "left": 6.100992322899401e-06,
+          "right": 1.1951997294090688e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics/split_select",
+          "left": 3.3760006772354245e-06,
+          "right": 4.668996552936733e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing/validation_metrics_total_s",
+          "left": 4.1338003939017653e-05,
+          "right": 6.427100743167102e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_bundle_save_s",
+          "left": 0.0010595869971439242,
+          "right": 0.0015631309943273664,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_flat_tensor_cache_load_s",
+          "left": 0.0008133960072882473,
+          "right": 0.0007958030037116259,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_total_s",
+          "left": 0.004104328007088043,
+          "right": 0.005316166992997751,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_backward_s",
+          "left": 0.00017991701315622777,
+          "right": 0.00029950599127914757,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_batch_transfer_s",
+          "left": 8.476999937556684e-06,
+          "right": 1.0890988050960004e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_chunk_load_s",
+          "left": 1.3429962564259768e-06,
+          "right": 1.7230049706995487e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epoch_total_s",
+          "left": 0.0008570170029997826,
+          "right": 0.0012549090024549514,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_epochs_total_s",
+          "left": 0.0008570170029997826,
+          "right": 0.0012549090024549514,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_forward_s",
+          "left": 4.410298424772918e-05,
+          "right": 7.484099478460848e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_loss_s",
+          "left": 6.153601862024516e-05,
+          "right": 9.436701657250524e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metric_accumulation_s",
+          "left": 4.3441992602311075e-05,
+          "right": 7.927999831736088e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_batch_transfer_s",
+          "left": 6.061003659851849e-06,
+          "right": 8.866991265676916e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_chunk_load_s",
+          "left": 3.00002284348011e-07,
+          "right": 3.210006980225444e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_forward_s",
+          "left": 1.743300526868552e-05,
+          "right": 2.511800266802311e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_metric_accumulation_s",
+          "left": 1.8313992768526077e-05,
+          "right": 2.7650996344164014e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_batching_s",
+          "left": 2.5349872885271907e-06,
+          "right": 2.796004991978407e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_row_to_sample_batch_s",
+          "left": 2.4294015020132065e-05,
+          "right": 3.5627002944238484e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_split_select_s",
+          "left": 6.162008503451943e-06,
+          "right": 8.054994395934045e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_metrics_total_s",
+          "left": 0.00012022600276395679,
+          "right": 0.00016652500198688358,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_optimizer_step_s",
+          "left": 0.0002666809887159616,
+          "right": 0.0003864090103888884,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_progress_callback_s",
+          "left": 1.76539906533435e-05,
+          "right": 2.3293992853723466e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_batching_s",
+          "left": 4.087996785528958e-06,
+          "right": 4.930014256387949e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_row_to_sample_batch_s",
+          "left": 3.045699850190431e-05,
+          "right": 4.929200804326683e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_split_select_s",
+          "left": 2.4495995603501797e-05,
+          "right": 2.3855012841522694e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_train_zero_grad_s",
+          "left": 8.351601718459278e-05,
+          "right": 9.623200458008796e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_batch_transfer_s",
+          "left": 1.8930004443973303e-06,
+          "right": 2.7049973141402006e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_chunk_load_s",
+          "left": 1.500011421740055e-07,
+          "right": 2.3000757209956646e-07,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_forward_s",
+          "left": 4.599001840688288e-06,
+          "right": 7.794995326548815e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_metric_accumulation_s",
+          "left": 6.080997991375625e-06,
+          "right": 1.0529998689889908e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_batching_s",
+          "left": 9.310024324804544e-07,
+          "right": 1.3629905879497528e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_row_to_sample_batch_s",
+          "left": 6.100992322899401e-06,
+          "right": 1.1951997294090688e-05,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_split_select_s",
+          "left": 3.3760006772354245e-06,
+          "right": 4.668996552936733e-06,
+          "classification": "measured execution time"
+        },
+        {
+          "path": "/metadata/timing_validation_metrics_total_s",
+          "left": 4.1338003939017653e-05,
+          "right": 6.427100743167102e-05,
+          "classification": "measured execution time"
+        }
+      ]
+    }
+  ],
+  "datasets": [
+    {
+      "generation": 2,
+      "rows": 16,
+      "entire_row_bodies_equal": true,
+      "complete_jsonl_equal": true,
+      "header_differences": []
+    },
+    {
+      "generation": 5,
+      "rows": 16,
+      "entire_row_bodies_equal": true,
+      "complete_jsonl_equal": false,
+      "header_differences": [
+        {
+          "path": "/metadata/dataset_extraction_identity",
+          "left": "2123f543cea888de37b4a915cd903e49175c1e5adc191ade0bea54af8e371cd8",
+          "right": "89441954f834da4c3e686e6b44cb086d805a069af3e5e0e1832aaf7e124ff8dc"
+        },
+        {
+          "path": "/metadata/scientific_source_provenance/producer/identity/evaluator",
+          "left": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+          "right": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2"
+        }
+      ]
+    }
+  ],
+  "claim": "Exact checkpoint, scientific record/update and row-body equality; full model/provenance artifacts intentionally retain all enumerated differences."
+}
