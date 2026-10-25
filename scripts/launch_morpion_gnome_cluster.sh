@@ -79,7 +79,11 @@ MORPION_SEED_ACTIVE_MODEL_EVALUATOR="${MORPION_SEED_ACTIVE_MODEL_EVALUATOR:-mlp_
 
 # Crash-only supervision delays, in seconds. Increase if repeated failures are
 # noisy or external resources need longer to settle between retries.
-GROWTH_SLEEP_SECONDS=2
+GROWTH_SLEEP_SECONDS="${GROWTH_SLEEP_SECONDS:-2}"
+if [[ ! "$GROWTH_SLEEP_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "GROWTH_SLEEP_SECONDS must be a positive integer." >&2
+  exit 1
+fi
 DATASET_SLEEP_SECONDS=5
 TRAINING_SLEEP_SECONDS=5
 REEVALUATION_SLEEP_SECONDS=5

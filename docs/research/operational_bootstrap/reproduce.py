@@ -28,6 +28,7 @@ from chipiron.environments.morpion.bootstrap.control import (
 )
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     committed_evaluator,
+    publication_records,
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from docs.research.atomic_activation.measure import disk
@@ -73,6 +74,7 @@ def main() -> None:
         "minimum_disk_headroom_bytes": 20 * 2**30,
         "cluster_seconds": options.cluster_seconds,
         "stop_grace_seconds": 15,
+        "growth_pause_seconds": 90,
         "node_target": options.nodes,
         "subsequent_steps_per_call": 1,
         "cycles": 2,
@@ -110,6 +112,7 @@ def main() -> None:
         env = dict(environment)
         if cluster:
             env.update(
+                GROWTH_SLEEP_SECONDS="90",
                 MORPION_SCIENTIFIC="1",
                 MORPION_USE_INSTALLED_PACKAGES="1",
                 MORPION_CLUSTER_HEADLESS="1",
@@ -278,6 +281,20 @@ def main() -> None:
             "four-workers",
             ["bash", "scripts/launch_morpion_gnome_cluster.sh"],
             cluster=True,
+        )
+        concurrent = load_bootstrap_run_state(paths.run_state_path)
+        assert concurrent.generation > 1
+        assert committed_evaluator(workspace, concurrent)[0] == initial
+        assert any(
+            "accepted_dataset" in record and "accepted_training" in record
+            for record in publication_records(concurrent.metadata)
+        ), "Four-worker session did not durably complete real Dataset and Training."
+        assert (
+            paths.pipeline_reevaluation_patch_path.exists()
+            or concurrent.metadata["atomic_reevaluation"]["accepted_cursor"] is not None
+        )
+        (root / "concurrent-authority.json").write_bytes(
+            paths.run_state_path.read_bytes()
         )
     models = [initial]
     for era in (2, 3):
