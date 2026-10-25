@@ -210,14 +210,18 @@ def main() -> None:
                         or shutil.disk_usage(root).free
                         < budget["minimum_disk_headroom_bytes"]
                     ):
-                        os.killpg(result.pid, signal.SIGTERM)
+                        for child in psutil.Process(result.pid).children():
+                            child.send_signal(signal.SIGTERM)
                         result.wait(timeout=30)
                         message = "Experiment resource/time budget reached; stopped."
                         raise RuntimeError(message)
                     time.sleep(0.2)
             finally:
+                # Keep /usr/bin/time alive to wait for the actual command. The
+                # cluster command handles TERM by stopping all owned groups.
                 if result.poll() is None:
-                    os.killpg(result.pid, signal.SIGTERM)
+                    for child in psutil.Process(result.pid).children():
+                        child.send_signal(signal.SIGTERM)
                     result.wait(timeout=30)
             log.with_suffix(".groups.json").write_text(
                 json.dumps(
