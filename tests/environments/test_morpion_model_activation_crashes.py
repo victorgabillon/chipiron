@@ -33,6 +33,9 @@ PRE = [
     "backup",
     "selector",
     "checkpoint",
+    "stream_partial_shard",
+    "stream_before_manifest",
+    "stream_complete",
     "science",
     "validation",
     "hash_validation",
@@ -106,6 +109,20 @@ def crash_child(root: Path, phase: str) -> None:
     after(ComposedNodeSelector, "refresh_state_for_checkpoint", "selector")
     after(GrowthPatchReceiptSession, "publish_manifest", "discovery")
     after(GrowthPatchReceiptSession, "publish_manifest", "recovery")
+    # Exercise the actual streaming writer inside the existing private transaction.
+    from anemone.checkpoints import sharded_encode
+
+    original_manifest = sharded_encode.write_sharded_checkpoint_manifest
+
+    def manifest(*args: Any, **kwargs: Any) -> Any:
+        if armed and phase == "stream_before_manifest":
+            os._exit(73)
+        return original_manifest(*args, **kwargs)
+
+    sharded_encode.write_sharded_checkpoint_manifest = manifest
+    after(
+        runner_module, "write_sharded_search_checkpoint_from_search", "stream_complete"
+    )
     from chipiron.environments.morpion.bootstrap import pipeline_artifacts
 
     after(pipeline_artifacts, "save_pipeline_active_model", "projection")
@@ -117,6 +134,16 @@ def crash_child(root: Path, phase: str) -> None:
     original_write = Path.write_bytes
 
     def write(path: Path, contents: Any) -> Any:
+        if (
+            armed
+            and phase == "stream_partial_shard"
+            and "checkpoint" in path.parts
+            and path.name.endswith(".jsonl.zst")
+        ):
+            with path.open("wb") as stream:
+                stream.write(contents[: len(contents) // 2])
+                stream.flush()
+                os._exit(73)
         result = original_write(path, contents)
         if (
             armed

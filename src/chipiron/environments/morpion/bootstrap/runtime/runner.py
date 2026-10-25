@@ -26,7 +26,7 @@ from anemone.checkpoints import (
     load_search_from_sharded_checkpoint,
     read_sharded_checkpoint_manifest,
     write_checkpoint_json_payload,
-    write_sharded_search_checkpoint,
+    write_sharded_search_checkpoint_from_search,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -186,6 +186,9 @@ if TYPE_CHECKING:
     )
 
 LOGGER = logging.getLogger(__name__)
+
+# Bound node serialization while avoiding excessively small physical shard files.
+CHECKPOINT_NODES_PER_SHARD = 1024
 _GROWTH_STEP_SEPARATOR = (
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 )
@@ -2097,57 +2100,73 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         LOGGER.info("[checkpoint] save_start path=%s", str(output))
         rss_before_mb = current_rss_mb()
         save_started_at = time.perf_counter()
-        payload_started_at = time.perf_counter()
-        log_morpion_checkpoint_memory_phase(
-            "before_checkpoint_save_payload_build",
-            path=output,
-            generation=generation_from_checkpoint_path(output),
-        )
-        with self._state_rematerialization_phase("checkpoint"):
-            payload = build_search_checkpoint_payload(
-                runtime,
-                state_codec=self._state_codec,
-            )
-        checkpoint_selector_state = checkpoint_selector_state_fields(
-            payload,
-            prefix="checkpoint",
-        )
-        payload_elapsed_s = time.perf_counter() - payload_started_at
-        LOGGER.info(
-            "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
-            str(output),
-            payload_elapsed_s,
-        )
-        LOGGER.info(
-            "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
-            str(output),
-            _metric_value(
-                checkpoint_selector_state["checkpoint_selector_state_present"]
-            ),
-            _metric_value(checkpoint_selector_state["checkpoint_selector_state_type"]),
-            _metric_value(
-                checkpoint_selector_state["checkpoint_selector_state_version"]
-            ),
-        )
-        node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
-        log_morpion_checkpoint_memory_phase(
-            "after_checkpoint_save_payload_build",
-            path=output,
-            nodes=node_count,
-            generation=generation_from_checkpoint_path(output),
-        )
         manifest = None
+        payload_elapsed_s = None
+        anchor_count = delta_count = None
         if self._args.runtime_checkpoint_format == "sharded":
-            manifest = write_sharded_search_checkpoint(
-                payload,
-                output,
-                layout="split",
+            log_morpion_checkpoint_memory_phase(
+                "before_checkpoint_save_stream",
+                path=output,
+                generation=generation_from_checkpoint_path(output),
             )
+            # The publication owner provides a fresh private path. Anemone rejects
+            # nonempty directories, including partial output from a failed attempt.
+            with self._state_rematerialization_phase("checkpoint"):
+                manifest = write_sharded_search_checkpoint_from_search(
+                    runtime,
+                    output,
+                    state_codec=self._state_codec,
+                    layout="split",
+                    node_count_per_shard=CHECKPOINT_NODES_PER_SHARD,
+                )
+            node_count = manifest.total_node_count
             checkpoint_bytes = _checkpoint_artifact_bytes(output)
             write_stats = None
         else:
+            payload_started_at = time.perf_counter()
+            log_morpion_checkpoint_memory_phase(
+                "before_checkpoint_save_payload_build",
+                path=output,
+                generation=generation_from_checkpoint_path(output),
+            )
+            with self._state_rematerialization_phase("checkpoint"):
+                payload = build_search_checkpoint_payload(
+                    runtime,
+                    state_codec=self._state_codec,
+                )
+            checkpoint_selector_state = checkpoint_selector_state_fields(
+                payload,
+                prefix="checkpoint",
+            )
+            payload_elapsed_s = time.perf_counter() - payload_started_at
+            LOGGER.info(
+                "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
+                str(output),
+                payload_elapsed_s,
+            )
+            LOGGER.info(
+                "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
+                str(output),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_present"]
+                ),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_type"]
+                ),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_version"]
+                ),
+            )
+            node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+            log_morpion_checkpoint_memory_phase(
+                "after_checkpoint_save_payload_build",
+                path=output,
+                nodes=node_count,
+                generation=generation_from_checkpoint_path(output),
+            )
             write_stats = write_checkpoint_json_payload(payload, output)
             checkpoint_bytes = write_stats.compressed_bytes
+            del payload
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_write",
             path=output,
@@ -2229,7 +2248,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output if write_stats is None else write_stats.output_path),
             elapsed_s,
         )
-        del payload
         gc.collect()
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_cleanup",
