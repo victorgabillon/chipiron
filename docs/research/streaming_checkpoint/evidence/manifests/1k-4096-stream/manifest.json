@@ -1,0 +1,66 @@
+{
+  "checkpoint_format_version": 3,
+  "encoder": "stdlib",
+  "generation": null,
+  "node_count_per_shard": 4096,
+  "notes": "C2e split state/node/runtime shard layout.",
+  "sharded_checkpoint_format_version": 1,
+  "shards": [
+    {
+      "compressed_bytes": 3883,
+      "encoding": "json_zst",
+      "kind": "metadata",
+      "path": "metadata.json.zst",
+      "record_count": 1,
+      "sha256": null,
+      "uncompressed_bytes": 11278
+    },
+    {
+      "compressed_bytes": 23311,
+      "encoding": "jsonl_zst",
+      "kind": "node_shells",
+      "path": "node_shells/nodes_000000.jsonl.zst",
+      "record_count": 1003,
+      "sha256": null,
+      "uncompressed_bytes": 225047
+    },
+    {
+      "compressed_bytes": 23217,
+      "encoding": "jsonl_zst",
+      "kind": "state_payloads",
+      "path": "state_payloads/state_payloads_000000.jsonl.zst",
+      "record_count": 1003,
+      "sha256": null,
+      "uncompressed_bytes": 201773
+    },
+    {
+      "compressed_bytes": 27553,
+      "encoding": "jsonl_zst",
+      "kind": "node_runtime",
+      "path": "node_runtime/node_runtime_000000.jsonl.zst",
+      "record_count": 1003,
+      "sha256": null,
+      "uncompressed_bytes": 865233
+    },
+    {
+      "compressed_bytes": 6471,
+      "encoding": "json_zst",
+      "kind": "selector",
+      "path": "selector/selector.json.zst",
+      "record_count": 1,
+      "sha256": null,
+      "uncompressed_bytes": 193273
+    },
+    {
+      "compressed_bytes": 388,
+      "encoding": "json_zst",
+      "kind": "latest_expansions",
+      "path": "latest_expansions/latest_expansions.json.zst",
+      "record_count": 1,
+      "sha256": null,
+      "uncompressed_bytes": 4436
+    }
+  ],
+  "total_branch_count": 1114,
+  "total_node_count": 1003
+}

@@ -1,0 +1,548 @@
+[
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "init",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "00-init"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.685730130004231
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "01-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.480212265014416
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "02-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.842236899974523
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "03-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.739786232996266
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "04-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.059748196974397
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "05-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.731148364982801
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "06-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.15313279000111
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "07-dataset",
+      "--generation",
+      "2"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.6135160499834456
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "08-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.11239305298659
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "09-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.6242898300115485
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "10-training",
+      "--generation",
+      "2"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.236135192011716
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "11-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.867018824006664
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "12-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.722497496026335
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "13-prepare",
+      "--generation",
+      "2",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.237441902019782
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "14-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 12.118644823989598
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "15-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.549982336000539
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "16-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 11.063822694006376
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "17-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.554711416974897
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "18-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.648242055991432
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "19-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.205820056988159
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "20-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.755366469005821
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "21-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.5998937060066964
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "22-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.753580694989068
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "23-dataset",
+      "--generation",
+      "5"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.403594763018191
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "24-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.583661413984373
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "25-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.230439901992213
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "26-training",
+      "--generation",
+      "5"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.226178323995555
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "27-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.27478058100678
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "28-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.930092212016461
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "29-prepare",
+      "--generation",
+      "5",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.562138870998751
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "30-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 12.33523051100201
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "31-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.217737597995438
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "32-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 12.1988895709801
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "33-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.422147344012046
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "34-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.7126467829803005
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "35-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 9.216929588001221
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "36-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.887954261008417
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "37-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.718601560976822
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "38-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.28202151201549
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/workspace",
+      "--label",
+      "39-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/streaming-checkpoint-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.8999409200041555
+  }
+]

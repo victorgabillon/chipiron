@@ -1,0 +1,1790 @@
+{
+  "models": [
+    {
+      "generation": 1,
+      "local_trained_generation": null,
+      "name": "seed",
+      "path": "seed",
+      "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+      "source": "external_seed",
+      "source_generation": 1
+    },
+    {
+      "path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_b",
+      "sha256": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+      "generation": 1,
+      "name": "linear_b",
+      "source": "local_training",
+      "source_generation": 1,
+      "local_trained_generation": 1
+    },
+    {
+      "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+      "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+      "generation": 3,
+      "name": "linear_b",
+      "source": "local_training",
+      "source_generation": 3,
+      "local_trained_generation": 3
+    }
+  ],
+  "generations": [
+    {
+      "accepted_dataset": {
+        "attempt_id": "171293c0835345e285268a87c7326ee8",
+        "descriptor_sha256": "b2262fc012fa5941b9717ff7da3c69ab2c0a59b467871155f64ad628b2dd4bd4"
+      },
+      "accepted_training": {
+        "attempt_id": "a25f066a2c774cf2b58ad849e1ad2940",
+        "descriptor_sha256": "22f322d7afa7cc10221b54c4a036cbfffb19e11638801a1704f282409a5d396c"
+      },
+      "checkpoint_path": "generation_publications_v3/objects/fefa4da8297d4275b23044d26d182dab/checkpoint/genesis-checkpoint",
+      "descriptor_path": "generation_publications_v3/objects/fefa4da8297d4275b23044d26d182dab/.generation_publication_v3.json",
+      "descriptor_sha256": "b0ed7b5252a4397a55813696d9a770ae5405658e96223d064d48594a3d4b7f14",
+      "generation": 1,
+      "id": "fefa4da8297d4275b23044d26d182dab",
+      "parent_id": null,
+      "publication_version": 3,
+      "scientific_identity": {
+        "checkpoint_sha256": "3b967f825420c5e6f9a1ec8918bcd0c3c55a508136742e8b63f539d3cca9bdb0",
+        "generation_descriptor_sha256": "899095b10a78edaf7f6fb90ef878024b0d549be1dfe99f3f0790e582fdda0fe0",
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "growth_generation": 1,
+        "producer": {
+          "api_sha256": {
+            "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+            "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+            "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+            "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+          },
+          "identity": {
+            "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+            "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+            "objective": "maximum_total_moves",
+            "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+          },
+          "packages": {
+            "algorhino-anemone": "0.2.26",
+            "atomheart": "0.2.11",
+            "chipiron": "0.2.4",
+            "valanga": "0.2.5"
+          },
+          "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+        },
+        "producer_sha256": "bec8bcbc6f0b59753f33ff67a3273f5b3994106349553b0e531958ecd120cb29",
+        "scientific_contract": "anemone-values-canonical-morpion-1",
+        "source_format_kind": "morpion_closed_scientific_snapshot",
+        "source_format_version": 2,
+        "source_generation": 1,
+        "storage_layout_version": 1
+      },
+      "tree_snapshot_path": "generation_publications_v3/objects/fefa4da8297d4275b23044d26d182dab/scientific_snapshot/generation.json"
+    },
+    {
+      "checkpoint_path": "generation_publications_v3/objects/c11374e847bc45e8bdd2bf9248204cd1/checkpoint/generation_000002.sharded",
+      "descriptor_path": "generation_publications_v3/objects/c11374e847bc45e8bdd2bf9248204cd1/.generation_publication_v3.json",
+      "descriptor_sha256": "06b67b990185999a8b8a8a5f6257951e395e40a8cdff9110dbd5898ba647ba8f",
+      "generation": 2,
+      "id": "c11374e847bc45e8bdd2bf9248204cd1",
+      "parent_id": "fefa4da8297d4275b23044d26d182dab",
+      "publication_version": 3,
+      "scientific_identity": {
+        "checkpoint_sha256": "3b967f825420c5e6f9a1ec8918bcd0c3c55a508136742e8b63f539d3cca9bdb0",
+        "generation_descriptor_sha256": "df0438170573125869e31145d52a1730d624d02e2969dd3c69ab008fa2500706",
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "growth_generation": 2,
+        "producer": {
+          "api_sha256": {
+            "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+            "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+            "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+            "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+          },
+          "identity": {
+            "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+            "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+            "objective": "maximum_total_moves",
+            "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+          },
+          "packages": {
+            "algorhino-anemone": "0.2.26",
+            "atomheart": "0.2.11",
+            "chipiron": "0.2.4",
+            "valanga": "0.2.5"
+          },
+          "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+        },
+        "producer_sha256": "bec8bcbc6f0b59753f33ff67a3273f5b3994106349553b0e531958ecd120cb29",
+        "scientific_contract": "anemone-values-canonical-morpion-1",
+        "source_format_kind": "morpion_closed_scientific_snapshot",
+        "source_format_version": 2,
+        "source_generation": 2,
+        "storage_layout_version": 1
+      },
+      "tree_snapshot_path": "generation_publications_v3/objects/c11374e847bc45e8bdd2bf9248204cd1/scientific_snapshot/generation.json"
+    },
+    {
+      "accepted_dataset": {
+        "attempt_id": "bea5ae01c66c4914ba8a548fe5715983",
+        "descriptor_sha256": "e6ba40c2a9e1c08fc1f659d0c310022e1a3460637b1ef27bdacf5e7f384af725"
+      },
+      "accepted_training": {
+        "attempt_id": "40c85aab2f7a41e197f4ac1c2c1edc39",
+        "descriptor_sha256": "974f72b72a486393b642d5b1cba5aaa2ad26030c022a7acd69ed2c62c6342646"
+      },
+      "activation_request_sha256": "0f4b3518862b3a4544006da880a45e251b8572ec3811532e9f6a976a1f174a9c",
+      "checkpoint_path": "generation_publications_v3/objects/8a8aa768a0b54060a15a7a3463760541/checkpoint/generation_000003.sharded",
+      "descriptor_path": "generation_publications_v3/objects/8a8aa768a0b54060a15a7a3463760541/.generation_publication_v3.json",
+      "descriptor_sha256": "29ae777deee6dc5e48f08acf2e1d4fc40b8c317c54228d9d36b00b1552c66653",
+      "generation": 3,
+      "id": "8a8aa768a0b54060a15a7a3463760541",
+      "parent_id": "c11374e847bc45e8bdd2bf9248204cd1",
+      "publication_version": 3,
+      "scientific_identity": {
+        "checkpoint_sha256": "cf62e20c15b07e1033fb31c9781aa4fbeeb8e1e10f680c325084e9a936c484bf",
+        "generation_descriptor_sha256": "fb0860c8a0924eea3fbea86ff3b8b4a6cfccf7143e1958c7508825480a6d22c6",
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "growth_generation": 3,
+        "producer": {
+          "api_sha256": {
+            "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+            "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+            "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+            "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+          },
+          "identity": {
+            "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+            "evaluator": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+            "objective": "maximum_total_moves",
+            "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+          },
+          "packages": {
+            "algorhino-anemone": "0.2.26",
+            "atomheart": "0.2.11",
+            "chipiron": "0.2.4",
+            "valanga": "0.2.5"
+          },
+          "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+        },
+        "producer_sha256": "940553eacdba0789bef2913eb23cf70510d134f0f577b2cfe91175e5c0c658e4",
+        "scientific_contract": "anemone-values-canonical-morpion-1",
+        "source_format_kind": "morpion_closed_scientific_snapshot",
+        "source_format_version": 2,
+        "source_generation": 3,
+        "storage_layout_version": 1
+      },
+      "tree_snapshot_path": "generation_publications_v3/objects/8a8aa768a0b54060a15a7a3463760541/scientific_snapshot/generation.json"
+    },
+    {
+      "checkpoint_path": "generation_publications_v3/objects/930c21f1df0c483bbb9518874ec5588f/checkpoint/generation_000004.sharded",
+      "descriptor_path": "generation_publications_v3/objects/930c21f1df0c483bbb9518874ec5588f/.generation_publication_v3.json",
+      "descriptor_sha256": "58e454da980c36b5c02575374c51735eaa209215d4eecb6797a9eb6ae7416395",
+      "generation": 4,
+      "id": "930c21f1df0c483bbb9518874ec5588f",
+      "parent_id": "8a8aa768a0b54060a15a7a3463760541",
+      "publication_version": 3,
+      "scientific_identity": {
+        "checkpoint_sha256": "cf62e20c15b07e1033fb31c9781aa4fbeeb8e1e10f680c325084e9a936c484bf",
+        "generation_descriptor_sha256": "00d651708585bb983111fc68af07cb524949997c9aa75acae7419849278b0d33",
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "growth_generation": 4,
+        "producer": {
+          "api_sha256": {
+            "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+            "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+            "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+            "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+          },
+          "identity": {
+            "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+            "evaluator": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+            "objective": "maximum_total_moves",
+            "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+          },
+          "packages": {
+            "algorhino-anemone": "0.2.26",
+            "atomheart": "0.2.11",
+            "chipiron": "0.2.4",
+            "valanga": "0.2.5"
+          },
+          "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+        },
+        "producer_sha256": "940553eacdba0789bef2913eb23cf70510d134f0f577b2cfe91175e5c0c658e4",
+        "scientific_contract": "anemone-values-canonical-morpion-1",
+        "source_format_kind": "morpion_closed_scientific_snapshot",
+        "source_format_version": 2,
+        "source_generation": 4,
+        "storage_layout_version": 1
+      },
+      "tree_snapshot_path": "generation_publications_v3/objects/930c21f1df0c483bbb9518874ec5588f/scientific_snapshot/generation.json"
+    },
+    {
+      "activation_request_sha256": "9c6413ce04ccdc875202fd2ca5a1d962f8a65b458fd81ce10283426e1294dcc1",
+      "checkpoint_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/checkpoint/generation_000005.sharded",
+      "descriptor_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/.generation_publication_v3.json",
+      "descriptor_sha256": "876cb69fada689163cbae91aabec383ee674b036dc5f2ada89fd2a3555cdedfe",
+      "generation": 5,
+      "id": "a3a328abd1db4420bacce93237779dfb",
+      "parent_id": "930c21f1df0c483bbb9518874ec5588f",
+      "publication_version": 3,
+      "scientific_identity": {
+        "checkpoint_sha256": "524b46be1d8d88e102f960c0e0410781c1e1441632f03be927d4d66266b61fc5",
+        "generation_descriptor_sha256": "3579059457cb8ac7395cab41dda5920408949b6a960e555807528e1ab5e4c6cd",
+        "generation_mapping": "growth-equals-scientific-from-1",
+        "growth_generation": 5,
+        "producer": {
+          "api_sha256": {
+            "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+            "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+            "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+            "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+          },
+          "identity": {
+            "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+            "evaluator": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+            "objective": "maximum_total_moves",
+            "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+          },
+          "packages": {
+            "algorhino-anemone": "0.2.26",
+            "atomheart": "0.2.11",
+            "chipiron": "0.2.4",
+            "valanga": "0.2.5"
+          },
+          "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+        },
+        "producer_sha256": "bc12a4c4d11aa61c038c9650431a4cd865ed1b40863aa90161e8e8d6b413a074",
+        "scientific_contract": "anemone-values-canonical-morpion-1",
+        "source_format_kind": "morpion_closed_scientific_snapshot",
+        "source_format_version": 2,
+        "source_generation": 5,
+        "storage_layout_version": 1
+      },
+      "tree_snapshot_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/scientific_snapshot/generation.json"
+    }
+  ],
+  "processes": 40,
+  "final": {
+    "stage": "check",
+    "label": "38-check",
+    "before": {
+      "run_state_sha256": "7444dd188796ed5860ed5d5602184df6e3f72b2dcb931d1af0c2c5a24f7d7e27",
+      "generation": 5,
+      "nodes": 2,
+      "head": {
+        "activation_request_sha256": "9c6413ce04ccdc875202fd2ca5a1d962f8a65b458fd81ce10283426e1294dcc1",
+        "checkpoint_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/checkpoint/generation_000005.sharded",
+        "descriptor_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/.generation_publication_v3.json",
+        "descriptor_sha256": "876cb69fada689163cbae91aabec383ee674b036dc5f2ada89fd2a3555cdedfe",
+        "generation": 5,
+        "id": "a3a328abd1db4420bacce93237779dfb",
+        "parent_id": "930c21f1df0c483bbb9518874ec5588f",
+        "publication_version": 3,
+        "scientific_identity": {
+          "checkpoint_sha256": "524b46be1d8d88e102f960c0e0410781c1e1441632f03be927d4d66266b61fc5",
+          "generation_descriptor_sha256": "3579059457cb8ac7395cab41dda5920408949b6a960e555807528e1ab5e4c6cd",
+          "generation_mapping": "growth-equals-scientific-from-1",
+          "growth_generation": 5,
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+              "evaluator": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+              "objective": "maximum_total_moves",
+              "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "producer_sha256": "bc12a4c4d11aa61c038c9650431a4cd865ed1b40863aa90161e8e8d6b413a074",
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "source_format_kind": "morpion_closed_scientific_snapshot",
+          "source_format_version": 2,
+          "source_generation": 5,
+          "storage_layout_version": 1
+        },
+        "tree_snapshot_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/scientific_snapshot/generation.json"
+      },
+      "model": {
+        "generation": 3,
+        "local_trained_generation": 3,
+        "name": "linear_b",
+        "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+        "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+        "source": "local_training",
+        "source_generation": 3
+      },
+      "workspace_epoch": {
+        "workspace_id": "bb9fcc6e635145549cae00d04e7f96f2",
+        "epoch_id": "b9d463e70d824d7c96b22b359f545750"
+      }
+    },
+    "after": {
+      "run_state_sha256": "7444dd188796ed5860ed5d5602184df6e3f72b2dcb931d1af0c2c5a24f7d7e27",
+      "generation": 5,
+      "nodes": 2,
+      "head": {
+        "activation_request_sha256": "9c6413ce04ccdc875202fd2ca5a1d962f8a65b458fd81ce10283426e1294dcc1",
+        "checkpoint_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/checkpoint/generation_000005.sharded",
+        "descriptor_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/.generation_publication_v3.json",
+        "descriptor_sha256": "876cb69fada689163cbae91aabec383ee674b036dc5f2ada89fd2a3555cdedfe",
+        "generation": 5,
+        "id": "a3a328abd1db4420bacce93237779dfb",
+        "parent_id": "930c21f1df0c483bbb9518874ec5588f",
+        "publication_version": 3,
+        "scientific_identity": {
+          "checkpoint_sha256": "524b46be1d8d88e102f960c0e0410781c1e1441632f03be927d4d66266b61fc5",
+          "generation_descriptor_sha256": "3579059457cb8ac7395cab41dda5920408949b6a960e555807528e1ab5e4c6cd",
+          "generation_mapping": "growth-equals-scientific-from-1",
+          "growth_generation": 5,
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+              "evaluator": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+              "objective": "maximum_total_moves",
+              "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "producer_sha256": "bc12a4c4d11aa61c038c9650431a4cd865ed1b40863aa90161e8e8d6b413a074",
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "source_format_kind": "morpion_closed_scientific_snapshot",
+          "source_format_version": 2,
+          "source_generation": 5,
+          "storage_layout_version": 1
+        },
+        "tree_snapshot_path": "generation_publications_v3/objects/a3a328abd1db4420bacce93237779dfb/scientific_snapshot/generation.json"
+      },
+      "model": {
+        "generation": 3,
+        "local_trained_generation": 3,
+        "name": "linear_b",
+        "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+        "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+        "source": "local_training",
+        "source_generation": 3
+      },
+      "workspace_epoch": {
+        "workspace_id": "bb9fcc6e635145549cae00d04e7f96f2",
+        "epoch_id": "b9d463e70d824d7c96b22b359f545750"
+      }
+    },
+    "cpu_user_s": 0.7019119999999992,
+    "cpu_system_s": 0.044985,
+    "io": {
+      "rchar": 6910689,
+      "wchar": 487780,
+      "syscr": 3734,
+      "syscw": 229,
+      "read_bytes": 0,
+      "write_bytes": 659456,
+      "cancelled_write_bytes": 0
+    },
+    "started_unix_s": 1792921767.4243321,
+    "finished_unix_s": 1792921769.478448,
+    "elapsed_s": 2.054115481005283,
+    "pid": 1428605,
+    "rss_before_mb": 367.41796875,
+    "rss_after_mb": 374.953125,
+    "process_peak_rss_mb": 373.40625,
+    "available_ram_before_mb": 68426.35546875,
+    "available_ram_after_mb": 68440.9765625,
+    "cuda_before": null,
+    "cuda_after": null,
+    "disk": {
+      "files": 171,
+      "logical_bytes": 625187,
+      "allocated_bytes": 950272
+    },
+    "checkpoint_payload_sha256": "7c4b3036acc27674999e36b8b5783e728aa551ea29a38ae16be8dc0ae0303ad7",
+    "evaluator_version": 3,
+    "rng_sha256": "036ba4a4f9325768363d9946ab2aa5f7d555e6fbfc639d55044352e68a44ff34",
+    "rollout_rng_sha256": "7e077967cb32416520793d368faec465d19b339e9413e9743963a1e696d5b9ee",
+    "selector_sha256": "22c895e323edc1198fffd27b02e5e604aa1b35648f7c63dbd5472a349c56d7ca",
+    "nodes": 2,
+    "edges": 1,
+    "checkpoint_disk": {
+      "files": 7,
+      "logical_bytes": 10413,
+      "allocated_bytes": 32768
+    },
+    "scientific_disk": {
+      "files": 3,
+      "logical_bytes": 6273,
+      "allocated_bytes": 12288
+    },
+    "model_disk": {
+      "files": 4,
+      "logical_bytes": 21138,
+      "allocated_bytes": 32768
+    },
+    "receipts": {
+      "878e6338-079a-486c-bbbe-95c3453aa64f": {
+        "patch_id": "878e6338-079a-486c-bbbe-95c3453aa64f",
+        "content_sha256": "a039727cde88071e1d025d525d3048ad3ca5dc43cd3478d5b03f7a1cb336e70e",
+        "tree_generation": 1,
+        "evaluator_generation": 1,
+        "evaluator_name": "seed",
+        "model_bundle_path": "seed",
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "checkpoint_path": "generation_publications_v3/objects/c11374e847bc45e8bdd2bf9248204cd1/checkpoint/generation_000002.sharded",
+        "checkpoint_sha256": "3b967f825420c5e6f9a1ec8918bcd0c3c55a508136742e8b63f539d3cca9bdb0",
+        "committed_generation": 2,
+        "rows_requested": 2,
+        "rows_applied": 2,
+        "blend_alpha": 1.0,
+        "accepted_cursor_sha256": "a2cde5516a4008785424c72035c12fd5863a790a55805a2c5057e66dda3edcb6"
+      },
+      "d005cb4a-07c1-4178-9a3e-73d58efd3531": {
+        "patch_id": "d005cb4a-07c1-4178-9a3e-73d58efd3531",
+        "content_sha256": "dab2f47370499f9b251aeb3673e9e5db5998a30d6f0c7ede31a2e923822bbef6",
+        "tree_generation": 3,
+        "evaluator_generation": 1,
+        "evaluator_name": "linear_b",
+        "model_bundle_path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_b",
+        "model_sha256": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+        "checkpoint_path": "generation_publications_v3/objects/930c21f1df0c483bbb9518874ec5588f/checkpoint/generation_000004.sharded",
+        "checkpoint_sha256": "cf62e20c15b07e1033fb31c9781aa4fbeeb8e1e10f680c325084e9a936c484bf",
+        "committed_generation": 4,
+        "rows_requested": 2,
+        "rows_applied": 2,
+        "blend_alpha": 1.0,
+        "accepted_cursor_sha256": "c820adf804cd3a00ea3510d14ab353a251ce820d5687c8ede86d104dcb564f0e"
+      }
+    },
+    "scientific_hashes": {
+      "generation.json": "3579059457cb8ac7395cab41dda5920408949b6a960e555807528e1ab5e4c6cd",
+      "records.jsonl": "79df79b2524b6e824d8e0c5dc0aaaf08884431a4e1fef95c9035c6472388e421",
+      "updates.jsonl": "0281565ef08e84898037b3b10f21d7350912db34f5dccf74b9b168b605570126"
+    },
+    "activation_independent_max_and_full_checkpoint": true,
+    "creation_generations_sha256": "e61b9f584dbe27741cef6e9ee440831d7d94470c0871b0871541f0308916efea",
+    "certificates": {
+      "terminal": 1,
+      "nonterminal_forced": 1,
+      "frontier_estimate": 0
+    },
+    "root_science": {
+      "direct": 30.484771728515625,
+      "tree": 35.0,
+      "effective": 35.0,
+      "contract": {
+        "target_source": "tree_value",
+        "values": {
+          "direct": {
+            "score": 30.484771728515625,
+            "certainty": "ESTIMATE",
+            "over_event": null,
+            "line": null
+          },
+          "tree": {
+            "score": 35.0,
+            "certainty": "FORCED",
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "type": "enum",
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "qualname": "MorpionTermination",
+                "name": "NO_LEGAL_MOVES"
+              },
+              "winner": null
+            },
+            "line": null
+          },
+          "effective": {
+            "score": 35.0,
+            "certainty": "FORCED",
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "type": "enum",
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "qualname": "MorpionTermination",
+                "name": "NO_LEGAL_MOVES"
+              },
+              "winner": null
+            },
+            "line": null
+          },
+          "target": {
+            "score": 35.0,
+            "certainty": "FORCED",
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "type": "enum",
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "qualname": "MorpionTermination",
+                "name": "NO_LEGAL_MOVES"
+              },
+              "winner": null
+            },
+            "line": null
+          }
+        },
+        "certainties": {
+          "direct": "ESTIMATE",
+          "tree": "FORCED",
+          "effective": "FORCED",
+          "target": "FORCED"
+        },
+        "all_branches_generated": true,
+        "backup_exactness_compatible": true
+      }
+    },
+    "pending": {
+      "id": "4800162e-ddae-4419-919c-6cd596e63e1c",
+      "sha256": "25639cfd033e8511afdf99aff38e3e0031aac292332d7cc4838fe44a224b5470",
+      "rows": 2,
+      "envelope": {
+        "epoch_id": "b9d463e70d824d7c96b22b359f545750",
+        "expected_cursor_sha256": "c820adf804cd3a00ea3510d14ab353a251ce820d5687c8ede86d104dcb564f0e",
+        "model": {
+          "generation": 3,
+          "local_trained_generation": 3,
+          "name": "linear_b",
+          "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+          "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+          "source": "local_training",
+          "source_generation": 3
+        },
+        "next_cursor": {
+          "completed_full_pass_count": 1,
+          "evaluator_generation": 3,
+          "evaluator_name": "linear_b",
+          "last_patch_id": "4800162e-ddae-4419-919c-6cd596e63e1c",
+          "metadata": {
+            "source": "reevaluation_worker"
+          },
+          "model_bundle_path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+          "next_node_cursor": "0",
+          "tree_generation": 5,
+          "updated_at_utc": "2026-10-25T09:49:21.841419Z"
+        },
+        "numeric_policy": "anemone_depth_scaled_nonterminal_v1",
+        "producer_id": "a54275673cfe409190d9af756795808e",
+        "protocol": "morpion_reevaluation_proposal",
+        "schema_version": 2,
+        "source": {
+          "descriptor_sha256": "876cb69fada689163cbae91aabec383ee674b036dc5f2ada89fd2a3555cdedfe",
+          "id": "a3a328abd1db4420bacce93237779dfb",
+          "scientific_identity": {
+            "checkpoint_sha256": "524b46be1d8d88e102f960c0e0410781c1e1441632f03be927d4d66266b61fc5",
+            "generation_descriptor_sha256": "3579059457cb8ac7395cab41dda5920408949b6a960e555807528e1ab5e4c6cd",
+            "generation_mapping": "growth-equals-scientific-from-1",
+            "growth_generation": 5,
+            "producer": {
+              "api_sha256": {
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "identity": {
+                "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                "evaluator": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+                "objective": "maximum_total_moves",
+                "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "chipiron": "0.2.4",
+                "valanga": "0.2.5"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "producer_sha256": "bc12a4c4d11aa61c038c9650431a4cd865ed1b40863aa90161e8e8d6b413a074",
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "source_generation": 5,
+            "storage_layout_version": 1
+          }
+        },
+        "workspace_id": "bb9fcc6e635145549cae00d04e7f96f2"
+      }
+    },
+    "accepted_results": [
+      {
+        "generation": 1,
+        "dataset": {
+          "reference": {
+            "attempt_id": "171293c0835345e285268a87c7326ee8",
+            "descriptor_sha256": "b2262fc012fa5941b9717ff7da3c69ab2c0a59b467871155f64ad628b2dd4bd4"
+          },
+          "source": {
+            "descriptor_sha256": "b0ed7b5252a4397a55813696d9a770ae5405658e96223d064d48594a3d4b7f14",
+            "id": "fefa4da8297d4275b23044d26d182dab",
+            "scientific_identity": {
+              "checkpoint_sha256": "3b967f825420c5e6f9a1ec8918bcd0c3c55a508136742e8b63f539d3cca9bdb0",
+              "generation_descriptor_sha256": "899095b10a78edaf7f6fb90ef878024b0d549be1dfe99f3f0790e582fdda0fe0",
+              "generation_mapping": "growth-equals-scientific-from-1",
+              "growth_generation": 1,
+              "producer": {
+                "api_sha256": {
+                  "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                  "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                  "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                  "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+                },
+                "identity": {
+                  "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                  "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+                  "objective": "maximum_total_moves",
+                  "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+                },
+                "packages": {
+                  "algorhino-anemone": "0.2.26",
+                  "atomheart": "0.2.11",
+                  "chipiron": "0.2.4",
+                  "valanga": "0.2.5"
+                },
+                "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+              },
+              "producer_sha256": "bec8bcbc6f0b59753f33ff67a3273f5b3994106349553b0e531958ecd120cb29",
+              "scientific_contract": "anemone-values-canonical-morpion-1",
+              "source_format_kind": "morpion_closed_scientific_snapshot",
+              "source_format_version": 2,
+              "source_generation": 1,
+              "storage_layout_version": 1
+            }
+          },
+          "rows_sha256": "732b5fb9ed7cec6b6003d6b3bd076e7b3fde0ab8d4518136c742ff143b2508c1",
+          "rows_bytes": 7914
+        },
+        "rows": 2,
+        "metadata": {
+          "dataset_kind": "morpion_supervised_rows",
+          "dataset_version": 2,
+          "source_root_node_id": "0",
+          "source_format_kind": "training_tree_snapshot",
+          "source_format_version": 1,
+          "require_exact_or_terminal": false,
+          "min_depth": null,
+          "min_visit_count": null,
+          "max_rows": 16,
+          "use_backed_up_value": false,
+          "num_rows": 2,
+          "skipped_no_target_count": 0,
+          "target_source_counts": {
+            "tree_value": 0,
+            "direct_value": 2
+          },
+          "bootstrap_generation": 1,
+          "dataset_confidence_policy": "selected_value_v2",
+          "dataset_confidence_contract": "morpion-selected-value-confidence-1",
+          "scientific_source_provenance": {
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_generation": 1,
+            "producer": {
+              "identity": {
+                "revision": "4ada24712dca95d1114d3e838a13c3447af998ac",
+                "objective": "maximum_total_moves",
+                "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+                "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "valanga": "0.2.5",
+                "chipiron": "0.2.4"
+              },
+              "api_sha256": {
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "storage_layout_version": 1
+          },
+          "family_proof_contract": null,
+          "dataset_family_target_policy": "none",
+          "dataset_family_prediction_blend": 0.25,
+          "fraction_rows_in_exact_family": 1.0,
+          "num_exact_families": 1,
+          "mean_abs_effective_minus_raw_on_exact_families": 0.0,
+          "mean_abs_effective_minus_raw_on_non_exact_families": null,
+          "effective_minus_raw_mean_abs": 0.0,
+          "effective_minus_raw_max_abs": 0.0,
+          "num_pv_families": 1,
+          "mean_pv_family_size": 2.0,
+          "max_pv_family_size": 2,
+          "dataset_extraction_identity": "e22fa568c1f2a97d4d238a75ae344c6583fbe97fd966e7e34ab4bb419d43bfbc"
+        },
+        "training": {
+          "reference": {
+            "attempt_id": "a25f066a2c774cf2b58ad849e1ad2940",
+            "descriptor_sha256": "22f322d7afa7cc10221b54c4a036cbfffb19e11638801a1704f282409a5d396c"
+          },
+          "selected": {
+            "path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_b",
+            "sha256": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+            "generation": 1,
+            "name": "linear_b",
+            "source": "local_training",
+            "source_generation": 1,
+            "local_trained_generation": 1
+          },
+          "proposal": {
+            "admission": {
+              "attempt_id": "a25f066a2c774cf2b58ad849e1ad2940",
+              "claim_id": "a620348e-8874-4cd7-bd5c-943636950473",
+              "configuration": {
+                "candidates": [
+                  {
+                    "args": {
+                      "batch_size": 4,
+                      "dataset_file": "accepted Dataset",
+                      "device": "cpu",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "hidden_dim": null,
+                      "hidden_sizes": null,
+                      "learning_rate": 0.001,
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "num_epochs": 1,
+                      "output_dir": "linear_a",
+                      "relation_bias_scale": 1.0,
+                      "shuffle": true,
+                      "validation_fraction": 0.25,
+                      "validation_seed": 17
+                    },
+                    "model_args": {
+                      "edge_token_mode": "drawn_only",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "entity_validity_feature_index": 24,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "global_geometry_features": "none",
+                      "hidden_sizes": null,
+                      "latent_window_move_features": "none",
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "relation_bias_scale": 1.0,
+                      "target_mean": 0.0,
+                      "target_standard_deviation": 1.0,
+                      "target_transform_enabled": false
+                    },
+                    "name": "linear_a"
+                  },
+                  {
+                    "args": {
+                      "batch_size": 4,
+                      "dataset_file": "accepted Dataset",
+                      "device": "cpu",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "hidden_dim": null,
+                      "hidden_sizes": null,
+                      "learning_rate": 0.003,
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "num_epochs": 1,
+                      "output_dir": "linear_b",
+                      "relation_bias_scale": 1.0,
+                      "shuffle": true,
+                      "validation_fraction": 0.25,
+                      "validation_seed": 17
+                    },
+                    "model_args": {
+                      "edge_token_mode": "drawn_only",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "entity_validity_feature_index": 24,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "global_geometry_features": "none",
+                      "hidden_sizes": null,
+                      "latent_window_move_features": "none",
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "relation_bias_scale": 1.0,
+                      "target_mean": 0.0,
+                      "target_standard_deviation": 1.0,
+                      "target_transform_enabled": false
+                    },
+                    "name": "linear_b"
+                  }
+                ],
+                "chunk_size": 16,
+                "diagnostics_max_rows": 60,
+                "force_evaluator": null,
+                "max_rows": null,
+                "selection": "forced_else_lowest_finite_validation_else_final_v1",
+                "skip_diagnostics": true
+              },
+              "dataset": {
+                "reference": {
+                  "attempt_id": "171293c0835345e285268a87c7326ee8",
+                  "descriptor_sha256": "b2262fc012fa5941b9717ff7da3c69ab2c0a59b467871155f64ad628b2dd4bd4"
+                },
+                "rows_bytes": 7914,
+                "rows_sha256": "732b5fb9ed7cec6b6003d6b3bd076e7b3fde0ab8d4518136c742ff143b2508c1",
+                "source": {
+                  "descriptor_sha256": "b0ed7b5252a4397a55813696d9a770ae5405658e96223d064d48594a3d4b7f14",
+                  "id": "fefa4da8297d4275b23044d26d182dab",
+                  "scientific_identity": {
+                    "checkpoint_sha256": "3b967f825420c5e6f9a1ec8918bcd0c3c55a508136742e8b63f539d3cca9bdb0",
+                    "generation_descriptor_sha256": "899095b10a78edaf7f6fb90ef878024b0d549be1dfe99f3f0790e582fdda0fe0",
+                    "generation_mapping": "growth-equals-scientific-from-1",
+                    "growth_generation": 1,
+                    "producer": {
+                      "api_sha256": {
+                        "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                        "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                        "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                        "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+                      },
+                      "identity": {
+                        "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                        "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+                        "objective": "maximum_total_moves",
+                        "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+                      },
+                      "packages": {
+                        "algorhino-anemone": "0.2.26",
+                        "atomheart": "0.2.11",
+                        "chipiron": "0.2.4",
+                        "valanga": "0.2.5"
+                      },
+                      "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+                    },
+                    "producer_sha256": "bec8bcbc6f0b59753f33ff67a3273f5b3994106349553b0e531958ecd120cb29",
+                    "scientific_contract": "anemone-values-canonical-morpion-1",
+                    "source_format_kind": "morpion_closed_scientific_snapshot",
+                    "source_format_version": 2,
+                    "source_generation": 1,
+                    "storage_layout_version": 1
+                  }
+                }
+              },
+              "generation": 1,
+              "identity": {
+                "epoch_id": "b9d463e70d824d7c96b22b359f545750",
+                "workspace_id": "bb9fcc6e635145549cae00d04e7f96f2"
+              },
+              "reproducibility": {
+                "cuda_rng_hex": [],
+                "cudnn_benchmark": false,
+                "cudnn_deterministic": false,
+                "deterministic": true,
+                "environment": {},
+                "float32_matmul_precision": "highest",
+                "num_threads": 1,
+                "python": "3.13.5",
+                "torch": "2.14.0+cpu",
+                "torch_initial_seed": 102,
+                "torch_rng_hex": "66000000000000000100000001000000000000000000000066000000000000003fbe000b00000000ddc5d38400000000fe678a39000000003af533c50000000082404a5c00000000b58e662d00000000702ac80e0000000038aebe5c00000000863d0672000000004d8514f600000000d155919e000000004bc709b300000000dab0801d000000001070605000000000c44f7c8e000000002e6f2674000000009c04f3420000000003d7a3d30000000013d3b20e000000009371074900000000aff0b47e00000000bc12f2ce00000000729cc248000000007744a6a500000000429f6e90000000005a149e8900000000d31ea992000000009101ee6100000000edadaccc0000000004fdb652000000001880bc96000000006274a2d10000000066d306c000000000fb7395cd00000000fb78cee200000000fc71fae800000000c070c9a300000000b04e1f5900000000fcc44dbd000000005ea60cd900000000da67902f000000002ca382da00000000b6882769000000005fdfc39500000000dee45a400000000029a3705e00000000f7c6d8df000000007412abb300000000bf6e99b800000000c3d5f6b300000000589e0d5d00000000511a8ce0000000008f449ae10000000072f75f8000000000678f570500000000dbb21a57000000003b3a358300000000b779b7e3000000003f58704b00000000b2fe3d7400000000dc47a88400000000d428ec0300000000e38fd17b000000006ab6db4600000000783b3baa0000000064c188f400000000e66c4567000000006796fc530000000083eced730000000090e1fd5f000000007c97d71300000000342084a800000000979bd7da00000000ae955e6a0000000056b5348100000000707e21940000000047e5ffea0000000022d8829d00000000ef64289300000000d1a66d6b0000000061203860000000003226186200000000725d5d2f000000004ee0f54c0000000080c63468000000003b5a9434000000009e2c6e7e0000000013b2b12300000000d86cec0f0000000092896ee80000000090df31ca000000005be05797000000007a242a6b00000000e53783b80000000082ad000000000000aa06adf3000000000e12733600000000e89d71760000000050feb32500000000f4254ce700000000d8291d3f000000009e1acec6000000005885d9b100000000eac6a43000000000bbb4db8700000000674e742a000000000e0ea9960000000028f78a5b000000009a74378a0000000066586e8500000000e363924c000000009a5a63a0000000006916d60c00000000df08548b00000000a4c4f06a000000008de2bc060000000016d79d6b00000000892b0283000000004e91f5ad0000000074ffb715000000003ddd78f500000000f077c7bb00000000f5d480340000000025227ed7000000007bcf137c00000000a0252fb200000000698b2be70000000052bbaf0900000000dbc9d194000000001fc4b80c00000000bef7b25600000000dff56955000000001bcf73c800000000fe8c2cd9000000005805f21c000000004034c03500000000c9dd8a7e000000007288f1ad00000000bbc45edd000000002415b20e00000000c19b8edd000000001846ecd400000000361c79c100000000797e534600000000e91de7820000000049919e4900000000fbd946400000000036ca70b400000000199b2104000000007392f1660000000091c9cbfd0000000032a9434b00000000b80ca30b00000000327d2ad200000000f09d19c0000000007b5c475500000000bfc6fad400000000ca046ffa00000000ec74db2400000000bc6d9bbe0000000097fa3e89000000006b9a059000000000101db756000000005991432c00000000c2f9df2400000000305c541500000000970fee5400000000d66c5d9d000000004d64e57e00000000a63e41a1000000005f7bbf6f00000000c2fa2297000000006dae3d3400000000af26a95f00000000556131ba0000000003f7f33f00000000e00f86cf0000000041c099d100000000bd2c5a130000000045ccafd900000000530e9714000000007512885e000000007b5cbb8e00000000753db72700000000e2dc61c5000000007f8ef73400000000d62f66da00000000c5dcbc040000000076870b16000000004c98445a00000000204cacf8000000008fc5ad29000000002c79312b000000001e5b916400000000fe8af50800000000fac433e50000000002f8a49000000000c6d8cd2100000000e57ca2f400000000865d3ceb00000000421380c7000000006f629c3200000000963d692d00000000fa929433000000006fc71b5900000000348db1e10000000082262020000000001ac4d8c600000000aebf255d00000000dd4742050000000004a0a6be0000000032598a4b00000000f47cb6cb00000000497da0a6000000006e926bb1000000007491c021000000009d77fc480000000066ade1fc00000000b47697e4000000000fc64ab100000000fe18d8dc00000000af418c3100000000ea91453b0000000032ccee520000000000dce29c00000000acdf4b2900000000bf4b5693000000007507bf1d000000000e8f8e8700000000a2dc1fbf0000000007ac03fd000000007c029d2d00000000d557aa66000000008e1b01810000000027cb014e00000000ea7c765200000000a40c0680000000006cd4b11f000000008b9bca0a00000000c7c1f99300000000aae09e720000000069279787000000002ad1a79a00000000bced3b6b0000000086f1099d000000000aeec791000000001f327b6400000000ced43e990000000075213ff700000000885a0a0700000000a380402b000000004bfcbedd00000000651154f7000000003c74441300000000abf8d9b900000000ad8cb011000000004216ab4a0000000071a43ee400000000fde3d52900000000d55850f00000000073931785000000009ba54bd400000000ffad9ee40000000074819a2f00000000cd2768f10000000050f306fa00000000ca6b3a0800000000bea141ad00000000396c9636000000008b34d20a00000000e61edad60000000069bed9f200000000e3dab443000000003c4eabd300000000ee962ee7000000009561a1400000000079b4eff700000000387f7d8000000000f93c2fcd00000000bad91a5e00000000e0fa395700000000df64493900000000162409b70000000000f1758700000000e72890fe000000001227fee200000000d483a4ce00000000f31357e000000000d14e96e700000000fc7b398e0000000059dafa6b00000000dc3d39f10000000020c1ca92000000009065470b00000000f722752f000000009bfbad91000000008625780200000000088525d40000000082614d0e00000000760b449000000000f1992595000000000dc9ddb0000000001a5b824b00000000d765ec6e000000009fb49d560000000088d1322a00000000db73e6f2000000006c4dd2730000000036e2625700000000e9af93c80000000089a2ceb2000000000f854f36000000002487fdf2000000009d326bb100000000f610bbd300000000e5ce93770000000031a5441f000000009366d34200000000d99a49e50000000042c3de0d000000004b5c2fde00000000aaf109e700000000f0c9de600000000059a68ea3000000002c56cbce00000000d128a19600000000860733ce00000000c125cbf900000000d3b8a8240000000089d73ed300000000bde4e91500000000dd64dbcd00000000e39a9b0a00000000dd977c75000000001ba770fe00000000c8c5855d000000009e9a1eb100000000de7c144c000000004e9c0179000000007ff37134000000007009bde800000000b546c8c200000000254dd5bd00000000bb50829b0000000056dbab5800000000ad1990a70000000066ca61c10000000035e8a7c500000000ab84fdf700000000a63f9b0300000000ddf3d946000000002cf3811200000000bd7d9b0e00000000f3c1cd250000000042919dd8000000000919ad2d00000000f2b2ef2200000000e01cf30b00000000c7457e1b00000000eb079a4800000000bb5a67020000000031e071a1000000008ac04d4800000000435b840a00000000dcdde3bd000000000458b49500000000cdf16b83000000001b2fa78e000000004ef7d895000000006e3e050e00000000d9807c7300000000ac6efad6000000008053d2b000000000c0853972000000009c0f8ded0000000033425cb700000000ce57293200000000c0e3ee38000000003b9c618800000000f924ac5c00000000554f7b5200000000a2416623000000006998e5d30000000052dd0b5b0000000040be64560000000027da569f000000001cdf04eb00000000bf9f2c8200000000162c42570000000099b554bf00000000ae9ad82c000000002e26fe3e00000000afaff54f00000000306fb43c000000007b8f00cd00000000e4d347ba000000004bb106c200000000f67a7b5a0000000002b4465800000000bfa14fda00000000bd6c1c7b00000000be838b110000000089a9bd57000000003cac45200000000041114d0a000000003b996a3300000000de08ac690000000093d8b71300000000981e741a00000000926b578a000000006b81fd0d00000000d35333dd00000000ad62cac700000000440e6a3c00000000730656ab0000000035057a7b0000000025e35818000000003b6ca3fe00000000bbabeb8000000000a1c2efb900000000f40636c10000000019f0cb88000000004e2fb110000000006e695a9b0000000045650a1f00000000e3e22eb00000000070ed10ba00000000a6b1dd0d000000002bee120000000000a5fb19d0000000002d2076eb00000000d651156600000000845a16a000000000906eed200000000083b0c7d3000000003424bd3e00000000391e6be60000000098f805870000000079809b3b000000007572694b000000007d3d064000000000a69fc197000000006fc14e0b0000000087b99fb9000000003660efe400000000a753606a000000003dd84ed600000000368086d000000000aaf31f1d00000000d41da7f80000000096d6c70d00000000f2f0c7870000000075806268000000008ac3c658000000009e8add610000000083c9ef0900000000789d060500000000225a2974000000009a4c8230000000008ea49cee000000006e62b7f300000000cf2b01f8000000004b757abb000000009d581381000000008c0f68c7000000003dac4a1d00000000e49a4df600000000f7bdd46400000000e399519b000000009b20b21300000000fed1f660000000007352bba9000000006e011d2300000000407037d2000000004a27c8f000000000a992fcfa00000000efd8c8ea00000000fae2c79b00000000b7451b4300000000aee80ac20000000022638dbd00000000823db4a80000000063c585b20000000029ca0e5700000000ad2b1daa00000000f1e4abbf00000000c660fc62000000006bafcdb6000000005667e449000000003d56cbe9000000006136129200000000fb71ffa0000000002a3a956200000000e5f72d7c00000000e3d2078f00000000b59d174e00000000f58da2b2000000006533dc8d00000000966833ab0000000058784b5a00000000121e9dd900000000abf78aee000000003f9ff42000000000d38c74d80000000009e0065f0000000022add2ab000000009b6fa4c400000000f460c0c10000000070728b3f000000002e18521300000000252a969f000000006382deed00000000e1d12efd000000002cc2f806000000005f2942bf00000000b518c83a000000006e9e1d4f00000000d1ea8139000000007c7fa2ce000000002346d08c000000000e569ada000000002bea4bad00000000385562b200000000eeabfdcc000000008eab915000000000793831c3000000003194fa5c0000000000297a1500000000112f23f8000000002c36909b0000000039002670000000002c10a4360000000071ef955c0000000046695a9000000000ebeddce600000000a006d3b10000000003523c9d000000007fe5b5fa0000000007e8f6d700000000b0afaf5e00000000f20b2dda0000000033b1c02e000000003e363fed00000000310da2a500000000408264f2000000009141323f000000005879e1ca000000000b96636a00000000178edb96000000006f4d3bc200000000c359c80b0000000017c769960000000072cad84000000000896c04a7000000000238a2de0000000091a3ff99000000002c366a0d000000008aed182d00000000a193bad8000000001af30bbc00000000a9c2765b000000007ab69ed600000000f0c093a500000000aea32ac400000000762a25ac00000000fad58de70000000074ae462800000000fce96a6c000000000ab8511f000000002cf8005700000000fc006d9d0000000072547ba0000000006d42e8df00000000a41531db0000000022ec84ca0000000045d4b56900000000152531810000000055f3ddfc000000003109247a00000000345272f900000000f8e09a0b000000001e7c473d000000001d08727b00000000543118c3000000009c0854f80000000005801d4200000000dfa7410f000000004794d6d20000000021e5dcc100000000b89ab34e000000004c0eb87100000000b1db5f3d0000000026683a3100000000506fd18e00000000adcf7110000000009586c50e000000001ed80613000000002c542dbc000000007dd6303500000000a98678b800000000d0a64b1a000000006a22ce2b000000002d50a44100000000b82fef9500000000bf60feed000000008ac844fc000000006c71339e00000000c6a0017400000000e4ef1ffd0000000085474df80000000041f06dce000000006e1ec1b00000000001cf6c7a0000000066adb43000000000a501dead000000004b080ae700000000d1ce5b1f00000000df739d540000000001873278000000006c452e270000000009325cae00000000c5a3742300000000280c0cff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+              },
+              "schema_version": 1
+            },
+            "models": {
+              "linear_a": {
+                "path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_a",
+                "sha256": "37e34de2ff061c08f4d1c9f0dc7a8af906389b403b62ad875f3585b85191965d"
+              },
+              "linear_b": {
+                "path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_b",
+                "sha256": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016"
+              }
+            },
+            "status": {
+              "evaluator_results": {
+                "linear_a": {
+                  "batch_size": 4,
+                  "elapsed_s": 0.07814728299854323,
+                  "final_loss": 3820.3291015625,
+                  "learning_rate": 0.001,
+                  "loss_name": "mse",
+                  "model_bundle_path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_a",
+                  "num_epochs": 1,
+                  "num_train_samples": 2,
+                  "num_validation_samples": 0,
+                  "performance": {
+                    "available_ram_after_mb": 68494.828125,
+                    "available_ram_before_mb": 68493.32421875,
+                    "cuda_after": null,
+                    "cuda_before": null,
+                    "elapsed_s": 0.07811251698876731,
+                    "finished_unix_s": 1792921580.4149575,
+                    "pid": 1427388,
+                    "process_peak_rss_mb": 378.9453125,
+                    "rss_after_mb": 380.16015625,
+                    "rss_before_mb": 367.76171875,
+                    "started_unix_s": 1792921580.3368447
+                  },
+                  "train_loss": 3820.3291015625,
+                  "train_mae": 61.73745346069336,
+                  "validation_loss": null,
+                  "validation_mae": null
+                },
+                "linear_b": {
+                  "batch_size": 4,
+                  "elapsed_s": 0.0044736860145349056,
+                  "final_loss": 371.82305908203125,
+                  "learning_rate": 0.003,
+                  "loss_name": "mse",
+                  "model_bundle_path": "training_publications_v1/objects/a25f066a2c774cf2b58ad849e1ad2940/models/generation_000001/linear_b",
+                  "num_epochs": 1,
+                  "num_train_samples": 2,
+                  "num_validation_samples": 0,
+                  "performance": {
+                    "available_ram_after_mb": 68494.50390625,
+                    "available_ram_before_mb": 68494.50390625,
+                    "cuda_after": null,
+                    "cuda_before": null,
+                    "elapsed_s": 0.004442817997187376,
+                    "finished_unix_s": 1792921580.583475,
+                    "pid": 1427388,
+                    "process_peak_rss_mb": 378.9453125,
+                    "rss_after_mb": 380.171875,
+                    "rss_before_mb": 380.16015625,
+                    "started_unix_s": 1792921580.5790324
+                  },
+                  "train_loss": 371.82305908203125,
+                  "train_mae": 18.932825088500977,
+                  "validation_loss": null,
+                  "validation_mae": null
+                }
+              },
+              "generation": 1,
+              "metadata": {
+                "training_duration_s": 0.4141915020009037,
+                "training_evaluator_names": [
+                  "linear_a",
+                  "linear_b"
+                ]
+              },
+              "selected_evaluator_name": "linear_b",
+              "selection_policy": "lowest_final_loss",
+              "status": "done",
+              "updated_at_utc": "2026-10-25T09:46:20.918319+00:00"
+            }
+          }
+        }
+      },
+      {
+        "generation": 3,
+        "dataset": {
+          "reference": {
+            "attempt_id": "bea5ae01c66c4914ba8a548fe5715983",
+            "descriptor_sha256": "e6ba40c2a9e1c08fc1f659d0c310022e1a3460637b1ef27bdacf5e7f384af725"
+          },
+          "source": {
+            "descriptor_sha256": "29ae777deee6dc5e48f08acf2e1d4fc40b8c317c54228d9d36b00b1552c66653",
+            "id": "8a8aa768a0b54060a15a7a3463760541",
+            "scientific_identity": {
+              "checkpoint_sha256": "cf62e20c15b07e1033fb31c9781aa4fbeeb8e1e10f680c325084e9a936c484bf",
+              "generation_descriptor_sha256": "fb0860c8a0924eea3fbea86ff3b8b4a6cfccf7143e1958c7508825480a6d22c6",
+              "generation_mapping": "growth-equals-scientific-from-1",
+              "growth_generation": 3,
+              "producer": {
+                "api_sha256": {
+                  "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                  "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                  "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                  "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+                },
+                "identity": {
+                  "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                  "evaluator": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+                  "objective": "maximum_total_moves",
+                  "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+                },
+                "packages": {
+                  "algorhino-anemone": "0.2.26",
+                  "atomheart": "0.2.11",
+                  "chipiron": "0.2.4",
+                  "valanga": "0.2.5"
+                },
+                "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+              },
+              "producer_sha256": "940553eacdba0789bef2913eb23cf70510d134f0f577b2cfe91175e5c0c658e4",
+              "scientific_contract": "anemone-values-canonical-morpion-1",
+              "source_format_kind": "morpion_closed_scientific_snapshot",
+              "source_format_version": 2,
+              "source_generation": 3,
+              "storage_layout_version": 1
+            }
+          },
+          "rows_sha256": "030add42bfed421dcf84a2a409123e71e5b8437850db5b18a5b0b612a06be527",
+          "rows_bytes": 8012
+        },
+        "rows": 2,
+        "metadata": {
+          "dataset_kind": "morpion_supervised_rows",
+          "dataset_version": 2,
+          "source_root_node_id": "0",
+          "source_format_kind": "training_tree_snapshot",
+          "source_format_version": 1,
+          "require_exact_or_terminal": false,
+          "min_depth": null,
+          "min_visit_count": null,
+          "max_rows": 16,
+          "use_backed_up_value": false,
+          "num_rows": 2,
+          "skipped_no_target_count": 0,
+          "target_source_counts": {
+            "tree_value": 0,
+            "direct_value": 2
+          },
+          "bootstrap_generation": 3,
+          "dataset_confidence_policy": "selected_value_v2",
+          "dataset_confidence_contract": "morpion-selected-value-confidence-1",
+          "scientific_source_provenance": {
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_generation": 3,
+            "producer": {
+              "identity": {
+                "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                "evaluator": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+                "objective": "maximum_total_moves",
+                "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "valanga": "0.2.5",
+                "chipiron": "0.2.4"
+              },
+              "api_sha256": {
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "storage_layout_version": 1
+          },
+          "family_proof_contract": null,
+          "dataset_family_target_policy": "none",
+          "dataset_family_prediction_blend": 0.25,
+          "fraction_rows_in_exact_family": 1.0,
+          "num_exact_families": 1,
+          "mean_abs_effective_minus_raw_on_exact_families": 0.0,
+          "mean_abs_effective_minus_raw_on_non_exact_families": null,
+          "effective_minus_raw_mean_abs": 0.0,
+          "effective_minus_raw_max_abs": 0.0,
+          "num_pv_families": 1,
+          "mean_pv_family_size": 2.0,
+          "max_pv_family_size": 2,
+          "dataset_extraction_identity": "2daa3256a6d5ae8c90fcaaa768b92747ca3aed98fa13b1c6c457ffca42c7401d"
+        },
+        "training": {
+          "reference": {
+            "attempt_id": "40c85aab2f7a41e197f4ac1c2c1edc39",
+            "descriptor_sha256": "974f72b72a486393b642d5b1cba5aaa2ad26030c022a7acd69ed2c62c6342646"
+          },
+          "selected": {
+            "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+            "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa",
+            "generation": 3,
+            "name": "linear_b",
+            "source": "local_training",
+            "source_generation": 3,
+            "local_trained_generation": 3
+          },
+          "proposal": {
+            "admission": {
+              "attempt_id": "40c85aab2f7a41e197f4ac1c2c1edc39",
+              "claim_id": "10c717f2-4d93-4845-b92d-387796252214",
+              "configuration": {
+                "candidates": [
+                  {
+                    "args": {
+                      "batch_size": 4,
+                      "dataset_file": "accepted Dataset",
+                      "device": "cpu",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "hidden_dim": null,
+                      "hidden_sizes": null,
+                      "learning_rate": 0.001,
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "num_epochs": 1,
+                      "output_dir": "linear_a",
+                      "relation_bias_scale": 1.0,
+                      "shuffle": true,
+                      "validation_fraction": 0.25,
+                      "validation_seed": 17
+                    },
+                    "model_args": {
+                      "edge_token_mode": "drawn_only",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "entity_validity_feature_index": 24,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "global_geometry_features": "none",
+                      "hidden_sizes": null,
+                      "latent_window_move_features": "none",
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "relation_bias_scale": 1.0,
+                      "target_mean": 0.0,
+                      "target_standard_deviation": 1.0,
+                      "target_transform_enabled": false
+                    },
+                    "name": "linear_a"
+                  },
+                  {
+                    "args": {
+                      "batch_size": 4,
+                      "dataset_file": "accepted Dataset",
+                      "device": "cpu",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "hidden_dim": null,
+                      "hidden_sizes": null,
+                      "learning_rate": 0.003,
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "num_epochs": 1,
+                      "output_dir": "linear_b",
+                      "relation_bias_scale": 1.0,
+                      "shuffle": true,
+                      "validation_fraction": 0.25,
+                      "validation_seed": 17
+                    },
+                    "model_args": {
+                      "edge_token_mode": "drawn_only",
+                      "entity_d_model": 64,
+                      "entity_dim_feedforward": 256,
+                      "entity_dropout_ratio": 0.0,
+                      "entity_input_feature_dim": 25,
+                      "entity_max_tokens": 1536,
+                      "entity_n_head": 4,
+                      "entity_n_layer": 2,
+                      "entity_output_tanh": false,
+                      "entity_pooling": "value_token",
+                      "entity_relation_schema": null,
+                      "entity_relation_type_count": null,
+                      "entity_use_validity_feature": true,
+                      "entity_validity_feature_index": 24,
+                      "feature_names": [
+                        "moves",
+                        "num_points",
+                        "num_used_unit_segments",
+                        "bbox_width",
+                        "bbox_height",
+                        "bbox_area",
+                        "point_density_in_bbox",
+                        "legal_action_count",
+                        "legal_actions_dir_0",
+                        "legal_actions_dir_1",
+                        "legal_actions_dir_2",
+                        "legal_actions_dir_3",
+                        "num_distinct_playable_cells",
+                        "mean_legal_actions_per_playable_cell",
+                        "max_legal_actions_per_playable_cell",
+                        "playable_cells_with_1_action",
+                        "playable_cells_with_2_actions",
+                        "playable_cells_with_ge_3_actions",
+                        "dir_usage_value_0_count",
+                        "dir_usage_value_1_count",
+                        "dir_usage_value_2_count",
+                        "dir_usage_value_3_count",
+                        "points_with_any_dir_usage_3",
+                        "points_with_ge_2_nonzero_dir_usages",
+                        "segments_4_present_1_missing_geometric",
+                        "segments_4_present_1_missing_overlap_ok",
+                        "segments_4_present_1_missing_parallel_ok",
+                        "segments_4_present_1_missing_legal",
+                        "segments_3_present_2_missing_geometric",
+                        "segments_3_present_2_missing_overlap_ok",
+                        "segments_3_present_2_missing_parallel_ok",
+                        "segments_3_present_2_missing_alive",
+                        "segments_4p1m_dir_0_legal",
+                        "segments_4p1m_dir_1_legal",
+                        "segments_4p1m_dir_2_legal",
+                        "segments_4p1m_dir_3_legal",
+                        "frontier_cell_count",
+                        "frontier_cells_in_any_ge3_candidate_segment",
+                        "frontier_cells_in_any_legal_4p1m_segment",
+                        "occupied_connected_components",
+                        "largest_occupied_component_size"
+                      ],
+                      "feature_subset_name": "handcrafted_41",
+                      "global_geometry_features": "none",
+                      "hidden_sizes": null,
+                      "latent_window_move_features": "none",
+                      "legacy_graph_tokens": null,
+                      "model_kind": "linear",
+                      "relation_bias_scale": 1.0,
+                      "target_mean": 0.0,
+                      "target_standard_deviation": 1.0,
+                      "target_transform_enabled": false
+                    },
+                    "name": "linear_b"
+                  }
+                ],
+                "chunk_size": 16,
+                "diagnostics_max_rows": 60,
+                "force_evaluator": null,
+                "max_rows": null,
+                "selection": "forced_else_lowest_finite_validation_else_final_v1",
+                "skip_diagnostics": true
+              },
+              "dataset": {
+                "reference": {
+                  "attempt_id": "bea5ae01c66c4914ba8a548fe5715983",
+                  "descriptor_sha256": "e6ba40c2a9e1c08fc1f659d0c310022e1a3460637b1ef27bdacf5e7f384af725"
+                },
+                "rows_bytes": 8012,
+                "rows_sha256": "030add42bfed421dcf84a2a409123e71e5b8437850db5b18a5b0b612a06be527",
+                "source": {
+                  "descriptor_sha256": "29ae777deee6dc5e48f08acf2e1d4fc40b8c317c54228d9d36b00b1552c66653",
+                  "id": "8a8aa768a0b54060a15a7a3463760541",
+                  "scientific_identity": {
+                    "checkpoint_sha256": "cf62e20c15b07e1033fb31c9781aa4fbeeb8e1e10f680c325084e9a936c484bf",
+                    "generation_descriptor_sha256": "fb0860c8a0924eea3fbea86ff3b8b4a6cfccf7143e1958c7508825480a6d22c6",
+                    "generation_mapping": "growth-equals-scientific-from-1",
+                    "growth_generation": 3,
+                    "producer": {
+                      "api_sha256": {
+                        "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                        "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                        "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                        "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+                      },
+                      "identity": {
+                        "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+                        "evaluator": "3a7ad10187a8119687dd13ecdb4923ad1c0263b34dd87c9fee6b5e9570d3f016",
+                        "objective": "maximum_total_moves",
+                        "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+                      },
+                      "packages": {
+                        "algorhino-anemone": "0.2.26",
+                        "atomheart": "0.2.11",
+                        "chipiron": "0.2.4",
+                        "valanga": "0.2.5"
+                      },
+                      "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+                    },
+                    "producer_sha256": "940553eacdba0789bef2913eb23cf70510d134f0f577b2cfe91175e5c0c658e4",
+                    "scientific_contract": "anemone-values-canonical-morpion-1",
+                    "source_format_kind": "morpion_closed_scientific_snapshot",
+                    "source_format_version": 2,
+                    "source_generation": 3,
+                    "storage_layout_version": 1
+                  }
+                }
+              },
+              "generation": 3,
+              "identity": {
+                "epoch_id": "b9d463e70d824d7c96b22b359f545750",
+                "workspace_id": "bb9fcc6e635145549cae00d04e7f96f2"
+              },
+              "reproducibility": {
+                "cuda_rng_hex": [],
+                "cudnn_benchmark": false,
+                "cudnn_deterministic": false,
+                "deterministic": true,
+                "environment": {},
+                "float32_matmul_precision": "highest",
+                "num_threads": 1,
+                "python": "3.13.5",
+                "torch": "2.14.0+cpu",
+                "torch_initial_seed": 104,
+                "torch_rng_hex": "680000000000000001000000010000000000000000000000680000000000000009d10fe300000000f4d261fb00000000766a3f8000000000c813296200000000525f4a0c00000000607d98d9000000001673f8a500000000ec1a27060000000025eb49a7000000006da5127100000000a70fd6ac00000000257956c8000000000b22fda8000000009b3e54dd00000000070ae43d00000000d3b386ae0000000086ca160800000000f09c09750000000028e45e480000000041f5a8de000000001f15b7d00000000022504bb600000000b7bc77ea000000001cc725ae00000000ef9c48060000000065d12a75000000008f20af0d00000000875f6d5600000000fb65efc500000000f6f2cc9e00000000636e8ce90000000000ec18d00000000050b8372800000000b287ce7900000000c254ffce0000000049b95e0c00000000f22a866f0000000005fd8f7d00000000bbf6513300000000ef6a7dbf00000000aa042f930000000072bea23b0000000025253eec000000002afe6f8200000000f5ad4a3800000000d7be414a000000009dd0eafa0000000086dc9a04000000000fb7c64000000000b8b6becf00000000fa2a25e9000000007135781800000000ca8e1d1e00000000e86f99d200000000eeeada66000000008397a1fc00000000b945544a00000000d2f996f400000000b068f84b000000001107df71000000008d59353900000000dfc9d30d000000003afcaf6400000000871607b100000000ba0f7c5c0000000009487a3300000000d03c0a84000000001e6154d400000000b6d50dd100000000af2dc6150000000052ad6bb900000000d8306b4400000000e6665d3d0000000008af340a000000007356ac6100000000461d5f3800000000eb021b7900000000a0609d08000000006fbf2cc300000000ec510cbf0000000037b1369d000000003b47dc7f0000000035249cbe0000000007b97cf400000000e92254f300000000a80047b300000000693d04770000000060e260c700000000684c157700000000c7562ac400000000af1f7f1c000000006727e5f700000000d10e39b3000000009dc436aa000000001aaa2deb000000003d7dba6b000000000d853c0a0000000083736f8c00000000489b4fa10000000096de88b500000000c9042964000000004eeb35f900000000c80a4d18000000005049a27c000000005e467a3200000000801178ee000000001a04531500000000ae88a8eb00000000ae815de300000000afbe0446000000001559acc8000000001eec451f000000004736c4de0000000046cd4f10000000001173404900000000c4f57049000000002e647a410000000001ae2fe60000000041b9fcee000000008269a7710000000028bc1895000000000cb79aec0000000066406a7a000000001f88335f0000000053c2fe83000000007303b7e500000000af4b1bea000000005ce7f799000000009796316500000000b0af40dc00000000221d71d50000000089271e76000000002d61c53100000000476c1be8000000005b1b9ee50000000040e26a1300000000c983ff0b00000000d78fd4df000000002f33a16e00000000b2cf3eb800000000fd20bd3b000000005f69306b00000000a5e00ebc000000007301a9c000000000c18182be00000000818d43d100000000dd66ef6c00000000605183b8000000003f8e0aa400000000a7c3f3fd000000004bf45a2e000000002f85ab4800000000bf293382000000002b9db09f00000000c8f2e71c0000000084d1e78b000000007b604084000000005bd155500000000021c35a5000000000401c1b1c00000000e165905e0000000002129dde0000000008a4a1cc00000000fb9bdc5c000000004754586e0000000044b6dca30000000045608947000000007c5f930f000000009508a2ef00000000d8a99fc5000000001237e172000000002be6d85e000000003f49e58100000000bf8a52b00000000040e2fa4300000000550dd7b00000000004d35cec000000007501bfa600000000a643653f000000003287b115000000006f19c25a000000001ce731c800000000f2c638160000000032007caf00000000a9c355d900000000cc2c32b60000000001ec67dd00000000862f5b430000000000001aa000000000881351ec0000000096193fcc0000000089d5a8e800000000331aa93300000000e1a1211c0000000088470d7200000000d18a44db000000009f27139400000000b7a60cfd00000000cb19201a00000000dfd004d5000000009523b0240000000093c79b910000000000563971000000003178ac200000000022a5b4250000000038599268000000004cb50b1000000000cc33b89d0000000017af072000000000e5635c3d000000002cf72bfe000000005fade96400000000ebb48a4300000000289bf08a0000000069b21c8a000000000fa8badd0000000095b9e60600000000a3f56a21000000002a251ce800000000099b1cf300000000cf8587ae00000000bf7fad8600000000708bfa350000000010f48770000000009664b7ff00000000ab6c41a4000000009050951500000000b4d9f55f000000004ec273bd00000000e254ba110000000011701e600000000038c76a0600000000019245bf000000001937abf3000000002da8bf3c00000000ad6fd81d000000002ea5e2a3000000004ab703070000000021eb93fc000000005af71e9500000000a9aefd4a000000003ad125ff00000000700d72ab00000000ee504f2300000000db4c1cff000000002eea3105000000001d0346920000000033d3235700000000b315866b0000000034d260dd00000000ae5f331b00000000a2de3a3f00000000e788cce100000000f206307900000000dec94f380000000096739417000000002fe18630000000008dff0150000000003fbf5faf000000001519c96400000000e9994e8100000000bd7dce6d000000003338e593000000005d65d83900000000bac329a200000000a2b03f4e000000005aec1c8d00000000c4574cbd000000002b98817800000000a083b5c6000000005e2b84e600000000c1e1e41800000000365b64e700000000fb59dad900000000eb3713e3000000009c37d8460000000006f75b6a00000000d935ace20000000019eab80700000000f5bdeaf3000000002799ffd4000000004eb0c73100000000e14d443b00000000e123c7fc00000000471bf39f0000000057b0640f000000007222797b000000007f235fff000000000d5deaf200000000a835a5b50000000035278c4300000000a84cb2a900000000373a052f00000000d967b82400000000c41a438f00000000468737b200000000fdc2276a0000000096caeccd00000000f4aae85c00000000d590fb3300000000362295f40000000017dd9799000000007877cdc500000000b7f75d270000000064aba4cb00000000d5bf829b0000000006c0204600000000f782e06500000000435263b400000000db3dfbfd000000006fff1f79000000009ea5534d00000000f46ffbe000000000ad5cdf95000000004639820600000000da0ff15a00000000a47594b500000000bc41125600000000d0158d4200000000b5750d870000000074614fe8000000003524bb00000000002ca7a8c900000000cf1d4b3700000000f08a3f2800000000f641fcee00000000f0238572000000005d285a1600000000fab2b6670000000051f1b97900000000db05b0e10000000084e77a86000000002b0f0eb1000000007bedc71600000000d685545d0000000023ded96a00000000bbd6c22a0000000019cce5e6000000009571999f00000000e7a074e400000000497f592200000000234a6cb9000000005ce94b0e00000000a44e5975000000007255d5d900000000ef2ffb1d00000000a6d14964000000003f17e34100000000d35aba50000000003838dea700000000413a59280000000005c627af0000000024e1dbc100000000c5b44ec300000000814935a600000000131df25d000000007f1b92050000000081d1d4b70000000016c5aa69000000007b127a2b00000000f01e6ae000000000494213b100000000024c209f000000006cfd69240000000009c9639400000000c53542150000000028a54866000000009d1b2b0b0000000062eb13770000000081da88d700000000bdc87b170000000005596ebb0000000038e05e6300000000f3f8fb2700000000564448f1000000000174679800000000a861fbed00000000f10c1f3b000000009015c4f7000000007b2fed4a000000009f06524200000000d42b39e600000000525ce553000000003fd92a6200000000f7e4dbc100000000c6e9f35b0000000006bcc72700000000e26596410000000014af11ea0000000099644e4d000000007f09eb53000000003e2e414e0000000064f72f9900000000c8321ce700000000a2aedb4c00000000db22966d000000008f6bd880000000002fe5cb13000000001a94600500000000d25912d300000000064a05b9000000002659ce8900000000c770196c00000000b275cde0000000006a29e288000000009eff3a0b00000000ed6864a600000000e34e4e1400000000289c51d70000000091a1f20800000000d05827f700000000dbf7d3020000000004fe41b800000000fc6f247d00000000709539ab000000009af9cf8c0000000099d2c7cd000000006482c0d90000000046938df300000000dd088efd000000003b4fdaf100000000be3a0e0a000000009ddc3e58000000003487204d0000000092b6a3e400000000dfa141fb000000007799877d000000003ab3d911000000008fc163ea00000000ea49c33600000000016500db000000007aed433800000000d3fc38830000000027997e5a00000000b1c3f1ab00000000530202160000000074574ed600000000a932f81100000000646fa79800000000f68a76e80000000062f1d44f00000000c938e6d1000000006d83bec90000000022ba818c000000005d90a972000000000a32abbd00000000e706893000000000e359121f0000000050f38c4d00000000b75909da00000000c7b99d6a00000000e2420f1500000000ef56fea500000000472258f6000000009beaf7fa00000000c0e7823a000000008930eb790000000072ef7aaa00000000fb68b3d800000000a423bd000000000081d52dac000000007d59ed8f00000000ea4702d400000000bd11c120000000006226d57600000000e12158c400000000fd5115e6000000000a493c9500000000fd1916830000000071ba9ad500000000d192f04400000000e83d2bb5000000002ba9970700000000d1c28aec00000000b540bf80000000000f79171e00000000c8cb741200000000c66f9abb0000000033fe1968000000009a0da80600000000a3c9cae600000000022e489700000000e327189200000000a9260694000000005cc6cbe300000000611c276d00000000c7933d45000000000645cad700000000e2e9df600000000079c3b63500000000a8e1056400000000997ab413000000004a41ff410000000085e7b2100000000068861ec500000000274de7eb0000000025b58526000000008b46b4500000000065b0a57600000000681d807d0000000062cd272d00000000a07b4b1300000000176850e300000000dcc5f7fe00000000f469bead0000000008768e200000000023db96af00000000011fb0eb00000000c74f22ee00000000525e952e00000000591aa67c00000000b87e09ea00000000c814aec50000000019d95b5c000000007b8012a700000000c1725c6000000000c50722a100000000899207f30000000079ac2e2900000000c5ce05fd00000000278c5c1e000000006d2c95ca000000007167a360000000003cc1e2a600000000836d92a100000000f33ee6850000000024d01c7000000000a9edc4f30000000023c087c700000000b2ee3f1f000000004d70d42900000000758504bf00000000085976a200000000087d9d15000000003f9e439a000000002915071c00000000464c3db900000000ee7cdba8000000003797e60e00000000cf19679e00000000fee416dc00000000efbe7e14000000006a3db8f6000000008d6d6ce90000000027394a0500000000856defd20000000001eebce000000000eefaf61f000000000b603c0d000000007dc984cc00000000ddeea96a00000000f4fae25d00000000d2218dbb000000003aa97632000000000dd0f68100000000171f216000000000db0b4ec8000000006646093e000000006d5e1f6500000000cc0edcd300000000dca0671500000000fe34fc1c0000000069d8ce0200000000a1944a0400000000bace5d9700000000ce08ab32000000007db9d2aa000000005328e1d000000000c9b997c100000000ec68cfdf00000000864f85fe00000000b58ec90a00000000a62cd7610000000021ff5a6d00000000dfc94e5100000000d6742f6b00000000142a219500000000f062350400000000f37a922f00000000238f3b090000000014360e32000000002a0c1845000000003ed22c9a00000000f40fd5df00000000bc7d5bf800000000a5d59cf600000000c922c01900000000994ceaba00000000742eac9d00000000dc7c056700000000808a073b00000000d026981c0000000061a27c8400000000610ec82c000000009897460b000000004c29227f00000000b682af0d0000000024fa2bae000000005509421f00000000e12d5fc900000000830e49fb00000000da3a15a20000000093d1c50a000000005b5c38dc0000000015890fb20000000071671f0400000000f44ad6ee00000000d3c46a2900000000a09439e000000000b1e1b71b0000000038c62a2f000000007c2e7c8b000000001bc851ea00000000decb00cf0000000098b574e7000000008f9b782100000000d4e8bd540000000073db594a0000000065980184000000000f42018e000000008e0633fd000000000f0d7edd000000002b940a430000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+              },
+              "schema_version": 1
+            },
+            "models": {
+              "linear_a": {
+                "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_a",
+                "sha256": "33dbb81ddbcbc8dab9cca5cecbcc5f35cc459d64cc2cdc919a08e690cd5f095b"
+              },
+              "linear_b": {
+                "path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+                "sha256": "a0a1e17d11f7495302423a4b0c925575327d09ee00d1bdd2d6168693b0814aaa"
+              }
+            },
+            "status": {
+              "evaluator_results": {
+                "linear_a": {
+                  "batch_size": 4,
+                  "elapsed_s": 0.06668147500022314,
+                  "final_loss": 139.86734008789062,
+                  "learning_rate": 0.001,
+                  "loss_name": "mse",
+                  "model_bundle_path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_a",
+                  "num_epochs": 1,
+                  "num_train_samples": 2,
+                  "num_validation_samples": 0,
+                  "performance": {
+                    "available_ram_after_mb": 68506.92578125,
+                    "available_ram_before_mb": 68506.90625,
+                    "cuda_after": null,
+                    "cuda_before": null,
+                    "elapsed_s": 0.06665382301434875,
+                    "finished_unix_s": 1792921686.6673353,
+                    "pid": 1428098,
+                    "process_peak_rss_mb": 379.00390625,
+                    "rss_after_mb": 380.265625,
+                    "rss_before_mb": 367.765625,
+                    "started_unix_s": 1792921686.600681
+                  },
+                  "train_loss": 139.86734008789062,
+                  "train_mae": 8.834102630615234,
+                  "validation_loss": null,
+                  "validation_mae": null
+                },
+                "linear_b": {
+                  "batch_size": 4,
+                  "elapsed_s": 0.004675503994803876,
+                  "final_loss": 68.75863647460938,
+                  "learning_rate": 0.003,
+                  "loss_name": "mse",
+                  "model_bundle_path": "training_publications_v1/objects/40c85aab2f7a41e197f4ac1c2c1edc39/models/generation_000003/linear_b",
+                  "num_epochs": 1,
+                  "num_train_samples": 2,
+                  "num_validation_samples": 0,
+                  "performance": {
+                    "available_ram_after_mb": 68508.7265625,
+                    "available_ram_before_mb": 68508.7265625,
+                    "cuda_after": null,
+                    "cuda_before": null,
+                    "elapsed_s": 0.004638976010028273,
+                    "finished_unix_s": 1792921686.84028,
+                    "pid": 1428098,
+                    "process_peak_rss_mb": 379.00390625,
+                    "rss_after_mb": 380.27734375,
+                    "rss_before_mb": 380.265625,
+                    "started_unix_s": 1792921686.8356404
+                  },
+                  "train_loss": 68.75863647460938,
+                  "train_mae": 7.465732574462891,
+                  "validation_loss": null,
+                  "validation_mae": null
+                }
+              },
+              "generation": 3,
+              "metadata": {
+                "training_duration_s": 0.41632329899584875,
+                "training_evaluator_names": [
+                  "linear_a",
+                  "linear_b"
+                ]
+              },
+              "selected_evaluator_name": "linear_b",
+              "selection_policy": "lowest_final_loss",
+              "status": "done",
+              "updated_at_utc": "2026-10-25T09:48:07.186801+00:00"
+            }
+          }
+        }
+      }
+    ],
+    "process_cpu_user_s": 8.02749,
+    "process_cpu_system_s": 0.24165299999999998,
+    "process_peak_rss_mib": 373.40625
+  },
+  "parent_pid": 1426973
+}

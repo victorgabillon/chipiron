@@ -389,6 +389,7 @@ def scan(root: Path, out: Path) -> dict:
 
 
 def main() -> None:
+    """Select the isolated storage inventory or component measurement."""
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("mode", choices=("inventory", "components", "scan"))
     parser.add_argument("source", type=Path)

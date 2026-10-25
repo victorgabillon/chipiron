@@ -34,6 +34,7 @@ from tests.environments.morpion_patch_receipt_helpers import fixture_patch
 
 
 def main() -> None:
+    """Measure a local patch using a new legal synthetic graph."""
     root = Path(sys.argv[1])
     root.mkdir(parents=True, exist_ok=False)
     logging.disable(logging.CRITICAL)
