@@ -77,7 +77,16 @@ def test_scientific_validation_precedes_reuse_and_reconstruction(
 
 @pytest.mark.parametrize(
     "damage",
-    ("text", "frame", "oversized_frame", "order", "completion", "digest", "missing"),
+    (
+        "text",
+        "frame",
+        "oversized_frame",
+        "order",
+        "btree",
+        "completion",
+        "digest",
+        "missing",
+    ),
 )
 def test_corrupted_compact_cache_rebuilt_before_payload_decode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, damage: str
@@ -107,12 +116,28 @@ def test_corrupted_compact_cache_rebuilt_before_payload_decode(
             connection.execute("UPDATE records SET payload=?", (corrupted,))
         elif damage == "order":
             connection.execute("UPDATE updates SET sequence=sequence+1")
+        elif damage == "btree":
+            # Model inconsistent secondary keys without changing table/digest bytes.
+            connection.execute("DROP INDEX export_order")
+            connection.execute(
+                "CREATE INDEX export_order ON updates(-order_index, sequence)"
+            )
+            connection.execute("PRAGMA writable_schema=ON")
+            connection.execute(
+                "UPDATE sqlite_schema SET sql="
+                "'CREATE INDEX export_order ON updates(order_index, sequence)' "
+                "WHERE name='export_order'"
+            )
         elif damage == "completion":
             connection.execute("DELETE FROM completed")
         elif damage == "digest":
             connection.execute("UPDATE cache_digest SET digest='invalid'")
     if damage == "missing":
         index.unlink()
+    elif damage == "btree":
+        with sqlite3.connect(index) as connection:
+            assert connection.execute("PRAGMA quick_check").fetchall() == [("ok",)]
+            assert connection.execute("PRAGMA integrity_check").fetchall() != [("ok",)]
     original = ShardedTrainingGenerationView._decode_payload
 
     def checked(self: Any, payload: bytes) -> Any:

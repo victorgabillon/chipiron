@@ -891,7 +891,9 @@ class ShardedTrainingGenerationView:
                 row = connection.execute("SELECT identity FROM completed").fetchone()
                 valid = bool(
                     row == (self.identity,)
-                    and connection.execute("PRAGMA quick_check").fetchone() == ("ok",)
+                    # quick_check misses secondary indexes inconsistent with rows.
+                    and connection.execute("PRAGMA integrity_check").fetchone()
+                    == ("ok",)
                 )
                 if valid and self.format_version == SCIENTIFIC_VERSION:
                     valid = connection.execute(
@@ -990,7 +992,7 @@ class ShardedTrainingGenerationView:
                 )
             connection.execute("INSERT INTO completed VALUES (?)", (self.identity,))
             connection.commit()
-            if connection.execute("PRAGMA quick_check").fetchone() != ("ok",):
+            if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
                 raise ValueError("Training reader index validation failed")
             self._measure_build_disk(temporary)
             connection.close()
