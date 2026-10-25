@@ -1,0 +1,284 @@
+{
+  "root": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/evidence/verified-5000/work",
+  "generations": [
+    {
+      "generation": 1,
+      "measurement": {
+        "started_unix_s": 1792914276.5671299,
+        "finished_unix_s": 1792914276.9872491,
+        "elapsed_s": 0.4201196189969778,
+        "pid": 1217331,
+        "rss_before_mb": 294.32421875,
+        "rss_after_mb": 299.24609375,
+        "process_peak_rss_mb": 298.0078125,
+        "available_ram_before_mb": 70458.671875,
+        "available_ram_after_mb": 70458.953125,
+        "cuda_before": null,
+        "cuda_after": null
+      },
+      "costs": {
+        "cpu_user_s": 0.03248099999999976,
+        "cpu_system_s": 0.01669899999999999,
+        "io": {
+          "rchar": 76321883,
+          "wchar": 20050707,
+          "syscr": 484,
+          "syscw": 123,
+          "read_bytes": 0,
+          "write_bytes": 20140032,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "phase": {
+        "copy_s": 0.10568727098871022,
+        "whole_link_s": 0.09734055900480598,
+        "compressed_s": 0.1017456829722505,
+        "body_link_s": 0.11485691100824624
+      },
+      "disk": {
+        "copy": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487500,
+          "allocated": 6512640
+        },
+        "whole_link": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487500,
+          "allocated": 6512640
+        },
+        "compressed": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 588207,
+          "allocated": 606208
+        },
+        "body_link": {
+          "paths": 12,
+          "inodes": 12,
+          "logical": 6487500,
+          "allocated": 6516736
+        }
+      },
+      "new_all_variants_allocated": 20148224
+    },
+    {
+      "generation": 2,
+      "measurement": {
+        "started_unix_s": 1792914276.9889507,
+        "finished_unix_s": 1792914277.3573043,
+        "elapsed_s": 0.3683538460172713,
+        "pid": 1217331,
+        "rss_before_mb": 299.24609375,
+        "rss_after_mb": 299.25,
+        "process_peak_rss_mb": 298.0078125,
+        "available_ram_before_mb": 70458.953125,
+        "available_ram_after_mb": 70462.92578125,
+        "cuda_before": null,
+        "cuda_after": null
+      },
+      "costs": {
+        "cpu_user_s": 0.03154500000000038,
+        "cpu_system_s": 0.021455000000000002,
+        "io": {
+          "rchar": 76014314,
+          "wchar": 19742732,
+          "syscr": 476,
+          "syscw": 115,
+          "read_bytes": 0,
+          "write_bytes": 19824640,
+          "cancelled_write_bytes": 6070272
+        }
+      },
+      "phase": {
+        "copy_s": 0.0986569469969254,
+        "whole_link_s": 0.07499911900958978,
+        "compressed_s": 0.0965151280106511,
+        "body_link_s": 0.09710115200141445
+      },
+      "disk": {
+        "copy": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487598,
+          "allocated": 6516736
+        },
+        "whole_link": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487598,
+          "allocated": 6512640
+        },
+        "compressed": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 588307,
+          "allocated": 606208
+        },
+        "body_link": {
+          "paths": 12,
+          "inodes": 12,
+          "logical": 6487598,
+          "allocated": 6516736
+        }
+      },
+      "new_all_variants_allocated": 13766656
+    },
+    {
+      "generation": 3,
+      "measurement": {
+        "started_unix_s": 1792914277.360448,
+        "finished_unix_s": 1792914277.724482,
+        "elapsed_s": 0.3640336499956902,
+        "pid": 1217331,
+        "rss_before_mb": 299.25,
+        "rss_after_mb": 299.25,
+        "process_peak_rss_mb": 298.0078125,
+        "available_ram_before_mb": 70462.92578125,
+        "available_ram_after_mb": 70461.8046875,
+        "cuda_before": null,
+        "cuda_after": null
+      },
+      "costs": {
+        "cpu_user_s": 0.027900999999999954,
+        "cpu_system_s": 0.022893999999999998,
+        "io": {
+          "rchar": 75904441,
+          "wchar": 19632856,
+          "syscr": 472,
+          "syscw": 111,
+          "read_bytes": 0,
+          "write_bytes": 19709952,
+          "cancelled_write_bytes": 6070272
+        }
+      },
+      "phase": {
+        "copy_s": 0.09651176200713962,
+        "whole_link_s": 0.06495746201835573,
+        "compressed_s": 0.09611365900491364,
+        "body_link_s": 0.10405357298441231
+      },
+      "disk": {
+        "copy": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487598,
+          "allocated": 6516736
+        },
+        "whole_link": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 6487598,
+          "allocated": 6512640
+        },
+        "compressed": {
+          "paths": 10,
+          "inodes": 10,
+          "logical": 588308,
+          "allocated": 606208
+        },
+        "body_link": {
+          "paths": 12,
+          "inodes": 12,
+          "logical": 6487598,
+          "allocated": 6516736
+        }
+      },
+      "new_all_variants_allocated": 13651968
+    }
+  ],
+  "totals": {
+    "copy": {
+      "all": {
+        "paths": 30,
+        "inodes": 30,
+        "logical": 19462696,
+        "allocated": 19546112
+      },
+      "last_three": {
+        "paths": 30,
+        "inodes": 30,
+        "logical": 19462696,
+        "allocated": 19546112
+      }
+    },
+    "whole_link": {
+      "all": {
+        "paths": 30,
+        "inodes": 20,
+        "logical": 18736081,
+        "allocated": 18792448
+      },
+      "last_three": {
+        "paths": 30,
+        "inodes": 20,
+        "logical": 18736081,
+        "allocated": 18792448
+      }
+    },
+    "compressed": {
+      "all": {
+        "paths": 30,
+        "inodes": 30,
+        "logical": 1764822,
+        "allocated": 1818624
+      },
+      "last_three": {
+        "paths": 30,
+        "inodes": 30,
+        "logical": 1764822,
+        "allocated": 1818624
+      }
+    },
+    "body_link": {
+      "all": {
+        "paths": 36,
+        "inodes": 32,
+        "logical": 7335406,
+        "allocated": 7409664
+      },
+      "last_three": {
+        "paths": 36,
+        "inodes": 32,
+        "logical": 7335406,
+        "allocated": 7409664
+      }
+    }
+  },
+  "all_output_disk": {
+    "files": 126,
+    "logical_bytes": 60152910,
+    "allocated_bytes": 47566848
+  },
+  "bytewise_roundtrip": true,
+  "state_decode_calls": 0,
+  "buffer_bytes": 262144,
+  "note": "Component timing includes hashes/fsync; excludes production validators/commit. All versions stay on disk; no retention implemented.",
+  "observation": {
+    "started_unix_s": 1792914276.566815,
+    "finished_unix_s": 1792914277.733261,
+    "elapsed_s": 1.1664455370046198,
+    "pid": 1217331,
+    "rss_before_mb": 294.32421875,
+    "rss_after_mb": 299.25,
+    "process_peak_rss_mb": 298.0078125,
+    "available_ram_before_mb": 70458.671875,
+    "available_ram_after_mb": 70461.8046875,
+    "cuda_before": null,
+    "cuda_after": null
+  },
+  "costs": {
+    "cpu_user_s": 0.09684399999999993,
+    "cpu_system_s": 0.07008299999999998,
+    "io": {
+      "rchar": 228265149,
+      "wchar": 59426295,
+      "syscr": 1462,
+      "syscw": 349,
+      "read_bytes": 0,
+      "write_bytes": 59674624,
+      "cancelled_write_bytes": 12140544
+    }
+  }
+}
