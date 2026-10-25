@@ -372,6 +372,9 @@ launch_worker_terminal() {
   local log_name="$5"
   local startup_message="$6"
   local command source_path cache_args="" cache_setup="" cache_rotate=""
+  if [[ "$MORPION_SCIENTIFIC" == "1" ]]; then
+    startup_message="[$worker_name] work_dir=$MORPION_WORK_DIR\n[$worker_name] protocol=closed-scientific-v2; configuration=bootstrap_config.json + control.json; evaluator=committed run_state; checkpoint shard rows=1024"
+  fi
   source_path="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src"
   if [[ "$MORPION_USE_INSTALLED_PACKAGES" == "1" ]]; then source_path=""; fi
   if [[ -n "$CLUSTER_CACHE_ROOT" && ( "$worker_name" == "DATASET" || "$worker_name" == "REEVALUATION" ) ]]; then

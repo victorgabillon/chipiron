@@ -10,8 +10,10 @@ import os
 import shlex
 import sys
 from collections.abc import Callable
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Literal, cast
 
 from .bootstrap_args import MorpionBootstrapArgs
@@ -1891,7 +1893,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     register_current_launcher_process(paths)
     exit_code = 0
     try:
-        run_morpion_bootstrap_experiment(launcher_args)
+        # A single CLI call owns its readers. The supervisor passes its explicit
+        # source scope when repeated calls should reuse an index instead.
+        private_cache = (
+            TemporaryDirectory(prefix="morpion-reader-")
+            if launcher_args.scientific
+            and launcher_args.reader_cache_dir is None
+            and launcher_args.pipeline_stage
+            in {"dataset", "dataset_worker", "reevaluation"}
+            else nullcontext(None)
+        )
+        with private_cache as directory:
+            if directory is not None:
+                launcher_args = replace(launcher_args, reader_cache_dir=Path(directory))
+                LOGGER.info("[reader-cache] private invocation scope=%s", directory)
+            run_morpion_bootstrap_experiment(launcher_args)
     except BaseException:
         exit_code = 1
         raise

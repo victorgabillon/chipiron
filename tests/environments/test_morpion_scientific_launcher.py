@@ -120,3 +120,37 @@ def test_scientific_initialization_is_explicit_and_preserves_source(
     assert original == {p.name: p.read_bytes() for p in seed.iterdir() if p.is_file()}
     with pytest.raises(ValueError, match="fresh workspace"):
         run_morpion_bootstrap_experiment(invocation)
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_cli_reader_cache_ownership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, explicit: bool
+) -> None:
+    """A CLI-owned cache is released; an explicitly borrowed cache is never removed."""
+    from chipiron.environments.morpion.bootstrap import launcher
+
+    seen = []
+    borrowed = tmp_path / "borrowed"
+    borrowed.mkdir()
+
+    def operation(args: launcher.MorpionBootstrapLauncherArgs) -> None:
+        assert args.reader_cache_dir is not None
+        seen.append(args.reader_cache_dir)
+        assert args.reader_cache_dir.is_dir()
+        (args.reader_cache_dir / "fixture.sqlite3").write_bytes(b"owned")
+
+    monkeypatch.setattr(launcher, "run_morpion_bootstrap_experiment", operation)
+    assert (
+        launcher.main([
+            "--scientific",
+            "--pipeline-stage",
+            "reevaluation",
+            "--work-dir",
+            str(tmp_path / "work"),
+            *(["--reader-cache-dir", str(borrowed)] if explicit else []),
+        ])
+        == 0
+    )
+    assert len(seen) == 1
+    assert seen[0].exists() is explicit
+    assert borrowed.exists()
