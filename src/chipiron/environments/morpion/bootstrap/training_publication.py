@@ -378,6 +378,15 @@ def accepted_selected_model(
     proposal = _proposal(paths, reference)
     status = _validate(paths, state, proposal, verify=True, record=record)
     name = status.selected_evaluator_name
+    assert name is not None
+    result = status.evaluator_results[name]
+    require(
+        result.num_train_samples is not None
+        and result.num_train_samples > 0
+        and result.num_epochs is not None
+        and result.num_epochs > 0,
+        "Activation requires a genuinely trained candidate with positive samples.",
+    )
     return reference, {
         **proposal["models"][name],
         "generation": generation,
@@ -437,6 +446,17 @@ def publish_training(
     require(
         read_object(attempt.directory / "admission.json") == attempt.admission,
         "Training admission changed.",
+    )
+    require(
+        bool(status.evaluator_results)
+        and all(
+            result.num_train_samples is not None
+            and result.num_train_samples > 0
+            and result.num_epochs is not None
+            and result.num_epochs > 0
+            for result in status.evaluator_results.values()
+        ),
+        "Training publication requires positive effective samples and completed epochs.",
     )
     final = _directory(paths, attempt.admission["attempt_id"])
     models = {}

@@ -505,3 +505,15 @@ def test_tie_keeps_admitted_candidate_order(tmp_path: Path, monkeypatch: Any) ->
         run_pipeline_training_stage(args, generation=1).selected_evaluator_name
         == "small_mlp"
     )
+
+
+def test_empty_training_cannot_publish_initialized_weights(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """A real zero-row training operation is not accepted as completed learning."""
+    local_leaderboard(monkeypatch, tmp_path)
+    args, paths, _ = setup_training(tmp_path / "workspace")
+    authority = paths.run_state_path.read_bytes()
+    with pytest.raises(ValueError, match="positive effective samples"):
+        run_pipeline_training_stage(replace(args, training_max_rows=0), generation=1)
+    assert paths.run_state_path.read_bytes() == authority
