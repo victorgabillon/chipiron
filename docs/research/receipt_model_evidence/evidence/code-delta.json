@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "added": 205,
+      "removed": 0,
+      "path": "docs/research/receipt_model_evidence/measure.py"
+    },
+    {
+      "added": 144,
+      "removed": 0,
+      "path": "docs/research/receipt_model_evidence/separate.py"
+    },
+    {
+      "added": 40,
+      "removed": 10,
+      "path": "scripts/report_morpion_rolling_recovery.py"
+    },
+    {
+      "added": 7,
+      "removed": 2,
+      "path": "src/chipiron/environments/morpion/bootstrap/generation_publication.py"
+    },
+    {
+      "added": 1,
+      "removed": 1,
+      "path": "src/chipiron/environments/morpion/bootstrap/generation_publication_io.py"
+    },
+    {
+      "added": 9,
+      "removed": 5,
+      "path": "tests/environments/test_morpion_activation_completion.py"
+    },
+    {
+      "added": 403,
+      "removed": 0,
+      "path": "tests/environments/test_morpion_receipt_model_evidence.py"
+    }
+  ],
+  "production": {
+    "added": 8,
+    "removed": 3
+  },
+  "analyzer": {
+    "added": 40,
+    "removed": 10
+  },
+  "tests": {
+    "added": 412,
+    "removed": 5
+  },
+  "research": {
+    "added": 349,
+    "removed": 0
+  }
+}
