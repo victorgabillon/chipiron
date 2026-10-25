@@ -1,0 +1,647 @@
+{
+  "paced-small": {
+    "generations": [
+      {
+        "generation": 1,
+        "id": "e6e450e08460425ca212950da247d85b",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 49420,
+          "unique_file_blocks": 90112
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 22770,
+          "unique_file_blocks": 36864
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 5976,
+          "unique_file_blocks": 12288
+        },
+        "accepted_dataset": {
+          "attempt_id": "b8fc363737044bd7895bb31e9f2e43cf",
+          "descriptor_sha256": "83585cf8dfa078515da7ee1fdfc3ae40196fc57b8fa4faebafcb5f4184fb52a5"
+        },
+        "accepted_training": {
+          "attempt_id": "4961094d603e486a8c8d775f10b2fdc7",
+          "descriptor_sha256": "63e8ec504b9ea1501505bfbae45584accfa908623f19425b1ed85e175176619c"
+        }
+      },
+      {
+        "generation": 2,
+        "id": "6773c24c0a81436a8615c78988555596",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 58436,
+          "unique_file_blocks": 102400
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 29571,
+          "unique_file_blocks": 49152
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 8055,
+          "unique_file_blocks": 12288
+        },
+        "accepted_dataset": {
+          "attempt_id": "7da2862d24524ebbbeb5ce343494ece7",
+          "descriptor_sha256": "55a971b8298ecd2a786e288489c1b13e1894d18be94b289059e2eb4259c8f581"
+        },
+        "accepted_training": {
+          "attempt_id": "980e39bfa36b4b8193124a1d8c2d272f",
+          "descriptor_sha256": "1ab09ce0817eedf7ac2a5446290edbacf4bc273bf68b0f2a9ae5b33e82204de0"
+        }
+      },
+      {
+        "generation": 3,
+        "id": "82c52168f67d4513b560b0f9763889e7",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 58434,
+          "unique_file_blocks": 102400
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 29571,
+          "unique_file_blocks": 49152
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 8053,
+          "unique_file_blocks": 12288
+        },
+        "accepted_dataset": {
+          "attempt_id": "8fb416e9b6ab446da6971314b14777b5",
+          "descriptor_sha256": "736491ce9cd616baccd34f62ae74a50d845e782616b45e8c1789725c0b5f6b6c"
+        },
+        "accepted_training": null
+      },
+      {
+        "generation": 4,
+        "id": "61bbf548a875482f98f499740382a76f",
+        "capsule": {
+          "files": 21,
+          "logical_bytes": 93531,
+          "unique_file_blocks": 151552
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 32436,
+          "unique_file_blocks": 53248
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 14163,
+          "unique_file_blocks": 20480
+        },
+        "accepted_dataset": {
+          "attempt_id": "0ffbdb0ee6f448378f0aeffb12d26c20",
+          "descriptor_sha256": "8b09bc8fd9d586e504500d49603cec71b2cb652922b938ef16fb0e1113dda4b5"
+        },
+        "accepted_training": null
+      },
+      {
+        "generation": 5,
+        "id": "cbcf8303dfa6424f8931496b13ca46c3",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 96297,
+          "unique_file_blocks": 139264
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 40832,
+          "unique_file_blocks": 57344
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 18497,
+          "unique_file_blocks": 24576
+        },
+        "accepted_dataset": {
+          "attempt_id": "302cdce1c1f04efcb683670493bea2bf",
+          "descriptor_sha256": "43146160c5c74d0b9ecffc169342d10bd8649d2943ef4911983e600b08b8426d"
+        },
+        "accepted_training": {
+          "attempt_id": "841f5bedc1e944a9aa147b5a0db7dc9b",
+          "descriptor_sha256": "11d4ee24444a690825091f21fdd404470e2acd80185fdb0c5eb7ed4fb17cb753"
+        }
+      },
+      {
+        "generation": 6,
+        "id": "476f27dfcf764c69987a5fcffd015c59",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 103593,
+          "unique_file_blocks": 139264
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 45742,
+          "unique_file_blocks": 57344
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 20884,
+          "unique_file_blocks": 24576
+        },
+        "accepted_dataset": {
+          "attempt_id": "08c952b1a6a6483ea0a03107e7707075",
+          "descriptor_sha256": "df81bfffb09729f30328e9e1d1fd9a21cbb0966de4a4e96afb32814145da106c"
+        },
+        "accepted_training": {
+          "attempt_id": "43a508f15f7146af811fc38a5b707e95",
+          "descriptor_sha256": "d87f028df0689774ff3148095c737fba5c5f247ef8d1a51bd16a71aed5365cbe"
+        }
+      },
+      {
+        "generation": 7,
+        "id": "33c57e007a5f42fa96ed450e8c8fda57",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 103592,
+          "unique_file_blocks": 139264
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 45742,
+          "unique_file_blocks": 57344
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 20883,
+          "unique_file_blocks": 24576
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      },
+      {
+        "generation": 8,
+        "id": "3d99c9fe3d684d74a52d54fe7dc7af6d",
+        "capsule": {
+          "files": 21,
+          "logical_bytes": 128109,
+          "unique_file_blocks": 176128
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 44104,
+          "unique_file_blocks": 57344
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 20672,
+          "unique_file_blocks": 24576
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      },
+      {
+        "generation": 9,
+        "id": "8519b2502fcd4efaa0314b9ef49fe08f",
+        "capsule": {
+          "files": 17,
+          "logical_bytes": 114800,
+          "unique_file_blocks": 155648
+        },
+        "checkpoint": {
+          "files": 7,
+          "logical_bytes": 53038,
+          "unique_file_blocks": 65536
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 24551,
+          "unique_file_blocks": 32768
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      }
+    ],
+    "four_worker_sessions": [
+      {
+        "stage": "01-M1-four-workers.groups",
+        "roles": {
+          "reevaluation": {
+            "pgid": "2118700",
+            "sampled_group_peak_rss_bytes": 280817664,
+            "sampled_cpu_s": 42.6,
+            "observed_pids": 48
+          },
+          "training_worker": {
+            "pgid": "2118693",
+            "sampled_group_peak_rss_bytes": 369491968,
+            "sampled_cpu_s": 47.64,
+            "observed_pids": 46
+          },
+          "dataset_worker": {
+            "pgid": "2118687",
+            "sampled_group_peak_rss_bytes": 273580032,
+            "sampled_cpu_s": 42.82,
+            "observed_pids": 47
+          },
+          "growth": {
+            "pgid": "2118684",
+            "sampled_group_peak_rss_bytes": 284270592,
+            "sampled_cpu_s": 8.790000000000001,
+            "observed_pids": 8
+          }
+        },
+        "resources": {
+          "wall_s": 121.28,
+          "user_s": 141.52,
+          "system_s": 7.2,
+          "peak_rss_kib": 353756,
+          "input_blocks": 0,
+          "output_blocks": 10256
+        },
+        "sampled": {
+          "workspace_peak_allocated_bytes": 1675264,
+          "staging_peak_allocated_bytes": 364544,
+          "scratch_peak_allocated_bytes": 311296,
+          "sample_seconds": 0.2
+        },
+        "all_groups_stopped": true
+      },
+      {
+        "stage": "06-M2-four-workers.groups",
+        "roles": {
+          "training_worker": {
+            "pgid": "2120587",
+            "sampled_group_peak_rss_bytes": 369369088,
+            "sampled_cpu_s": 47.11,
+            "observed_pids": 47
+          },
+          "dataset_worker": {
+            "pgid": "2120580",
+            "sampled_group_peak_rss_bytes": 273780736,
+            "sampled_cpu_s": 41.93,
+            "observed_pids": 47
+          },
+          "growth": {
+            "pgid": "2120577",
+            "sampled_group_peak_rss_bytes": 286621696,
+            "sampled_cpu_s": 8.71,
+            "observed_pids": 8
+          },
+          "reevaluation": {
+            "pgid": "2120593",
+            "sampled_group_peak_rss_bytes": 281235456,
+            "sampled_cpu_s": 42.08,
+            "observed_pids": 49
+          }
+        },
+        "resources": {
+          "wall_s": 121.28,
+          "user_s": 139.45,
+          "system_s": 7.41,
+          "peak_rss_kib": 353880,
+          "input_blocks": 0,
+          "output_blocks": 18928
+        },
+        "sampled": {
+          "workspace_peak_allocated_bytes": 3997696,
+          "staging_peak_allocated_bytes": 446464,
+          "scratch_peak_allocated_bytes": 446464,
+          "sample_seconds": 0.2
+        },
+        "all_groups_stopped": true
+      }
+    ],
+    "workspace": {
+      "files": 310,
+      "logical_bytes": 3699069,
+      "unique_file_blocks": 4239360
+    },
+    "run_state_bytes": 38486,
+    "dataset_publications_v1": {
+      "files": 12,
+      "logical_bytes": 1528443,
+      "unique_file_blocks": 1556480
+    },
+    "training_publications_v1": {
+      "files": 48,
+      "logical_bytes": 403309,
+      "unique_file_blocks": 540672
+    },
+    "genesis": {
+      "files": 14,
+      "logical_bytes": 34753,
+      "unique_file_blocks": 65536
+    },
+    "generation_publications_v3": {
+      "files": 170,
+      "logical_bytes": 806212,
+      "unique_file_blocks": 983040
+    }
+  },
+  "final-5k": {
+    "generations": [
+      {
+        "generation": 1,
+        "id": "1094b372103d4171905afef3ca2c0834",
+        "capsule": {
+          "files": 29,
+          "logical_bytes": 757272,
+          "unique_file_blocks": 819200
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 555406,
+          "unique_file_blocks": 593920
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 178809,
+          "unique_file_blocks": 184320
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      },
+      {
+        "generation": 2,
+        "id": "e807bea7a0a048dc9b5489ec985d54d3",
+        "capsule": {
+          "files": 29,
+          "logical_bytes": 763716,
+          "unique_file_blocks": 827392
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 558670,
+          "unique_file_blocks": 598016
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 181674,
+          "unique_file_blocks": 188416
+        },
+        "accepted_dataset": {
+          "attempt_id": "dfb6fe1c088c4821aa8656461cf11dfd",
+          "descriptor_sha256": "bd4d3dd4b3330fc413f94a98c45fcf7106cd3a977c45fefeb04b0db57cd7afc0"
+        },
+        "accepted_training": {
+          "attempt_id": "cb044b4fe4464745bf98b786dd93c4ed",
+          "descriptor_sha256": "e7ea70d00e726793837cd50472f1402d7ff3f108020fb9095f40a120fc1ab39b"
+        }
+      },
+      {
+        "generation": 3,
+        "id": "208e4daf0a3b4d8b8b8faa283811facb",
+        "capsule": {
+          "files": 29,
+          "logical_bytes": 763716,
+          "unique_file_blocks": 827392
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 558670,
+          "unique_file_blocks": 598016
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 181674,
+          "unique_file_blocks": 188416
+        },
+        "accepted_dataset": {
+          "attempt_id": "1ac9d5ba75f24e0b84d8f457ac43bb23",
+          "descriptor_sha256": "08e8ca9c02e2339d44c7f642d235ef0f2ca3107bf8d308b937a148516de2d997"
+        },
+        "accepted_training": null
+      },
+      {
+        "generation": 4,
+        "id": "175ae005d5f34c94bb706dd71fc9a41a",
+        "capsule": {
+          "files": 33,
+          "logical_bytes": 1027074,
+          "unique_file_blocks": 1105920
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 640038,
+          "unique_file_blocks": 684032
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 338009,
+          "unique_file_blocks": 344064
+        },
+        "accepted_dataset": {
+          "attempt_id": "ebd01aabfa594ccf89c412a6fd80ff2a",
+          "descriptor_sha256": "4165361e0e705593d8901e8669f2d57ace1414f3d5936c5521c6644c0072c3ac"
+        },
+        "accepted_training": null
+      },
+      {
+        "generation": 5,
+        "id": "0da71bc08afc4b21bc27e9b745758163",
+        "capsule": {
+          "files": 29,
+          "logical_bytes": 1026948,
+          "unique_file_blocks": 1097728
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 646698,
+          "unique_file_blocks": 692224
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 341192,
+          "unique_file_blocks": 348160
+        },
+        "accepted_dataset": {
+          "attempt_id": "1988652c01034df4bb8740c56560686a",
+          "descriptor_sha256": "f01c6bc86f2790f80abfba74677da224ccfc6e0c29abe78957b4aedefc329fcd"
+        },
+        "accepted_training": {
+          "attempt_id": "beed4260d1ea4c3bba39467059454bdd",
+          "descriptor_sha256": "91f9af9eaabb99f79d8815d27b854872ba145588858d3965236bd7435e88d83d"
+        }
+      },
+      {
+        "generation": 6,
+        "id": "0543e6d65c4d401c98746c4e8bb216ca",
+        "capsule": {
+          "files": 29,
+          "logical_bytes": 1026948,
+          "unique_file_blocks": 1097728
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 646698,
+          "unique_file_blocks": 692224
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 341192,
+          "unique_file_blocks": 348160
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      },
+      {
+        "generation": 7,
+        "id": "c23ef9d516d24f16bcb2f810841f446a",
+        "capsule": {
+          "files": 33,
+          "logical_bytes": 1052425,
+          "unique_file_blocks": 1138688
+        },
+        "checkpoint": {
+          "files": 19,
+          "logical_bytes": 643866,
+          "unique_file_blocks": 692224
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 343159,
+          "unique_file_blocks": 352256
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      },
+      {
+        "generation": 8,
+        "id": "2697e8c657d74131830b7c4738b8225c",
+        "capsule": {
+          "files": 32,
+          "logical_bytes": 1044847,
+          "unique_file_blocks": 1126400
+        },
+        "checkpoint": {
+          "files": 22,
+          "logical_bytes": 658148,
+          "unique_file_blocks": 712704
+        },
+        "scientific": {
+          "files": 3,
+          "logical_bytes": 346319,
+          "unique_file_blocks": 352256
+        },
+        "accepted_dataset": null,
+        "accepted_training": null
+      }
+    ],
+    "four_worker_sessions": [
+      {
+        "stage": "01-M1-four-workers.groups",
+        "roles": {
+          "training_worker": {
+            "pgid": "2123038",
+            "sampled_group_peak_rss_bytes": 369512448,
+            "sampled_cpu_s": 46.71,
+            "observed_pids": 47
+          },
+          "dataset_worker": {
+            "pgid": "2123032",
+            "sampled_group_peak_rss_bytes": 275714048,
+            "sampled_cpu_s": 70.42,
+            "observed_pids": 31
+          },
+          "reevaluation": {
+            "pgid": "2123045",
+            "sampled_group_peak_rss_bytes": 283152384,
+            "sampled_cpu_s": 69.35000000000001,
+            "observed_pids": 34
+          },
+          "growth": {
+            "pgid": "2123029",
+            "sampled_group_peak_rss_bytes": 336678912,
+            "sampled_cpu_s": 26.1,
+            "observed_pids": 5
+          }
+        },
+        "resources": {
+          "wall_s": 121.33,
+          "user_s": 211.74,
+          "system_s": 6.17,
+          "peak_rss_kib": 354096,
+          "input_blocks": 0,
+          "output_blocks": 163624
+        },
+        "sampled": {
+          "workspace_peak_allocated_bytes": 9302016,
+          "staging_peak_allocated_bytes": 7598080,
+          "scratch_peak_allocated_bytes": 7405568,
+          "sample_seconds": 0.2
+        },
+        "all_groups_stopped": true
+      },
+      {
+        "stage": "06-M2-four-workers.groups",
+        "roles": {
+          "training_worker": {
+            "pgid": "2154670",
+            "sampled_group_peak_rss_bytes": 369532928,
+            "sampled_cpu_s": 46.71,
+            "observed_pids": 47
+          },
+          "dataset_worker": {
+            "pgid": "2154664",
+            "sampled_group_peak_rss_bytes": 275898368,
+            "sampled_cpu_s": 83.59,
+            "observed_pids": 23
+          },
+          "reevaluation": {
+            "pgid": "2154677",
+            "sampled_group_peak_rss_bytes": 282931200,
+            "sampled_cpu_s": 55.63,
+            "observed_pids": 40
+          },
+          "growth": {
+            "pgid": "2154661",
+            "sampled_group_peak_rss_bytes": 334245888,
+            "sampled_cpu_s": 25.080000000000002,
+            "observed_pids": 7
+          }
+        },
+        "resources": {
+          "wall_s": 121.34,
+          "user_s": 210.57,
+          "system_s": 6.67,
+          "peak_rss_kib": 353220,
+          "input_blocks": 0,
+          "output_blocks": 167432
+        },
+        "sampled": {
+          "workspace_peak_allocated_bytes": 13103104,
+          "staging_peak_allocated_bytes": 7680000,
+          "scratch_peak_allocated_bytes": 4399104,
+          "sample_seconds": 0.2
+        },
+        "all_groups_stopped": true
+      }
+    ],
+    "workspace": {
+      "files": 365,
+      "logical_bytes": 10392515,
+      "unique_file_blocks": 11087872
+    },
+    "run_state_bytes": 32990,
+    "dataset_publications_v1": {
+      "files": 10,
+      "logical_bytes": 1286300,
+      "unique_file_blocks": 1318912
+    },
+    "training_publications_v1": {
+      "files": 24,
+      "logical_bytes": 200622,
+      "unique_file_blocks": 270336
+    },
+    "genesis": {
+      "files": 26,
+      "logical_bytes": 740222,
+      "unique_file_blocks": 794624
+    },
+    "generation_publications_v3": {
+      "files": 252,
+      "logical_bytes": 7462946,
+      "unique_file_blocks": 7860224
+    }
+  }
+}

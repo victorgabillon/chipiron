@@ -1,0 +1,29 @@
+{
+  "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+  "platform": "linux-x86_64",
+  "packages": {
+    "chipiron": "0.2.4",
+    "algorhino-anemone": "0.2.26",
+    "algorhino-coral": "0.1.15",
+    "atomheart": "0.2.11",
+    "valanga": "0.2.5",
+    "torch": "2.14.0+cpu",
+    "pytest": "9.1.1",
+    "ruff": "0.15.20",
+    "mypy": "2.1.0",
+    "pyright": "1.1.411",
+    "pylint": "4.0.6",
+    "zstandard": "0.25.0",
+    "psutil": "7.2.2"
+  },
+  "zstd_library_version": [
+    1,
+    5,
+    7
+  ],
+  "torch_cuda_available": false,
+  "zstandard_native": {
+    "backend_c.cpython-313-x86_64-linux-gnu.so": "f7a5ec06ea6b404effbb11b18fd63ec9039292be834ee99fb5b4ca1b780de201",
+    "_cffi.cpython-313-x86_64-linux-gnu.so": "425683fabd106f55d5ba91e675dcbfc4aca5e8ac3d244e57df7a4d52e41e1dd3"
+  }
+}

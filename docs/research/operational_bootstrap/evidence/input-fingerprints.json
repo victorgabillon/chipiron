@@ -1,0 +1,7 @@
+{
+  "bootstrap_config.json": "d5c1a0a9e7a223d5fcdb727968b271107bdf3094de205a23f367ceabc6f938e6",
+  "seed/morpion_manifest.json": "6205330360317dde258a2047218f94fc203fe196d3a8070ae93596ef20cc7c4a",
+  "seed/param.pt": "9b48928024de2088a69929691f9300a5262b317acd12535deb3b3570009e508b",
+  "seed/param.json": "76e66a484218c6202113f2a7846e5126b3969c3d60fb972e20d61cfcbca7bd27",
+  "seed/morpion_regressor_args.json": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7"
+}
