@@ -165,3 +165,7 @@ os.environ.setdefault(
     "ML_FLOW_URI_PATH_TEST",
     f"sqlite:///{(TEST_OUTPUT_DIR / 'mlruns_test.db').as_posix()}",
 )
+
+# Default record persistence must never rewrite the operator's home leaderboard.
+# Reuse the existing isolated application-output root; tests can override explicitly.
+os.environ["MORPION_LEADERBOARD_PATH"] = str(TEST_OUTPUT_DIR / "leaderboard.jsonl")
