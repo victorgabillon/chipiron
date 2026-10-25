@@ -620,6 +620,7 @@ def run_next_pipeline_dataset_stage_once(
     claim_owner: str | None = None,
     use_streaming_sharded_reader: bool = False,
     reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending dataset generation once, if any."""
@@ -687,6 +688,7 @@ def run_next_pipeline_dataset_stage_once(
                 claim_owner=claim_owner,
                 use_streaming_sharded_reader=True,
                 reader_cache_dir=reader_cache_dir,
+                **({"allow_scientific_v2": True} if allow_scientific_v2 else {}),
             )
         else:
             run_pipeline_dataset_stage(

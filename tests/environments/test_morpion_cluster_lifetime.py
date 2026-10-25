@@ -35,9 +35,17 @@ def test_headless_cluster_stops_all_four_worker_groups(
 import json, os, signal, subprocess, sys, time
 from pathlib import Path
 if "--pipeline-stage" not in sys.argv:
-    if "-c" in sys.argv: sys.exit(1)
+    if "-c" in sys.argv:
+        if "latest_tree_snapshot_path" in sys.argv[2]:
+            print("fixed-source")
+            sys.exit(0)
+        sys.exit(1)
     sys.exit(0)
 stage=sys.argv[sys.argv.index("--pipeline-stage")+1]
+if "--reader-cache-dir" in sys.argv:
+    cache=Path(sys.argv[sys.argv.index("--reader-cache-dir")+1])
+    cache.mkdir(parents=True,exist_ok=True)
+    (cache/"owned.sqlite3").write_bytes(b"private lifecycle fixture")
 child=subprocess.Popen([sys.executable, "-c", "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)"])
 Path(os.environ["MORPION_WORK_DIR"], stage+".json").write_text(json.dumps({"pid":os.getpid(),"child":child.pid}))
 time.sleep(60)
@@ -77,6 +85,9 @@ time.sleep(60)
         output, _ = process.communicate(timeout=13)
         assert process.returncode == (143 if interrupt else 0), output
         assert "all worker groups stopped" in output
+        for line in output.splitlines():
+            if "private_reader_cache=" in line:
+                assert not Path(line.split("private_reader_cache=")[1]).exists()
         for stage in stages:
             for pid in json.loads((tmp_path / f"{stage}.json").read_text()).values():
                 # Successful launcher exit itself confirms quiescence, without a
@@ -103,3 +114,14 @@ def test_cluster_rejects_horizon_over_twelve_hours(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert "at most 43200" in result.stderr
     assert not list(tmp_path.glob("*.json"))
+
+
+def test_scientific_cache_cleanup_follows_group_quiescence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the supervisor's private cache is retired after ignoring-TERM children stop."""
+    monkeypatch.setenv("MORPION_SCIENTIFIC", "1")
+    (tmp_path / "run_state.json").write_text(
+        '{"latest_tree_snapshot_path": "fixed-source"}'
+    )
+    test_headless_cluster_stops_all_four_worker_groups(tmp_path, interrupt=True)

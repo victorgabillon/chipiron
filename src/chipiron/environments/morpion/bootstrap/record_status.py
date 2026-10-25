@@ -6,6 +6,7 @@ import hashlib
 import heapq
 import json
 import logging
+import os
 import time
 from collections import Counter
 from dataclasses import dataclass
@@ -559,7 +560,12 @@ def persist_certified_leaderboard_candidates(
     )
     candidate_total = len(candidates) if isinstance(candidates, tuple) else "streaming"
     resolved_path = (
-        Path.home() / "morpion_runs" / "morpion_leaderboard.jsonl"
+        Path(
+            os.environ.get(
+                "MORPION_LEADERBOARD_PATH",
+                str(Path.home() / "morpion_runs" / "morpion_leaderboard.jsonl"),
+            )
+        )
         if leaderboard_path is None
         else Path(leaderboard_path)
     )

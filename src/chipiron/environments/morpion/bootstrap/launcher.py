@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import shlex
@@ -186,6 +187,13 @@ class MorpionBootstrapLauncherArgs:
     pipeline_stage: MorpionPipelineStage = "loop"
     pipeline_generation: int | None = None
     reevaluation_max_nodes_per_patch: int = 10_000
+    scientific: bool = False
+    scientific_operation: str | None = None
+    scientific_config: Path | None = None
+    seed_model: Path | None = None
+    activation_request: Path | None = None
+    initial_nodes: int = 100
+    reader_cache_dir: Path | None = None
     dataset_streaming_sharded_reader: bool = False
     reevaluation_streaming_sharded_reader: bool = False
     verbose_checkpoint_logs: bool = False
@@ -248,6 +256,24 @@ def run_morpion_bootstrap_experiment(
     This launcher is the canonical human/operator entrypoint for one real
     Morpion bootstrap experiment backed by the Anemone search runner.
     """
+    if launcher_args.scientific:
+        os.environ["MORPION_LEADERBOARD_PATH"] = str(
+            launcher_args.work_dir / "leaderboard.jsonl"
+        )
+    if launcher_args.scientific_operation is not None:
+        return _scientific_operation(launcher_args)
+    if launcher_args.scientific:
+        from .generation_publication_io import require
+
+        require(
+            launcher_args.pipeline_stage != "loop",
+            "Scientific workers require an explicit pipeline stage.",
+        )
+        paths = MorpionBootstrapPaths.from_work_dir(launcher_args.work_dir)
+        require(
+            paths.run_state_path.is_file(),
+            "Scientific run requires explicit initialization; restore never falls back to fresh search.",
+        )
     if not launcher_args.quiet_worker_startup:
         LOGGER.info("[launcher] startup_start work_dir=%s", str(launcher_args.work_dir))
     startup_status = _collect_launcher_startup_status(launcher_args)
@@ -301,7 +327,44 @@ def run_morpion_bootstrap_experiment(
                 _growth_effective_max_cycles(launcher_args, default=1),
             ),
         )
+    if launcher_args.scientific:
+        from .generation_publication_io import (
+            PUBLICATION_KEY,
+            committed_evaluator,
+            publication_records,
+            require,
+        )
+
+        state = load_bootstrap_run_state(startup_status.paths.run_state_path)
+        committed_evaluator(startup_status.paths.work_dir, state)
+        require(
+            state.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract") == 1,
+            "Scientific launcher requires the complete activation protocol.",
+        )
+        if launcher_args.pipeline_stage == "growth":
+            producer = publication_records(state.metadata)[-1]["scientific_identity"][
+                "producer"
+            ]["identity"]
+            return run_pipeline_growth_stage(
+                startup_status.resolved_bootstrap_args,
+                _build_launcher_runner(startup_status),
+                max_cycles=cast(
+                    "int", _growth_effective_max_cycles(launcher_args, default=1)
+                ),
+                checkpoint_bound_receipts=True,
+                durable_generation_publication=True,
+                scientific_v2_producer=producer,
+                closed_scientific_snapshot=True,
+            )
     if launcher_args.pipeline_stage == "reevaluation":
+        if launcher_args.scientific:
+            return run_morpion_reevaluation_worker_once(
+                startup_status.resolved_bootstrap_args,
+                max_nodes_per_patch=launcher_args.reevaluation_max_nodes_per_patch,
+                use_streaming_sharded_reader=True,
+                allow_scientific_v2=True,
+                reader_cache_dir=launcher_args.reader_cache_dir,
+            )
         if launcher_args.reevaluation_streaming_sharded_reader:
             return run_morpion_reevaluation_worker_once(
                 startup_status.resolved_bootstrap_args,
@@ -313,6 +376,13 @@ def run_morpion_bootstrap_experiment(
             max_nodes_per_patch=launcher_args.reevaluation_max_nodes_per_patch,
         )
     if launcher_args.pipeline_stage == "dataset_worker":
+        if launcher_args.scientific:
+            return run_next_pipeline_dataset_stage_once(
+                startup_status.resolved_bootstrap_args,
+                use_streaming_sharded_reader=True,
+                allow_scientific_v2=True,
+                reader_cache_dir=launcher_args.reader_cache_dir,
+            )
         if launcher_args.dataset_streaming_sharded_reader:
             return run_next_pipeline_dataset_stage_once(
                 startup_status.resolved_bootstrap_args,
@@ -326,6 +396,15 @@ def run_morpion_bootstrap_experiment(
             startup_status.resolved_bootstrap_args
         )
     if launcher_args.pipeline_stage == "dataset":
+        if launcher_args.scientific:
+            assert launcher_args.pipeline_generation is not None
+            return run_pipeline_dataset_stage(
+                startup_status.resolved_bootstrap_args,
+                generation=launcher_args.pipeline_generation,
+                use_streaming_sharded_reader=True,
+                allow_scientific_v2=True,
+                reader_cache_dir=launcher_args.reader_cache_dir,
+            )
         if launcher_args.dataset_streaming_sharded_reader:
             assert launcher_args.pipeline_generation is not None
             return run_pipeline_dataset_stage(
@@ -352,6 +431,114 @@ def run_morpion_bootstrap_experiment(
         runner,
         max_cycles=cast("int", _growth_effective_max_cycles(launcher_args, default=1)),
     )
+
+
+def _scientific_args(
+    args: MorpionBootstrapArgs, config: MorpionBootstrapConfig
+) -> MorpionBootstrapArgs:
+    """Use the explicit persisted experiment configuration, preserving stage limits."""
+    from dataclasses import asdict
+
+    from chipiron.environments.morpion.learning.target_confidence import (
+        validate_confidence_policy,
+    )
+
+    from .generation_publication_io import require
+
+    require(
+        config.pipeline_mode == "artifact_pipeline"
+        and config.runtime.runtime_checkpoint_format == "sharded"
+        and config.training_export_mode == "sharded"
+        and not config.runtime.growth_skip_training_export,
+        "Scientific experiment requires sharded checkpoints and closed exports.",
+    )
+    require(
+        not config.search.rollout.enabled
+        or config.search.rollout.max_extra_steps is not None,
+        "Scientific activation requires bounded rollout.",
+    )
+    validate_confidence_policy("selected_value_v2", config.dataset.family_target_policy)
+    return replace(
+        _bootstrap_args_with_persisted_config(args, persisted_config=config),
+        **asdict(config.runtime),
+        dataset_confidence_policy="selected_value_v2",
+        validation_fraction=config.validation_fraction,
+        validation_seed=config.validation_seed,
+        training_device=config.training_device,
+    )
+
+
+def _scientific_operation(
+    args: MorpionBootstrapLauncherArgs,
+) -> MorpionBootstrapRunState:
+    """Expose existing genesis/activation authority without another coordinator."""
+    from .generation_publication_io import (
+        PUBLICATION_KEY,
+        committed_evaluator,
+        publication_records,
+        require,
+    )
+    from .model_activation import activate_model, prepare_model_activation_request
+
+    require(args.scientific, "Scientific operations require --scientific.")
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    if args.scientific_operation == "initialize":
+        from .scientific_publication_initialization import (
+            initialize_scientific_experiment,
+        )
+
+        require(
+            args.scientific_config is not None and args.seed_model is not None,
+            "Initialization requires --scientific-config and --seed-model.",
+        )
+        assert args.scientific_config is not None and args.seed_model is not None
+        config = load_bootstrap_config(args.scientific_config)
+        return initialize_scientific_experiment(
+            _scientific_args(args.bootstrap_args, config),
+            config,
+            seed_model=args.seed_model,
+            initial_nodes=args.initial_nodes,
+        )
+    if args.scientific_operation == "prepare-activation":
+        require(
+            args.pipeline_generation is not None
+            and args.activation_request is not None,
+            "Preparation requires --pipeline-generation and --activation-request.",
+        )
+        assert (
+            args.pipeline_generation is not None and args.activation_request is not None
+        )
+        request = prepare_model_activation_request(
+            paths, training_generation=args.pipeline_generation
+        )
+        # A request is an explicit operator input, never overwritten or automatically submitted.
+        with args.activation_request.open("x") as handle:
+            json.dump(request, handle, indent=2)
+            handle.write("\n")
+    elif args.scientific_operation == "activate":
+        require(
+            args.activation_request is not None,
+            "Activation requires --activation-request.",
+        )
+        assert args.activation_request is not None
+        activate_model(paths, json.loads(args.activation_request.read_text()))
+    state = load_bootstrap_run_state(paths.run_state_path)
+    model, _ = committed_evaluator(paths.work_dir, state)
+    print(
+        json.dumps(
+            {
+                "workspace": str(paths.work_dir),
+                "generation": state.generation,
+                "head": state.metadata[PUBLICATION_KEY]["head_id"],
+                "model": model,
+                "publications": publication_records(state.metadata),
+                "reevaluation": state.metadata.get("atomic_reevaluation"),
+                "pending_patch": paths.pipeline_reevaluation_patch_path.exists(),
+            },
+            indent=2,
+        )
+    )
+    return state
 
 
 def _growth_effective_max_cycles(
@@ -420,6 +607,11 @@ def _collect_launcher_startup_status(
 
     if config_exists:
         bootstrap_config = load_bootstrap_config(paths.bootstrap_config_path)
+        if launcher_args.scientific:
+            resolved_bootstrap_args = _scientific_args(
+                requested_bootstrap_args, bootstrap_config
+            )
+            requested_bootstrap_args = resolved_bootstrap_args
         if not launcher_args.training_export_mode_explicit:
             requested_bootstrap_args = replace(
                 requested_bootstrap_args,
@@ -933,6 +1125,32 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--work-dir", required=True, type=Path)
+    parser.add_argument(
+        "--scientific",
+        action="store_true",
+        help="Explicit closed scientific experiment protocol; never automatic activation.",
+    )
+    parser.add_argument(
+        "--scientific-operation",
+        choices=["initialize", "inspect", "prepare-activation", "activate"],
+    )
+    parser.add_argument(
+        "--scientific-config",
+        type=Path,
+        help="Existing bootstrap configuration for fresh scientific initialization.",
+    )
+    parser.add_argument(
+        "--seed-model",
+        type=Path,
+        help="Complete initial model bundle; copied into the new workspace.",
+    )
+    parser.add_argument("--activation-request", type=Path)
+    parser.add_argument("--initial-nodes", type=_parse_positive_int, default=100)
+    parser.add_argument(
+        "--reader-cache-dir",
+        type=Path,
+        help="Caller-owned cache; never grants shared-cache deletion authority.",
+    )
     parser.add_argument(
         "--evaluator-family",
         type=str,
@@ -1506,16 +1724,19 @@ def launcher_args_from_cli(
         parsed.quiet_worker_startup
         or os.environ.get("MORPION_SUPERVISED_WORKER") == "1"
     )
-    _validate_pipeline_stage_cli(
-        parser=parser,
-        pipeline_mode=parsed.pipeline_mode,
-        pipeline_stage=parsed.pipeline_stage,
-        pipeline_generation=parsed.pipeline_generation,
-        growth_additional_branch_budget=parsed.growth_additional_branch_budget,
-        growth_save_and_exit=parsed.growth_save_and_exit,
-        diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
-        tree_branch_limit_explicit=tree_branch_limit_explicit,
-    )
+    if parsed.scientific:
+        parsed.pipeline_mode = "artifact_pipeline"
+    if parsed.scientific_operation is None:
+        _validate_pipeline_stage_cli(
+            parser=parser,
+            pipeline_mode=parsed.pipeline_mode,
+            pipeline_stage=parsed.pipeline_stage,
+            pipeline_generation=parsed.pipeline_generation,
+            growth_additional_branch_budget=parsed.growth_additional_branch_budget,
+            growth_save_and_exit=parsed.growth_save_and_exit,
+            diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
+            tree_branch_limit_explicit=tree_branch_limit_explicit,
+        )
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=parsed.work_dir,
         evaluator_family_preset=parsed.evaluator_family,
@@ -1622,6 +1843,13 @@ def launcher_args_from_cli(
     )
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
+        scientific=parsed.scientific,
+        scientific_operation=parsed.scientific_operation,
+        scientific_config=parsed.scientific_config,
+        seed_model=parsed.seed_model,
+        activation_request=parsed.activation_request,
+        initial_nodes=parsed.initial_nodes,
+        reader_cache_dir=parsed.reader_cache_dir,
         max_cycles=parsed.max_cycles,
         pipeline_stage=cast("MorpionPipelineStage", parsed.pipeline_stage),
         pipeline_generation=parsed.pipeline_generation,
@@ -1659,6 +1887,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         verbose_checkpoint_logs=launcher_args.verbose_checkpoint_logs
     )
     paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    paths.ensure_directories()
     register_current_launcher_process(paths)
     exit_code = 0
     try:

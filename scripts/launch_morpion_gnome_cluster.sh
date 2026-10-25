@@ -17,6 +17,9 @@ MORPION_CLUSTER_HEADLESS="${MORPION_CLUSTER_HEADLESS:-0}"
 MORPION_CLUSTER_MAX_SECONDS="${MORPION_CLUSTER_MAX_SECONDS:-42900}"
 MORPION_CLUSTER_STOP_GRACE_SECONDS="${MORPION_CLUSTER_STOP_GRACE_SECONDS:-60}"
 CLUSTER_PIDS=()
+CLUSTER_CACHE_ROOT=""
+MORPION_SCIENTIFIC="${MORPION_SCIENTIFIC:-0}"
+MORPION_USE_INSTALLED_PACKAGES="${MORPION_USE_INSTALLED_PACKAGES:-0}"
 CLUSTER_STOPPED=0
 # SIGKILL is asynchronous; reserve a bounded confirmation phase after TERM grace.
 CLUSTER_KILL_CONFIRM_SECONDS=5
@@ -193,6 +196,8 @@ stop_headless_workers() {
   done
   for pid in "${CLUSTER_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
   echo "[CLUSTER] all worker groups stopped"
+  # Created by this supervisor only; never touch default/shared reader caches.
+  if [[ -n "$CLUSTER_CACHE_ROOT" ]]; then rm -rf -- "$CLUSTER_CACHE_ROOT"; fi
 }
 
 if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
@@ -207,6 +212,10 @@ if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
   mkdir -p "$MORPION_WORK_DIR"
   exec 9>"$MORPION_WORK_DIR/.cluster.lock"
   flock -n 9 || { echo "Cluster already running in $MORPION_WORK_DIR" >&2; exit 1; }
+  if [[ "$MORPION_SCIENTIFIC" == "1" ]]; then
+    CLUSTER_CACHE_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/morpion-readers.XXXXXXXX") || exit 1
+    echo "[CLUSTER] private_reader_cache=$CLUSTER_CACHE_ROOT"
+  fi
   CLUSTER_DEADLINE=$((SECONDS + MORPION_CLUSTER_MAX_SECONDS))
   trap 'stop_headless_workers; exit 130' INT
   trap 'stop_headless_workers; exit 143' TERM
@@ -362,12 +371,28 @@ launch_worker_terminal() {
   local launcher_args="$4"
   local log_name="$5"
   local startup_message="$6"
-  local command
+  local command source_path cache_args="" cache_setup="" cache_rotate=""
+  source_path="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src"
+  if [[ "$MORPION_USE_INSTALLED_PACKAGES" == "1" ]]; then source_path=""; fi
+  if [[ -n "$CLUSTER_CACHE_ROOT" && ( "$worker_name" == "DATASET" || "$worker_name" == "REEVALUATION" ) ]]; then
+    cache_args="--reader-cache-dir '$CLUSTER_CACHE_ROOT/$worker_name'"
+    # Both stages are synchronous, with no inference/export subprocesses. The
+    # preceding pipeline has been waited before rotating its private source scope.
+    # Dataset consumes one source once; Reevaluation retains its current source
+    # between calls (including idle/pending-patch polls).
+    cache_setup="last_source=''"
+    if [[ "$worker_name" == "REEVALUATION" ]]; then
+      cache_rotate="source=\$(\"$PYTHON_BIN\" -c 'import json,sys; print(json.load(open(sys.argv[1]))[\"latest_tree_snapshot_path\"])' '$MORPION_WORK_DIR/run_state.json') || exit 1
+if [[ \"\$source\" != \"\$last_source\" ]]; then rm -rf -- '$CLUSTER_CACHE_ROOT/$worker_name'; last_source=\$source; fi"
+    else
+      cache_rotate="rm -rf -- '$CLUSTER_CACHE_ROOT/$worker_name'"
+    fi
+  fi
   local worker_stop_trap='echo; echo "worker stopped; terminal kept open"; exec bash'
   if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then worker_stop_trap='exit 143'; fi
   command=$(cat <<EOF
 cd "$REPO_ROOT" &&
-export PYTHONPATH="$CORAL_REPO_ROOT/src:$ATOMHEART_REPO_ROOT/src:$ANEMONE_REPO_ROOT/src:$REPO_ROOT/src:\${PYTHONPATH:-}" &&
+export PYTHONPATH="$source_path" &&
 export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
 export MORPION_OPERATOR_RICH="$MORPION_OPERATOR_RICH" &&
 export MORPION_COLOR_RAW_LOGS="$MORPION_COLOR_RAW_LOGS" &&
@@ -386,11 +411,13 @@ print("chipiron:", chipiron.__file__)
 print("coral:", coral.__file__)
 PY
 idle_checks=0
+$cache_setup
 while true; do
+  $cache_rotate
   if [[ "$worker_name" == "GROWTH" && "$MORPION_GROWTH_SHOW_RECAP" == "1" ]]; then
     "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.growth_recap --work-dir "$MORPION_WORK_DIR" --worker-max-cycles "$MORPION_GROWTH_WORKER_MAX_CYCLES" || true
   fi
-  ${extra_prefix}"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.launcher --work-dir "$MORPION_WORK_DIR" --pipeline-mode artifact_pipeline --training-export-mode "$TRAINING_EXPORT_MODE" ${launcher_args} 2>&1 | tee -a "$LOG_DIR/$log_name"
+  ${extra_prefix}"$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.launcher --work-dir "$MORPION_WORK_DIR" --pipeline-mode artifact_pipeline --training-export-mode "$TRAINING_EXPORT_MODE" ${launcher_args} ${cache_args} 2>&1 | tee -a "$LOG_DIR/$log_name"
   status=\${PIPESTATUS[0]}
   if [[ "$worker_name" == "GROWTH" && "\$status" -eq 0 ]] && "$PYTHON_BIN" -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]); sys.exit(0 if p.is_file() and json.loads(p.read_text(encoding="utf-8")).get("metadata", {}).get("growth_status") == "growth_budget_already_exhausted" else 1)' "$MORPION_WORK_DIR/run_state.json"; then
     echo "[$worker_name] worker exited with status \$status; growth_budget_already_exhausted; not restarting"
@@ -491,6 +518,21 @@ if [[ -n "$MORPION_TRAINING_MAX_ROWS" ]]; then
 fi
 if [[ "$MORPION_SKIP_EVALUATOR_DIAGNOSTICS" == "1" ]]; then
   TRAINING_ARGS="$TRAINING_ARGS --skip-evaluator-diagnostics"
+fi
+
+if [[ "$MORPION_SCIENTIFIC" == "1" ]]; then
+  if [[ "$MORPION_CLUSTER_HEADLESS" != "1" ]]; then
+    echo "Scientific experiments require bounded headless supervision." >&2
+    exit 1
+  fi
+  if [[ ! -f "$MORPION_WORK_DIR/run_state.json" ]]; then
+    echo "Initialize explicitly before starting scientific workers; no fresh fallback." >&2
+    exit 1
+  fi
+  GROWTH_ARGS="--scientific --pipeline-stage growth --max-cycles $MORPION_GROWTH_WORKER_MAX_CYCLES"
+  DATASET_ARGS="--scientific --pipeline-stage dataset_worker"
+  TRAINING_ARGS="--scientific --pipeline-stage training_worker --training-row-chunk-size $MORPION_TRAINING_ROW_CHUNK_SIZE --skip-evaluator-diagnostics"
+  REEVALUATION_ARGS="--scientific --pipeline-stage reevaluation --reevaluation-max-nodes-per-patch ${MORPION_REEVALUATION_MAX_NODES_PER_PATCH:-256}"
 fi
 
 if should_launch_worker growth; then

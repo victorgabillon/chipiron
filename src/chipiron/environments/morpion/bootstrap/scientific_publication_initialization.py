@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .derived.provenance import inside
@@ -19,7 +20,9 @@ from .scientific_generation_publication import catalog_paths
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
+    from .config import MorpionBootstrapConfig
     from .run_state import MorpionBootstrapRunState
 
 
@@ -205,3 +208,118 @@ def initialize_scientific_v2_publication(
         session.publish_manifest(state)
         publication.prune_uncommitted(state)
         return state
+
+
+def initialize_scientific_experiment(
+    args: MorpionBootstrapArgs,
+    config: MorpionBootstrapConfig,
+    *,
+    seed_model: Path,
+    initial_nodes: int,
+) -> MorpionBootstrapRunState:
+    """Build a bounded fresh search, then use the existing complete genesis commit."""
+    import hashlib
+    import time
+
+    from .bootstrap_paths import MorpionBootstrapPaths
+    from .config import bootstrap_config_sha256, save_bootstrap_config
+    from .control import MorpionBootstrapEffectiveRuntimeConfig
+    from .pipeline_artifacts import (
+        MorpionPipelineActiveModel,
+        save_pipeline_active_model,
+    )
+    from .run_state import initialize_bootstrap_run_state
+    from .runtime.runner import (
+        AnemoneMorpionSearchRunner,
+        AnemoneMorpionSearchRunnerArgs,
+        default_search_args,
+    )
+    from .scientific_stream import ENCODING
+
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    with growth_receipt_ownership(paths):
+        require(
+            not paths.run_state_path.exists()
+            and not (paths.work_dir / "genesis").exists(),
+            "Initialization requires a fresh workspace; preserve interrupted genesis for investigation.",
+        )
+        paths.ensure_directories()
+        genesis = paths.work_dir / "genesis"
+        genesis.mkdir()
+        bundle = genesis / "seed"
+        copy_artifact(seed_model.resolve(), bundle)
+        save_bootstrap_config(config, paths.bootstrap_config_path)
+        save_pipeline_active_model(
+            MorpionPipelineActiveModel(
+                generation=1,
+                evaluator_name="seed",
+                model_bundle_path=paths.relative_to_work_dir(bundle),
+                updated_at_utc="1970-01-01T00:00:00Z",
+                source="external_seed",
+                source_generation=1,
+            ),
+            paths.pipeline_active_model_path,
+        )
+        producer = {
+            "revision": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "objective": "maximum_total_moves",
+            "evaluator": artifact_digest(bundle),
+            "config_sha256": bootstrap_config_sha256(config),
+        }
+        effective = MorpionBootstrapEffectiveRuntimeConfig(
+            args.tree_branch_limit,
+            reevaluation_blend_alpha=args.reevaluation_blend_alpha,
+        )
+        runner = AnemoneMorpionSearchRunner(
+            AnemoneMorpionSearchRunnerArgs(
+                random_seed=4,
+                runtime_checkpoint_format="sharded",
+                search_args=default_search_args(rollout=config.search.rollout),
+            )
+        )
+        try:
+            runner.load_or_create(None, bundle, effective)
+            # The requested node count is a target, never permission for unlimited search.
+            for _ in range(args.max_growth_steps_per_cycle):
+                if runner.current_tree_size() >= initial_nodes:
+                    break
+                before = runner.current_tree_size()
+                runner.grow(1)
+                if runner.current_tree_size() == before:
+                    break
+            checkpoint = genesis / "checkpoint"
+            runner.save_checkpoint(checkpoint)
+            source = runner.export_closed_scientific_snapshot(
+                genesis / "science",
+                generation=1,
+                producer=producer,
+                encoding=ENCODING,
+            )
+            state = replace(
+                initialize_bootstrap_run_state(),
+                generation=1,
+                last_save_unix_s=time.time(),
+                tree_size_at_last_save=runner.current_tree_size(),
+                latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint),
+                latest_tree_snapshot_path=paths.relative_to_work_dir(source),
+                metadata={
+                    "bootstrap_config_hash": producer["config_sha256"],
+                    "bootstrap_effective_runtime": {
+                        "tree_branch_limit": args.tree_branch_limit,
+                        "reevaluation_blend_alpha": args.reevaluation_blend_alpha,
+                    },
+                },
+            )
+        finally:
+            runner.discard_uncommitted_runtime()
+    return initialize_scientific_v2_publication(
+        paths,
+        state,
+        producer=producer,
+        closed_scientific_snapshot=True,
+        atomic_reevaluation=True,
+        growth_scoring=True,
+        fenced_dataset=True,
+        durable_training=True,
+        model_activation=True,
+    )
