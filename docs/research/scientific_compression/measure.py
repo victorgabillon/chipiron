@@ -65,7 +65,10 @@ def measured(name: str, root: Path, operation: Any) -> Any:
                         groups["sqlite_bytes"][inode] = size
                         sqlite_paths.add(str(path))
                 for path in Path("/proc/self/fd").iterdir():
-                    stat = path.stat()
+                    try:
+                        stat = path.stat()
+                    except FileNotFoundError:
+                        continue  # The directory iterator's own fd is already closed.
                     if stat.st_nlink == 0:
                         groups["unlinked_bytes"][(stat.st_dev, stat.st_ino)] = (
                             stat.st_blocks * 512

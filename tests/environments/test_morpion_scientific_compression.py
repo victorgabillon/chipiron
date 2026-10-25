@@ -81,6 +81,7 @@ def test_exact_bytes_determinism_reference_and_cache(tmp_path: Path) -> None:
     [
         "truncated_header",
         "truncated_checksum",
+        "checksum",
         "invalid",
         "trailing",
         "concatenated",
@@ -119,6 +120,8 @@ def test_corruption_rejected_by_reference_and_index(
         encoded = encoded[:5]
     elif damage == "truncated_checksum":
         encoded = encoded[:-1]
+    elif damage == "checksum":
+        encoded = encoded[:-1] + bytes([encoded[-1] ^ 1])
     elif damage == "invalid":
         encoded = encoded[:10] + b"\xff" * (len(encoded) - 10)
     elif damage == "trailing":
@@ -260,3 +263,53 @@ def test_interrupted_compressed_index_is_disposable(
         assert not rebuilt.index_reused
     with view(manifest) as cached:
         assert cached.index_reused
+
+
+def test_refreshed_accepted_model_has_exact_raw_compressed_science(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Encode the same genuinely activated M2 graph and producer in fresh fixtures."""
+    from chipiron.environments.morpion.bootstrap.model_activation import (
+        _runner,
+        activate_model,
+        prepare_model_activation_request,
+    )
+    from tests.environments.morpion_activation_helpers import setup_activation
+    from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
+
+    local_leaderboard(monkeypatch, tmp_path)
+    _, paths, _ = setup_activation(tmp_path / "run", encoding=ENCODING)
+    state = activate_model(
+        paths, prepare_model_activation_request(paths, training_generation=1)
+    )
+    head = paths.work_dir / state.latest_tree_snapshot_path
+    header = read_closed_manifest(head)
+    runner, effective = _runner(paths, state)
+    runner.load_or_create(
+        paths.work_dir / state.latest_runtime_checkpoint_path, None, effective
+    )
+    runner.validate_model_refresh_certificates()
+    exports = []
+    for name, encoding in (("raw", None), ("compressed", ENCODING)):
+        exports.append(
+            runner.export_closed_scientific_snapshot(
+                tmp_path / name,
+                generation=1,
+                producer=header["producer"]["identity"],
+                encoding=encoding,
+            )
+        )
+    assert load_closed_scientific_snapshot(
+        exports[0]
+    ) == load_closed_scientific_snapshot(exports[1])
+    for key in ("record_shard", "update_shard"):
+        decoded = []
+        for path in exports:
+            descriptor = read_closed_manifest(path)[key]
+            with open_scientific_stream(
+                path.parent / descriptor["path"], descriptor
+            ) as stream:
+                decoded.append(stream.read())
+        assert decoded[0] == decoded[1]
+    assert_reference(exports[1])
+    runner.discard_uncommitted_runtime()

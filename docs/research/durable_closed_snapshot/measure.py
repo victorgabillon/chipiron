@@ -79,6 +79,7 @@ def main() -> None:
             "oracle",
             "discover",
             "dataset",
+            "dataset_stream",
             "continuation",
             "streams",
             "recover",
@@ -247,7 +248,10 @@ def main() -> None:
             def read() -> Any:
                 """Read."""
                 with ShardedTrainingGenerationView(
-                    source, allow_closed_snapshot=True, cache_dir=root / "reader-cache"
+                    source,
+                    allow_closed_snapshot=True,
+                    cache_dir=root
+                    / ("profile-reader-cache" if opt.profile else "reader-cache"),
                 ) as view:
                     digest = scientific_digest(
                         view.iter_nodes_in_export_order(),
@@ -312,7 +316,7 @@ def main() -> None:
 
             value, obs = measured("recover", root, recover)
             result = {"observation": obs, "nodes": value}
-        elif opt.mode == "dataset":
+        elif opt.mode in ("dataset", "dataset_stream"):
             from typing import get_args
 
             from chipiron.environments.morpion.bootstrap.cycle_dataset import (
@@ -332,10 +336,17 @@ def main() -> None:
                 SAFE_FAMILY_POLICIES,
             )
 
-            reference = load_closed_scientific_snapshot(source)
+            reference = (
+                load_closed_scientific_snapshot(source)
+                if opt.mode == "dataset"
+                else None
+            )
             pairs = []
             with ShardedTrainingGenerationView(
-                source, allow_closed_snapshot=True, cache_dir=root / "reader-cache"
+                source,
+                allow_closed_snapshot=True,
+                cache_dir=root
+                / ("profile-reader-cache" if opt.profile else "reader-cache"),
             ) as view:
                 policies = [
                     ("selected_value_v2", p) for p in sorted(SAFE_FAMILY_POLICIES)
@@ -350,37 +361,62 @@ def main() -> None:
                         dataset_confidence_policy=confidence,
                         dataset_family_target_policy=policy,
                     )
-                    expected = extract_rows_from_training_snapshot(
-                        args=configured,
-                        snapshot=reference.snapshot,
-                        generation=state.generation,
-                        value_contracts=reference.value_contracts,
-                        source_provenance=reference.provenance,
+                    expected = (
+                        extract_rows_from_training_snapshot(
+                            args=configured,
+                            snapshot=reference.snapshot,
+                            generation=state.generation,
+                            value_contracts=reference.value_contracts,
+                            source_provenance=reference.provenance,
+                        )
+                        if reference is not None
+                        else None
                     )
                     left = root / f"{confidence}-{policy}-oracle.jsonl"
-                    right = root / f"{confidence}-{policy}-indexed.jsonl"
-                    save_morpion_supervised_rows_streaming(
-                        rows=expected.rows, metadata=expected.metadata, path=left
-                    )
-                    started = perf_counter()
-                    with disk_dataset_context(
-                        IndexedDatasetSource(view), configured
-                    ) as context:
-                        stream = context.stream(state.generation)
-                        assert stream.metadata == expected.metadata
+                    right = root / f"{confidence}-{policy}-{opt.mode}.jsonl"
+                    if expected is not None:
                         save_morpion_supervised_rows_streaming(
-                            rows=context.rows(), metadata=stream.metadata, path=right
+                            rows=expected.rows, metadata=expected.metadata, path=left
                         )
+
+                    def write_dataset(
+                        configured: Any = configured,
+                        expected: Any = expected,
+                        right: Path = right,
+                    ) -> Any:
+                        """Measure only the actual indexed extraction and serialization."""
+                        with disk_dataset_context(
+                            IndexedDatasetSource(view), configured
+                        ) as context:
+                            stream = context.stream(state.generation)
+                            if expected is not None:
+                                assert stream.metadata == expected.metadata
+                            return save_morpion_supervised_rows_streaming(
+                                rows=context.rows(),
+                                metadata=stream.metadata,
+                                path=right,
+                            )
+
+                    started = perf_counter()
+                    observation = None
+                    if opt.mode == "dataset_stream":
+                        written, observation = measured(
+                            f"dataset-{confidence}-{policy}", root, write_dataset
+                        )
+                    else:
+                        written = write_dataset()
                     elapsed = perf_counter() - started
-                    with left.open("rb") as a, right.open("rb") as b:
-                        for x, y in zip(a, b, strict=True):
-                            assert x == y
+                    if expected is not None:
+                        with left.open("rb") as a, right.open("rb") as b:
+                            for x, y in zip(a, b, strict=True):
+                                assert x == y
                     pairs.append({
                         "confidence": confidence,
                         "policy": policy,
-                        "rows": len(expected.rows),
+                        "rows": written.row_count,
                         "indexed_seconds": elapsed,
-                        "jsonl_sha256": instruments.sha(left),
+                        "jsonl_sha256": instruments.sha(right),
+                        "observation": observation,
                     })
             result = {
                 "paired_jsonl_rows": sum(p["rows"] for p in pairs),
@@ -504,9 +540,9 @@ def main() -> None:
 
     result["final_process_peak_rss_mb"] = process_peak_rss_mb()
     result["source_fingerprints"] = {e["path"]: e["sha256"] for e in seal["files"]}
-    (root / f"{opt.mode}-g{state.generation}.json").write_text(
-        json.dumps(result, indent=2) + "\n"
-    )
+    (
+        root / f"{'profile-' if opt.profile else ''}{opt.mode}-g{state.generation}.json"
+    ).write_text(json.dumps(result, indent=2) + "\n")
     print(
         json.dumps({
             "mode": opt.mode,
