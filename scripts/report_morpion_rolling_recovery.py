@@ -380,7 +380,7 @@ def _inspect(
             f"Unresolved {name} ownership; recover separately.",
         )
     inodes: dict[tuple[int, int], dict[str, Any]] = {}
-    generations = []
+    generations = {}
     models: dict[str, set[str]] = {}
     model_holders: dict[tuple[str, str], list[int]] = {}
     blockers = []
@@ -471,7 +471,7 @@ def _inspect(
             )
             entry["paths"].append(str(file.relative_to(paths.work_dir)))
             entry["generations"].append(generation)
-        generations.append({
+        generations[generation] = {
             "generation": generation,
             "id": identifier,
             "current_contract_required": True,
@@ -486,11 +486,13 @@ def _inspect(
             "rollback_executable": False,
             "files": [str(p.relative_to(paths.work_dir)) for p in files],
             "models": model_pins,
-        })
+        }
     _work_roots(paths, state, records, reasons, models, ledger)
-    # Exact receipt acknowledgement calls model_pin(), which validates EVERY
-    # capsule from the current head down to the newest matching model holder.
-    # Another surviving copy of the weights does not remove that runtime edge.
+    # model_pin authenticates the newest matching physical bundle, and every
+    # descriptor scanned to find it. Keep that exact binding, not an alternative
+    # copy inferred from equal weights or hardlinks. Historical trees are separate.
+    receipt_model_evidence = []
+    retained_model_files: set[str] = set()
     if ledger:
         lookup_floor = min(
             max(model_holders[(r.model_bundle_path, r.model_sha256)])
@@ -498,7 +500,32 @@ def _inspect(
         )
         for generation in records:
             if generation >= lookup_floor:
-                reasons[generation].append("exact-receipt-model-lookup")
+                retained_commitments.add(records[generation]["descriptor_path"])
+        for receipt in ledger.values():
+            holder = max(
+                model_holders[(receipt.model_bundle_path, receipt.model_sha256)]
+            )
+            item = generations[holder]
+            model = next(
+                m
+                for m in item["models"]
+                if (m["origin"], m["sha256"])
+                == (receipt.model_bundle_path, receipt.model_sha256)
+            )
+            bundle = capsule_path(paths.work_dir, item["id"], 3) / model["path"]
+            prefix = str(bundle.relative_to(paths.work_dir)) + "/"
+            retained_model_files.update(
+                p for p in item["files"] if p.startswith(prefix)
+            )
+            receipt_model_evidence.append({
+                "patch_id": receipt.patch_id,
+                "logical_origin": receipt.model_bundle_path,
+                "model_sha256": receipt.model_sha256,
+                "physical_bundle": prefix[:-1],
+                "holder_generation": holder,
+                "descriptor_path": records[holder]["descriptor_path"],
+                "descriptor_sha256": records[holder]["descriptor_sha256"],
+            })
     # Every unique receipt model must survive in a selected capsule, even if its
     # original logical path is kept outside the candidate namespace.
     live = {g for g, why in reasons.items() if why}
@@ -513,6 +540,7 @@ def _inspect(
         if live.isdisjoint(i["generations"])
         and len(i["paths"]) == i["nlink"]
         and retained_commitments.isdisjoint(i["paths"])
+        and retained_model_files.isdisjoint(i["paths"])
     ]
     require(
         all(len(i["paths"]) == i["nlink"] for i in inodes.values()),
@@ -534,7 +562,7 @@ def _inspect(
         "rollback_candidates": [reference(r) for r in ordered[-3:-1]],
         "additional": [reference(r) for r in ordered[:-3] if r["generation"] in live],
     }
-    for item in generations:
+    for item in generations.values():
         item["rolling_required"] = bool(item["rolling_reasons"])
     return {
         "validated": not blockers,
@@ -547,9 +575,11 @@ def _inspect(
         "current_publication_metadata_bytes": encoded_bytes(
             state.metadata[PUBLICATION_KEY]
         ),
-        "generations": generations,
+        "generations": list(generations.values()),
         "activation_completion_evidence": completion_evidence,
+        "receipt_model_evidence": receipt_model_evidence,
         "retained_commitment_files": sorted(retained_commitments),
+        "retained_receipt_model_files": sorted(retained_model_files),
         "conditional_candidates": [] if blockers else sorted(set(records) - live),
         "conditional_reclaimable_files": [] if blockers else candidate_inodes,
         "conditional_reclaimable_file_blocks": 0
@@ -570,7 +600,7 @@ def _inspect(
             "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
             "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
             "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
-            "Exact receipt model lookup still validates its historical capsule scan; alternate model copies do not authorize skipping it.",
+            "Exact receipt lookup retains its descriptor scan and exact chosen frozen models, independently of historical trees.",
             "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
             "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
             "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing.",

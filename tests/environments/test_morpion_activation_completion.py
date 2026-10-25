@@ -313,10 +313,10 @@ def test_old_reader_and_explicit_pin_still_protect_payload(
     assert report["validated"] and report["conditional_candidates"] == []
 
 
-def test_receipt_model_lookup_still_pins_old_activation(
+def test_receipt_model_lookup_retains_evidence_without_old_tree(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An alternate surviving M1 bundle does not bypass the actual model-pin scan."""
+    """Retain the actual selected bundle and seal, independently of the old tree."""
     from chipiron.environments.morpion.bootstrap import generation_publication
     from tests.environments.test_morpion_model_activation_edges import propose
 
@@ -346,9 +346,13 @@ def test_receipt_model_lookup_still_pins_old_activation(
         pass
     report = analyze(paths, retain=(1,))
     assert report["validated"], report
-    assert old_generation not in report["conditional_candidates"]
+    assert old_generation in report["conditional_candidates"]
     old = next(g for g in report["generations"] if g["generation"] == old_generation)
-    assert "exact-receipt-model-lookup" in old["rolling_reasons"]
+    assert not old["rolling_reasons"]
+    assert any(
+        e["holder_generation"] == old_generation
+        for e in report["receipt_model_evidence"]
+    )
     # Trace actual validation, retaining every byte: no simulated receipt or deletion.
     seen = []
     original_validate = generation_publication.validate_capsule
@@ -361,6 +365,6 @@ def test_receipt_model_lookup_still_pins_old_activation(
     authority = paths.run_state_path.read_bytes()
     paths.pipeline_reevaluation_patch_path.write_bytes(original_patch)
     activate_model(paths, request)
-    assert old_generation in seen
+    assert old_generation not in seen
     assert paths.run_state_path.read_bytes() == authority
     assert not paths.pipeline_reevaluation_patch_path.exists()

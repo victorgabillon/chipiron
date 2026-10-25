@@ -30,6 +30,7 @@ from .generation_publication_io import (
     publication_namespace,
     publication_records,
     publish_directory_if_absent,
+    read_committed_descriptor,
     read_object,
     require,
     sync_artifact,
@@ -353,9 +354,13 @@ class DurableGenerationPublication:
     def model_pin(
         self, state: MorpionBootstrapRunState, origin: str, digest: str
     ) -> Path:
-        """Resolve exact original model bytes from retained committed provenance."""
+        """Authenticate the original model binding and its actual frozen bytes.
+
+        Receipt recovery validates the current head separately. Historical model
+        lookup needs sealed provenance, not unrelated checkpoint/scientific files.
+        """
         for record in reversed(publication_records(state.metadata)):
-            descriptor = validate_capsule(self.paths.work_dir, record)
+            descriptor = read_committed_descriptor(self.paths.work_dir, record)
             for pin in descriptor["model_pins"]:
                 if (pin["origin"], pin["sha256"]) == (origin, digest):
                     path = inside(

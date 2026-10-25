@@ -417,7 +417,7 @@ def read_committed_descriptor(work_dir: Path, record: dict[str, Any]) -> dict[st
 
 
 def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
-    """Verify every dependency before exposing scientific rows or acknowledging a patch."""
+    """Verify every dependency for scientific consumers and current-head recovery."""
     descriptor = read_committed_descriptor(work_dir, record)
     version = record.get("publication_version", 1)
     root = capsule_path(work_dir, record["id"], version)
