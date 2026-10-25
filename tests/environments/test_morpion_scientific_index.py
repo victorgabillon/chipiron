@@ -215,7 +215,7 @@ def test_concurrent_builders_old_pins_new_generation_and_restart(
             for process, pipe in processes:
                 if process.is_alive():
                     process.kill()
-                process.join(30)
+                process.join()  # Confirm death before the owner's directory exits.
                 assert not process.is_alive()
                 pipe.close()
     assert not cache.exists()
@@ -256,7 +256,7 @@ def test_owned_cache_after_process_death(tmp_path: Path) -> None:
         finally:
             if process.is_alive():
                 process.kill()
-            process.join(30)
+            process.join()
             assert not process.is_alive()
     assert not cache.exists()
 
@@ -305,7 +305,7 @@ def test_killed_reader_releases_pin_but_keeps_reusable_index(tmp_path: Path) -> 
         finally:
             if process.is_alive():
                 process.kill()
-            process.join(30)
+            process.join()
             assert not process.is_alive()
             parent.close()
     assert not cache.exists()
