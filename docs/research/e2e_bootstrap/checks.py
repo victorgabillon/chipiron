@@ -117,6 +117,9 @@ def science(
     return runner.export_closed_scientific_snapshot(
         destination,
         generation=target,
+        encoding=read_closed_manifest(paths.work_dir / head["tree_snapshot_path"])[
+            "record_shard"
+        ].get("encoding"),
         producer=producer,
         committed_source=None
         if previous is None
@@ -262,11 +265,18 @@ def verify(root: Path, out: Path, *, full: bool) -> dict:
             (n.state_ref_payload, n.parent_ids, n.child_ids)
             for n in new_science.snapshot.nodes
         ]
-        assert (root / previous["tree_snapshot_path"]).parent.joinpath(
-            "records.jsonl"
-        ).read_bytes().splitlines()[1:] == source.parent.joinpath(
-            "records.jsonl"
-        ).read_bytes().splitlines()[1:]
+        from chipiron.environments.morpion.bootstrap.scientific_stream import (
+            open_scientific_stream,
+        )
+
+        record_rows = []
+        for manifest in (root / previous["tree_snapshot_path"], source):
+            descriptor = read_closed_manifest(manifest)["record_shard"]
+            with open_scientific_stream(
+                manifest.parent / descriptor["path"], descriptor
+            ) as stream:
+                record_rows.append(stream.read().splitlines()[1:])
+        assert record_rows[0] == record_rows[1]
         result["activation_independent_max_and_full_checkpoint"] = True
         restored.discard_uncommitted_runtime()
     if full:

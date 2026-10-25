@@ -80,11 +80,14 @@ def main() -> None:
             "discover",
             "dataset",
             "continuation",
+            "streams",
+            "recover",
         ],
     )
     p.add_argument("--count", type=int, default=1000)
     p.add_argument("--history", action="store_true")
     p.add_argument("--profile", action="store_true")
+    p.add_argument("--encoding", choices=["jsonl-zstd-1"])
     opt = p.parse_args()
     root = opt.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -158,7 +161,10 @@ def main() -> None:
             """Write and commit the initial frozen runtime."""
             checkpoint = paths.work_dir / "genesis-checkpoint.sharded"
             source = runner.export_closed_scientific_snapshot(
-                paths.work_dir / "genesis-source", generation=1, producer=producer
+                paths.work_dir / "genesis-source",
+                generation=1,
+                producer=producer,
+                encoding=opt.encoding,
             )
             runner.save_checkpoint(checkpoint)
             state = replace(
@@ -260,6 +266,52 @@ def main() -> None:
                 value, obs = measured(opt.mode, root, read)
             assert value["reused"] == (opt.mode == "reuse")
             result = {"observation": obs, "hashing": hashed, **value}
+        elif opt.mode == "streams":
+            from chipiron.environments.morpion.bootstrap.scientific_stream import (
+                open_scientific_stream,
+            )
+            from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
+                read_closed_manifest,
+            )
+
+            header = read_closed_manifest(source)
+
+            def read_streams() -> Any:
+                values = {}
+                for key in ("record_shard", "update_shard"):
+                    descriptor = header[key]
+                    digest = hashlib.sha256()
+                    size = 0
+                    with open_scientific_stream(
+                        source.parent / descriptor["path"], descriptor
+                    ) as stream:
+                        while data := stream.read(64 * 1024):
+                            digest.update(data)
+                            size += len(data)
+                    values[key] = {"sha256": digest.hexdigest(), "bytes": size}
+                return values
+
+            value, obs = measured("streams", root, read_streams)
+            result = {"observation": obs, "decoded": value}
+        elif opt.mode == "recover":
+            from chipiron.environments.morpion.bootstrap import (
+                MorpionBootstrapEffectiveRuntimeConfig,
+            )
+
+            def recover() -> Any:
+                validate_capsule(
+                    paths.work_dir, publication_records(state.metadata)[-1]
+                )
+                runner.load_or_create(
+                    paths.work_dir / state.latest_runtime_checkpoint_path,
+                    None,
+                    MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=100000),
+                )
+                runner.validate_model_refresh_certificates()
+                return runner.current_tree_size()
+
+            value, obs = measured("recover", root, recover)
+            result = {"observation": obs, "nodes": value}
         elif opt.mode == "dataset":
             from typing import get_args
 

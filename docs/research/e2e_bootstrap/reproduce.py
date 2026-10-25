@@ -26,6 +26,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--endgame", action="store_true")
+    parser.add_argument("--scientific-encoding", choices=["jsonl-zstd-1"])
     options = parser.parse_args()
     destination = options.destination.resolve()
     destination.mkdir(parents=True, exist_ok=False)
@@ -74,7 +75,15 @@ def main() -> None:
         assert checked["scientific_hashes"] == oracle["science"]
         return checked
 
-    initialized = run("init", *(["--endgame"] if options.endgame else []))
+    initialized = run(
+        "init",
+        *(["--endgame"] if options.endgame else []),
+        *(
+            ["--scientific-encoding", options.scientific_encoding]
+            if options.scientific_encoding
+            else []
+        ),
+    )
     checked = run("check")
     m1 = initialized["after"]["model"]
     if options.endgame:

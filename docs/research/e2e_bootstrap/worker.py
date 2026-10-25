@@ -124,7 +124,9 @@ def arguments(root: Path) -> MorpionBootstrapArgs:
     )
 
 
-def initialize(root: Path, count: int, endgame: bool) -> None:
+def initialize(
+    root: Path, count: int, endgame: bool, encoding: str | None = None
+) -> None:
     """Genuine legal search, real seed weights, independently validated fresh genesis."""
     from contextlib import nullcontext
 
@@ -188,7 +190,7 @@ def initialize(root: Path, count: int, endgame: bool) -> None:
         "config_sha256": bootstrap_config_sha256(config),
     }
     source = runner.export_closed_scientific_snapshot(
-        root / "genesis-science", generation=1, producer=producer
+        root / "genesis-science", generation=1, producer=producer, encoding=encoding
     )
     state = replace(
         initialize_bootstrap_run_state(),
@@ -244,6 +246,7 @@ def main() -> None:
     parser.add_argument("--generation", type=int)
     parser.add_argument("--count", type=int, default=64)
     parser.add_argument("--endgame", action="store_true")
+    parser.add_argument("--scientific-encoding", choices=["jsonl-zstd-1"])
     parser.add_argument("--request", type=Path)
     options = parser.parse_args()
     root = options.root.resolve()
@@ -269,7 +272,9 @@ def main() -> None:
         lambda **kw: original(**kw, leaderboard_path=root.parent / "leaderboard.jsonl"),
     ):
         if options.stage == "init":
-            initialize(root, options.count, options.endgame)
+            initialize(
+                root, options.count, options.endgame, options.scientific_encoding
+            )
         elif options.stage == "growth":
             state = load_bootstrap_run_state(paths.run_state_path)
             runner, _ = _runner(paths, state)
