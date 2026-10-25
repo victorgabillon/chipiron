@@ -269,14 +269,15 @@ def test_growth_lock_excludes_activation(
     assert paths.run_state_path.read_bytes() == before
 
 
+@pytest.mark.parametrize("encoding", [None, "jsonl-zstd-1"])
 def test_late_m1_producer_cannot_publish(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, encoding: str | None
 ) -> None:
     """Pause real M1 computation, commit M2, then exercise the final producer fence."""
     from threading import Event, Thread
 
     local_leaderboard(monkeypatch, tmp_path)
-    args, paths, _ = setup_activation(tmp_path / "workspace")
+    args, paths, _ = setup_activation(tmp_path / "workspace", encoding=encoding)
     request = prepare_model_activation_request(paths, training_generation=1)
     arrived, release = Event(), Event()
     original = worker.proposal_patch

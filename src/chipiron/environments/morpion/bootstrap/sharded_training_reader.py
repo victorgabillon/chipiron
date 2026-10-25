@@ -1220,7 +1220,10 @@ class ShardedTrainingGenerationView:
         record: dict[str, Any], update: dict[str, Any]
     ) -> TrainingNodeSnapshot:
         """Reconstruct exactly the saved v2 fields, without a v1 value fallback."""
-        _validate_update(update)
+        # Ingestion validates every update before the completion marker. Opening
+        # verifies source identity and all cached bytes; published indexes are
+        # immutable. Repeating that field validation on every Dataset pass adds
+        # no evidence within this validated view's lifetime.
         return TrainingNodeSnapshot(
             node_id=update["node_id"],
             parent_ids=tuple(update["parent_ids"]),
@@ -1421,7 +1424,9 @@ class ShardedTrainingGenerationView:
         """Decode one scientific row; never decompress a complete index."""
         return cast(
             "dict[str, Any]",
-            json.loads(self._payload_decoder.decompress(payload, allow_extra_data=False)),
+            json.loads(
+                self._payload_decoder.decompress(payload, allow_extra_data=False)
+            ),
         )
 
     def iter_nodes_in_export_order(self) -> Iterator[TrainingNodeSnapshot]:

@@ -37,6 +37,44 @@ def _open(source: Path, cache: Path) -> ShardedTrainingGenerationView:
     )
 
 
+def test_scientific_validation_precedes_reuse_and_reconstruction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every ingested update is validated once; a pinned immutable view reuses it."""
+    from chipiron.environments.morpion.bootstrap import (
+        sharded_training_reader as reader,
+    )
+
+    source = closed(tmp_path / "source", encoding="jsonl-zstd-1")
+    oracle = load_closed_scientific_snapshot(source)
+    validated = []
+    original = reader._validate_update
+
+    def checked(row: Any) -> None:
+        original(row)
+        validated.append(row["node_id"])
+
+    monkeypatch.setattr(reader, "_validate_update", checked)
+    with _open(source, tmp_path / "cache") as initial:
+        assert validated == [node.node_id for node in oracle.snapshot.nodes]
+        for _ in range(3):
+            assert tuple(initial.iter_nodes_in_export_order()) == oracle.snapshot.nodes
+        assert len(validated) == len(oracle.snapshot.nodes)
+    validated.clear()
+    with _open(source, tmp_path / "cache") as reused:
+        assert reused.index_reused
+        assert tuple(reused.iter_nodes_in_export_order()) == oracle.snapshot.nodes
+        assert not validated
+        index = reused.index_path
+    # Corruption cannot inherit the previously validated view's lifetime.
+    with sqlite3.connect(index) as connection:
+        connection.execute("UPDATE updates SET sequence=sequence+1")
+    with _open(source, tmp_path / "cache") as rebuilt:
+        assert not rebuilt.index_reused
+        assert validated == [node.node_id for node in oracle.snapshot.nodes]
+        assert tuple(rebuilt.iter_nodes_in_export_order()) == oracle.snapshot.nodes
+
+
 @pytest.mark.parametrize(
     "damage",
     ("text", "frame", "oversized_frame", "order", "completion", "digest", "missing"),
