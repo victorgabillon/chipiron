@@ -8,6 +8,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, get_args
 
 import pytest
+import zstandard
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
@@ -94,10 +95,15 @@ def test_corrupt_cached_reference_rebuilds_before_fast_rows(tmp_path: Path) -> N
         row = connection.execute(
             "SELECT payload FROM records WHERE node_id='0'"
         ).fetchone()
-        payload = json.loads(row[0])
+        payload = json.loads(zstandard.ZstdDecompressor().decompress(row[0]))
         payload["state_ref_payload"] = [0, [0]]
         connection.execute(
-            "UPDATE records SET payload=? WHERE node_id='0'", (json.dumps(payload),)
+            "UPDATE records SET payload=? WHERE node_id='0'",
+            (
+                zstandard.ZstdCompressor(level=3, write_checksum=True).compress(
+                    json.dumps(payload).encode()
+                ),
+            ),
         )
     with view(path) as rebuilt:
         assert not rebuilt.index_reused
