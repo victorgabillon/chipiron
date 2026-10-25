@@ -218,12 +218,16 @@ def initialize_scientific_experiment(
     initial_nodes: int,
 ) -> MorpionBootstrapRunState:
     """Build a bounded fresh search, then use the existing complete genesis commit."""
-    import hashlib
     import time
+
+    import anemone
+
+    import chipiron
 
     from .bootstrap_paths import MorpionBootstrapPaths
     from .config import bootstrap_config_sha256, save_bootstrap_config
     from .control import MorpionBootstrapEffectiveRuntimeConfig
+    from .derived.cli import package_fingerprint
     from .pipeline_artifacts import (
         MorpionPipelineActiveModel,
         save_pipeline_active_model,
@@ -261,7 +265,8 @@ def initialize_scientific_experiment(
             paths.pipeline_active_model_path,
         )
         producer = {
-            "revision": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "revision": package_fingerprint(Path(chipiron.__file__).parent),
+            "anemone_source_sha256": package_fingerprint(Path(anemone.__file__).parent),
             "objective": "maximum_total_moves",
             "evaluator": artifact_digest(bundle),
             "config_sha256": bootstrap_config_sha256(config),
