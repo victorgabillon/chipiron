@@ -42,11 +42,13 @@ def main() -> None:
     parser.add_argument("label")
     parser.add_argument("mode", choices=("reads", "scope"))
     parser.add_argument("--native", action="store_true")
+    parser.add_argument("--workspace", type=Path)
     opt = parser.parse_args()
     measure = native_measurement if opt.native else measured
     root = opt.root.resolve()
-    state = load_bootstrap_run_state(root / "work/run_state.json")
-    source = root / "work" / state.latest_tree_snapshot_path
+    workspace = opt.workspace.resolve() if opt.workspace else root / "work"
+    state = load_bootstrap_run_state(workspace / "run_state.json")
+    source = workspace / state.latest_tree_snapshot_path
     instruments.options = SimpleNamespace(profile=False)
     result = {"source": str(source), "manifest_sha256": sha(source)}
     hashes = {"calls": 0, "bytes": 0}
@@ -116,7 +118,7 @@ def main() -> None:
             }
             for policy in (RAW_NUMERIC_POLICY, GROWTH_NUMERIC_POLICY):
                 adapter = MorpionActiveModelNodeReevaluationEvaluator(
-                    root / "work" / MODEL, numeric_policy=policy
+                    workspace / MODEL, numeric_policy=policy
                 )
 
                 def reevaluate(policy: str = policy, adapter: Any = adapter) -> str:
