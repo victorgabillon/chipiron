@@ -7,6 +7,7 @@ No scheduler, publication replacement, retention, or implicit model promotion.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -41,15 +42,41 @@ def main() -> None:
     parser.add_argument("inputs", type=Path)
     parser.add_argument("--nodes", type=int, default=100)
     parser.add_argument("--cluster-seconds", type=int, default=120)
+    parser.add_argument("--max-seconds", type=int, default=3600)
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--session-only", action="store_true")
+    parser.add_argument("--initialize-only", action="store_true")
+    parser.add_argument("--initial-workspace", type=Path)
+    parser.add_argument("--growth-steps", type=int, default=1)
+    parser.add_argument("--growth-pause", type=int, default=2)
+    parser.add_argument("--ownership-wait", type=float, default=60)
+    parser.add_argument(
+        "--validation-level", choices=("routine", "audit"), default="audit"
+    )
+    parser.add_argument("--audit-every-check", action="store_true")
     options = parser.parse_args()
     root = options.destination.resolve()
     if options.verify:
         from . import checks
 
-        checks.verify(root)
+        try:
+            checks.verify(root, full=options.validation_level == "audit")
+        except BaseException:
+            (root / f"validation-failed-{time.time_ns()}.json").write_text(
+                json.dumps({
+                    "level": options.validation_level,
+                    "time_ns": time.time_ns(),
+                })
+            )
+            raise
         return
-    if options.cluster_seconds <= 0:
+    if (
+        options.cluster_seconds <= 0
+        or options.growth_pause <= 0
+        or options.growth_steps <= 0
+        or options.max_seconds <= 0
+        or not 0 <= options.ownership_wait <= 600
+    ):
         parser.error("The real four-worker session requires a positive horizon.")
     root.mkdir(parents=True, exist_ok=False)
     workspace = root / "workspace"
@@ -76,12 +103,20 @@ def main() -> None:
         "minimum_disk_headroom_bytes": 20 * 2**30,
         "cluster_seconds": options.cluster_seconds,
         "stop_grace_seconds": 15,
-        "growth_pause_seconds": 90,
+        "growth_pause_seconds": options.growth_pause,
+        "ownership_wait_seconds": options.ownership_wait,
+        "audit_policy": "every-check" if options.audit_every_check else "model-changes",
         "node_target": options.nodes,
-        "subsequent_steps_per_call": 1,
+        "subsequent_steps_per_call": options.growth_steps,
+        "maximum_call_seconds": 1800,
+        "maximum_growth_calls_per_session": options.cluster_seconds
+        // options.growth_pause
+        + 1,
         "cycles": 2,
     }
     (root / "budget.json").write_text(json.dumps(budget, indent=2))
+    experiment_started = time.monotonic()
+    budget["maximum_experiment_seconds"] = options.max_seconds
     calls = []
     scratch = Path(tempfile.mkdtemp(prefix="experiment-", dir=os.environ["TMPDIR"]))
     budget["scratch"] = str(scratch)
@@ -114,7 +149,8 @@ def main() -> None:
         env = dict(environment)
         if cluster:
             env.update(
-                GROWTH_SLEEP_SECONDS="90",
+                GROWTH_SLEEP_SECONDS=str(options.growth_pause),
+                MORPION_WORKER_OWNERSHIP_WAIT_SECONDS=str(options.ownership_wait),
                 MORPION_SCIENTIFIC="1",
                 MORPION_USE_INSTALLED_PACKAGES="1",
                 MORPION_CLUSTER_HEADLESS="1",
@@ -148,6 +184,9 @@ def main() -> None:
             started = time.monotonic()
             observed = {}
             group_peaks = {}
+            union_peak_rss = 0
+            authorities = []
+            previous_authority = b""
             peak_workspace = 0
             peak_staging = 0
             peak_scratch = 0
@@ -157,6 +196,32 @@ def main() -> None:
                         processes = psutil.Process(result.pid).children(recursive=True)
                     except psutil.NoSuchProcess:
                         processes = []
+                    if paths.run_state_path.exists():
+                        authority = paths.run_state_path.read_bytes()
+                        if authority != previous_authority:
+                            observed_state = json.loads(authority)
+                            publication = observed_state.get("metadata", {}).get(
+                                "durable_generation_publication_v1", {}
+                            )
+                            authorities.append({
+                                "elapsed_s": time.monotonic() - started,
+                                "sha256": hashlib.sha256(authority).hexdigest(),
+                                "generation": observed_state["generation"],
+                                "nodes": observed_state["tree_size_at_last_save"],
+                                "results": [
+                                    {
+                                        key: r[key]
+                                        for key in (
+                                            "generation",
+                                            "accepted_dataset",
+                                            "accepted_training",
+                                        )
+                                        if key in r
+                                    }
+                                    for r in publication.get("generations", [])
+                                ],
+                            })
+                            previous_authority = authority
                     group_rss = {}
                     for process in processes:
                         try:
@@ -177,6 +242,7 @@ def main() -> None:
                             group_rss[group] = group_rss.get(group, 0) + rss
                         except (psutil.NoSuchProcess, ProcessLookupError):
                             pass
+                    union_peak_rss = max(union_peak_rss, sum(group_rss.values()))
                     for group, rss in group_rss.items():
                         group_peaks[str(group)] = max(
                             group_peaks.get(str(group), 0), rss
@@ -210,7 +276,8 @@ def main() -> None:
                         > budget["maximum_group_union_rss_bytes"]
                         or psutil.virtual_memory().available
                         < budget["minimum_available_ram_bytes"]
-                        or time.monotonic() - started > 600
+                        or time.monotonic() - started > budget["maximum_call_seconds"]
+                        or time.monotonic() - experiment_started > options.max_seconds
                         or peak_workspace > budget["workspace_limit_bytes"]
                         or shutil.disk_usage(root).free
                         < budget["minimum_disk_headroom_bytes"]
@@ -232,7 +299,9 @@ def main() -> None:
                 json.dumps(
                     {
                         "processes": observed,
+                        "authority_observations": authorities,
                         "group_peak_rss_bytes": group_peaks,
+                        "process_union_peak_rss_bytes": union_peak_rss,
                         "workspace_peak_allocated_bytes": peak_workspace,
                         "staging_peak_allocated_bytes": peak_staging,
                         "scratch_peak_allocated_bytes": peak_scratch,
@@ -257,24 +326,60 @@ def main() -> None:
                     assert not Path(line.split("private_reader_cache=")[1]).exists()
 
     inputs = options.inputs.resolve()
-    run(
-        "initialize",
-        [
-            *prefix,
-            "--scientific-operation",
+    if options.initial_workspace is not None:
+        source = options.initial_workspace.resolve()
+        source_state = load_bootstrap_run_state(source / "run_state.json")
+        assert source_state.generation == 1, (
+            "Matched sessions require a task-private frozen genesis."
+        )
+        committed_evaluator(source, source_state)
+        shutil.copytree(source, workspace)
+        budget["copied_initial_workspace"] = str(source)
+        (root / "budget.json").write_text(json.dumps(budget, indent=2))
+    else:
+        run(
             "initialize",
-            "--scientific-config",
-            str(inputs / "bootstrap_config.json"),
-            "--seed-model",
-            str(inputs / "seed"),
-            "--initial-nodes",
-            str(options.nodes),
-        ],
-    )
+            [
+                *prefix,
+                "--scientific-operation",
+                "initialize",
+                "--scientific-config",
+                str(inputs / "bootstrap_config.json"),
+                "--seed-model",
+                str(inputs / "seed"),
+                "--initial-nodes",
+                str(options.nodes),
+            ],
+        )
+
+    if options.initialize_only:
+        return
     save_bootstrap_control(
-        MorpionBootstrapControl(max_growth_steps_per_cycle=1, save_after_seconds=0.0),
+        MorpionBootstrapControl(
+            max_growth_steps_per_cycle=options.growth_steps, save_after_seconds=0.0
+        ),
         paths.control_path,
     )
+    if options.session_only:
+        run(
+            "matched-four-workers",
+            ["bash", "scripts/launch_morpion_gnome_cluster.sh"],
+            cluster=True,
+        )
+        run(
+            "routine-check",
+            [
+                sys.executable,
+                "-m",
+                "docs.research.operational_bootstrap.reproduce",
+                str(root),
+                str(inputs),
+                "--verify",
+                "--validation-level",
+                "routine",
+            ],
+        )
+        return
     initial = committed_evaluator(
         workspace, load_bootstrap_run_state(paths.run_state_path)
     )[0]
@@ -385,6 +490,8 @@ def main() -> None:
             str(root),
             str(inputs),
             "--verify",
+            "--validation-level",
+            "audit" if options.audit_every_check else "routine",
         ],
     )
     run("inspect", [*prefix, "--scientific-operation", "inspect"])

@@ -16,16 +16,47 @@ from docs.research.e2e_bootstrap import checks
 from docs.research.e2e_bootstrap.worker import arguments
 
 
-def verify(root: Path) -> None:
-    """Compare current checkpoint, all accepted rows, values and actual patch rows."""
+def verify(root: Path, *, full: bool = True) -> None:
+    """Keep authoritative recovery checks; select the existing independent full audit."""
     workspace = root / "workspace"
     config = load_bootstrap_config(workspace / "bootstrap_config.json")
     with patch.object(
         checks, "arguments", lambda p: _scientific_args(arguments(p), config)
     ):
         result = checks.verify(
-            workspace, root / f"verified-{time.time_ns()}", full=True
+            workspace, root / f"verified-{time.time_ns()}", full=full
         )
+    from chipiron.environments.morpion.bootstrap import (
+        MorpionBootstrapPaths,
+        dataset_publication,
+        training_publication,
+    )
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        publication_records,
+    )
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        load_bootstrap_run_state,
+    )
+
+    paths = MorpionBootstrapPaths.from_work_dir(workspace)
+    before = paths.run_state_path.read_bytes()
+    state = load_bootstrap_run_state(paths.run_state_path)
+    accepted = []
+    for record in publication_records(state.metadata):
+        item = {"generation": record["generation"]}
+        if "accepted_dataset" in record:
+            item["dataset"] = dataset_publication.accepted_dataset_identity(
+                paths, state, record["generation"]
+            )
+        if "accepted_training" in record:
+            item["training"] = training_publication.accepted_selected_model(
+                paths, state, record["generation"]
+            )
+        if len(item) > 1:
+            accepted.append(item)
+    assert paths.run_state_path.read_bytes() == before
+    result["validation_level"] = "independent-audit" if full else "routine-recovery"
+    result["verified_accepted_identities"] = accepted
     from atomheart.games.morpion.dynamics import MorpionDynamics
 
     from chipiron.environments.morpion.learning import decode_morpion_state_ref_payload
@@ -48,7 +79,9 @@ def verify(root: Path) -> None:
                 "variant": entry["variant"],
                 "legal_replay_and_terminal": True,
             })
-    if result["certificates"]["terminal"]:
+    if result.get("certificates", {}).get("terminal"):
         assert verified_records
     result["verified_leaderboard"] = verified_records
-    (root / "latest-verification.json").write_text(json.dumps(result, indent=2))
+    encoded = json.dumps(result, indent=2)
+    (root / f"verification-{time.time_ns()}.json").write_text(encoded)
+    (root / "latest-verification.json").write_text(encoded)
