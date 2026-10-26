@@ -16,6 +16,7 @@ import shutil
 import time
 from contextlib import contextmanager
 from contextvars import ContextVar
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 from .cycle_timing import timestamp_utc_from_unix_s
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from .run_state import MorpionBootstrapRunState
 
 PUBLICATION_KEY = "durable_generation_publication_v1"
+RETIRED_PAYLOAD_KEY = "retired_payload_v1"
 LOGGER = logging.getLogger(__name__)
 PUBLICATION_NAMESPACE = "generation_publications_v1"
 CAPSULE_SEAL = ".generation_publication_v1.json"
@@ -273,6 +275,18 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
             identifier not in ids and generation not in generations,
             "Duplicate publication root.",
         )
+        if RETIRED_PAYLOAD_KEY in record:
+            require(
+                data["schema_version"] == 3
+                and data.get("evaluator_contract") == 1
+                and index < len(records) - 3
+                and record[RETIRED_PAYLOAD_KEY] == record.get("descriptor_sha256")
+                and isinstance(record[RETIRED_PAYLOAD_KEY], str)
+                and len(record[RETIRED_PAYLOAD_KEY]) == 64
+                and "accepted_dataset" not in record
+                and "accepted_training" not in record,
+                "Invalid retirement admission or required complete boundary.",
+            )
         ids.add(identifier)
         generations.add(generation)
         require(
@@ -450,9 +464,44 @@ def read_committed_descriptor(work_dir: Path, record: dict[str, Any]) -> dict[st
     return descriptor
 
 
-def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
-    """Verify every dependency for scientific consumers and current-head recovery."""
+def capsule_payload_files(descriptor: dict[str, Any]) -> set[str]:
+    """Only checkpoint/science bytes can retire; all seals, config and models stay."""
+    require(
+        all(
+            PurePosixPath(pin["path"]).parts[0] == "models"
+            for pin in descriptor["model_pins"]
+        ),
+        "Model pin is not separated from retireable payloads.",
+    )
+    return {
+        entry["path"]
+        for entry in descriptor["files"]
+        if PurePosixPath(entry["path"]).parts[0]
+        in {"checkpoint", "scientific_snapshot"}
+    }
+
+
+def validate_capsule(
+    work_dir: Path, record: dict[str, Any], *, retired_evidence: bool = False
+) -> dict[str, Any]:
+    """Read complete inputs, or explicitly audit the evidence of a retired boundary.
+
+    Retirement never makes a historical tree a readable scientific input. The
+    exact committed seal authorizes missing payload entries only; surviving bytes
+    and every model/configuration entry remain checked, including during cleanup.
+    """
     descriptor = read_committed_descriptor(work_dir, record)
+    retired = RETIRED_PAYLOAD_KEY in record
+    require(
+        not retired
+        or (
+            retired_evidence
+            and record.get("publication_version") == 3
+            and record[RETIRED_PAYLOAD_KEY] == record["descriptor_sha256"]
+        ),
+        "Retired payload is not an available scientific/recovery boundary.",
+    )
+    permitted_missing = capsule_payload_files(descriptor) if retired else set()
     version = record.get("publication_version", 1)
     root = capsule_path(work_dir, record["id"], version)
     seal = root / capsule_seal(version)
@@ -473,6 +522,13 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
             "Conflicting capsule dependency path.",
         )
         names.add(relative)
+        require(
+            not PurePosixPath(relative).is_absolute()
+            and ".." not in PurePosixPath(relative).parts,
+            "Unsafe capsule dependency path.",
+        )
+        if relative in permitted_missing and not (root / relative).exists():
+            continue
         path = inside(root, relative)
         require(
             path.is_file()
@@ -485,7 +541,10 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
         for p in root.rglob("*")
         if p.is_file() and p != seal
     }
-    require(actual == names, "Capsule inventory does not match its files.")
+    require(
+        names - permitted_missing <= actual <= names,
+        "Capsule inventory does not match its files.",
+    )
     require(
         not any(p.is_symlink() for p in root.rglob("*")),
         "Symlinked capsule dependency.",
@@ -493,12 +552,12 @@ def validate_capsule(work_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
     if not descriptor.get("baseline"):
         for field in ["checkpoint_path", "tree_snapshot_path"]:
             value = record[field]
-            if value is not None:
+            if value is not None and not retired:
                 path = inside(work_dir, value)
                 require(
                     path.is_relative_to(root), "Committed pointer escaped its capsule."
                 )
-    if version in (2, 3):
+    if version in (2, 3) and not retired:
         validate_committed_identity(work_dir, root, record, descriptor)
     return descriptor
 
@@ -554,7 +613,10 @@ def locate_capsule(path: Path) -> tuple[Path, str, int] | None:
 
 @contextmanager
 def generation_read_pin(
-    path: Path, *, manifest: MorpionPipelineGenerationManifest | None = None
+    path: Path,
+    *,
+    manifest: MorpionPipelineGenerationManifest | None = None,
+    retired_evidence: bool = False,
 ) -> Iterator[None]:
     """Read a raw capsule path only after adopting its run-state commit."""
     for ancestor in path.absolute().parents:
@@ -598,7 +660,7 @@ def generation_read_pin(
         )
         if manifest is not None:
             _validate_manifest_record(manifest, matching[0], records[0]["generation"])
-        validate_capsule(work_dir, matching[0])
+        validate_capsule(work_dir, matching[0], retired_evidence=retired_evidence)
         # A writer may have died between complete state replacement and dir fsync.
         sync_artifact(work_dir / "run_state.json", work_dir)
         yield
@@ -725,7 +787,9 @@ def audit_generation_publications(work_dir: Path) -> None:
     """
     state = read_object(work_dir / "run_state.json")
     for record in publication_records(state["metadata"]):
-        with generation_read_pin(inside(work_dir, record["descriptor_path"])):
+        with generation_read_pin(
+            inside(work_dir, record["descriptor_path"]), retired_evidence=True
+        ):
             pass
 
 

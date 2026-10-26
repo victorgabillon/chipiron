@@ -25,3 +25,13 @@ The original 10k G7 Dataset and G12 Training claims, and the older null-owner G1
 claim, remain untouched in their original workspaces. Generated-copy tests must
 retain unknown/incomplete claims; completion evidence must never be fabricated to
 make a source eligible for deletion.
+
+Historical receipt checkpoints/sources are separate from exact completion evidence:
+an explicit retirement plan authenticates each receipt's checkpoint binding against
+the retained committed descriptor, keeps its exact UUID/content/cursor evidence and
+actual frozen model bytes, and does not retain an unrelated tree merely for ACK.
+Default legacy inspection keeps its conservative projection until that plan is
+requested or retirement is admitted. Current accepted producer cursor and pending
+proposals remain source roots. Accepted Dataset/Training inputs remain complete
+roots, since selected-input retry and independent Dataset semantics currently use
+their scientific source. No lifetime for those inputs is invented here.

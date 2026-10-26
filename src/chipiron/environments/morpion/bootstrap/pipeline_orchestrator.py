@@ -452,6 +452,9 @@ def load_available_pipeline_manifests(
         training = training_enabled(state)
         for record in publication_records(state.metadata):
             generation = record["generation"]
+            if "retired_payload_v1" in record:
+                manifests.pop(generation, None)
+                continue
             manifest = project_dataset(
                 paths, state, generation, manifests.get(generation), record=record
             )

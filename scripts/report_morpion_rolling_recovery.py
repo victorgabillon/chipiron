@@ -1,7 +1,7 @@
-"""Read-only closed-capsule reachability; no retirement or deletion authority.
+"""Closed-capsule reachability and explicit, fenced historical payload retirement.
 
-The proposed roots are a design projection, NOT an accepted run_state format.
-All existing committed capsules remain required by publication protocol 3.
+Default inspection is read-only. --retire authorizes only classified payloads in
+run_state before unlinking them; it preserves every model and evidence descriptor.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 from contextlib import ExitStack
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     dataset_publication,
     load_bootstrap_run_state,
+    save_bootstrap_run_state,
     training_publication,
 )
 from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
@@ -27,15 +29,18 @@ from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
 from chipiron.environments.morpion.bootstrap.derived.provenance import inside
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
+    RETIRED_PAYLOAD_KEY,
     active_model_projection,
     artifact_digest,
     capsule_lease,
     capsule_path,
+    capsule_payload_files,
     committed_evaluator,
     file_digest,
     growth_receipt_ownership,
     publication_records,
     require,
+    sync_directory,
     validate_capsule,
 )
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
@@ -90,12 +95,18 @@ def _work_roots(
     reasons: dict[int, list[str]],
     models: dict[str, set[str]],
     ledger: dict[str, Any],
+    *,
+    retirement_plan: bool,
 ) -> None:
     """Conservatively retain observed work, including expired claims and cursors."""
 
     def retain(generation: int | None, reason: str) -> None:
         require(generation in records, f"Unknown {reason} generation: {generation}")
         assert generation is not None
+        require(
+            RETIRED_PAYLOAD_KEY not in records[generation],
+            f"Live {reason} depends on a retired payload.",
+        )
         reasons[generation].append(reason)
 
     def model(origin: str, digest: str | None = None) -> None:
@@ -122,7 +133,7 @@ def _work_roots(
         )
         model(active.model_bundle_path)
     for receipt in ledger.values():
-        if explicit_evaluator:
+        if explicit_evaluator and not retirement_plan:
             retain(
                 receipt.committed_generation, "exact-receipt-checkpoint-conservative"
             )
@@ -311,7 +322,10 @@ def _work_roots(
 
 
 def analyze(
-    paths: MorpionBootstrapPaths, *, retain: tuple[int, ...] = ()
+    paths: MorpionBootstrapPaths,
+    *,
+    retain: tuple[int, ...] = (),
+    retirement_plan: bool = False,
 ) -> dict[str, Any]:
     """Report a point-in-time projection; any validation error suppresses candidates."""
     result: dict[str, Any] = {
@@ -323,14 +337,20 @@ def analyze(
     }
     try:
         with growth_receipt_ownership(paths, create=False), ExitStack() as pins:
-            result.update(_inspect(paths, pins, retain))
+            result.update(
+                _inspect(paths, pins, retain, retirement_plan=retirement_plan)
+            )
     except (OSError, ValueError, KeyError, TypeError) as exc:
         result.update(validated=False, blockers=[f"{type(exc).__name__}: {exc}"])
     return result
 
 
 def _inspect(
-    paths: MorpionBootstrapPaths, pins: ExitStack, retain: tuple[int, ...]
+    paths: MorpionBootstrapPaths,
+    pins: ExitStack,
+    retain: tuple[int, ...],
+    *,
+    retirement_plan: bool = False,
 ) -> dict[str, Any]:
     """Use existing capsule validation, receipt parsing, Growth lock and inode pins."""
     before = _controls(paths)
@@ -340,6 +360,7 @@ def _inspect(
         state.metadata[PUBLICATION_KEY]["schema_version"] == 3,
         "Only closed publication v3 is analyzed.",
     )
+    retirement_plan = retirement_plan or any(RETIRED_PAYLOAD_KEY in r for r in ordered)
     head = ordered[-1]
     require(
         ordered[0]["generation"] == 1,
@@ -366,6 +387,10 @@ def _inspect(
         require(
             type(generation) is int and generation in records,
             "Unknown explicit retention root.",
+        )
+        require(
+            RETIRED_PAYLOAD_KEY not in records[generation],
+            "Explicit retention cannot resurrect an already retired payload.",
         )
         reasons[generation].append("explicit-scientific-retention")
     namespace = paths.work_dir / "generation_publications_v3"
@@ -421,7 +446,7 @@ def _inspect(
                 )
                 reader = True
                 reasons[generation].append("observed-reader-pin")
-        descriptor = validate_capsule(paths.work_dir, record)
+        descriptor = validate_capsule(paths.work_dir, record, retired_evidence=True)
         require(
             ("model_activation" in descriptor)
             == ("activation_request_sha256" in record),
@@ -450,7 +475,11 @@ def _inspect(
             )
         files = [
             paths.work_dir / record["descriptor_path"],
-            *(root / entry["path"] for entry in descriptor["files"]),
+            *(
+                root / entry["path"]
+                for entry in descriptor["files"]
+                if (root / entry["path"]).is_file()
+            ),
         ]
         for file in files:
             stat = file.stat()
@@ -474,7 +503,8 @@ def _inspect(
         generations[generation] = {
             "generation": generation,
             "id": identifier,
-            "current_contract_required": True,
+            "current_contract_required": RETIRED_PAYLOAD_KEY not in record,
+            "payload_retired": RETIRED_PAYLOAD_KEY in record,
             "current_contract_reasons": ["committed-publication-ancestry"]
             + (
                 ["exact-receipt-checkpoint"]
@@ -487,7 +517,9 @@ def _inspect(
             "files": [str(p.relative_to(paths.work_dir)) for p in files],
             "models": model_pins,
         }
-    _work_roots(paths, state, records, reasons, models, ledger)
+    _work_roots(
+        paths, state, records, reasons, models, ledger, retirement_plan=retirement_plan
+    )
     # model_pin authenticates the newest matching physical bundle, and every
     # descriptor scanned to find it. Keep that exact binding, not an alternative
     # copy inferred from equal weights or hardlinks. Historical trees are separate.
@@ -566,6 +598,7 @@ def _inspect(
         item["rolling_required"] = bool(item["rolling_reasons"])
     return {
         "validated": not blockers,
+        "retirement_plan": retirement_plan,
         "blockers": blockers,
         "source_run_state_sha256": before["run_state.json"],
         "proposed_active_roots": active,
@@ -580,7 +613,11 @@ def _inspect(
         "receipt_model_evidence": receipt_model_evidence,
         "retained_commitment_files": sorted(retained_commitments),
         "retained_receipt_model_files": sorted(retained_model_files),
-        "conditional_candidates": [] if blockers else sorted(set(records) - live),
+        "conditional_candidates": []
+        if blockers
+        else sorted(
+            g for g in set(records) - live if RETIRED_PAYLOAD_KEY not in records[g]
+        ),
         "conditional_reclaimable_files": [] if blockers else candidate_inodes,
         "conditional_reclaimable_file_blocks": 0
         if blockers
@@ -608,17 +645,131 @@ def _inspect(
     }
 
 
+def retire(
+    paths: MorpionBootstrapPaths,
+    *,
+    generations: tuple[int, ...],
+    retain: tuple[int, ...] = (),
+) -> dict[str, Any]:
+    """Explicitly retire only owned, dependency-free closed payloads under pins.
+
+    The existing run-state replacement authorizes absence before the first
+    unlink. A retry audits remaining evidence and finishes partial cleanup.
+    No accepted input, model, claim, receipt or descriptor is deleted.
+    """
+    require(
+        bool(generations) and len(set(generations)) == len(generations),
+        "Select distinct retirement generations explicitly.",
+    )
+    with growth_receipt_ownership(paths, create=False), ExitStack() as pins:
+        report = _inspect(paths, pins, retain, retirement_plan=True)
+        require(report["validated"], "Uncertain retention dependencies.")
+        state = load_bootstrap_run_state(paths.run_state_path)
+        require(
+            file_digest(paths.run_state_path) == report["source_run_state_sha256"],
+            "Retirement source authority changed.",
+        )
+        records = publication_records(state.metadata)
+        require(
+            state.metadata[PUBLICATION_KEY].get("evaluator_contract") == 1,
+            "Retirement requires explicit frozen evaluator bindings.",
+        )
+        indexed = {r["generation"]: r for r in records}
+        allowed = set(report["conditional_candidates"])
+        for generation in generations:
+            require(generation in indexed, "Unknown retirement generation.")
+            record = indexed[generation]
+            require(
+                generation in allowed or RETIRED_PAYLOAD_KEY in record,
+                "Required or unknown historical dependency cannot retire.",
+            )
+            observed = next(
+                g for g in report["generations"] if g["generation"] == generation
+            )
+            require(not observed["observed_reader"], "Reader pin blocks cleanup.")
+        authorized = [
+            {**r, RETIRED_PAYLOAD_KEY: r["descriptor_sha256"]}
+            if r["generation"] in generations
+            else r
+            for r in records
+        ]
+        updated = replace(
+            state,
+            metadata={
+                **state.metadata,
+                PUBLICATION_KEY: {
+                    **state.metadata[PUBLICATION_KEY],
+                    "generations": authorized,
+                },
+            },
+        )
+        publication_records(
+            updated.metadata
+        )  # Explicit version/recent/input admission.
+        if updated != state:
+            save_bootstrap_run_state(updated, paths.run_state_path, durable=True)
+        # Even after an uncertain prior replacement, seal authority before unlink.
+        from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+            sync_artifact,
+        )
+
+        sync_artifact(paths.run_state_path, paths.work_dir)
+        removed = []
+        for record in publication_records(updated.metadata):
+            if record["generation"] not in generations:
+                continue
+            descriptor = validate_capsule(paths.work_dir, record, retired_evidence=True)
+            root = capsule_path(paths.work_dir, record["id"], 3)
+            for relative in sorted(capsule_payload_files(descriptor)):
+                target = root / relative
+                if target.exists():
+                    target = inside(root, relative)
+                    target.unlink()
+                    sync_directory(target.parent)
+                    removed.append(str(target.relative_to(paths.work_dir)))
+            # Empty directories carry no scientific/evidence identity. Seals,
+            # model bytes, config and attempt ownership markers are never removed.
+            for name in ("checkpoint", "scientific_snapshot"):
+                directory = root / name
+                if directory.exists():
+                    for child in sorted(
+                        directory.rglob("*"), key=lambda p: len(p.parts), reverse=True
+                    ):
+                        if child.is_dir():
+                            child.rmdir()
+                            sync_directory(child.parent)
+                    directory.rmdir()
+                    sync_directory(root)
+            validate_capsule(paths.work_dir, record, retired_evidence=True)
+        return {
+            "action": "explicit-retirement",
+            "deletion_authorized": True,
+            "generations": list(generations),
+            "authority_sha256": file_digest(paths.run_state_path),
+            "removed_files": removed,
+            "source_run_state_sha256": report["source_run_state_sha256"],
+            "preserved": "all descriptors/config/model bytes, accepted results, receipts, cursors and claims",
+        }
+
+
 def main() -> None:
-    """Print a report to stdout; never write into the inspected workspace."""
+    """Inspect by default; require explicit generation selection for retirement."""
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("work_dir", type=Path)
     parser.add_argument("--retain", type=int, action="append", default=[])
+    parser.add_argument("--retire", type=int, action="append", default=[])
+    parser.add_argument("--retirement-plan", action="store_true")
     args = parser.parse_args()
-    result = analyze(
-        MorpionBootstrapPaths.from_work_dir(args.work_dir), retain=tuple(args.retain)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    result = (
+        retire(paths, generations=tuple(args.retire), retain=tuple(args.retain))
+        if args.retire
+        else analyze(
+            paths, retain=tuple(args.retain), retirement_plan=args.retirement_plan
+        )
     )
     print(json.dumps(result, indent=2, sort_keys=True))
-    if not result.get("validated"):
+    if not args.retire and not result.get("validated"):
         raise SystemExit(2)
 
 
