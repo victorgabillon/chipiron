@@ -16,6 +16,7 @@ def assert_test_output_path(path: str | Path) -> None:
     resolved = Path(path).expanduser().resolve()
     protected = (
         Path.home() / "morpion_runs",
+        Path.home() / "oldata" / "victor" / "morpion_runs",
         Path.home() / ".cache" / "chipiron",
         Path(user_data_dir("chipiron")),
     )

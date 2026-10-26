@@ -102,6 +102,8 @@ def get_mlflow_uri(
     """
     override_uri = os.environ.get(env_var)
     if override_uri:
+        if override_uri.startswith("sqlite:///"):
+            assert_test_output_path(override_uri.removeprefix("sqlite:///"))
         return override_uri
     db_path = get_mlflow_db_path(filename=filename)
     return f"sqlite:///{db_path.as_posix()}"

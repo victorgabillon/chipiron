@@ -29,6 +29,19 @@ CLUSTER_KILL_CONFIRM_SECONDS=5
 # a different production run; keep it off old runs unless intentionally
 # resuming them.
 MORPION_WORK_DIR="${MORPION_WORK_DIR:-$HOME/oldata/victor/morpion_runs/generic_linoo_fresh_with_bigrun_models_v1}"
+
+# Refuse research destinations before shell startup can create logs or controls.
+if [[ -n "${CHIPIRON_TEST_OUTPUT_ROOT:-}" ]]; then
+  test_work_root="$(realpath -m -- "$MORPION_WORK_DIR")" || exit 1
+  for test_protected_root in "$HOME/morpion_runs" "$HOME/oldata/victor/morpion_runs" "${XDG_DATA_HOME:-$HOME/.local/share}/chipiron"; do
+    test_protected_root="$(realpath -m -- "$test_protected_root")" || exit 1
+    if [[ "$test_work_root/" == "$test_protected_root/"* ]]; then
+      echo "Protected persistence destination selected during tests: $MORPION_WORK_DIR" >&2
+      exit 1
+    fi
+  done
+fi
+# Test destination guard ends before any startup side effects.
 # Repository roots used to build worker PYTHONPATH. Override these only when
 # testing another local checkout of one dependency.
 ANEMONE_REPO_ROOT="${ANEMONE_REPO_ROOT:-$HOME/oldata/victor/anemone}"

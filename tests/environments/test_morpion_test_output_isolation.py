@@ -16,7 +16,7 @@ from chipiron.environments.morpion.bootstrap.record_status import (
     persist_certified_leaderboard_candidates,
 )
 from chipiron.utils.path_runtime import assert_test_output_path, get_output_root
-from chipiron.utils.path_variables import get_mlflow_db_path
+from chipiron.utils.path_variables import get_mlflow_db_path, get_mlflow_uri
 
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
@@ -57,6 +57,9 @@ def test_unsafe_output_and_database_overrides_are_refused(
         get_mlflow_db_path()
     with pytest.raises(ValueError, match="Protected persistence"):
         assert_test_output_path(protected / "reader.sqlite3")
+    monkeypatch.setenv("ML_FLOW_URI_PATH", f"sqlite:///{protected}/mlruns.db")
+    with pytest.raises(ValueError, match="Protected persistence"):
+        get_mlflow_uri()
 
 
 def test_private_defaults_and_explicit_production_workspace(

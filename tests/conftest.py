@@ -167,6 +167,7 @@ else:
 TEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 os.environ["CHIPIRON_TEST_OUTPUT_ROOT"] = str(TEST_OUTPUT_DIR)
 os.environ["CHIPIRON_OUTPUT_DIR"] = str(TEST_OUTPUT_DIR)
+os.environ["MORPION_WORK_DIR"] = str(TEST_OUTPUT_DIR / "bootstrap")
 os.environ["XDG_CACHE_HOME"] = str(TEST_OUTPUT_DIR / "cache")
 os.environ["ML_FLOW_DB_PATH"] = str(TEST_OUTPUT_DIR / "mlruns.db")
 os.environ["ML_FLOW_URI_PATH"] = f"sqlite:///{TEST_OUTPUT_DIR / 'mlruns.db'}"
