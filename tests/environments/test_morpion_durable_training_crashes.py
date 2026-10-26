@@ -43,7 +43,7 @@ POST = [
 
 def crashed_worker(args: Any, point: str) -> None:
     """Exit without cleanup from the actual CPU trainer and publication path."""
-    from chipiron.environments.morpion.bootstrap import cycle_training
+    from chipiron.environments.morpion.bootstrap import cycle_training, pipeline_claims
     from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
         service,
     )
@@ -116,7 +116,7 @@ def crashed_worker(args: Any, point: str) -> None:
 
             patch.setattr(publication, "save_bootstrap_run_state", commit)
         elif point == "acknowledgement":
-            patch.setattr(publication, "release_pipeline_stage_claim", stop)
+            patch.setattr(pipeline_claims, "release_pipeline_stage_claim", stop)
         else:
             repair = publication._repair
 
