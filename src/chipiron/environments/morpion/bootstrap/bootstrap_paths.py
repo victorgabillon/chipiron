@@ -13,6 +13,8 @@ from anemone.checkpoints import (
     parse_generation_checkpoint_name,
 )
 
+from chipiron.utils.path_runtime import assert_test_output_path
+
 from .bootstrap_errors import (
     InvalidBootstrapArtifactPathError,
     InvalidGenerationRetentionCountError,
@@ -55,6 +57,7 @@ class MorpionBootstrapPaths:
     ) -> MorpionBootstrapPaths:
         """Build canonical bootstrap paths for one work directory."""
         root = Path(work_dir).resolve()
+        assert_test_output_path(root)
         return cls(
             work_dir=root,
             bootstrap_config_path=root / "bootstrap_config.json",

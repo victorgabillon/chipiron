@@ -9,6 +9,8 @@ from pathlib import Path
 
 from platformdirs import user_data_dir
 
+from chipiron.utils.path_runtime import assert_test_output_path
+
 APP_NAME = "chipiron"
 
 
@@ -72,6 +74,7 @@ def _runtime_data_dir() -> Path:
         else:
             base = Path(user_data_dir(APP_NAME))
 
+    assert_test_output_path(base)
     base.mkdir(parents=True, exist_ok=True)
     return base
 
@@ -84,6 +87,7 @@ def get_mlflow_db_path(*, filename: str = "mlruns.db") -> Path:
     override = os.environ.get("ML_FLOW_DB_PATH")
     p = Path(override) if override else (_runtime_data_dir() / "mlflow" / filename)
     p = p.expanduser().resolve()
+    assert_test_output_path(p)
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 

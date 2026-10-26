@@ -569,6 +569,9 @@ def persist_certified_leaderboard_candidates(
         if leaderboard_path is None
         else Path(leaderboard_path)
     )
+    from chipiron.utils.path_runtime import assert_test_output_path
+
+    assert_test_output_path(resolved_path)
     entries = _load_leaderboard_entries(resolved_path)
     existing_entry_count = len(entries)
     candidate_count = 0

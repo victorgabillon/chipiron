@@ -618,6 +618,9 @@ class ShardedTrainingGenerationView:
             raise ValueError("Reader cache must be outside the source export directory")
         if self.format_kind in (SCIENTIFIC_KIND, CLOSED_KIND):
             assert_artifact_writable(directory)
+        from chipiron.utils.path_runtime import assert_test_output_path
+
+        assert_test_output_path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()
         self.index_path = directory / f"v{INDEX_SCHEMA_VERSION}-{digest}.sqlite3"
