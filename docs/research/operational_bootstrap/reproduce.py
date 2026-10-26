@@ -43,6 +43,7 @@ def main() -> None:
     parser.add_argument("--nodes", type=int, default=100)
     parser.add_argument("--cluster-seconds", type=int, default=120)
     parser.add_argument("--max-seconds", type=int, default=3600)
+    parser.add_argument("--call-max-seconds", type=int, default=1800)
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--session-only", action="store_true")
     parser.add_argument("--initialize-only", action="store_true")
@@ -75,6 +76,7 @@ def main() -> None:
         or options.growth_pause <= 0
         or options.growth_steps <= 0
         or options.max_seconds <= 0
+        or options.call_max_seconds <= 0
         or not 0 <= options.ownership_wait <= 600
     ):
         parser.error("The real four-worker session requires a positive horizon.")
@@ -108,7 +110,7 @@ def main() -> None:
         "audit_policy": "every-check" if options.audit_every_check else "model-changes",
         "node_target": options.nodes,
         "subsequent_steps_per_call": options.growth_steps,
-        "maximum_call_seconds": 1800,
+        "maximum_call_seconds": options.call_max_seconds,
         "maximum_growth_calls_per_session": options.cluster_seconds
         // options.growth_pause
         + 1,
