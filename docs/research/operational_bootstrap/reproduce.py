@@ -334,6 +334,7 @@ def main() -> None:
         )
         committed_evaluator(source, source_state)
         shutil.copytree(source, workspace)
+        budget["node_target"] = source_state.tree_size_at_last_save
         budget["copied_initial_workspace"] = str(source)
         (root / "budget.json").write_text(json.dumps(budget, indent=2))
     else:
