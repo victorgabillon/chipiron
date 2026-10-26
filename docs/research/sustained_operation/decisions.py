@@ -59,13 +59,14 @@ def main() -> None:
         },
     )
     model, physical = committed_evaluator(paths.work_dir, state)
-    runner, _ = _runner(paths, state)
+    runner, effective = _runner(paths, state)
     with torch.random.fork_rng(devices=[]):
         runner._runtime = runner._load_runtime_from_checkpoint(
             paths.work_dir / record["checkpoint_path"],
             search_args=runner._args.search_args,
             model_bundle_path=physical,
         )
+    runner.apply_effective_runtime_config(effective)
     try:
         runner.validate_model_refresh_certificates()
         checkpoint = payload(runner)
@@ -89,6 +90,10 @@ def main() -> None:
                 "selected_depth": report.selected_depth,
                 "nodes_added": report.nodes_added,
             })
+        assert (
+            witness["steps"]
+            or runner._runtime.tree.root_node.tree_evaluation.has_exact_value()
+        )
         assert paths.run_state_path.read_bytes() == authority
         with options.output.open("x") as stream:
             json.dump(witness, stream, indent=2)
