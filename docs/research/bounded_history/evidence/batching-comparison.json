@@ -1,0 +1,262 @@
+[
+  {
+    "case": "p4",
+    "steps_per_invocation": 4,
+    "initial_nodes": 10005,
+    "initial_edges": 11014,
+    "new_nodes": 699,
+    "new_edges": 813,
+    "committed_steps": 20,
+    "wall_s": 360.78,
+    "cpu_s": 770.09,
+    "nodes_per_s": 1.9374688175619492,
+    "ownership_completed_s": 289.521378,
+    "ownership_windows_s": [
+      54.549876,
+      50.29498,
+      58.689158,
+      56.013375,
+      69.973989
+    ],
+    "useful_attempt_s": [
+      3.424,
+      3.411,
+      5.112,
+      3.805,
+      5.133,
+      2.821
+    ],
+    "restores": 6,
+    "checkpoint_s": [
+      1.174,
+      0.942,
+      1.01,
+      1.239,
+      0.873
+    ],
+    "lock_failures": {
+      "growth": 0,
+      "dataset": 0,
+      "training": 0,
+      "reevaluation": 0
+    },
+    "dataset_generations": [
+      1,
+      2,
+      4
+    ],
+    "training_generations": [
+      1,
+      2
+    ],
+    "union_peak_rss_bytes": 1263624192,
+    "staging_peak_bytes": 16031744,
+    "scratch_peak_bytes": 15446016,
+    "accepted_latencies": [
+      {
+        "generation": 1,
+        "kind": "accepted_dataset",
+        "elapsed_s": 58.245308441000816,
+        "source_latency_s": 58.24003302399797,
+        "reference": {
+          "attempt_id": "05557aa97b30429dbb35bd2956a5cc91",
+          "descriptor_sha256": "783086fa59fccc71da0dcf234e60ec540da126ef52e09785909195ca1f9c6020"
+        }
+      },
+      {
+        "generation": 1,
+        "kind": "accepted_training",
+        "elapsed_s": 116.97173329300131,
+        "source_latency_s": 116.96645787599846,
+        "reference": {
+          "attempt_id": "a58dcec51cd548f1bb1a213951c36ce1",
+          "descriptor_sha256": "427ae883e759a34929c97240408d0292810d3994d3568fd2d16520f9a9b0567d"
+        },
+        "latency_after_dataset_s": 58.72642485200049
+      },
+      {
+        "generation": 2,
+        "kind": "accepted_dataset",
+        "elapsed_s": 176.85288944000058,
+        "source_latency_s": 118.81728184399981,
+        "reference": {
+          "attempt_id": "7d182c8ffe704a4086fbb28b43056411",
+          "descriptor_sha256": "50d1d625aa8fa11c26ddc14d0d60964d03f157e9df5e7c447139460ca23abc91"
+        }
+      },
+      {
+        "generation": 2,
+        "kind": "accepted_training",
+        "elapsed_s": 237.73592706000272,
+        "source_latency_s": 179.70031946400195,
+        "reference": {
+          "attempt_id": "bc59daaef0cc4304848ccd1e273a6dfc",
+          "descriptor_sha256": "7b3ab677a7bcde0eec848b6d74c4328e5d9aa9e694ec405efdba9cf3010b0162"
+        },
+        "latency_after_dataset_s": 60.88303762000214
+      },
+      {
+        "generation": 4,
+        "kind": "accepted_dataset",
+        "elapsed_s": 313.1649672849999,
+        "source_latency_s": 136.3120778449993,
+        "reference": {
+          "attempt_id": "be23922eb75248ec8fb9af4c31dc2353",
+          "descriptor_sha256": "73822fc71d0d52a7fa7e7d096fcf90617bdfbe59d7b934f7d7b3694239d192b7"
+        }
+      }
+    ],
+    "capsule_allocated_checkpoint_bytes": 6168576,
+    "capsule_allocated_scientific_bytes": 1896448
+  },
+  {
+    "case": "p16",
+    "steps_per_invocation": 16,
+    "initial_nodes": 10005,
+    "initial_edges": 11014,
+    "new_nodes": 1616,
+    "new_edges": 1894,
+    "committed_steps": 48,
+    "wall_s": 360.86,
+    "cpu_s": 771.14,
+    "nodes_per_s": 4.478190988194868,
+    "ownership_completed_s": 271.77744,
+    "ownership_windows_s": [
+      114.264684,
+      72.943968,
+      84.568788
+    ],
+    "useful_attempt_s": [
+      21.724,
+      14.862,
+      18.911,
+      20.965
+    ],
+    "restores": 4,
+    "checkpoint_s": [
+      1.858,
+      1.431,
+      1.449
+    ],
+    "lock_failures": {
+      "growth": 0,
+      "dataset": 0,
+      "training": 0,
+      "reevaluation": 0
+    },
+    "dataset_generations": [
+      1,
+      2
+    ],
+    "training_generations": [
+      1
+    ],
+    "union_peak_rss_bytes": 1270939648,
+    "staging_peak_bytes": 17121280,
+    "scratch_peak_bytes": 15872000,
+    "accepted_latencies": [
+      {
+        "generation": 1,
+        "kind": "accepted_dataset",
+        "elapsed_s": 119.90616370800126,
+        "source_latency_s": 119.8958279690014,
+        "reference": {
+          "attempt_id": "c8b34f7b7ae1414988426eb2e665f473",
+          "descriptor_sha256": "5a9604711953dc0abb2adb5ffab507080b1c717d74879966436342ef9c4d0089"
+        }
+      },
+      {
+        "generation": 1,
+        "kind": "accepted_training",
+        "elapsed_s": 203.50801171000057,
+        "source_latency_s": 203.49767597100072,
+        "reference": {
+          "attempt_id": "0424f122debe43f9801613c96ba2034e",
+          "descriptor_sha256": "c21123c16a476951fe3d43f98f27595077293bcd0a26da1c1636a4d1077ae8c7"
+        },
+        "latency_after_dataset_s": 83.60184800199931
+      },
+      {
+        "generation": 2,
+        "kind": "accepted_dataset",
+        "elapsed_s": 289.3368021590031,
+        "source_latency_s": 169.6426153900029,
+        "reference": {
+          "attempt_id": "d34e0e77ac2f442b82d6f7e476b05ad1",
+          "descriptor_sha256": "e322f1caa3540ee1291c73ff2d463225b968d1cbbad74662cd56f12d0866bc11"
+        }
+      }
+    ],
+    "capsule_allocated_checkpoint_bytes": 3948544,
+    "capsule_allocated_scientific_bytes": 1216512
+  },
+  {
+    "case": "p32",
+    "steps_per_invocation": 32,
+    "initial_nodes": 10005,
+    "initial_edges": 11014,
+    "new_nodes": 3324,
+    "new_edges": 3857,
+    "committed_steps": 96,
+    "wall_s": 361.72,
+    "cpu_s": 680.76,
+    "nodes_per_s": 9.189428287072873,
+    "ownership_completed_s": 318.99304,
+    "ownership_windows_s": [
+      99.897617,
+      105.9043,
+      113.191123
+    ],
+    "useful_attempt_s": [
+      35.805,
+      39.031,
+      44.224
+    ],
+    "restores": 3,
+    "checkpoint_s": [
+      1.681,
+      2.448,
+      2.081
+    ],
+    "lock_failures": {
+      "growth": 0,
+      "dataset": 0,
+      "training": 0,
+      "reevaluation": 0
+    },
+    "dataset_generations": [
+      1
+    ],
+    "training_generations": [
+      1
+    ],
+    "union_peak_rss_bytes": 1297293312,
+    "staging_peak_bytes": 19361792,
+    "scratch_peak_bytes": 9457664,
+    "accepted_latencies": [
+      {
+        "generation": 1,
+        "kind": "accepted_dataset",
+        "elapsed_s": 214.58226278800066,
+        "source_latency_s": 214.5763805710012,
+        "reference": {
+          "attempt_id": "ce4ad8075e4d492aae6a265fde468532",
+          "descriptor_sha256": "e9aa7433bcba2f8980bfd334db4316a8f4b2a03332cabc72fdb15aeba51270c4"
+        }
+      },
+      {
+        "generation": 1,
+        "kind": "accepted_training",
+        "elapsed_s": 333.19639993500095,
+        "source_latency_s": 333.1905177180015,
+        "reference": {
+          "attempt_id": "1c63dd14d822417897ab30121e76a06c",
+          "descriptor_sha256": "9b93bb9dc3eeb9558bee46a56e9dbc82e0ec49bd1c71e5293cf9ae27d70aa28d"
+        },
+        "latency_after_dataset_s": 118.61413714700029
+      }
+    ],
+    "capsule_allocated_checkpoint_bytes": 4354048,
+    "capsule_allocated_scientific_bytes": 1335296
+  }
+]

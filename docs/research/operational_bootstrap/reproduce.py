@@ -48,7 +48,7 @@ def main() -> None:
     parser.add_argument("--session-only", action="store_true")
     parser.add_argument("--initialize-only", action="store_true")
     parser.add_argument("--initial-workspace", type=Path)
-    parser.add_argument("--growth-steps", type=int, default=1)
+    parser.add_argument("--growth-steps", type=int, default=32)
     parser.add_argument("--growth-pause", type=int, default=2)
     parser.add_argument("--ownership-wait", type=float, default=60)
     parser.add_argument(
