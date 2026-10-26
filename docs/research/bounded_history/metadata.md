@@ -57,6 +57,6 @@ A fresh ten-generation pilot then passed before the two complete 100-generation
 arms. All failed-pilot artifacts are preserved.
 
 The full [measurements and trace evidence](evidence/metadata-scaling.json) identify
-the exact B package and tool, actual budgets and resources. Source source/wheel
+the exact B package and tool, actual budgets and resources. Source/wheel
 identity is independent of package version. No model was activated or trained in
 this fixed-model study; genuine multi-era learning is validated separately.

@@ -1,0 +1,180 @@
+{
+  "graph": {
+    "nodes_before_probe_step": 20493,
+    "nodes_after_probe_step": 20536,
+    "steps": 1,
+    "source_copy": "/home/pompote/oldata/victor/morpion-scratch/s27/graph-profile/workspace",
+    "process_rss_mib_at_event": 398.473,
+    "exclusive_reachable_bytes": 96999889,
+    "exclusive_components": [
+      {
+        "component": "runner_shell",
+        "bytes": 344,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "selector_linoo_state",
+        "bytes": 5679314,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "checkpoint_state_roots",
+        "bytes": 13414472,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "algorithm_node_shells",
+        "bytes": 3121472,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "tree_node_shells",
+        "bytes": 1807168,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "tree_node_parent_links",
+        "bytes": 8220092,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "tree_node_child_links",
+        "bytes": 3239536,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "tree_node_unopened_links",
+        "bytes": 31679200,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "state_handles",
+        "bytes": 3706953,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "node_eval_shells",
+        "bytes": 2300032,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "node_eval_values",
+        "bytes": 2952451,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "node_eval_runtime_states",
+        "bytes": 20026176,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "node_eval_policy_objective",
+        "bytes": 1208,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "branch_keys_ordering_keys",
+        "bytes": 0,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "state_representations",
+        "bytes": 0,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      },
+      {
+        "component": "remaining_runtime",
+        "bytes": 851471,
+        "capped": false,
+        "max_depth_reached_count": 0,
+        "recursion_error_count": 0
+      }
+    ],
+    "maximum_walk_depth": 64,
+    "maximum_walk_objects": 2000000,
+    "context_node_cap": 25000,
+    "complete_map": false,
+    "raw_summary": "2026-10-26 22:05:59,941 INFO chipiron.environments.morpion.bootstrap.profiling.recursive.runner [growth-recursive-profile-summary] event=after_growth rss_mb=398.473 total_recursive_reachable_mb=92.506 rss_minus_reachable_mb=305.966 capped_components=[standalone:node_evaluations,standalone:runtime_root] uncapped_components=[standalone:all_profile_nodes,standalone:tree_node_structures,standalone:state_handles,standalone:linoo_selector,standalone:checkpoint_state_roots,exclusive:runner_shell,exclusive:selector_linoo_state,exclusive:checkpoint_state_roots,exclusive:algorithm_node_shells,exclusive:tree_node_shells,exclusive:tree_node_parent_links,exclusive:tree_node_child_links,exclusive:tree_node_unopened_links,exclusive:state_handles,exclusive:node_eval_shells,exclusive:node_eval_values,exclusive:node_eval_runtime_states,exclusive:node_eval_policy_objective,exclusive:branch_keys_ordering_keys,exclusive:state_representations,exclusive:remaining_runtime,checkpoint_payload_store:1] max_objects=2000000 max_depth=64 complete_map=False checkpoint_handle_scan_capped=False checkpoint_payload_store_capped=False largest_components=[exclusive:tree_node_unopened_links:30.212,exclusive:node_eval_runtime_states:19.098,exclusive:checkpoint_state_roots:12.793,exclusive:tree_node_parent_links:7.839,exclusive:selector_linoo_state:5.416,exclusive:state_handles:3.535,exclusive:tree_node_child_links:3.089,exclusive:algorithm_node_shells:2.977]",
+    "native": {
+      "wall_s": 135.05,
+      "user_s": 119.29,
+      "system_s": 1.02,
+      "peak_rss_kib": 483292
+    },
+    "limitations": [
+      "All exclusive partitions were uncapped, but standalone node_evaluations/runtime_root traversals hit the depth limit.",
+      "This is object-ownership accounting for the traversed graph, not exact isolated RSS or a capacity guarantee.",
+      "RSS minus traversed bytes includes imports/native allocations/shared pages/untraversed objects and is not a leak measurement."
+    ]
+  },
+  "serialization": {
+    "source": "/home/pompote/oldata/victor/morpion-scratch/s27/long/workspace",
+    "copy": "/home/pompote/oldata/victor/morpion-scratch/s27/serialization/workspace",
+    "generation": 12,
+    "nodes": 20493,
+    "model": {
+      "generation": 6,
+      "local_trained_generation": 6,
+      "name": "linear_b",
+      "path": "training_publications_v1/objects/b50423ff66c340fc85daf3d1da2f47f2/models/generation_000006/linear_b",
+      "sha256": "7ebf4864abc9c43d8880a0c048eab10f359c0dff5bd39ca2ef7c9ec3c1f9f3ad",
+      "source": "local_training",
+      "source_generation": 6
+    },
+    "restore_seconds": 81.4418526629961,
+    "save_seconds_with_tracemalloc": 9.61214255199593,
+    "rss_after_restore_bytes": 448131072,
+    "rss_after_save_bytes": 448339968,
+    "native_process_peak_rss_bytes": 452845568,
+    "tracemalloc_aux_peak_bytes": 10136172,
+    "tracemalloc_aux_current_bytes": 552063,
+    "serialized_checkpoint": {
+      "files": 67,
+      "logical_bytes": 2814513,
+      "allocated_bytes": 2981888
+    },
+    "notes": [
+      "Existing streaming writer; no second graph or payload-list oracle built by this probe.",
+      "tracemalloc begins only after cold restore and measures new traced Python allocations, not native allocator memory.",
+      "Native peak RSS covers the whole process including imports/restore; RSS change is not an exact auxiliary allocation metric.",
+      "This instrumented save time is not comparable to uninstrumented operational timing."
+    ]
+  },
+  "serialization_native": {
+    "wall_s": 95.18,
+    "user_s": 94.84,
+    "system_s": 0.3,
+    "peak_rss_kib": 442232
+  },
+  "source_main_unchanged": true
+}

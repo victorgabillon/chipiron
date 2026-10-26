@@ -1,0 +1,98 @@
+{
+  "root": "/home/pompote/oldata/victor/morpion-scratch/s27/p16",
+  "sessions": [
+    {
+      "label": "00-matched-four-workers",
+      "role_pgids": {
+        "354565": "growth",
+        "354568": "dataset",
+        "354572": "training",
+        "354581": "reevaluation"
+      },
+      "sampled_cpu_seconds_by_role": {
+        "growth": 322.98,
+        "dataset": 143.22,
+        "training": 108.42999999999998,
+        "reevaluation": 188.57
+      },
+      "max_individual_process_rss_bytes_by_role": {
+        "growth": 368291840,
+        "dataset": 266014720,
+        "training": 357261312,
+        "reevaluation": 272187392
+      },
+      "available_ram_min_bytes": null,
+      "available_disk_min_bytes": null
+    }
+  ],
+  "roles": {
+    "growth": {
+      "checkpoint_completed_writer_bytes": 3672808,
+      "checkpoint_completed_writes": 3,
+      "indexed_reader_observations": 10,
+      "index_reused_true": 0,
+      "index_reused_false": 10,
+      "maximum_index_bytes": 8544256,
+      "maximum_index_build_peak_disk_bytes": 8544256,
+      "index_build_elapsed_seconds": [
+        5.159992266999325,
+        4.333511660999648,
+        4.157260429001326,
+        3.582878070999868,
+        3.7629882499968517,
+        3.5728712570016796,
+        4.296633877002023,
+        4.006379192996974,
+        3.969588768999529,
+        3.9535064670017164
+      ]
+    },
+    "dataset": {
+      "checkpoint_completed_writer_bytes": 0,
+      "checkpoint_completed_writes": 0,
+      "indexed_reader_observations": 2,
+      "index_reused_true": 0,
+      "index_reused_false": 2,
+      "maximum_index_bytes": 7749632,
+      "maximum_index_build_peak_disk_bytes": 7749632,
+      "index_build_elapsed_seconds": [
+        83.75555497299865,
+        49.15842463199806
+      ]
+    },
+    "training": {
+      "checkpoint_completed_writer_bytes": 0,
+      "checkpoint_completed_writes": 0,
+      "indexed_reader_observations": 0,
+      "index_reused_true": 0,
+      "index_reused_false": 0,
+      "maximum_index_bytes": 0,
+      "maximum_index_build_peak_disk_bytes": 0,
+      "index_build_elapsed_seconds": []
+    },
+    "reevaluation": {
+      "checkpoint_completed_writer_bytes": 0,
+      "checkpoint_completed_writes": 0,
+      "indexed_reader_observations": 2,
+      "index_reused_true": 0,
+      "index_reused_false": 2,
+      "maximum_index_bytes": 8114176,
+      "maximum_index_build_peak_disk_bytes": 8114176,
+      "index_build_elapsed_seconds": [
+        82.34720762899815,
+        52.48085125500074
+      ]
+    }
+  },
+  "committed_scientific_exports_excluding_copied_genesis": 3,
+  "committed_checkpoint_payload_logical_bytes_excluding_copied_genesis": 3672808,
+  "committed_scientific_logical_bytes_excluding_copied_genesis": 1197061,
+  "limits": [
+    "CPU sums use sampled user+system for actual group members and can miss short-lived children; GNU time child totals are retained separately.",
+    "Role RSS values are per-process maxima, not simultaneous role totals; actual union/group peaks are in groups.json.",
+    "Completed checkpoint writer bytes include completed writes even if later publication was interrupted; bytes represent checkpoint payload size, not block-device traffic.",
+    "Committed scientific export counts come from authority, excluding the copied genesis. Status recaps are not counted as exports.",
+    "Reader observations count actual ShardedTrainingGenerationView opens, not duplicated wrapper memory logs.",
+    "Headroom fields were added after the controlled batching study and are absent for those earlier cases."
+  ]
+}

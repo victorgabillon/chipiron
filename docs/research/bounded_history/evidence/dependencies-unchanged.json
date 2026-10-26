@@ -1,0 +1,70 @@
+{
+  "all_distribution_file_identities_unchanged": true,
+  "distributions": {
+    "algorhino-coral": {
+      "version": "0.1.15",
+      "files": 31,
+      "manifest_sha256": "f2bf28f8d1351ec381706cd2efa5a76bb991dfa0e23bc28f93b0f71e131f2747"
+    },
+    "atomheart": {
+      "version": "0.2.11",
+      "files": 53,
+      "manifest_sha256": "3404fdb9dfffe5d94a975059dbecfe69642ab595882ab78070c523f4f25c4dc8"
+    },
+    "valanga": {
+      "version": "0.2.5",
+      "files": 20,
+      "manifest_sha256": "782e9faad706fb8f10d864fb010d36d9e08f60c9fe4693ac3be88b78b6802717"
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "files": 13,
+      "manifest_sha256": "1739f2de6a591ee2f90fd7a8b0a4c7bbfcc906e1f0af9dda82e089c265a20ecd"
+    },
+    "ijson": {
+      "version": "3.6.0",
+      "files": 25,
+      "manifest_sha256": "af9e17bb2daf304503de09cadda99db4cda713430e7953487cfa2cd52b8e900d"
+    },
+    "torch": {
+      "version": "2.14.0+cpu",
+      "files": 12397,
+      "manifest_sha256": "a7386fbbfe12007b14b99f4722387632f120e97f67935b877da5138993507b2a"
+    },
+    "psutil": {
+      "version": "7.2.2",
+      "files": 18,
+      "manifest_sha256": "a6bbed43ea6185749ac868753182af62766186dd9b9d9c3b80e6a84c02a8a49f"
+    },
+    "numpy": {
+      "version": "2.2.6",
+      "files": 878,
+      "manifest_sha256": "b3248d4d635d699695e9570e6ac84aace274383e9fe616e9224feb34754a19de"
+    },
+    "pytest": {
+      "version": "9.1.1",
+      "files": 90,
+      "manifest_sha256": "cf815b70287dc92f5d4dd821ab6bc16fc43c7b26f3fe79123fd01f3204c11017"
+    },
+    "ruff": {
+      "version": "0.15.20",
+      "files": 10,
+      "manifest_sha256": "a149d1979a9fabcd8a42914d4a3db39cd0a266c516cb3050476410af27d112a4"
+    },
+    "mypy": {
+      "version": "2.1.0",
+      "files": 1445,
+      "manifest_sha256": "d1ccf8a4706857e7a4a51bca5afbc4db1f0a46e3c8197dd78d956af2e67216b5"
+    },
+    "pyright": {
+      "version": "1.1.411",
+      "files": 5443,
+      "manifest_sha256": "e302bbe536cccb90b9dc02199ff1255ba2183b907d0b74d88ee1b1aca830c17f"
+    },
+    "pylint": {
+      "version": "4.0.6",
+      "files": 189,
+      "manifest_sha256": "1f6b8682ccd42702d2b4045a66dcca313b4a343a25b9341579882bdcef2e69b6"
+    }
+  }
+}

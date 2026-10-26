@@ -1,0 +1,46 @@
+{
+  "captured_unix_s": 1793034061.7776897,
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+  "cpu_model": "AMD Ryzen AI 9 HX PRO 370 w/ Radeon 890M",
+  "logical_cpus": 24,
+  "physical_cores": 12,
+  "process_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "memory_total_bytes": 92405284864,
+  "memory_available_bytes": 73223086080,
+  "disk_usage": {
+    "total": 871928098816,
+    "used": 783821443072,
+    "free": 48202276864
+  },
+  "filesystem": "FSTYPE SOURCE         TARGET\next4   /dev/nvme0n1p4 /home/pompote/oldata\n",
+  "isolated_scratch": "/home/pompote/oldata/victor/morpion-scratch/s27",
+  "limits": [
+    "Host had unrelated desktop activity. Controlled comparisons excluded own CI and other benchmarks, not all machine activity.",
+    "Operational engineering run overlaps CI; reported rates are not a matched A/B estimate."
+  ]
+}
