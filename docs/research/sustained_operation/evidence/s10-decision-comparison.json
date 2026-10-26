@@ -1,0 +1,104 @@
+[
+  {
+    "before": 7,
+    "after": 8,
+    "models": [
+      {
+        "generation": 1,
+        "local_trained_generation": null,
+        "name": "seed",
+        "path": "genesis/seed",
+        "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "source": "external_seed",
+        "source_generation": 1
+      },
+      {
+        "generation": 5,
+        "local_trained_generation": 5,
+        "name": "linear_b",
+        "path": "training_publications_v1/objects/d6951f46e6994c42ac45d58ca8915a2d/models/generation_000005/linear_b",
+        "sha256": "2b48e2ca6048f7ad8574a873f789c93576785d512c607befc0dd806730d4befd",
+        "source": "local_training",
+        "source_generation": 5
+      }
+    ],
+    "initial_nodes": 10810,
+    "initial_rng_equal": true,
+    "initial_rollout_rng_equal": true,
+    "selected_nodes": [
+      [
+        7199,
+        7883,
+        4506,
+        2746,
+        1201,
+        57,
+        8462,
+        4111
+      ],
+      [
+        8002,
+        7893,
+        2212,
+        5506,
+        8928,
+        470,
+        8462,
+        171
+      ]
+    ],
+    "first_decision_changes": true,
+    "any_observed_decision_changes": true
+  },
+  {
+    "before": 14,
+    "after": 15,
+    "models": [
+      {
+        "generation": 5,
+        "local_trained_generation": 5,
+        "name": "linear_b",
+        "path": "training_publications_v1/objects/d6951f46e6994c42ac45d58ca8915a2d/models/generation_000005/linear_b",
+        "sha256": "2b48e2ca6048f7ad8574a873f789c93576785d512c607befc0dd806730d4befd",
+        "source": "local_training",
+        "source_generation": 5
+      },
+      {
+        "generation": 10,
+        "local_trained_generation": 10,
+        "name": "linear_a",
+        "path": "training_publications_v1/objects/bea28fd5592d4d1792410817379089c0/models/generation_000010/linear_a",
+        "sha256": "5b82bfb48626b83b8d959e9a6b725bcecb7e3234d19ed0fc09a9532df0bb6bc0",
+        "source": "local_training",
+        "source_generation": 10
+      }
+    ],
+    "initial_nodes": 11611,
+    "initial_rng_equal": true,
+    "initial_rollout_rng_equal": true,
+    "selected_nodes": [
+      [
+        1347,
+        64,
+        1055,
+        7448,
+        9939,
+        7385,
+        1958,
+        973
+      ],
+      [
+        1352,
+        3301,
+        39,
+        10601,
+        10706,
+        8316,
+        1911,
+        1548
+      ]
+    ],
+    "first_decision_changes": true,
+    "any_observed_decision_changes": true
+  }
+]

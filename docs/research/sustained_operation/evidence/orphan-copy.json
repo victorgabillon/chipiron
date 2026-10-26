@@ -1,0 +1,32 @@
+{
+  "source": "/home/pompote/oldata/victor/morpion-scratch/s26/p2/workspace",
+  "disposable_copy": "/home/pompote/oldata/victor/morpion-scratch/s26/gc2/workspace",
+  "source_inventory_sha256": "b214c08fd5ccc9960054dc8f8af7a7c55d239fee026812432dd906747cfa0c4e",
+  "original_files_unchanged": true,
+  "shared_pin_blocked": true,
+  "removed_uncommitted_ids": [
+    "8100e1e5fe7f406aa566026641590b77"
+  ],
+  "committed_capsule_count_preserved": 6,
+  "before": {
+    "files": 281,
+    "logical_bytes": 14693584,
+    "allocated_bytes": 15343616
+  },
+  "after": {
+    "files": 270,
+    "logical_bytes": 7059685,
+    "allocated_bytes": 7684096
+  },
+  "freed_copy_allocated_file_bytes": 7659520,
+  "authority_unchanged": true,
+  "exact_cold_checkpoint_selector_rng_equal": {
+    "checkpoint_payload_sha256": "94ccca18c157bdf88a15cb044d441cbf7a107085e3388693b67965b5193331db",
+    "selector_sha256": "c4e660dbab5e7df4e77abb68b28444e035c3005d9f6742201811993a5802aaff",
+    "rng_sha256": "5fcee0cfa006ab70def933b8fec523590c5dd97c2f6ca15d1cfd4b635fa21bbb",
+    "rollout_rng_sha256": "d2f372a3bd5c013f8d220c0c1fd48f76f00019e4ba50d572a8cdc4ee4898f024",
+    "nodes": 5252,
+    "edges": 5758
+  },
+  "note": "Existing collector only; destructive effects confined to a generated copy. No claim or committed recovery state retired. Copy inode allocation differs from original when copytree separates existing hardlinks."
+}

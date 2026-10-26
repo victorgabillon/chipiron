@@ -47,13 +47,14 @@ exact accepted candidates at the two marked recipe transitions.
   --nodes 5000 --cluster-seconds 180 --growth-pause 2 --ownership-wait 60 --growth-steps 4
 # Recheck disk/RAM and worker quiescence before this separate larger experiment.
 "$PYTHON_BIN" -m docs.research.operational_bootstrap.reproduce NEW_10K NEW_INPUTS \
-  --nodes 10000 --cluster-seconds 180 --growth-pause 2 --ownership-wait 120 \
-  --growth-steps 4 --max-seconds 3600
+  --nodes 10000 --cluster-seconds 420 --growth-pause 2 --ownership-wait 120 \
+  --growth-steps 4 --max-seconds 7200 --call-max-seconds 2700
 ```
 
 Limits include 1,000 initialization steps from the frozen example configuration,
 one Growth cycle per invocation, the explicit steps per cycle, a bounded cluster
-horizon, bounded retry cadence, 1,800 seconds per call, the total experiment cap,
+horizon, bounded retry cadence, a default 1,800 seconds per call (explicitly
+2,700 for the measured 10k run), the total experiment cap,
 8 GiB available RAM floor, 8 GiB sampled process-union RSS ceiling, 20 GiB disk
 headroom, 2 GiB workspace and 1 GiB private scratch. Initialization can overshoot
 the requested node target by one legal expansion; the step/time/resource budgets
@@ -103,3 +104,5 @@ run initialize on that workspace. Do not use SIGKILL as routine shutdown.
 Retention remains fail closed; see `../morpion_sustained_retention.md`. The finite
 experiment budgets bound storage by stopping. They do not provide indefinitely
 bounded historical storage or permission to retire any original experiment.
+
+Measured results, exact identities and final CI: [sustained-operation report](../morpion_sustained_operation.md).

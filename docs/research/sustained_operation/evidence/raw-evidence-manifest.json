@@ -1,0 +1,1210 @@
+{
+  "purpose": "Static review evidence only; no runtime authority, cache or provenance registry. Original workspaces and every actual accepted result are retained.",
+  "executable_commit": "99a63802c94ac865b0b908f01c8cafee633a965c",
+  "executable_tree": "cf2b75fdb2aee5df3df2f31dc4ba311c32e7c0ed",
+  "raw_evidence": [
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/a-focused-2.log",
+      "bytes": 1243,
+      "sha256": "21a4fd5fc00eb0e951942be15a279327e9a49ada9453202add1090cfd5501bf5"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/a-focused-3.log",
+      "bytes": 98,
+      "sha256": "960aa492b612a41b332b9dc030ac8554bf4f6c68d035fb7dba7f195076f3d359"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/a-focused.log",
+      "bytes": 1237,
+      "sha256": "f630889396b3a071cd42f1bea3f6af9b9900e3ae97b41568828fe62365669612"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/b-focused-2.log",
+      "bytes": 113,
+      "sha256": "f47a6730a6647adb2d306698b29bd08bf72c74e93232941d6a265eebc5db4ab6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/b-focused-3.log",
+      "bytes": 100,
+      "sha256": "5518f1a92cc027ae8a9744de3f9002403286f51fec7799545ca6738938302fa3"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/b-focused.log",
+      "bytes": 112,
+      "sha256": "29cf2dc8194155232463fbe39a659d17f6046fe9f38a7d1327ffb7904c2a3a07"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/b5-artifacts.json",
+      "bytes": 23641,
+      "sha256": "8b040ac11528abce6e1cec974b49735328a647228f657ad3c3f54f7baaf2ca95"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-5k-summary.json",
+      "bytes": 23183,
+      "sha256": "5de23626ed323a40f9ed4ba524a0e2d46b929571bb036a9982df8b523b83026b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-5k.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decision-comparison.json",
+      "bytes": 2445,
+      "sha256": "fc20daf2ee092e6090e78374c113e3dda52d5c54d9985b491d9e4c9bab4281af"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g3-v2.json",
+      "bytes": 1272,
+      "sha256": "930da85ed9d61d4a19d6a41c0e74f6f8696c23774ca92f821bd26f634672b3d7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g3-v2.log",
+      "bytes": 12150,
+      "sha256": "7a1beca93569aa1a551f281bf32d3a5fe4be792b9f2c0e3f55210aebcae9417c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g3.json",
+      "bytes": 502,
+      "sha256": "7db2cc38e047896f28666329a8d1fcfa486d3eba1a1db44c0f87711c35bb0be1"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g3.log",
+      "bytes": 12150,
+      "sha256": "bf5a54a7040a595ece5e9ffd05c9f899119c6892df74889cc4c9e113932e928f"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g4-v2.json",
+      "bytes": 1362,
+      "sha256": "8be229d267526948a7cb92160173544d6b8876c124a0cf17f3afbce3025e2882"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g4-v2.log",
+      "bytes": 12150,
+      "sha256": "43300a0914aca1318c392395f57a012b498d4eb046425094e778c2532ebfc4e4"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g4.json",
+      "bytes": 591,
+      "sha256": "3da6b8431ed8268d14061a9d09cc16578a3e52bafce19d08cbcaeedaf523e8b0"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g4.log",
+      "bytes": 12150,
+      "sha256": "9c131ba4d1d553e4e44669940cead2e5fcea593910a45984d26759f48db7478c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g6-v2.json",
+      "bytes": 1362,
+      "sha256": "7898120761720afca886eec04ff6d759983c004d4d051f58d3e408feaaf93848"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g6-v2.log",
+      "bytes": 12150,
+      "sha256": "a1a3d2b9bf810cf76a195fd52835a0f50b8163d5e7a0cc4bfccfbb8136ef08b4"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g6.json",
+      "bytes": 591,
+      "sha256": "6a6a976823ad79dd221a620ab9ddb129d08494c420690cd9607fb2d09e883744"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g6.log",
+      "bytes": 12150,
+      "sha256": "b424a2d9dce172145f54780eeb02c1f26acc7c67303f1fc616c818db291562d8"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g7-v2.json",
+      "bytes": 1361,
+      "sha256": "3e9f2e7b61387eb12e6951f4381e14e82236efdb09dedebc21eb4647b0684d5b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g7-v2.log",
+      "bytes": 12150,
+      "sha256": "03fb0c8b54f566020a5150db59ef7f3914dcf224cc8a26f137f9d7557dd3e1ba"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g7.json",
+      "bytes": 591,
+      "sha256": "339014a25f3da895665ea117eb99826629293325e04a47b1f10fbcc9d9902e38"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/baseline-decisions/g7.log",
+      "bytes": 12150,
+      "sha256": "f06245ce4896bfdd5a1248bc3c8317c0bf568a3decd02d991a0036ba36af8b08"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/bench-chain.log",
+      "bytes": 661,
+      "sha256": "e29b15f222badcc1b5fc3a435df2f5bd64ceff43e8740a4bfed0f5b857a8be7e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/build-a.log",
+      "bytes": 284525,
+      "sha256": "0df845066f030df65a8cc6c85bcbc044bab426a4127c8dd20625700e733440ff"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/build-final.log",
+      "bytes": 212473,
+      "sha256": "ad2c78fdf741860637892b537c2c631fbc5b4e5abd9262e0f83ef0835f904a1c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/build-guard.log",
+      "bytes": 212098,
+      "sha256": "cc9439cb9418fb1b66cec1c30000a40504acd157ef8d28bc8fc4a175f349ebfc"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/cd-focused-2.log",
+      "bytes": 99,
+      "sha256": "e91a72ec3045e50d1770d5f1a0e3044b20e6dba7af1f1228f193b6d8a9bd2b0d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/cd-focused.log",
+      "bytes": 1317,
+      "sha256": "a5f1dd36d545c88ab5b4567cb3778fa7ff25ce37ac98040e014235235bb9cf56"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ci-guard-chain.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/collect-baseline.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/continuation-actual.log",
+      "bytes": 39619,
+      "sha256": "2f268b8680bbb3de6fef4abf22b58e8c6576d18c235040ec5256fed4201abf94"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/continuation-copy.json",
+      "bytes": 1394,
+      "sha256": "fb2f3591ec0cd485ff7d9e67874474650a157f927f193364120f33e802919385"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/continuation-copy.log",
+      "bytes": 1315,
+      "sha256": "3e7740a2e36d3fb6cc376b6357c4b241d585b1d963c36b941c6848aa3980d55e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/continuation-predict.log",
+      "bytes": 12312,
+      "sha256": "f266e6faaa1bfbfb4582743cb256a367a3e8fe8d04f7ab8ba0bbac5aa5072d1d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/continuation-verify.log",
+      "bytes": 12312,
+      "sha256": "e9827f871897ebebce1d6d33c2f7734f9932738806e290ea3a8c3a92a46a6f8d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/coverage-final.json",
+      "bytes": 4113404,
+      "sha256": "b75423cd3288e64a892f50639e46fbfef5eb711b501f3e2bed322815cac92455"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/coverage-guard-final.json",
+      "bytes": 4113515,
+      "sha256": "c837f05bab51338cd808e3b9e2a3379ef86be60a4025fae90b243391494c2045"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/dependency-files.json",
+      "bytes": 3778103,
+      "sha256": "95fad40c6fa94055ca8512c663d81777dc428aa47d2048b8fe078cb7d1ce7fc6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/dependency-identities.log",
+      "bytes": 1281,
+      "sha256": "c92b06c73659939a54aad0caac5622530f17e3649e2fddec892fdd5521569afe"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/distribution-final.log",
+      "bytes": 840,
+      "sha256": "77ea56f661bd596d59eda1c8e868ad6b2b52e71c19585e98c54a5bc316678844"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/distribution-guard-final.log",
+      "bytes": 840,
+      "sha256": "77ea56f661bd596d59eda1c8e868ad6b2b52e71c19585e98c54a5bc316678844"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-a.log",
+      "bytes": 740831,
+      "sha256": "c1bad032b83b0deae698d31db10edba9fdd5ce19a9ac23f275118763db199d37"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-a.xml",
+      "bytes": 476779,
+      "sha256": "af6a4d9a756ea9419357ec14885f5d589eb1c95ce4d77239e8300f3cf0016387"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-a2.log",
+      "bytes": 1802,
+      "sha256": "8dcb453884e69c8ac164a430296602bd173c5f21bfcebd17ef6d725b542cf926"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-a2.xml",
+      "bytes": 25554,
+      "sha256": "994ff4251d72e919be9648bcface31ee253f3f0c58bb4ad12e871224ad028302"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-guard-final-metrics.json",
+      "bytes": 1264065,
+      "sha256": "ea440de9cb78341388ca5a2ffdf32958a31905a22af01bdd8a24ba9066fdf566"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-guard-final.log",
+      "bytes": 1830,
+      "sha256": "afb864c079bf0ada0ea17a6587f2efa953dd713f8b4d12b1fb216d07b0469721"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/fast-guard-final.xml",
+      "bytes": 28105,
+      "sha256": "13cab096e8e92683798899e88ddb2d48fdb6cc898aab6ed1d258a183254448db"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/final-quiescence.json",
+      "bytes": 2906,
+      "sha256": "e0b41b04d4cacdc15e81f338f01bcf2c79335c6c2ebc5d7c70e662cbaae40f48"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/final-source-commit.txt",
+      "bytes": 41,
+      "sha256": "4781a4b849c8d64c8a4a4a4fdac958adc74800ed747b07c55f6d42fb06c28171"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-a.log",
+      "bytes": 28,
+      "sha256": "be107ff1153b16436f7d9ba0eae23311cece3942328550a6f951350513a5bcd5"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-d.log",
+      "bytes": 831,
+      "sha256": "b6c37879343ca8bddb327e675f99fc851c1ed0911e19b2f17569105c3d6a918a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-d2.log",
+      "bytes": 28,
+      "sha256": "aa873dcabb5a100014f2be3900d65c86721e35ba3938234c60bf973a76f4bc14"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-e.log",
+      "bytes": 28,
+      "sha256": "f7540ae2e7a6762e0eb90ff65620c3e8085dd5bc4c503984ba4003e6ca1ebd0b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-guard-final.log",
+      "bytes": 28,
+      "sha256": "7d64541e4ce3b0efbc78eeeec07da9c14be739509bdecaa52fd3ff770f69fc1d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/format-shell.log",
+      "bytes": 28,
+      "sha256": "7d64541e4ce3b0efbc78eeeec07da9c14be739509bdecaa52fd3ff770f69fc1d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-chain.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-final-metrics.json",
+      "bytes": 3265470,
+      "sha256": "7452522c8e6eee78be3798df24223642e2d8be6103c72079ec8144f6b28772cb"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-final.log",
+      "bytes": 109968,
+      "sha256": "fc3047e34d454eac6ebb967172e94dfa48a6edef1d899d6d4534936c5fa5b169"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-final.xml",
+      "bytes": 467470,
+      "sha256": "4cfa7c3b1b193bef8ffbf2689c85e1adb405a7272e8cee4047e7555a20d6d06a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-guard-final-metrics.json",
+      "bytes": 3276391,
+      "sha256": "28ee6136dab8adffbf6e55356c7fda944d6c06e4ae740d66b1d8b26f3f98051a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-guard-final.log",
+      "bytes": 109921,
+      "sha256": "8d422079de734a28bbb912c05a67206fd885935381840bb680c0367e66c28f11"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-guard-final.xml",
+      "bytes": 468957,
+      "sha256": "b8b44727082846b7b8ba2268e46db15c7f761921c5bb9e9874fb8ed4b008db50"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/full-source-commit.txt",
+      "bytes": 41,
+      "sha256": "476f24f67082edb14d241865c6cae2d6022155d9f36f9c9ee88edbb3948e94f9"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/graph-memory-10k.log",
+      "bytes": 168453,
+      "sha256": "9b4bee8db9284a5d63bbaa39b789eda5f41e1820ac96da0dd6ee951269db4015"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/graph-memory-10k.resources.json",
+      "bytes": 70,
+      "sha256": "5fe4149708ce3f7ff6ccf4f40467944265b1c8601c0336d043e46a8e5abf8799"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/graph-memory.log",
+      "bytes": 165689,
+      "sha256": "92e71390d5b4c3d534d7fee836fc1857986aae0158d34eef2591db9c64ddba4c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/graph-memory.resources.json",
+      "bytes": 70,
+      "sha256": "1319eed14b73a9befc73ae41150ad13d3310bbbe379bf0d5d931b7cdebe709f7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/growth-phases.json",
+      "bytes": 3919,
+      "sha256": "59c3d9913362061116666e3c6c0b6c1f4c896d9745aae226884f258c044c6571"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/growth-profile.log",
+      "bytes": 39023,
+      "sha256": "94db24b91089de1a10536729ec09cf863bb0ede2d92d538c99471bc8ddac35df"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/growth-profile.resources.json",
+      "bytes": 70,
+      "sha256": "925b2559df92345c7284ec8af9ba6937d947e36c485bf56f593ed0b53f76129a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/growth.prof",
+      "bytes": 1547688,
+      "sha256": "d9fb10809f85d1594ba2101412947c1362e4c58de76323116265eeb2f4ea6570"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/historical-5k-reachability.json",
+      "bytes": 54410,
+      "sha256": "8cd9c8512350fbd9940dc7c8027faa75a719fb6003bd9b4002358f7553dec764"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/host.json",
+      "bytes": 287,
+      "sha256": "40e9cdf2c6ed527df87a7a97fa255964d03c137041a30df0e6e4818f7e66502b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/i5-artifacts.json",
+      "bytes": 1748,
+      "sha256": "4853f84b02ece9edfbdc3b1da668f1324a98a72370e56dec6d3c617f74d90f64"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-after-ci-and-s10.json",
+      "bytes": 101165,
+      "sha256": "d68a366087e14f87b90d1f1957e4b145503ea966bc676b71e612db7547f5c07b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-after-ci-and-s10.log",
+      "bytes": 279,
+      "sha256": "4845911a74e94dda13a01f24b3fb25cbeb3fa669b877391a8d16392f8b744902"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-baseline.json",
+      "bytes": 101133,
+      "sha256": "cc5e6f550b7883ad33904fce6ba7990740a565a4cb005073d433846910a10e89"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-baseline.log",
+      "bytes": 239,
+      "sha256": "062a28bf4c7cd64d7763db9cefc0b644f98e9f1374ccfd28a68ffbf96ccd5771"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-final.json",
+      "bytes": 101133,
+      "sha256": "f1335c5a8dea5aa89e9d8f3622628ff91b61c2a19887cfef4383b8156b0e7b2b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-final.log",
+      "bytes": 236,
+      "sha256": "b670b772ac3e62cc038dfa03016093f829cdd4ccf50e96c2fb96f4e824d110b8"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-guard-final.json",
+      "bytes": 101133,
+      "sha256": "5519e32da0cb35cc413c6addcee953f5d7eeb45a8a9151e1c920ddf56e4df7f7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-guard-final.log",
+      "bytes": 242,
+      "sha256": "80817f702eae5ac0f378deb9d7b15254e38324b7e290e615b3524754be909fc0"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-s10-start.json",
+      "bytes": 101133,
+      "sha256": "69f157e16387b30953da469599b708efd64a8f7a34f8f7fae7468bf73877e64a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/identities-s10-start.log",
+      "bytes": 240,
+      "sha256": "8c6a598a9aae70725a5c346667e2dd53338cc14abf55e681853f192d9ead23bf"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/initial-matched.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/install-a.log",
+      "bytes": 353,
+      "sha256": "fa0da2b8363fb40620c1c7d4a9673e05d132aaaebd9b5e898c414c6b38f0285c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/install-a2.log",
+      "bytes": 600,
+      "sha256": "c8013eb29a1d74d38b948372ea48dbbc2cd69a90d445e96880485e60804253fa"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/install-final.log",
+      "bytes": 600,
+      "sha256": "cd84a7c754e95a272253ec1a664447d7596bb39ee7d6d79a2acebde9e596670b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/install-guard.log",
+      "bytes": 600,
+      "sha256": "708a8c34003bfdbfc95041bc08d0f6018fe8d0182822a2abd029b6d864508f40"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/leaderboard-before.bytes",
+      "bytes": 183663,
+      "sha256": "0ca0dbacf66626bfb20cbacecb780eb6cc4861ccbf2ac2c8222631123b21d519"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/next.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/orphan-after.log",
+      "bytes": 12150,
+      "sha256": "4c4c7e324270d3ec637d68091188eb8c4ba6736429f578e76d2fd699ba00c0fb"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/orphan-before.log",
+      "bytes": 12150,
+      "sha256": "6dddddc77926174d8858a47bc6be64b1548b194c08b0d5b643ec007d6debd359"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/orphan-copy.json",
+      "bytes": 1402,
+      "sha256": "1c299a13c96ef1393dfd3cc92e33c889bbb4559c0021d98da764bc8ca6b486c4"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/orphan-copy.log",
+      "bytes": 1307,
+      "sha256": "da779f9617b57dcb1058fe25571ef867d5610a97c4ba5d3f69f27880d1e978df"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p2-artifacts.json",
+      "bytes": 3898,
+      "sha256": "242439775e7784ce72063539c0631d14dee89c0e9d08ccc4437f1f14f0b34ca6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p2-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p2-summary.json",
+      "bytes": 11612,
+      "sha256": "b6fd6f74803f8a18146b9ecd15a3ceb561080eafe3cce6343ddbd87b272d517d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p2.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p90-artifacts.json",
+      "bytes": 18653,
+      "sha256": "b73c620205b95d2d2e19671fecc082257e8ae72ebcca8dc0adbe1a0f27b9a286"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p90-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p90-summary.json",
+      "bytes": 20677,
+      "sha256": "f62e0abd7cb64a99bdbff5898815e339d78285505be8f685f3d791a263aed9f2"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/p90.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pacing-comparison.json",
+      "bytes": 798,
+      "sha256": "4268c30ac4c03a4e669e7a6167089afc2a02ff8d91b33b3a059a62444e2fde6d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pacing-metrics.json",
+      "bytes": 9391,
+      "sha256": "434733d0a97dde1c5ac9fa8a031bfe9babf35db8456b6fa91a91cb93e7cbdcc6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb-artifacts.json",
+      "bytes": 17160,
+      "sha256": "bd7822b18a25f87326e621715ffaa1ad7acacfe1422599f534eed1060e8db4e8"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb-retention.json",
+      "bytes": 297,
+      "sha256": "573a29c28d5a8f28386f0787557b67baa3c0b4a7c213396543eb48e9d2d7db89"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb-retention.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb-summary.json",
+      "bytes": 21390,
+      "sha256": "dbd406e3d3976520a0b7162772cff113372aa640ebb47af96726fabed9406806"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pb.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr-guard-final-metrics.json",
+      "bytes": 3161727,
+      "sha256": "309cbdd969a31256d91c5e5b0bc8ee4ab9f6085f02d50b1ba583d92a249cafd4"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr-guard-final.log",
+      "bytes": 7435,
+      "sha256": "44662430e03c6c083173edccb0f6ac267a15c8806c83e1166cb34dc136309c5f"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr-guard-final.xml",
+      "bytes": 443556,
+      "sha256": "491e987855455ab2d3eab253956338da7d7d4aed2c17ff8a47a658937b091e47"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr1-metrics.json",
+      "bytes": 3150269,
+      "sha256": "cbde0aa6f27c50ae6df26da6c588c5a49bd0f83b2aa6ee1fad62a3bd407ace55"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr1.log",
+      "bytes": 7913,
+      "sha256": "1b741016c320724f99b29ffe97a53f2f7ca31d8078a32407cfa9b33562063d1e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pr1.xml",
+      "bytes": 442040,
+      "sha256": "b176db79aea5a2d339b57318b3dab8c80ade768017ee6e4d36416c0388e942d7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/prepare.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/profile-chain.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/protected-after.json",
+      "bytes": 138,
+      "sha256": "9342df37a5abb6749b14039bdc7f92a9e7f249020ba70f3017fb90d2c7a3ded6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/protected-before.json",
+      "bytes": 40558520,
+      "sha256": "a0eaf027d4fe42b78573d560552b68088e34b2af4dbe3b476cc1053372d17e0a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pw-artifacts.json",
+      "bytes": 20351,
+      "sha256": "5ff5b6c6a1c3b24de164380045097edb61a845084acc3d820d5cc7fbaac93ea5"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pw-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pw-summary.json",
+      "bytes": 27408,
+      "sha256": "ab81f85a2784980147ec41245b8bb4a994528c9fa43d4e462857fe210302a5af"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/pw.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/reachability.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ruff-a.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ruff-d.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ruff-e.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ruff-guard-final.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/ruff-shell.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-artifacts.json",
+      "bytes": 44296,
+      "sha256": "cf9f235c590e51df369d8b50e361fdb57998b6007e6508b1cd6a2734ad59ec53"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-artifacts.log",
+      "bytes": 304,
+      "sha256": "891b7f920d5ec375acb4d308677b3c1690b2b5ae016dad612f31a6123d75aa8c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g14.json",
+      "bytes": 1362,
+      "sha256": "7b06e126bda5c181e8ef21bf32c40abce703f188fbf14c8b1d20a8f7304b7032"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g14.log",
+      "bytes": 12312,
+      "sha256": "d4b24cd89d7705d9cc42882f37b2dd5608ff80e22aceaf1c8cd627357d5a2e1d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g15.json",
+      "bytes": 1368,
+      "sha256": "9d3a7ca830ac23e069febbcbad6c6d4df2887c3418cddfa1ed4716eb87afad74"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g15.log",
+      "bytes": 12312,
+      "sha256": "150fabce50ba1be3bdb742e6172ba598b1bf55311d4052afc15ed9484b5ca775"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g7.json",
+      "bytes": 1274,
+      "sha256": "787296b61163b822056ff037cf9222bddb670d17f0f097a00a4d6a58af5864c9"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g7.log",
+      "bytes": 12312,
+      "sha256": "810ae14c22cfd6d1e0f58f7dc03854403d19259a23931be15c354f9e914c5de9"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g8.json",
+      "bytes": 1364,
+      "sha256": "bce8fc70a8e43403f8594e55e5e4c2f2ea07f3a8e67dda2f69177c0870a4ca37"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-decisions/g8.log",
+      "bytes": 12312,
+      "sha256": "f69e5c93922bea610cbe5c992016e3f88d159e8643d94cc0ea1c12a7c8a13f46"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-preflight.json",
+      "bytes": 1373,
+      "sha256": "d4ff70c5db5c278903912a5d8f1e894de09de9e8ad14a4cca122cc771eb10164"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-retention.json",
+      "bytes": 222085,
+      "sha256": "9a798161141f260699ec4c8b812630b5012efdb0f69f633ffd994dfc0d831ac7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-retention.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s10-summary.json",
+      "bytes": 176325,
+      "sha256": "1542b887976913f84b1e1976cdf0cf379dc738e9b3b3d33ca4142e2281628e2b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s5-artifacts.json",
+      "bytes": 33093,
+      "sha256": "da50d011f60860724cecf2b65965cf6330a7ee8ea1e22d57f56fd6f813045cde"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s5-collect.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s5-retention.json",
+      "bytes": 84672,
+      "sha256": "25e6d01dbff50c73b1e564a9e9768b3948454fed31bb169785f5baeb1225d30c"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s5-retention.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/s5-summary.json",
+      "bytes": 124464,
+      "sha256": "c85e12ccfa9b46b1406381ea6d83f821ae9442f5ee1732f15ce6ec29cda66f12"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/shell-guard.log",
+      "bytes": 100,
+      "sha256": "c8730943bee86305de5080d81c2c231d0c89933b1312273e3d707c8a06f30cdb"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/small-artifacts.log",
+      "bytes": 2082,
+      "sha256": "3087e32bab0629d4b221880638c332d19be30b735c652e3fde6f464669f89ceb"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/snapshot-after.log",
+      "bytes": 288,
+      "sha256": "156c1bc0efed917d4afc6f5f4873b2e1957bcad47d75b724b77abe9205d03199"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/snapshot-before.log",
+      "bytes": 61,
+      "sha256": "0fa8efb048b73f275c79d993dce64ff3c203fccd4cf0c96c12ffeda79682444e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/mypy.json",
+      "bytes": 29513,
+      "sha256": "eadf4576d9f5545e1fd69036d6d0b38d57965e7417f334d3e5735c9ac86d79d4"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/mypy.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/pylint.json",
+      "bytes": 21325,
+      "sha256": "b9bd65aebfedb57f558970dc2a640541880904f80d67c4a89577035947880d41"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/pylint.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/pyright.json",
+      "bytes": 50932,
+      "sha256": "eb5226714eefae1dd78db8de70e07a6faf022d7730f0e48c749890176191db0a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/pyright.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static/summary.json",
+      "bytes": 68,
+      "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/mypy.json",
+      "bytes": 29513,
+      "sha256": "4e89cf03e653c8c056e464c8407a19802354a2ca812e10f0ea2da906bd2983b8"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/mypy.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/pylint.json",
+      "bytes": 21325,
+      "sha256": "b9bd65aebfedb57f558970dc2a640541880904f80d67c4a89577035947880d41"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/pylint.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/pyright.json",
+      "bytes": 50932,
+      "sha256": "9f2e8bb8a27ee521228944f3697beff9ccbd8cc28299e495830c6b43eeecb331"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/pyright.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final/summary.json",
+      "bytes": 68,
+      "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static-guard-final.log",
+      "bytes": 39366,
+      "sha256": "31cdb2dcf2bd32fc4e8a201d651eddbdc328f0789f15aab11751a9486065c5dd"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/static.log",
+      "bytes": 39366,
+      "sha256": "8be2979bfeb3cb71a9c5c808bcd1a5926cf197be60419ffb8e2f5d92e2dba725"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/sustained-10k.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/sustained-5k.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/toolchain-guard-final.log",
+      "bytes": 33,
+      "sha256": "ab756adedfea0d2d4a3a16cdaa5769cc30be200f5421cfe1516c664d09b58ae6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/toolchain.log",
+      "bytes": 33,
+      "sha256": "ab756adedfea0d2d4a3a16cdaa5769cc30be200f5421cfe1516c664d09b58ae6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/validation-audit.log",
+      "bytes": 13284,
+      "sha256": "6dd7719123607b90abb61cb753391dd944c631fe8b66e6eea6a43def6a9800c6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/validation-audit.resources.json",
+      "bytes": 72,
+      "sha256": "7c543e7ce7f446e798c98e42e1eca1fddb92cc0f9f72d51db6db1560ebf4b044"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/validation-routine.log",
+      "bytes": 12150,
+      "sha256": "e37d2431a0b3bd7d7efbd74b4182d0ff0512c54bd04a409bf19b44dfe89da2e5"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/e/validation-routine.resources.json",
+      "bytes": 70,
+      "sha256": "7609ae68dfb2e8aff1659543ab237647c43fae597d1cd5fc0de8160e65eb5864"
+    }
+  ],
+  "execution_scripts": [
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/PROGRESS.md",
+      "bytes": 22847,
+      "sha256": "112ed31c1f477e17a981a4731ea6a36c12c07f0c81e9d5cdc5a2cd5dfd025971"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/bench.sh",
+      "bytes": 1987,
+      "sha256": "3a229ce0d1c68425acf49f38bc2dccdc1c2acee4faa1b6813e2425293587ac54"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/ci-guard.sh",
+      "bytes": 879,
+      "sha256": "e3deb516b46e2686f1cec534d251d06e391ff245e8cba26653eb53485377b894"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/continuation_copy.py",
+      "bytes": 3450,
+      "sha256": "f28aa426b42c3bf51c299e375c116827c34203e4e0b227bdaea9a6dae5d6eb00"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/curate.py",
+      "bytes": 10875,
+      "sha256": "af4f3a7a3bf753d63b6cdfb2752e0a51f5f13787bf42725be33be50839901c38"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/dependency_identities.py",
+      "bytes": 1780,
+      "sha256": "6e5b42c092ec3525cf5f0b698f9029ef2463109b5e6e12781d9f599ae3887fc3"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/env.sh",
+      "bytes": 954,
+      "sha256": "6f97949983f4c9a2977742887469fba860827cee480a455b43451e973a9d9b18"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/full.sh",
+      "bytes": 872,
+      "sha256": "3b9b12282d227cb0bdf4dbf650a92aba861cbec582af775066e33b31b85cb89e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/guard_edit.py",
+      "bytes": 721,
+      "sha256": "3fa91832af4f9dc3fcdc934e6b2f6b12ad3cb0d21eb052fa440e5fa42c743bde"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/identities.py",
+      "bytes": 1864,
+      "sha256": "b47c9ef86991fde0b45ad1524788190bddd662501cadbe2d6bfcc66a164d3363"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/next.sh",
+      "bytes": 1056,
+      "sha256": "1e056a4d8238f4c210ffdb705a773548c44831980fffd77000be176af4be1aaf"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/orphan_copy.py",
+      "bytes": 3268,
+      "sha256": "fedba965da46366f1921c524d8b2ed5a49b2f850660044fe5bf4ae2e46203ca3"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/profile.sh",
+      "bytes": 2399,
+      "sha256": "d125d49ba0b6f7a3bbc725ea995bd2510d8c20eb99b64b6df930aba2ba4b1472"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/raw_manifest.py",
+      "bytes": 1710,
+      "sha256": "75f03605bec13fc381cd76ee1eabd5c00b0f69fdec126dff5e97d2ba05695eb3"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/snapshot.py",
+      "bytes": 1909,
+      "sha256": "51c7c638a85d1156b143f6bd59e4374741788af1bc403afb9c01a1a97062b25b"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/summarize_artifacts.py",
+      "bytes": 4899,
+      "sha256": "b8979a125163b2b1005b8021117832b256b5334065c6b78a001a5e7373cbdb6d"
+    }
+  ],
+  "wheels": [
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wa/chipiron-0.2.4-py3-none-any.whl",
+      "bytes": 1119427,
+      "sha256": "29609db2dc41258e6e00d8b0f26f96b49c8940482ce0882f2972c6ed375ac5c3"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wa/chipiron-0.2.4.tar.gz",
+      "bytes": 899812,
+      "sha256": "a6cffb18eda07cbb946a8c2889ceb26732b060bed219f9e22d9637c2cd7404ec"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wf/chipiron-0.2.4-py3-none-any.whl",
+      "bytes": 1119908,
+      "sha256": "eddf00f3077aa0a38ba1c92a02f9576df95cc7b581460c0da7ea5ae5490f546e"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wf/chipiron-0.2.4.tar.gz",
+      "bytes": 900449,
+      "sha256": "467e9cd75add3e3d5bfda80db4834cd7193e9b90c15edb680c2b20b730bb66e9"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wg/chipiron-0.2.4-py3-none-any.whl",
+      "bytes": 1119957,
+      "sha256": "bfe5f0350992a796e4a1a864d8d28e26bc238669c0ac52754395807a1d90bf90"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/wg/chipiron-0.2.4.tar.gz",
+      "bytes": 900446,
+      "sha256": "0c243862d7ab143bbf4cfd8d5e37d37e268e8b1cce17acfa861e9882694779d2"
+    }
+  ],
+  "experiments": {
+    "b5": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/b5",
+      "file_count": 444,
+      "logical_bytes": 101001556,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/b5.json",
+        "bytes": 125612,
+        "sha256": "611012b64840a17eb73e721aef755c365fbeb46e6de7e6112aa1ba15fa9b557c"
+      }
+    },
+    "s5": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/s5",
+      "file_count": 655,
+      "logical_bytes": 87779003,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/s5.json",
+        "bytes": 191484,
+        "sha256": "6ed731fa3e14f03f79939d2014e607bdfb44dac67dec4a7ea51c5fc12157e77b"
+      }
+    },
+    "s10": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/s10",
+      "file_count": 1106,
+      "logical_bytes": 170071910,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/s10.json",
+        "bytes": 335957,
+        "sha256": "0d53f4a977b97a22c5b865947558cbc70965b896b0f8a9fb05fad2ffa13f5fc1"
+      }
+    },
+    "i5": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/i5",
+      "file_count": 66,
+      "logical_bytes": 2782976,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/i5.json",
+        "bytes": 17442,
+        "sha256": "cb885ea2b485574e36587381ea824f8f8f8be0d51bce0157cac5388d7f6e0df9"
+      }
+    },
+    "p90": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/p90",
+      "file_count": 195,
+      "logical_bytes": 5023897,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/p90.json",
+        "bytes": 54751,
+        "sha256": "071d93551e46f34947ffeb283d9992782506141af4c016480b6bcd56fb021e14"
+      }
+    },
+    "p2": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/p2",
+      "file_count": 291,
+      "logical_bytes": 15306630,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/p2.json",
+        "bytes": 85261,
+        "sha256": "a8bbafd7839ac93c39bab0f344160984a576e6aab7f332393d0d41d2db4bceea"
+      }
+    },
+    "pw": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/pw",
+      "file_count": 369,
+      "logical_bytes": 8531419,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/pw.json",
+        "bytes": 108567,
+        "sha256": "61b2b353c893b0bf1522516872b8f95e2101f4c489539a11202e32d15b0aabb5"
+      }
+    },
+    "pb": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/pb",
+      "file_count": 330,
+      "logical_bytes": 41935736,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/pb.json",
+        "bytes": 96098,
+        "sha256": "aeb6a65b1594cce6d3fbc99b328bc0422d85905edfdb8fecf6ec9e76c568ff20"
+      }
+    },
+    "gc2": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/gc2",
+      "file_count": 273,
+      "logical_bytes": 7062253,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/gc2.json",
+        "bytes": 80565,
+        "sha256": "ff0191b49de7f805ac00b615224ade07fa06c37eb5bcd34df7e47c4f518d0f15"
+      }
+    },
+    "continuation": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/continuation",
+      "file_count": 1093,
+      "logical_bytes": 101870866,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/continuation.json",
+        "bytes": 349246,
+        "sha256": "3654a2efaf4ae46a49a7657bd444de06263150bec122622b1b7848230f9f005b"
+      }
+    },
+    "decisions10": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/decisions10",
+      "file_count": 1031,
+      "logical_bytes": 37299909,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/decisions10.json",
+        "bytes": 328493,
+        "sha256": "4e793995c27368102b1ec579928909fa602c6a3086769dc0c636c41e046a2d6b"
+      }
+    },
+    "gp": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/gp",
+      "file_count": 100,
+      "logical_bytes": 2326880,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/gp.json",
+        "bytes": 28171,
+        "sha256": "c68b256cae9890916e29ee7ebcf3920fda76ac13701f04b56194a3980825239f"
+      }
+    },
+    "mp": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/mp",
+      "file_count": 100,
+      "logical_bytes": 2326880,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/mp.json",
+        "bytes": 28171,
+        "sha256": "af1a5cb8f5100bc9fa94c1332ddae3067fe95f8b67833381576f5ef1ce4cf530"
+      }
+    },
+    "mp10": {
+      "root": "/home/pompote/oldata/victor/morpion-scratch/s26/mp10",
+      "file_count": 1086,
+      "logical_bytes": 39722272,
+      "inventory": {
+        "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inventories/mp10.json",
+        "bytes": 338974,
+        "sha256": "42ae49184fea70599c34636e8fbe15fd8719d6ff4c76a1aba5c37deecfe2579c"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inputs/bootstrap_config.json",
+      "bytes": 5631,
+      "sha256": "d5c1a0a9e7a223d5fcdb727968b271107bdf3094de205a23f367ceabc6f938e6"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inputs/seed/morpion_manifest.json",
+      "bytes": 1995,
+      "sha256": "6205330360317dde258a2047218f94fc203fe196d3a8070ae93596ef20cc7c4a"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inputs/seed/morpion_regressor_args.json",
+      "bytes": 1554,
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inputs/seed/param.json",
+      "bytes": 517,
+      "sha256": "76e66a484218c6202113f2a7846e5126b3969c3d60fb972e20d61cfcbca7bd27"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/s26/inputs/seed/param.pt",
+      "bytes": 1941,
+      "sha256": "9b48928024de2088a69929691f9300a5262b317acd12535deb3b3570009e508b"
+    }
+  ]
+}
