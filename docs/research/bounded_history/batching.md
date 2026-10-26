@@ -12,9 +12,9 @@ Every case starts from an independent copy, with private control/cache/authority
 
 | Steps / invocation | Committed nodes / edges added | Committed steps | Nodes/s | Accepted Dataset / Training | Completed ownership s |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 4 | 699 / see exact evidence | 20 | 1.937 | 3 / 2 | 289.52 |
-| 16 | 1,616 / see exact evidence | 48 | 4.478 | 2 / 1 | 271.78 |
-| 32 | 3,324 / see exact evidence | 96 | 9.189 | 1 / 1 | 318.99 |
+| 4 | 699 / 813 | 20 | 1.937 | 3 / 2 | 289.52 |
+| 16 | 1,616 / 1,894 | 48 | 4.478 | 2 / 1 | 271.78 |
+| 32 | 3,324 / 3,857 | 96 | 9.189 | 1 / 1 | 318.99 |
 
 The selected batch is **32**, an observed **4.74×** durable-node rate versus 4.
 Whole-session CPU per new node also decreases. Each accepted Training has real

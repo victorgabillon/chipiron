@@ -1,0 +1,3793 @@
+{
+  "full": {
+    "budget": {
+      "generations": 100,
+      "retire_every": 0,
+      "maximum_seconds": 1100,
+      "actual_seconds": 204.5084400630003,
+      "maximum_rss_bytes": 2147483648,
+      "minimum_available_ram_bytes": 8589934592,
+      "minimum_disk_headroom_bytes": 21474836480,
+      "maximum_workspace_bytes": 2147483648,
+      "nodes_fixed": 123,
+      "genuine_neural_receipts": 99,
+      "search_steps": 0
+    },
+    "native_resources": {
+      "wall_s": 207.71,
+      "user_s": 86.48,
+      "system_s": 12.4,
+      "peak_rss_kib": 320508,
+      "output_blocks": 287400
+    },
+    "authority_json_bytes_written": 18767263,
+    "all_entry_inodes": 3044,
+    "directory_inodes": 1322,
+    "allocated_bytes_including_directories": 14491648,
+    "samples": [
+      {
+        "generation": 2,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.23356942200189224,
+        "first_exact_receipt_ack_wall_s": 0.04670398799862596,
+        "receipt_count": 1,
+        "authority_bytes": 8692,
+        "metadata_owned_heap_bytes": 16570,
+        "complete_boundaries": [
+          1,
+          2
+        ],
+        "allocation": {
+          "files": 60,
+          "logical_bytes": 160653,
+          "allocated_bytes": 278528
+        },
+        "process_rss_bytes": 314855424
+      },
+      {
+        "generation": 5,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.2371729629994661,
+        "first_exact_receipt_ack_wall_s": 0.02898206899772049,
+        "receipt_count": 4,
+        "authority_bytes": 19752,
+        "metadata_owned_heap_bytes": 31882,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "allocation": {
+          "files": 123,
+          "logical_bytes": 344837,
+          "allocated_bytes": 544768
+        },
+        "process_rss_bytes": 314134528
+      },
+      {
+        "generation": 10,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 6,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 7,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.2645215359989379,
+        "first_exact_receipt_ack_wall_s": 0.0379256490014086,
+        "receipt_count": 9,
+        "authority_bytes": 38193,
+        "metadata_owned_heap_bytes": 57529,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "allocation": {
+          "files": 228,
+          "logical_bytes": 651816,
+          "allocated_bytes": 995328
+        },
+        "process_rss_bytes": 314421248
+      },
+      {
+        "generation": 25,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 6,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 7,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 11,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 12,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 13,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 14,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 15,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 16,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 17,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 18,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 19,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 20,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 21,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 22,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 23,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 24,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.24595288099953905,
+        "first_exact_receipt_ack_wall_s": 0.03718403099992429,
+        "receipt_count": 24,
+        "authority_bytes": 93575,
+        "metadata_owned_heap_bytes": 134238,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25
+        ],
+        "allocation": {
+          "files": 543,
+          "logical_bytes": 1572977,
+          "allocated_bytes": 2338816
+        },
+        "process_rss_bytes": 320659456
+      },
+      {
+        "generation": 50,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 6,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 7,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 11,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 12,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 13,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 14,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 15,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 16,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 17,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 18,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 19,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 20,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 21,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 22,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 23,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 24,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 26,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 27,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 28,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 29,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 30,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 31,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 32,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 33,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 34,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 35,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 36,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 37,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 38,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 39,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 40,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 41,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 42,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 43,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 44,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 45,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 46,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 47,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 48,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 49,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.24776883899903623,
+        "first_exact_receipt_ack_wall_s": 0.03955888099881122,
+        "receipt_count": 49,
+        "authority_bytes": 185875,
+        "metadata_owned_heap_bytes": 262197,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50
+        ],
+        "allocation": {
+          "files": 1068,
+          "logical_bytes": 3107536,
+          "allocated_bytes": 4583424
+        },
+        "process_rss_bytes": 321847296
+      },
+      {
+        "generation": 75,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 6,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 7,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 11,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 12,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 13,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 14,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 15,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 16,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 17,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 18,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 19,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 20,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 21,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 22,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 23,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 24,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 26,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 27,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 28,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 29,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 30,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 31,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 32,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 33,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 34,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 35,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 36,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 37,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 38,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 39,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 40,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 41,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 42,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 43,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 44,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 45,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 46,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 47,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 48,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 49,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 51,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 52,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 53,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 54,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 55,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 56,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 57,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 58,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 59,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 60,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 61,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 62,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 63,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 64,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 65,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 66,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 67,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 68,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 69,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 70,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 71,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 72,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 73,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 74,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.25475457799984724,
+        "first_exact_receipt_ack_wall_s": 0.04048250499909045,
+        "receipt_count": 74,
+        "authority_bytes": 278176,
+        "metadata_owned_heap_bytes": 390157,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75
+        ],
+        "allocation": {
+          "files": 1593,
+          "logical_bytes": 4642205,
+          "allocated_bytes": 6823936
+        },
+        "process_rss_bytes": 322842624
+      },
+      {
+        "generation": 100,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 6,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 7,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 11,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 12,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 13,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 14,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 15,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 16,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 17,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 18,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 19,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 20,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 21,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 22,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 23,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 24,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 26,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 27,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 28,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 29,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 30,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 31,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 32,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 33,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 34,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 35,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 36,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 37,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 38,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 39,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 40,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 41,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 42,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 43,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 44,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 45,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 46,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 47,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 48,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 49,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 51,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 52,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 53,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 54,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 55,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 56,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 57,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 58,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 59,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 60,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 61,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 62,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 63,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 64,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 65,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 66,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 67,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 68,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 69,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 70,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 71,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 72,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 73,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 74,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 76,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 77,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 78,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 79,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 80,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 81,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 82,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 83,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 84,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 85,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 86,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 87,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 88,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 89,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 90,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 91,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 92,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 93,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 94,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 95,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 96,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 97,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 98,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 99,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.26005055300265667,
+        "first_exact_receipt_ack_wall_s": 0.04877443800069159,
+        "receipt_count": 99,
+        "authority_bytes": 370481,
+        "metadata_owned_heap_bytes": 518243,
+        "complete_boundaries": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100
+        ],
+        "allocation": {
+          "files": 2118,
+          "logical_bytes": 6177274,
+          "allocated_bytes": 9068544
+        },
+        "process_rss_bytes": 323850240
+      }
+    ]
+  },
+  "rolling": {
+    "budget": {
+      "generations": 100,
+      "retire_every": 5,
+      "maximum_seconds": 1100,
+      "actual_seconds": 237.5489127400033,
+      "maximum_rss_bytes": 2147483648,
+      "minimum_available_ram_bytes": 8589934592,
+      "minimum_disk_headroom_bytes": 21474836480,
+      "maximum_workspace_bytes": 2147483648,
+      "nodes_fixed": 123,
+      "genuine_neural_receipts": 99,
+      "search_steps": 0
+    },
+    "native_resources": {
+      "wall_s": 240.77,
+      "user_s": 99.82,
+      "system_s": 13.59,
+      "peak_rss_kib": 320516,
+      "output_blocks": 309360
+    },
+    "authority_json_bytes_written": 23214888,
+    "all_entry_inodes": 1298,
+    "directory_inodes": 546,
+    "allocated_bytes_including_directories": 6553600,
+    "samples": [
+      {
+        "generation": 2,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 2,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.23689501300032134,
+        "first_exact_receipt_ack_wall_s": 0.03758361700238311,
+        "receipt_count": 1,
+        "authority_bytes": 8692,
+        "metadata_owned_heap_bytes": 16570,
+        "complete_boundaries": [
+          1,
+          2
+        ],
+        "allocation": {
+          "files": 60,
+          "logical_bytes": 160682,
+          "allocated_bytes": 278528
+        },
+        "process_rss_bytes": 314839040
+      },
+      {
+        "generation": 5,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 4,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 5,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.25869708100071875,
+        "first_exact_receipt_ack_wall_s": 0.029799968000588706,
+        "receipt_count": 4,
+        "authority_bytes": 19952,
+        "metadata_owned_heap_bytes": 32151,
+        "complete_boundaries": [
+          3,
+          4,
+          5
+        ],
+        "allocation": {
+          "files": 103,
+          "logical_bytes": 287550,
+          "allocated_bytes": 446464
+        },
+        "process_rss_bytes": 314437632
+      },
+      {
+        "generation": 10,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 4,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 6,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 7,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 8,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 9,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 10,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.24194849299965426,
+        "first_exact_receipt_ack_wall_s": 0.039775352997821756,
+        "receipt_count": 9,
+        "authority_bytes": 38893,
+        "metadata_owned_heap_bytes": 58323,
+        "complete_boundaries": [
+          8,
+          9,
+          10
+        ],
+        "allocation": {
+          "files": 158,
+          "logical_bytes": 451278,
+          "allocated_bytes": 651264
+        },
+        "process_rss_bytes": 314531840
+      },
+      {
+        "generation": 25,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 4,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 6,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 7,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 8,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 9,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 11,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 12,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 13,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 14,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 15,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 16,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 17,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 18,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 19,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 20,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 21,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 22,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 23,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 24,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 25,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.25620237900147913,
+        "first_exact_receipt_ack_wall_s": 0.040746492999460315,
+        "receipt_count": 24,
+        "authority_bytes": 95775,
+        "metadata_owned_heap_bytes": 136607,
+        "complete_boundaries": [
+          23,
+          24,
+          25
+        ],
+        "allocation": {
+          "files": 323,
+          "logical_bytes": 942449,
+          "allocated_bytes": 1261568
+        },
+        "process_rss_bytes": 320876544
+      },
+      {
+        "generation": 50,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 4,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 6,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 7,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 8,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 9,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 11,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 12,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 13,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 14,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 15,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 16,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 17,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 18,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 19,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 20,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 21,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 22,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 23,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 24,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 26,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 27,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 28,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 29,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 30,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 31,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 32,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 33,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 34,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 35,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 36,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 37,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 38,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 39,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 40,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 41,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 42,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 43,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 44,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 45,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 46,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 47,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 48,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 49,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 50,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.24573674400016898,
+        "first_exact_receipt_ack_wall_s": 0.0404827540005499,
+        "receipt_count": 49,
+        "authority_bytes": 190575,
+        "metadata_owned_heap_bytes": 267191,
+        "complete_boundaries": [
+          48,
+          49,
+          50
+        ],
+        "allocation": {
+          "files": 598,
+          "logical_bytes": 1760991,
+          "allocated_bytes": 2277376
+        },
+        "process_rss_bytes": 322117632
+      },
+      {
+        "generation": 75,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 4,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 6,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 7,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 8,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 9,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 11,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 12,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 13,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 14,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 15,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 16,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 17,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 18,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 19,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 20,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 21,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 22,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 23,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 24,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 26,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 27,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 28,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 29,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 30,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 31,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 32,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 33,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 34,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 35,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 36,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 37,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 38,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 39,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 40,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 41,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 42,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 43,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 44,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 45,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 46,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 47,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 48,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 49,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 51,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 52,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 53,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 54,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 55,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 56,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 57,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 58,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 59,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 60,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 61,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 62,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 63,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 64,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 65,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 66,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 67,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 68,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 69,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 70,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 71,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 72,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 73,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 74,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 75,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.2306257780001033,
+        "first_exact_receipt_ack_wall_s": 0.034299285001907265,
+        "receipt_count": 74,
+        "authority_bytes": 285376,
+        "metadata_owned_heap_bytes": 397776,
+        "complete_boundaries": [
+          73,
+          74,
+          75
+        ],
+        "allocation": {
+          "files": 873,
+          "logical_bytes": 2579371,
+          "allocated_bytes": 3293184
+        },
+        "process_rss_bytes": 323174400
+      },
+      {
+        "generation": 100,
+        "validation_traces": {
+          "cold_runtime_recovery": [
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "exact_old_receipt_ack": [
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ],
+          "explicit_archive_audit": [
+            {
+              "generation": 1,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 2,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 3,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 4,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 5,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 6,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 7,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 8,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 9,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 10,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 11,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 12,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 13,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 14,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 15,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 16,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 17,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 18,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 19,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 20,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 21,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 22,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 23,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 24,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 25,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 26,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 27,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 28,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 29,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 30,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 31,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 32,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 33,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 34,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 35,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 36,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 37,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 38,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 39,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 40,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 41,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 42,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 43,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 44,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 45,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 46,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 47,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 48,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 49,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 50,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 51,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 52,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 53,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 54,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 55,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 56,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 57,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 58,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 59,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 60,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 61,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 62,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 63,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 64,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 65,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 66,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 67,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 68,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 69,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 70,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 71,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 72,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 73,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 74,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 75,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 76,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 77,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 78,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 79,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 80,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 81,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 82,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 83,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 84,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 85,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 86,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 87,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 88,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 89,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 90,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 91,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 92,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 93,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 94,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 95,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 96,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 97,
+              "retired_payload": true,
+              "historical_full_payload": false
+            },
+            {
+              "generation": 98,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 99,
+              "retired_payload": false,
+              "historical_full_payload": true
+            },
+            {
+              "generation": 100,
+              "retired_payload": false,
+              "historical_full_payload": false
+            }
+          ]
+        },
+        "nodes": 123,
+        "edges": 123,
+        "checkpoint_payload_sha256": "744c66beb4231ac2442a755c8454bb565d9f0a1b7053cb6788927873f7d41fc2",
+        "selector_sha256": "733bbf5e47bc099f671c17cb44373dba9ed3a1163943c35db087eda32747e272",
+        "rng_sha256": "f8c19087f724ccc3fddd46d395989c384f6493f69d52e7287f7c7e944b9da713",
+        "rollout_rng_sha256": "148ace98632bbac9a9784ee3b7b143441e4585ef28fa79583962dcc29764e524",
+        "recovery_wall_s": 0.2602747080018162,
+        "first_exact_receipt_ack_wall_s": 0.041726650000782683,
+        "receipt_count": 99,
+        "authority_bytes": 380181,
+        "metadata_owned_heap_bytes": 528487,
+        "complete_boundaries": [
+          98,
+          99,
+          100
+        ],
+        "allocation": {
+          "files": 1148,
+          "logical_bytes": 3398340,
+          "allocated_bytes": 4308992
+        },
+        "process_rss_bytes": 324272128
+      }
+    ]
+  },
+  "identity": {
+    "package_commit": "e1eb9667ebd255766ef4cfc382411d0ed7d5fe25",
+    "retirement_tool_commit": "0d89bb0809b4d5da6deed6fa26cf078f63edfa13",
+    "wheel_sha256": "d8ce0d5300ea64bc575608cb13567740f209e64b1be4dbc59d9196d49a8ac5b7",
+    "driver_sha256": "12da3f21d46c3743a4e06832d1567533af7f4a552f2c22c311de062ca5c85cc7",
+    "matched_full_payload_selector_search_rollout_equal": true,
+    "limitation": "Fixed model and graph, no Growth steps; cold-runtime measurements use a warm process/filesystem. Old-model-era descriptor-scan scaling is not represented by the fixed-model receipt probe."
+  }
+}

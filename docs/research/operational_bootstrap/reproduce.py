@@ -192,6 +192,9 @@ def main() -> None:
             peak_workspace = 0
             peak_staging = 0
             peak_scratch = 0
+            captured_proposals = {}
+            minimum_available_ram = psutil.virtual_memory().available
+            minimum_available_disk = shutil.disk_usage(root).free
             try:
                 while result.poll() is None:
                     try:
@@ -224,6 +227,31 @@ def main() -> None:
                                 ],
                             })
                             previous_authority = authority
+                    # Preserve exact observed proposals as research evidence only.
+                    # This archive never participates in worker admission/acceptance.
+                    try:
+                        proposal_bytes = (
+                            paths.pipeline_reevaluation_patch_path.read_bytes()
+                        )
+                    except FileNotFoundError:
+                        pass
+                    else:
+                        proposal_hash = hashlib.sha256(proposal_bytes).hexdigest()
+                        if proposal_hash not in captured_proposals:
+                            archive = root / "captured-proposals"
+                            archive.mkdir(exist_ok=True)
+                            target = archive / f"{proposal_hash}.json"
+                            if not target.exists():
+                                with target.open("xb") as captured:
+                                    captured.write(proposal_bytes)
+                            assert (
+                                hashlib.sha256(target.read_bytes()).hexdigest()
+                                == proposal_hash
+                            )
+                            captured_proposals[proposal_hash] = {
+                                "elapsed_s": time.monotonic() - started,
+                                "path": str(target),
+                            }
                     group_rss = {}
                     for process in processes:
                         try:
@@ -272,6 +300,12 @@ def main() -> None:
                         # An owned cache may be removed between read-only samples.
                         continue
                     peak_scratch = max(peak_scratch, scratch_bytes)
+                    minimum_available_ram = min(
+                        minimum_available_ram, psutil.virtual_memory().available
+                    )
+                    minimum_available_disk = min(
+                        minimum_available_disk, shutil.disk_usage(root).free
+                    )
                     if (
                         scratch_bytes > budget["scratch_limit_bytes"]
                         or sum(group_rss.values())
@@ -302,11 +336,14 @@ def main() -> None:
                     {
                         "processes": observed,
                         "authority_observations": authorities,
+                        "captured_proposals": captured_proposals,
                         "group_peak_rss_bytes": group_peaks,
                         "process_union_peak_rss_bytes": union_peak_rss,
                         "workspace_peak_allocated_bytes": peak_workspace,
                         "staging_peak_allocated_bytes": peak_staging,
                         "scratch_peak_allocated_bytes": peak_scratch,
+                        "minimum_available_ram_bytes": minimum_available_ram,
+                        "minimum_available_disk_bytes": minimum_available_disk,
                         "sample_seconds": 0.2,
                     },
                     indent=2,
