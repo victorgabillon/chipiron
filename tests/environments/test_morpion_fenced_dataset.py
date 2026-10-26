@@ -404,3 +404,41 @@ def test_source_and_epoch_changed_during_compute(
             load_bootstrap_run_state(paths.run_state_path).metadata
         )[0]
     )
+
+
+def test_live_owner_releases_its_claim_after_contended_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A live attempt can release its exact claim; an expired unknown owner cannot."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event, Timer
+
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        growth_receipt_ownership,
+    )
+
+    args, paths, _ = setup_fenced(tmp_path)
+    monkeypatch.setenv("MORPION_WORKER_OWNERSHIP_WAIT_SECONDS", "2")
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    held, release = Event(), Event()
+
+    def competing_growth() -> None:
+        with growth_receipt_ownership(paths):
+            held.set()
+            assert release.wait(2)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with publication.admit_dataset(
+            paths, args, manifest, ttl_seconds=60, owner=None
+        ):
+            claim = load_pipeline_stage_claim(
+                paths.pipeline_dataset_claim_path_for_generation(1)
+            )
+            assert claim.owner is None
+            result = executor.submit(competing_growth)
+            assert held.wait(1)
+            timer = Timer(0.1, release.set)
+            timer.start()
+        result.result(timeout=2)
+        timer.join()
+    assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
