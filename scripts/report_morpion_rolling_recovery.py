@@ -573,6 +573,13 @@ def _inspect(
         and len(i["paths"]) == i["nlink"]
         and retained_commitments.isdisjoint(i["paths"])
         and retained_model_files.isdisjoint(i["paths"])
+        and (
+            not retirement_plan
+            or all(
+                Path(p).parts[3] in {"checkpoint", "scientific_snapshot"}
+                for p in i["paths"]
+            )
+        )
     ]
     require(
         all(len(i["paths"]) == i["nlink"] for i in inodes.values()),
@@ -599,6 +606,12 @@ def _inspect(
     return {
         "validated": not blockers,
         "retirement_plan": retirement_plan,
+        "authorized_retired_generations": [
+            r["generation"] for r in ordered if RETIRED_PAYLOAD_KEY in r
+        ],
+        "complete_payload_generations": [
+            r["generation"] for r in ordered if RETIRED_PAYLOAD_KEY not in r
+        ],
         "blockers": blockers,
         "source_run_state_sha256": before["run_state.json"],
         "proposed_active_roots": active,
@@ -634,12 +647,12 @@ def _inspect(
         "retained_control_files": before,
         "outside_capsules": "all retained; not inventoried for reclamation",
         "limitations": [
-            "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
+            "Read-only inspection grants no new deletion authority; only explicit retired_payload_v1 records permit payload absence.",
             "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
-            "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
+            "Accepted results retain their full source; retirement plans keep historical exact receipt descriptors and original model bytes separately.",
             "Exact receipt lookup retains its descriptor scan and exact chosen frozen models, independently of historical trees.",
             "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
-            "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
+            "Control fingerprints detect observed changes; explicit retirement additionally holds Growth ownership and candidate exclusive pins through authorization/cleanup.",
             "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing.",
         ],
     }
