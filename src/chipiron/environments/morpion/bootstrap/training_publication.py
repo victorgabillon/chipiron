@@ -34,7 +34,7 @@ from .pipeline_artifacts import (
     pipeline_training_status_from_dict,
     pipeline_training_status_to_dict,
 )
-from .pipeline_claims import claim_pipeline_stage, release_pipeline_stage_claim
+from .pipeline_claims import claim_pipeline_stage, release_owned_pipeline_stage_claim
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 from .worker_result_io import (
     attempt_directory,
@@ -189,6 +189,9 @@ def admit_training(
             )
             result = project_training(paths, state, manifest, verify=True)
             _repair(paths, result, proposal)
+            release_owned_pipeline_stage_claim(
+                claim_path=claim_path, claim_id=proposal["admission"]["claim_id"]
+            )
         else:
             from .pipeline.cursors import training_lower_bound_details
 
@@ -230,15 +233,9 @@ def admit_training(
         if attempt is not None:
             try:
                 with growth_receipt_ownership(paths, wait=True):
-                    if (
-                        claim_path.is_file()
-                        and load_pipeline_stage_claim(claim_path).claim_id
-                        == attempt.admission["claim_id"]
-                    ):
-                        release_pipeline_stage_claim(
-                            claim_path=claim_path,
-                            claim_id=attempt.admission["claim_id"],
-                        )
+                    release_owned_pipeline_stage_claim(
+                        claim_path=claim_path, claim_id=attempt.admission["claim_id"]
+                    )
             except BlockingIOError:
                 pass
 

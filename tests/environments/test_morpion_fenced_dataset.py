@@ -442,3 +442,31 @@ def test_live_owner_releases_its_claim_after_contended_cleanup(
         result.result(timeout=2)
         timer.join()
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("same_claim", [False, True])
+def test_accepted_retry_releases_only_its_exact_completed_claim(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, same_claim: bool
+) -> None:
+    """A crash after acceptance can leave its claim; a replacement is untouched."""
+    from chipiron.environments.morpion.bootstrap.pipeline_claims import (
+        claim_pipeline_stage,
+    )
+
+    args, paths, _ = setup_fenced(tmp_path)
+    local_leaderboard(monkeypatch, tmp_path)
+    result = run_dataset(args)
+    admission = publication._proposal(paths, reference(paths))["admission"]
+    path = paths.pipeline_dataset_claim_path_for_generation(1)
+    claim = claim_pipeline_stage(
+        generation=1, stage="dataset", claim_path=path, ttl_seconds=60
+    )
+    if same_claim:
+        save_pipeline_stage_claim(replace(claim, claim_id=admission["claim_id"]), path)
+    authority = paths.run_state_path.read_bytes()
+    assert run_dataset(args) == result
+    assert path.exists() is not same_claim
+    if not same_claim:
+        assert load_pipeline_stage_claim(path) == claim
+    assert paths.run_state_path.read_bytes() == authority

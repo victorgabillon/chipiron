@@ -517,3 +517,32 @@ def test_empty_training_cannot_publish_initialized_weights(
     with pytest.raises(ValueError, match="positive effective samples"):
         run_pipeline_training_stage(replace(args, training_max_rows=0), generation=1)
     assert paths.run_state_path.read_bytes() == authority
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("same_claim", [False, True])
+def test_accepted_training_retry_releases_only_its_completed_claim(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, same_claim: bool
+) -> None:
+    """Only authenticated successful acceptance ends this particular claim."""
+    from chipiron.environments.morpion.bootstrap.pipeline_claims import (
+        claim_pipeline_stage,
+    )
+
+    local_leaderboard(monkeypatch, tmp_path)
+    args, paths, _ = setup_training(tmp_path / "workspace")
+    result = run_pipeline_training_stage(args, generation=1)
+    record = publication_record(load_bootstrap_run_state(paths.run_state_path), 1)
+    admission = publication._proposal(paths, record[publication.ACCEPTED])["admission"]
+    path = paths.pipeline_training_claim_path_for_generation(1)
+    claim = claim_pipeline_stage(
+        generation=1, stage="training", claim_path=path, ttl_seconds=60
+    )
+    if same_claim:
+        save_pipeline_stage_claim(replace(claim, claim_id=admission["claim_id"]), path)
+    authority = paths.run_state_path.read_bytes()
+    assert run_pipeline_training_stage(args, generation=1) == result
+    assert path.exists() is not same_claim
+    if not same_claim:
+        assert load_pipeline_stage_claim(path) == claim
+    assert paths.run_state_path.read_bytes() == authority

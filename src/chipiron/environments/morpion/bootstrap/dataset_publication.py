@@ -36,7 +36,7 @@ from .pipeline_artifacts import (
     pipeline_manifest_from_dict,
     pipeline_manifest_to_dict,
 )
-from .pipeline_claims import claim_pipeline_stage, release_pipeline_stage_claim
+from .pipeline_claims import claim_pipeline_stage, release_owned_pipeline_stage_claim
 from .reevaluation_transaction import source_identity
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 from .worker_result_io import (
@@ -259,6 +259,9 @@ def admit_dataset(
                 paths, state, generation, manifest, verify_rows=True
             )
             _repair(paths, result, proposal)
+            release_owned_pipeline_stage_claim(
+                claim_path=claim_path, claim_id=proposal["admission"]["claim_id"]
+            )
             attempt = None
         else:
             descriptor = validate_capsule(paths.work_dir, record)
@@ -293,15 +296,9 @@ def admit_dataset(
             # A replacement's claim must survive the old worker's late cleanup.
             try:
                 with growth_receipt_ownership(paths, wait=True):
-                    if (
-                        claim_path.is_file()
-                        and load_pipeline_stage_claim(claim_path).claim_id
-                        == attempt.admission["claim_id"]
-                    ):
-                        release_pipeline_stage_claim(
-                            claim_path=claim_path,
-                            claim_id=attempt.admission["claim_id"],
-                        )
+                    release_owned_pipeline_stage_claim(
+                        claim_path=claim_path, claim_id=attempt.admission["claim_id"]
+                    )
             except BlockingIOError:
                 pass  # Advisory claim may expire; never obscure accepted state.
 

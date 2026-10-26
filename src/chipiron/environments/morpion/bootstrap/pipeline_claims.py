@@ -217,11 +217,26 @@ def release_pipeline_stage_claim(*, claim_path: Path, claim_id: str) -> None:
     delete_pipeline_stage_claim(claim_path)
 
 
+def release_owned_pipeline_stage_claim(*, claim_path: Path, claim_id: str) -> None:
+    """Under stage ownership, release only this exact admitted/completed claim.
+
+    Completion callers must first verify the authoritative accepted result. This
+    does not infer quiescence from a TTL, PID or supervisor status; readers retain
+    their existing capsule pins and accepted inputs remain retention roots.
+    """
+    if (
+        claim_path.is_file()
+        and load_pipeline_stage_claim(claim_path).claim_id == claim_id
+    ):
+        release_pipeline_stage_claim(claim_path=claim_path, claim_id=claim_id)
+
+
 __all__ = [
     "PipelineStageAlreadyClaimedError",
     "PipelineStageClaimMismatchError",
     "claim_pipeline_stage",
     "load_active_pipeline_stage_claim",
     "pipeline_stage_claim_is_expired",
+    "release_owned_pipeline_stage_claim",
     "release_pipeline_stage_claim",
 ]
