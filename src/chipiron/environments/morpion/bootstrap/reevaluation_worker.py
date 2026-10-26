@@ -1286,7 +1286,7 @@ def run_morpion_reevaluation_worker_once(
             if captured is not None:
                 # Inference stays outside ownership. Recheck the captured proposal
                 # and publish under the same lease used by Growth commits.
-                publication_stack.enter_context(growth_receipt_ownership(paths))
+                publication_stack.enter_context(growth_receipt_ownership(paths, wait=True))
                 publication_state = load_bootstrap_run_state(paths.run_state_path)
                 validate_proposal(publication_state, patch)
                 require(

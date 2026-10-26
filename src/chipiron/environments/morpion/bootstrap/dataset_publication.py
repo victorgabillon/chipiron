@@ -240,7 +240,7 @@ def admit_dataset(
     options = {key: getattr(args, key) for key in OPTIONS}
     claim_path = paths.pipeline_dataset_claim_path_for_generation(generation)
     result: DatasetAttempt | MorpionPipelineGenerationManifest
-    with growth_receipt_ownership(paths):
+    with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Dataset publication is not enabled.")
         if state.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract"):
@@ -292,7 +292,7 @@ def admit_dataset(
         if attempt is not None:
             # A replacement's claim must survive the old worker's late cleanup.
             try:
-                with growth_receipt_ownership(paths):
+                with growth_receipt_ownership(paths, wait=True):
                     if (
                         claim_path.is_file()
                         and load_pipeline_stage_claim(claim_path).claim_id
@@ -369,7 +369,7 @@ def accept_dataset(
     from .checkpoint_patch_receipts import receipt_ledger
     from .generation_publication_io import growth_receipt_ownership
 
-    with growth_receipt_ownership(paths), ExitStack() as pins:
+    with growth_receipt_ownership(paths, wait=True), ExitStack() as pins:
         state = load_bootstrap_run_state(paths.run_state_path)
         receipt_ledger(state)
         proposal = _proposal(paths, reference)

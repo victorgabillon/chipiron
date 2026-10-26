@@ -93,6 +93,9 @@ REEVALUATION_SLEEP_SECONDS=5
 # against checkpoint frequency and recovery granularity.
 GROWTH_TREE_BRANCH_LIMIT="${GROWTH_TREE_BRANCH_LIMIT:-1200000}"
 GROWTH_MAX_STEPS_PER_CYCLE="${GROWTH_MAX_STEPS_PER_CYCLE:-10}"
+if [[ "$MORPION_SCIENTIFIC" == "1" ]]; then
+  : "${MORPION_GROWTH_WORKER_MAX_CYCLES:=1}"
+fi
 MORPION_GROWTH_WORKER_MAX_CYCLES="${MORPION_GROWTH_WORKER_MAX_CYCLES:-20}"
 GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR="${GROWTH_SAVE_AFTER_TREE_GROWTH_FACTOR:-1.2}"
 GROWTH_SAVE_AFTER_SECONDS="${GROWTH_SAVE_AFTER_SECONDS:-10}"
@@ -536,6 +539,9 @@ if [[ "$MORPION_SCIENTIFIC" == "1" ]]; then
     echo "Initialize explicitly before starting scientific workers; no fresh fallback." >&2
     exit 1
   fi
+  # A bounded scientific invocation releases ownership regularly. Learners wait
+  # at their existing admission/publication boundaries instead of discarding work.
+  export MORPION_WORKER_OWNERSHIP_WAIT_SECONDS="${MORPION_WORKER_OWNERSHIP_WAIT_SECONDS:-60}"
   GROWTH_ARGS="--scientific --pipeline-stage growth --max-cycles $MORPION_GROWTH_WORKER_MAX_CYCLES"
   DATASET_ARGS="--scientific --pipeline-stage dataset_worker"
   TRAINING_ARGS="--scientific --pipeline-stage training_worker --training-row-chunk-size $MORPION_TRAINING_ROW_CHUNK_SIZE --skip-evaluator-diagnostics"

@@ -177,7 +177,7 @@ def admit_training(
     claim_path = paths.pipeline_training_claim_path_for_generation(generation)
     attempt = None
     result: TrainingAttempt | MorpionPipelineGenerationManifest
-    with growth_receipt_ownership(paths):
+    with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Durable Training is not enabled.")
         record = publication_record(state, generation)
@@ -229,7 +229,7 @@ def admit_training(
     finally:
         if attempt is not None:
             try:
-                with growth_receipt_ownership(paths):
+                with growth_receipt_ownership(paths, wait=True):
                     if (
                         claim_path.is_file()
                         and load_pipeline_stage_claim(claim_path).claim_id
@@ -545,7 +545,7 @@ def accept_training(
     """Attach a result at the sole commit without changing model, checkpoint or cursor."""
     from .checkpoint_patch_receipts import receipt_ledger
 
-    with growth_receipt_ownership(paths):
+    with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
         receipt_ledger(state)
         proposal = _proposal(paths, reference)

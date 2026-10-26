@@ -9,8 +9,11 @@ from __future__ import annotations
 import ctypes
 import hashlib
 import json
+import logging
+import math
 import os
 import shutil
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
@@ -35,6 +38,7 @@ if TYPE_CHECKING:
     from .run_state import MorpionBootstrapRunState
 
 PUBLICATION_KEY = "durable_generation_publication_v1"
+LOGGER = logging.getLogger(__name__)
 PUBLICATION_NAMESPACE = "generation_publications_v1"
 CAPSULE_SEAL = ".generation_publication_v1.json"
 ATTEMPT_MARKER = ".publication_attempt_v1.json"
@@ -101,22 +105,52 @@ def file_digest(path: Path) -> str:
 
 @contextmanager
 def growth_receipt_ownership(
-    paths: MorpionBootstrapPaths, *, create: bool = True
+    paths: MorpionBootstrapPaths, *, create: bool = True, wait: bool = False
 ) -> Iterator[None]:
-    """Keep a stable kernel lock across the whole Growth invocation, never a TTL."""
+    """Keep the stable kernel lock; optionally wait a bounded time for publication.
+
+    Learning workers can wait at admission/commit without repeating computation.
+    Growth remains nonblocking. Waiting neither owns nor changes authority.
+    """
     import fcntl
 
+    timeout = (
+        float(os.environ.get("MORPION_WORKER_OWNERSHIP_WAIT_SECONDS", "0"))
+        if wait
+        else 0.0
+    )
+    require(
+        math.isfinite(timeout) and 0 <= timeout <= 600, "Invalid ownership wait budget."
+    )
     if create:
         paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
     path = paths.pipeline_dir / ".growth_patch_consumer.lock"
     if not create:
         inside(paths.work_dir, path.relative_to(paths.work_dir).as_posix())
     with path.open("a+" if create else "rb") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        started = time.monotonic()
+        contended = False
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if not contended:
+                    LOGGER.info("[ownership] contention timeout_seconds=%.3f", timeout)
+                    contended = True
+                remaining = timeout - (time.monotonic() - started)
+                if remaining <= 0:
+                    raise
+                time.sleep(min(0.05, remaining))
+        acquired = time.monotonic()
+        LOGGER.info("[ownership] acquired wait_seconds=%.6f", acquired - started)
         try:
             yield
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
+            LOGGER.info(
+                "[ownership] released held_seconds=%.6f", time.monotonic() - acquired
+            )
 
 
 def artifact_digest(path: Path) -> str:
