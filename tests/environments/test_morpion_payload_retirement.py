@@ -507,3 +507,59 @@ def test_all_three_recent_checkpoints_restore_and_accepted_inputs_stay_verified(
             )
     finally:
         runner.discard_uncommitted_runtime()
+
+
+def test_retired_source_allows_exact_ack_but_refuses_new_proposal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise an actual retired receipt SOURCE, not just its saved checkpoint."""
+    from dataclasses import replace
+
+    local_leaderboard(monkeypatch, tmp_path)
+    args, paths, _ = setup_activation(tmp_path / "workspace", seed_score=42.0)
+    grow(paths)
+    assert run_morpion_reevaluation_worker_once(
+        args,
+        max_nodes_per_patch=7,
+        use_streaming_sharded_reader=True,
+        allow_scientific_v2=True,
+    ).patch_written
+    original = paths.pipeline_reevaluation_patch_path.read_bytes()
+    patch = reevaluation_patch_from_dict(json.loads(original))
+    assert patch.tree_generation == 2
+    for _ in range(3):
+        grow(paths)
+    assert run_morpion_reevaluation_worker_once(
+        args,
+        max_nodes_per_patch=7,
+        use_streaming_sharded_reader=True,
+        allow_scientific_v2=True,
+    ).patch_written
+    grow(paths)
+    current = load_bootstrap_run_state(paths.run_state_path)
+    assert current.generation == 6
+    with generation_read_pin(paths.work_dir / current.latest_tree_snapshot_path):
+        pass
+    report_module.retire(paths, generations=(2,))
+    state = load_bootstrap_run_state(paths.run_state_path)
+    assert not (paths.work_dir / records(paths)[1]["tree_snapshot_path"]).exists()
+    paths.pipeline_reevaluation_patch_path.write_bytes(original)
+    session = GrowthPatchReceiptSession(
+        paths,
+        object(),
+        durable_generation_publication=True,
+        scientific_v2_producer=records(paths)[-1]["scientific_identity"]["producer"][
+            "identity"
+        ],
+        closed_scientific_snapshot=True,
+    )
+    before = paths.run_state_path.read_bytes()
+    with growth_receipt_ownership(paths):
+        assert session.acknowledge_pending(state)
+    assert paths.run_state_path.read_bytes() == before
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+    metadata = json.loads(json.dumps(patch.metadata))
+    metadata[TRANSACTION_KEY]["next_cursor"]["last_patch_id"] = "new-retired-operation"
+    fresh = replace(patch, patch_id="new-retired-operation", metadata=metadata)
+    with pytest.raises(ValueError, match="Retired scientific source"):
+        validate_proposal(state, fresh)

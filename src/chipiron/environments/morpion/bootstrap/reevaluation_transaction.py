@@ -12,7 +12,7 @@ import uuid
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
-from .generation_publication_io import publication_records, require
+from .generation_publication_io import RETIRED_PAYLOAD_KEY, publication_records, require
 from .pipeline_artifacts import (
     MorpionReevaluationCursor,
     MorpionReevaluationPatch,
@@ -115,7 +115,10 @@ def transaction_state(state: MorpionBootstrapRunState) -> dict[str, Any] | None:
 
 
 def source_identity(
-    state: MorpionBootstrapRunState, generation: int | None
+    state: MorpionBootstrapRunState,
+    generation: int | None,
+    *,
+    require_payload: bool = False,
 ) -> dict[str, Any]:
     """Bind the exact committed seal and science, without another inventory."""
     records = [
@@ -126,6 +129,10 @@ def source_identity(
         "Atomic Reevaluation requires a committed closed scientific source.",
     )
     record = records[0]
+    require(
+        not require_payload or RETIRED_PAYLOAD_KEY not in record,
+        "Retired scientific source cannot admit a new proposal.",
+    )
     return {
         key: record[key] for key in ("id", "descriptor_sha256", "scientific_identity")
     }
@@ -179,7 +186,12 @@ def validate_proposal(
     )
     assert isinstance(envelope, dict)
     require(
-        envelope["source"] == source_identity(state, patch.tree_generation),
+        envelope["source"]
+        == source_identity(
+            state,
+            patch.tree_generation,
+            require_payload=duplicate_cursor_digest is None,
+        ),
         "Proposal scientific source identity mismatch.",
     )
     if data.get("numeric_policy") == GROWTH_NUMERIC_POLICY:

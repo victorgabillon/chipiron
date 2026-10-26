@@ -53,3 +53,9 @@ original fresh runs, historical experiments and research evidence remain intact.
 `--retain G` is an explicit per-operation research root, not a new persistent registry;
 repeat the required root set on each requested operation. Actual reclaimed allocation
 must be measured after cleanup and reported separately from conditional candidates.
+
+NEW Reevaluation admission additionally requires an unretired scientific source,
+even if cleanup has not yet removed its bytes. Exact committed acknowledgement
+uses the receipt's authenticated source identity and original model bytes instead.
+A real retired-source regression distinguishes those paths without re-opening the
+old source or weakening cursor/model/UUID checks.
