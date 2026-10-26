@@ -49,16 +49,20 @@ def operational_history(tmp_path_factory: TempPathFactory) -> Path:
         capture_output=True,
         text=True,
     )
-    for stage in ("dataset_worker", "training_worker"):
-        run_morpion_bootstrap_experiment(
-            launcher_args_from_cli([
-                "--scientific",
-                "--work-dir",
-                str(workspace),
-                "--pipeline-stage",
-                stage,
-            ])
+    with pytest.MonkeyPatch.context() as environment:
+        environment.setenv(
+            "MORPION_LEADERBOARD_PATH", str(workspace / "leaderboard.jsonl")
         )
+        for stage in ("dataset_worker", "training_worker"):
+            run_morpion_bootstrap_experiment(
+                launcher_args_from_cli([
+                    "--scientific",
+                    "--work-dir",
+                    str(workspace),
+                    "--pipeline-stage",
+                    stage,
+                ])
+            )
     return root
 
 
