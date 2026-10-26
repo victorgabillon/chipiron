@@ -21,6 +21,14 @@ from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run
 from tests.environments.morpion_activation_helpers import setup_activation
 
 
+@pytest.fixture(autouse=True)
+def isolate_launcher_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Restore the launcher override before another test reuses this process."""
+    monkeypatch.setenv("MORPION_LEADERBOARD_PATH", str(tmp_path / "leaderboard.jsonl"))
+
+
 def test_scientific_workers_and_explicit_activation(tmp_path: Path) -> None:
     """Actual persisted configuration survives legacy defaults and a cold M2 Growth."""
     _, paths, _ = setup_activation(tmp_path / "work", encoding="jsonl-zstd-1")
