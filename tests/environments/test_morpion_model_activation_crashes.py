@@ -309,8 +309,9 @@ def test_process_death_is_one_complete_model(
     runner.discard_uncommitted_runtime()
 
 
+@pytest.mark.parametrize("automatic_renewal", [False, True])
 def test_death_after_m1_drain_requires_new_request(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, automatic_renewal: bool
 ) -> None:
     """An accepted patch is not replayed and the original optimistic head is stale."""
     from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
@@ -335,7 +336,25 @@ def test_death_after_m1_drain_requires_new_request(
     assert committed_evaluator(paths.work_dir, drained)[0] == request["previous_model"]
     with pytest.raises(ValueError, match="Stale"):
         activate_model(paths, request)
-    renewed = prepare_model_activation_request(paths, training_generation=1)
+    if automatic_renewal:
+        from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+            growth_receipt_ownership,
+        )
+        from chipiron.environments.morpion.bootstrap.model_activation import (
+            _renew_automatic_request_after_drain,
+        )
+
+        with growth_receipt_ownership(paths):
+            renewed = _renew_automatic_request_after_drain(paths, drained, request)
+        assert renewed == prepare_model_activation_request(paths, training_generation=1)
+        assert renewed["candidate"] == request["candidate"]
+        assert json.loads((paths.work_dir / "request.json").read_text()) == request
+        with pytest.raises(ValueError, match="retarget"):
+            _renew_automatic_request_after_drain(
+                paths, drained, {**request, "candidate": {"sha256": "wrong"}}
+            )
+    else:
+        renewed = prepare_model_activation_request(paths, training_generation=1)
     after = activate_model(paths, renewed)
     assert after.generation == 3
     assert receipt_ledger(after) == receipt_ledger(drained)

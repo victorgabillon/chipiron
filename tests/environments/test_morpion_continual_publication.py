@@ -135,7 +135,9 @@ def setup_continual(
             ),
         )
     seed = root.parent / "zero"
-    model_args = MorpionRegressorArgs(model_kind="linear")
+    model_args = MorpionRegressorArgs(
+        model_kind="linear", feature_subset_name="zero_moves", feature_names=("moves",)
+    )
     model = build_morpion_regressor(model_args)
     with torch.no_grad():
         for parameter in model.parameters():
@@ -333,4 +335,47 @@ def test_completed_node_budget_never_restarts_growth(
     assert state.metadata["experiment_termination"]["maximum_unique_nodes"] == 5
     authority = paths.run_state_path.read_bytes()
     assert grow(args) == load_bootstrap_run_state(paths.run_state_path)
+    assert paths.run_state_path.read_bytes() == authority
+
+
+def test_automatic_request_renews_after_real_m1_drain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An interrupted automatic transition keeps the selection and both exact requests."""
+    from chipiron.environments.morpion.bootstrap import model_activation as activation
+    from chipiron.environments.morpion.bootstrap.runtime.runner import (
+        AnemoneMorpionSearchRunner,
+    )
+    from tests.environments.test_morpion_model_activation_edges import propose
+
+    local_leaderboard(monkeypatch, tmp_path)
+    args, paths = setup_continual(
+        tmp_path / "workspace", automatic=True, extra_steps=64, proof=True
+    )
+    state = grow(args)
+    run_dataset(args, generation=state.generation)
+    run_pipeline_training_stage(args, generation=state.generation)
+    assert propose(args).patch_written
+    with monkeypatch.context() as context:
+
+        def interrupted(*_args: object, **_kwargs: object) -> None:
+            raise RuntimeError("interrupted_after_drain")
+
+        context.setattr(
+            AnemoneMorpionSearchRunner, "refresh_model_estimates", interrupted
+        )
+        with pytest.raises(RuntimeError, match="interrupted_after_drain"):
+            activation.activate_selected_round_automatically(paths)
+    drained = load_bootstrap_run_state(paths.run_state_path)
+    assert drained.generation == state.generation + 1
+    directory = paths.pipeline_dir / "automatic_activation"
+    [original] = list(directory.glob("*.json"))
+    original_bytes = original.read_bytes()
+    activation.activate_selected_round_automatically(paths)
+    recovered = load_bootstrap_run_state(paths.run_state_path)
+    assert recovered.generation == drained.generation + 1
+    assert len(list(directory.glob("*.json"))) == 2
+    assert original.read_bytes() == original_bytes
+    authority = paths.run_state_path.read_bytes()
+    activation.activate_selected_round_automatically(paths)
     assert paths.run_state_path.read_bytes() == authority

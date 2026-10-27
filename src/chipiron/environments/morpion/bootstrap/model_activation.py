@@ -11,6 +11,9 @@ from __future__ import annotations
 import copy
 import time
 from dataclasses import asdict, replace
+from itertools import zip_longest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 import torch
@@ -404,15 +407,43 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     if state.metadata.get("experiment_termination") is not None:
         return
     directory = paths.pipeline_dir / "automatic_activation"
-    # Recover an interrupted request before considering another round. A stale
-    # uncommitted request is an error, never permission to silently retarget it.
+    # Preserve original requests and any explicit M1-drain renewals. A committed
+    # member finishes its entire chain; no old request is reactivated afterward.
+    chains: dict[int, list[dict[str, Any]]] = {}
     for path in sorted(directory.glob("generation_*.json")):
         request = read_object(path)
-        if not any(
-            r.get("activation_request_sha256") == object_digest(request)
+        chains.setdefault(request["training_generation"], []).append(request)
+    for requests in chains.values():
+        committed = {
+            r.get("activation_request_sha256")
             for r in publication_records(state.metadata)
-        ):
-            state = activate_model(paths, request)
+        }
+        if any(object_digest(r) in committed for r in requests):
+            continue
+        positions = {
+            r["id"]: i for i, r in enumerate(publication_records(state.metadata))
+        }
+        require(
+            all(r["expected_head"] in positions for r in requests),
+            "Unknown automatic request head.",
+        )
+        request = max(requests, key=lambda r, p=positions: p[r["expected_head"]])
+        if request["expected_head"] != state.metadata[PUBLICATION_KEY]["head_id"]:
+            with growth_receipt_ownership(paths):
+                state = load_bootstrap_run_state(paths.run_state_path)
+                request = _renew_automatic_request_after_drain(paths, state, request)
+                renewed_path = directory / (
+                    f"generation_{request['training_generation']:06d}"
+                    f".recovery_{request['expected_head']}.json"
+                )
+                if renewed_path.exists():
+                    require(
+                        read_object(renewed_path) == request,
+                        "Conflicting automatic renewal.",
+                    )
+                else:
+                    atomic_json(renewed_path, request)
+        state = activate_model(paths, request)
     accepted = [r for r in publication_records(state.metadata) if ACCEPTED in r]
     if not accepted:
         return
@@ -445,3 +476,76 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         atomic_json(path, request)
     activate_model(paths, request)
+
+
+def _renew_automatic_request_after_drain(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Use the existing new-request contract only after one unchanged M1 drain.
+
+    Caller owns Growth. No candidate, selection, policy or runtime is retargeted;
+    the original file remains evidence. Arbitrary stale requests still fail.
+    """
+    from .sharded_training_reader import ShardedTrainingGenerationView
+
+    records = publication_records(state.metadata)
+    require(
+        len(records) >= 2
+        and records[-2]["id"] == request["expected_head"]
+        and records[-1]["parent_id"] == request["expected_head"]
+        and "activation_request_sha256" not in records[-1]
+        and records[-1]["scientific_identity"]["producer"]
+        == records[-2]["scientific_identity"]["producer"]
+        and any(
+            r.committed_generation == state.generation
+            for r in receipt_ledger(state).values()
+        ),
+        "Stale automatic request is not an adjacent M1 receipt drain.",
+    )
+    renewed = _request(paths, state, request["training_generation"])
+    changed = {"expected_head", "expected_cursor_sha256", "receipt_ledger_sha256"}
+    require(
+        {k: v for k, v in renewed.items() if k not in changed}
+        == {k: v for k, v in request.items() if k not in changed},
+        "Automatic renewal would retarget the accepted candidate or policy.",
+    )
+    # A Growth publication can also accept a numeric receipt. Compare all static
+    # scientific fields and visit counts, so such a head cannot masquerade as a
+    # receipt-only boundary. Owned disposable indices keep this rare audit bounded.
+    with (
+        TemporaryDirectory(prefix="morpion-activation-recovery-") as scratch,
+        ShardedTrainingGenerationView(
+            inside(paths.work_dir, records[-2]["tree_snapshot_path"]),
+            cache_dir=Path(scratch) / "old",
+            allow_closed_snapshot=True,
+        ) as old,
+        ShardedTrainingGenerationView(
+            inside(paths.work_dir, records[-1]["tree_snapshot_path"]),
+            cache_dir=Path(scratch) / "new",
+            allow_closed_snapshot=True,
+        ) as new,
+    ):
+        for left, right in zip_longest(
+            old.iter_nodes_in_export_order(), new.iter_nodes_in_export_order()
+        ):
+            require(
+                left is not None and right is not None,
+                "Growth changed the activation tree.",
+            )
+            assert left is not None and right is not None
+            static = (
+                "node_id",
+                "parent_ids",
+                "child_ids",
+                "depth",
+                "state_ref_payload",
+                "is_terminal",
+                "visit_count",
+            )
+            require(
+                all(getattr(left, field) == getattr(right, field) for field in static),
+                "Growth changed the activation tree.",
+            )
+    return renewed
