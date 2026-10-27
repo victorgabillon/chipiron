@@ -82,6 +82,7 @@ def train_streaming_epoch(
                 if is_streaming_validation_index(
                     row_index,
                     validation_fraction=args.validation_fraction,
+                    validation_indices=args.validation_indices,
                 ):
                     validation_count += 1
                 else:
@@ -136,11 +137,13 @@ def streaming_row_is_in_split(
     *,
     validation_fraction: float,
     split: Literal["train", "validation"],
+    validation_indices: frozenset[int] | None = None,
 ) -> bool:
     """Return whether one row index belongs to a streaming split."""
     is_validation = is_streaming_validation_index(
         row_index,
         validation_fraction=validation_fraction,
+        validation_indices=validation_indices,
     )
     return is_validation if split == "validation" else not is_validation
 
@@ -149,8 +152,11 @@ def is_streaming_validation_index(
     row_index: int,
     *,
     validation_fraction: float,
+    validation_indices: frozenset[int] | None = None,
 ) -> bool:
     """Return whether one row index belongs to streaming validation."""
+    if validation_indices is not None:
+        return row_index in validation_indices
     if validation_fraction <= 0.0:
         return False
     period = max(2, round(1.0 / validation_fraction))

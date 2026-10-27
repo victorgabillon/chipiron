@@ -79,6 +79,7 @@ def evaluate_streaming_metrics(
                     if streaming_row_is_in_split(
                         row_start_index + offset,
                         validation_fraction=args.validation_fraction,
+                        validation_indices=args.validation_indices,
                         split=split,
                     )
                 ]

@@ -30,23 +30,27 @@ def cached_index_schedule(
     *,
     row_count: int,
     validation_fraction: float,
+    validation_indices: frozenset[int] | None = None,
 ) -> CachedIndexSchedule:
     """Build deterministic train/validation indices matching streaming policy."""
     train_indices: list[int] = []
-    validation_indices: list[int] = []
+    selected_validation_indices: list[int] = []
     for row_index in range(row_count):
         if is_streaming_validation_index(
             row_index,
             validation_fraction=validation_fraction,
+            validation_indices=validation_indices,
         ):
-            validation_indices.append(row_index)
+            selected_validation_indices.append(row_index)
         else:
             train_indices.append(row_index)
     return CachedIndexSchedule(
         row_count=row_count,
         train_indices=tuple(train_indices),
-        validation_indices=tuple(validation_indices),
-        split_policy=streaming_split_policy(validation_fraction),
+        validation_indices=tuple(selected_validation_indices),
+        split_policy="canonical_state_sha256_v1"
+        if validation_indices is not None
+        else streaming_split_policy(validation_fraction),
     )
 
 
@@ -82,6 +86,7 @@ def split_indices_for_streaming_policy(
     *,
     row_count: int,
     validation_fraction: float,
+    validation_indices: frozenset[int] | None = None,
     split: Literal["train", "validation"],
 ) -> tuple[int, ...]:
     """Return train or validation indices for the streaming split policy."""
@@ -91,6 +96,7 @@ def split_indices_for_streaming_policy(
         if streaming_row_is_in_split(
             row_index,
             validation_fraction=validation_fraction,
+            validation_indices=validation_indices,
             split=split,
         )
     )

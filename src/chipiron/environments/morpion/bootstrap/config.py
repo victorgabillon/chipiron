@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -522,6 +522,18 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         evaluator_update_policy=args.evaluator_update_policy,
         pipeline_mode=args.pipeline_mode,
         training_export_mode=args.training_export_mode,
+        metadata={
+            "continual_learning": asdict(args.continual_learning),
+            "continual_training_settings": {
+                "shuffle": args.shuffle,
+                "training_max_rows": args.training_max_rows,
+                "training_row_chunk_size": args.training_row_chunk_size,
+                "skip_evaluator_diagnostics": args.skip_evaluator_diagnostics,
+                "evaluator_diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
+            },
+        }
+        if args.continual_learning is not None
+        else {},
     )
 
 

@@ -8,6 +8,7 @@ from .args import (
     MorpionTrainingArgs,
     MorpionTrainingProgressCallback,
 )
+from .continuation import MorpionTrainingContinuation
 from .diagnostics import (
     MorpionDiagnosticPredictionResult,
     UnsupportedMorpionDiagnosticInputFormatError,
@@ -40,6 +41,7 @@ __all__ = [
     "MorpionRelationalEntityTokenCachePaths",
     "MorpionStreamingTrainingArgs",
     "MorpionTrainingArgs",
+    "MorpionTrainingContinuation",
     "MorpionTrainingProgressCallback",
     "UnsupportedMorpionDiagnosticInputFormatError",
     "default_relational_entity_token_cache_paths",

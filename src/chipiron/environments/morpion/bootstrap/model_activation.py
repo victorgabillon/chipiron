@@ -39,6 +39,7 @@ from .generation_publication_io import (
     object_digest,
     publication_records,
     read_committed_descriptor,
+    read_object,
     require,
 )
 from .reevaluation_transaction import (
@@ -385,3 +386,62 @@ def activate_model(
         finally:
             session.discard_runtime()
             publication.close()
+
+
+def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
+    """Opt-in Growth boundary: persist and retry the ordinary atomic request exactly."""
+    from .derived.provenance import atomic_json
+    from .learning_policy import policy_from_metadata
+    from .training_publication import ACCEPTED, _proposal
+
+    config = load_bootstrap_config(paths.bootstrap_config_path)
+    policy = policy_from_metadata(config.metadata)
+    require(
+        policy is not None and policy.automatic_activation,
+        "Automatic activation requires explicit persisted experiment authorization.",
+    )
+    state = load_bootstrap_run_state(paths.run_state_path)
+    if state.metadata.get("experiment_termination") is not None:
+        return
+    directory = paths.pipeline_dir / "automatic_activation"
+    # Recover an interrupted request before considering another round. A stale
+    # uncommitted request is an error, never permission to silently retarget it.
+    for path in sorted(directory.glob("generation_*.json")):
+        request = read_object(path)
+        if not any(
+            r.get("activation_request_sha256") == object_digest(request)
+            for r in publication_records(state.metadata)
+        ):
+            state = activate_model(paths, request)
+    accepted = [r for r in publication_records(state.metadata) if ACCEPTED in r]
+    if not accepted:
+        return
+    latest = accepted[-1]
+    proposal = _proposal(paths, latest[ACCEPTED])
+    decision = proposal["status"]["metadata"].get("continual_selection")
+    require(
+        isinstance(decision, dict),
+        "Automatic activation requires a continual selection decision.",
+    )
+    if not decision["activation_eligible"]:
+        return
+    path = directory / f"generation_{latest['generation']:06d}.json"
+    if path.exists():
+        return  # The exact request above was already committed or recovered.
+    require(
+        committed_evaluator(paths.work_dir, state)[0] == decision["incumbent"]["model"],
+        "Selection incumbent differs from the current model.",
+    )
+    with growth_receipt_ownership(paths):
+        state = load_bootstrap_run_state(paths.run_state_path)
+        accepted_now = [r for r in publication_records(state.metadata) if ACCEPTED in r]
+        require(
+            accepted_now[-1][ACCEPTED] == latest[ACCEPTED],
+            "A newer selection superseded this round.",
+        )
+        if path.exists():
+            return
+        request = _request(paths, state, latest["generation"])
+        directory.mkdir(parents=True, exist_ok=True)
+        atomic_json(path, request)
+    activate_model(paths, request)

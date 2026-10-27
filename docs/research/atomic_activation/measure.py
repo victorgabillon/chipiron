@@ -39,13 +39,11 @@ from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
 
 def disk(root: Path) -> dict[str, int]:
     """Separate logical bytes from inode-aware actual allocation."""
-    files = [p for p in root.rglob("*") if p.is_file()]
-    unique = {(p.stat().st_dev, p.stat().st_ino): p.stat() for p in files}
-    return {
-        "files": len(files),
-        "logical_bytes": sum(p.stat().st_size for p in files),
-        "allocated_bytes": sum(s.st_blocks * 512 for s in unique.values()),
-    }
+    from chipiron.environments.morpion.bootstrap.pipeline_memory import (
+        directory_disk_usage,
+    )
+
+    return directory_disk_usage(root)
 
 
 def main() -> None:

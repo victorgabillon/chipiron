@@ -271,6 +271,25 @@ def initialize_scientific_experiment(
             "evaluator": artifact_digest(bundle),
             "config_sha256": bootstrap_config_sha256(config),
         }
+        if args.continual_learning is not None:
+            from importlib import import_module
+            from platform import python_version
+
+            import torch
+
+            producer.update({
+                "python_version": python_version(),
+                "torch_version": str(torch.__version__),
+            })
+
+            for name in ("coral", "atomheart", "valanga", "parsley"):
+                module = import_module(name)
+                source_file = module.__file__
+                require(source_file is not None, f"Missing {name} source file.")
+                assert source_file is not None
+                producer[name + "_source_sha256"] = package_fingerprint(
+                    Path(source_file).parent
+                )
         effective = MorpionBootstrapEffectiveRuntimeConfig(
             args.tree_branch_limit,
             reevaluation_blend_alpha=args.reevaluation_blend_alpha,
@@ -279,6 +298,9 @@ def initialize_scientific_experiment(
             AnemoneMorpionSearchRunnerArgs(
                 random_seed=4,
                 runtime_checkpoint_format="sharded",
+                max_tree_nodes=None
+                if args.continual_learning is None
+                else args.continual_learning.max_tree_nodes,
                 search_args=default_search_args(rollout=config.search.rollout),
             )
         )
@@ -307,6 +329,11 @@ def initialize_scientific_experiment(
                 latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint),
                 latest_tree_snapshot_path=paths.relative_to_work_dir(source),
                 metadata={
+                    **(
+                        {"continual_learning": {"schema_version": 1}}
+                        if args.continual_learning is not None
+                        else {}
+                    ),
                     "bootstrap_config_hash": producer["config_sha256"],
                     "bootstrap_effective_runtime": {
                         "tree_branch_limit": args.tree_branch_limit,

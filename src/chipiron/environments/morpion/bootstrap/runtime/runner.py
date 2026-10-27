@@ -8,10 +8,12 @@ import os
 import time
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
+from dataclasses import replace as dataclasses_replace
 from pathlib import Path
 from random import Random
+from tempfile import TemporaryDirectory
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
@@ -255,6 +257,7 @@ class AnemoneMorpionSearchRunnerArgs:
     restore_memory_profile_recursive_max_objects: int | None = None
     restore_memory_profile_recursive_max_depth: int | None = None
     runtime_checkpoint_format: str = "json-zst"
+    max_tree_nodes: int | None = None
     growth_state_eviction_policy: str = "none"
     growth_state_eviction_recent_window: int = 1000
     growth_state_rematerialization_cache_size: int = 10000
@@ -312,6 +315,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_generation: int | None = None
         self._last_reevaluation_patch_apply_metrics: dict[str, object] | None = None
         self.last_growth_steps: int | None = None
+        self.last_node_budget_stop_reason: str | None = None
+        self._node_budget_resources = ExitStack()
         self._latest_checkpoint_metrics: dict[str, object] | None = None
         self._latest_training_export_stats: dict[str, object] | None = None
         self._latest_training_export_profile: dict[str, object] | None = None
@@ -454,6 +459,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
 
+    def set_unique_node_budget(self, maximum: int) -> None:
+        """Bind a configured cap without changing Anemone's all-children executor."""
+        require(
+            isinstance(maximum, int) and not isinstance(maximum, bool) and maximum > 0,
+            "The unique-node budget must be a positive integer.",
+        )
+        require(
+            self._args.search_args.opening_type == OpeningType.ALL_CHILDREN,
+            "The unique-node budget requires all-children expansion.",
+        )
+        self._args = dataclasses_replace(self._args, max_tree_nodes=maximum)
+
     def grow(self, max_growth_steps: int) -> None:
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
         runtime = self._require_runtime()
@@ -475,7 +492,41 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._clear_linoo_selection_table_artifact()
         steps_executed = 0
         stop_reason = "max_steps_reached"
+        self.last_node_budget_stop_reason = None
+        budget_checkpoint: Path | None = None
+        budget_start_step = 0
         for _step_index in range(max_growth_steps):
+            node_limit = self._args.max_tree_nodes
+            if node_limit is not None:
+                if _live_tree_node_count(runtime) >= node_limit:
+                    stop_reason = "maximum_unique_nodes"
+                    self.last_node_budget_stop_reason = stop_reason
+                    break
+                # A fixed-start Morpion position with P points has at most 20P
+                # legal line placements. Default Linoo selects one parent's
+                # complete children; each bounded rollout adds at most K edges.
+                expansion = self._args.search_args.opening_expansion
+                extra = (
+                    0
+                    if str(expansion.kind.value) != "rollout"
+                    else expansion.rollout.max_extra_steps
+                )
+                require(
+                    extra is not None, "A unique-node budget requires bounded rollouts."
+                )
+                assert extra is not None
+                max_depth = max(runtime.tree.descendants, default=0)
+                upper_bound = 20 * (36 + max_depth) * (1 + extra)
+                if (
+                    budget_checkpoint is None
+                    and node_limit - _live_tree_node_count(runtime) <= upper_bound
+                ):
+                    temporary = self._node_budget_resources.enter_context(
+                        TemporaryDirectory(prefix="morpion-node-budget-")
+                    )
+                    budget_checkpoint = Path(temporary) / "checkpoint"
+                    self.save_checkpoint(budget_checkpoint)
+                    budget_start_step = steps_executed
             if runtime.tree.root_node.tree_evaluation.has_exact_value():
                 stop_reason = "exact_solution_found"
                 break
@@ -494,6 +545,35 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             step_report = runtime.step()
             steps_executed += 1
             current_tree_size = _live_tree_node_count(runtime)
+            if node_limit is not None and current_tree_size > node_limit:
+                require(
+                    budget_checkpoint is not None,
+                    "Unexpected expansion size; oversized runtime cannot publish.",
+                )
+                assert budget_checkpoint is not None
+                safe_steps = steps_executed - budget_start_step - 1
+                runtime = self._load_runtime_from_checkpoint(
+                    budget_checkpoint,
+                    search_args=self._args.search_args,
+                    model_bundle_path=self._current_evaluator_bundle_path,
+                )
+                self._runtime = runtime
+                apply_runtime_config_to_runtime(
+                    runtime, self._last_applied_runtime_config
+                )
+                self._install_state_rematerialization_phase_hooks(runtime)
+                # Replay the safe prefix from the exact selector/search/rollout
+                # RNG checkpoint. The rejected expansion is never published.
+                configured_args = self._args
+                self._args = dataclasses_replace(self._args, max_tree_nodes=None)
+                try:
+                    self.grow(safe_steps)
+                finally:
+                    self._args = configured_args
+                steps_executed = budget_start_step + safe_steps
+                stop_reason = "next_complete_expansion_exceeds_unique_node_budget"
+                self.last_node_budget_stop_reason = stop_reason
+                break
             tree = getattr(runtime, "tree", None)
             branch_count = getattr(tree, "branch_count", None)
             selected_node_id = None
@@ -683,6 +763,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         self.last_growth_steps = steps_executed
         final_tree_size = _live_tree_node_count(runtime)
+        if (
+            self._args.max_tree_nodes is not None
+            and final_tree_size == self._args.max_tree_nodes
+        ):
+            self.last_node_budget_stop_reason = "maximum_unique_nodes"
         LOGGER.info(
             "[growth] done steps=%s nodes_added=%s final_size=%s stop_reason=%s",
             steps_executed,
@@ -1579,6 +1664,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._current_evaluator_bundle_path = None
         self._last_reevaluation_patch_apply_metrics = None
         self._reset_growth_state_eviction_runtime()
+        self._node_budget_resources.close()
+        self._node_budget_resources = ExitStack()
 
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""

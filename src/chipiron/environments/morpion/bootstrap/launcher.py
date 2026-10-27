@@ -196,6 +196,8 @@ class MorpionBootstrapLauncherArgs:
     activation_request: Path | None = None
     initial_nodes: int = 100
     reader_cache_dir: Path | None = None
+    continual_policy: object | None = None
+    cluster_script: Path | None = None
     dataset_streaming_sharded_reader: bool = False
     reevaluation_streaming_sharded_reader: bool = False
     verbose_checkpoint_logs: bool = False
@@ -446,6 +448,7 @@ def _scientific_args(
     )
 
     from .generation_publication_io import require
+    from .learning_policy import policy_from_metadata
 
     require(
         config.pipeline_mode == "artifact_pipeline"
@@ -460,6 +463,28 @@ def _scientific_args(
         "Scientific activation requires bounded rollout.",
     )
     validate_confidence_policy("selected_value_v2", config.dataset.family_target_policy)
+    policy = policy_from_metadata(config.metadata)
+    training_settings = (
+        config.metadata.get("continual_training_settings", {})
+        if policy is not None
+        else {}
+    )
+    require(
+        isinstance(training_settings, dict)
+        and (
+            policy is None
+            or set(training_settings)
+            == {
+                "shuffle",
+                "training_max_rows",
+                "training_row_chunk_size",
+                "skip_evaluator_diagnostics",
+                "evaluator_diagnostics_max_rows",
+            }
+        ),
+        "Incomplete persisted continual training settings.",
+    )
+    assert isinstance(training_settings, dict)
     return replace(
         _bootstrap_args_with_persisted_config(args, persisted_config=config),
         **asdict(config.runtime),
@@ -467,7 +492,23 @@ def _scientific_args(
         validation_fraction=config.validation_fraction,
         validation_seed=config.validation_seed,
         training_device=config.training_device,
+        continual_learning=policy,
+        **training_settings,
     )
+
+
+def _parsed_continual_policy(parsed: argparse.Namespace) -> object:
+    """Resolve the small policy dataclass only for explicit fresh preparation."""
+    from dataclasses import fields
+
+    from .learning_policy import MorpionContinualLearningPolicy
+
+    return MorpionContinualLearningPolicy(**{
+        field.name: getattr(parsed, field.name)
+        if getattr(parsed, field.name) is not None
+        else getattr(MorpionContinualLearningPolicy(), field.name)
+        for field in fields(MorpionContinualLearningPolicy)
+    })
 
 
 def _scientific_operation(
@@ -484,6 +525,27 @@ def _scientific_operation(
 
     require(args.scientific, "Scientific operations require --scientific.")
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    if args.scientific_operation in {"prepare-continuous", "run-continuous"}:
+        from .continual_operator import (
+            prepare_continual_experiment,
+            run_monitored_continual_experiment,
+        )
+        from .learning_policy import MorpionContinualLearningPolicy
+
+        if args.scientific_operation == "prepare-continuous":
+            require(
+                isinstance(args.continual_policy, MorpionContinualLearningPolicy),
+                "Explicit continual policy required.",
+            )
+            assert isinstance(args.continual_policy, MorpionContinualLearningPolicy)
+            return prepare_continual_experiment(
+                args.bootstrap_args, args.continual_policy
+            )
+        require(
+            args.cluster_script is not None, "run-continuous requires --cluster-script."
+        )
+        assert args.cluster_script is not None
+        return run_monitored_continual_experiment(paths, args.cluster_script)
     if args.scientific_operation == "initialize":
         from .scientific_publication_initialization import (
             initialize_scientific_experiment,
@@ -531,6 +593,12 @@ def _scientific_operation(
             {
                 "workspace": str(paths.work_dir),
                 "generation": state.generation,
+                "unique_nodes": state.tree_size_at_last_save,
+                "experiment_termination": state.metadata.get("experiment_termination"),
+                "completed_learning_rounds": sum(
+                    "accepted_training" in r
+                    for r in publication_records(state.metadata)
+                ),
                 "head": state.metadata[PUBLICATION_KEY]["head_id"],
                 "model": model,
                 "publications": publication_records(state.metadata),
@@ -1134,7 +1202,14 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--scientific-operation",
-        choices=["initialize", "inspect", "prepare-activation", "activate"],
+        choices=[
+            "initialize",
+            "inspect",
+            "prepare-activation",
+            "activate",
+            "prepare-continuous",
+            "run-continuous",
+        ],
     )
     parser.add_argument(
         "--scientific-config",
@@ -1148,6 +1223,9 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--activation-request", type=Path)
     parser.add_argument("--initial-nodes", type=_parse_positive_int, default=100)
+    from .continual_operator import add_continual_arguments
+
+    add_continual_arguments(parser)
     parser.add_argument(
         "--reader-cache-dir",
         type=Path,
@@ -1728,6 +1806,12 @@ def launcher_args_from_cli(
     )
     if parsed.scientific:
         parsed.pipeline_mode = "artifact_pipeline"
+    if parsed.scientific_operation == "prepare-continuous":
+        if not any(a.startswith("--max-growth-steps-per-cycle") for a in argv_list):
+            parsed.max_growth_steps_per_cycle = 32
+        if not rollout_config_explicit:
+            parsed.rollout_after_opening = True
+            parsed.rollout_max_extra_steps = 2
     if parsed.scientific_operation is None:
         _validate_pipeline_stage_cli(
             parser=parser,
@@ -1845,6 +1929,10 @@ def launcher_args_from_cli(
     )
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
+        continual_policy=_parsed_continual_policy(parsed)
+        if parsed.scientific_operation == "prepare-continuous"
+        else None,
+        cluster_script=parsed.cluster_script,
         scientific=parsed.scientific,
         scientific_operation=parsed.scientific_operation,
         scientific_config=parsed.scientific_config,
@@ -1889,6 +1977,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         verbose_checkpoint_logs=launcher_args.verbose_checkpoint_logs
     )
     paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    if launcher_args.scientific_operation == "prepare-continuous":
+        from .generation_publication_io import require
+
+        require(
+            not paths.work_dir.exists(),
+            "Prepare into a new workspace; existing runs are read-only inputs.",
+        )
     paths.ensure_directories()
     register_current_launcher_process(paths)
     exit_code = 0

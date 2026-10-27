@@ -432,6 +432,16 @@ def run_pipeline_growth_stage(
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    if paths.run_state_path.exists():
+        from chipiron.environments.morpion.bootstrap.learning_policy import (
+            validate_continual_context,
+        )
+
+        validate_continual_context(
+            paths,
+            load_bootstrap_run_state(paths.run_state_path),
+            args.continual_learning,
+        )
     if closed_scientific_snapshot and (
         scientific_v2_producer is None or not durable_generation_publication
     ):
@@ -445,6 +455,50 @@ def run_pipeline_growth_stage(
             "Durable generation publication requires checkpoint-bound receipt mode."
         )
         raise CheckpointPatchReceiptError(message)
+    if args.continual_learning is not None:
+        from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+            publication_records,
+            require,
+        )
+
+        require(
+            closed_scientific_snapshot,
+            "Continual learning requires the full scientific pipeline.",
+        )
+        setter = getattr(runner, "set_unique_node_budget", None)
+        require(
+            callable(setter),
+            "Continual Growth requires an enforced unique-node budget.",
+        )
+        assert callable(setter)
+        setter(args.continual_learning.max_tree_nodes)
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if state.metadata.get("experiment_termination") is not None:
+            return state
+        head = publication_records(state.metadata)[-1]
+        learning = args.continual_learning
+        if (
+            state.generation > 1
+            and "activation_request_sha256" not in head
+            and state.generation % learning.dataset_every_generations == 0
+            and state.generation % learning.training_every_generations == 0
+            and "accepted_training" not in head
+        ):
+            LOGGER.info(
+                "[pipeline] growth_wait reason=learning_boundary generation=%s",
+                state.generation,
+            )
+            return state
+        if args.continual_learning.automatic_activation:
+            from chipiron.environments.morpion.bootstrap.model_activation import (
+                activate_selected_round_automatically,
+            )
+
+            activate_selected_round_automatically(paths)
+            state = load_bootstrap_run_state(paths.run_state_path)
+            scientific_v2_producer = publication_records(state.metadata)[-1][
+                "scientific_identity"
+            ]["producer"]["identity"]
     # Updated legacy callers also take this lease and cannot race a receipt owner.
     # Old binaries must be quiesced before adoption; they do not know this lock.
     with growth_receipt_ownership(paths):
@@ -943,6 +997,10 @@ def _run_one_pipeline_growth_cycle_impl(
     if receipt_requires_save:
         save_triggered = True
         save_reason = "checkpoint_bound_patch"
+    node_budget_stop = getattr(runner, "last_node_budget_stop_reason", None)
+    if node_budget_stop is not None:
+        save_triggered = True
+        save_reason = "unique_node_budget"
 
     if args.diagnostic_stop_after_growth:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -1070,6 +1128,7 @@ def _run_one_pipeline_growth_cycle_impl(
         and has_no_growth
         and did_not_expand_tree
         and has_no_reevaluation_patch
+        and node_budget_stop is None
     ):
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info(
@@ -1396,6 +1455,15 @@ def _run_one_pipeline_growth_cycle_impl(
         effective_runtime_config=effective_runtime_config,
     )
     run_state_metadata.update(observability_metadata)
+    if node_budget_stop is not None:
+        assert args.continual_learning is not None
+        run_state_metadata["growth_status"] = "growth_budget_already_exhausted"
+        run_state_metadata["experiment_termination"] = {
+            "reason": node_budget_stop,
+            "maximum_unique_nodes": args.continual_learning.max_tree_nodes,
+            "committed_unique_nodes": current_tree_size,
+            "timestamp_utc": timestamp_utc,
+        }
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,

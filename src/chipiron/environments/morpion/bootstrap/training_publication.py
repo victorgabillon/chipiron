@@ -82,6 +82,19 @@ def configuration(
 
     from .cycle_training import morpion_training_args_from_evaluator_spec
 
+    if args.continual_learning is not None:
+        require(
+            args.training_evaluator_names is None,
+            "Continual rounds train every configured candidate.",
+        )
+        require(
+            control.force_evaluator is None,
+            "Continual selection requires measured validation loss.",
+        )
+        require(
+            args.validation_fraction > 0,
+            "Continual training requires held-out validation.",
+        )
     candidates = []
     for name, spec in evaluators.evaluators.items():
         require(
@@ -97,6 +110,8 @@ def configuration(
             validation_seed=args.validation_seed,
             device=args.training_device,
         )
+        if args.continual_learning is not None:
+            trainer = replace(trainer, stable_validation_split=True)
         candidates.append({
             "name": name,
             "args": asdict(trainer),
@@ -108,11 +123,18 @@ def configuration(
             json.dumps({
                 "candidates": candidates,
                 "force_evaluator": control.force_evaluator,
-                "selection": "forced_else_lowest_finite_validation_else_final_v1",
+                "selection": "heldout_candidate_name_tie_incumbent_on_equal_v1"
+                if args.continual_learning is not None
+                else "forced_else_lowest_finite_validation_else_final_v1",
                 "max_rows": args.training_max_rows,
                 "chunk_size": args.training_row_chunk_size,
                 "skip_diagnostics": args.skip_evaluator_diagnostics,
                 "diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
+                **(
+                    {"continual_learning": asdict(args.continual_learning)}
+                    if args.continual_learning is not None
+                    else {}
+                ),
             })
         ),
     )
@@ -151,6 +173,82 @@ class TrainingAttempt:
     directory: Path
 
 
+def latest_candidate_parents(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    names: list[str],
+) -> dict[str, Any]:
+    """Derive candidate heads from existing accepted receipts, never model projections."""
+    from .generation_publication_io import publication_records
+
+    parents: dict[str, Any] = dict.fromkeys(names)
+    unresolved = set(names)
+    for record in reversed(publication_records(state.metadata)):
+        if ACCEPTED not in record:
+            continue
+        proposal = _proposal(paths, record[ACCEPTED])
+        for name in sorted(unresolved & proposal["models"].keys()):
+            model = proposal["models"][name]
+            require(
+                artifact_digest(inside(paths.work_dir, model["path"]))
+                == model["sha256"],
+                "Latest accepted candidate bundle is missing or changed.",
+            )
+            parents[name] = {
+                "generation": record["generation"],
+                "accepted_training": record[ACCEPTED],
+                "model": model,
+                "weights_sha256": file_digest(
+                    inside(paths.work_dir, model["path"]) / "param.pt"
+                ),
+            }
+            unresolved.remove(name)
+        if not unresolved:
+            break
+    return parents
+
+
+def _continuation_admission(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    config: dict[str, Any],
+    generation: int,
+) -> dict[str, Any]:
+    """Capture parent and incumbent identities under the existing ownership fence."""
+    from .generation_publication_io import committed_evaluator, publication_records
+
+    if "continual_learning" not in config:
+        return {}
+    records = publication_records(state.metadata)
+    parents = latest_candidate_parents(
+        paths, state, [c["name"] for c in config["candidates"]]
+    )
+    require(
+        all(p is None or p["generation"] < generation for p in parents.values()),
+        "A newer accepted candidate cannot be trained on an older generation.",
+    )
+    accepted = [r for r in records if ACCEPTED in r]
+    previous_generation = max((r["generation"] for r in accepted), default=0)
+    incumbent, _ = committed_evaluator(paths.work_dir, state)
+    return {
+        "parents": parents,
+        "round_number": len(accepted) + 1,
+        "incumbent": incumbent,
+        "skipped_scientific_generations": [
+            r["generation"]
+            for r in records
+            if previous_generation < r["generation"] < generation
+        ],
+        "skipped_accepted_dataset_generations": [
+            r["generation"]
+            for r in records
+            if previous_generation < r["generation"] < generation
+            and dataset.ACCEPTED in r
+            and ACCEPTED not in r
+        ],
+    }
+
+
 def _directory(
     paths: MorpionBootstrapPaths, identifier: str, *, private: bool = False
 ) -> Path:
@@ -180,6 +278,9 @@ def admit_training(
     with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Durable Training is not enabled.")
+        from .learning_policy import policy_from_metadata, validate_continual_context
+
+        validate_continual_context(paths, state, policy_from_metadata(config))
         record = publication_record(state, generation)
         if ACCEPTED in record:
             proposal = _proposal(paths, record[ACCEPTED])
@@ -215,7 +316,7 @@ def admit_training(
                 staging = _directory(paths, identifier, private=True)
                 staging.mkdir(parents=True, exist_ok=False)
                 admission = {
-                    "schema_version": 1,
+                    "schema_version": 2 if "continual_learning" in config else 1,
                     "attempt_id": identifier,
                     "generation": generation,
                     "identity": workspace_epoch(state),
@@ -223,6 +324,7 @@ def admit_training(
                     "claim_id": claim.claim_id,
                     "configuration": config,
                     "reproducibility": reproducibility(),
+                    **_continuation_admission(paths, state, config, generation),
                 }
                 atomic_json(staging / "admission.json", admission)
                 attempt = TrainingAttempt(admission, staging)
@@ -254,6 +356,11 @@ def _validate(
         "Incomplete Training result.",
     )
     admission = proposal["admission"]
+    from .learning_policy import policy_from_metadata, validate_continual_context
+
+    validate_continual_context(
+        paths, state, policy_from_metadata(admission["configuration"])
+    )
     require(
         set(admission)
         == {
@@ -266,9 +373,21 @@ def _validate(
             "configuration",
             "reproducibility",
         }
+        | (
+            {
+                "parents",
+                "round_number",
+                "incumbent",
+                "skipped_accepted_dataset_generations",
+                "skipped_scientific_generations",
+            }
+            if "continual_learning" in admission["configuration"]
+            else set()
+        )
         and isinstance(admission["schema_version"], int)
         and not isinstance(admission["schema_version"], bool)
-        and admission["schema_version"] == 1,
+        and admission["schema_version"]
+        == (2 if "continual_learning" in admission["configuration"] else 1),
         "Incomplete Training admission.",
     )
     require(
@@ -313,6 +432,7 @@ def _validate(
             validation_loss=r.validation_loss,
             num_epochs=r.num_epochs,
             num_samples=None,
+            num_validation_samples=r.num_validation_samples,
         )
         for name in names
         for r in [status.evaluator_results[name]]
@@ -321,6 +441,7 @@ def _validate(
         select_or_force_active_evaluator_name(
             evaluator_metrics=metrics,
             force_evaluator=admission["configuration"]["force_evaluator"],
+            validation_only="continual_learning" in admission["configuration"],
         )
         == status.selected_evaluator_name,
         "Training selection changed.",
@@ -337,6 +458,8 @@ def _validate(
     require(
         status.selection_policy == expected_policy, "Training selection policy changed."
     )
+    if "parents" in admission:
+        _validate_continual_selection(admission, status)
     for name in names:
         model = proposal["models"][name]
         expected = paths.relative_to_work_dir(
@@ -353,6 +476,8 @@ def _validate(
                 artifact_digest(inside(paths.work_dir, expected)) == model["sha256"],
                 "Training model missing or changed.",
             )
+            if "parents" in admission:
+                _validate_continuation(paths, admission, name, model)
     if verify:
         require(
             dataset.accepted_dataset_identity(paths, state, generation)
@@ -360,6 +485,127 @@ def _validate(
             "Training Dataset bytes changed.",
         )
     return status
+
+
+def _validate_continual_selection(
+    admission: dict[str, Any], status: MorpionPipelineTrainingStatusArtifact
+) -> None:
+    """Independently reapply the declared decision rule to same-round held-out metrics."""
+    import math
+
+    decision = status.metadata.get("continual_selection")
+    require(isinstance(decision, dict), "Missing continual selection decision.")
+    assert isinstance(decision, dict)
+    losses = {
+        name: result.validation_loss
+        for name, result in status.evaluator_results.items()
+    }
+    require(
+        all(loss is not None and math.isfinite(loss) for loss in losses.values()),
+        "Every candidate requires finite held-out loss.",
+    )
+    winner = status.selected_evaluator_name
+    assert winner is not None
+    incumbent = decision["incumbent"]
+    require(
+        incumbent["model"] == admission["incumbent"]
+        and math.isfinite(incumbent["validation_loss"]),
+        "Selection incumbent or its validation metric changed.",
+    )
+    winning_loss = losses[winner]
+    assert winning_loss is not None
+    improves = winning_loss < incumbent["validation_loss"]
+    policy = admission["configuration"]["continual_learning"]
+    number = admission["round_number"]
+    eligible = (
+        number % policy["selection_every_rounds"] == 0
+        and number % policy["activation_every_rounds"] == 0
+    )
+    population = decision["validation_population"]
+    require(
+        decision["round_number"] == number
+        and decision["candidate"] == winner
+        and decision["candidate_validation_losses"] == losses
+        and decision["improves_incumbent"] == improves
+        and decision["activation_eligible"] == (eligible and improves)
+        and decision["decision"]
+        == ("candidate" if eligible and improves else "retain_incumbent")
+        and population["validation_count"] > 0
+        and all(
+            r.num_validation_samples == population["validation_count"]
+            and r.num_train_samples == population["train_count"]
+            for r in status.evaluator_results.values()
+        ),
+        "Continual selection does not match the shared held-out decision contract.",
+    )
+
+
+def _validate_continuation(
+    paths: MorpionBootstrapPaths,
+    admission: dict[str, Any],
+    name: str,
+    model: dict[str, Any],
+) -> None:
+    """Check exact loaded-parent evidence in the accepted immutable model bundle."""
+    from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+        load_morpion_model_bundle,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.continuation import (
+        candidate_training_seed,
+        weights_digest,
+    )
+
+    with torch.random.fork_rng(devices=[]):
+        trained, _, manifest = load_morpion_model_bundle(
+            inside(paths.work_dir, model["path"])
+        )
+    evidence = manifest.metadata["continuation"]
+    parent = admission["parents"][name]
+    policy = admission["configuration"]["continual_learning"]
+    inherits = (
+        parent is not None
+        and policy["training_policy"] == "continue_from_previous_accepted_weights"
+    )
+    require(
+        evidence["candidate_name"] == name
+        and evidence["training_policy"] == policy["training_policy"]
+        and evidence["optimizer_state_policy"] == policy["optimizer_state_policy"]
+        and evidence["loaded_previous_weights"] == inherits
+        and evidence["parent_bundle_sha256"]
+        == (None if parent is None else parent["model"]["sha256"])
+        and evidence["parent_weights_sha256"]
+        == (None if parent is None else parent["weights_sha256"])
+        and evidence["final_weights_sha256"] == weights_digest(trained)
+        and evidence["optimizer_steps"] > 0,
+        "Training continuation evidence differs from admitted lineage.",
+    )
+    require(
+        evidence["seed"]
+        == candidate_training_seed(policy["seed"], name, admission["generation"])
+        and evidence["optimizer_state_loaded"]
+        == (inherits and policy["optimizer_state_policy"] == "continue_adam")
+        and evidence["optimizer_sha256"]
+        == file_digest(inside(paths.work_dir, model["path"]) / "optimizer.pt")
+        and evidence["final_optimizer_step_count"]
+        - evidence["starting_optimizer_step_count"]
+        == evidence["optimizer_steps"]
+        and evidence["training_examples_seen"]
+        == manifest.metadata["num_train_samples"] * manifest.metadata["num_epochs"],
+        "Candidate optimizer, seed or sample provenance changed.",
+    )
+    if inherits:
+        assert parent is not None
+        bundle = inside(paths.work_dir, parent["model"]["path"])
+        require(
+            artifact_digest(bundle) == parent["model"]["sha256"],
+            "Accepted parent changed during training.",
+        )
+        with torch.random.fork_rng(devices=[]):
+            previous, _, _ = load_morpion_model_bundle(bundle)
+        require(
+            evidence["starting_weights_sha256"] == weights_digest(previous),
+            "Training did not start with the exact accepted parent tensors.",
+        )
 
 
 def accepted_selected_model(
@@ -556,6 +802,21 @@ def accept_training(
                 previous in (None, reference), "Conflicting accepted Training attempt."
             )
             if previous is None:
+                if "parents" in admission:
+                    require(
+                        latest_candidate_parents(
+                            paths, state, list(admission["parents"])
+                        )
+                        == admission["parents"],
+                        "Stale Training parents: another accepted update advanced a candidate lineage.",
+                    )
+                    from .generation_publication_io import committed_evaluator
+
+                    require(
+                        committed_evaluator(paths.work_dir, state)[0]
+                        == admission["incumbent"],
+                        "Training incumbent changed before acceptance.",
+                    )
                 claim = load_pipeline_stage_claim(
                     paths.pipeline_training_claim_path_for_generation(generation)
                 )
@@ -609,8 +870,11 @@ def run_training(
         restrict_evaluators_config,
         train_and_select_evaluators_streaming,
     )
+    from .performance import StageMeasurement
     from .pipeline_artifacts import MorpionPipelineTrainingStatusArtifact
     from .profiling.memory_diagnostics import MemoryDiagnostics
+
+    round_measurement = StageMeasurement(cuda_device=args.training_device)
 
     evaluators = restrict_evaluators_config(
         args.resolved_evaluators_config(), args.training_evaluator_names
@@ -636,9 +900,21 @@ def run_training(
         state = replace(
             state,
             latest_model_bundle_paths={
+                name: str(paths.resolve_work_dir_path(parent["model"]["path"]))
+                for name, parent in attempt.admission["parents"].items()
+                if parent is not None
+            }
+            if "parents" in attempt.admission
+            else {
                 name: str(paths.resolve_work_dir_path(path))
                 for name, path in (state.latest_model_bundle_paths or {}).items()
             },
+            metadata={
+                **state.metadata,
+                "candidate_training_parents": attempt.admission["parents"],
+            }
+            if "parents" in attempt.admission
+            else state.metadata,
         )
         memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
         try:
@@ -663,6 +939,11 @@ def run_training(
             file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
             "Training input changed during computation.",
         )
+        selection = (
+            _compare_incumbent(paths, private_paths, args, attempt, result, rows)
+            if "parents" in attempt.admission
+            else None
+        )
         # The synchronous trainer has returned; only this attempt owned these
         # inputs/caches. Keep the accepted Dataset as the sole durable row source.
         shutil.rmtree(rows.parent)
@@ -676,6 +957,123 @@ def run_training(
             metadata={
                 "training_evaluator_names": list(evaluators.evaluators),
                 "training_duration_s": result.training_duration_s,
+                "round_performance": round_measurement.finish(),
+                **({"continual_selection": selection} if selection is not None else {}),
             },
         )
         return accept_training(paths, publish_training(paths, attempt, status))
+
+
+def _compare_incumbent(
+    paths: MorpionBootstrapPaths,
+    private_paths: MorpionBootstrapPaths,
+    args: MorpionBootstrapArgs,
+    attempt: TrainingAttempt,
+    result: Any,
+    rows: Path,
+) -> dict[str, Any]:
+    """Compare all models on this accepted Dataset, never on another round's loss."""
+    import math
+    from dataclasses import fields
+
+    from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+        load_morpion_model_bundle,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.args import (
+        MorpionTrainingArgs,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.evaluation import (
+        evaluate_streaming_metrics,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.state_split import (
+        prepare_state_split,
+    )
+    from chipiron.learning.torch_runtime import resolve_torch_device
+
+    populations = []
+    metrics = {}
+    for name, relative in result.model_bundle_paths.items():
+        candidate_path = private_paths.resolve_work_dir_path(relative)
+        require(candidate_path is not None, "Candidate output path is missing.")
+        assert candidate_path is not None
+        candidate_manifest = read_object(candidate_path / "morpion_manifest.json")
+        populations.append(candidate_manifest["metadata"]["state_split"])
+        loss = result.evaluator_metrics[name].validation_loss
+        require(
+            loss is not None and math.isfinite(loss),
+            "Every candidate needs finite held-out loss.",
+        )
+        metrics[name] = loss
+    require(
+        bool(populations)
+        and all(p == populations[0] for p in populations)
+        and populations[0]["validation_count"] > 0,
+        "Candidate validation populations differ or are empty.",
+    )
+    incumbent = attempt.admission["incumbent"]
+    bundle = inside(paths.work_dir, incumbent["path"])
+    require(artifact_digest(bundle) == incumbent["sha256"], "Incumbent model changed.")
+    with torch.random.fork_rng(devices=[]):
+        model, model_args, manifest = load_morpion_model_bundle(bundle)
+    require(
+        manifest.target_kind == "backup_value",
+        "Incumbent target contract is incompatible.",
+    )
+    keywords = {
+        f.name: getattr(model_args, f.name)
+        for f in fields(MorpionTrainingArgs)
+        if hasattr(model_args, f.name)
+    }
+    evaluation_args = MorpionTrainingArgs(
+        **keywords,
+        dataset_file=rows,
+        output_dir=attempt.directory / "unused-evaluation",
+        batch_size=64 if model_args.model_kind in {"linear", "mlp"} else 8,
+        validation_fraction=args.validation_fraction,
+        validation_seed=args.validation_seed,
+        stable_validation_split=True,
+        device=args.training_device,
+    )
+    evaluation_args, population = prepare_state_split(
+        evaluation_args, args.training_max_rows
+    )
+    require(population == populations[0], "Incumbent validation population differs.")
+    device = resolve_torch_device(args.training_device)
+    stats = evaluate_streaming_metrics(
+        model=model.to(device),
+        args=evaluation_args,
+        row_chunk_size=args.training_row_chunk_size,
+        max_rows=args.training_max_rows,
+        split="validation",
+        device=device,
+    )
+    require(
+        stats.sample_count == population["validation_count"]
+        and math.isfinite(stats.loss),
+        "Incumbent validation is empty or nonfinite.",
+    )
+    winner = min(metrics, key=lambda name: (metrics[name], name))
+    require(
+        winner == result.selected_evaluator_name,
+        "Candidate selection is not deterministic.",
+    )
+    policy = args.continual_learning
+    assert policy is not None
+    round_number = attempt.admission["round_number"]
+    eligible = (
+        round_number % policy.selection_every_rounds == 0
+        and round_number % policy.activation_every_rounds == 0
+    )
+    return {
+        "round_number": round_number,
+        "candidate": winner,
+        "candidate_validation_losses": metrics,
+        "validation_population": population,
+        "incumbent": {"model": incumbent, "validation_loss": stats.loss},
+        "improves_incumbent": metrics[winner] < stats.loss,
+        "activation_eligible": eligible and metrics[winner] < stats.loss,
+        "decision": "candidate"
+        if eligible and metrics[winner] < stats.loss
+        else "retain_incumbent",
+        "tie_break": "incumbent_on_equal_else_candidate_name",
+    }
