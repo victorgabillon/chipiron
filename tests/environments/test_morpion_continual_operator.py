@@ -20,12 +20,16 @@ from chipiron.environments.morpion.bootstrap.continual_operator import (
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     committed_evaluator,
 )
-from chipiron.environments.morpion.bootstrap.launcher import launcher_args_from_cli
+from chipiron.environments.morpion.bootstrap.launcher import (
+    launcher_args_from_cli,
+    run_morpion_bootstrap_experiment,
+)
 from chipiron.environments.morpion.bootstrap.learning_policy import (
     MorpionContinualLearningPolicy,
     policy_from_metadata,
     validate_continual_context,
 )
+from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
     load_morpion_model_bundle,
 )
@@ -61,6 +65,7 @@ def test_preparation_records_nine_candidates_and_distinct_zero_search_seed(
         "entity_token_transformer_small",
     }
     assert state.tree_size_at_last_save == 1
+    assert config.evaluator_update_policy == "future_only"
     assert not (root / "training_publications_v1").exists()
     _, bundle = committed_evaluator(root, state)
     model, model_args, manifest = load_morpion_model_bundle(bundle)
@@ -108,6 +113,46 @@ def test_cli_continual_defaults_and_explicit_policies() -> None:
     assert explicit.continual_policy.automatic_activation
     assert explicit.continual_policy.training_policy == "fresh_from_scratch"
     assert explicit.continual_policy.optimizer_state_policy == "reset_each_round"
+
+
+def test_prepared_genesis_skips_learning_then_restores_for_real_growth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The actual operator preparation can enter the existing scientific workers."""
+    monkeypatch.setenv("MORPION_LEADERBOARD_PATH", str(tmp_path / "leaderboard.jsonl"))
+    root = tmp_path / "fresh"
+    prepare_continual_experiment(
+        MorpionBootstrapArgs(work_dir=root, max_growth_steps_per_cycle=2),
+        MorpionContinualLearningPolicy(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(root)
+    authority = paths.run_state_path.read_bytes()
+    for stage in ("dataset_worker", "training_worker"):
+        result = run_morpion_bootstrap_experiment(
+            launcher_args_from_cli([
+                "--scientific",
+                "--work-dir",
+                str(root),
+                "--pipeline-stage",
+                stage,
+            ])
+        )
+        assert result.generation is None
+    assert paths.run_state_path.read_bytes() == authority
+    run_morpion_bootstrap_experiment(
+        launcher_args_from_cli([
+            "--scientific",
+            "--work-dir",
+            str(root),
+            "--pipeline-stage",
+            "growth",
+            "--max-cycles",
+            "1",
+        ])
+    )
+    state = load_bootstrap_run_state(paths.run_state_path)
+    assert state.generation == 2
+    assert state.tree_size_at_last_save > 1
 
 
 @pytest.mark.fast

@@ -642,7 +642,7 @@ def run_next_pipeline_dataset_stage_once(
         manifests = {
             g: m
             for g, m in manifests.items()
-            if g % args.continual_learning.dataset_every_generations == 0
+            if g > 1 and g % args.continual_learning.dataset_every_generations == 0
         }
     LOGGER.info(
         "[pipeline] dataset_status latest_dataset_generation=%s latest_dataset_manifest=%s latest_dataset_created_at=%s latest_dataset_rows=%s",
@@ -753,7 +753,7 @@ def run_next_pipeline_training_stage_once(
         manifests = {
             g: m
             for g, m in manifests.items()
-            if g % args.continual_learning.training_every_generations == 0
+            if g > 1 and g % args.continual_learning.training_every_generations == 0
         }
     lower_bound = _training_lower_bound(paths)
     selection_lower_bound_generation = _training_selection_lower_bound_generation(

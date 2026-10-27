@@ -109,7 +109,9 @@ def prepare_continual_experiment(
         tree_branch_limit=2_000_000_000,
         save_after_seconds=0.0,
         dataset_confidence_policy="selected_value_v2",
-        evaluator_update_policy="reevaluate_all",
+        # Ordinary restore attaches the committed evaluator without changing the
+        # checkpoint. Atomic activation separately performs a complete refresh.
+        evaluator_update_policy="future_only",
         min_available_ram_mb=policy.min_available_ram_mb,
         candidate_checkpoint_load_headroom_factor=0.0,
         candidate_checkpoint_load_min_headroom_mb=0,
