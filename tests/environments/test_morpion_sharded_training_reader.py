@@ -310,6 +310,36 @@ def test_interrupted_build_and_corrupt_cache_recovery(
         assert view.node_count() == 300
 
 
+@pytest.mark.parametrize("damage", ["duplicate_record", "duplicate_update", "orphan"])
+def test_constraint_failure_after_committed_prefix_keeps_existing_cache(
+    tmp_path: Path, damage: str
+) -> None:
+    """A failed private build is discarded even after its first chunk committed."""
+    path = write_generation(tmp_path / "source", [str(i) for i in range(300)])
+    cache = tmp_path / "cache"
+    with ShardedTrainingGenerationView(path, cache_dir=cache) as original:
+        index_path = original.index_path
+        expected = tuple(original.iter_nodes_in_export_order())
+    original_index = index_path.read_bytes()
+    source = path.parent / (
+        "nodes-1.json" if damage == "duplicate_record" else "updates-1.json"
+    )
+    original_source = source.read_bytes()
+    rows = json.loads(original_source)
+    field = "nodes" if damage == "duplicate_record" else "updates"
+    rows[field][-1]["node_id"] = "missing" if damage == "orphan" else "0"
+    source.write_text(json.dumps(rows))
+    with pytest.raises(ValueError, match="Duplicate node ID or update"):
+        ShardedTrainingGenerationView(path, cache_dir=cache)
+    assert set(cache.glob("v*.sqlite3")) == {index_path}
+    assert not list(cache.glob(".building-*"))
+    assert index_path.read_bytes() == original_index
+    source.write_bytes(original_source)
+    with ShardedTrainingGenerationView(path, cache_dir=cache) as recovered:
+        assert recovered.index_reused
+        assert tuple(recovered.iter_nodes_in_export_order()) == expected
+
+
 def test_parser_buffers_do_not_scale_with_array_length(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

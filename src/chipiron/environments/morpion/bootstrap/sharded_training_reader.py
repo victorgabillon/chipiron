@@ -918,6 +918,11 @@ class ShardedTrainingGenerationView:
         connection = sqlite3.connect(temporary)
         try:
             _configure_connection(connection)
+            # Discard this unique private file on any error. Rename only a
+            # complete, integrity-checked index; reusable indexes still require
+            # fresh source hashes and cache-digest/integrity validation.
+            connection.execute("PRAGMA journal_mode=OFF")
+            connection.execute("PRAGMA synchronous=OFF")
             connection.executescript("""
                 CREATE TABLE records (
                     node_id TEXT COLLATE BINARY PRIMARY KEY,
