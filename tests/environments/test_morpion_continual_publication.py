@@ -368,6 +368,10 @@ def test_automatic_request_renews_after_real_m1_drain(
             activation.activate_selected_round_automatically(paths)
     drained = load_bootstrap_run_state(paths.run_state_path)
     assert drained.generation == state.generation + 1
+    # A real learner can finish another round on the drained M1 head before
+    # recovery. Its comparison against M1 must never authorize replacement of M2.
+    run_dataset(args, generation=drained.generation)
+    run_pipeline_training_stage(args, generation=drained.generation)
     directory = paths.pipeline_dir / "automatic_activation"
     [original] = list(directory.glob("*.json"))
     original_bytes = original.read_bytes()

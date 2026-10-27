@@ -9,6 +9,7 @@ session. Failure discards RAM. Recovery reads the existing authoritative head.
 from __future__ import annotations
 
 import copy
+import logging
 import time
 from dataclasses import asdict, replace
 from itertools import zip_longest
@@ -73,6 +74,7 @@ POLICY = {
     "refresh_scope": "all",
     "batch_size": 64,
 }
+LOGGER = logging.getLogger(__name__)
 
 
 def _runner(
@@ -413,6 +415,7 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     for path in sorted(directory.glob("generation_*.json")):
         request = read_object(path)
         chains.setdefault(request["training_generation"], []).append(request)
+    positions = {r["id"]: i for i, r in enumerate(publication_records(state.metadata))}
     for requests in chains.values():
         committed = {
             r.get("activation_request_sha256")
@@ -420,14 +423,11 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
         }
         if any(object_digest(r) in committed for r in requests):
             continue
-        positions = {
-            r["id"]: i for i, r in enumerate(publication_records(state.metadata))
-        }
         require(
             all(r["expected_head"] in positions for r in requests),
             "Unknown automatic request head.",
         )
-        request = max(requests, key=lambda r, p=positions: p[r["expected_head"]])
+        request = max(requests, key=lambda r: positions[r["expected_head"]])
         if request["expected_head"] != state.metadata[PUBLICATION_KEY]["head_id"]:
             with growth_receipt_ownership(paths):
                 state = load_bootstrap_run_state(paths.run_state_path)
@@ -459,10 +459,15 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     path = directory / f"generation_{latest['generation']:06d}.json"
     if path.exists():
         return  # The exact request above was already committed or recovered.
-    require(
-        committed_evaluator(paths.work_dir, state)[0] == decision["incumbent"]["model"],
-        "Selection incumbent differs from the current model.",
-    )
+    if committed_evaluator(paths.work_dir, state)[0] != decision["incumbent"]["model"]:
+        # A learner may finish on the M1 receipt-drain head while an interrupted
+        # M1->M2 request is recovered. Its old-incumbent comparison cannot justify
+        # another activation. Keep M2 and let ordinary Growth/Dataset continue.
+        LOGGER.info(
+            "[activation] selection_superseded generation=%s reason=incumbent_changed",
+            latest["generation"],
+        )
+        return
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
         accepted_now = [r for r in publication_records(state.metadata) if ACCEPTED in r]
