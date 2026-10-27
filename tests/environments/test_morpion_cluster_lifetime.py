@@ -25,9 +25,9 @@ def _process_has_exited(pid: int) -> bool:
     return status.rsplit(") ", 1)[1].startswith(("Z", "X"))
 
 
-@pytest.mark.parametrize("interrupt", [False, True])
+@pytest.mark.parametrize("interrupt", [False, True, "monitor_death"])
 def test_headless_cluster_stops_all_four_worker_groups(
-    tmp_path: Path, *, interrupt: bool
+    tmp_path: Path, *, interrupt: bool | str
 ) -> None:
     """Real shell supervision terminates even descendants that ignore TERM."""
     stub = tmp_path / "python_stub"
@@ -64,6 +64,13 @@ time.sleep(60)
         MORPION_CLUSTER_WORKERS="all",
         MORPION_SEED_MODELS_FROM_WORK_DIR="",
     )
+    owner = None
+    if interrupt == "monitor_death":
+        owner = subprocess.Popen(["sleep", "60"])
+        env["MORPION_RESOURCE_MONITOR_PID"] = str(owner.pid)
+        env["MORPION_RESOURCE_MONITOR_START_TICKS"] = (
+            Path(f"/proc/{owner.pid}/stat").read_text().rsplit(") ", 1)[1].split()[19]
+        )
     process = subprocess.Popen(
         ["bash", str(_SCRIPT)],
         env=env,
@@ -80,10 +87,15 @@ time.sleep(60)
         ):
             time.sleep(0.05)
         assert all((tmp_path / f"{stage}.json").exists() for stage in stages)
-        if interrupt:
+        if owner is not None:
+            owner.kill()
+            owner.wait(timeout=3)
+        elif interrupt:
             process.send_signal(signal.SIGTERM)
         output, _ = process.communicate(timeout=13)
-        assert process.returncode == (143 if interrupt else 0), output
+        assert process.returncode == (143 if interrupt is True else 0), output
+        if owner is not None:
+            assert "resource monitor exited" in output
         assert "all worker groups stopped" in output
         for line in output.splitlines():
             if "private_reader_cache=" in line:
@@ -94,6 +106,9 @@ time.sleep(60)
                 # second test-only grace period that hides incomplete shutdown.
                 assert _process_has_exited(pid), (pid, output)
     finally:
+        if owner is not None and owner.poll() is None:
+            owner.kill()
+            owner.wait(timeout=3)
         if process.poll() is None:
             process.send_signal(signal.SIGTERM)
             process.communicate(timeout=13)

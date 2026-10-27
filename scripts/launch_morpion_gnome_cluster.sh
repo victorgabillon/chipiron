@@ -189,6 +189,20 @@ worker_groups_running() {
   return 1
 }
 
+# The optional resource monitor must remain alive, including its exact Linux
+# process identity. A reused PID cannot silently orphan a monitored experiment.
+resource_monitor_running() {
+  local status remainder
+  local -a fields
+  if [[ -z "${MORPION_RESOURCE_MONITOR_PID:-}" ]]; then return 0; fi
+  if ! read -r status < "/proc/$MORPION_RESOURCE_MONITOR_PID/stat"; then return 1; fi
+  remainder="${status##*) }"
+  read -r -a fields <<< "$remainder"
+  [[ "${fields[0]:-Z}" != "Z" && "${fields[0]:-X}" != "X" &&
+     -n "${MORPION_RESOURCE_MONITOR_START_TICKS:-}" &&
+     "${fields[19]:-}" == "$MORPION_RESOURCE_MONITOR_START_TICKS" ]]
+}
+
 stop_headless_workers() {
   local pid deadline alive
   if [[ "$CLUSTER_STOPPED" == "1" ]]; then return; fi
@@ -578,6 +592,10 @@ if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
   echo "[CLUSTER] logs=$LOG_DIR active_limit=${MORPION_CLUSTER_MAX_SECONDS}s stop_grace=${MORPION_CLUSTER_STOP_GRACE_SECONDS}s"
   next_status=$SECONDS
   while (( SECONDS < CLUSTER_DEADLINE )); do
+    if ! resource_monitor_running; then
+      echo "[CLUSTER] resource monitor exited; stopping owned worker groups" >&2
+      break
+    fi
     alive=0
     for pid in "${CLUSTER_PIDS[@]}"; do
       if kill -0 "$pid" 2>/dev/null; then alive=1; fi
