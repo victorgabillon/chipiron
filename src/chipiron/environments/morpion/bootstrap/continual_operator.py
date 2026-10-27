@@ -342,7 +342,7 @@ def _run_monitored(
                 MORPION_CLUSTER_WORKERS="all",
                 MORPION_RESOURCE_MONITOR_PID=str(os.getpid()),
                 MORPION_RESOURCE_MONITOR_START_TICKS=Path("/proc/self/stat")
-                .read_text()
+                .read_text(encoding="utf-8")
                 .rsplit(") ", 1)[1]
                 .split()[19],
                 MORPION_CLUSTER_MAX_SECONDS=str(

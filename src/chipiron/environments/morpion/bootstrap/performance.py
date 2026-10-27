@@ -58,6 +58,7 @@ class StageMeasurement:
                 self.cuda = None
         self.started_unix_s = time.time()
         self.started = time.perf_counter()
+        self.cpu_started = time.process_time()
         self.rss_before_mb = current_rss_mb()
         self.available_before_mb = available_ram_mb()
 
@@ -89,6 +90,7 @@ class StageMeasurement:
             "started_unix_s": self.started_unix_s,
             "finished_unix_s": time.time(),
             "elapsed_s": time.perf_counter() - self.started,
+            "cpu_s": time.process_time() - self.cpu_started,
             "pid": os.getpid(),
             "rss_before_mb": self.rss_before_mb,
             "rss_after_mb": current_rss_mb(),
