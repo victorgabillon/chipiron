@@ -46,6 +46,7 @@ from .generation_publication_io import (
     read_object,
     require,
 )
+from .performance import StageMeasurement, persist_stage_measurement
 from .reevaluation_transaction import (
     GROWTH_NUMERIC_POLICY,
     cursor_digest,
@@ -334,6 +335,7 @@ def activate_model(
             == object_digest(_request(paths, state, request["training_generation"])),
             "Stale or conflicting model activation request.",
         )
+        measurement = StageMeasurement()
         runner, effective = _runner(paths, state)
         head = publication_records(state.metadata)[-1]
         producer = dict(head["scientific_identity"]["producer"]["identity"])
@@ -377,6 +379,7 @@ def activate_model(
             )
             model = request["candidate"]
             model_path = publication.freeze_model(model)
+            refresh_measurement = StageMeasurement()
             refresh = runner.refresh_model_estimates(model_path)
             publication.activation = {
                 "request_sha256": digest,
@@ -384,10 +387,15 @@ def activate_model(
                 "previous_head": state.metadata[PUBLICATION_KEY]["head_id"],
                 "previous_producer": producer,
                 "refresh": asdict(refresh),
+                "refresh_performance": refresh_measurement.finish(),
             }
             publication.active_evaluator = model
             publication.producer = {**producer, "evaluator": model["sha256"]}
-            return _save(session, runner, state)
+            state = _save(session, runner, state)
+            persist_stage_measurement(
+                paths.work_dir, state.generation, "activation", measurement.finish()
+            )
+            return state
         finally:
             session.discard_runtime()
             publication.close()
