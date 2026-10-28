@@ -17,6 +17,14 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONPATH: ""
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHON_JIT: "0"
+  OMP_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -27,7 +35,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.13.5"
       - name: Cache quality tools
         uses: actions/cache@v4
         with:
@@ -45,7 +53,7 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
       PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
@@ -56,7 +64,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.13.5"
       - name: Cache CPU dependencies
         uses: actions/cache@v4
         with:
@@ -75,9 +83,37 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install tox==4.56.1 build==1.5.0
+      - name: Prepare exact scientific dependency source
+        run: python .github/scripts/scientific_ci.py prepare
+      - name: Build installed test environment
+        run: python -m tox -e py313 --notest
+      - name: Verify exact installed scientific source
+        run: .tox/py313/bin/python .github/scripts/scientific_ci.py verify
       - name: Test installed package
-        timeout-minutes: 15
+        timeout-minutes: 60
         run: python -m tox -e py313
+      - name: Preserve FULL evidence
+        run: |
+          cp .ci-reports/tests.json .ci-reports/full-tests.json
+          cp .ci-reports/pytest.xml .ci-reports/full.xml
+          cp .ci-reports/coverage.json .ci-reports/full-coverage.json
+      - name: FAST and PR installed-package lanes
+        timeout-minutes: 45
+        run: |
+          make test-fast PYTHON=.tox/py313/bin/python TEST_ARGS=--junitxml=.ci-reports/fast.xml
+          cp .ci-reports/tests.json .ci-reports/fast-tests.json
+          make test-pr PYTHON=.tox/py313/bin/python TEST_ARGS=--junitxml=.ci-reports/pr.xml
+          cp .ci-reports/tests.json .ci-reports/pr-tests.json
+      - name: Chess and scientific integration contracts
+        timeout-minutes: 30
+        run: |
+          .tox/py313/bin/python -m pytest --no-cov -n 2 --dist=loadfile tests/integration_test/one_match/test_integration.py tests/environments/test_morpion_continual_training.py tests/environments/test_morpion_continual_publication.py tests/environments/test_morpion_checkpoint_parity.py --junitxml=.ci-reports/scientific-integration.xml
+          .tox/py313/bin/python .github/scripts/scientific_ci.py verify
+          .tox/py313/bin/python -m pip check
+      - name: Strict wheel and sdist metadata
+        run: |
+          python -m pip install twine==7.0.0
+          python -m twine check --strict dist/*
       - name: Record CI environment and disk usage
         if: always()
         run: |
@@ -109,7 +145,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.13.5"
       - name: Cache CPU dependencies
         uses: actions/cache@v4
         with:
@@ -128,6 +164,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install tox==4.56.1 build==1.5.0
+      - name: Prepare exact scientific dependency source
+        run: python .github/scripts/scientific_ci.py prepare
+      - name: Build installed static environment
+        run: python -m tox -e static --notest
+      - name: Verify static scientific dependency source
+        run: .tox/static/bin/python .github/scripts/scientific_ci.py verify
       - name: Check static-analysis ratchet
         timeout-minutes: 15
         run: python -m tox -e static
