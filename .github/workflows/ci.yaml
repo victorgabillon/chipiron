@@ -92,7 +92,7 @@ jobs:
         run: .tox/py314/bin/python .github/scripts/scientific_ci.py verify
       - name: Test installed package
         timeout-minutes: 60
-        run: python -m tox -e py314
+        run: python -m tox -e py314 -- tests --cov-config=${{ github.workspace }}/pyproject.toml
       - name: Preserve FULL evidence
         run: |
           cp .ci-reports/tests.json .ci-reports/full-tests.json
