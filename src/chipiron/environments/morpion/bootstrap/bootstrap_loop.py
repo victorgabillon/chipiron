@@ -112,6 +112,7 @@ from .cycle_validation import (
     previous_effective_runtime_config as _previous_effective_runtime_config,
 )
 from .cycle_validation import reevaluate_tree_for_policy as _reevaluate_tree_for_policy
+from .cycle_validation import require_legacy_workspace as _require_legacy_workspace
 from .cycle_validation import (
     require_single_process_mode as _require_single_process_mode,
 )
@@ -187,6 +188,7 @@ def run_one_bootstrap_cycle(
     implementations should support reload/restart-style semantics from the
     latest saved artifacts.
     """
+    _require_legacy_workspace(paths, run_state)
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
     memory.log("cycle_start")
     try:
@@ -734,6 +736,7 @@ def _run_bootstrap_loop_impl(
 ) -> MorpionBootstrapRunState:
     """Run the shared bootstrap loop body for one validated execution mode."""
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    _require_legacy_workspace(paths)
     paths.ensure_directories()
 
     current_config = bootstrap_config_from_args(args)

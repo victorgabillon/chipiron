@@ -11,14 +11,22 @@ from .control import (
     MorpionBootstrapEffectiveRuntimeConfig,
     effective_runtime_config_from_metadata,
 )
+from .generation_publication_io import (
+    PUBLICATION_KEY,
+    publication_namespace,
+    require,
+)
+from .run_state import load_bootstrap_run_state
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from .bootstrap_args import MorpionBootstrapArgs
+    from .bootstrap_paths import MorpionBootstrapPaths
     from .config import MorpionBootstrapConfig
     from .evaluator_config import MorpionEvaluatorSpec
     from .pipeline_config import MorpionEvaluatorUpdatePolicy
+    from .run_state import MorpionBootstrapRunState
 
 
 _INVALID_DATASET_FAMILY_BLEND_ERROR = (
@@ -59,6 +67,26 @@ def require_single_process_mode(args: MorpionBootstrapArgs) -> None:
             "run_morpion_bootstrap_loop only supports pipeline_mode='single_process'. "
             "Use the dedicated artifact-pipeline stage entrypoints instead."
         )
+
+
+def require_legacy_workspace(
+    paths: MorpionBootstrapPaths,
+    run_state: MorpionBootstrapRunState | None = None,
+) -> None:
+    """Reject scientific authority before legacy configuration or runtime writes."""
+    message = "Cannot use a legacy bootstrap entrypoint on a scientific workspace."
+    require(
+        not any(
+            (paths.work_dir / publication_namespace(version)).exists()
+            for version in (1, 2, 3)
+        ),
+        message,
+    )
+    if paths.run_state_path.exists():
+        persisted_state = load_bootstrap_run_state(paths.run_state_path)
+        require(PUBLICATION_KEY not in persisted_state.metadata, message)
+    if run_state is not None:
+        require(PUBLICATION_KEY not in run_state.metadata, message)
 
 
 def reevaluate_tree_for_policy(policy: MorpionEvaluatorUpdatePolicy) -> bool:
@@ -133,6 +161,7 @@ def validate_runtime_reconfiguration(
 __all__ = [
     "previous_effective_runtime_config",
     "reevaluate_tree_for_policy",
+    "require_legacy_workspace",
     "require_single_process_mode",
     "validate_dataset_family_target_args",
     "validate_forced_evaluator",
