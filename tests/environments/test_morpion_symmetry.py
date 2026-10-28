@@ -1,7 +1,5 @@
 """State, action, relation and sampling contracts for D4 augmentation."""
 
-from __future__ import annotations
-
 import random
 from dataclasses import replace
 from typing import TYPE_CHECKING

@@ -1,7 +1,5 @@
 """Packed relational entity-token cache for Morpion supervised rows."""
 
-from __future__ import annotations
-
 import json
 import os
 from dataclasses import asdict, dataclass
@@ -438,7 +436,7 @@ def _read_relational_entity_token_cache_payload(
     """Read relational cache tensors, returning ``None`` when unusable."""
     try:
         payload = _torch_load_cpu(tensor_path)
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         return None
     if not isinstance(payload, dict):
         return None
@@ -634,7 +632,10 @@ def _tensors_match_manifest(
         or str(loaded.packed_relation_triples.dtype) != manifest.relation_dtype
         or str(loaded.relation_lengths.dtype) != manifest.relation_lengths_dtype
         or str(loaded.target_tensor.dtype) != manifest.target_dtype
-        or _shape_2(loaded.packed_input_tensor) != manifest.packed_input_shape
+    ):
+        return False
+    if (
+        _shape_2(loaded.packed_input_tensor) != manifest.packed_input_shape
         or _shape_1(loaded.token_lengths) != manifest.token_lengths_shape
         or _shape_2(loaded.packed_relation_triples) != manifest.packed_relation_shape
         or _shape_1(loaded.relation_lengths) != manifest.relation_lengths_shape

@@ -1,7 +1,5 @@
 """Small installed operator interface; never synthesizes a scientific experiment."""
 
-from __future__ import annotations
-
 import argparse
 import importlib.util
 import json
@@ -220,7 +218,7 @@ def _run_prepared(work_dir: Path, *, dry_run: bool, confirmed: bool) -> int:
             confirmed = (
                 input("Launch this prepared experiment? [y/N] ").strip().lower() == "y"
             )
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             confirmed = False
     if not confirmed:
         print("Launch cancelled.")

@@ -1,7 +1,5 @@
 """Rendering and logging helpers for recursive memory profiling."""
 
-from __future__ import annotations
-
 import gc
 import logging
 import time

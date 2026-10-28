@@ -1,7 +1,5 @@
 """Helpers for presenting flat action history as a participant-column table."""
 
-from __future__ import annotations
-
 import typing
 
 

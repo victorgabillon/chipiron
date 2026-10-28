@@ -1,7 +1,5 @@
 """Existing persistent controls, with an explicit preview before cycle-boundary apply."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (

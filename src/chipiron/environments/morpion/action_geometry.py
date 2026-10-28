@@ -1,8 +1,6 @@
 """Canonical point and unit-segment geometry for Morpion actions."""
 # pyright: reportMissingImports=false
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, cast
 
 from atomheart.games.morpion.dynamics import DIRECTIONS

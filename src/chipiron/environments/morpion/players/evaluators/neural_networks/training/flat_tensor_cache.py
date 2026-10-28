@@ -1,7 +1,5 @@
 """Flat handcrafted-feature tensor cache for Morpion streaming training."""
 
-from __future__ import annotations
-
 import json
 import os
 from dataclasses import asdict, dataclass
@@ -349,7 +347,7 @@ def _read_flat_tensor_cache_payload(
     """Read cache tensors, returning ``None`` when the payload is unusable."""
     try:
         payload = _torch_load_cpu(tensor_path)
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         return None
     if not isinstance(payload, dict):
         return None

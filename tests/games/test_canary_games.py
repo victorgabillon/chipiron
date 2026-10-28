@@ -1,7 +1,5 @@
 """Direct tests for the tiny deterministic canary games added in PR1."""
 
-from __future__ import annotations
-
 from test_support.canary_games import (
     RoleCycleCanaryGame,
     make_solo_canary_game,

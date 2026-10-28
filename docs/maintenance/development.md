@@ -1,17 +1,18 @@
 # Developer operations
 
-Use Python 3.13 and the pinned optional dependencies in `pyproject.toml`.
-Normal checks are `python -m tox`; the fast test selection is
-`python -m pytest -m "not integration and not external_data"`.
+Use Python 3.14 and the pinned optional dependencies in `pyproject.toml`.
+Normal checks are `python -m tox`; use `make test-fast` for representative
+feedback, `make test-pr` for broad regression and `make test-full` for the
+complete normal selection. See [the testing guide](../testing.md).
 Integration installation scripts may download engines/datasets and are separate
 from the ordinary offline unit-test gate.
 
-The default tox environments are `tooling`, `py313`, `ruff` and `static`.
-`py313` validates the installed wheel with published dependencies and no sibling
-source overrides. `ruff` is strict; `static` prints inherited Pylint/mypy/Pyright
-debt and rejects new diagnostics using the
-[reviewed baseline](static_analysis_baseline/README.md). The strict developer
-commands `tox -e lint,typecheck` remain available and can fail on inherited debt.
+The default tox environments are `tooling`, `py314`, `ruff` and `static`.
+`py314` validates the installed wheel with published dependencies and no sibling
+source overrides. `ruff` requires clean lint and formatting; `static` requires
+zero Pylint, strict mypy and Pyright diagnostics. The older
+[reviewed baseline](static_analysis_baseline/README.md) is historical evidence.
+The component commands `tox -e lint,typecheck` remain available.
 
 For MLflow, select an external SQLite database explicitly:
 

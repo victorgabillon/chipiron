@@ -1,7 +1,5 @@
 """Generic recursive deep-size traversal for Morpion profiling."""
 
-from __future__ import annotations
-
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass

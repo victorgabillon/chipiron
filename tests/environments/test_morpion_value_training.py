@@ -1,7 +1,5 @@
 """Training restart, unchanged bundle defaults, and canonical-cache contracts."""
 
-from __future__ import annotations
-
 import json
 import pickle
 import subprocess

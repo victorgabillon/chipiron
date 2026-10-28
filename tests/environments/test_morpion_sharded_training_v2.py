@@ -1,7 +1,5 @@
 """Scientific contracts, historical compatibility and actual row parity for v2."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import dataclass, field, replace
@@ -29,6 +27,7 @@ from anemone.training_export.serialization import (
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from atomheart.games.morpion.dynamics import MorpionDynamics
 from valanga import Outcome
+from valanga.evaluations import Value
 from valanga.over_event import OverEvent
 
 from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
@@ -55,7 +54,6 @@ from chipiron.environments.morpion.learning import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from valanga.evaluations import Value
 
 CODEC = MorpionStateCheckpointCodec()
 PRODUCER = {

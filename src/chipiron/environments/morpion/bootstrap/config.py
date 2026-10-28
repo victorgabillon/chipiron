@@ -1,14 +1,12 @@
 """Persisted bootstrap configuration helpers for Morpion runs."""
 # pylint: disable=too-many-lines
 
-from __future__ import annotations
-
 import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
     is_relational_entity_token_model_kind,
@@ -30,7 +28,11 @@ from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
     DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+    MorpionEvaluatorUpdatePolicy,
+    MorpionPipelineMode,
+    MorpionTrainingExportMode,
 )
+from .pv_family_targets import PvFamilyTargetPolicy
 from .record_status import (
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -41,17 +43,17 @@ from .record_status import (
 if TYPE_CHECKING:
     from .bootstrap_args import (
         MorpionBootstrapArgs,
-        MorpionGrowthStateEvictionPayloadMode,
-        MorpionGrowthStateEvictionPolicy,
-        MorpionRuntimeCheckpointFormat,
     )
     from .pipeline_config import (
-        MorpionEvaluatorUpdatePolicy,
-        MorpionPipelineMode,
         MorpionPipelineStage,
-        MorpionTrainingExportMode,
     )
-    from .pv_family_targets import PvFamilyTargetPolicy
+
+type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
+type MorpionGrowthStateEvictionPolicy = Literal[
+    "none", "cold_expanded", "frontier_cold", "expanded"
+]
+type MorpionGrowthStateEvictionPayloadMode = Literal["anchor", "delta_when_safe"]
+
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
 DEFAULT_MORPION_TREE_BRANCH_LIMIT = 128
@@ -311,12 +313,12 @@ class MalformedMorpionBootstrapConfigError(TypeError):
     def unexpected_fields(
         cls,
         section_name: str,
-        fields: set[str],
+        field_names: set[str],
     ) -> MalformedMorpionBootstrapConfigError:
         """Return one unexpected-fields error."""
         return cls(
             f"Morpion bootstrap config field `{section_name}` has unexpected fields "
-            f"{sorted(fields)!r}."
+            f"{sorted(field_names)!r}."
         )
 
     @classmethod
@@ -1579,7 +1581,6 @@ __all__ = [
     "bootstrap_config_from_dict",
     "bootstrap_config_sha256",
     "bootstrap_config_to_canonical_json",
-    "bootstrap_config_to_dict",
     "bootstrap_config_to_dict",
     "bootstrap_fields_owned_by_stage",
     "dataset_stage_owned_bootstrap_fields",

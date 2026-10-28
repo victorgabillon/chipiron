@@ -17,14 +17,12 @@ from anemone.nodes.algorithm_node import AlgorithmNode
 from anemone.tree_and_value_branch_selector import (
     TreeAndValueBranchSelector,
 )
-from anemone.trees import Tree
 from atomheart.games.chess.board import IBoard, create_board
 from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.players.adapters.chess_adapter import ChessAdapter
 from chipiron.environments.chess.players.factory.factory import create_chipiron_player
 from chipiron.environments.chess.types import ChessState
-from chipiron.players import Player
 from chipiron.players.move_selector.modifiers import ComposedBranchSelector
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -33,7 +31,10 @@ if TYPE_CHECKING:
     from anemone.basics import TreeDepth
     from anemone.nodes import ITreeNode
     from anemone.tree_exploration import TreeExploration
+    from anemone.trees import Tree
     from valanga import StateTag
+
+    from chipiron.players import Player
 
 
 def create_player_and_tree(

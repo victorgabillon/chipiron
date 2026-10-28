@@ -4,7 +4,6 @@ import argparse
 import copy
 import logging
 import time
-from collections.abc import Iterator
 from functools import cache
 from typing import TYPE_CHECKING, Any
 
@@ -40,6 +39,8 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from chipiron.games.domain.match.match_results import MatchReport
 
 

@@ -1,7 +1,5 @@
 """Register chess-specific move selector factories."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.types import GameKind

@@ -2,12 +2,13 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
-
-from valanga import StateTag
+from typing import TYPE_CHECKING, Literal
 
 from chipiron.environments.integer_reduction.tags import IntegerReductionStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
+
+if TYPE_CHECKING:
+    from valanga import StateTag
 
 DEFAULT_INTEGER_REDUCTION_START_VALUE = 15
 

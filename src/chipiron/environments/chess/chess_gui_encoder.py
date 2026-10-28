@@ -3,8 +3,6 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from valanga.game import Seed
-
 from chipiron.displays.gui_protocol import (
     UpdatePayload,
     UpdGameStatus,
@@ -12,11 +10,14 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from valanga.game import Seed
+
+    from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
 
 @dataclass(frozen=True, slots=True)

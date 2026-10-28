@@ -1,7 +1,5 @@
 """Deterministic process death and durability errors using generated artifacts."""
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess

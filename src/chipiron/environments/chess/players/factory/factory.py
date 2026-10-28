@@ -10,16 +10,10 @@ from anemone.progress_monitor.progress_monitor import (
 )
 from atomheart import ChessDynamics
 from atomheart.games.chess.board import BoardFactory, create_board_factory
-from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
-from valanga.policy import BranchSelector
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.environments.chess.players.adapters.chess_adapter import ChessAdapter
-from chipiron.environments.chess.players.args.chess_player_args import (
-    ChessPlayerArgs,
-    ChessPlayerFactoryArgs,
-)
 from chipiron.environments.chess.players.evaluators.boardevaluators.anemone_adapter import (
     MasterBoardEvaluatorAsAnemone,
     MasterBoardOverEventDetector,
@@ -39,13 +33,9 @@ from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players import move_selector
-from chipiron.players.boardevaluators.master_board_evaluator_args import (
-    MasterBoardEvaluatorArgs,
-)
 from chipiron.players.factory_pipeline import create_player_with_pipeline
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
-from chipiron.players.player import Player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.dataclass import IsDataclass
@@ -56,6 +46,17 @@ if TYPE_CHECKING:
     from anemone.node_evaluation.direct.protocols import (
         MasterStateValueEvaluator,
     )
+    from atomheart.games.chess.board.utils import FenPlusHistory
+    from valanga.policy import BranchSelector
+
+    from chipiron.environments.chess.players.args.chess_player_args import (
+        ChessPlayerArgs,
+        ChessPlayerFactoryArgs,
+    )
+    from chipiron.players.boardevaluators.master_board_evaluator_args import (
+        MasterBoardEvaluatorArgs,
+    )
+    from chipiron.players.player import Player
 
 
 @dataclass
@@ -190,7 +191,7 @@ def create_chess_player(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle_in: ValueOracle[ChessState] | None,
         terminal_oracle_in: TerminalOracle[ChessState, Color] | None,
-    ) -> "MasterStateValueEvaluator":
+    ) -> MasterStateValueEvaluator:
         master_board_evaluator = create_master_state_evaluator_from_args(
             master_board_evaluator=evaluator_args,
             value_oracle=value_oracle_in,

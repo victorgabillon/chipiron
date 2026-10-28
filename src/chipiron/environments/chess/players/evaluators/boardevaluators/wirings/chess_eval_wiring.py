@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 from importlib.resources import files
+from typing import TYPE_CHECKING
 
 import parsley
-from valanga.evaluations import Value
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
     BasicEvaluation,
@@ -27,6 +27,9 @@ from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args
     NeuralNetBoardEvalArgs,
 )
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    from valanga.evaluations import Value
 
 
 class ChessEvalWiringError(ValueError):

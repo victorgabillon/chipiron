@@ -1,7 +1,5 @@
 """Chess-specific bundle helpers for NN evaluator construction."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (

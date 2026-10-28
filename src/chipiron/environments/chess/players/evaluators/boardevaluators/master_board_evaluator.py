@@ -1,9 +1,8 @@
 """Module for master board evaluator."""
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from valanga import Color, Outcome
-from valanga.evaluations import Value
 from valanga.over_event import OverEvent
 
 from chipiron.core.evaluation_scale import (
@@ -11,25 +10,29 @@ from chipiron.core.evaluation_scale import (
     ValueOverEnum,
     get_value_over_enum,
 )
-from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.chess.players.evaluators.boardevaluators import (
     basic_evaluation,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
     create_chess_nn_state_eval_from_model_bundle,
 )
-from chipiron.environments.chess.types import ChessState
 from chipiron.models.model_bundle import resolve_model_bundle
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     BasicEvaluationBoardEvaluatorArgs,
 )
-from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
-from chipiron.players.boardevaluators.master_board_evaluator_args import (
-    MasterBoardEvaluatorArgs,
-)
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
+
+if TYPE_CHECKING:
+    from valanga.evaluations import Value
+
+    from chipiron.core.oracles import TerminalOracle, ValueOracle
+    from chipiron.environments.chess.types import ChessState
+    from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
+    from chipiron.players.boardevaluators.master_board_evaluator_args import (
+        MasterBoardEvaluatorArgs,
+    )
 
 
 class MasterBoardEvaluatorError(ValueError):

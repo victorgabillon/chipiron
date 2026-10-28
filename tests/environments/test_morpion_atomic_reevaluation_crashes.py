@@ -1,7 +1,5 @@
 """Real process death and filesystem errors with a committed accepted cursor."""
 
-from __future__ import annotations
-
 import errno
 import os
 import subprocess

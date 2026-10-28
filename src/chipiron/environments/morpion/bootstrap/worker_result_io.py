@@ -4,8 +4,6 @@ No stage dispatch, journal or authority: callers validate their own contracts an
 hold existing Growth ownership before attaching a reference to run_state.
 """
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 

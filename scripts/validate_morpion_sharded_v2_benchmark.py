@@ -1,7 +1,5 @@
 """Validate measured synthetic artifacts after timing, without warming exports."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

@@ -28,9 +28,7 @@ audit's proposed separate `growth_commit` sidecar. No such sidecar is introduced
 ## API and activation boundary
 
 ```python
-run_pipeline_growth_stage(
-    args, runner, max_cycles=1, checkpoint_bound_receipts=True
-)
+run_pipeline_growth_stage(args, runner, max_cycles=1, checkpoint_bound_receipts=True)
 ```
 
 The keyword defaults to `False`; no CLI, launcher, orchestrator or production

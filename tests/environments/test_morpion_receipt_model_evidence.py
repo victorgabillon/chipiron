@@ -1,7 +1,5 @@
 """Exact old receipts authenticate seals/models without reopening unrelated trees."""
 
-from __future__ import annotations
-
 import json
 import os
 import shutil

@@ -1,7 +1,5 @@
 """Tests for Morpion neural-network diagnostics prediction adapters."""
 
-from __future__ import annotations
-
 from types import SimpleNamespace
 from typing import cast
 

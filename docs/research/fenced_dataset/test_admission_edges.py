@@ -1,8 +1,7 @@
 """Additional installed-wheel admission checks; no service workers or saved data."""
 
 from dataclasses import replace
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -24,6 +23,9 @@ from tests.environments.morpion_fenced_dataset_helpers import (
     run_dataset,
     setup_fenced,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_takeover_claim_survives_old_completion(

@@ -1,7 +1,5 @@
 """Focused tests for checkpoint payload serialization helpers."""
 
-from __future__ import annotations
-
 from dataclasses import asdict
 from types import SimpleNamespace
 from typing import TYPE_CHECKING

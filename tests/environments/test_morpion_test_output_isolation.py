@@ -1,7 +1,5 @@
 """Repository test configuration must refuse real default persistence destinations."""
 
-from __future__ import annotations
-
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING

@@ -1,7 +1,5 @@
 """Streaming training loops backed by cached Morpion flat tensors."""
 
-from __future__ import annotations
-
 import logging
 import math
 from time import perf_counter
@@ -143,7 +141,6 @@ def evaluate_flat_cache_streaming_metrics(
     model: MorpionRegressor,
     args: MorpionTrainingArgs,
     cache: FlatTensorCache,
-    row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,

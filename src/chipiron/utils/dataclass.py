@@ -1,8 +1,10 @@
 """Module to check if an object is a dataclass."""
 
-from collections.abc import Iterable
 from enum import Enum
-from typing import Any, ClassVar, Protocol, no_type_check
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, no_type_check
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class DataClass(Protocol):

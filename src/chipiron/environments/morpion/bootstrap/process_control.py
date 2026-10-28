@@ -1,7 +1,5 @@
 """Thin file-backed launcher process control for the Morpion dashboard."""
 
-from __future__ import annotations
-
 import json
 import os
 import signal
@@ -353,7 +351,7 @@ def _read_process_state_file(path: Path) -> dict[str, object] | None:
         return None
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(loaded, dict):
         return None

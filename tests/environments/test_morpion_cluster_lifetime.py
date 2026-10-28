@@ -1,7 +1,5 @@
 """Bounded foreground hosting uses the existing stages and stops their descendants."""
 
-from __future__ import annotations
-
 import json
 import os
 import signal
@@ -20,7 +18,7 @@ def _process_has_exited(pid: int) -> bool:
     """Read procfs atomically enough to tolerate a concurrently reaped process."""
     try:
         status = Path(f"/proc/{pid}/stat").read_text()
-    except (FileNotFoundError, ProcessLookupError):
+    except FileNotFoundError, ProcessLookupError:
         return True
     return status.rsplit(") ", 1)[1].startswith(("Z", "X"))
 

@@ -1,7 +1,5 @@
 """Tests for the Morpion bootstrap toy-tree sanity laboratory."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import pytest

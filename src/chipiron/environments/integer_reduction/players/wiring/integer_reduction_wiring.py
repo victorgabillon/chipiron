@@ -12,7 +12,6 @@ from anemone.node_evaluation.tree.single_agent.factory import (
 )
 from anemone.tree_and_value_branch_selector import TreeAndValueBranchSelector
 
-from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.debug.tree_search_debug_selector import DebugTreeSearchSelector
 from chipiron.environments.integer_reduction.players.adapters.integer_reduction_adapter import (
     IntegerReductionAdapter,
@@ -27,9 +26,6 @@ from chipiron.environments.integer_reduction.types import (
 )
 from chipiron.environments.types import GameKind
 from chipiron.players import Player
-from chipiron.players.boardevaluators.master_board_evaluator_args import (
-    MasterBoardEvaluatorArgs,
-)
 from chipiron.players.factory_pipeline import (
     create_player_with_standard_adapter_pipeline,
 )
@@ -43,6 +39,11 @@ from chipiron.utils.path_runtime import get_output_root
 
 if TYPE_CHECKING:
     from valanga.policy import BranchSelector
+
+    from chipiron.core.oracles import TerminalOracle, ValueOracle
+    from chipiron.players.boardevaluators.master_board_evaluator_args import (
+        MasterBoardEvaluatorArgs,
+    )
 
 type SoloRole = Any
 

@@ -1,6 +1,11 @@
 """Init file for scripts module."""
 
-from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .iscript import IScript
+    from .script import Script
+    from .script_type import ScriptType
 
 __all__ = [
     "IScript",

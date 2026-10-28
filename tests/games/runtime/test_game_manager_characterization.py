@@ -1,7 +1,5 @@
 """Characterization tests for the current GameManager synchronous behavior."""
 
-from __future__ import annotations
-
 from test_support.runtime_fixtures import build_runtime_harness
 from valanga import Color
 

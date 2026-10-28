@@ -1,7 +1,5 @@
 """Port the existing capsule fault matrix to real scientific-v2 generations."""
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess

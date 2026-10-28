@@ -1,7 +1,5 @@
 """Streaming training loops backed by cached Morpion entity-token tensors."""
 
-from __future__ import annotations
-
 import logging
 import math
 from time import perf_counter
@@ -213,7 +211,6 @@ def evaluate_entity_token_cache_streaming_metrics(
     model: MorpionRegressor,
     args: MorpionTrainingArgs,
     cache: MorpionEntityTokenCache,
-    row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
@@ -227,7 +224,6 @@ def evaluate_entity_token_cache_streaming_metrics(
             cache=cache,
             row_indices=row_indices,
         ),
-        row_chunk_size=row_chunk_size,
         max_rows=max_rows,
         split=split,
         device=device,
@@ -239,7 +235,6 @@ def evaluate_relational_entity_token_cache_streaming_metrics(
     model: MorpionRegressor,
     args: MorpionTrainingArgs,
     cache: MorpionRelationalEntityTokenCache,
-    row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
@@ -253,7 +248,6 @@ def evaluate_relational_entity_token_cache_streaming_metrics(
             cache=cache,
             row_indices=row_indices,
         ),
-        row_chunk_size=row_chunk_size,
         max_rows=max_rows,
         split=split,
         device=device,
@@ -266,7 +260,6 @@ def _evaluate_packed_cache_streaming_metrics(
     args: MorpionTrainingArgs,
     row_count: int,
     batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
-    row_chunk_size: int,
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,

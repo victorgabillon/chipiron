@@ -1,7 +1,5 @@
 """Target and prediction scale diagnostics for Morpion neural training."""
 
-from __future__ import annotations
-
 from dataclasses import asdict, dataclass
 from typing import cast
 

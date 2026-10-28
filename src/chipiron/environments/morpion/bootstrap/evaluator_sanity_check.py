@@ -1,13 +1,12 @@
 """Standalone sanity checks for Morpion bootstrap evaluator learning."""
 # pylint: disable=duplicate-code,too-many-lines
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from anemone.training_export import (
@@ -40,8 +39,6 @@ from .evaluator_family import (
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from .evaluator_config import MorpionEvaluatorSpec
 
 LOGGER = logging.getLogger(__name__)

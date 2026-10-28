@@ -5,8 +5,6 @@ No existing experiment path is accepted. The real built-in adapter uses a tiny
 constant-score model double (real training-state decoding, no trained bundle).
 """
 
-from __future__ import annotations
-
 import argparse
 import gc
 import json

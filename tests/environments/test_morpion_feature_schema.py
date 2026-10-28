@@ -1,7 +1,5 @@
 """Tests for explicit Morpion handcrafted feature subsets."""
 
-from __future__ import annotations
-
 import pytest
 
 from chipiron.environments.morpion.players.evaluators.neural_networks import (

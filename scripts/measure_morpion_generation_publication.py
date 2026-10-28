@@ -4,8 +4,6 @@ This driver uses the test scalar runner and actual scientific v1 exporter.
 It is deliberately separate from real Growth, model training and worker CLIs.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging

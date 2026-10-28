@@ -4,8 +4,6 @@ Run prepare, cold, reuse and parity separately and serially. Measurement modes
 forbid the full reader. No bootstrap/distributed worker or experiment is used.
 """
 
-from __future__ import annotations
-
 import argparse
 import cProfile
 import hashlib

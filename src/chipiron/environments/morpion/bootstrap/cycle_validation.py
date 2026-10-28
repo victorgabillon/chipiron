@@ -1,7 +1,5 @@
 """Validation helpers shared by Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING
 

@@ -1,7 +1,5 @@
 """Characterization tests for current GUI metadata payload behavior."""
 
-from __future__ import annotations
-
 import queue
 
 from anemone import TreeAndValuePlayerArgs

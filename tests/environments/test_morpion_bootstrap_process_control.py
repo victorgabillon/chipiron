@@ -1,7 +1,5 @@
 """Tests for Morpion launcher process-control helpers."""
 
-from __future__ import annotations
-
 import signal
 import sys
 from types import SimpleNamespace

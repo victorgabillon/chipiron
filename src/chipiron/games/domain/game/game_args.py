@@ -2,7 +2,9 @@
 
 from dataclasses import dataclass
 
-from chipiron.environments.chess.starting_position_args import AllStartingPositionArgs
+from chipiron.environments.chess.starting_position_args import (
+    AllStartingPositionArgs,
+)
 from chipiron.environments.types import GameKind
 
 

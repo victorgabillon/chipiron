@@ -1,7 +1,5 @@
 """Build Morpion regressor construction args from training args."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (

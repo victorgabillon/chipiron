@@ -1,7 +1,5 @@
 """Accept immutable Training results without activating their models in Growth."""
 
-from __future__ import annotations
-
 import json
 import os
 import platform
@@ -9,6 +7,7 @@ import shutil
 import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import torch
@@ -47,7 +46,6 @@ from .worker_result_io import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths

@@ -1,7 +1,5 @@
 """Characterization tests for current role-order scheduling and results behavior."""
 
-from __future__ import annotations
-
 import pytest
 from valanga import SOLO, Color
 

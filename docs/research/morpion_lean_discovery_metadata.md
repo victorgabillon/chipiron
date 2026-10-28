@@ -45,7 +45,9 @@ The envelope has exactly four keys:
 {
     "schema_version": 2,
     "generation": state.generation,
-    "publication": state.metadata["durable_generation_publication_v1"]["generations"][-1],
+    "publication": state.metadata["durable_generation_publication_v1"]["generations"][
+        -1
+    ],
     "checkpoint": None,
 }
 ```

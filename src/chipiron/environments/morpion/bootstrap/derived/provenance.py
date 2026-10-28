@@ -1,7 +1,5 @@
 """Durable identities and strict path boundaries for opt-in derived experiments."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import os

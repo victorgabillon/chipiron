@@ -1,7 +1,5 @@
 """Memory-diagnostics glue for Morpion bootstrap cycles."""
 
-from __future__ import annotations
-
 import gc
 from typing import Protocol
 

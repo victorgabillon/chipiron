@@ -6,8 +6,6 @@ interruption, without modifying the source dataset or creating search labels.
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import hashlib
 import json
 import math

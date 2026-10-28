@@ -1,19 +1,27 @@
 """Shared bootstrap argument dataclass for Morpion workflows."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from pathlib import Path
+
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidencePolicy,
+)
 
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
     InvalidReevaluationBlendAlphaError,
 )
-from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapSearchConfig
+from .config import (
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    MorpionBootstrapSearchConfig,
+    MorpionGrowthStateEvictionPayloadMode,
+    MorpionGrowthStateEvictionPolicy,
+    MorpionRuntimeCheckpointFormat,
+)
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import morpion_evaluators_config_from_preset
 from .learning_policy import (
-    MorpionContinualLearningPolicy,  # noqa: TC001 - dataclass introspection
+    MorpionContinualLearningPolicy,
 )
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
@@ -23,21 +31,7 @@ from .pipeline_config import (
     MorpionPipelineMode,
     MorpionTrainingExportMode,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from chipiron.environments.morpion.learning.target_confidence import (
-        DatasetConfidencePolicy,
-    )
-
-    from .pv_family_targets import PvFamilyTargetPolicy
-
-type MorpionRuntimeCheckpointFormat = Literal["json-zst", "sharded"]
-type MorpionGrowthStateEvictionPolicy = Literal[
-    "none", "cold_expanded", "frontier_cold", "expanded"
-]
-type MorpionGrowthStateEvictionPayloadMode = Literal["anchor", "delta_when_safe"]
+from .pv_family_targets import PvFamilyTargetPolicy
 
 
 def _invalid_training_max_rows_error() -> ValueError:
@@ -455,3 +449,11 @@ class MorpionBootstrapArgs:
 
 
 __all__ = ["MorpionBootstrapArgs"]
+
+
+__all__ = [
+    "MorpionBootstrapArgs",
+    "MorpionGrowthStateEvictionPayloadMode",
+    "MorpionGrowthStateEvictionPolicy",
+    "MorpionRuntimeCheckpointFormat",
+]

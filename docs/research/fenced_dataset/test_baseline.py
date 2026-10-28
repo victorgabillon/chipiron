@@ -1,10 +1,7 @@
 """Characterize the pre-fence Dataset acceptance gaps with new tiny fixtures."""
 
 from dataclasses import replace
-from pathlib import Path
-from typing import Any
-
-import pytest
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
@@ -26,6 +23,11 @@ from tests.environments.morpion_durable_closed_helpers import (
     ClosedPublicationRunner,
     run_closed_publication,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 def adapter(monkeypatch: pytest.MonkeyPatch, root: Path) -> None:

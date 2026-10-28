@@ -45,7 +45,7 @@ class RunTheLeagueScript(IScript):
                 # TODO: not use pickle make somehting human readbale and moidifiable
                 self.league = pickle.load(openfile)
             print("Previous league loaded successfully")
-        except (FileNotFoundError, pickle.UnpicklingError):
+        except FileNotFoundError, pickle.UnpicklingError:
             print("Creation of a new league")
             new_random = random.Random(x=None)
             seed_run: int = new_random.randrange(0, 10**10)

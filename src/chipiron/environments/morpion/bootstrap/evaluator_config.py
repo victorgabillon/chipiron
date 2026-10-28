@@ -1,7 +1,5 @@
 """Evaluator configuration types for the Morpion bootstrap workflow."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
@@ -13,7 +11,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
-    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+    LegacyGraphConfig,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressorArgs,

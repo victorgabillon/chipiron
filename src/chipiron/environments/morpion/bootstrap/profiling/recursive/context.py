@@ -1,7 +1,5 @@
 """Context discovery for Morpion recursive memory profiling."""
 
-from __future__ import annotations
-
 import logging
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence

@@ -1,7 +1,5 @@
 """Tests for the standalone Morpion training export profiling script."""
 
-from __future__ import annotations
-
 import importlib.util
 from pathlib import Path
 from typing import TYPE_CHECKING

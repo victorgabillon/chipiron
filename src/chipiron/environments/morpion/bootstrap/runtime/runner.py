@@ -1,7 +1,5 @@
 """Real Anemone-backed Morpion search runner for bootstrap cycles."""
 
-from __future__ import annotations
-
 import gc
 import logging
 import os
@@ -939,7 +937,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 "_diagnostic_phase_context",
                 self._state_rematerialization_phase,
             )
-        except (AttributeError, TypeError):
+        except AttributeError, TypeError:
             return
         base_selector = getattr(selector, "base", None)
         if base_selector is not None and base_selector is not selector:
@@ -1016,7 +1014,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if callable(all_nodes_in_tree_order):
             try:
                 raw_nodes = all_nodes_in_tree_order()
-            except (AttributeError, RuntimeError, TypeError):
+            except AttributeError, RuntimeError, TypeError:
                 self._state_eviction_metrics.skip("scan_nodes_failed")
                 return iter(())
             if isinstance(raw_nodes, Sequence):
@@ -1096,7 +1094,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     node=node,
                     state=state,
                 )
-        except (AttributeError, RuntimeError, TypeError, ValueError):
+        except AttributeError, RuntimeError, TypeError, ValueError:
             self._state_eviction_metrics.skip("payload_build_failed")
             return
         finally:
@@ -1204,7 +1202,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 state_codec=self._state_codec,
                 branch_from_parent=parent_context.branch_from_parent,
             )
-        except (AttributeError, RuntimeError, TypeError, ValueError):
+        except AttributeError, RuntimeError, TypeError, ValueError:
             self._state_eviction_metrics.record_delta_payload_fallback(
                 "delta_payload_build_failed"
             )
@@ -1498,7 +1496,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if callable(all_nodes_in_tree_order):
             try:
                 raw_nodes = all_nodes_in_tree_order()  # pylint: disable=not-callable
-            except (AttributeError, RuntimeError, TypeError):
+            except AttributeError, RuntimeError, TypeError:
                 return iter(())
             if isinstance(raw_nodes, Iterable):
                 return iter(raw_nodes)
@@ -1610,7 +1608,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             if callable(iter_child_links):
                 try:
                     child_links = iter_child_links()
-                except (AttributeError, RuntimeError, TypeError):
+                except AttributeError, RuntimeError, TypeError:
                     pass
                 else:
                     if isinstance(child_links, Iterable):
@@ -2500,7 +2498,7 @@ def _optional_live_tree_node_count(runtime: Any) -> int | None:
     """Return live node count when available without affecting caller behavior."""
     try:
         return _live_tree_node_count(runtime)
-    except (AttributeError, RuntimeError, TypeError, ValueError):
+    except AttributeError, RuntimeError, TypeError, ValueError:
         return None
 
 

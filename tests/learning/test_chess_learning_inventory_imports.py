@@ -1,7 +1,5 @@
 """Import and adapter smoke tests for current chess learning modules."""
 
-from __future__ import annotations
-
 import importlib
 import sys
 import types

@@ -1,7 +1,5 @@
 """Lean discovery is a versioned projection, never checkpoint/receipt authority."""
 
-from __future__ import annotations
-
 import copy
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, get_args

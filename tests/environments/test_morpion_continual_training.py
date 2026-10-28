@@ -1,7 +1,5 @@
 """Independent tensor and optimizer oracles for continuing candidate training."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING
 

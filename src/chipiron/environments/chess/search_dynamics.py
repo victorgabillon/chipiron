@@ -1,7 +1,7 @@
 """Depth-aware chess search dynamics wrappers."""
 
 from dataclasses import dataclass
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
 from anemone.dynamics import SearchDynamics
 from atomheart.games.chess.move.imove import MoveKey
@@ -9,11 +9,11 @@ from valanga import Transition
 
 from chipiron.environments.chess.types import ChessState
 
-ChessStateT = TypeVar("ChessStateT", bound=ChessState)
-
 
 @dataclass(frozen=True)
-class ChessCopyStackSearchDynamics(SearchDynamics[ChessStateT, MoveKey]):
+class ChessCopyStackSearchDynamics[ChessStateT: ChessState](
+    SearchDynamics[ChessStateT, MoveKey]
+):
     """Wrap search dynamics with depth-aware board-copy policy in ``step`` only."""
 
     __anemone_search_dynamics__ = True

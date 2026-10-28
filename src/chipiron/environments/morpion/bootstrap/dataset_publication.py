@@ -4,11 +4,10 @@ One reference is attached to the existing scientific publication entry. TTL clai
 schedule attempts; they neither certify completion nor protect a reader's lifetime.
 """
 
-from __future__ import annotations
-
 import uuid
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.learning.tree_to_dataset import (
@@ -50,7 +49,6 @@ from .worker_result_io import workspace_epoch as _identity
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths

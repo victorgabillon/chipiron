@@ -2,18 +2,11 @@
 
 import queue
 import uuid
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from atomheart.games.chess.move.move_factory import MoveFactory
-from valanga.game import Seed
 
-from chipiron.core.roles import (
-    GameRole,
-    MutableRoleAssignment,
-    RoleAssignment,
-)
 from chipiron.displays.gui_protocol import (
     GuiUpdate,
     MatchId,
@@ -24,10 +17,8 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.environment import EnvDeps, make_environment
-from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_playing_status import GamePlayingStatus
 from chipiron.games.runtime.orchestrator.match_controller import MatchController
-from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
@@ -42,8 +33,19 @@ from .game_manager import GameManager
 from .progress_collector import PlayerProgressCollectorObservable
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from valanga.game import Seed
+
     import chipiron.players as players_m
+    from chipiron.core.roles import (
+        GameRole,
+        MutableRoleAssignment,
+        RoleAssignment,
+    )
     from chipiron.environments.base import Environment
+    from chipiron.games.domain.game.game_args import GameArgs
+    from chipiron.players import PlayerFactoryArgs
     from chipiron.players.factory_higher_level import (
         MoveFunction,
         PlayerObserverFactory,

@@ -1,8 +1,7 @@
 """Independent scientific oracles through explicit atomic-protocol genesis."""
 
 from functools import partial
-from pathlib import Path
-from typing import Any, get_args
+from typing import TYPE_CHECKING, Any, get_args
 
 import pytest
 
@@ -11,6 +10,9 @@ from chipiron.environments.morpion.bootstrap.pv_family_targets import (
 )
 from tests.environments import test_morpion_durable_scientific_v2 as scientific
 from tests.environments.test_morpion_durable_closed_science import closed_adapter
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def atomic_adapter(monkeypatch: pytest.MonkeyPatch) -> None:

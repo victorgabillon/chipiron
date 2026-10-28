@@ -1,7 +1,5 @@
 """Stable profiling helpers for Morpion bootstrap diagnostics."""
 
-from __future__ import annotations
-
 from importlib import import_module
 
 _LAZY_EXPORT_MODULES = {

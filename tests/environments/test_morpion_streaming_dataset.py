@@ -1,7 +1,5 @@
 """Exact differential tests for opt-in Dataset extraction from the shared index."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import replace

@@ -1,7 +1,5 @@
 """Tests for Morpion model definition, bundle IO, and minimal training."""
 
-from __future__ import annotations
-
 import json
 import random
 from typing import TYPE_CHECKING, cast

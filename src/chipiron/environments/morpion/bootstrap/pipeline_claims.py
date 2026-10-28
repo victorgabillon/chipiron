@@ -1,7 +1,5 @@
 """Temporary stage-claim helpers for the Morpion artifact pipeline."""
 
-from __future__ import annotations
-
 import json
 import time
 import uuid

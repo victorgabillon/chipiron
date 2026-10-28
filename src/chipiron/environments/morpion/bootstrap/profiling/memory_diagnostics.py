@@ -11,8 +11,6 @@ Example:
       2>&1 | tee ~/oldata/victor/morpion_runs/big_run_01/memory_debug.log
 """
 
-from __future__ import annotations
-
 import gc
 import logging
 import os

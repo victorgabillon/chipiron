@@ -1,14 +1,18 @@
 """Factory for game-specific SVG adapters."""
 
-from atomheart.games.chess.board import BoardFactory
+from typing import TYPE_CHECKING
 
 from chipiron.displays.checkers_svg_adapter import CheckersSvgAdapter
 from chipiron.displays.chess_svg_adapter import ChessSvgAdapter
 from chipiron.displays.integer_reduction_svg_adapter import IntegerReductionSvgAdapter
 from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
 from chipiron.displays.svg_adapter_errors import UnregisteredSvgAdapterError
-from chipiron.displays.svg_adapter_protocol import SvgGameAdapter
 from chipiron.environments.types import GameKind
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board import BoardFactory
+
+    from chipiron.displays.svg_adapter_protocol import SvgGameAdapter
 
 
 def make_svg_adapter(

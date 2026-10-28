@@ -1,7 +1,5 @@
 """Low-level object access helpers for recursive profiling."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator, Mapping, Sized
 from types import (
     BuiltinFunctionType,
@@ -61,7 +59,7 @@ def len_or_none(value: object) -> int | None:
     """Return ``len(value)`` when cheap and supported."""
     try:
         return len(value) if isinstance(value, Sized) else None
-    except (TypeError, RuntimeError):
+    except TypeError, RuntimeError:
         return None
 
 

@@ -1,18 +1,13 @@
 """Match result aggregation with participant-based reporting."""
 
-from __future__ import annotations
-
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 
+from atomheart.games.chess.move import MoveUci
+
+from chipiron.core.roles import ParticipantId
 from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from atomheart.games.chess.move import MoveUci
-
-    from chipiron.core.roles import ParticipantId
 
 
 class MatchResultsError(ValueError):

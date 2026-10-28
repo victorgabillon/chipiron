@@ -1,20 +1,21 @@
 """Runtime Stockfish move selector implementation."""
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
-import atomheart.games.chess.board as boards
 import chess.engine
 from atomheart.games.chess.board import create_board_chi
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
+    import atomheart.games.chess.board as boards
     from atomheart import BoardChi
+    from valanga.game import BranchName, Seed
 
 
 class ChessLikeState(Protocol):

@@ -1,8 +1,7 @@
 """Fresh real neural/checkpoint/Dataset/Training fixtures for explicit activation."""
 
 from dataclasses import replace
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
@@ -38,6 +37,9 @@ from chipiron.environments.morpion.bootstrap.scientific_publication_initializati
 from tests.environments.morpion_durable_v2_helpers import scientific_args
 from tests.environments.morpion_fenced_dataset_helpers import run_dataset
 from tests.environments.test_morpion_anemone_runner import _make_model_bundle
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def setup_activation(

@@ -1,7 +1,5 @@
 """Bounded serial generation barriers with a durable restart journal."""
 
-from __future__ import annotations
-
 import gc
 import random
 import time

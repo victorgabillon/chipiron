@@ -1,6 +1,6 @@
 """Scientific model activation uses the existing single durable commit."""
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 import torch
@@ -17,6 +17,9 @@ from chipiron.environments.morpion.bootstrap.model_activation import (
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments.morpion_activation_helpers import setup_activation
 from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.fast

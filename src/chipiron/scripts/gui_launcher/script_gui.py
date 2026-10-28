@@ -1,15 +1,16 @@
 """Entry point for customtkinter script GUI."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import customtkinter as _customtkinter
-
-from chipiron import scripts
-from chipiron.utils.dataclass import IsDataclass
 
 from .builders import generate_inputs
 from .models import ArgsChosenByUser
 from .ui_ctk import build_script_gui
+
+if TYPE_CHECKING:
+    from chipiron import scripts
+    from chipiron.utils.dataclass import IsDataclass
 
 ctk: Any = _customtkinter
 

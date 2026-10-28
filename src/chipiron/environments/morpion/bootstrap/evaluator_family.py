@@ -1,7 +1,5 @@
 """Canonical Morpion evaluator-family presets for bootstrap experiments."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 from typing import Final
 

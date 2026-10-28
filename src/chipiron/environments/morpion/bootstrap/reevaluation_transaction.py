@@ -4,8 +4,6 @@ Only explicit fresh closed-snapshot genesis enables this protocol. Epoch identit
 fences Reevaluation proposals, not the independent Dataset/Training writers.
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import uuid

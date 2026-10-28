@@ -1,7 +1,5 @@
 """Tests for Morpion bootstrap memory diagnostics."""
 
-from __future__ import annotations
-
 import gc
 import importlib
 import logging

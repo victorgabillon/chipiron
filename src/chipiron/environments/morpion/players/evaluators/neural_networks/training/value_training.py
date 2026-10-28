@@ -6,15 +6,13 @@ states and the deterministic historical row split.
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import json
 import math
 import os
 import signal
 import time
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import torch
 from torch.utils.data import DataLoader, Sampler
@@ -41,6 +39,7 @@ from .cached_index_schedule import cached_index_schedule, shuffled_epoch_train_i
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
+    from typing import Any
 
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
@@ -351,7 +350,7 @@ def train_entity_value(
                 )
                 if not bool(torch.isfinite(loss)):
                     raise ValueError("Non-finite training loss.")
-                loss.backward()
+                torch.autograd.backward(loss)
                 optimizer.step()
                 step += 1
                 now = time.monotonic()

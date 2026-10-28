@@ -1,7 +1,5 @@
 """Tests for persisted Morpion bootstrap evaluator diagnostics."""
 
-from __future__ import annotations
-
 import logging
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast

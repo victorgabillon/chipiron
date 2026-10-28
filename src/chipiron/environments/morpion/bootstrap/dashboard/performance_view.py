@@ -1,7 +1,5 @@
 """Small-artifact performance summaries, independent of search and model loading."""
 
-from __future__ import annotations
-
 import json
 import math
 from dataclasses import dataclass

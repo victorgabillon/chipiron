@@ -3,7 +3,7 @@
 import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
 import yaml
 from coral.neural_networks.input_converters.content_to_input import (
@@ -16,11 +16,13 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
-from chipiron.models.model_bundle import ResolvedModelBundle
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
-from chipiron.utils import MyPath
+
+if TYPE_CHECKING:
+    from chipiron.models.model_bundle import ResolvedModelBundle
+    from chipiron.utils import MyPath
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 

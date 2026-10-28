@@ -1,7 +1,5 @@
 """Small wall-clock timing helpers for Chipiron learning workflows."""
 
-from __future__ import annotations
-
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from time import perf_counter

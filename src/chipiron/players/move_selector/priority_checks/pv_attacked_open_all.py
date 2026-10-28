@@ -10,9 +10,9 @@ from anemone.node_selector.opening_instructions import (
     OpeningInstructor,
     create_instructions_to_open_all_branches,
 )
-from anemone.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 if TYPE_CHECKING:
+    from anemone.nodes.algorithm_node.algorithm_node import AlgorithmNode
     from anemone.trees import Tree
 
 
@@ -53,7 +53,7 @@ class PvAttackedOpenAllPriorityCheck:
 
     def maybe_choose_opening(
         self,
-        tree: "Tree[AlgorithmNode[Any]]",
+        tree: Tree[AlgorithmNode[Any]],
         latest_tree_expansions: Any,
     ) -> OpeningInstructions[AlgorithmNode[Any]] | None:
         """Optionally return opening instructions that override the base selector."""

@@ -66,7 +66,7 @@ chipiron-bootstrap dashboard --no-browser --port 8501
 ```
 
 The server binds to loopback. Core Chipiron does not require Streamlit; dashboard
-support uses the pinned, Python 3.13-validated `dashboard` extra. A packaged
+support uses the pinned, Python 3.14-validated `dashboard` extra. A packaged
 installation may use `pip install 'chipiron[dashboard]'` once this change is released.
 
 ## Advanced / internal launcher

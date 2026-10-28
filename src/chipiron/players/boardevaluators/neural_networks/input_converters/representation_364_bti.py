@@ -1,12 +1,13 @@
 """Document the module provides a class for converting a chess board into a representation input."""
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from valanga import State
-from valanga.representation_factory import RepresentationFactory
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from valanga.representation_factory import RepresentationFactory
     from valanga.represention_for_evaluation import ContentRepresentation
 
 

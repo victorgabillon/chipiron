@@ -1,7 +1,5 @@
 """Public Morpion neural-network training API."""
 
-from __future__ import annotations
-
 from .training import (
     InvalidValidationFractionError,
     MorpionDiagnosticPredictionResult,

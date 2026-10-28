@@ -1,12 +1,9 @@
 """Module for player handle."""
 
 from dataclasses import dataclass
-from typing import Protocol, TypeVar
+from typing import Protocol
 
 from chipiron.players.game_player import GamePlayer
-
-SnapT = TypeVar("SnapT")
-RuntimeT = TypeVar("RuntimeT")
 
 
 class PlayerHandle(Protocol):

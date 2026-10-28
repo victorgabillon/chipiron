@@ -1,7 +1,5 @@
 """Phase 3 artifact-pipeline stage entrypoints for Morpion bootstrap."""
 
-from __future__ import annotations
-
 import logging
 import os
 import time

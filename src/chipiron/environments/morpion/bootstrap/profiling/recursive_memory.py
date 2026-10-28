@@ -1,7 +1,5 @@
 """Compatibility imports for Morpion recursive memory profiling."""
 
-from __future__ import annotations
-
 from .recursive.context import build_recursive_profile_context
 from .recursive.deep_size import DeepSizeStats, deep_size
 from .recursive.rendering import gc_shallow_size_summary

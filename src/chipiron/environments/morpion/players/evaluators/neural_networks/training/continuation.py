@@ -1,7 +1,5 @@
 """Strict weight continuation inside ordinary, immutable Morpion model bundles."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import random

@@ -1,7 +1,5 @@
 """Focused tests for integer-reduction SVG layout behavior."""
 
-from __future__ import annotations
-
 import importlib.util
 import sys
 import types

@@ -4,8 +4,6 @@ All committed capsules remain durable retention roots. Only uncommitted owned
 attempts can be collected, under the same Growth lease as normal publication.
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import shutil

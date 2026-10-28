@@ -6,8 +6,6 @@ then owns one private runtime and publishes through the ordinary capsule/receipt
 session. Failure discards RAM. Recovery reads the existing authoritative head.
 """
 
-from __future__ import annotations
-
 import copy
 import logging
 import time

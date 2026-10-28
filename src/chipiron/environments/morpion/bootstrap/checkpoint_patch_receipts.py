@@ -5,8 +5,6 @@ create-only producer may run independently. Atomic protocol receipts bind the
 accepted cursor to this commit; legacy receipts retain their old cursor barrier.
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import os

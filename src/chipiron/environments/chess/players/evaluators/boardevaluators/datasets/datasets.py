@@ -10,14 +10,12 @@ Functions:
 
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, no_type_check
 
 import numpy as np
 import pandas as pd
 import torch
-from atomheart.games.chess.board import IBoard
 from atomheart.games.chess.board.factory import create_board_chi
 from atomheart.games.chess.board.utils import Fen, FenPlusHistory
 from coral.neural_networks.input_converters.content_to_input import (
@@ -27,12 +25,16 @@ from pandas import DataFrame
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.learning.supervised import SupervisedBatch
 from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from atomheart import BoardChi
+    from atomheart.games.chess.board import IBoard
+
+    from chipiron.learning.supervised import SupervisedBatch
 
 
 class DatasetError(RuntimeError):

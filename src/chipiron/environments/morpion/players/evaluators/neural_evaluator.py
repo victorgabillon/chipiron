@@ -1,7 +1,5 @@
 """Normal Morpion neural value evaluation from portable model bundles."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -76,7 +74,9 @@ class MorpionRegressorMasterEvaluator(MorpionMasterEvaluator):
             )
 
         morpion_state = cast("MorpionState", state)
-        model_inputs = self.input_converter.state_to_model_input_tensors(morpion_state)
+        model_inputs: tuple[torch.Tensor, ...] = (
+            self.input_converter.state_to_model_input_tensors(morpion_state)
+        )
         regressor = cast(_MorpionRegressor, self.regressor)  # noqa: TC006
         device_inputs = tuple(
             tensor.to(module_device(cast("torch.nn.Module", regressor)))

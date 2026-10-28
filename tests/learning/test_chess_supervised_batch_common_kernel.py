@@ -1,7 +1,5 @@
 """Tests for chess supervised batches with common learning kernels."""
 
-from __future__ import annotations
-
 import importlib
 
 import pytest

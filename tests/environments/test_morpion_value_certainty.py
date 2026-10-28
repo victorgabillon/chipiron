@@ -1,7 +1,5 @@
 """Value-level certainty through real Morpion reevaluation and Dataset paths."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, get_args
 

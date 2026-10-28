@@ -1,7 +1,5 @@
 """Persistence helpers for Morpion bootstrap run state."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field

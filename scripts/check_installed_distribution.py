@@ -1,7 +1,5 @@
 """Smoke-test published dependency contracts using the installed Chipiron wheel."""
 
-from __future__ import annotations
-
 import importlib
 import importlib.metadata
 import sys
@@ -39,8 +37,14 @@ def main() -> None:
         ("coral", "algorhino-coral"),
         ("anemone", "algorhino-anemone"),
         ("atomheart", "atomheart"),
+        ("valanga", "valanga"),
+        ("parsley", "parsley-coco"),
     ):
         require_installed_package(name, distribution)
+
+    import chipiron
+
+    assert (Path(chipiron.__file__).parent / "py.typed").is_file()
 
     from anemone.checkpoints import build_atoms, deserialize_checkpoint_atom
 

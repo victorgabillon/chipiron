@@ -6,8 +6,6 @@ Directional usage values encode endpoint/interior occupancy, so reflection
 permutes their direction keys without changing the values.
 """
 
-from __future__ import annotations
-
 from dataclasses import replace
 from functools import lru_cache
 from typing import TYPE_CHECKING

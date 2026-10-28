@@ -1,7 +1,5 @@
 """Tiny cold-checkpoint fixture shared by receipt tests and crash subprocesses."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from pathlib import Path

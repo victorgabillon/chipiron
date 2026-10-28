@@ -1,7 +1,5 @@
 """Restore actual sealed neural models without a scientific model transition."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import replace

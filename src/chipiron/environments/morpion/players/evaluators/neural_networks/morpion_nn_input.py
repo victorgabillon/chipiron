@@ -1,9 +1,8 @@
 """Facade for Morpion neural-network input data."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+
+from torch import Tensor
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     MorpionFeatureSubset,
@@ -13,9 +12,6 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
-
-if TYPE_CHECKING:
-    from torch import Tensor
 
 
 @dataclass(frozen=True, slots=True)

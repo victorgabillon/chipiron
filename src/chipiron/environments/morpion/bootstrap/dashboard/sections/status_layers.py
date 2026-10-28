@@ -1,7 +1,5 @@
 """Dashboard control and effective-state status layers."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, cast
 
 from chipiron.environments.morpion.bootstrap.config import (

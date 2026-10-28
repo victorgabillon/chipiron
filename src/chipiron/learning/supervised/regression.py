@@ -1,7 +1,5 @@
 """Generic supervised regression batch mechanics."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass

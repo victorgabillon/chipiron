@@ -1,7 +1,5 @@
 """Growth-budget helpers for Morpion artifact-pipeline stages."""
 
-from __future__ import annotations
-
 import logging
 from dataclasses import replace
 from typing import TYPE_CHECKING

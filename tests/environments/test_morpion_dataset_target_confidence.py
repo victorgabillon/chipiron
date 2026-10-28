@@ -1,7 +1,5 @@
 """Selected-value scientific confidence, with frozen Dataset v1 compatibility."""
 
-from __future__ import annotations
-
 import copy
 import json
 import shutil

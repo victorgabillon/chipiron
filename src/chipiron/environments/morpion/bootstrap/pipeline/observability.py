@@ -1,7 +1,5 @@
 """Observability metadata helpers for Morpion artifact-pipeline stages."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 

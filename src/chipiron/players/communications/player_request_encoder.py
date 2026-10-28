@@ -1,21 +1,21 @@
 """Encoders for player move requests and state snapshots."""
 
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import Color, SoloRole
-from valanga.game import Seed
 
-from chipiron.displays.gui_protocol import Scope
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
 
-StateT_contra = TypeVar("StateT_contra", contravariant=True)
-StateSnapT = TypeVar("StateSnapT", default=Any)
+if TYPE_CHECKING:
+    from valanga import Color, SoloRole
+    from valanga.game import Seed
+
+    from chipiron.displays.gui_protocol import Scope
 
 
 class BoardWithFenHistory(Protocol):
@@ -104,7 +104,7 @@ class PlayerRequestEncoderError(ValueError):
         super().__init__(f"No PlayerRequestEncoder for game_kind={game_kind!r}")
 
 
-class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
+class PlayerRequestEncoder[StateT_contra, StateSnapT = Any](Protocol):
     """Protocol for encoding player move requests."""
 
     game_kind: GameKind

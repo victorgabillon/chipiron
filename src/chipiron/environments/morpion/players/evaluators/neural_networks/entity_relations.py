@@ -1,8 +1,5 @@
 """Sparse structural relations for clean Morpion entity-token inputs."""
-# ruff: noqa: TC001
 # pyright: reportMissingImports=false
-
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum

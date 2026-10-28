@@ -1,7 +1,5 @@
 """Historical completion is metadata evidence; current recovery still verifies payloads."""
 
-from __future__ import annotations
-
 import copy
 import json
 import shutil

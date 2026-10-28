@@ -1,7 +1,5 @@
 """Original-code golden evidence for the opt-in historical graph representation."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import replace

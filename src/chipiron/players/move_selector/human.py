@@ -4,15 +4,18 @@ to select moves through the command line interface.
 """
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from valanga import Dynamics, TurnState
-from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes
+
+if TYPE_CHECKING:
+    from valanga.game import Seed
+
 
 type AnyTurnState = TurnState[Any]
 

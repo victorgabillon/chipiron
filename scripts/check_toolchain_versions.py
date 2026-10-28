@@ -1,7 +1,5 @@
 """Check that quality-tool versions have one source of truth."""
 
-from __future__ import annotations
-
 import re
 import sys
 import tomllib
@@ -120,7 +118,7 @@ def check_tox_config(
             f"[tool.tox].min_version must match tox=={tox_version} from dev extra."
         )
 
-    expected_envs = ["tooling", "py313", "ruff", "static"]
+    expected_envs = ["tooling", "py314", "ruff", "static"]
     if tox.get("env_list") != expected_envs:
         errors.append(f"[tool.tox].env_list must be {expected_envs!r}.")
 
@@ -129,11 +127,11 @@ def check_tox_config(
         errors.append("pyproject.toml is missing [tool.tox.env].")
         return
 
-    py313 = tox_env.get("py313", {})
-    py313_deps = py313.get("deps", []) if isinstance(py313, dict) else []
+    py314 = tox_env.get("py314", {})
+    py314_deps = py314.get("deps", []) if isinstance(py314, dict) else []
     build_pin = f"build=={pins.get('build')}"
-    if build_pin not in py313_deps:
-        errors.append(f"[tool.tox.env.py313].deps must include {build_pin!r}.")
+    if build_pin not in py314_deps:
+        errors.append(f"[tool.tox.env.py314].deps must include {build_pin!r}.")
 
     tooling = tox_env.get("tooling", {})
     if not isinstance(tooling, dict) or tooling.get("package") != "skip":
@@ -165,19 +163,15 @@ def check_tox_config(
     )
     static = tox_env.get("static", {})
     expected_static = [
-        [
-            "python",
-            "scripts/static_analysis_ratchet.py",
-            "--mypy-strict",
-            "--output",
-            "{envtmpdir}/static-analysis",
-        ]
+        ["python", "-m", "mypy", "--strict", "src/chipiron"],
+        ["python", "-m", "pyright", "--pythonpath", "{envpython}", "src/chipiron"],
+        ["python", "-m", "pylint", "src/chipiron"],
     ]
     if static.get("commands") != expected_static:
         errors.append(
-            "The static environment must run the read-only no-regression ratchet."
+            "The static environment must require clean strict mypy, Pyright and Pylint."
         )
-    if py313.get("set_env", {}).get("CHIPIRON_TEST_INSTALLED") != "1":
+    if py314.get("set_env", {}).get("CHIPIRON_TEST_INSTALLED") != "1":
         errors.append("The test environment must validate the installed distribution.")
 
     typecheck = tox_env.get("typecheck", {})

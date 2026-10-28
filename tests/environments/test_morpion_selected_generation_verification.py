@@ -1,7 +1,5 @@
 """Selected closures are authoritative; discovery is advisory and audit is explicit."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any

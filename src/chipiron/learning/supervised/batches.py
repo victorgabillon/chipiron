@@ -1,18 +1,18 @@
 """Dependency-clean supervised tensor batch abstractions."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 
-if TYPE_CHECKING:
-    import torch
+import torch
 
 
 class SupervisedBatch(Protocol):
     """Protocol for supervised tensor batches used by Chipiron trainers."""
 
-    is_batch: bool
+    @property
+    def is_batch(self) -> bool:
+        """Whether tensors include a leading sample dimension."""
+        ...
 
     def get_input_layer(self) -> torch.Tensor:
         """Return the model input tensor."""

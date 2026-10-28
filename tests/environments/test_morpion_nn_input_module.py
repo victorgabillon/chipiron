@@ -1,7 +1,5 @@
 """Tests for the Morpion neural-network input facade."""
 
-from __future__ import annotations
-
 import torch
 from atomheart.games.morpion import initial_state as morpion_initial_state
 

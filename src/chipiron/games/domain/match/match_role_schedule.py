@@ -1,11 +1,13 @@
 """Neutral schedules and validated match plans for supported topologies."""
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from chipiron.core.roles import GameRole
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class MatchScheduleType(StrEnum):

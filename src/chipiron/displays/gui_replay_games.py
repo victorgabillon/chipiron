@@ -7,11 +7,13 @@ from typing import Any
 
 import chess
 import chess.svg
-from atomheart.games.chess.board.board_chi import BoardChi
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QWidget
+
+if typing.TYPE_CHECKING:
+    from atomheart.games.chess.board.board_chi import BoardChi
 
 
 class MainWindow(QWidget):

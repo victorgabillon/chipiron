@@ -4,7 +4,10 @@ import os
 import subprocess
 import sys
 import textwrap
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 TESTS_ROOT = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(os.path.join(TESTS_ROOT, "../.."))

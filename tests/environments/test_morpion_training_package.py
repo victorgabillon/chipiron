@@ -1,7 +1,5 @@
 """Tests for the Morpion neural-network training package API."""
 
-from __future__ import annotations
-
 from os import PathLike
 from typing import get_args, get_type_hints
 

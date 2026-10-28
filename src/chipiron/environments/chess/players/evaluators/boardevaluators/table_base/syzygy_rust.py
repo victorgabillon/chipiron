@@ -1,13 +1,17 @@
 # pylint: disable=no-member
 """Module for the SyzygyTable class."""
 
-import atomheart.games.chess.board as boards
+from typing import TYPE_CHECKING
+
 import shakmaty_python_binding
 from atomheart.games.chess.board import RustyBoardChi
 
-from chipiron.utils import MyPath
-
 from .syzygy_table import SyzygyTable
+
+if TYPE_CHECKING:
+    import atomheart.games.chess.board as boards
+
+    from chipiron.utils import MyPath
 
 
 class SyzygyRustTable(SyzygyTable[RustyBoardChi]):

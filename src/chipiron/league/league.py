@@ -13,7 +13,6 @@ from sortedcollections import ValueSortedDict
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_factories import create_match_manager
-from chipiron.games.domain.match.match_results import MatchReport, MatchResults
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players.player_args import AnyPlayerArgs
@@ -23,6 +22,7 @@ from chipiron.utils.small_tools import MyPath, mkdir_if_not_existing
 
 if TYPE_CHECKING:
     import chipiron as ch
+    from chipiron.games.domain.match.match_results import MatchReport, MatchResults
 
 
 class LeagueError(ValueError):

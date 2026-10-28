@@ -1,7 +1,7 @@
 """The operator interface selects the existing complete scientific protocol."""
 
 from dataclasses import replace
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -19,6 +19,9 @@ from chipiron.environments.morpion.bootstrap.launcher import (
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments.morpion_activation_helpers import setup_activation
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture(autouse=True)

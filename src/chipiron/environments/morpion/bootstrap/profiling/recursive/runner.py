@@ -1,7 +1,5 @@
 """Top-level recursive memory profiling pass for Morpion growth runtime."""
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING
 

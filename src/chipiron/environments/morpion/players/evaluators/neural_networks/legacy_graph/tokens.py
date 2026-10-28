@@ -5,8 +5,6 @@ truncation are part of the historical experiment contract.
 """
 # pyright: reportMissingImports=false
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import TYPE_CHECKING, Final

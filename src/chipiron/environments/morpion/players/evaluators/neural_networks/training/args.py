@@ -1,9 +1,7 @@
 """Morpion neural-network training argument dataclasses."""
 
-from __future__ import annotations
-
 import math
-import os  # noqa: TC003 - keep available for typing.get_type_hints.
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -16,11 +14,11 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
-    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+    LegacyGraphConfig,
 )
 
 from .continuation import (
-    MorpionTrainingContinuation,  # noqa: TC001 - dataclass introspection
+    MorpionTrainingContinuation,
 )
 
 type MorpionTrainingProgressCallback = Callable[[int, int, int, int], None]

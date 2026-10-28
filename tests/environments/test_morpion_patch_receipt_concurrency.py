@@ -1,7 +1,5 @@
 """Independent synthetic producers and consumers, with deterministic barriers."""
 
-from __future__ import annotations
-
 import json
 import select
 import subprocess

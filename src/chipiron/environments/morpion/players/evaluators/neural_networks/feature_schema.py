@@ -1,7 +1,5 @@
 """Canonical Morpion handcrafted feature schema and subset helpers."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 

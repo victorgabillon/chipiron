@@ -6,8 +6,6 @@ Medium-refactor goals:
 - MatchOrchestrator: mailbox.get() loop + dispatch + match lifecycle
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from valanga import TurnState
