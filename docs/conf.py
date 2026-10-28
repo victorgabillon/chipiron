@@ -4,15 +4,15 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import os
-
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import sys
+from pathlib import Path
 
-# Import the chess module.
-sys.path.insert(0, os.path.abspath("../src"))
-sys.path.insert(0, os.path.abspath(".."))
+# Resolve imports independently of the Sphinx command's working directory.
+repository_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(repository_root / "src"))
+sys.path.insert(0, str(repository_root))
 
 
 project = "chipiron"

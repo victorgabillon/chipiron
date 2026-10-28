@@ -1,7 +1,5 @@
 """Legacy APIs must reject scientific authority before any workspace mutation."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING
 from unittest.mock import Mock

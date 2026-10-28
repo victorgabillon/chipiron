@@ -235,6 +235,18 @@ def check_dependabot(pins: dict[str, str], errors: list[str]) -> None:
     )
 
 
+def check_constraints(pins: dict[str, str], errors: list[str]) -> None:
+    """Keep the reproducible CPU environment aligned with canonical tool pins."""
+    constraints = pinned_versions(
+        read_text(".github/ci-cpu-constraints.txt").splitlines()
+    )
+    errors.extend(
+        f"CPU constraints must select {name}=={version}."
+        for name, version in pins.items()
+        if constraints.get(name) != version
+    )
+
+
 def main() -> int:
     """Run the toolchain drift checks."""
     pyproject = tomllib.loads(read_text("pyproject.toml"))
@@ -245,6 +257,7 @@ def main() -> int:
     check_pre_commit(pins, errors)
     check_workflows(pins, errors)
     check_dependabot(pins, errors)
+    check_constraints(pins, errors)
 
     if errors:
         print("Toolchain version drift detected:")
