@@ -1,5 +1,5 @@
 # Keep the interpreter aligned with tox/CI and use the Debian package archive.
-FROM python:3.13-bookworm
+FROM python:3.14-bookworm
 
 WORKDIR /app
 
@@ -46,11 +46,11 @@ RUN .venv/bin/pip install opencv-python-headless
 RUN .venv/bin/pip install --upgrade pip setuptools wheel gdown
 
 # Install torch first (before installing chipiron!)
-RUN .venv/bin/pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+RUN .venv/bin/pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
 
 
 # Install numpy (force-reinstall to overwrite system numpy)
-RUN .venv/bin/pip install --upgrade --force-reinstall numpy==2.2.6
+RUN .venv/bin/pip install --upgrade --force-reinstall numpy==2.5.4
 
 
 # Copy only what setuptools needs to build/install chipiron
