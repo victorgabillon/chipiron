@@ -27,7 +27,7 @@ env:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
         run: python -m tox -e tooling,ruff
 
   pytest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
@@ -132,7 +132,7 @@ jobs:
           include-hidden-files: true
 
   static:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
@@ -185,7 +185,7 @@ jobs:
   test:
     if: ${{ always() }}
     needs: [quality, pytest, static]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every validation gate
