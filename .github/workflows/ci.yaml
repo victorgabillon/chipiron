@@ -87,7 +87,9 @@ jobs:
       - name: Prepare exact scientific dependency source
         run: python .github/scripts/scientific_ci.py prepare
       - name: Build installed test environment
-        run: python -m tox -e py313 --notest
+        run: |
+          python -m tox -e py313 --notest
+          .tox/py313/bin/python -m pip install psutil==7.2.2
       - name: Verify exact installed scientific source
         run: .tox/py313/bin/python .github/scripts/scientific_ci.py verify
       - name: Test installed package
@@ -168,7 +170,9 @@ jobs:
       - name: Prepare exact scientific dependency source
         run: python .github/scripts/scientific_ci.py prepare
       - name: Build installed static environment
-        run: python -m tox -e static --notest
+        run: |
+          python -m tox -e static --notest
+          .tox/static/bin/python -m pip install psutil==7.2.2
       - name: Verify static scientific dependency source
         run: .tox/static/bin/python .github/scripts/scientific_ci.py verify-static
       - name: Check static-analysis ratchet
