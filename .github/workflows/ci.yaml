@@ -19,6 +19,7 @@ concurrency:
 
 env:
   PYTHONPATH: ""
+  CHIPIRON_TEST_INSTALLED: "1"
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHON_JIT: "0"
   OMP_NUM_THREADS: "1"
@@ -169,7 +170,7 @@ jobs:
       - name: Build installed static environment
         run: python -m tox -e static --notest
       - name: Verify static scientific dependency source
-        run: .tox/static/bin/python .github/scripts/scientific_ci.py verify
+        run: .tox/static/bin/python .github/scripts/scientific_ci.py verify-static
       - name: Check static-analysis ratchet
         timeout-minutes: 15
         run: python -m tox -e static

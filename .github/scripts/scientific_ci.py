@@ -79,7 +79,7 @@ def prepare(contract: dict) -> None:
     )
 
 
-def verify(contract: dict) -> None:
+def verify(contract: dict, *, editable_chipiron: bool = False) -> None:
     """Require exact installed scientific dependencies and current Chipiron source."""
     site = Path(sysconfig.get_path("purelib")).resolve()
     result = {}
@@ -105,19 +105,36 @@ def verify(contract: dict) -> None:
             message = f"Unexpected scientific package members: {distribution}"
             raise RuntimeError(message)
         result[distribution] = {"origin": str(origin), "members": len(actual)}
+    package_root = ROOT / "src" if editable_chipiron else site
+    spec = importlib.util.find_spec("chipiron")
+    expected_origin = package_root / "chipiron/__init__.py"
+    if (
+        spec is None
+        or spec.origin is None
+        or Path(spec.origin).resolve() != expected_origin.resolve()
+    ):
+        message = f"Unexpected Chipiron origin; expected {expected_origin}"
+        raise RuntimeError(message)
     sources = subprocess.check_output(
-        ["git", "ls-tree", "-r", "--name-only", "HEAD", "src/chipiron"],
+        ["git", "ls-tree", "-r", contract["chipiron_reference"], "src/chipiron"],
         cwd=ROOT,
         text=True,
     ).splitlines()
-    for name in sources:
-        if (
-            name.endswith((".py", ".pyi", "/py.typed"))
-            and (ROOT / name).read_bytes()
-            != (site / name.removeprefix("src/")).read_bytes()
-        ):
-            message = f"Installed Chipiron differs from reviewed source: {name}"
-            raise RuntimeError(message)
+    for entry in sources:
+        metadata, name = entry.split("\t", 1)
+        if name.endswith((".py", ".pyi", "/py.typed")):
+            data = (package_root / name.removeprefix("src/")).read_bytes()
+            blob = hashlib.sha1(
+                b"blob " + str(len(data)).encode() + b"\0" + data
+            ).hexdigest()
+            checkout_data = (ROOT / name).read_bytes()
+            checkout_blob = hashlib.sha1(
+                b"blob " + str(len(checkout_data)).encode() + b"\0" + checkout_data
+            ).hexdigest()
+            if blob != metadata.split()[2] or checkout_blob != metadata.split()[2]:
+                message = f"Chipiron differs from reviewed Git source: {name}"
+                raise RuntimeError(message)
+    result["chipiron"] = {"origin": str(expected_origin), "editable": editable_chipiron}
     (ROOT / ".ci-reports").mkdir(exist_ok=True)
     (ROOT / ".ci-reports/scientific-installed-identity.json").write_text(
         json.dumps(result, indent=2) + "\n"
@@ -135,8 +152,10 @@ def main() -> None:
         prepare(contract)
     elif sys.argv[1:] == ["verify"]:
         verify(contract)
+    elif sys.argv[1:] == ["verify-static"]:
+        verify(contract, editable_chipiron=True)
     else:
-        message = "Usage: scientific_ci.py prepare|verify"
+        message = "Usage: scientific_ci.py prepare|verify|verify-static"
         raise SystemExit(message)
 
 
