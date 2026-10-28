@@ -17,8 +17,9 @@ record, including the summer/current capability matrix, candidate architectures,
 continuation policy, 40,934-node engineering run and operator commands. This
 report adds native Python 3.14 evidence without replacing that history.
 
-Anemone 0.3.1 is published. Validation also requires the repaired native Rust
-binding 0.1.6 candidate; its separate publication is awaiting user authorization.
+Anemone 0.3.1 is published. The repaired Rust binding 0.1.6 is authorized,
+merged and tagged after passing CI. Its PyPI upload is blocked by a missing
+trusted-publisher configuration; the CI-built release wheel is validated locally.
 A fresh PyPI-only installation needs that release before it can resolve the
 final dependency metadata. The existing validated private environment is usable.
 
@@ -159,7 +160,7 @@ signature to its supported `Bound<PyModule>` API. It retains the published
 0.1.5 chess logic and underlying Shakmaty versions; it uses no ABI-forward-
 compatibility flag or replacement move-construction path. Maturin is 1.15.0.
 
-The public GitHub master is still version 0.1.4 and lacks some published 0.1.5
+The public GitHub master was still version 0.1.4 and lacked some published 0.1.5
 move-modification logic. The candidate therefore preserves the genuine PyPI
 0.1.5 source rather than downgrading to that obsolete tree. Special moves,
 500 deterministic plies compared with python-chess, and the five-case installed
@@ -167,13 +168,41 @@ chess/stalemate matrix pass. Candidate source, wheel, review patch, CI/release
 workflow and regression evidence are retained under `E/shakmaty-diagnosis`,
 `E/shakmaty-candidate` and `E/shakmaty-final.patch`.
 
-Release status: **validated local candidate; publication authorization pending**.
-No Rust branch, commit, PR, merge or release was written remotely. The Anemone
-publication approval does not authorize publishing this separate project.
+The user separately authorized: “Publish Rust binding 0.1.6 after CI passes.”
+[PR #1](https://github.com/victorgabillon/shakmaty_python_binding/pull/1) passed CI
+40703193567 at exact head `41e37163505a4779eaff4b9dd7c7c99aaf71a7b2` and merged
+normally as `986e6d907ae563afae2695044fc6bc3952016727`. Its merged tree equals
+the tested tree. Master CI 40703671112 passed; annotated tag `v0.1.6` points to
+that merge. The minimum Rust declaration is 1.85, matching PyO3's metadata;
+correcting this declaration preserves the exact native binary used by FULL.
+
+The [tag workflow](https://github.com/victorgabillon/shakmaty_python_binding/actions/runs/40703927007)
+builds and tests successfully, but its publication job reports
+`invalid-publisher`: a valid GitHub token has no corresponding PyPI publisher.
+Release status: **CI-tested, merged and tagged; awaiting PyPI account setup**.
+The needed GitHub publisher settings are owner `victorgabillon`, repository
+`shakmaty_python_binding`, workflow filename `ci.yml`, environment `pypi`.
+The [PyPI publisher setup](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+requires the project owner to register that identity. The available connector
+cannot edit PyPI account settings. No branch protection or publishing check was
+bypassed; only the failed upload needs retrying after setup.
+
 `E/shakmaty-release-candidate.json` records the complete source/artifact identities;
 the validated native library SHA-256 is
 `80ae7e5c848ed6c21a470938d0e9bf686cb0ab6d584bca5fdf87fc8c2cebffbb`.
 All six core source/build/typing files match the candidate sdist exactly.
+
+The actual tag-CI artifacts are retained under `E/shakmaty-ci-release`. Their
+six core files also match the immutable merge commit exactly. The release wheel
+SHA-256 is `aba03469af3b22655e6a336124729ff850a39b6d2f9b9e1478a043bb0059e4ae`;
+the sdist SHA-256 is `38035914bac219e9becbb54b0a871c811d5105c8f294a7c3fc92ee6094117cb7`.
+All four installed package members match this wheel. With it installed, the
+native constructor/special-move/500-ply checks pass, **14 focused Chipiron tests
+pass in 31.39 s**, and the complete Morpion search/27-update training snapshot is
+again exactly equal to the Python 3.13 reference. These are CI release artifacts,
+not yet public PyPI artifacts. `E/shakmaty-publication.json` records the release
+and upload status, and `E/native314-ci-release/snapshot.json` records the final
+numerical comparison.
 
 The supervised chess DataLoader also failed to pickle converter functions
 defined inside their factory. The same four conversion functions now live at
@@ -226,7 +255,7 @@ snapshot is **exactly equal**, not approximately equal.
   body comparison, not a claim that migrated files are byte-identical.
 
 Evidence: `E/baseline313-v2/snapshot.json`,
-`E/native314-ab60/snapshot.json`, `E/scientific-equivalence-final.json` and
+`E/native314-ci-release/snapshot.json`, `E/scientific-equivalence-final.json` and
 `E/continual-implementation-ast-audit.json`. An earlier exploratory 128-node
 fixture did not actually advance after restore; it is retained as diagnostic
 evidence and is not used for the equivalence claim.
@@ -427,6 +456,6 @@ modernization and obsolete test backfill removal. Production source alone is
 926 insertions and 1,171 deletions (net -245 lines). The final report commit is
 documentation only; the exact tested source identity remains `ab60c856`.
 Chipiron remains a local, unpublished branch. Publication would require separate
-user authorization. The remaining installation blocker is the separately
-requested authorization and publication of Rust binding 0.1.6; all authorized
-local migration and validation work is complete.
+user authorization. The remaining installation blocker is PyPI's missing
+trusted publisher for the authorized Rust binding 0.1.6 release; the source,
+merge, tag, CI artifacts and local validation are complete.
