@@ -47,7 +47,7 @@ dependencies = [
   "platformdirs>=4.13.7",
   "psutil>=7.2.2",
   "huggingface_hub>=2.3.0",
-  "shakmaty_python_binding>=0.1.5",
+  "shakmaty_python_binding>=0.1.6",
   "chess>=1.11.2",
 ]
 

@@ -45,6 +45,30 @@ class ModelInputRepresentationError(ValueError):
         super().__init__(f"no matching case for {representation} in {__name__}")
 
 
+def _to_float(tensor: torch.Tensor) -> torch.Tensor:
+    """Keep representation conversion picklable for DataLoader workers."""
+    return tensor.float()
+
+
+def _board_to_transformer_input(state: ChessState) -> torch.Tensor:
+    """Convert a state to the existing piece-map transformer input."""
+    return build_transformer_input(
+        piece_map=state.board.piece_map(),
+        board_turn=state.board.turn,
+        transformer_args=TransformerArgs(),
+    )
+
+
+def _board_to_one_side_input(state: ChessState) -> torch.Tensor:
+    """Convert a state to the existing piece-difference input."""
+    return transform_board_pieces_one_side(state.board, False)
+
+
+def _board_to_two_sides_input(state: ChessState) -> torch.Tensor:
+    """Convert a state to the existing two-sided piece input."""
+    return transform_board_pieces_two_sides(state.board, False)
+
+
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
@@ -63,9 +87,6 @@ def create_board_to_input_from_representation(
         internal_tensor_representation_type=internal_tensor_representation_type
     )
     assert representation_factory is not None
-
-    def _to_float(t: torch.Tensor) -> torch.Tensor:
-        return t.float()
 
     converter: RepresentationBTI[ChessState, torch.Tensor, BoardModificationP] = (
         RepresentationBTI(
@@ -104,29 +125,13 @@ def create_board_to_input(
             )
 
         case ModelInputRepresentationType.PIECE_MAP:
-
-            def board_to_input_convert_transformer(state: ChessState) -> torch.Tensor:
-                return build_transformer_input(
-                    piece_map=state.board.piece_map(),
-                    board_turn=state.board.turn,
-                    transformer_args=TransformerArgs(),
-                )
-
-            board_to_input_convert = board_to_input_convert_transformer
+            board_to_input_convert = _board_to_transformer_input
 
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
-
-            def board_to_input_convert_one_side(state: ChessState) -> torch.Tensor:
-                return transform_board_pieces_one_side(state.board, False)
-
-            board_to_input_convert = board_to_input_convert_one_side
+            board_to_input_convert = _board_to_one_side_input
 
         case ModelInputRepresentationType.BOARD_PIECES_TWO_SIDES:
-
-            def board_to_input_convert_two_sides(state: ChessState) -> torch.Tensor:
-                return transform_board_pieces_two_sides(state.board, False)
-
-            board_to_input_convert = board_to_input_convert_two_sides
+            board_to_input_convert = _board_to_two_sides_input
 
         case _:
             raise ModelInputRepresentationError(model_input_representation_type)
