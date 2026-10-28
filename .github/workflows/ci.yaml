@@ -94,7 +94,7 @@ jobs:
         run: .tox/py313/bin/python .github/scripts/scientific_ci.py verify
       - name: Test installed package
         timeout-minutes: 60
-        run: python -m tox -e py313 -- --cov-config=${{ github.workspace }}/pyproject.toml
+        run: python -m tox -e py313 -- --basetemp=${{ runner.temp }}/chipiron-py313-pytest
       - name: Preserve FULL evidence
         run: |
           cp .ci-reports/tests.json .ci-reports/full-tests.json
