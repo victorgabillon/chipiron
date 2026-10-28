@@ -1,7 +1,5 @@
 """Prepare an immutable-source derivation without constructing a live search runtime."""
 
-from __future__ import annotations
-
 import copy
 import hashlib
 import json

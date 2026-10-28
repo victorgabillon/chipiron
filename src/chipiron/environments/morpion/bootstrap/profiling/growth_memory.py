@@ -1,8 +1,6 @@
 """Opt-in shallow memory attribution for Morpion growth runtimes."""
 # pylint: disable=broad-exception-caught
 
-from __future__ import annotations
-
 import gc
 import logging
 import sys
@@ -61,7 +59,7 @@ def _format_pairs(pairs: Iterable[tuple[str, object]]) -> str:
 def _safe_len(value: object) -> int | None:
     try:
         return len(value) if isinstance(value, Sized) else None
-    except (TypeError, RuntimeError):
+    except TypeError, RuntimeError:
         return None
 
 

@@ -1,18 +1,15 @@
 """Module for oracles."""
 
 from collections.abc import Hashable
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 from valanga import State
 
 type BranchName = str
 type Value = Any
 
-StateT_contra = TypeVar("StateT_contra", bound=State, contravariant=True)
-RoleT_co = TypeVar("RoleT_co", bound=Hashable, covariant=True)
 
-
-class PolicyOracle(Protocol[StateT_contra]):
+class PolicyOracle[StateT_contra: State](Protocol):
     """Generic oracle for game-specific best-action queries."""
 
     def supports(self, state: StateT_contra) -> bool:
@@ -24,7 +21,7 @@ class PolicyOracle(Protocol[StateT_contra]):
         ...
 
 
-class ValueOracle(Protocol[StateT_contra]):
+class ValueOracle[StateT_contra: State](Protocol):
     """Generic oracle for game-specific exact evaluation."""
 
     def supports(self, state: StateT_contra) -> bool:
@@ -36,7 +33,7 @@ class ValueOracle(Protocol[StateT_contra]):
         ...
 
 
-class TerminalOracle(Protocol[StateT_contra, RoleT_co]):
+class TerminalOracle[StateT_contra: State, RoleT_co: Hashable](Protocol):
     """Oracle for providing terminal metadata (winner/draw)."""
 
     def supports(self, state: StateT_contra) -> bool:

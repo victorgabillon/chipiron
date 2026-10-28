@@ -16,8 +16,6 @@ Example:
 
 """
 
-from __future__ import annotations
-
 import copy
 import logging
 import os
@@ -81,7 +79,7 @@ if TYPE_CHECKING:
 
     from coral.chi_nn import ChiNN
     from coral.neural_networks import NNBWStateEvaluator
-    from torch import Tensor, nn
+    from torch import Tensor
 
     from chipiron.environments.chess.types import ChessState
     from chipiron.scripts.script import Script
@@ -145,7 +143,7 @@ class LearnNNScript:
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBWStateEvaluator[ChessState]
     saving_folder: MyPath
-    criterion: nn.Module
+    criterion: torch.nn.Module
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
     device: torch.device

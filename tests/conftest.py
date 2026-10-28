@@ -1,7 +1,5 @@
 """Pytest-local environment setup for PR1 characterization tests."""
 
-from __future__ import annotations
-
 import os
 import sys
 import tempfile

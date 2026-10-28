@@ -1,7 +1,5 @@
 """Search-runner protocol for Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:

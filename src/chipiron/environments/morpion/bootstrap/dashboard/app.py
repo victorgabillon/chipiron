@@ -1,7 +1,5 @@
 """Compose a lazy five-page Streamlit operator interface."""
 
-from __future__ import annotations
-
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 

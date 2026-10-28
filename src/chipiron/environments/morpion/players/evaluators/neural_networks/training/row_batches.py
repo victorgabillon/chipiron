@@ -1,7 +1,5 @@
 """Morpion supervised-row batching and tensor conversion helpers."""
 
-from __future__ import annotations
-
 import os
 from typing import TYPE_CHECKING
 

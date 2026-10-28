@@ -2,10 +2,13 @@
 # logger_module.py
 
 import logging
-from collections.abc import Generator
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
 from rich.logging import RichHandler
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 chipiron_logger = logging.getLogger("chipiron_app")
 chipiron_logger.setLevel(logging.DEBUG)

@@ -1,7 +1,5 @@
 """Handcrafted Morpion feature extraction for neural-network inputs."""
 
-from __future__ import annotations
-
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from typing import Final

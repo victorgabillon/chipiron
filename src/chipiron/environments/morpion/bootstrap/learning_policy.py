@@ -1,7 +1,5 @@
 """Opt-in continuous experiment settings stored in the existing configuration."""
 
-from __future__ import annotations
-
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 

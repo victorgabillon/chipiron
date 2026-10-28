@@ -6,7 +6,6 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from valanga import SOLO, StateTag
 
 from chipiron.environments.base import Environment
-from chipiron.environments.deps import MorpionEnvironmentDeps
 from chipiron.environments.morpion.morpion_gui_encoder import MorpionGuiEncoder
 from chipiron.environments.morpion.morpion_rules import MorpionRules
 from chipiron.environments.morpion.tags import MorpionStartTag
@@ -16,13 +15,14 @@ from chipiron.players.communications.player_request_encoder import (
     MorpionPlayerRequestEncoder,
 )
 from chipiron.players.factory_higher_level import create_player_observer_factory
-from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from chipiron.environments.deps import MorpionEnvironmentDeps
     from chipiron.players.communications.player_request_encoder import (
         PlayerRequestEncoder,
     )
     from chipiron.players.factory_higher_level import PlayerObserverFactory
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 class MorpionEnvironmentError(TypeError):
@@ -51,7 +51,7 @@ def make_morpion_environment(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
-    ) -> "PlayerObserverFactory":
+    ) -> PlayerObserverFactory:
         return create_player_observer_factory(
             game_kind=GameKind.MORPION,
             each_player_has_its_own_thread=each_player_has_its_own_thread,

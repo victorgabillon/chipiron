@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Standalone Morpion checkpoint profiling outside the bootstrap pipeline."""
 
-from __future__ import annotations
-
 import argparse
 import cProfile
 import logging

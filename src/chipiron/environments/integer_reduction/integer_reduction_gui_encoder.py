@@ -1,8 +1,7 @@
 """Integer reduction GUI encoder."""
 
 from dataclasses import dataclass
-
-from valanga.game import Seed
+from typing import TYPE_CHECKING
 
 from chipiron.displays.gui_protocol import UpdatePayload, UpdGameStatus, UpdStateGeneric
 from chipiron.environments.integer_reduction.types import (
@@ -10,8 +9,12 @@ from chipiron.environments.integer_reduction.types import (
     IntegerReductionState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
+
+if TYPE_CHECKING:
+    from valanga.game import Seed
+
+    from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
 
 @dataclass(frozen=True, slots=True)

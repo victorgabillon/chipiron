@@ -1,10 +1,12 @@
 """Fallback evaluator wiring for games without a specific evaluator."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from valanga.evaluations import Certainty, Value
 
-from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 
 
 class ConstantEvaluator:

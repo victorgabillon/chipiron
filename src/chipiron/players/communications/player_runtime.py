@@ -7,10 +7,6 @@ incoming `PlayerRequest`, asks the `GamePlayer` to select a move, and emits a
 
 from typing import TYPE_CHECKING
 
-from valanga.policy import NotifyProgressCallable
-
-from chipiron.core.roles import GameRole
-from chipiron.displays.gui_protocol import Scope
 from chipiron.players.communications.player_message import (
     EvMove,
     EvProgress,
@@ -18,13 +14,16 @@ from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
-from chipiron.players.game_player import GamePlayer
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
-from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
-    from valanga.policy import Recommendation
+    from valanga.policy import NotifyProgressCallable, Recommendation
+
+    from chipiron.core.roles import GameRole
+    from chipiron.displays.gui_protocol import Scope
+    from chipiron.players.game_player import GamePlayer
+    from chipiron.utils.communication.mailbox import MainMailboxMessage
+    from chipiron.utils.queue_protocols import PutQueue
 
 
 def handle_player_request[StateSnapT, RuntimeStateT](

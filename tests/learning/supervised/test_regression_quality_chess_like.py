@@ -1,7 +1,5 @@
 """Regression quality smoke tests for chess-like value targets."""
 
-from __future__ import annotations
-
 import torch
 
 from chipiron.learning.supervised import regression_quality_stats

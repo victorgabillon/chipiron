@@ -6,8 +6,6 @@ Atomic-mode proposals carry their next cursor; only Growth accepts it in the
 checkpoint/receipt run-state commit. Publication alone never advances that cursor.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import tempfile

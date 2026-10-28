@@ -1,7 +1,5 @@
 """Dataset target smoothing helpers for Morpion bootstrap training rows."""
 
-from __future__ import annotations
-
 import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING

@@ -1,7 +1,5 @@
 """On-demand checkpoint navigation and bounded tree inspection."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.dashboard.theme import page_header

@@ -1,7 +1,5 @@
 """CLI wrapper for Morpion stale training recovery."""
 
-from __future__ import annotations
-
 from .pipeline.training_recovery import (
     DEFAULT_STALE_GRACE_SECONDS,
     StaleTrainingState,

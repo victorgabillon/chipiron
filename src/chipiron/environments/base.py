@@ -2,33 +2,26 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol
 
-from valanga import Dynamics, StateTag
+from valanga import Dynamics, State
 
 from chipiron.core.roles import GameRole
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_rules import GameRules
-from chipiron.scripts.chipiron_args import ImplementationArgs
+from chipiron.players.communications.player_request_encoder import (
+    PlayerRequestEncoder,
+)
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
-    from chipiron.players.communications.player_request_encoder import (
-        PlayerRequestEncoder,
-    )
+    from valanga import StateTag
+
     from chipiron.players.factory_higher_level import PlayerObserverFactory
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
-StateT = TypeVar("StateT")
-StateSnapT = TypeVar("StateSnapT")
-
-StartTagT = TypeVar("StartTagT")  # produced by normalize_start_tag
-StartTagOutT_co = TypeVar("StartTagOutT_co", covariant=True)
-StartTagInT_contra = TypeVar("StartTagInT_contra", contravariant=True)
-StateOutT_co = TypeVar("StateOutT_co", covariant=True)
-
-
-class TagNormalizer(Protocol[StartTagOutT_co]):
+class TagNormalizer[StartTagOutT_co](Protocol):
     """Protocol for normalizing raw start tags."""
 
     def __call__(self, tag: StateTag) -> StartTagOutT_co:
@@ -36,7 +29,7 @@ class TagNormalizer(Protocol[StartTagOutT_co]):
         ...
 
 
-class InitialStateFactory(Protocol[StateOutT_co, StartTagInT_contra]):
+class InitialStateFactory[StateOutT_co, StartTagInT_contra](Protocol):
     """Protocol for creating initial states from start tags."""
 
     def __call__(self, tag: StartTagInT_contra) -> StateOutT_co:
@@ -53,13 +46,13 @@ class PlayerObserverFactoryBuilder(Protocol):
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
-    ) -> "PlayerObserverFactory":
+    ) -> PlayerObserverFactory:
         """Build a player observer factory with the given configuration."""
         ...
 
 
 @dataclass(frozen=True)
-class Environment[StateT, StateSnapT, StartTagT]:
+class Environment[StateT: State, StateSnapT, StartTagT]:
     """Bundle environment wiring and factories for a game kind."""
 
     game_kind: GameKind
@@ -67,7 +60,7 @@ class Environment[StateT, StateSnapT, StartTagT]:
     rules: GameRules[StateT]
     dynamics: Dynamics[StateT]
     gui_encoder: GuiEncoder[StateT]
-    player_encoder: "PlayerRequestEncoder[StateT, StateSnapT]"
+    player_encoder: PlayerRequestEncoder[StateT, StateSnapT]
     make_player_observer_factory: PlayerObserverFactoryBuilder
     normalize_start_tag: TagNormalizer[StartTagT]
     make_initial_state: InitialStateFactory[StateT, StartTagT]

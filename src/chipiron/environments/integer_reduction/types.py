@@ -1,7 +1,5 @@
 """Integer reduction Chipiron-facing state and dynamics adapters."""
 
-from __future__ import annotations
-
 import inspect
 from dataclasses import dataclass, field
 from functools import lru_cache

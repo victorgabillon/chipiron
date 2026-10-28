@@ -1,7 +1,5 @@
 """Pipeline manifest persistence helpers for Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from .pipeline_artifacts import (

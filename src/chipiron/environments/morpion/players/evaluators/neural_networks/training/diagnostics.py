@@ -1,7 +1,5 @@
 """Diagnostic prediction adapters for Morpion neural-network evaluators."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -152,6 +150,8 @@ def diagnostic_training_args(
 ) -> MorpionTrainingArgs:
     """Build Morpion training args for diagnostics-only row adaptation."""
     model_kind = getattr(model_args, "model_kind", None)
+    if not isinstance(model_kind, str):
+        raise UnsupportedMorpionDiagnosticInputFormatError(model_kind)
     adapter_kind = diagnostic_adapter_kind(model_kind)
     resolved_feature_subset_name = feature_subset_name
     resolved_feature_names = feature_names

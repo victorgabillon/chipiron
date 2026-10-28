@@ -2,11 +2,14 @@
 
 from enum import StrEnum
 from importlib.resources import as_file, files
+from typing import TYPE_CHECKING
 
 import parsley
 
 from chipiron.games.domain.game.game_args import GameArgs
-from chipiron.utils import MyPath
+
+if TYPE_CHECKING:
+    from chipiron.utils import MyPath
 
 
 class GameConfigTag(StrEnum):

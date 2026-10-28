@@ -3,11 +3,12 @@
 import copy
 import multiprocessing
 import queue
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
-    AnySyzygyTable,
-)
+if TYPE_CHECKING:
+    from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
+        AnySyzygyTable,
+    )
 
 
 class SyzygyProcess(multiprocessing.Process):

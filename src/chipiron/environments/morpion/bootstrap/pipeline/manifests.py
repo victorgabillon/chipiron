@@ -1,7 +1,5 @@
 """Manifest helpers for Morpion artifact-pipeline stages."""
 
-from __future__ import annotations
-
 import logging
 from contextlib import contextmanager
 from dataclasses import replace
@@ -158,7 +156,7 @@ def latest_prior_dataset_status_artifact(
             continue
         try:
             return load_pipeline_dataset_status_file(status_path)
-        except (OSError, TypeError, ValueError):
+        except OSError, TypeError, ValueError:
             LOGGER.warning(
                 "Skipping unreadable dataset status artifact: %s",
                 status_path,

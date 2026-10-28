@@ -1,7 +1,5 @@
 """Explicit retirement changes absence admission, never the scientific authority."""
 
-from __future__ import annotations
-
 import json
 import os
 import shutil

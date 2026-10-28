@@ -2,9 +2,8 @@
 
 from dataclasses import replace
 from functools import partial
-from pathlib import Path
 from types import SimpleNamespace
-from typing import get_args
+from typing import TYPE_CHECKING, get_args
 
 import pytest
 
@@ -25,6 +24,9 @@ from tests.environments.morpion_fenced_dataset_helpers import (
     run_dataset,
 )
 from tests.environments.test_morpion_durable_closed_science import closed_adapter
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 CASES = [("legacy_v1", p, False, False) for p in get_args(PvFamilyTargetPolicy)] + [
     ("selected_value_v2", p, backup, exact)

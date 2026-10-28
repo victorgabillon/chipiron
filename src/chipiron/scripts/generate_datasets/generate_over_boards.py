@@ -11,12 +11,10 @@ Key features:
 - Support for both dynamic monthly processing and legacy single-file mode.
 """
 
-from pathlib import Path
-from typing import Any, cast, no_type_check
+from typing import TYPE_CHECKING, Any, cast, no_type_check
 
 import chess
 import chess.pgn
-import pandas as pd
 
 from chipiron.scripts.generate_datasets.generate_boards import DEFAULT_RANDOM_SEED
 from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
@@ -28,6 +26,11 @@ from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
 )
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import EXTERNAL_DATA_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pandas as pd
 
 
 def is_game_over_position(board: chess.Board) -> bool:

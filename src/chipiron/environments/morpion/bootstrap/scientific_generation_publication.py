@@ -5,8 +5,6 @@ is scientific G, starting at 1, with a fixed producer and evaluator/model epoch.
 No historical v1 adoption, skipped export, producer epoch or implicit migration.
 """
 
-from __future__ import annotations
-
 import tempfile
 from typing import TYPE_CHECKING, Any
 

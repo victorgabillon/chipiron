@@ -21,8 +21,6 @@ python -m chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity \
 # pylint: disable=duplicate-code,too-many-lines
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import argparse
 import csv
 import json

@@ -1,12 +1,11 @@
 """Checkpoint restore memory logging helpers for Morpion runtime."""
 
-from __future__ import annotations
-
 import gc
 import logging
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
@@ -20,7 +19,6 @@ from chipiron.environments.morpion.bootstrap.profiling.recursive.deep_size impor
 from .checkpoint_io import _checkpoint_artifact_bytes, _metric_value
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Any
 
     from anemone.checkpoints import SearchRuntimeCheckpointPayload

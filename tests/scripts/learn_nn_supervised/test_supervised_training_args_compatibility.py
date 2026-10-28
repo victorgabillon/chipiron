@@ -1,7 +1,5 @@
 """Compatibility tests for supervised chess training config names."""
 
-from __future__ import annotations
-
 from dataclasses import fields
 from importlib.resources import files
 from pathlib import Path

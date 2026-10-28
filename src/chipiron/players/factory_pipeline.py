@@ -1,33 +1,35 @@
 """Generic player construction pipeline with game-specific builders."""
 
-import random
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from anemone.dynamics import SearchDynamics
 from valanga import Dynamics, TurnState
 from valanga.game import Role
-from valanga.policy import BranchSelector
 
-from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
-from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.master_board_evaluator_args import (
-    MasterBoardEvaluatorArgs,
-)
 from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.move_selector.human import GuiHumanPlayerArgs
-from chipiron.players.move_selector.move_selector_args import (
-    AnyMoveSelectorArgs,
-    NonTreeMoveSelectorArgs,
-)
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.player import GameAdapter, Player
-from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    import random
+    from collections.abc import Callable
+
+    from anemone.dynamics import SearchDynamics
     from anemone.node_evaluation.direct.protocols import (
         MasterStateValueEvaluator,
     )
+    from valanga.policy import BranchSelector
+
+    from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
+    from chipiron.environments.types import GameKind
+    from chipiron.players.boardevaluators.master_board_evaluator_args import (
+        MasterBoardEvaluatorArgs,
+    )
+    from chipiron.players.move_selector.move_selector_args import (
+        AnyMoveSelectorArgs,
+        NonTreeMoveSelectorArgs,
+    )
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 def create_player_with_pipeline[RoleT: Role, StateT: TurnState[Any], SnapT](
@@ -44,7 +46,7 @@ def create_player_with_pipeline[RoleT: Role, StateT: TurnState[Any], SnapT](
             ValueOracle[StateT] | None,
             TerminalOracle[StateT, RoleT] | None,
         ],
-        "MasterStateValueEvaluator",
+        MasterStateValueEvaluator,
     ],
     adapter_builder: Callable[
         [BranchSelector[StateT], PolicyOracle[StateT] | None],
@@ -108,7 +110,7 @@ def create_player_with_standard_adapter_pipeline[
             ValueOracle[StateT] | None,
             TerminalOracle[StateT, RoleT] | None,
         ],
-        "MasterStateValueEvaluator",
+        MasterStateValueEvaluator,
     ],
     game_kind: GameKind,
     runtime_dynamics: Dynamics[StateT],

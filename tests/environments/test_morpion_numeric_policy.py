@@ -1,7 +1,5 @@
 """Explicit fresh proposal policy and exact Growth/Reevaluation score parity."""
 
-from __future__ import annotations
-
 import copy
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any

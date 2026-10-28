@@ -1,16 +1,9 @@
 """Environment wiring and factory helpers."""
 
-from typing import Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-from atomheart.games.chess.board.utils import FenPlusHistory
-
-from chipiron.environments.base import Environment
 from chipiron.environments.checkers.environment import make_checkers_environment
-from chipiron.environments.checkers.tags import CheckersStartTag
-from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.chess.environment import make_chess_environment
-from chipiron.environments.chess.tags import ChessStartTag
-from chipiron.environments.chess.types import ChessState
 from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
@@ -21,12 +14,21 @@ from chipiron.environments.deps import (
 from chipiron.environments.integer_reduction.environment import (
     make_integer_reduction_environment,
 )
-from chipiron.environments.integer_reduction.tags import IntegerReductionStartTag
-from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.morpion.environment import make_morpion_environment
-from chipiron.environments.morpion.tags import MorpionStartTag
-from chipiron.environments.morpion.types import MorpionState
 from chipiron.environments.types import GameKind
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board.utils import FenPlusHistory
+
+    from chipiron.environments.base import Environment
+    from chipiron.environments.checkers.tags import CheckersStartTag
+    from chipiron.environments.checkers.types import CheckersState
+    from chipiron.environments.chess.tags import ChessStartTag
+    from chipiron.environments.chess.types import ChessState
+    from chipiron.environments.integer_reduction.tags import IntegerReductionStartTag
+    from chipiron.environments.integer_reduction.types import IntegerReductionState
+    from chipiron.environments.morpion.tags import MorpionStartTag
+    from chipiron.environments.morpion.types import MorpionState
 
 
 class EnvironmentCreationError(ValueError):

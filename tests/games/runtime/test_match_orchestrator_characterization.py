@@ -1,7 +1,5 @@
 """Characterization tests for the current MatchOrchestrator mailbox loop."""
 
-from __future__ import annotations
-
 from test_support.runtime_fixtures import (
     build_runtime_harness,
     make_back_command,

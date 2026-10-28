@@ -1,7 +1,5 @@
 """Characterization tests for the current MatchController routing behavior."""
 
-from __future__ import annotations
-
 from test_support.runtime_fixtures import (
     build_runtime_harness,
     drain_gui_payloads,

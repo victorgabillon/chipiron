@@ -5,8 +5,6 @@ a separate fresh process. Stage RSS uses the existing memory observability.
 Validation belongs after measurement, to avoid warming the export inputs.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

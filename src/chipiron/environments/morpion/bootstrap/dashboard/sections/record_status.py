@@ -1,7 +1,5 @@
 """Dashboard certified/frontier record status rendering."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (

@@ -6,12 +6,10 @@ outcome/assessment without stepping the game, so we reproduce the same terminal
 logic used by atomheart.CheckersDynamics.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from atomheart.games.checkers.generation import generate_legal_moves
+from atomheart.games.checkers.rules import CheckersRules as AtomCheckersRules
 from atomheart.games.checkers.state import CheckersState
 from valanga import Color
 
@@ -21,9 +19,6 @@ from chipiron.games.domain.game.game_rules import (
     OutcomeKind,
     PositionAssessment,
 )
-
-if TYPE_CHECKING:
-    from atomheart.games.checkers.rules import CheckersRules as AtomCheckersRules
 
 
 @dataclass(frozen=True)

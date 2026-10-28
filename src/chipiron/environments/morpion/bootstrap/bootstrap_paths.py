@@ -1,8 +1,6 @@
 """Path and retention helpers for Morpion bootstrap artifacts."""
 # pylint: disable=too-many-public-methods
 
-from __future__ import annotations
-
 import logging
 import shutil
 from dataclasses import dataclass

@@ -11,21 +11,19 @@ During benchmarking, logging is suppressed to ERROR level to avoid noise in timi
 Results are printed to console and saved to a timestamped file.
 """
 
-import datetime
+import datetime as dt
 import os
 import statistics
 import sys
 import time
 import traceback
 import warnings
-from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
-from atomheart.games.chess.board.iboard import IBoard
 
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.utils.logger import (
@@ -35,6 +33,9 @@ from chipiron.utils.logger import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from atomheart.games.chess.board.iboard import IBoard
     from atomheart.games.chess.move.imove import MoveKey
 
     from chipiron.environments.chess.players.args.chess_player_args import (
@@ -441,7 +442,7 @@ class ChessEngineBenchmark:
             os.makedirs(report_dir, exist_ok=True)
         with open(filename, "w", encoding="utf-8") as f:
             # Write header
-            timestamp = datetime.datetime.now()
+            timestamp = dt.datetime.now()
             f.write("Chipiron Chess Engine Benchmark Results\n")
             f.write(f"Generated on: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"{'=' * 80}\n\n")
@@ -502,7 +503,7 @@ class ChessEngineBenchmark:
     def run_full_benchmark(self) -> None:
         """Run the complete benchmark suite."""
         print("🚀 Starting Chipiron Performance Benchmark")
-        print(f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Timestamp: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         # Run benchmarks
         try:
@@ -520,7 +521,7 @@ class ChessEngineBenchmark:
         self.print_results()
 
         # Save results in dedicated folder
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
         report_dir = "package://scripts/profiling/benchmark_reports"
         filename = os.path.join(report_dir, f"benchmark_results_{timestamp}.txt")
         self.save_results(filename)

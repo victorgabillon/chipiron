@@ -270,7 +270,7 @@ def main() -> None:
                                 "cpu_s": cpu.user + cpu.system,
                             }
                             group_rss[group] = group_rss.get(group, 0) + rss
-                        except (psutil.NoSuchProcess, ProcessLookupError):
+                        except psutil.NoSuchProcess, ProcessLookupError:
                             pass
                     union_peak_rss = max(union_peak_rss, sum(group_rss.values()))
                     for group, rss in group_rss.items():

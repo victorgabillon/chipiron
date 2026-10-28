@@ -1,7 +1,5 @@
 """Process death and fsync faults across the existing closed-capsule transaction."""
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess

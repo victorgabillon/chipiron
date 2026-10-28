@@ -1,7 +1,5 @@
 """Deterministic producer races at the existing Growth flock boundary."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from threading import Event, Thread
 from typing import TYPE_CHECKING, Any

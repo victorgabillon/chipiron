@@ -1,7 +1,5 @@
 """Derived-only strict restoration and durable reevaluation drain, with no Growth."""
 
-from __future__ import annotations
-
 import gc
 import uuid
 from dataclasses import asdict, fields

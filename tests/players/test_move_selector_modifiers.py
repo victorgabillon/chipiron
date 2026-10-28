@@ -1,11 +1,9 @@
 """Unit tests for move selector recommendation modifiers."""
 
-from __future__ import annotations
-
 import copy
 from dataclasses import dataclass, field
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 from anemone.dynamics import SearchDynamics
@@ -13,6 +11,7 @@ from atomheart.games.chess.board import create_board
 from valanga import BranchKey, Color, TurnState
 from valanga.dynamics import Transition
 from valanga.evaluations import Certainty, Value
+from valanga.game import BranchName
 from valanga.policy import Recommendation
 
 from chipiron.environments.chess.types import ChessState
@@ -23,9 +22,6 @@ from chipiron.players.move_selector.modifiers import (
     chess_progress_gain_zeroing,
     is_zeroing_state,
 )
-
-if TYPE_CHECKING:
-    from valanga.game import BranchName
 
 
 def fake_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:

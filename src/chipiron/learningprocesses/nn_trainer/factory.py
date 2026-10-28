@@ -10,32 +10,28 @@ This module remains only to support older imports during the migration away from
 learningprocesses.nn_trainer.
 """
 
-from __future__ import annotations
+from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
+    safe_nn_architecture_save,
+    safe_nn_param_save,
+    safe_nn_trainer_save,
+)
+from chipiron.scripts.learn_nn_supervised.training_args import (
+    GameInputArgs,
+    NNTrainerArgs,
+    NNTrainerConfigError,
+    OptimizerType,
+    SupervisedTrainingArgs,
+    SupervisedTrainingConfigError,
+)
 
-from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
-    safe_nn_architecture_save as safe_nn_architecture_save,
-)
-from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
-    safe_nn_param_save as safe_nn_param_save,
-)
-from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
-    safe_nn_trainer_save as safe_nn_trainer_save,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    GameInputArgs as GameInputArgs,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    NNTrainerArgs as NNTrainerArgs,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    NNTrainerConfigError as NNTrainerConfigError,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    OptimizerType as OptimizerType,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    SupervisedTrainingArgs as SupervisedTrainingArgs,
-)
-from chipiron.scripts.learn_nn_supervised.training_args import (
-    SupervisedTrainingConfigError as SupervisedTrainingConfigError,
-)
+__all__ = [
+    "GameInputArgs",
+    "NNTrainerArgs",
+    "NNTrainerConfigError",
+    "OptimizerType",
+    "SupervisedTrainingArgs",
+    "SupervisedTrainingConfigError",
+    "safe_nn_architecture_save",
+    "safe_nn_param_save",
+    "safe_nn_trainer_save",
+]

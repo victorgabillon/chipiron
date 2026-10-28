@@ -1,7 +1,5 @@
 """Latest Linoo selector table artifact helpers for Morpion bootstrap."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -172,7 +170,7 @@ def load_linoo_selection_table(path: str | Path) -> LinooSelectionTable | None:
         return None
     try:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(payload, dict):
         return None

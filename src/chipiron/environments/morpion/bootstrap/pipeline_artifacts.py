@@ -1,8 +1,6 @@
 """Durable artifact-contract helpers for the Morpion bootstrap pipeline."""
 # pylint: disable=duplicate-code,too-many-lines
 
-from __future__ import annotations
-
 import json
 import math
 from collections.abc import Mapping

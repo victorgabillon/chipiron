@@ -2,13 +2,14 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
-
-from valanga import StateTag
+from typing import TYPE_CHECKING, Literal
 
 from chipiron.environments.checkers.tags import CheckersStartTag
 from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.starting_position import StartingPositionArgs
+
+if TYPE_CHECKING:
+    from valanga import StateTag
 
 
 class CheckersStartingPositionArgsType(StrEnum):

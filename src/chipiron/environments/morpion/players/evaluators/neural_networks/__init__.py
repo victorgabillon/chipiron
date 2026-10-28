@@ -1,7 +1,5 @@
 """Morpion neural-network evaluator helpers."""
 
-from __future__ import annotations
-
 from typing import Any
 
 __all__ = [

@@ -1,7 +1,5 @@
 """Stable held-out membership for evolving, accepted Morpion datasets."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import dataclass, replace

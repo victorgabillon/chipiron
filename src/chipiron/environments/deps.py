@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class ChessBoardFactory(Protocol):
     """Protocol for building a chess board from FEN history."""
 
-    def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard":
+    def __call__(self, *, fen_with_history: FenPlusHistory) -> boards.IBoard:
         """Create a board from the provided FEN history."""
         ...
 

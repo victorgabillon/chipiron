@@ -5,18 +5,15 @@ The scientific export's effective-node flag is retained independently.
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import copy
 import hashlib
 import json
 import math
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
-
     from anemone.training_export import TrainingNodeSnapshot
 
 DatasetConfidencePolicy = Literal["legacy_v1", "selected_value_v2"]

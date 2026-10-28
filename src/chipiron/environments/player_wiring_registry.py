@@ -2,8 +2,6 @@
 
 # pylint: disable=import-outside-toplevel
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.types import GameKind

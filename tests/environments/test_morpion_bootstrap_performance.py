@@ -1,7 +1,5 @@
 """Observational metrics, compatible reads, and tiny scientific parity checks."""
 
-from __future__ import annotations
-
 import json
 import random
 import sys

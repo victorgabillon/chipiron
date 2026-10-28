@@ -1,13 +1,17 @@
 """Create per-game participant assignments from a validated match plan."""
 
-from valanga.game import Seed
+from typing import TYPE_CHECKING
 
 from chipiron import players
-from chipiron.core.roles import GameRole
-from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 from chipiron.utils.small_tools import unique_int_from_list
 
-from .game_args import GameArgs
+if TYPE_CHECKING:
+    from valanga.game import Seed
+
+    from chipiron.core.roles import GameRole
+    from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
+
+    from .game_args import GameArgs
 
 
 class GameArgsFactory:

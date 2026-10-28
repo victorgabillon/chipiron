@@ -5,8 +5,6 @@ different envelope and JSONL shards so an old loader cannot silently project
 v2 through the lossy v1 merge. It is deliberately not a bounded Dataset reader.
 """
 
-from __future__ import annotations
-
 import hashlib
 import importlib.metadata
 import inspect
@@ -278,9 +276,9 @@ def _producer(identity: Mapping[str, str]) -> dict[str, Any]:
     )
     versions = {name: importlib.metadata.version(name) for name in _PACKAGES}
     _require(
-        versions["atomheart"] == "0.2.11"
-        and versions["algorhino-anemone"] == "0.2.26"
-        and versions["valanga"] == "0.2.5",
+        versions["atomheart"] == "0.3.0"
+        and versions["algorhino-anemone"] == "0.3.1"
+        and versions["valanga"] == "0.3.0",
         "unsupported scientific dependency contract",
     )
     return {
@@ -686,7 +684,7 @@ def _load_scientific_training_generation(manifest_path: Path) -> ScientificGener
     generation = manifest["generation"]
     _require(_integer(generation) and generation >= 1, "invalid generation")
     _require(
-        importlib.metadata.version("atomheart") == "0.2.11",
+        importlib.metadata.version("atomheart") == "0.3.0",
         "unsupported canonical decoder",
     )
     _require(

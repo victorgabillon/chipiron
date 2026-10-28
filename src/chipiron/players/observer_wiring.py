@@ -1,17 +1,13 @@
 """Module for observer wiring."""
 
 from dataclasses import dataclass
-from typing import Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol
 
-from chipiron.players.game_player import GamePlayer
-
-SnapT_contra = TypeVar("SnapT_contra", contravariant=True)
-RuntimeT = TypeVar("RuntimeT")
-BuildArgsT = TypeVar("BuildArgsT")
-BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
+if TYPE_CHECKING:
+    from chipiron.players.game_player import GamePlayer
 
 
-class BuildGamePlayer(Protocol[SnapT_contra, RuntimeT, BuildArgsT_contra]):
+class BuildGamePlayer[SnapT_contra, RuntimeT, BuildArgsT_contra](Protocol):
     """Buildgameplayer implementation."""
 
     def __call__(

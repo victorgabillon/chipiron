@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
 from valanga import BranchKey, Color, Outcome, TurnState
-from valanga.evaluations import Value
-from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
+    from valanga.evaluations import Value
+    from valanga.game import BranchName, Seed
 
 type AnyTurnState = TurnState[Any]
 
@@ -38,7 +38,7 @@ class HasZeroing(Protocol):
     """Capability protocol for states exposing chess zeroing detection."""
 
     @property
-    def board(self) -> "BoardHasZeroing":
+    def board(self) -> BoardHasZeroing:
         """Return board supporting chess zeroing detection."""
         ...
 
@@ -46,7 +46,7 @@ class HasZeroing(Protocol):
 class BoardHasZeroing(Protocol):
     """Protocol for board objects exposing zeroing detection."""
 
-    def is_zeroing(self, move: "MoveKey") -> bool:
+    def is_zeroing(self, move: MoveKey) -> bool:
         """Return whether a move is a zeroing move."""
         ...
 
@@ -66,7 +66,7 @@ class ComposedBranchSelector[StateT: AnyTurnState](BranchSelector[StateT]):
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
         """Recommend from base selector and then apply modifiers in order."""
-        recommendation = self.base.recommend(
+        recommendation: Recommendation = self.base.recommend(
             state=state,
             seed=seed,
             notify_progress=notify_progress,

@@ -1,7 +1,5 @@
 """Tests for human-readable Morpion bootstrap training logs."""
 
-from __future__ import annotations
-
 import importlib.util
 import logging
 import sys

@@ -1,7 +1,5 @@
 """Cross-stack seams; scientific v2 publication remains explicitly unsupported."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING, get_args
 

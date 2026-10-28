@@ -1,8 +1,7 @@
 """Tiny fresh Training workspaces; no historical adoption or service workers."""
 
 from dataclasses import replace
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.evaluator_config import (
     MorpionEvaluatorsConfig,
@@ -14,6 +13,9 @@ from chipiron.environments.morpion.bootstrap.scientific_publication_initializati
 from tests.environments.morpion_durable_closed_helpers import setup_closed_baseline
 from tests.environments.morpion_durable_v2_helpers import scientific_producer
 from tests.environments.morpion_fenced_dataset_helpers import run_dataset
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def setup_training(root: Path) -> Any:

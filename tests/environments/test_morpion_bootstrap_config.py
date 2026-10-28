@@ -1,7 +1,5 @@
 """Tests for persisted Morpion bootstrap config behavior."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from pathlib import Path
 from typing import cast

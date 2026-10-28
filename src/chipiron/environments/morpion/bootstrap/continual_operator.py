@@ -4,8 +4,6 @@ All work scheduling stays in the existing workers and Growth learning boundary.
 This operator owns only a bounded supervisor process and its resource accounting.
 """
 
-from __future__ import annotations
-
 import fcntl
 import json
 import math
@@ -82,8 +80,8 @@ def prepare_continual_experiment(
 
     root = Path(args.work_dir).resolve()
     require(
-        sys.version_info[:2] == (3, 13),
-        "Continual preparation requires the validated Python 3.13 environment.",
+        sys.version_info[:2] == (3, 14),
+        "Continual preparation requires the validated Python 3.14 environment.",
     )
     require(
         not root.is_symlink()
@@ -213,7 +211,7 @@ def run_monitored_continual_experiment(
     from platform import python_version
 
     require(
-        sys.version_info[:2] == (3, 13)
+        sys.version_info[:2] == (3, 14)
         and producer.get("python_version") == python_version()
         and producer.get("torch_version") == str(torch.__version__),
         "Python or Torch runtime differs from the prepared experiment.",
@@ -310,7 +308,7 @@ def _run_monitored(
                     and "--pipeline-stage" in command
                 ):
                     longest = max(longest, time.time() - child.create_time())
-            except (psutil.NoSuchProcess, ProcessLookupError):
+            except psutil.NoSuchProcess, ProcessLookupError:
                 continue
         ram = available_ram_mb()
         require(ram is not None, "Available RAM monitoring is unavailable.")
@@ -440,7 +438,7 @@ def _run_monitored(
                         psutil.STATUS_DEAD,
                     }:
                         live.append(child.pid)
-                except (psutil.NoSuchProcess, ProcessLookupError):
+                except psutil.NoSuchProcess, ProcessLookupError:
                     continue
             shutdown_confirmed = not live
         elapsed = consumed + time.monotonic() - started

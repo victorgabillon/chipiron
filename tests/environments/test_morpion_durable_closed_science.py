@@ -5,8 +5,7 @@ The worker routing adapter here is test-only: production defaults stay disabled.
 """
 
 from functools import partial
-from pathlib import Path
-from typing import Any, get_args
+from typing import TYPE_CHECKING, Any, get_args
 
 import pytest
 
@@ -21,6 +20,9 @@ from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
 )
 from tests.environments import test_morpion_durable_scientific_v2 as scientific
 from tests.environments.morpion_durable_closed_helpers import setup_closed_baseline
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def closed_adapter(monkeypatch: pytest.MonkeyPatch) -> None:

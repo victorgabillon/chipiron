@@ -1,7 +1,5 @@
 """Helpers for Morpion tests that build Anemone training snapshots."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from anemone.training_export import TrainingNodeSnapshot

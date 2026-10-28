@@ -1,8 +1,8 @@
 # Scientific validation without repeating the full suite during development
 
-Use the environment containing the intended dependency implementations. In
-particular, the current scientific integration needs the exact reviewed Anemone
-source; its `0.2.26` version string alone does not identify that implementation.
+Use Python 3.14 and the published foundational releases pinned in `pyproject.toml`.
+Validate installed wheel origins and exact package bytes; a version string alone
+does not establish a scientific implementation identity.
 
 ```bash
 make test-fast                 # representative science and real recovery, no coverage
@@ -68,10 +68,17 @@ replace it with mocked exceptions to make a selected suite pass faster.
 During iteration run FAST and affected tests. Before review run PR and the relevant
 complete matrices. Before scientific/recovery/dependency merges or releases run
 FULL plus the existing quality, installed-package and static gates. GitHub's
-required `pytest` job still runs unfiltered `tox -e py313`; the aggregate `test`
+required `pytest` job still runs unfiltered `tox -e py314`; the aggregate `test`
 gate still requires quality, pytest and static success. Releases retain their
 existing full gate, ancestry checks and publication permissions. The same full CI
 also runs nightly and can be dispatched manually. No branch protection is changed.
+
+## Strict source checks
+
+`tox -e static` requires zero diagnostics from strict mypy, Pyright and Pylint.
+`tox -e ruff` requires clean formatting and lint. CI and releases use these gates;
+the historical Python 3.13 static baseline remains archival evidence and does not
+permit inherited diagnostics in the Python 3.14 gate.
 
 ## Isolation, measurements and evidence
 

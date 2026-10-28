@@ -1,7 +1,5 @@
 """Direct-file unit tests for integer-reduction tree evaluator logic."""
 
-from __future__ import annotations
-
 import importlib.util
 import sys
 import types

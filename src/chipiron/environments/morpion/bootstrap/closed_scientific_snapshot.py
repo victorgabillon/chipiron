@@ -7,8 +7,6 @@ runtime graph is caller-owned; auxiliary working memory is bounded by a row,
 parser buffers and the existing SQLite cache (TEMP membership/topology on disk).
 """
 
-from __future__ import annotations
-
 import shutil
 import tempfile
 from contextlib import ExitStack

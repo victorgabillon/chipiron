@@ -5,6 +5,7 @@ from typing import Any
 KIND = "morpion_scientific_training_export"
 VERSION = 2
 CONTRACT = "anemone-values-canonical-morpion-1"
+# Encoding identity is unchanged by the Python 3.14 releases.
 REFERENCE_CONTRACT = "atomheart-0.2.11-dump-state-ref"
 
 # Independent storage envelope; scientific values retain VERSION/CONTRACT above.

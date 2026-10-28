@@ -6,12 +6,10 @@ It provides the `MainWindow` class, which creates a surface for the chessboard a
 """
 
 import os
-import queue
 import time
 import typing
 from dataclasses import dataclass
 
-from atomheart.games.chess.board import BoardFactory
 from PySide6 import QtGui
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
@@ -25,7 +23,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from valanga import Color, StateTag
-from valanga.evaluations import Value
 
 from chipiron.core.roles import GameRole
 from chipiron.displays.action_history_table import build_action_history_table
@@ -49,13 +46,18 @@ from chipiron.displays.gui_protocol import (
 from chipiron.displays.svg_adapter_factory import make_svg_adapter
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
+    import queue
+
+    from atomheart.games.chess.board import BoardFactory
+    from valanga.evaluations import Value
+
     from chipiron.core.request_context import RequestContext
     from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
+    from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
 class _MorpionLegalActionsToggleAdapter(typing.Protocol):

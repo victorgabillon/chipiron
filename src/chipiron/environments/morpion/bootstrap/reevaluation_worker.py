@@ -1,7 +1,5 @@
 """Producer-only reevaluation worker for bounded Morpion patch artifacts."""
 
-from __future__ import annotations
-
 import json
 import logging
 import math
@@ -9,6 +7,7 @@ import time
 import uuid
 from contextlib import ExitStack
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
 
 from anemone.node_evaluation.direct import scale_nonterminal_score
@@ -66,7 +65,6 @@ from .sharded_training_reader import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
     from typing import Any
 
     from .bootstrap_args import MorpionBootstrapArgs
@@ -170,7 +168,7 @@ def _read_reevaluation_worker_state(path: Path) -> dict[str, object]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return {}
     if not isinstance(payload, dict):
         return {}

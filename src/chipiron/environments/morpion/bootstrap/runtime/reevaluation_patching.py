@@ -1,7 +1,5 @@
 """Live-tree reevaluation patch application for Morpion runtime."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 

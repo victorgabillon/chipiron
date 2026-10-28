@@ -1,7 +1,5 @@
 """Tests for fixed-tree Morpion fitted-backup sanity checks."""
 
-from __future__ import annotations
-
 import json
 import sys
 from dataclasses import asdict, dataclass

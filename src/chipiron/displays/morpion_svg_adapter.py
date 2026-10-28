@@ -1,7 +1,5 @@
 """Board-based Morpion SVG adapter for the generic GUI."""
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass, field
 from html import escape

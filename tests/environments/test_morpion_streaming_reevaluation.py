@@ -1,8 +1,6 @@
 """Legacy/indexed worker differential tests, using isolated synthetic exports."""
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from typing import TYPE_CHECKING

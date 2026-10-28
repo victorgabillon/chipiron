@@ -1,8 +1,8 @@
 """Module for chess wiring."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
 
 from chipiron.environments.chess.players.args.chess_player_args import (
@@ -18,10 +18,14 @@ from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.environments.chess.types import ChessState
-from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.scripts.chipiron_args import ImplementationArgs
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board.utils import FenPlusHistory
+
+    from chipiron.environments.chess.types import ChessState
+    from chipiron.players.game_player import GamePlayer
 
 
 @dataclass(frozen=True)

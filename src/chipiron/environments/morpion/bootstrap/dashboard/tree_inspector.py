@@ -1,7 +1,5 @@
 """Read-only tree and state inspection helpers for the Morpion bootstrap dashboard."""
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
 from functools import lru_cache

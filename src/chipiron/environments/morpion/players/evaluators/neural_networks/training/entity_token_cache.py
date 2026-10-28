@@ -1,7 +1,5 @@
 """Packed entity-token tensor cache for Morpion streaming training."""
 
-from __future__ import annotations
-
 import json
 import os
 from dataclasses import asdict, dataclass
@@ -400,7 +398,7 @@ def _read_entity_token_cache_payload(
     """Read cache tensors, returning ``None`` when the payload is unusable."""
     try:
         payload = _torch_load_cpu(tensor_path)
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         return None
     if not isinstance(payload, dict):
         return None
@@ -574,10 +572,16 @@ def _tensors_match_manifest(
         packed_input_tensor.device.type != "cpu"
         or token_lengths.device.type != "cpu"
         or target_tensor.device.type != "cpu"
-        or str(packed_input_tensor.dtype) != manifest.input_dtype
+    ):
+        return False
+    if (
+        str(packed_input_tensor.dtype) != manifest.input_dtype
         or str(token_lengths.dtype) != manifest.lengths_dtype
         or str(target_tensor.dtype) != manifest.target_dtype
-        or tuple(int(item) for item in packed_input_tensor.shape)
+    ):
+        return False
+    if (
+        tuple(int(item) for item in packed_input_tensor.shape)
         != manifest.packed_input_shape
         or tuple(int(item) for item in token_lengths.shape)
         != manifest.token_lengths_shape

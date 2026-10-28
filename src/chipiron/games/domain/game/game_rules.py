@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 from valanga import TurnState
 
@@ -11,8 +11,6 @@ from chipiron.core.roles import GameRole
 from .final_game_result import RoleGameResult, RoleOutcome
 
 type AnyTurnState = TurnState[Any]
-
-StateT_contra = TypeVar("StateT_contra", contravariant=True, bound=AnyTurnState)
 
 
 class OutcomeKind(StrEnum):

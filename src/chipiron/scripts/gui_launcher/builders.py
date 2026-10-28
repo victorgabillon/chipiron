@@ -1,7 +1,6 @@
 """Builders for script types and arguments from GUI choices."""
 
-from collections.abc import Callable, Sequence
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
@@ -37,12 +36,17 @@ from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 from .models import ArgsChosenByUser, ScriptGUIType
-from .participant_selection import ParticipantSelection
 from .registries import starting_positions_for_game
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from chipiron.utils.dataclass import IsDataclass
+
+    from .participant_selection import ParticipantSelection
 
 
 class UnsupportedLauncherParticipantCountError(ValueError):

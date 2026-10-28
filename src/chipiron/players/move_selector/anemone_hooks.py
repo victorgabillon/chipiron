@@ -1,7 +1,5 @@
 """Anemone hooks implementations for Chipiron chess states."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -51,7 +49,7 @@ class ChessFeatureExtractor(FeatureExtractor):
 
         try:
             tactical_threat = bool(board.is_attacked(not valanga_color_to_chess(turn)))
-        except (TypeError, AttributeError, ValueError):
+        except TypeError, AttributeError, ValueError:
             return {}
 
         return {

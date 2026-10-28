@@ -3,12 +3,13 @@
 from typing import TYPE_CHECKING, Protocol
 
 from atomheart.games.chess.board import IBoard
-from atomheart.games.chess.move.imove import MoveKey
 from valanga import Color, Outcome, OverEvent
 from valanga.evaluations import Certainty, Value
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from atomheart.games.chess.move.imove import MoveKey
 
 
 class SyzygyTable[BoardT: IBoard](Protocol):

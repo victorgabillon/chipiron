@@ -2,14 +2,17 @@
 
 # pylint: disable=duplicate-code
 
-from valanga.game import BranchName, Seed
-from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
+from typing import TYPE_CHECKING
 
 from chipiron.environments.integer_reduction.types import (
     IntegerReductionDynamics,
     IntegerReductionState,
 )
 from chipiron.players.player import PlayerMoveSelectionError
+
+if TYPE_CHECKING:
+    from valanga.game import BranchName, Seed
+    from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 
 class IntegerReductionAdapter:

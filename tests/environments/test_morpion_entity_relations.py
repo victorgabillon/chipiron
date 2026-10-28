@@ -1,7 +1,5 @@
 """Tests for sparse structural relations over Morpion entity tokens."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, cast
 
 import pytest

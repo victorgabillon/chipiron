@@ -1,7 +1,5 @@
 """Tests for supervised batches with multiple positional model inputs."""
 
-from __future__ import annotations
-
 import math
 
 import pytest

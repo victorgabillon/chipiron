@@ -1,7 +1,5 @@
 """The analyzer ratchet detects new debt without hiding inherited diagnostics."""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import subprocess

@@ -1,7 +1,5 @@
 """Committed scientific evidence is distinct from disposable reader caches."""
 
-from __future__ import annotations
-
 import json
 import sqlite3
 import subprocess

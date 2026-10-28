@@ -1,7 +1,5 @@
 """Matplotlib plotting helpers for Morpion bootstrap dashboard data."""
 
-from __future__ import annotations
-
 from datetime import datetime
 from typing import TYPE_CHECKING, cast
 

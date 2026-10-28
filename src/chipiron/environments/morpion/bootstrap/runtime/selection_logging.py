@@ -1,7 +1,5 @@
 """Formatting helpers for Morpion growth selection logs."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 
 from .checkpoint_io import _metric_value

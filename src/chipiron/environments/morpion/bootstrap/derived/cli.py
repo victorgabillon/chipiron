@@ -1,7 +1,5 @@
 """Read-only planning, preparation-only copying, and explicitly confirmed execution."""
 
-from __future__ import annotations
-
 import argparse
 import fcntl
 import hashlib

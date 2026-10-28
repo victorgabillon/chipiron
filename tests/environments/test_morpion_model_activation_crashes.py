@@ -1,7 +1,5 @@
 """Real process death inside activation; no fault injection in production code."""
 
-from __future__ import annotations
-
 import json
 import os
 import subprocess

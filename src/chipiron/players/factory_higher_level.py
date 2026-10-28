@@ -12,20 +12,22 @@ Typing strategy:
 
 import multiprocessing
 from functools import partial
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-from chipiron.core.roles import GameRole
 from chipiron.environments.player_wiring_registry import get_observer_wiring
-from chipiron.environments.types import GameKind
-from chipiron.players.communications.player_message import PlayerRequest
 from chipiron.players.communications.player_runtime import handle_player_request
-from chipiron.players.observer_wiring import ObserverWiring
-from chipiron.players.player_args import PlayerFactoryArgs
 from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
 from chipiron.players.player_thread import PlayerProcess
-from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
+
+if TYPE_CHECKING:
+    from chipiron.core.roles import GameRole
+    from chipiron.environments.types import GameKind
+    from chipiron.players.communications.player_message import PlayerRequest
+    from chipiron.players.observer_wiring import ObserverWiring
+    from chipiron.players.player_args import PlayerFactoryArgs
+    from chipiron.utils.communication.mailbox import MainMailboxMessage
+    from chipiron.utils.dataclass import IsDataclass
+    from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
 
 class MoveFunction(Protocol):

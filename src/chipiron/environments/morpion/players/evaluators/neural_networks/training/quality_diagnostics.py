@@ -1,7 +1,5 @@
 """Regression quality diagnostics for Morpion cached training."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 

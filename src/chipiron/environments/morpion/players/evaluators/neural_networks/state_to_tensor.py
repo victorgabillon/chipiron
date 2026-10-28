@@ -1,7 +1,5 @@
 """Tensor conversion for handcrafted Morpion neural-network features."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 

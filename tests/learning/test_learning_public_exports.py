@@ -1,7 +1,5 @@
 """Smoke tests for stable public learning exports."""
 
-from __future__ import annotations
-
 from chipiron.learning import (
     RegressionBatchMetricSums,
     RegressionBatchTrainStats,

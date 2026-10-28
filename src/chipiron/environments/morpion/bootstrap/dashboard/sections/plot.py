@@ -1,7 +1,5 @@
 """Dashboard plot rendering section helpers."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from matplotlib import pyplot as plt

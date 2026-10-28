@@ -20,11 +20,10 @@ Dependencies:
 """
 
 import random
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import chess
 import chess.pgn
-from atomheart.games.chess.board.utils import Fen
 
 from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
     add_monthly_cli_args,
@@ -35,6 +34,11 @@ from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
 )
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import EXTERNAL_DATA_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from atomheart.games.chess.board.utils import Fen
 
 # Sampling configuration variables
 DEFAULT_SAMPLING_FREQUENCY = 50

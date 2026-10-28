@@ -11,16 +11,16 @@ from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
 from chipiron.environments.chess.chess_rules import ChessRules
 from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.chess.types import ChessState
-from chipiron.environments.deps import ChessEnvironmentDeps
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_request_encoder import (
     ChessPlayerRequestEncoder,
 )
 from chipiron.players.factory_higher_level import create_player_observer_factory
-from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from chipiron.environments.deps import ChessEnvironmentDeps
     from chipiron.players.factory_higher_level import PlayerObserverFactory
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 class ChessEnvironmentError(TypeError):
@@ -46,7 +46,7 @@ def make_chess_environment(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
-    ) -> "PlayerObserverFactory":
+    ) -> PlayerObserverFactory:
         return create_player_observer_factory(
             game_kind=GameKind.CHESS,
             each_player_has_its_own_thread=each_player_has_its_own_thread,

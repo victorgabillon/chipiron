@@ -1,8 +1,6 @@
 """Document the module provides a factory function for creating the main move selector based on the given arguments."""
 
-import random
-from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from anemone import (
     TreeAndValuePlayerArgs,
@@ -11,24 +9,14 @@ from anemone import (
 )
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
-from anemone.node_evaluation.direct.protocols import (
-    MasterStateValueEvaluator,
-)
-from anemone.node_evaluation.tree.factory import NodeTreeEvaluationFactory
-from anemone.node_selector.opening_instructions import OpeningInstructor
 from valanga import (
     Dynamics,
     RepresentationFactory,
     StateModifications,
     TurnState,
 )
-from valanga.evaluator_types import EvaluatorInput
-from valanga.policy import BranchSelector
 
 from chipiron.environments.search_dynamics_addons import apply_search_dynamics_addon
-from chipiron.environments.types import GameKind
-from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
-from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.logger import chipiron_logger
 
 from .anemone_hooks import ChessFeatureExtractor
@@ -41,6 +29,24 @@ from .priority_checks.pv_attacked_open_all import PvAttackedOpenAllPriorityCheck
 from .random_args import RandomSelectorArgs
 from .random_selector import create_random_selector
 from .registry import get_game_specific_selector_factory
+
+if TYPE_CHECKING:
+    import random
+    from collections.abc import Mapping
+
+    from anemone.node_evaluation.direct.protocols import (
+        MasterStateValueEvaluator,
+    )
+    from anemone.node_evaluation.tree.factory import NodeTreeEvaluationFactory
+    from anemone.node_selector.opening_instructions import OpeningInstructor
+    from valanga.evaluator_types import EvaluatorInput
+    from valanga.policy import BranchSelector
+
+    from chipiron.environments.types import GameKind
+    from chipiron.players.move_selector.move_selector_args import (
+        NonTreeMoveSelectorArgs,
+    )
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 type AnyTurnState = TurnState[Any]
 

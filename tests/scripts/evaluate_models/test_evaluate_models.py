@@ -3,16 +3,20 @@
 import importlib
 import inspect
 import textwrap
-from pathlib import Path
 
 import pytest
 
 pytest.importorskip("dacite")
 pytest.importorskip("torch")
+from typing import TYPE_CHECKING
+
 import torch
 
 from chipiron.models.model_bundle import ModelBundleRef, ResolvedModelBundle
 from chipiron.scripts.evaluate_models.evaluate_models import evaluate_models
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 evaluate_models_module = importlib.import_module(
     "chipiron.scripts.evaluate_models.evaluate_models"
@@ -112,7 +116,7 @@ def test_evaluate_model_uses_model_bundle_refs(
 
     class _FakeDataLoader:
         @classmethod
-        def __class_getitem__(cls, item: object) -> type["_FakeDataLoader"]:
+        def __class_getitem__(cls, item: object) -> type[_FakeDataLoader]:
             _ = item
             return cls
 

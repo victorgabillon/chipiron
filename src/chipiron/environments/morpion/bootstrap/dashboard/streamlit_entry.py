@@ -1,7 +1,5 @@
 """CLI entrypoint for the Morpion bootstrap Streamlit dashboard."""
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

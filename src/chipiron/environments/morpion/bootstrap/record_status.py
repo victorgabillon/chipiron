@@ -1,7 +1,5 @@
 """Morpion-specific bootstrap record semantics and certified leaderboard helpers."""
 
-from __future__ import annotations
-
 import hashlib
 import heapq
 import json

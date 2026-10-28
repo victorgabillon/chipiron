@@ -154,7 +154,7 @@ class _FakeBaseScript:
 class _NoopRun:
     """No-op context manager matching mlflow.start_run."""
 
-    def __enter__(self) -> "_NoopRun":
+    def __enter__(self) -> _NoopRun:
         return self
 
     def __exit__(

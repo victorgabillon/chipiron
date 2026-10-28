@@ -27,25 +27,25 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: Cache quality tools
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml') }}
+          key: pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
+            pip-quality-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-
       - name: Install pinned quality tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox==4.56.1 build==1.5.0
+          python -m pip install tox==4.67.4 build==1.6.1
       - name: Verify toolchain and formatting
         timeout-minutes: 15
         run: python -m tox -e tooling,ruff
 
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
       PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
@@ -56,14 +56,14 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: Cache CPU dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
+          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
           restore-keys: |
-            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
+            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-
       - name: Install system deps (Qt + OpenGL bits)
         run: |
           sudo apt-get update
@@ -74,10 +74,10 @@ jobs:
       - name: Install pinned quality tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox==4.56.1 build==1.5.0
+          python -m pip install tox==4.67.4 build==1.6.1
       - name: Test installed package
-        timeout-minutes: 15
-        run: python -m tox -e py313
+        timeout-minutes: 45
+        run: python -m tox -e py314
       - name: Record CI environment and disk usage
         if: always()
         run: |
@@ -85,7 +85,7 @@ jobs:
           python -m pip cache info
           du -sh ~/.cache/pip .tox || true
           df -h .
-          .tox/py313/bin/python -m pip list --format=json > .ci-reports/dependencies.json
+          .tox/py314/bin/python -m pip list --format=json > .ci-reports/dependencies.json
           ps -eo pid,ppid,args > .ci-reports/processes-after-tests.txt
       - name: Retain test evidence
         if: always()
@@ -102,21 +102,20 @@ jobs:
       PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
       PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
       QT_QPA_PLATFORM: offscreen
-      STATIC_ANALYSIS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: Cache CPU dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
+          key: pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-${{ hashFiles('pyproject.toml', '.github/ci-cpu-constraints.txt') }}
           restore-keys: |
-            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.13-
+            pip-cpu-v1-${{ runner.os }}-${{ runner.arch }}-py3.14-
       - name: Install system deps (Qt + OpenGL bits)
         run: |
           sudo apt-get update
@@ -127,16 +126,18 @@ jobs:
       - name: Install pinned quality tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox==4.56.1 build==1.5.0
-      - name: Check static-analysis ratchet
+          python -m pip install tox==4.67.4 build==1.6.1
+      - name: Require clean strict static analysis
         timeout-minutes: 15
-        run: python -m tox -e static
+        run: |
+          mkdir -p .ci-reports
+          python -m tox -e static --result-json .ci-reports/static-tox.json
       - name: Retain static evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ci-static-evidence
-          path: .tox/static/tmp/static-analysis/
+          path: .ci-reports/static-tox.json
           include-hidden-files: true
 
   test:

@@ -1,7 +1,5 @@
 """Deterministic publication faults and competing processes in private directories."""
 
-from __future__ import annotations
-
 import errno
 import io
 import json

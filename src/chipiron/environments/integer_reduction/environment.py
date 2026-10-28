@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from valanga import SOLO, StateTag
 
 from chipiron.environments.base import Environment
-from chipiron.environments.deps import IntegerReductionEnvironmentDeps
 from chipiron.environments.integer_reduction.integer_reduction_gui_encoder import (
     IntegerReductionGuiEncoder,
 )
@@ -22,10 +21,11 @@ from chipiron.players.communications.player_request_encoder import (
     IntegerReductionPlayerRequestEncoder,
 )
 from chipiron.players.factory_higher_level import create_player_observer_factory
-from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from chipiron.environments.deps import IntegerReductionEnvironmentDeps
     from chipiron.players.factory_higher_level import PlayerObserverFactory
+    from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 class IntegerReductionEnvironmentError(TypeError):
@@ -55,7 +55,7 @@ def make_integer_reduction_environment(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
-    ) -> "PlayerObserverFactory":
+    ) -> PlayerObserverFactory:
         return create_player_observer_factory(
             game_kind=GameKind.INTEGER_REDUCTION,
             each_player_has_its_own_thread=each_player_has_its_own_thread,

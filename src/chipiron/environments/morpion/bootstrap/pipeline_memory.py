@@ -1,7 +1,5 @@
 """Cheap always-on RSS checkpoints for Morpion artifact-pipeline stages."""
 
-from __future__ import annotations
-
 import logging
 import os
 import resource
@@ -78,7 +76,7 @@ def available_ram_mb() -> float | None:
     try:
         available_pages = os.sysconf("SC_AVPHYS_PAGES")
         page_size = os.sysconf("SC_PAGE_SIZE")
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         return None
     if available_pages <= 0 or page_size <= 0:
         return None
@@ -93,12 +91,12 @@ def current_rss_mb() -> float | None:
             resident_pages = int(statm[1])
             page_size = os.sysconf("SC_PAGE_SIZE")
             return resident_pages * page_size / (1024 * 1024)
-        except (OSError, ValueError, IndexError):
+        except OSError, ValueError, IndexError:
             pass
 
     try:
         rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         return None
     if rss <= 0:
         return None

@@ -4,8 +4,6 @@ The existing metadata key is retained as a fail-closed version fence.
 Only run_state.json decides which complete capsules have committed.
 """
 
-from __future__ import annotations
-
 import ctypes
 import hashlib
 import json

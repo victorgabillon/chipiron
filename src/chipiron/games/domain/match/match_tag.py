@@ -17,11 +17,14 @@ Methods:
 
 from enum import StrEnum
 from importlib.resources import as_file, files
+from typing import TYPE_CHECKING
 
 import parsley
 
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
-from chipiron.utils import MyPath
+
+if TYPE_CHECKING:
+    from chipiron.utils import MyPath
 
 
 class MatchConfigTag(StrEnum):

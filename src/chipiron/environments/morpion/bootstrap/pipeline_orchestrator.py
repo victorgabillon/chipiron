@@ -1,7 +1,5 @@
 """Sequential file-driven orchestrator for the Morpion artifact pipeline."""
 
-from __future__ import annotations
-
 import json
 import logging
 import os
@@ -42,6 +40,7 @@ from .pipeline_claims import (
     load_active_pipeline_stage_claim,
     pipeline_stage_claim_is_expired,
 )
+from .run_state import MorpionBootstrapRunState
 from .training_logging import log_training_cycle_idle
 
 if TYPE_CHECKING:
@@ -49,7 +48,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from .bootstrap_args import MorpionBootstrapArgs
-    from .run_state import MorpionBootstrapRunState
     from .search_runner_protocol import MorpionSearchRunner
 
 LOGGER = logging.getLogger(__name__)

@@ -1,8 +1,6 @@
 """Canonical human/operator launcher for one persistent Morpion bootstrap run."""
 # pylint: disable=too-many-lines
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging
@@ -1097,17 +1095,23 @@ def _render_launcher_startup_summary(
         f"evaluator family preset: {_render_evaluator_family_line(startup_status)}",
         f"configured evaluators: {evaluators}",
         f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
-        "tree_branch_limit: "
-        f"{resolved_tree_branch_limit} "
-        f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
-        "rollout: "
-        f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
-        f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
-        f"action_selector_kind={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
-        f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
-        f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}",
-        "dashboard: "
-        f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}",
+        (
+            "tree_branch_limit: "
+            f"{resolved_tree_branch_limit} "
+            f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})"
+        ),
+        (
+            "rollout: "
+            f"enabled={startup_status.bootstrap_config.search.rollout.enabled} "
+            f"max_extra_steps={startup_status.bootstrap_config.search.rollout.max_extra_steps} "
+            f"action_selector_kind={startup_status.bootstrap_config.search.rollout.action_selector_kind} "
+            f"random_seed={startup_status.bootstrap_config.search.rollout.random_seed} "
+            f"stop_on_existing_node={startup_status.bootstrap_config.search.rollout.stop_on_existing_node}"
+        ),
+        (
+            "dashboard: "
+            f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}"
+        ),
         "paths:",
         f"  config: {startup_status.paths.bootstrap_config_path}",
         f"  control: {startup_status.paths.control_path}",

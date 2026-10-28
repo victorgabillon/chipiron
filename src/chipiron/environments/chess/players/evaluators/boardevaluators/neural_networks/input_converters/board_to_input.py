@@ -2,10 +2,6 @@
 
 from typing import TYPE_CHECKING
 
-import torch
-from coral.neural_networks.input_converters.content_to_input import (
-    ContentToInputFunction,
-)
 from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
@@ -20,7 +16,6 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
     ModelInputRepresentationType,
@@ -30,10 +25,16 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 )
 
 if TYPE_CHECKING:
+    import torch
     from atomheart.games.chess.board import BoardModificationP
+    from coral.neural_networks.input_converters.content_to_input import (
+        ContentToInputFunction,
+    )
     from valanga.representation_factory import (
         RepresentationFactory,
     )
+
+    from chipiron.environments.chess.types import ChessState
 
 
 class ModelInputRepresentationError(ValueError):

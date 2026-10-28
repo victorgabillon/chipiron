@@ -9,17 +9,20 @@ import os
 import pstats
 import time
 from pstats import SortKey
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
-from parsley import Parsley
 from rich.pretty import pretty_repr
 
 from chipiron.scripts.default_script_args import DataClassWithBaseScriptArgs
-from chipiron.utils import MyPath
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
 from chipiron.utils.path_runtime import output_root_path_str
 from chipiron.utils.small_tools import mkdir_if_not_existing, resolve_package_path
+
+if TYPE_CHECKING:
+    from parsley import Parsley
+
+    from chipiron.utils import MyPath
+    from chipiron.utils.dataclass import IsDataclass
 
 
 class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:

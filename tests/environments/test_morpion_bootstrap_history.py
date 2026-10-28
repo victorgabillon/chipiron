@@ -1,7 +1,5 @@
 """Tests for Morpion bootstrap history persistence and loop integration."""
 
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Any, cast
 

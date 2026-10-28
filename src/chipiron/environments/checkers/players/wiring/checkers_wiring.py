@@ -2,11 +2,11 @@
 
 import random
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from valanga import Color
 
 from chipiron.core.evaluation_scale import get_value_over_enum
-from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.checkers.checkers_rules import (
     CheckersRules as CheckersRulesAdapter,
 )
@@ -24,15 +24,18 @@ from chipiron.environments.checkers.types import (
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.master_board_evaluator_args import (
-    MasterBoardEvaluatorArgs,
-)
 from chipiron.players.factory_pipeline import (
     create_player_with_standard_adapter_pipeline,
 )
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
+
+if TYPE_CHECKING:
+    from chipiron.core.oracles import TerminalOracle, ValueOracle
+    from chipiron.players.boardevaluators.master_board_evaluator_args import (
+        MasterBoardEvaluatorArgs,
+    )
 
 
 @dataclass(frozen=True)

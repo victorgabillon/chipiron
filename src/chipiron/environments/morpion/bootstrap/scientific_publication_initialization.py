@@ -1,7 +1,5 @@
 """Explicit new-workspace genesis for scientific publication v2; no adoption."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING

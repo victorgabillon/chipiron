@@ -1,17 +1,14 @@
 """Controller that routes match domain events between UI and players."""
 
-from collections.abc import Callable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.core.request_context import RequestContext
-from chipiron.core.roles import GameRole, RoleAssignment
 from chipiron.displays.gui_protocol import (
     HumanActionChosen,
     Scope,
     UpdNeedHumanAction,
     UpdNoHumanActionPending,
 )
-from chipiron.games.domain.game.game_manager import GameManager
 from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
     IllegalAction,
@@ -22,6 +19,12 @@ from chipiron.games.runtime.orchestrator.domain_events import (
 from chipiron.players.communications.player_message import EvMove, PlayerRequest
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import unique_int_from_list
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from chipiron.core.roles import GameRole, RoleAssignment
+    from chipiron.games.domain.game.game_manager import GameManager
 
 
 class MatchController:

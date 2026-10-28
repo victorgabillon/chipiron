@@ -1,7 +1,11 @@
 """Game-kind specific defaults for launcher state."""
 
-from .models import ArgsChosenByUser
+from typing import TYPE_CHECKING
+
 from .registries import launcher_spec_for_game
+
+if TYPE_CHECKING:
+    from .models import ArgsChosenByUser
 
 
 def apply_game_kind_defaults(args: ArgsChosenByUser) -> None:

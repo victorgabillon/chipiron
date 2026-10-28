@@ -1,7 +1,5 @@
 """Checkpoint codec and payload normalization for Morpion runtime."""
 
-from __future__ import annotations
-
 import logging
 import time
 from dataclasses import dataclass, field
@@ -20,6 +18,8 @@ from anemone.checkpoints import (
 from atomheart.games.morpion import MorpionStateCheckpointCodec
 from dacite import Config, from_dict
 
+from chipiron.environments.morpion.types import MorpionDynamics
+
 from .checkpoint_io import (
     CheckpointIoMetrics,
     _checkpoint_node_counts,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any
 
-    from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
+    from chipiron.environments.morpion.types import MorpionState
 
 LOGGER = logging.getLogger(
     ".".join(("chipiron.environments.morpion.bootstrap.runtime", "runner"))

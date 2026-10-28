@@ -5,8 +5,6 @@ filenames and file formats remain compatible with the legacy supervised chess
 training artifacts.
 """
 
-from __future__ import annotations
-
 import os.path
 import pickle
 import sys
@@ -24,6 +22,7 @@ from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
     from chipiron.utils import MyPath
+    from chipiron.utils.dataclass import IsDataclass
 
 
 class ReadableWeightsModule(Protocol):
@@ -36,8 +35,15 @@ class ReadableWeightsModule(Protocol):
 class OptimizerSchedulerHolder(Protocol):
     """Protocol for objects exposing legacy trainer checkpoint state."""
 
-    optimizer: torch.optim.Optimizer
-    scheduler: torch.optim.lr_scheduler.LRScheduler
+    @property
+    def optimizer(self) -> torch.optim.Optimizer:
+        """Read the optimizer whose state is saved."""
+        ...
+
+    @property
+    def scheduler(self) -> torch.optim.lr_scheduler.LRScheduler:
+        """Read the scheduler whose state is saved."""
+        ...
 
 
 def get_optimizer_file_path_from(folder_path: MyPath) -> str:
@@ -72,7 +78,7 @@ def _get_nn_architecture_file_path_from(folder_path: MyPath) -> str:
 
 
 def safe_nn_architecture_save(
-    nn_architecture_args: object, nn_param_folder_name: MyPath
+    nn_architecture_args: IsDataclass, nn_param_folder_name: MyPath
 ) -> None:
     """Save the architecture of a neural network to a legacy YAML file."""
     path_to_param_file = _get_nn_architecture_file_path_from(nn_param_folder_name)

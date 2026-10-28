@@ -5,8 +5,6 @@ read-only code oracle, never scientific artifacts. All output is scratch data.
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

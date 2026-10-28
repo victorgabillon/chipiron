@@ -1,7 +1,5 @@
 """Compact Morpion training recap for cluster worker terminals."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import math
@@ -141,13 +139,15 @@ def render_training_recap(recap: MorpionTrainingRecap | None) -> str:
 
     lines = [
         header,
-        "  "
-        f"train_loss={_format_float(recap.train_loss)} "
-        f"validation_loss={_format_float(recap.validation_loss)} "
-        "validation_r2="
-        f"{_format_float(recap.validation_quality_r2_vs_mean_baseline)} "
-        "validation_pearson="
-        f"{_format_float(recap.validation_quality_pearson_correlation)}",
+        (
+            "  "
+            f"train_loss={_format_float(recap.train_loss)} "
+            f"validation_loss={_format_float(recap.validation_loss)} "
+            "validation_r2="
+            f"{_format_float(recap.validation_quality_r2_vs_mean_baseline)} "
+            "validation_pearson="
+            f"{_format_float(recap.validation_quality_pearson_correlation)}"
+        ),
     ]
     flag_parts = [
         _format_flag("entity_output_tanh", recap.entity_output_tanh),
@@ -181,8 +181,10 @@ def render_training_recap_table(table: MorpionTrainingRecapTable | None) -> str:
 
     lines = [
         header,
-        "  evaluator                         train_loss  val_loss  "
-        "r2      pearson  tanh   entity_token_cache  shuffle",
+        (
+            "  evaluator                         train_loss  val_loss  "
+            "r2      pearson  tanh   entity_token_cache  shuffle"
+        ),
     ]
     for row in table.rows:
         marker = "*" if row.evaluator_name == table.selected_evaluator_name else " "
@@ -238,7 +240,6 @@ def render_training_recap_table_operator(
                 f"cache={_format_bool(row.entity_token_cache_used)}",
                 f"shuffle={_format_bool(row.cached_global_shuffle)}",
             )
-            if part is not None
         )
         lines.append(
             f"{marker} {row.evaluator_name:<32.32} "
@@ -347,7 +348,8 @@ def find_key(obj: object, key: str) -> object | None:
     """Recursively return the first value for ``key`` in JSON-like data."""
     if isinstance(obj, dict):
         if key in obj:
-            return obj[key]
+            value: object = obj[key]
+            return value
         for value in obj.values():
             found = find_key(value, key)
             if found is not None:
@@ -942,9 +944,10 @@ def _find_first(sources: list[object], key: str) -> object | None:
 
 def _read_json_file(path: Path) -> object | None:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        payload: object = json.loads(path.read_text(encoding="utf-8"))
+    except OSError, json.JSONDecodeError:
         return None
+    return payload
 
 
 def _coerce_model_path(value: object | None, *, work_dir: Path) -> Path | None:
@@ -957,7 +960,7 @@ def _coerce_model_path(value: object | None, *, work_dir: Path) -> Path | None:
 def _relative_to_work_dir(path: Path, work_dir: Path) -> Path:
     try:
         return path.resolve().relative_to(work_dir.resolve())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return path
 
 

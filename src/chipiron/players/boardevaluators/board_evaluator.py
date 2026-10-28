@@ -1,18 +1,18 @@
 """Module representing the board evaluators."""
 
-from typing import Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol
 
 from valanga import Color
-from valanga.evaluations import Value
 
 from chipiron.displays.gui_protocol import UpdEvaluation
-from chipiron.displays.gui_publisher import GuiPublisher
 
-StateT_contra = TypeVar("StateT_contra", contravariant=True)
-StateT = TypeVar("StateT")
+if TYPE_CHECKING:
+    from valanga.evaluations import Value
+
+    from chipiron.displays.gui_publisher import GuiPublisher
 
 
-class StateEvaluator(Protocol[StateT_contra]):
+class StateEvaluator[StateT_contra](Protocol):
     """Protocol representing a board evaluator."""
 
     def evaluate(self, state: StateT_contra) -> Value:
@@ -20,7 +20,7 @@ class StateEvaluator(Protocol[StateT_contra]):
         ...
 
 
-class IGameStateEvaluator(Protocol[StateT_contra]):
+class IGameStateEvaluator[StateT_contra](Protocol):
     """Protocol representing a game board evaluator."""
 
     def evaluate(self, state: StateT_contra) -> tuple[Value | None, Value]:

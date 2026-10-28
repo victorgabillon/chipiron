@@ -1,12 +1,11 @@
 """Runtime and retention helpers shared by Morpion bootstrap workflows."""
 # pylint: disable=duplicate-code
 
-from __future__ import annotations
-
 import logging
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from .bootstrap_errors import (
@@ -36,8 +35,6 @@ from .runtime.restore_memory_logging import (
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from anemone.checkpoints import SearchRuntimeCheckpointPayload
 
     from .control import (

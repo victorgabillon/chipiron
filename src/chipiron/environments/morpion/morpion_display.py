@@ -1,7 +1,5 @@
 """Pure Morpion display payload helpers shared by GUI and dashboard renderers."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast

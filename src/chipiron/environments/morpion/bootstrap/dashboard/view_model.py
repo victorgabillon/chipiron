@@ -1,7 +1,5 @@
 """Read-only, lightweight operator snapshots; no tree, model or Streamlit imports."""
 
-from __future__ import annotations
-
 import json
 import math
 from contextlib import suppress
@@ -123,7 +121,7 @@ def _live_launcher(work_dir: Path, process: JsonObject) -> bool:
         stat = (
             (Path("/proc") / str(pid) / "stat").read_text().rsplit(") ", 1)[1].split()
         )
-    except (OSError, UnicodeError, IndexError):
+    except OSError, UnicodeError, IndexError:
         return False
     return (
         stat[0] != "Z"

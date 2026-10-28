@@ -1,16 +1,17 @@
 """Dataset extraction helpers shared by Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 import logging
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from anemone.training_export import load_training_tree_snapshot
+from anemone.training_export import TrainingTreeSnapshot, load_training_tree_snapshot
 
 from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRow,
+    MorpionSupervisedRows,
     iter_morpion_supervised_rows_from_training_snapshot,
     morpion_supervised_rows_metadata_from_training_snapshot,
     save_morpion_supervised_rows,
@@ -42,15 +43,9 @@ from .record_status import (
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Mapping
     from typing import Any
 
-    from anemone.training_export import TrainingTreeSnapshot
-
-    from chipiron.environments.morpion.learning import (
-        MorpionSupervisedRow,
-        MorpionSupervisedRows,
-    )
     from chipiron.environments.morpion.learning.tree_to_dataset import (
         TrainingTreeSource,
     )

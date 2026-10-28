@@ -1,7 +1,5 @@
 """Routine experiment checks keep byte validation and exact accepted dependencies."""
 
-from __future__ import annotations
-
 import json
 import shutil
 import subprocess
