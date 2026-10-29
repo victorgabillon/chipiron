@@ -6,6 +6,7 @@ import textwrap
 import types
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -98,8 +99,15 @@ def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("atomheart")
     pytest.importorskip("coral")
     _install_learning_script_observability_stubs(monkeypatch)
+    from chipiron.learning.torch_runtime import resolve_torch_device
+    from chipiron.scripts.learn_nn_supervised import learn_nn_from_supervised_datasets
     from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
         LearnNNScript,
+    )
+
+    resolver = Mock(wraps=resolve_torch_device)
+    monkeypatch.setattr(
+        learn_nn_from_supervised_datasets, "resolve_torch_device", resolver
     )
 
     original_is_available = torch.cuda.is_available
@@ -110,6 +118,8 @@ def test_learn_nn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     try:
         script_object = LearnNNScript(base_script=_FakeBaseScript(config))
+        resolver.assert_called_once_with("auto")
+        assert script_object.device == torch.device("cpu")
         script_object.run()
         script_object.terminate()
     finally:

@@ -22,6 +22,7 @@ from .torch_runtime import (
     parameter_count,
     resolve_torch_device,
     state_dict_on_cpu,
+    synchronize_torch_device_if_needed,
     torch_device_info,
 )
 
@@ -45,6 +46,7 @@ __all__ = [
     "regression_quality_stats_to_metadata",
     "resolve_torch_device",
     "state_dict_on_cpu",
+    "synchronize_torch_device_if_needed",
     "torch_device_info",
     "train_regression_batch",
 ]

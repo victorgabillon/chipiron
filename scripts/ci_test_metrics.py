@@ -1,6 +1,7 @@
 """Run pytest and retain actual serial or distributed test identity evidence."""
 
 import json
+import os
 import sys
 import time
 from collections import Counter
@@ -92,6 +93,7 @@ class TestMetrics:
 
 
 RECORDER: TestMetrics | None = None
+STARTED = time.monotonic()
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -109,14 +111,29 @@ def main() -> int:
     code = pytest.main(["-p", "ci_test_metrics", *sys.argv[1:]])
     recorder = sys.modules["ci_test_metrics"].RECORDER
     assert recorder is not None
+    return write_report(recorder, code, started, Path(".ci-reports/tests.json"))
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session: pytest.Session) -> None:
+    """Optionally observe the unchanged python -m pytest integration command."""
+    output = os.environ.get("CI_TEST_METRICS_OUTPUT")
+    if output and not hasattr(session.config, "workeroutput"):
+        assert RECORDER is not None
+        session.exitstatus = write_report(
+            RECORDER, session.exitstatus, STARTED, Path(output)
+        )
+
+
+def write_report(recorder: TestMetrics, code: int, started: float, output: Path) -> int:
+    """Retain selections and phases, rejecting incomplete successful executions."""
     execution_errors = [] if recorder.collect_only else recorder.execution_errors()
     if execution_errors and code == pytest.ExitCode.OK:
         code = pytest.ExitCode.TESTS_FAILED
     for error in execution_errors:
         print(f"CI execution identity failure: {error}", file=sys.stderr)
-    output = Path(".ci-reports")
-    output.mkdir(exist_ok=True)
-    (output / "tests.json").write_text(
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
         json.dumps(
             {
                 "selected_ids": recorder.selected,
