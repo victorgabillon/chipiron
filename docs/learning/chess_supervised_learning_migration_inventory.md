@@ -490,3 +490,22 @@ PR14:
   This path should be treated carefully in PR13.
 - `evaluate_models.py` defaults to external dataset and model-bundle paths, so
   tests should continue to patch or isolate filesystem/model access.
+
+## Chess optimizer/scheduler continuation
+
+`reuse_existing_trainer` restores the legacy `optimizer.pi` and `scheduler.pi`
+objects as state into a new SGD optimizer bound to the supplied live model and a
+new StepLR scheduler bound to that optimizer. Saved SGD options, momentum buffers,
+learning rates and scheduler progress override fresh initialization settings.
+The file names and pickle format are unchanged.
+
+The supported recipe is standard SGD plus StepLR with one ordered parameter
+group. Other optimizer/scheduler classes, multiple groups, incompatible parameter
+counts/shapes/dtypes, malformed momentum buffers and mismatched file pairs are
+rejected. The files contain no parameter names: the caller must restore the same
+model architecture and parameter order. Use trusted checkpoint files only.
+
+Given the same subsequent batches and explicit scheduler events, this preserves
+optimizer updates, including learning-rate decay boundaries. It does not provide
+exact whole-script replay: batch position, RNG state, rolling loss and the history
+used to decide when to schedule a decay are not all persisted by the chess script.

@@ -19,7 +19,6 @@ Example:
 import copy
 import logging
 import os
-import pickle
 import time
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, cast
@@ -62,12 +61,11 @@ from chipiron.learning.supervised import (
 )
 from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     get_folder_training_copies_path_from,
-    get_optimizer_file_path_from,
-    get_scheduler_file_path_from,
     safe_nn_architecture_save,
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
+from chipiron.scripts.learn_nn_supervised.trainer_restoration import restore_sgd_step_lr
 from chipiron.scripts.learn_nn_supervised.training_args import SupervisedTrainingArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger
@@ -552,28 +550,19 @@ def _create_optimizer_and_scheduler(
     saving_folder: MyPath,
 ) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LRScheduler]:
     """Create or load optimizer/scheduler using supervised training semantics."""
-    optimizer: torch.optim.Optimizer
-    scheduler: torch.optim.lr_scheduler.LRScheduler
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=args.starting_lr,
+        momentum=args.momentum_op,
+        weight_decay=0.000,
+    )
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer,
+        step_size=args.scheduler_step_size,
+        gamma=args.scheduler_gamma,
+    )
     if args.reuse_existing_trainer:
-        file_optimizer_path = get_optimizer_file_path_from(folder_path=saving_folder)
-        with open(file_optimizer_path, "rb") as file_optimizer:
-            optimizer = pickle.load(file_optimizer)
-
-        file_scheduler_path = get_scheduler_file_path_from(folder_path=saving_folder)
-        with open(file_scheduler_path, "rb") as file_scheduler:
-            scheduler = pickle.load(file_scheduler)
-    else:
-        optimizer = torch.optim.SGD(
-            model.parameters(),
-            lr=args.starting_lr,
-            momentum=args.momentum_op,
-            weight_decay=0.000,
-        )
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=args.scheduler_step_size,
-            gamma=args.scheduler_gamma,
-        )
+        restore_sgd_step_lr(optimizer, scheduler, saving_folder)
 
     if args.saving_intermediate_copy:
         folder_path_training_copies = get_folder_training_copies_path_from(
