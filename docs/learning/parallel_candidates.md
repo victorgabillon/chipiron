@@ -75,8 +75,8 @@ second tensor training loop.
 
 [G1](https://github.com/victorgabillon/chipiron/pull/92) owns shared device dispatch.
 I1 leaves it unchanged. Spawned CPU processes inherit hidden CUDA/ROCm devices and
-thread limits before imports, and assert CUDA was not initialized. CPU continuation
-RNG evidence now avoids `get_rng_state_all()` even on GPU-capable installations;
+thread limits before imports, and assert CUDA was not initialized. CPU continuation seeds only the CPU generator; `torch.manual_seed` would also
+dispatch to accelerator generators. CPU RNG evidence avoids `get_rng_state_all()` even on GPU-capable installations;
 CPU evidence retains an empty `torch_cuda_hex`. CUDA training still captures CUDA
 RNG. This deliberately changes irrelevant GPU evidence for CPU runs on GPU hosts,
 not their CPU tensors or RNG. Multi-candidate GPU execution is excluded.

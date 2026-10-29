@@ -2,6 +2,7 @@
 
 import json
 import multiprocessing
+from contextlib import suppress
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
@@ -219,6 +220,12 @@ def test_coordinator_death_leaves_no_writers(tmp_path: Path, death_signal: str) 
 
     import psutil
 
+    def is_writer_alive(pid: int) -> bool:
+        try:
+            return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+        except psutil.NoSuchProcess:
+            return False
+
     rows_file(tmp_path)
     script = tmp_path / "coordinator.py"
     script.write_text("""from pathlib import Path
@@ -258,12 +265,7 @@ if __name__ == '__main__':
             process.wait(timeout=10)
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
-                living = [
-                    pid
-                    for pid in children
-                    if psutil.pid_exists(pid)
-                    and psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
-                ]
+                living = [pid for pid in children if is_writer_alive(pid)]
                 if not living:
                     break
                 time.sleep(0.1)
@@ -288,11 +290,9 @@ if __name__ == '__main__':
                 process.kill()
             process.wait()
             for pid in children:
-                if (
-                    psutil.pid_exists(pid)
-                    and psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
-                ):
-                    psutil.Process(pid).kill()
+                if is_writer_alive(pid):
+                    with suppress(psutil.NoSuchProcess):
+                        psutil.Process(pid).kill()
 
 
 def test_cpu_rng_evidence_does_not_read_cuda(
@@ -301,6 +301,11 @@ def test_cpu_rng_evidence_does_not_read_cuda(
     """A CUDA-capable installation must not initialize devices for CPU evidence."""
     rows = rows_file(tmp_path)
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(
+        torch.cuda,
+        "manual_seed_all",
+        lambda seed: pytest.fail("CPU training seeded CUDA"),
+    )
     monkeypatch.setattr(
         torch.cuda,
         "get_rng_state_all",

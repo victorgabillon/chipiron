@@ -117,7 +117,11 @@ def initialize_training(
     if continuation is not None:
         random.seed(continuation.seed)
         np.random.seed(continuation.seed % 2**32)
-        torch.manual_seed(continuation.seed)
+        if device.type == "cpu":
+            # torch.manual_seed also dispatches to accelerator generators.
+            torch.default_generator.manual_seed(continuation.seed)
+        else:
+            torch.manual_seed(continuation.seed)
         if device.type == "cuda" and torch.cuda.is_available():
             torch.cuda.manual_seed_all(continuation.seed)
         provenance = {
