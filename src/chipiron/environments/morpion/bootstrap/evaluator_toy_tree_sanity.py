@@ -35,8 +35,10 @@ import numpy as np
 import torch
 from torch import nn
 
+from chipiron.learning.optimization import backward_and_step, forward_tensors
+
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
 
 ToyCaseName = Literal[
     "A_stable_terminal_wins",
@@ -706,15 +708,13 @@ def train_weighted_regressor(
         epoch_weight_sum = 0.0
         for start in range(0, len(rows), batch_size):
             indices = permutation[start : start + batch_size]
-            prediction = model(features[indices])
+            prediction = forward_tensors(model, (features[indices],))
             batch_targets = targets[indices]
             batch_weights = weights[indices]
             loss = torch.sum(batch_weights * (prediction - batch_targets).square())
             loss = loss / torch.clamp(torch.sum(batch_weights), min=1e-12)
             optimizer.zero_grad()
-            backward = cast("Callable[[], None]", loss.backward)
-            backward()
-            optimizer.step()
+            backward_and_step(loss, optimizer)
             epoch_loss_num += float(
                 torch.sum(
                     batch_weights.detach()

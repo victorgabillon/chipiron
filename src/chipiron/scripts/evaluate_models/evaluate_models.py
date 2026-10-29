@@ -33,6 +33,9 @@ from chipiron.learning.supervised import (
     SupervisedBatch,
     evaluate_regression_batch,
 )
+from chipiron.learning.supervised.regression import (
+    scalar_loss_from_regression_metrics as _scalar_loss_from_regression_metrics,
+)
 from chipiron.models.model_bundle import (
     ModelBundleRef,
     ResolvedModelBundle,
@@ -140,46 +143,6 @@ def _compute_evaluation_loss_on_dataset(
             absolute_error_sum=absolute_error_sum,
             target_count=target_count,
         ),
-    )
-
-
-def _scalar_loss_from_regression_metrics(
-    *,
-    criterion: torch.nn.Module,
-    metrics: RegressionBatchMetricSums,
-) -> float:
-    """Convert regression sums back to the configured scalar criterion."""
-    if metrics.target_count == 0:
-        return 0.0
-    if isinstance(criterion, torch.nn.MSELoss):
-        if criterion.reduction == "sum":
-            return metrics.squared_error_sum
-        if criterion.reduction == "mean":
-            return metrics.squared_error_sum / metrics.target_count
-        if criterion.reduction == "none":
-            raise _unreduced_loss_reconstruction_error("MSELoss")
-    if isinstance(criterion, torch.nn.L1Loss):
-        if criterion.reduction == "sum":
-            return metrics.absolute_error_sum
-        if criterion.reduction == "mean":
-            return metrics.absolute_error_sum / metrics.target_count
-        if criterion.reduction == "none":
-            raise _unreduced_loss_reconstruction_error("L1Loss")
-    raise _unsupported_loss_reconstruction_error()
-
-
-def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
-    """Return a clear error for unreduced criterion reconstruction."""
-    return TypeError(
-        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
-    )
-
-
-def _unsupported_loss_reconstruction_error() -> TypeError:
-    """Return a clear error for unsupported criterion reconstruction."""
-    return TypeError(
-        "Model evaluation can only reconstruct scalar losses for MSELoss or "
-        "L1Loss from common regression metric sums."
     )
 
 
