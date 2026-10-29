@@ -68,8 +68,12 @@ replace it with mocked exceptions to make a selected suite pass faster.
 During iteration run FAST and affected tests. Before review run PR and the relevant
 complete matrices. Before scientific/recovery/dependency merges or releases run
 FULL plus the existing quality, installed-package and static gates. GitHub's
-required `pytest` job still runs unfiltered `tox -e py314`; the aggregate `test`
-gate still requires quality, pytest and static success. Releases retain their
+`pytest` matrix runs FULL, FAST/PR and integration on independent hosted runners.
+FULL still runs the unchanged `tox -e py314` command; the aggregate `test`
+gate requires quality, the entire pytest matrix and static success. Its `always()`
+condition and explicit success comparisons reject failed, skipped, cancelled or
+absent dependency results. Matrix fail-fast is disabled so a failing lane does not
+cancel its siblings. Releases retain their
 existing full gate, ancestry checks and publication permissions. The same full CI
 also runs nightly and can be dispatched manually. No branch protection is changed.
 
@@ -132,6 +136,45 @@ call or teardown evidence is missing or duplicated. Setup skips are accounted fo
 explicitly; collection-only evidence is labeled and is not an execution pass.
 Archive this file before another invocation overwrites it. Do not hardcode a test
 count: compare identities against the chosen base and account for added cases.
+
+Each runtime runner builds its own installed environment and verifies package and
+scientific dependency bytes against `GITHUB_SHA` before and after testing. For PRs,
+this is the immutable merge candidate, not the PR branch tip. FULL keeps coverage
+and strict wheel/sdist checks; all runtime jobs check installed origins and run
+`pip check`. Frozen historical replay remains unchanged.
+
+Runtime artifacts are named `ci-validation-LANE-SHA-RUN-ATTEMPT`; static artifacts
+also include SHA, run and attempt. Each runtime artifact contains `candidate.json`
+(including Git identities for source, tests and configuration), before/after
+installed identities, dependency versions, JUnit and execution evidence. FULL
+retains `full-tests.json`, `full.xml` and `full-coverage.json`; FAST/PR retains
+`fast-tests.json`, `pr-tests.json` and their JUnit files. Integration retains
+`scientific-integration.xml` and `integration-tests.json`: a passive pytest plugin
+records the same selections and phases without replacing its pytest command.
+Separate runner filesystems isolate `.tox`, `.ci-reports`, pytest temporary files
+and application outputs; existing invocation/worker output isolation still applies.
+Only downloaded dependency packages are cached, never test results.
+
+For timing comparisons, use Actions job/step timestamps, keeping raw downloads
+outside Git. Report elapsed run creation to aggregate completion (including queue
+delays), summed job start-to-completion seconds (runner usage, not rounded billing
+minutes), setup through the pre-test verification, and initial scheduling delays.
+Compare every baseline selected identity and `(nodeid, phase, outcome)` tuple with
+the new lane; permit only explicitly reviewed added tests. Compare integration
+JUnit identities/outcomes because historical integration has no phase report.
+Check source/configuration Git identities as well as counts: unchanged scientific
+test bytes preserve the real subprocess deaths and complete fsync/crash matrices.
+
+The H1 reference run [40895034430](https://github.com/victorgabillon/chipiron/actions/runs/40895034430)
+took 52m00s through aggregate completion and 54m53s summed runner time. Its runtime
+setup steps took 148s, FULL 1486s, FAST/PR 1078s and integration 315s; initial job
+scheduling took 70–71s. The more recent successful main run
+[40904254267](https://github.com/victorgabillon/chipiron/actions/runs/40904254267),
+at `f6ff2fba53e307f7e56738fde9c276bb28f3ceed`, took 36m26s and 42m29s summed runner
+time, with 122s runtime setup and 4s initial scheduling. Both selected FULL 3226,
+FAST 301 and PR 3061 tests. Use both baselines when assessing the remote parallel
+run: runner variability is substantial. Actual after-run measurements and exact
+identity/outcome comparisons belong in the H1 PR evidence before integration.
 
 Do not repeat FULL for a documentation-only descendant when verified unchanged
 executable, test and configuration content has already passed. Record the actual
