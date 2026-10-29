@@ -19,7 +19,7 @@ Set operational controls in the Training worker's inherited environment:
 All values must be positive integers. Increase reservations explicitly for larger
 models. The resolved worker count is bounded by requested count, candidate count,
 CPU budget, affinity/visible ancestor cgroup quotas minus the CPU reserve, and
-available RAM minus the continual RAM reserve and coordinator RSS. No capacity
+available host/cgroup RAM minus the continual RAM reserve and coordinator RSS. No capacity
 means refusal, not an increased budget. Thread count and scientific settings are
 never automatically tuned. These controls do not enter historical configuration
 or admission hashes. With `WORKERS=1`, existing process thread settings apply;

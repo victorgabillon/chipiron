@@ -331,3 +331,29 @@ def test_read_only_cache_never_repairs_missing_input(tmp_path: Path, kind: str) 
     with pytest.raises(ValueError, match="missing or stale"):
         getattr(module, f"load_or_materialize_{kind}_cache")(**arguments)
     assert not (tmp_path / "tensor_cache").exists()
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_cgroup_cpu_and_memory_headroom(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, version: int
+) -> None:
+    """Container quotas and usage cap host-wide affinity and available-memory reports."""
+    from chipiron.environments.morpion.bootstrap import candidate_resources
+
+    monkeypatch.setattr(
+        candidate_resources, "_cgroup_directories", lambda controller: [tmp_path]
+    )
+    monkeypatch.setattr(
+        candidate_resources.os, "sched_getaffinity", lambda pid: set(range(16))
+    )
+    if version == 2:
+        (tmp_path / "cpu.max").write_text("250000 100000")
+        (tmp_path / "memory.max").write_text(str(128 * 2**20))
+        (tmp_path / "memory.current").write_text(str(112 * 2**20))
+    else:
+        (tmp_path / "cpu.cfs_quota_us").write_text("250000")
+        (tmp_path / "cpu.cfs_period_us").write_text("100000")
+        (tmp_path / "memory.limit_in_bytes").write_text(str(128 * 2**20))
+        (tmp_path / "memory.usage_in_bytes").write_text(str(112 * 2**20))
+    assert candidate_resources.cpu_capacity() == 2.5
+    assert candidate_resources.available_memory_mb() <= 16

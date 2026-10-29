@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Never
 import psutil
 
 from .candidate_job import CandidateJob, prepare_candidate_cache, run_candidate
+from .candidate_resources import available_memory_mb
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -146,7 +147,7 @@ def execute_candidates(
             peak_mb = max(peak_mb, rss / 2**20)
             if (
                 peak_mb > plan.memory_mb
-                or psutil.virtual_memory().available / 2**20 < plan.min_available_mb
+                or available_memory_mb() < plan.min_available_mb
             ):
                 reason = "Candidate aggregate memory budget exceeded."
             if time.monotonic() - started > plan.timeout_s:

@@ -35,17 +35,13 @@ def _integer(name: str, default: int) -> int:
     return value
 
 
-def cpu_capacity() -> float:
-    """Honor affinity and all visible ancestor cgroup CPU quotas (v1 and v2)."""
-    capacity = float(
-        len(os.sched_getaffinity(0))
-        if hasattr(os, "sched_getaffinity")
-        else (os.cpu_count() or 1)
-    )
+def _cgroup_directories(controller: str) -> list[Path]:
+    """Resolve the process's visible cgroup and its quota-bearing ancestors."""
+    directories: list[Path] = []
     groups = Path("/proc/self/cgroup")
     mounts = Path("/proc/self/mountinfo")
     if not groups.exists() or not mounts.exists():
-        return capacity
+        return directories
     for group in groups.read_text(encoding="utf-8").splitlines():
         _, controllers, relative = group.split(":", 2)
         for mount in mounts.read_text(encoding="utf-8").splitlines():
@@ -54,7 +50,8 @@ def cpu_capacity() -> float:
             if fs[0] not in {"cgroup", "cgroup2"}:
                 continue
             if fs[0] == "cgroup" and (
-                "cpu" not in controllers.split(",") or "cpu" not in fs[2].split(",")
+                controller not in controllers.split(",")
+                or controller not in fs[2].split(",")
             ):
                 continue
             if fs[0] == "cgroup2" and controllers:
@@ -66,22 +63,53 @@ def cpu_capacity() -> float:
                 continue
             directory = location / suffix
             while directory.is_relative_to(location):
-                quota = directory / "cpu.max"
-                if quota.exists():
-                    amount, period = quota.read_text().split()
-                    if amount != "max":
-                        capacity = min(capacity, int(amount) / int(period))
-                quota = directory / "cpu.cfs_quota_us"
-                if quota.exists() and int(quota.read_text()) > 0:
-                    capacity = min(
-                        capacity,
-                        int(quota.read_text())
-                        / int((directory / "cpu.cfs_period_us").read_text()),
-                    )
+                directories.append(directory)
                 if directory == location:
                     break
                 directory = directory.parent
+    return directories
+
+
+def cpu_capacity() -> float:
+    """Honor affinity and all visible ancestor cgroup CPU quotas (v1 and v2)."""
+    capacity = float(
+        len(os.sched_getaffinity(0))
+        if hasattr(os, "sched_getaffinity")
+        else (os.cpu_count() or 1)
+    )
+    for directory in _cgroup_directories("cpu"):
+        quota = directory / "cpu.max"
+        if quota.exists():
+            amount, period = quota.read_text().split()
+            if amount != "max":
+                capacity = min(capacity, int(amount) / int(period))
+        quota = directory / "cpu.cfs_quota_us"
+        if quota.exists() and int(quota.read_text()) > 0:
+            capacity = min(
+                capacity,
+                int(quota.read_text())
+                / int((directory / "cpu.cfs_period_us").read_text()),
+            )
     return capacity
+
+
+def available_memory_mb() -> int:
+    """Reserve actual host/container headroom, including other cgroup members."""
+    available = psutil.virtual_memory().available
+    for directory in _cgroup_directories("memory"):
+        for limit_name, usage_name in (
+            ("memory.max", "memory.current"),
+            ("memory.limit_in_bytes", "memory.usage_in_bytes"),
+        ):
+            limit = directory / limit_name
+            if limit.exists():
+                amount = limit.read_text().strip()
+                if amount != "max" and int(amount) > 0:
+                    available = min(
+                        available,
+                        max(0, int(amount) - int((directory / usage_name).read_text())),
+                    )
+    return available // 2**20
 
 
 def resolve_candidate_plan(
@@ -104,7 +132,7 @@ def resolve_candidate_plan(
         _integer("MEMORY_MB", policy.max_group_rss_mb), policy.max_group_rss_mb
     )
     per_worker = _integer("WORKER_MEMORY_MB", 1024)
-    available = psutil.virtual_memory().available // 2**20 - policy.min_available_ram_mb
+    available = available_memory_mb() - policy.min_available_ram_mb
     headroom = min(memory, available) - math.ceil(
         psutil.Process().memory_info().rss / 2**20
     )
