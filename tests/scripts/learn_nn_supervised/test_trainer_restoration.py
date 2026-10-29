@@ -169,7 +169,7 @@ def test_legacy_independent_pickles(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "invalid",
-    ["optimizer", "scheduler", "groups", "shape", "count", "momentum", "pair"],
+    ["optimizer", "scheduler", "groups", "shape", "dtype", "count", "momentum", "pair"],
 )
 def test_incompatible_checkpoint_rejected(tmp_path: Path, invalid: str) -> None:
     """Unsupported recipes and incompatible model/state layouts fail explicitly."""
@@ -193,7 +193,9 @@ def test_incompatible_checkpoint_rejected(tmp_path: Path, invalid: str) -> None:
     safe_nn_trainer_save(
         SimpleNamespace(optimizer=optimizer, scheduler=scheduler), tmp_path
     )
-    resumed = nn.Linear(3, 1) if invalid == "shape" else _model()
+    resumed = nn.Linear(3, 1, dtype=torch.float64) if invalid == "shape" else _model()
+    if invalid == "dtype":
+        resumed = _model().float()
     if invalid == "count":
         resumed = nn.Linear(2, 1, bias=False, dtype=torch.float64)
     with pytest.raises(ValueError, match=r"[Cc]heckpoint|[Rr]estor|[Ss]upported"):
