@@ -21,6 +21,10 @@ external_data/syzygy-tables/
 
 # Generated evidence and local experiments are never image inputs.
 docs/research/**/evidence
+!docs/research/activation_completion/evidence/superseded/README.txt
+!docs/research/atomic_model_activation/evidence/probe-measured.py.txt
+!docs/research/bounded_anemone_integration/evidence/restore_control.py.txt
+!docs/research/bounded_anemone_integration/evidence/run_pair.py.txt
 morpion_runs
 comparisons
 action_supervision

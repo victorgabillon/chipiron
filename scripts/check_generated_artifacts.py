@@ -5,6 +5,13 @@ import sys
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
+# Hand-authored historical source snapshots and a scientific interpretation note.
+RETAINED_EVIDENCE = {
+    "docs/research/activation_completion/evidence/superseded/README.txt",
+    "docs/research/atomic_model_activation/evidence/probe-measured.py.txt",
+    "docs/research/bounded_anemone_integration/evidence/restore_control.py.txt",
+    "docs/research/bounded_anemone_integration/evidence/run_pair.py.txt",
+}
 CACHE_DIRS = {
     "__pycache__",
     ".pytest_cache",
@@ -36,7 +43,7 @@ SCRIPT_OUTPUTS = {
 def generated(path: str) -> bool:
     """Classify by reserved locations; JSON/YAML extensions are unrestricted."""
     parts = PurePosixPath(path).parts
-    if parts[-1] == ".gitkeep":
+    if parts[-1] == ".gitkeep" or path in RETAINED_EVIDENCE:
         return False
     return bool(
         (path.startswith("docs/research/") and "evidence" in parts[2:-1])
