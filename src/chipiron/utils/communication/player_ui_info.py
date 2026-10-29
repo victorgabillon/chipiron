@@ -1,14 +1,18 @@
 """Helpers for GUI player labels and player-info payloads."""
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from valanga import Color
 
 from chipiron.core.roles import GameRole, RoleAssignment, format_game_role
 from chipiron.displays.gui_protocol import ParticipantUiInfo, UpdParticipantsInfo
-from chipiron.players import PlayerFactoryArgs
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from chipiron.players import PlayerFactoryArgs
 
 
 def format_player_label(player: PlayerFactoryArgs) -> str:

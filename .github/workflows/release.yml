@@ -11,7 +11,11 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
+    env:
+      PIP_CONSTRAINT: ${{ github.workspace }}/.github/ci-cpu-constraints.txt
+      PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,7 +23,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
 
       - name: Verify clean main ancestry and release version
@@ -36,21 +40,19 @@ jobs:
             libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0 \
             libxcb-cursor0 libxcb-xinerama0 libx11-xcb-dev
 
-      - run: python -m pip install -U pip tox==4.56.1 build==1.5.0
+      - run: python -m pip install -U pip tox==4.67.4 build==1.6.1
       - name: Verify toolchain and formatting
         timeout-minutes: 15
         run: python -m tox -q -e tooling,ruff
 
       - name: Test installed package
-        timeout-minutes: 15
+        timeout-minutes: 45
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python -m tox -q -e py313
+        run: python -m tox -q -e py314
 
-      - name: Check static-analysis ratchet
+      - name: Require clean strict static analysis
         timeout-minutes: 15
-        env:
-          STATIC_ANALYSIS_BASE_REF: origin/main
         run: python -m tox -q -e static
 
   publish:
@@ -69,12 +71,12 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Build
         timeout-minutes: 15
         run: |
-          python -m pip install -U pip build==1.5.0 twine
+          python -m pip install -U pip build==1.6.1 twine
           python -m build
           python -m twine check dist/*
           python - <<'PY'

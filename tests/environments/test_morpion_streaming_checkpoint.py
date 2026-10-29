@@ -1,7 +1,7 @@
 """Real runner streaming, write-once and complete format-3 parity regressions."""
 
 from dataclasses import replace
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from anemone.checkpoints import (
@@ -12,6 +12,9 @@ from anemone.checkpoints import (
 
 from chipiron.environments.morpion.bootstrap.runtime import runner as module
 from tests.environments.test_morpion_checkpoint_format3 import graph
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def files(root: Path) -> dict[str, bytes]:

@@ -1,7 +1,5 @@
 """Kernel ownership, reader pins and conservative orphan collection."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import os

@@ -1,7 +1,5 @@
 """Immutable scientific v1 generations and checkpoint-bound receipt recovery."""
 
-from __future__ import annotations
-
 import json
 import os
 from dataclasses import replace

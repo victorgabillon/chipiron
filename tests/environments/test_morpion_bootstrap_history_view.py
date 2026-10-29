@@ -1,7 +1,5 @@
 """Tests for dashboard-ready Morpion bootstrap history views."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass, field
 from pathlib import Path

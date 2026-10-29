@@ -4,22 +4,25 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Annotated, Any
 
 from valanga import Dynamics, StateTag, TurnState
-from valanga.dynamics import Transition
-from valanga.game import ActionKey, ActionName, Seed
 
 from chipiron.displays.gui_protocol import Scope, UpdStateGeneric
-from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
-from chipiron.players.factory_higher_level import MoveFunction
-from chipiron.utils.communication.gui_encoder import GuiEncoder
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 if TYPE_CHECKING:
+    from valanga.dynamics import Transition
+    from valanga.game import ActionKey, ActionName, Seed
+
     from chipiron.displays.gui_protocol import UpdatePayload
+    from chipiron.displays.gui_publisher import GuiPublisher
     from chipiron.players.communications.player_message import PlayerRequest
+    from chipiron.players.communications.player_request_encoder import (
+        PlayerRequestEncoder,
+    )
+    from chipiron.players.factory_higher_level import MoveFunction
+    from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 type AnyTurnState = TurnState[Any]
 
@@ -412,7 +415,7 @@ class ObservableGame[StateT: AnyTurnState = AnyTurnState]:
         for move_function in self.move_functions:
             move_function(request)
 
-    def publish_update(self, payload: "UpdatePayload") -> None:
+    def publish_update(self, payload: UpdatePayload) -> None:
         """Publish an already-built GUI update payload to all displays."""
         for mailbox in self.mailboxes_display:
             mailbox.publish(payload)

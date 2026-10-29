@@ -1,7 +1,5 @@
 """Frozenset ownership diagnostics for Morpion recursive memory profiling."""
 
-from __future__ import annotations
-
 import gc
 from collections import Counter
 from dataclasses import dataclass, field

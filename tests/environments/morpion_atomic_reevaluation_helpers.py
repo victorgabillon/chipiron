@@ -1,8 +1,7 @@
 """Fresh explicit protocol fixtures, never historical adoption."""
 
 from dataclasses import replace
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap import load_bootstrap_run_state
 from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
@@ -29,6 +28,9 @@ from chipiron.environments.morpion.bootstrap.scientific_publication_initializati
 from tests.environments.morpion_durable_closed_helpers import setup_closed_baseline
 from tests.environments.morpion_durable_v2_helpers import scientific_producer
 from tests.environments.morpion_patch_receipt_helpers import fixture_patch
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def setup_atomic(root: Path) -> Any:

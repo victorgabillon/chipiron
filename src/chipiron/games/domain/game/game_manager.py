@@ -5,19 +5,14 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
 
 import yaml
-from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import BranchKey, Color, StateTag, Transition, TurnState
-from valanga.evaluations import Value
-from valanga.game import ActionKey
 
-import chipiron.players as players_m
 from chipiron.core.roles import (
     GameRole,
     MutableRoleAssignment,
     ParticipantId,
     format_game_role,
 )
-from chipiron.displays.gui_protocol import Scope
 from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
     IllegalAction,
@@ -26,14 +21,9 @@ from chipiron.games.runtime.orchestrator.domain_events import (
     NeedAction,
 )
 from chipiron.games.runtime.orchestrator.match_orchestrator import MatchOrchestrator
-from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
-from .final_game_result import GameReport, RoleGameResult
-from .game import ObservableGame, Ply
-from .game_args import GameArgs
 from .game_rules import (
     GameOutcome,
     GameRules,
@@ -41,13 +31,25 @@ from .game_rules import (
     OutcomeSource,
     outcome_to_role_game_result,
 )
-from .progress_collector import PlayerProgressCollectorP
 
 if TYPE_CHECKING:
     import queue
 
+    from atomheart.games.chess.move.move_factory import MoveFactory
+    from valanga.evaluations import Value
+    from valanga.game import ActionKey
+
+    import chipiron.players as players_m
+    from chipiron.displays.gui_protocol import Scope
     from chipiron.games.runtime.orchestrator.match_controller import MatchController
+    from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
+    from chipiron.utils import MyPath
     from chipiron.utils.communication.mailbox import MainMailboxMessage
+
+    from .final_game_result import GameReport, RoleGameResult
+    from .game import ObservableGame, Ply
+    from .game_args import GameArgs
+    from .progress_collector import PlayerProgressCollectorP
 
 type AnyTurnState = TurnState[Any]
 
@@ -77,7 +79,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
     participant_id_by_role: MutableRoleAssignment[ParticipantId]
 
     # A Queue for receiving messages from other process or functions such as players or Gui
-    main_thread_mailbox: "queue.Queue[MainMailboxMessage]"
+    main_thread_mailbox: queue.Queue[MainMailboxMessage]
 
     # The list of players (lifecycle handles)
     players: list[players_m.PlayerHandle]
@@ -102,7 +104,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         output_folder_path: MyPath | None,
         args: GameArgs,
         participant_id_by_role: MutableRoleAssignment[ParticipantId],
-        main_thread_mailbox: "queue.Queue[MainMailboxMessage]",
+        main_thread_mailbox: queue.Queue[MainMailboxMessage],
         players: list[players_m.PlayerHandle],
         move_factory: MoveFactory,
         progress_collector: PlayerProgressCollectorP,
@@ -270,7 +272,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         """
         self.game.rewind_one_move()
 
-    def play_one_game(self, controller: "MatchController") -> GameReport:
+    def play_one_game(self, controller: MatchController) -> GameReport:
         """Play one game.
 
         Returns:

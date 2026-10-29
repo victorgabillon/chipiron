@@ -1,7 +1,5 @@
 """Read-only root analysis on newly generated closed scientific capsules only."""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import os

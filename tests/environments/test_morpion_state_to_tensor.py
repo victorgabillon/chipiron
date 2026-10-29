@@ -1,7 +1,5 @@
 """Tests for Morpion handcrafted feature tensor conversion."""
 
-from __future__ import annotations
-
 import torch
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from torch import Tensor

@@ -1,7 +1,5 @@
 """Collection alone must never count as complete CI execution."""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import subprocess

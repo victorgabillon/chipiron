@@ -1,7 +1,5 @@
 """Bounded publication waits preserve the existing exclusive ownership fence."""
 
-from __future__ import annotations
-
 import time
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event

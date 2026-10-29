@@ -1,7 +1,5 @@
 """Dashboard Linoo selection-table rendering."""
 
-from __future__ import annotations
-
 from typing import Any
 
 __all__ = ["linoo_selection_table_rows", "render_linoo_selection_table"]

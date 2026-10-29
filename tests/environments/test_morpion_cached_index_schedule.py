@@ -1,7 +1,5 @@
 """Tests for cached Morpion training index schedules."""
 
-from __future__ import annotations
-
 from chipiron.environments.morpion.players.evaluators.neural_networks.training.cached_index_schedule import (
     cached_index_schedule,
     index_batches,

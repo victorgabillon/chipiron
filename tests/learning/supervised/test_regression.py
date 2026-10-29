@@ -1,7 +1,5 @@
 """Tests for common supervised regression batch helpers."""
 
-from __future__ import annotations
-
 import torch
 from torch import nn
 

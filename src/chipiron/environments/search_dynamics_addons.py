@@ -3,10 +3,12 @@
 import importlib
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
-from anemone.dynamics import SearchDynamics
 from valanga import TurnState
+
+if TYPE_CHECKING:
+    from anemone.dynamics import SearchDynamics
 
 type AnyTurnState = TurnState[Any]
 

@@ -1,7 +1,5 @@
 """Tests for canonical Morpion bootstrap evaluator-family presets."""
 
-from __future__ import annotations
-
 import pytest
 
 from chipiron.environments.morpion.bootstrap import (

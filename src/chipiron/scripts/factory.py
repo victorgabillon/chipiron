@@ -1,19 +1,22 @@
 """factory for scripts module."""
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from parsley import Parsley, create_parsley
 from parsley.logger import set_verbosity
 
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import get_package_root_path
 
 from .get_script import get_script_type_from_script_class_name
-from .iscript import IScript
 from .script import Script
-from .script_type import ScriptType
+
+if TYPE_CHECKING:
+    from chipiron.utils.dataclass import IsDataclass
+
+    from .iscript import IScript
+    from .script_type import ScriptType
 
 
 # instantiate relevant script

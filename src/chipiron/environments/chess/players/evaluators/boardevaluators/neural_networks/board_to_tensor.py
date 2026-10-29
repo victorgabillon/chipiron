@@ -1,9 +1,13 @@
 """Module to transform the board into a tensor representation."""
 
+from typing import TYPE_CHECKING
+
 import chess
 import torch
-from atomheart.games.chess.board import IBoard
 from valanga import Color
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board import IBoard
 
 
 def transform_board_pieces_one_side(

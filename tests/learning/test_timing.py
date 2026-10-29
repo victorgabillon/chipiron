@@ -1,7 +1,5 @@
 """Tests for common learning timing helpers."""
 
-from __future__ import annotations
-
 import pytest
 
 from chipiron.learning.timing import PhaseDurations, format_phase_durations

@@ -1,12 +1,10 @@
 """Public Morpion neural-network training services."""
 
-from __future__ import annotations
-
 import logging
 import os
 import random
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch.utils.data import DataLoader, Subset
@@ -687,7 +685,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=flat_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
@@ -697,7 +694,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=entity_token_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
@@ -707,7 +703,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=relational_entity_token_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
@@ -738,7 +733,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=flat_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
@@ -748,7 +742,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=entity_token_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
@@ -758,7 +751,6 @@ def train_morpion_regressor_streaming(
                 model=model,
                 args=training_args,
                 cache=relational_entity_token_cache,
-                row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
@@ -1414,10 +1406,7 @@ def _split_train_validation_dataset(
     sample_count = len(dataset)
     indices = list(range(sample_count))
     if sample_count < 2 or validation_fraction <= 0.0:
-        return cast(
-            "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]",
-            (Subset(dataset, indices), Subset(dataset, [])),
-        )
+        return Subset(dataset, indices), Subset(dataset, [])
 
     rng = random.Random(validation_seed)
     rng.shuffle(indices)
@@ -1425,7 +1414,4 @@ def _split_train_validation_dataset(
     validation_count = min(sample_count - 1, validation_count)
     validation_indices = indices[:validation_count]
     train_indices = indices[validation_count:]
-    return cast(
-        "tuple[Subset[TensorSupervisedBatch], Subset[TensorSupervisedBatch]]",
-        (Subset(dataset, train_indices), Subset(dataset, validation_indices)),
-    )
+    return Subset(dataset, train_indices), Subset(dataset, validation_indices)

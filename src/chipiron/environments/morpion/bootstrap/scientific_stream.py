@@ -8,8 +8,6 @@ checksum validation. Framing here also proves EOF, unlike stream_reader alone.
 
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import hashlib
 import io
 from contextlib import contextmanager

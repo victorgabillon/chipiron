@@ -1,7 +1,5 @@
 """Timing helpers shared by Morpion bootstrap cycle implementations."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 
 

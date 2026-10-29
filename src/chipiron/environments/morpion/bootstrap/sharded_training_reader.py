@@ -7,8 +7,6 @@ is O(all immutable rows + generation updates + graph validation tables).
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import hashlib
 import importlib.metadata
 import io
@@ -763,7 +761,7 @@ class ShardedTrainingGenerationView:
     def _set_scientific_header(self, manifest: dict[str, Any]) -> None:
         """Share value semantics across the historical and closed layouts."""
         if (
-            importlib.metadata.version("atomheart") != "0.2.11"
+            importlib.metadata.version("atomheart") != "0.3.0"
             or not isinstance(manifest["producer"], dict)
             or manifest["producer"].get("state_ref_contract") != REFERENCE_CONTRACT
         ):
@@ -905,7 +903,7 @@ class ShardedTrainingGenerationView:
                 return valid
             finally:
                 connection.close()
-        except (sqlite3.DatabaseError, TypeError, ValueError):
+        except sqlite3.DatabaseError, TypeError, ValueError:
             return False
 
     def _build_index(self) -> None:

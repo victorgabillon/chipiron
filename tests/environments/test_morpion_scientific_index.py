@@ -1,7 +1,5 @@
 """Compact disposable caches retain scientific integrity and process lifetimes."""
 
-from __future__ import annotations
-
 import multiprocessing
 import os
 import sqlite3

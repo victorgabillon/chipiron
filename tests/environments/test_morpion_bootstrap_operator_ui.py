@@ -1,7 +1,5 @@
 """High-value native Streamlit integration checks for navigation and operator safety."""
 
-from __future__ import annotations
-
 import json
 from typing import TYPE_CHECKING
 

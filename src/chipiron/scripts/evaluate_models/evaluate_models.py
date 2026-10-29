@@ -3,7 +3,7 @@
 Saves the evaluation results to a YAML file.
 """
 
-import datetime
+import datetime as dt
 import os
 import time
 from dataclasses import asdict, dataclass
@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, cast
 import dacite
 import torch
 import yaml
-from coral.chi_nn import ChiNN
 from torch.utils.data import DataLoader
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
@@ -42,16 +41,17 @@ from chipiron.models.model_bundle import (
 from chipiron.players.boardevaluators.neural_networks.model_bundle_runtime import (
     load_nn_architecture_args_from_bundle,
 )
-from chipiron.utils import MyPath
 from chipiron.utils.path_runtime import get_default_output_dir
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from coral.chi_nn import ChiNN
     from coral.neural_networks import NNBWStateEvaluator
     from torch import Tensor
 
     from chipiron.environments.chess.types import ChessState
+    from chipiron.utils import MyPath
 
 
 class EvaluationReportError(yaml.YAMLError):
@@ -71,7 +71,7 @@ class ModelEvaluation:
     """Represents a model evaluation."""
 
     evaluation: float
-    time_of_evaluation: datetime.datetime
+    time_of_evaluation: dt.datetime
     number_of_model_parameters: int
 
 
@@ -317,7 +317,7 @@ def evaluate_models(
             number_of_model_parameters: int = count_parameters(nn_board_evaluator.net)
             model_evaluation = ModelEvaluation(
                 evaluation=evalu,
-                time_of_evaluation=datetime.datetime.now(),
+                time_of_evaluation=dt.datetime.now(),
                 number_of_model_parameters=number_of_model_parameters,
             )
             evaluated_models[model_hash_key] = model_evaluation

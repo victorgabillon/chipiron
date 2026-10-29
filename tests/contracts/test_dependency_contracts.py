@@ -1,7 +1,5 @@
 """Targeted cross-repo shape checks for the PR1 safety net."""
 
-from __future__ import annotations
-
 from atomheart.games.checkers.state import CheckersState
 from atomheart.games.integer_reduction.state import IntegerReductionState
 from valanga import Color

@@ -1,7 +1,5 @@
 """Canonical value families retain their architecture through bootstrap configuration."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING
 

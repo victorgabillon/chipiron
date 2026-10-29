@@ -1,7 +1,5 @@
 """Tiny deterministic canary games for future orchestration refactors."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Literal
 

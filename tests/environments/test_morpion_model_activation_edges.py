@@ -1,7 +1,5 @@
 """Authority, proposal fencing and scientific rejection at model transitions."""
 
-from __future__ import annotations
-
 import copy
 from typing import TYPE_CHECKING, Any
 

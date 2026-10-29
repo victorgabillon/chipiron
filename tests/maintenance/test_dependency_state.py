@@ -1,7 +1,5 @@
 """Dependency records distinguish immutable installs from dirty local sources."""
 
-from __future__ import annotations
-
 import hashlib
 import importlib.util
 import json

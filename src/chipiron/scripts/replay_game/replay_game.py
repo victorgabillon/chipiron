@@ -4,11 +4,10 @@ import os
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import dacite
 import yaml
-from atomheart.games.chess.board.board_chi import BoardChi
 from atomheart.games.chess.board.factory import create_board_chi
 from atomheart.games.chess.board.utils import (  # pylint: disable=unused-import
     Fen,
@@ -21,6 +20,9 @@ from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import qt_runtime_bootstrap
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board.board_chi import BoardChi
 
 QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 

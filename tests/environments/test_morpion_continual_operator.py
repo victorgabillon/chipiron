@@ -1,7 +1,5 @@
 """Fresh preparation, declared resource limits and policy downgrade guards."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING
 

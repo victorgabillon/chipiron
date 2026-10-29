@@ -1,7 +1,5 @@
 """Training helpers shared by Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 import logging
 import math
 import time

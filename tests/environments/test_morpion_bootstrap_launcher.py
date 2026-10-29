@@ -1,7 +1,5 @@
 """Tests for the canonical Morpion bootstrap launcher."""
 
-from __future__ import annotations
-
 import logging
 from dataclasses import replace
 from typing import TYPE_CHECKING, cast

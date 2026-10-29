@@ -1,7 +1,5 @@
 """Whole-expansion node limits agree with an unrestricted continuation oracle."""
 
-from __future__ import annotations
-
 import pytest
 from anemone.checkpoints import (
     build_search_checkpoint_payload,

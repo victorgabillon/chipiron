@@ -1,7 +1,5 @@
 """Tests for the Morpion Phase 6 artifact-pipeline orchestrator."""
 
-from __future__ import annotations
-
 import json
 import logging
 from dataclasses import dataclass, replace

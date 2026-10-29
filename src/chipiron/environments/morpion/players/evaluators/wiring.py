@@ -1,12 +1,14 @@
 """Evaluator wiring for Morpion."""
 
 from dataclasses import dataclass
-
-from chipiron.environments.morpion.types import MorpionState
-from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
+from typing import TYPE_CHECKING
 
 from .morpion_state_evaluator import MorpionStateEvaluator
 from .neural_evaluator_args import MorpionNeuralEvaluatorArgs
+
+if TYPE_CHECKING:
+    from chipiron.environments.morpion.types import MorpionState
+    from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 
 
 @dataclass(frozen=True, slots=True)

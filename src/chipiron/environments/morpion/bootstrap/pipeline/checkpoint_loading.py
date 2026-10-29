@@ -1,7 +1,5 @@
 """Candidate checkpoint loading helpers for Morpion artifact-pipeline growth."""
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING
 

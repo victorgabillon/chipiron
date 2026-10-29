@@ -1,7 +1,5 @@
 """Crash recovery for opt-in ordinary Growth; synthetic workspaces only."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import os

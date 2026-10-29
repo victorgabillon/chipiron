@@ -6,8 +6,6 @@ these tables. Python retains one source node, one family summary and one row.
 """
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import json
 import math
 from contextlib import contextmanager
@@ -38,6 +36,7 @@ from .dataset_family_targets import (
     _node_raw_target_is_certified,
 )
 from .pv_family_targets import PvFamilyTargetPolicy, PvFamilyTargets, family_node_target
+from .sharded_training_reader import ShardedTrainingGenerationView
 
 if TYPE_CHECKING:
     import sqlite3
@@ -48,7 +47,6 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.learning import MorpionSupervisedRow
 
     from .bootstrap_args import MorpionBootstrapArgs
-    from .sharded_training_reader import ShardedTrainingGenerationView
 
 
 class UnsupportedStreamingDatasetError(ValueError):

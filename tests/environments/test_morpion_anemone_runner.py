@@ -1,8 +1,6 @@
 # ruff: noqa: E402
 """Tests for the real Anemone-backed Morpion bootstrap runner."""
 
-from __future__ import annotations
-
 import gc
 import json
 import logging

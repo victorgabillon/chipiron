@@ -1,11 +1,14 @@
 """Module collecting the progress of computing moves by each player."""
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from chipiron.core.roles import GameRole, MutableRoleAssignment
+from chipiron.core.roles import MutableRoleAssignment
 from chipiron.displays.gui_protocol import UpdParticipantProgress
 from chipiron.displays.gui_publisher import GuiPublisher
+
+if TYPE_CHECKING:
+    from chipiron.core.roles import GameRole
 
 
 class PlayerProgressCollectorP(Protocol):

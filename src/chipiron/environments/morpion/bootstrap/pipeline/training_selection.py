@@ -1,8 +1,6 @@
 """Training-selection guards shared by Morpion pipeline entrypoints."""
 
-from __future__ import annotations
-
-from collections.abc import Mapping as MappingABC
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -15,8 +13,6 @@ from chipiron.environments.morpion.bootstrap.pipeline_claims import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
         MorpionBootstrapPaths,
     )
@@ -43,7 +39,7 @@ def manifest_has_auto_recovery(
     manifest: MorpionPipelineGenerationManifest,
 ) -> bool:
     """Return whether one manifest records stale-training auto-recovery."""
-    return isinstance(manifest.metadata.get("auto_recovery"), MappingABC)
+    return isinstance(manifest.metadata.get("auto_recovery"), Mapping)
 
 
 def _started_cursor_status_file_allows_reclaim(

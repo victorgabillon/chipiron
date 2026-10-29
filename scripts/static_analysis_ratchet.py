@@ -1,7 +1,5 @@
 """Report inherited analyzer debt and fail on new diagnostics or baseline growth."""
 
-from __future__ import annotations
-
 import argparse
 import ast
 import hashlib

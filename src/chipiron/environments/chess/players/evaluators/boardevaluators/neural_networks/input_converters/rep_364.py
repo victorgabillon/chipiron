@@ -1,8 +1,7 @@
 """Module for rep 364."""
 
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-import atomheart.games.chess.board as boards
 import chess
 import torch
 from atomheart.games.chess.board.utils import square_rotate
@@ -11,6 +10,9 @@ from valanga.represention_for_evaluation import ContentRepresentation
 from chipiron.environments.chess.types import ChessState
 
 from .board_representation import Representation364
+
+if TYPE_CHECKING:
+    import atomheart.games.chess.board as boards
 
 
 class _Rep364Like(ContentRepresentation[ChessState, torch.Tensor], Protocol):

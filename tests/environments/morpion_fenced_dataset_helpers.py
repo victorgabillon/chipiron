@@ -1,9 +1,6 @@
 """Explicit fresh fenced genesis and tiny synthetic source helpers."""
 
-from pathlib import Path
-from typing import Any
-
-import pytest
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.scientific_publication_initialization import (
@@ -11,6 +8,11 @@ from chipiron.environments.morpion.bootstrap.scientific_publication_initializati
 )
 from tests.environments.morpion_durable_closed_helpers import setup_closed_baseline
 from tests.environments.morpion_durable_v2_helpers import scientific_producer
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 def setup_fenced(root: Path) -> Any:

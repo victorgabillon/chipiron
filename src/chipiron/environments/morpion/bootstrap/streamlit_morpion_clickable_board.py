@@ -1,7 +1,5 @@
 """Minimal Streamlit component wrapper for clickable Morpion SVG boards."""
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path

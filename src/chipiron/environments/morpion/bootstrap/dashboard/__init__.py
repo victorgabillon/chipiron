@@ -1,7 +1,5 @@
 """Stable Morpion bootstrap dashboard APIs."""
 
-from __future__ import annotations
-
 from typing import Any
 
 __all__ = ["run_dashboard_app"]

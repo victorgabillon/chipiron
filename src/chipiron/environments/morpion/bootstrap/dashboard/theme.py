@@ -1,7 +1,5 @@
 """Small centralized visual system, using owned classes and stable test IDs."""
 
-from __future__ import annotations
-
 from html import escape
 from typing import TYPE_CHECKING, Any
 

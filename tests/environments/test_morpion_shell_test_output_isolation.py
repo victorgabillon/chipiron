@@ -1,7 +1,5 @@
 """Shell preflight must refuse unsafe test roots before any startup side effects."""
 
-from __future__ import annotations
-
 import os
 import subprocess
 from pathlib import Path

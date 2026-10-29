@@ -2,10 +2,9 @@
 
 import multiprocessing
 import os
-from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -24,6 +23,9 @@ from tests.environments.morpion_fenced_dataset_helpers import (
     run_dataset,
     setup_fenced,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 PRE = [
     "before_rows",

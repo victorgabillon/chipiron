@@ -2,13 +2,15 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from atomheart.games.morpion.state import Variant as MorpionVariant
-from valanga import StateTag
 
 from chipiron.environments.morpion.tags import MorpionStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
+
+if TYPE_CHECKING:
+    from valanga import StateTag
 
 
 class MorpionStartingPositionArgsType(StrEnum):

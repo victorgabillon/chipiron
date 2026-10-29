@@ -1,7 +1,5 @@
 """Generated v1 exports and tiny scalar checkpoints; no search or workers."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, cast

@@ -1,8 +1,6 @@
 """Full-reference versus bounded v2 contracts; frozen v1 remains separate."""
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import json
 import sqlite3
 import tracemalloc

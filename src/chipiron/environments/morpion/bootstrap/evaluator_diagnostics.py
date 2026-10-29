@@ -1,22 +1,22 @@
 """Persist lightweight Morpion evaluator training diagnostics per generation."""
 
-from __future__ import annotations
-
 import json
 import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRow,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from chipiron.environments.morpion.learning import (
-        MorpionSupervisedRow,
         MorpionSupervisedRows,
     )
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
@@ -343,7 +343,7 @@ def load_previous_evaluator_for_diagnostics(
         return None
     try:
         return load_morpion_regressor_for_inference(path)
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         return None
 
 
@@ -411,7 +411,7 @@ def _predict_rows(
     evaluator_name: str,
     feature_subset_name: str,
     feature_names: tuple[str, ...],
-) -> list[float | None]:
+) -> Sequence[float | None]:
     """Return one prediction per row or ``None`` when no model is available."""
     from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
         try_predict_morpion_rows_for_diagnostics,
@@ -527,7 +527,7 @@ def _optional_int(value: object) -> int | None:
         return None
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 

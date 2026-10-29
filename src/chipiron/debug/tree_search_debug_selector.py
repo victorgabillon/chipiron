@@ -1,7 +1,5 @@
 """Debug wrapper for one-shot tree-search branch selectors."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, is_dataclass

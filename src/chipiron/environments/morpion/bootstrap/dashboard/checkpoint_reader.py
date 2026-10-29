@@ -1,7 +1,5 @@
 """Read persisted flat or split checkpoints for inspection without restoring search."""
 
-from __future__ import annotations
-
 import json
 from typing import TYPE_CHECKING, Any, cast
 

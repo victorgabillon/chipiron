@@ -1,9 +1,13 @@
 """Module that defines an observable version of GamePlayingStatus."""
 
-from chipiron.displays.gui_protocol import UpdGameStatus
-from chipiron.displays.gui_publisher import GuiPublisher
+from typing import TYPE_CHECKING
 
-from .game_playing_status import GamePlayingStatus, PlayingStatus
+from chipiron.displays.gui_protocol import UpdGameStatus
+
+if TYPE_CHECKING:
+    from chipiron.displays.gui_publisher import GuiPublisher
+
+    from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 
 class ObservableGamePlayingStatus:

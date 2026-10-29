@@ -1,19 +1,18 @@
 """Module for gui encoder."""
 
-from typing import Protocol, TypeVar
-
-from valanga.game import Seed
-
-from chipiron.displays.gui_protocol import UpdatePayload
+from typing import TYPE_CHECKING, Protocol
 
 # chipiron/utils/communication/gui_encoder.py
-from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
-StateT_contra = TypeVar("StateT_contra", contravariant=True)
+if TYPE_CHECKING:
+    from valanga.game import Seed
+
+    from chipiron.displays.gui_protocol import UpdatePayload
+    from chipiron.environments.types import GameKind
+    from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
 
-class GuiEncoder(Protocol[StateT_contra]):
+class GuiEncoder[StateT_contra](Protocol):
     """Guiencoder implementation."""
 
     game_kind: GameKind

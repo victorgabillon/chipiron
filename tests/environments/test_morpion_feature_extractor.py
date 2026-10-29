@@ -1,7 +1,5 @@
 """Tests for Morpion handcrafted feature extraction."""
 
-from __future__ import annotations
-
 from collections import OrderedDict
 
 from atomheart.games.morpion import initial_state as morpion_initial_state

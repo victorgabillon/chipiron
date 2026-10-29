@@ -1,7 +1,5 @@
 """Local CLI for inspecting Morpion bootstrap dashboard data."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
@@ -56,15 +54,19 @@ def _render_run_summary(data: MorpionBootstrapDashboardData) -> str:
     )
     return "\n".join((
         "=== Morpion Bootstrap Run Summary ===",
-        "cycles: "
-        f"{summary.num_cycles} "
-        f"(train: {summary.num_train_cycles}, no-train: {summary.num_no_train_cycles})",
+        (
+            "cycles: "
+            f"{summary.num_cycles} "
+            f"(train: {summary.num_train_cycles}, no-train: {summary.num_no_train_cycles})"
+        ),
         f"latest generation: {_format_optional_value(summary.latest_generation)}",
         f"latest tree size: {_format_optional_value(summary.latest_tree_num_nodes)}",
         f"latest certified record: {latest_record}",
         f"latest frontier best: {latest_frontier}",
-        "latest frontier source: "
-        f"{_format_optional_value(summary.latest_frontier_source)}",
+        (
+            "latest frontier source: "
+            f"{_format_optional_value(summary.latest_frontier_source)}"
+        ),
         f"latest evaluator: {_format_optional_value(summary.latest_active_evaluator_name)}",
     ))
 

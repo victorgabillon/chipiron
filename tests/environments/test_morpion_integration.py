@@ -1,7 +1,5 @@
 """Focused integration tests for Chipiron Morpion support."""
 
-from __future__ import annotations
-
 import json
 import queue
 from typing import TYPE_CHECKING, cast

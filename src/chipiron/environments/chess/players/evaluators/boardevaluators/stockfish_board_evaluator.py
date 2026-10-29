@@ -14,7 +14,6 @@ from valanga.over_event import Outcome
 from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
 )
-from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
@@ -22,6 +21,8 @@ if TYPE_CHECKING:
     from collections.abc import Hashable
 
     from atomheart.games.chess.board.board_chi import BoardChi
+
+    from chipiron.environments.chess.types import ChessState
 
 
 @dataclass
@@ -104,7 +105,7 @@ class StockfishBoardEvaluator:
                     try:
                         self.engine = chess.engine.SimpleEngine.popen_uci(path)
                         break
-                    except (FileNotFoundError, OSError):
+                    except FileNotFoundError, OSError:
                         continue
 
                 if self.engine is None:
@@ -169,7 +170,7 @@ class StockfishBoardEvaluator:
             cp_value = getattr(white_score, "cp", 0)
             return Value(score=float(cp_value) / 100.0, certainty=Certainty.ESTIMATE)
 
-        except (chess.engine.EngineError, FileNotFoundError, OSError):
+        except chess.engine.EngineError, FileNotFoundError, OSError:
             return Value(
                 score=0.0, certainty=Certainty.ESTIMATE
             )  # Fallback on any error

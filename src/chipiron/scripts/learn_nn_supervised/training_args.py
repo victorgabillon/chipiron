@@ -5,8 +5,6 @@
 field name remains ``nn_trainer_args`` during the migration.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING

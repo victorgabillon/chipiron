@@ -1,7 +1,5 @@
 """Rollout-related runtime logging helpers for Morpion bootstrap."""
 
-from __future__ import annotations
-
 import logging
 import os
 from collections.abc import Mapping

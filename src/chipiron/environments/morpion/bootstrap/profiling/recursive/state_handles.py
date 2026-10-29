@@ -1,7 +1,5 @@
 """State-handle diagnostics for Morpion recursive memory profiling."""
 
-from __future__ import annotations
-
 from collections import Counter
 from collections.abc import Iterable, Mapping
 

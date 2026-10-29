@@ -1,11 +1,14 @@
 """Runtime random move selector implementation."""
 
-import random as py_random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from valanga import Dynamics, TurnState
-from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
+
+if TYPE_CHECKING:
+    import random as py_random
+
+    from valanga.game import Seed
 
 type AnyTurnState = TurnState[Any]
 

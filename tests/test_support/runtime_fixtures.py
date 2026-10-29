@@ -1,7 +1,5 @@
 """Shared deterministic current-runtime fixtures for PR1 characterization tests."""
 
-from __future__ import annotations
-
 import queue
 import threading
 import time
@@ -22,6 +20,7 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.types import GameKind
+from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game import Game, ObservableGame
 from chipiron.games.domain.game.game_manager import GameManager
 from chipiron.games.domain.game.game_playing_status import (
@@ -44,7 +43,6 @@ from chipiron.players.communications.player_message import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from chipiron.games.domain.game.final_game_result import GameReport
 
 PayloadT = TypeVar("PayloadT")
 

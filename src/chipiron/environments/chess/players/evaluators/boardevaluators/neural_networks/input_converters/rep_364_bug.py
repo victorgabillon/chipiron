@@ -1,9 +1,8 @@
 # pylint: disable=duplicate-code
 """Module for rep 364 bug."""
 
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-import atomheart.games.chess.board as boards
 import chess
 import torch
 from valanga import ContentRepresentation
@@ -11,6 +10,9 @@ from valanga import ContentRepresentation
 from chipiron.environments.chess.types import ChessState
 
 from .board_representation import Representation364
+
+if TYPE_CHECKING:
+    import atomheart.games.chess.board as boards
 
 
 class _Rep364Like(ContentRepresentation[ChessState, torch.Tensor], Protocol):

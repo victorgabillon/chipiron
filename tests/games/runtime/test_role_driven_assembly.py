@@ -1,7 +1,5 @@
 """Focused tests for the PR3 role-driven environment assembly path."""
 
-from __future__ import annotations
-
 import queue
 from dataclasses import dataclass, field
 from types import SimpleNamespace

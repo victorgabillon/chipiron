@@ -1,11 +1,11 @@
 """Dashboard-ready read-only history views for Morpion bootstrap runs."""
 # pylint: disable=too-many-lines
 
-from __future__ import annotations
-
 import logging
 import shutil
+from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from anemone.training_export import load_training_tree_snapshot
@@ -57,8 +57,7 @@ from chipiron.environments.morpion.morpion_display import (
 from chipiron.environments.morpion.types import MorpionDynamics
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from pathlib import Path
+    from collections.abc import Sequence
 
     from anemone.training_export import TrainingTreeSnapshot
     from atomheart.games.morpion.state import MorpionState as AtomMorpionState

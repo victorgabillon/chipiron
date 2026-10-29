@@ -1,8 +1,6 @@
 """Cheap current-state latent-window geometry for Morpion move tokens."""
-# ruff: noqa: TC001, TC003, TRY003
+# ruff: noqa: TRY003
 # pyright: reportMissingImports=false
-
-from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, Sequence

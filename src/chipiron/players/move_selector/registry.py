@@ -1,7 +1,5 @@
 """Provide registration and lookup for game-specific move selector factories."""
 
-from __future__ import annotations
-
 import random
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any

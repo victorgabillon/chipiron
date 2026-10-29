@@ -3,7 +3,6 @@
 import argparse
 import logging
 import sys
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from chipiron.scripts.factory import create_script
@@ -11,13 +10,15 @@ from chipiron.scripts.gui_launcher import script_gui
 from chipiron.scripts.script_args import LoggingArgs
 from chipiron.scripts.script_type import ScriptType
 from chipiron.utils import qt_runtime_bootstrap
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from chipiron.scripts.iscript import IScript
+    from chipiron.utils.dataclass import IsDataclass
 
 sys.path.append("../../")
 
@@ -144,11 +145,11 @@ def main() -> None:
 if __name__ == "__main__":
     # checking if the version of python is high enough
     MESSAGE = (
-        "A version of Python higher than 3.13 is required to run chipiron.\n"
+        "A version of Python 3.14 or higher is required to run chipiron.\n"
         ' Try using "python3 main_chipiron.py" instead'
     )
 
-    assert sys.version_info >= (3, 13), MESSAGE
+    assert sys.version_info >= (3, 14), MESSAGE
     # launching the real main python script.
     # this allows the to bypass the automatic full interpreter check of python that would raise a syntax error before
     # the assertion above in case of a wrong python version

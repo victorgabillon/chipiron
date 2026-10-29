@@ -1,7 +1,5 @@
 """Atomic patch/cursor acceptance, explicit rejection, exact retry and scientific parity."""
 
-from __future__ import annotations
-
 import copy
 import json
 from dataclasses import replace

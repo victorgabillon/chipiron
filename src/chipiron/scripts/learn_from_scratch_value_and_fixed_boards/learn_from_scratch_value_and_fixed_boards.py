@@ -4,8 +4,6 @@ and from a fixed set of non-labelled boards.
 """
 # pylint: disable=duplicate-code
 
-from __future__ import annotations
-
 import logging
 import os
 import random

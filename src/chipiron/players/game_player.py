@@ -4,17 +4,15 @@
 It stays generic and does not depend on any specific game snapshot/runtime types.
 """
 
-from typing import TypeVar
+from typing import TYPE_CHECKING
 
-from valanga.game import Seed
-from valanga.policy import NotifyProgressCallable, Recommendation
+if TYPE_CHECKING:
+    from valanga.game import Seed
+    from valanga.policy import NotifyProgressCallable, Recommendation
 
-from chipiron.core.roles import GameRole
+    from chipiron.core.roles import GameRole
 
-from .player import Player
-
-StateSnapT = TypeVar("StateSnapT")
-RuntimeStateT = TypeVar("RuntimeStateT")
+    from .player import Player
 
 
 class GamePlayer[StateSnapT, RuntimeStateT]:

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any
 
 import dacite  # pyright: ignore[reportMissingImports]
 
-from chipiron.models.model_bundle import ResolvedModelBundle
 from chipiron.utils.small_tools import yaml_fetch_args_in_file
 
 if TYPE_CHECKING:
@@ -13,10 +12,12 @@ if TYPE_CHECKING:
         NeuralNetArchitectureArgs,
     )
 
+    from chipiron.models.model_bundle import ResolvedModelBundle
+
 
 def load_nn_architecture_args_from_file(
     architecture_file_path: str,
-) -> "NeuralNetArchitectureArgs":
+) -> NeuralNetArchitectureArgs:
     """Load neural-network architecture args from an explicit YAML file path."""
     # Imported lazily to keep the generic runtime module importable without coral.
     # pylint: disable=import-outside-toplevel
@@ -34,7 +35,7 @@ def load_nn_architecture_args_from_file(
 
 def load_nn_architecture_args_from_bundle(
     bundle: ResolvedModelBundle,
-) -> "NeuralNetArchitectureArgs":
+) -> NeuralNetArchitectureArgs:
     """Load neural-network architecture args from a resolved model bundle."""
     return load_nn_architecture_args_from_file(bundle.architecture_file_path)
 

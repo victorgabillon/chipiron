@@ -1,8 +1,6 @@
 """Differential and resource tests for the bounded published-generation view."""
 # ruff: noqa: TRY003
 
-from __future__ import annotations
-
 import json
 import os
 import random

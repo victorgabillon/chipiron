@@ -1,7 +1,5 @@
 """Dashboard memory/export observability section rendering."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, cast
 
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (

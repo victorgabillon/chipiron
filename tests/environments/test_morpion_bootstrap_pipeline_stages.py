@@ -1,7 +1,5 @@
 """Tests for Morpion bootstrap Phase 3 pipeline stage entrypoints."""
 
-from __future__ import annotations
-
 import ast
 import logging
 import time

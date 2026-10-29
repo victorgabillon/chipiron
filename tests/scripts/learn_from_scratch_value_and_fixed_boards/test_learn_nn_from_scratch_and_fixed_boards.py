@@ -1,8 +1,6 @@
 """Module for test learn nn from scratch and fixed boards."""
 # pylint: disable=duplicate-code
 
-from __future__ import annotations
-
 import sys
 import types
 from pathlib import Path

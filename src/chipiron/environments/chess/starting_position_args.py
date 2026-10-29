@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from importlib import resources
 from pathlib import Path
-from typing import Literal
-
-from valanga import StateTag
+from typing import TYPE_CHECKING, Literal
 
 from chipiron.environments.checkers.starting_position_args import (
     CheckersStandardStartingPositionArgs,
@@ -21,6 +19,9 @@ from chipiron.environments.morpion.starting_position_args import (
     MorpionStandardStartingPositionArgs,
 )
 from chipiron.environments.starting_position import StartingPositionArgs
+
+if TYPE_CHECKING:
+    from valanga import StateTag
 
 
 class StartingPositionError(ValueError):

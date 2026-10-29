@@ -1031,14 +1031,14 @@ def main() -> None:
     # Check if conda is available
     try:
         subprocess.run(["conda", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         chipiron_logger.error("❌ Conda is not available. Please install conda first.")
         sys.exit(1)
 
     # Check if git is available
     try:
         subprocess.run(["git", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         chipiron_logger.error("❌ Git is not available. Please install git first.")
         sys.exit(1)
 

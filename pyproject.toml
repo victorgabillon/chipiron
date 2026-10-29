@@ -1,50 +1,54 @@
 [build-system]
-requires = ["setuptools>=82.0.1"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 
 [project]
 name = "chipiron"
-version = "0.2.4"
+version = "0.3.0"
 description = "chipiron plays games"
 keywords = ["games", "AI", "torch"]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
   "Operating System :: OS Independent",
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
-  "PyYAML",
-  "PySide6==6.9.2",
-  "matplotlib>=3.10.0",
-  "plotly>=6.3.0",
+  "PyYAML>=6.0.3",
+  "PySide6==6.12.0",
+  "matplotlib>=3.11.2",
+  "plotly>=7.1.0",
   "sortedcollections>=2.1.0",
-  "pandas==2.3.2",
-  "numpy==2.2.6",
-  "numba>=0.61.2",
-  "graphviz>=0.20.1",
+  "pandas==3.1.0",
+  "numpy==2.5.4",
+  "numba>=0.68.1",
+  "graphviz>=0.21",
   "dacite>=1.9.2",
-  "customtkinter>=5.2",
-  "pyarrow",
-  "gprof2dot",
-  "mlflow",
+  "customtkinter>=6.0.0",
+  "pyarrow>=25.0.0",
+  "gprof2dot>=2025.4.14",
+  "mlflow>=3.17.2",
   # PyPI distribution names differ from their import packages:
   # parsley-coco -> parsley, algorhino-coral -> coral,
   # algorhino-anemone -> anemone.
-  "parsley-coco>=0.1.34",
-  "gdown",
-  "orjson",
-  "ijson>=3.4,<4",
-  "zstandard",
-  "rich",
-  "valanga==0.2.5",
-  "atomheart==0.2.11",
-  "algorhino-coral==0.1.15",
-  "algorhino-anemone==0.2.26",
-  "torchinfo",
-  "platformdirs>=4.9.2",
-  "huggingface_hub>=1.6.0",
-  "shakmaty_python_binding",
+  "parsley-coco==0.2.0",
+  "gdown>=6.4.2",
+  "orjson>=3.13.0",
+  "ijson>=3.6.0,<4",
+  "zstandard>=0.25.0",
+  "rich>=15.0.0",
+  "valanga==0.3.0",
+  "atomheart==0.3.0",
+  "algorhino-coral==0.2.0",
+  "algorhino-anemone==0.3.1",
+  "torch>=2.14.1",
+  "torchinfo>=1.8.0",
+  "platformdirs>=4.13.7",
+  "psutil>=7.2.2",
+  "huggingface_hub>=2.3.0",
+  "shakmaty_python_binding>=0.1.6",
+  "chess>=1.11.2",
 ]
 
 
@@ -59,26 +63,26 @@ authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 chipiron-bootstrap = "chipiron.environments.morpion.bootstrap.operator_cli:main"
 
 [project.optional-dependencies]
-dashboard = ["streamlit==1.64.0"]
-test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
+dashboard = ["streamlit==1.66.1"]
+test = ["pytest>=9.2.0", "coverage>=7.17.0", "pytest-cov>=7.1.0", "pytest-xdist>=3.8.0"]
 
-lint = ["ruff==0.15.20", "pylint==4.0.6"]
+lint = ["ruff==0.17.3", "pylint==4.1.3"]
 
 typecheck = [
-  "mypy==2.1.0",
-  "pyright[nodejs]==1.1.411",
-  "types-PyYAML>=6.0.12.20260518",
+  "mypy==2.4.0",
+  "pyright[nodejs]==1.1.414",
+  "types-PyYAML>=6.0.12.20260906",
 ]
 
 dev = [
-  "tox==4.56.1",
-  "black==26.5.1",
-  "build==1.5.0",
-  "twine",
-  "sphinx",
-  "sphinx-rtd-theme",
-  "sphinx-autodoc-typehints",
-  "pre-commit==4.6.0",
+  "tox==4.67.4",
+  "black==26.10.1",
+  "build==1.6.1",
+  "twine>=7.0.0",
+  "sphinx>=9.2.0",
+  "sphinx-rtd-theme>=3.1.0",
+  "sphinx-autodoc-typehints>=3.17.4",
+  "pre-commit==4.7.0",
 ]
 
 [project.urls]
@@ -93,6 +97,7 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.package-data]
 chipiron = [
+  "py.typed",
   "environments/morpion/bootstrap/streamlit_morpion_clickable_board_frontend/*.html",
   "data/players/**/*.yaml",
   "data/players/**/*.pt",
@@ -144,6 +149,7 @@ show_missing = true
 skip_covered = true
 
 [tool.mypy]
+python_version = "3.14"
 mypy_path = "src"
 ignore_missing_imports = true
 show_error_codes = true
@@ -199,7 +205,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py314"
 fix = false
 
 [tool.ruff.format]
@@ -271,15 +277,19 @@ ignore = [
 # If needed, can add file-specific ignores
 
 
+[tool.ruff.lint.flake8-type-checking]
+# Parsley and dacite inspect dataclass field types at runtime.
+runtime-evaluated-decorators = ["dataclasses.dataclass"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
 [tool.black]
 line-length = 88
-target-version = ['py313']
+target-version = ['py314']
 
 [tool.pylint]
-py-version = "3.13"
+py-version = "3.14"
 extension-pkg-whitelist = ["PyQt5", "PySide6"]
 
 [tool.pylint.format]
@@ -317,7 +327,7 @@ init-hook = "import sys; sys.path.append('.')"
 [tool.pyright]
 include = ["src", "tests"]
 extraPaths = ["src"]
-pythonVersion = "3.13"
+pythonVersion = "3.14"
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportUnusedImport = true
@@ -340,13 +350,13 @@ reportMissingModuleSource = false
 #################### TOX ####################
 
 [tool.tox]
-min_version = "4.56.1"
-env_list = ["tooling", "py313", "ruff", "static"]
+min_version = "4.67.4"
+env_list = ["tooling", "py314", "ruff", "static"]
 isolated_build = true
 
 
 [tool.tox.env_run_base]
-base_python = ["python3.13"]
+base_python = ["python3.14"]
 
 # ----------------
 # Tooling drift guard
@@ -359,8 +369,8 @@ commands = [["python", "scripts/check_toolchain_versions.py"]]
 # ----------------
 # Tests (realistic)
 # ----------------
-[tool.tox.env.py313]
-deps = ["build==1.5.0", "pytest-xdist==3.8.0"]
+[tool.tox.env.py314]
+deps = ["build==1.6.1", "pytest-xdist==3.8.0"]
 description = "Build + install package, run tests"
 extras = ["test", "dashboard"]
 set_env = { CHIPIRON_TEST_INSTALLED = "1", PYTHONPATH = "", QT_QPA_PLATFORM = "offscreen" }
@@ -369,7 +379,7 @@ commands_pre = [
   [
     "python",
     "-c",
-    "import shutil; shutil.rmtree(r'{toxinidir}/dist', ignore_errors=True)",
+    "import shutil; shutil.rmtree(r'{envtmpdir}/dist', ignore_errors=True)",
   ],
   [
     "python",
@@ -378,7 +388,7 @@ commands_pre = [
     "--sdist",
     "--wheel",
     "--outdir",
-    "{toxinidir}/dist",
+    "{envtmpdir}/dist",
     "{toxinidir}",
   ],
   [
@@ -389,12 +399,12 @@ commands_pre = [
   [
     "python",
     "-c",
-    "import os; print(os.listdir(r'{toxinidir}/dist'))",
+    "import os; print(os.listdir(r'{envtmpdir}/dist'))",
   ],
   [
     "python",
     "-c",
-    "import glob, subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'uninstall', '-y', 'chipiron']); subprocess.check_call([sys.executable, '-m', 'pip', 'install', glob.glob(r'{toxinidir}/dist/*.whl')[0]])",
+    "import glob, subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'uninstall', '-y', 'chipiron']); subprocess.check_call([sys.executable, '-m', 'pip', 'install', glob.glob(r'{envtmpdir}/dist/*.whl')[0]])",
   ],
 ]
 commands = [
@@ -482,15 +492,15 @@ commands = [
 # The strict lint/typecheck developer commands above remain available.
 [tool.tox.env.ruff]
 package = "skip"
-deps = ["ruff==0.15.20"]
+deps = ["ruff==0.17.3"]
 commands = [
   ["python", "-m", "ruff", "format", "--check", "."],
   ["python", "-m", "ruff", "check", "."],
 ]
 
 [tool.tox.env.static]
-description = "show inherited static debt and reject new diagnostic identities"
+description = "require clean strict mypy, Pyright and Pylint results"
 package = "editable"
 extras = ["lint", "typecheck"]
-pass_env = ["CI", "STATIC_ANALYSIS_BASE_REF"]
-commands = [["python", "scripts/static_analysis_ratchet.py", "--mypy-strict", "--output", "{envtmpdir}/static-analysis"]]
+pass_env = ["CI"]
+commands = [["python", "-m", "mypy", "--strict", "src/chipiron"], ["python", "-m", "pyright", "--pythonpath", "{envpython}", "src/chipiron"], ["python", "-m", "pylint", "src/chipiron"]]

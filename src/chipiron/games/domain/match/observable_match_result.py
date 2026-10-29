@@ -1,12 +1,15 @@
 """Observable wrapper around role-aware match results."""
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from chipiron.displays.gui_protocol import ParticipantMatchStats, UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.games.domain.game.final_game_result import GameReport
 
 from .match_results import MatchResults, SimpleResults
+
+if TYPE_CHECKING:
+    from chipiron.games.domain.game.final_game_result import GameReport
 
 
 def make_publishers() -> list[GuiPublisher]:

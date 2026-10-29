@@ -1,7 +1,5 @@
 """Checkpoint-backed state diagnostics for Morpion recursive memory profiling."""
 
-from __future__ import annotations
-
 import logging
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sized

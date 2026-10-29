@@ -1,13 +1,11 @@
 """Live state-eviction helpers for Morpion bootstrap runtimes."""
 
-from __future__ import annotations
-
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from time import perf_counter
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import Protocol, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
@@ -15,8 +13,7 @@ from anemone.checkpoints import (
     DeltaCheckpointStatePayload,
 )
 
-if TYPE_CHECKING:
-    from chipiron.environments.morpion.types import MorpionState
+from chipiron.environments.morpion.types import MorpionState
 
 
 class _MorpionStateCheckpointCodec(Protocol):

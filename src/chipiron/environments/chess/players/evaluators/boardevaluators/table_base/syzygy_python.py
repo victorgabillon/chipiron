@@ -1,12 +1,16 @@
 """Module for the SyzygyTable class."""
 
+from typing import TYPE_CHECKING
+
 import atomheart.games.chess.board as boards
 import chess.syzygy
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.table_base import (
     SyzygyTable,
 )
-from chipiron.utils import MyPath
+
+if TYPE_CHECKING:
+    from chipiron.utils import MyPath
 
 
 class SyzygyChiTable(SyzygyTable[boards.BoardChi]):

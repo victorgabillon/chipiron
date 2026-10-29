@@ -17,7 +17,7 @@ class FakeBoard:
     copy_calls: list[tuple[bool, bool]] = field(default_factory=list)
     game_over: bool = False
 
-    def copy(self, *, stack: bool, deep_copy_legal_moves: bool) -> "FakeBoard":
+    def copy(self, *, stack: bool, deep_copy_legal_moves: bool) -> FakeBoard:
         """Provide copy for the deterministic test fixture."""
         self.copy_calls.append((stack, deep_copy_legal_moves))
         history = list(self.history) if stack else []

@@ -1,7 +1,5 @@
 """Metadata and event helpers shared by Morpion bootstrap workflows."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from .config import BOOTSTRAP_CONFIG_HASH_METADATA_KEY

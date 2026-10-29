@@ -1,7 +1,5 @@
 """Exact scientific bytes and fail-closed framing under self-consistent manifests."""
 
-from __future__ import annotations
-
 import hashlib
 import io
 import json

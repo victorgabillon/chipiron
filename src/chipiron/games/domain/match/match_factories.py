@@ -28,7 +28,6 @@ from chipiron.environments.deps import (
 )
 from chipiron.environments.environment import make_environment
 from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.game.game_manager_factory import GameManagerFactory
 from chipiron.games.domain.game.game_tag import GameConfigTag
@@ -39,15 +38,16 @@ from chipiron.games.domain.match.match_role_schedule import (
     ValidatedMatchPlan,
     build_validated_match_plan,
 )
-from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import MyPath
 
 from .match_settings_args import MatchSettingsArgs
 
 if TYPE_CHECKING:
     import queue
 
+    from chipiron.games.domain.game.game_args import GameArgs
+    from chipiron.scripts.chipiron_args import ImplementationArgs
+    from chipiron.scripts.script_args import BaseScriptArgs
+    from chipiron.utils import MyPath
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 

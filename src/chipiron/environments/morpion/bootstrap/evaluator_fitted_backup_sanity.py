@@ -1,14 +1,13 @@
 """Fitted-backup sanity loop on one frozen Morpion bootstrap tree."""
 # pylint: disable=duplicate-code,too-many-lines
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import torch
@@ -64,8 +63,6 @@ from .pv_family_targets import (
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from .evaluator_config import MorpionEvaluatorSpec
 
 LOGGER = logging.getLogger(__name__)

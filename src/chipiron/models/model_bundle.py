@@ -1,7 +1,5 @@
 """Model bundle resolution for neural-network artifacts."""
 
-from __future__ import annotations
-
 import importlib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath

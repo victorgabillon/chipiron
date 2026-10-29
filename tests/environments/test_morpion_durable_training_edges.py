@@ -1,7 +1,6 @@
 """Independent producer and serializer checks for accepted Training outputs."""
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -10,6 +9,9 @@ from chipiron.environments.morpion.bootstrap.pipeline.stages import (
 )
 from tests.environments.morpion_durable_training_helpers import setup_training
 from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_training_keeps_exact_reevaluation_proposal(

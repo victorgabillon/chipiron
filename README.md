@@ -1,4 +1,4 @@
-[![python](https://img.shields.io/badge/Python-3.13-blue)](https://www.python.org)
+[![python](https://img.shields.io/badge/Python-3.14-blue)](https://www.python.org)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
@@ -73,7 +73,7 @@ python3 -m chipiron.scripts.main_chipiron
 
 ## Requirements
 
-* Python 3.13
+* Python 3.14
 * pip
 * curl
 * tkinter
@@ -116,8 +116,8 @@ This downloads and installs Stockfish 16 (~40MB) to the correct location for chi
 ```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create --name chipiron3.13 python==3.13
-conda activate chipiron3.13
+conda create --name chipiron3.14 python==3.14
+conda activate chipiron3.14
 conda install -c conda-forge tk=*=xft_* # to fix graphical problems with tkinter
 make init
 ```
@@ -234,7 +234,7 @@ static-analysis errors.
 tox
 ```
 
-If tox is not installed in your active Python 3.13 environment:
+If tox is not installed in your active Python 3.14 environment:
 
 ```bash
 python -m pip install -e '.[dev]'
@@ -244,10 +244,10 @@ Useful focused runs:
 
 ```bash
 tox -e tooling
-tox -e py313
+tox -e py314
 tox -e ruff
 tox -e static
-# Optional strict reports, which still fail on inherited debt:
+# Separate lint and type-check entry points (also required clean):
 tox -e lint
 tox -e typecheck
 ```
@@ -257,7 +257,7 @@ pre-commit are pinned in `pyproject.toml`. `tox -e tooling` checks that CI and
 pre-commit stay aligned with those pins.
 
 For local IDEs, pre-commit, or manual commands outside tox, install the same
-development extras into your active Python 3.13 environment:
+development extras into your active Python 3.14 environment:
 
 ```bash
 python -m pip install -e '.[test,lint,typecheck,dev]'

@@ -1,8 +1,6 @@
 # ruff: noqa: D102, D105, D107, ANN201, ANN204, TRY003
 """Tests for opt-in Morpion growth runtime memory profiling."""
 
-from __future__ import annotations
-
 import gc
 import importlib
 import logging

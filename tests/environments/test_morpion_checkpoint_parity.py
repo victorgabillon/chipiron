@@ -1,7 +1,5 @@
 """Morpion runner checkpoint parity through the published Anemone boundary."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 

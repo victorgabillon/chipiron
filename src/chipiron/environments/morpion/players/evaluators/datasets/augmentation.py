@@ -1,7 +1,5 @@
 """On-demand state augmentation without duplicating stored training rows."""
 
-from __future__ import annotations
-
 import hashlib
 from typing import TYPE_CHECKING, Protocol
 

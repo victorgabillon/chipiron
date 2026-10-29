@@ -1,7 +1,5 @@
 """Regression tests for chess runtime history and repetition handling."""
 
-from __future__ import annotations
-
 import queue
 from types import SimpleNamespace
 

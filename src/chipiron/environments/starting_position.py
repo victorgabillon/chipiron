@@ -1,8 +1,9 @@
 """Module for starting position."""
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from valanga import StateTag
+if TYPE_CHECKING:
+    from valanga import StateTag
 
 
 class StartingPositionArgs(Protocol):

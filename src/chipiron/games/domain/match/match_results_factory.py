@@ -1,13 +1,17 @@
 """Create match-results objects from validated match plans."""
 
-import queue
+from typing import TYPE_CHECKING
 
-from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.environments.types import GameKind
 from chipiron.games.domain.match.match_results import IMatchResults, MatchResults
-from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
+
+if TYPE_CHECKING:
+    import queue
+
+    from chipiron.displays.gui_protocol import GuiUpdate, Scope
+    from chipiron.environments.types import GameKind
+    from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 
 
 class MatchResultsFactory:

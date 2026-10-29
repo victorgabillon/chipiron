@@ -1,7 +1,5 @@
 """Record runtime dependency provenance without importing heavy model packages."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import importlib.metadata

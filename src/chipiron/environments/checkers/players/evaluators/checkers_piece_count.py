@@ -1,7 +1,5 @@
 """Simple checkers evaluator wiring for tree search."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -13,13 +11,13 @@ from valanga import Color, Outcome, State
 from valanga.evaluations import Certainty, Value
 from valanga.over_event import OverEvent
 
+from chipiron.core.evaluation_scale import ValueOverEnum
+from chipiron.environments.checkers.checkers_rules import CheckersRules
 from chipiron.games.domain.game.game_rules import OutcomeKind
 
 if TYPE_CHECKING:
     from collections.abc import Hashable
 
-    from chipiron.core.evaluation_scale import ValueOverEnum
-    from chipiron.environments.checkers.checkers_rules import CheckersRules
     from chipiron.environments.checkers.types import CheckersState
 
 KING_WEIGHT = 2

@@ -5,8 +5,6 @@ shard is still parsed and freshly hashed by the existing bounded reader. Mutable
 updates, creation keys and topology are always validated in a fresh SQLite index.
 """
 
-from __future__ import annotations
-
 import hashlib
 import importlib
 import sys

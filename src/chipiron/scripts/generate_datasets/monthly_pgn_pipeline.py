@@ -5,8 +5,6 @@ This module intentionally holds the mechanics (seed, dest-dir setup, month loop 
 intermediate saving, and cleanup) so dataset scripts can focus on *what to extract* from games.
 """
 
-from __future__ import annotations
-
 import random
 import shutil
 import subprocess
@@ -150,7 +148,7 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
 
             local_size = local_path.stat().st_size
 
-            if remote_size > 0 and local_size == remote_size:
+            if 0 < remote_size == local_size:
                 chipiron_logger.info(
                     "Compressed file already exists for %s: %s", month, local_path
                 )

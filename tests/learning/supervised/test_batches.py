@@ -1,7 +1,5 @@
 """Tests for common supervised tensor batch helpers."""
 
-from __future__ import annotations
-
 import torch
 
 from chipiron.learning.supervised import (

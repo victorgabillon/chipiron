@@ -1,7 +1,5 @@
 """Scientific values and source visibility across the versioned capsule boundary."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from pathlib import Path

@@ -1,7 +1,5 @@
 """Strict current checkpoint boundary and the unchanged continuation witness."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from typing import TYPE_CHECKING

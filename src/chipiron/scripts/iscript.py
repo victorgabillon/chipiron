@@ -1,9 +1,11 @@
 """Document the module defines the IScript interface, which serves as the interface for scripts in the application."""
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from .default_script_args import DataClassWithBaseScriptArgs, DefaultScriptArgs
-from .script import AnyScript
+
+if TYPE_CHECKING:
+    from .script import AnyScript
 
 
 class IScript(Protocol):

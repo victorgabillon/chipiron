@@ -1,7 +1,5 @@
 """Focused integration tests for Chipiron integer reduction support."""
 
-from __future__ import annotations
-
 import json
 import queue
 from dataclasses import asdict

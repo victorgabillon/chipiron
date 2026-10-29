@@ -1,7 +1,5 @@
 """Opt-in derivation, sequential barriers and checkpoint-only drain regressions."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 

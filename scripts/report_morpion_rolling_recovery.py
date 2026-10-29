@@ -4,8 +4,6 @@ Default inspection is read-only. --retire authorizes only classified payloads in
 run_state before unlinking them; it preserves every model and evidence descriptor.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 from contextlib import ExitStack

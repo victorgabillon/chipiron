@@ -1,7 +1,5 @@
 """Small Torch runtime helpers shared by Chipiron learning workflows."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import torch
@@ -81,7 +79,9 @@ def resolve_torch_device(requested_device: str = "auto") -> torch.device:
         raise TorchDeviceUnavailableError.invalid_request(requested_device) from exc
 
     if device.type == "cuda":
-        _validate_cuda_device(device, requested_device=requested_device)
+        _validate_cuda_device(
+            device_index=device.index, requested_device=requested_device
+        )
     return device
 
 
@@ -97,7 +97,7 @@ def torch_device_info(
     if resolved_device.type == "cuda" and cuda_available:
         try:
             cuda_device_name = torch.cuda.get_device_name(resolved_device)
-        except (AssertionError, RuntimeError):
+        except AssertionError, RuntimeError:
             cuda_device_name = None
     return TorchDeviceInfo(
         requested_device=requested_device,
@@ -127,17 +127,17 @@ def state_dict_on_cpu(module: nn.Module) -> dict[str, torch.Tensor]:
 
 
 def _validate_cuda_device(
-    device: torch.device,
     *,
+    device_index: int | None,
     requested_device: str,
 ) -> None:
     """Validate CUDA availability and index bounds for one concrete device."""
     if not torch.cuda.is_available():
         raise TorchDeviceUnavailableError.cuda_unavailable(requested_device)
     cuda_device_count = torch.cuda.device_count()
-    if device.index is not None and not 0 <= device.index < cuda_device_count:
+    if device_index is not None and not 0 <= device_index < cuda_device_count:
         raise TorchDeviceUnavailableError.cuda_index_out_of_range(
             requested_device=requested_device,
-            device_index=device.index,
+            device_index=device_index,
             cuda_device_count=cuda_device_count,
         )

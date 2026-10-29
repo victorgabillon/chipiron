@@ -1,7 +1,5 @@
 """Recover stale Morpion artifact-pipeline training claims safely."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import shutil
@@ -221,7 +219,7 @@ def _load_manifest(path: Path) -> MorpionPipelineGenerationManifest | None:
         return None
     try:
         return load_pipeline_manifest(path)
-    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+    except OSError, TypeError, ValueError, json.JSONDecodeError:
         return None
 
 
@@ -242,7 +240,7 @@ def _read_json_mapping(path: Path) -> dict[str, object]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return {}
     if not isinstance(payload, dict):
         return {}

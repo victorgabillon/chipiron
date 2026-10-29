@@ -1,7 +1,5 @@
 """Tests for the local Morpion bootstrap dashboard CLI and plots."""
 
-from __future__ import annotations
-
 import os
 
 os.environ.setdefault("MPLBACKEND", "Agg")

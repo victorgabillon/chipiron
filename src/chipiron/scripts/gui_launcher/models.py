@@ -42,3 +42,6 @@ class ArgsChosenByUser:
             self.participants = list(launcher_spec.default_participants)
         if not self.starting_position_key:
             self.starting_position_key = launcher_spec.default_starting_position_key
+
+
+__all__ = ["ArgsChosenByUser", "ParticipantSelection", "ScriptGUIType"]

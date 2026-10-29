@@ -1,7 +1,5 @@
 """Explicit historical architecture; never aliases modern entity-token features."""
 
-from __future__ import annotations
-
 from dataclasses import asdict, dataclass
 from typing import Literal
 

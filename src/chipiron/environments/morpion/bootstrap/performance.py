@@ -5,8 +5,6 @@ peaks are reset only for individual evaluators/inference windows. Their wall
 clock includes synchronization at the two boundaries, never inside a batch.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import os
@@ -30,7 +28,7 @@ def process_peak_rss_mb() -> float | None:
     try:
         peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         return peak / (1024 * 1024 if sys.platform == "darwin" else 1024)
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         return None
 
 
@@ -53,7 +51,7 @@ class StageMeasurement:
                     self.cuda.synchronize(self.device)
                     self.cuda.reset_peak_memory_stats(self.device)
                     self.cuda_before = self._cuda_snapshot()
-            except (RuntimeError, ValueError, AssertionError):
+            except RuntimeError, ValueError, AssertionError:
                 LOGGER.warning("CUDA measurement unavailable", exc_info=True)
                 self.cuda = None
         self.started_unix_s = time.time()
@@ -83,7 +81,7 @@ class StageMeasurement:
             try:
                 self.cuda.synchronize(self.device)
                 cuda_after = self._cuda_snapshot()
-            except (RuntimeError, ValueError, AssertionError):
+            except RuntimeError, ValueError, AssertionError:
                 LOGGER.warning("CUDA measurement unavailable", exc_info=True)
         return {
             **details,
@@ -126,7 +124,7 @@ def persist_stage_measurement(
         }
         temporary.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
         temporary.replace(path)
-    except (OSError, ValueError, TypeError):
+    except OSError, ValueError, TypeError:
         LOGGER.warning(
             "Could not persist performance observation %s", path, exc_info=True
         )

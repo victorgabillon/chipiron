@@ -1,7 +1,5 @@
 """Tests for Morpion bootstrap record-status semantics."""
 
-from __future__ import annotations
-
 import json
 import logging
 from types import SimpleNamespace

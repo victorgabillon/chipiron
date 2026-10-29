@@ -1,7 +1,5 @@
 """Dashboard disk-usage section rendering."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (

@@ -1,7 +1,5 @@
 """Compatibility tests for legacy chess trainer checkpoint helper paths."""
 
-from __future__ import annotations
-
 import importlib
 from typing import Any
 

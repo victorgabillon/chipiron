@@ -1,7 +1,5 @@
 """Direct-file unit tests for the tree-search debug wrapper."""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import sys

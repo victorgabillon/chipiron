@@ -1,7 +1,5 @@
 """Human-readable Morpion growth recap for cluster operator terminals."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os
@@ -148,7 +146,7 @@ def _load_run_state(path: Path) -> MorpionBootstrapRunState | None:
         return None
     try:
         return load_bootstrap_run_state(path)
-    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+    except OSError, TypeError, ValueError, json.JSONDecodeError:
         return None
 
 
@@ -157,7 +155,7 @@ def _load_active_model(path: Path) -> MorpionPipelineActiveModel | None:
         return None
     try:
         return load_pipeline_active_model(path)
-    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+    except OSError, TypeError, ValueError, json.JSONDecodeError:
         return None
 
 
@@ -166,7 +164,7 @@ def _read_json_mapping(path: Path) -> dict[str, object]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return {}
     if not isinstance(payload, Mapping):
         return {}

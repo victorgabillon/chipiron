@@ -1,7 +1,5 @@
 """Tests for the standalone Morpion checkpoint profiling script."""
 
-from __future__ import annotations
-
 import importlib.util
 from pathlib import Path
 from types import SimpleNamespace

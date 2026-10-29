@@ -1,14 +1,17 @@
 """Module for the basic evaluation of a chess board."""
 
 import math
+from typing import TYPE_CHECKING
 
 import chess
-from atomheart.games.chess.board import IBoard
 from chess import Square
 from valanga import Color
 from valanga.evaluations import Certainty, Value
 
-from chipiron.environments.chess.types import ChessState
+if TYPE_CHECKING:
+    from atomheart.games.chess.board import IBoard
+
+    from chipiron.environments.chess.types import ChessState
 
 
 def value_base(board: IBoard, color: chess.Color) -> int:

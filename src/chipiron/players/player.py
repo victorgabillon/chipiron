@@ -6,15 +6,14 @@ The core `Player` is generic and delegates all game-specific logic to a `GameAda
 - optional oracle fast-path (e.g. syzygy in chess)
 """
 
-from typing import Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol
 
-from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
-PlayerId = str
+if TYPE_CHECKING:
+    from valanga.game import BranchName, Seed
 
-StateSnapT_contra = TypeVar("StateSnapT_contra", contravariant=True)
-RuntimeStateT = TypeVar("RuntimeStateT")
+PlayerId = str
 
 
 class PlayerMoveSelectionError(ValueError):
@@ -25,7 +24,7 @@ class PlayerMoveSelectionError(ValueError):
         super().__init__("No legal moves in this position")
 
 
-class GameAdapter(Protocol[StateSnapT_contra, RuntimeStateT]):
+class GameAdapter[StateSnapT_contra, RuntimeStateT](Protocol):
     """Game-specific behavior injected into the generic `Player`."""
 
     def build_runtime_state(self, snapshot: StateSnapT_contra) -> RuntimeStateT:

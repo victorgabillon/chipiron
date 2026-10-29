@@ -1,7 +1,5 @@
 """Focused tests for PR5 role- and participant-based result reporting."""
 
-from __future__ import annotations
-
 from dataclasses import asdict
 
 from chipiron.games.domain.game.final_game_result import (

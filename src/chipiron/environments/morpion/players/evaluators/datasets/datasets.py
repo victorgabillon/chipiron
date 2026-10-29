@@ -1,7 +1,5 @@
 """PyTorch dataset helpers for Morpion supervised learning rows."""
 
-from __future__ import annotations
-
 import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -29,7 +27,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
     resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
-    LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
+    LegacyGraphConfig,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.tokens import (
     MorpionGraphTokenConverter,

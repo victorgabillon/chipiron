@@ -1,8 +1,6 @@
 """Artifact-driven bootstrap loop for Morpion self-training."""
 # pylint: disable=duplicate-code
 
-from __future__ import annotations
-
 import logging
 import time
 from collections.abc import Mapping

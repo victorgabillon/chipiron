@@ -1,7 +1,5 @@
 """Tests for Morpion growth operator recaps."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.bootstrap.growth_recap import (

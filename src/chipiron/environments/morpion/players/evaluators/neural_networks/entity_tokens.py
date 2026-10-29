@@ -1,15 +1,15 @@
 """Entity-token tensor conversion for Morpion neural evaluators."""
 # pyright: reportMissingImports=false
 
-from __future__ import annotations
-
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import IntEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal
 
 import torch
+from atomheart.games.morpion.state import Point, Segment
 from torch import Tensor
 
 from chipiron.environments.morpion.action_geometry import (
@@ -29,11 +29,6 @@ from chipiron.environments.morpion.types import (
     MorpionDynamics,
     MorpionState,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from atomheart.games.morpion.state import Point, Segment
 
 MORPION_ENTITY_TOKEN_MODEL_KIND: Final[str] = "entity_token_transformer_value_net"
 MORPION_ENTITY_TOKEN_INPUT_REPRESENTATION: Final[str] = "morpion_entity_tokens_v1"

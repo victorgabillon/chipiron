@@ -1,15 +1,19 @@
 """Module for board to transformer input."""
 
+from typing import TYPE_CHECKING
+
 import chess
 import torch
 from atomheart.games.chess.board import create_board
-from atomheart.games.chess.board.iboard import PieceMap
 from atomheart.games.chess.board.utils import FenPlusHistory, square_rotate
 from atomheart.utils.color import valanga_color_to_chess
 from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
-from valanga import Color
+
+if TYPE_CHECKING:
+    from atomheart.games.chess.board.iboard import PieceMap
+    from valanga import Color
 
 
 def build_transformer_input(
