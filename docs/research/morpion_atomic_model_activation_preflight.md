@@ -1,5 +1,7 @@
 # Atomic model activation: checkpoint prerequisite remains open
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Decision and scope
 
 **No durable M1 → M2 activation was implemented.** This task stops at the user's
@@ -37,7 +39,7 @@ No production source, normal test, configuration, dependency or CI command chang
 All 476 installed Chipiron and 289 Anemone Python modules match these Git sources
 byte-for-byte. Version `0.2.26` alone is not a reproducible dependency identity.
 The independent copied environment and complete hashes are recorded in
-[`atomic_model_activation/evidence/`](atomic_model_activation/evidence/).
+[`atomic_model_activation/evidence/`](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_model_activation/evidence).
 
 New secondary-ext4 worktree:
 `/home/pompote/oldata/victor/morpion-scratch/atomic-model-activation-20261024/worktree`.

@@ -134,6 +134,11 @@ src/chipiron/scripts/profiling/benchmark_reports/**
 /action_supervision/
 .pyright/
 
+# Archived research outputs; keep reports, Python harnesses and test fixtures.
+/docs/research/**/evidence/
+/.ci-reports/
+/.venv/
+
 # Generated profiles and historical replay serializations
 *.prof
 *.pstats

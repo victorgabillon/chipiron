@@ -1,5 +1,7 @@
 # Closed scientific snapshots: offline implementation
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This implements option A from `f05d418c42b9292410702f51de2d976fbf693059`,
 whose parent is the exact reviewed implementation
 `0790c596f52e4d3360a416a385b771cf70049d25`. No implementation was cherry-picked
@@ -220,7 +222,7 @@ The bounded full scan also obtains every value contract and creation origin by s
 
 Dataset timing includes family construction, summaries, streaming output and source checks, on an already-open reused view. Its parity process holds the full oracle and is not used for bounded-RSS claims. Nine legacy policies add 9,000 exact 1k-row comparisons. Total: **89,000 paired JSONL rows**, **34,170 complete scientific node comparisons** (unchanged and growing populations, including long histories), and **17,000 literal current-update row comparisons against the committed historical-v2 writer**. Small regression fixtures additionally exercise changed certainties, late DAG parents, nulls, terminal proofs, gates, metadata, cursor wrap and patch rows.
 
-At 10k, unchanged-write user+system CPU was **3.717 s**, logical bytes read **294.084 MiB**, physical bytes read **12 KiB**, and physical bytes written **73.578 MiB** (including disposable SQLite work). Raw syscall, CPU, I/O, codec, Python fsync counters, disk inventories and source fingerprints are retained in [measurements](closed_scientific_snapshot/evidence/measurements.json). Python fsync counters do not count SQLite’s internal C-level sync calls.
+At 10k, unchanged-write user+system CPU was **3.717 s**, logical bytes read **294.084 MiB**, physical bytes read **12 KiB**, and physical bytes written **73.578 MiB** (including disposable SQLite work). Raw syscall, CPU, I/O, codec, Python fsync counters, disk inventories and source fingerprints are retained in [measurements](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/measurements.json). Python fsync counters do not count SQLite’s internal C-level sync calls.
 
 The design study’s matched short-history complete re-encoding component was 1.470/12.134/27.358 s at 1k/5k/10k. The new unchanged end-to-end offline writes are 1.177/4.761/8.384 s, **including validation absent from that old component measurement**. Conversely, new initial writes cost 4.991/37.859/87.426 s because they include authoritative load/redump checks and bounded topology/index validation. Do not present initial writes as faster, or compare the design’s 0.890 s real-10k copy-plus-update component directly with a complete validated write. The original real-search 502 MiB writer RSS is not a matched memory comparison: these controlled graphs share board objects.
 
@@ -234,22 +236,22 @@ The final relevant regression run passed **523 tests in 354.54 seconds**:
 44 closed-snapshot regressions plus 479 existing scientific reader/writer,
 durable-v2 publication/crash, checkpoint/receipt/parity, selected-generation
 verification and Dataset confidence/value-certainty tests. See the exact
-[pytest result](closed_scientific_snapshot/evidence/regressions-final.txt).
+[pytest result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/regressions-final.txt).
 This is the relevant regression suite, not a claim that every installed-package
 tox environment was run.
 
-Production Ruff checks [passed](closed_scientific_snapshot/evidence/ruff-final.txt).
+Production Ruff checks [passed](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/ruff-final.txt).
 The new test and research scripts passed the
-[E4/E7/E9/F/I checks](closed_scientific_snapshot/evidence/ruff-support.txt).
+[E4/E7/E9/F/I checks](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/ruff-support.txt).
 Targeted mypy with `--follow-imports=silent` passed for the writer, indexed reader
-and shared validation evidence ([result](closed_scientific_snapshot/evidence/mypy-final.txt));
+and shared validation evidence ([result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/mypy-final.txt));
 the existing unused PySide6 configuration note remains. `git diff --check` passed.
 
-The [source manifest](closed_scientific_snapshot/evidence/source-manifest.json)
+The [source manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/source-manifest.json)
 records exact ancestry and SHA256 hashes of the six production files used by
 these measurements. All 31 pre-existing worktrees retained their original HEAD,
 status and tracked diff, including the dirty research checkout and design/PR
-worktrees ([comparison](closed_scientific_snapshot/evidence/protected-worktrees.json)).
+worktrees ([comparison](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/closed_scientific_snapshot/evidence/protected-worktrees.json)).
 Only newly generated synthetic fixtures were used. There was no production
 activation, real continuation, historical deletion, distributed worker, push or
 PR creation.

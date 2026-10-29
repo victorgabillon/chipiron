@@ -1,5 +1,7 @@
 # Corrected Anemone / Chipiron integration reproduction
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This investigation starts at Chipiron
 `60fdf85bb26e34f7d502122f34f3208ae2fc19d9`, whose parent is the validated durable
 Training head `dc142573a1163178ae8fd5fc9feb90ff8ffee21e`.

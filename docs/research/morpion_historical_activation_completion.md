@@ -1,5 +1,7 @@
 # Historical activation acknowledgement without historical tree payloads
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Scope and exact foundation
 
 This change separates the evidence that an explicit model activation committed
@@ -208,7 +210,7 @@ The initial projection incorrectly omitted this lookup dependency and reported
 superseded.** All payloads
 moved in the earlier exploratory disposable copy were restored; the original E2E
 workspace was never altered. All 20 sealed G4 payload hashes in that copy were
-[verified after restoration](activation_completion/evidence/superseded/exploratory-restoration.json).
+[verified after restoration](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/superseded/exploratory-restoration.json).
 The corrected analyzer refuses the G4-unavailability
 experiment before moving anything. Initial raw observations remain separate from
 the final dependency conclusion.
@@ -445,33 +447,33 @@ processes; no bootstrap worker service or distributed experiment is launched.
 
 All paths below are relative to this report's directory:
 
-- [Exact sources and installed source hashes](activation_completion/evidence/sources.json).
-- [Final genuine E2E process results](activation_completion/evidence/final-e2e-summary.json),
-  [cross-run scientific comparison](activation_completion/evidence/final-scientific-comparison.json)
-  and [stale-producer/conflict checks](activation_completion/evidence/final-focused.json).
-- [Final dependency graph](activation_completion/evidence/final-reachability.json) and
-  [allocated inode inventory](activation_completion/evidence/final-allocation.json).
-- [Independent lifetime experiment](activation_completion/evidence/lifetime-separation.json)
-  and [baseline refusal](activation_completion/evidence/lifetime-baseline-refusal.json).
-- [Before retry](activation_completion/evidence/final-before-retry.json),
-  [after retry](activation_completion/evidence/final-after-retry.json),
-  [before head validation](activation_completion/evidence/final-before-head.json) and
-  [after head validation](activation_completion/evidence/final-after-head.json), with
+- [Exact sources and installed source hashes](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/sources.json).
+- [Final genuine E2E process results](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-e2e-summary.json),
+  [cross-run scientific comparison](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-scientific-comparison.json)
+  and [stale-producer/conflict checks](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-focused.json).
+- [Final dependency graph](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-reachability.json) and
+  [allocated inode inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-allocation.json).
+- [Independent lifetime experiment](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/lifetime-separation.json)
+  and [baseline refusal](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/lifetime-baseline-refusal.json).
+- [Before retry](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-before-retry.json),
+  [after retry](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-after-retry.json),
+  [before head validation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-before-head.json) and
+  [after head validation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/final-after-head.json), with
   adjacent `.profile.txt` reports and retained raw profiles in scratch.
-- [Code-size delta](activation_completion/evidence/code-delta.json),
-  [19 new plus 24 existing tests](activation_completion/evidence/lookup-final.xml),
-  [failing-before pointer corruption](activation_completion/evidence/pointer-before.xml),
-  [passing-after pointer/layout matrix](activation_completion/evidence/pointer-after.xml),
-  and [independent scientific matrix](activation_completion/evidence/scientific.xml).
-- [Final validation summary, environment and execution fingerprints](activation_completion/evidence/validation.json),
-  [PR JUnit](activation_completion/evidence/pr.xml) and
-  [FULL JUnit including exhaustive matrices](activation_completion/evidence/full.xml).
-- [Protected-worktree audit](activation_completion/evidence/protected.json): all 45
+- [Code-size delta](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/code-delta.json),
+  [19 new plus 24 existing tests](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/lookup-final.xml),
+  [failing-before pointer corruption](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/pointer-before.xml),
+  [passing-after pointer/layout matrix](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/pointer-after.xml),
+  and [independent scientific matrix](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/scientific.xml).
+- [Final validation summary, environment and execution fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/validation.json),
+  [PR JUnit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/pr.xml) and
+  [FULL JUnit including exhaustive matrices](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/full.xml).
+- [Protected-worktree audit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/protected.json): all 45
   prior Chipiron and 13 prior Anemone registrations, HEADs, statuses and tracked-diff
   fingerprints are unchanged.
 
 The initial observations are retained for transparency. The
-[superseded dependency estimate](activation_completion/evidence/superseded/README.txt)
+[superseded dependency estimate](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/activation_completion/evidence/superseded/README.txt)
 is explicitly not the final reachability conclusion. Final claims use `final-*` and
 the separately audited `lifetime-*` evidence. Raw test/build logs and all original
 generated workspaces remain under the new task scratch root.

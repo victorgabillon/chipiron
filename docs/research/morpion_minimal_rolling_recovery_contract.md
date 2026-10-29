@@ -1,5 +1,7 @@
 # Minimal rolling recovery contract — read-only design and evidence
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Decision and scope
 
 Base: **`ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3`**, directly, with no
@@ -197,7 +199,7 @@ synthetic workspace must be unchanged by every analysis call.
 
 All 84 serial fresh-process jobs succeeded. Full reports, source fingerprints and
 machine/toolchain details are in
-[the evidence directory](minimal_rolling_recovery/evidence/scaling.json).
+[the evidence directory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/minimal_rolling_recovery/evidence/scaling.json).
 The independent raw fixtures, logs and command manifest remain under
 `/home/pompote/oldata/victor/morpion-scratch/rolling-recovery-contract-20261023/evidence/validated-history`.
 
@@ -284,7 +286,7 @@ The relevant existing suites passed **881 cases in 866.20 seconds**, including
 22 initial analysis cases. After the final fail-closed guards, all **24 final
 analysis cases passed in 22.39 seconds**. This is 859 existing regression cases
 plus 24 final dedicated cases across the two runs, not 905 independent tests.
-[Exact suite counts and JUnit fingerprints](minimal_rolling_recovery/evidence/validation.json)
+[Exact suite counts and JUnit fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/minimal_rolling_recovery/evidence/validation.json)
 are retained. Tests ran serially against the new checkout and the existing pinned
 Python 3.13.5 environment, without modifying that environment. The full installed
 package CI was **not** rerun; this is the relevant regression selection, not a

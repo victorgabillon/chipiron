@@ -1,6 +1,7 @@
 """Check that quality-tool versions have one source of truth."""
 
 import re
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -265,7 +266,10 @@ def main() -> int:
             print(f"- {error}")
         return 1
     print("Toolchain versions are coherent.")
-    return 0
+    return subprocess.call(
+        [sys.executable, str(ROOT / "scripts/check_generated_artifacts.py")],
+        cwd=ROOT,
+    )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # Morpion streaming checkpoint integration
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This focused integration replaces the sharded save branch with Anemone's live-search
 writer. JSON saves retain their materialized implementation. Scientific export,
 activation, receipt, publication, fsync and recovery code are unchanged.
@@ -25,7 +27,7 @@ or a separately released dependency containing the exact implementation.
 All 477 installed Chipiron Python files also match the implementation. The benchmark
 wheel and final wheel differ only in formatting in runner.py; an AST comparison of
 every Python file verifies identical executable semantics. Both full file-hash sets
-and wheel/sdist hashes are retained in [sources.json](streaming_checkpoint/evidence/sources.json).
+and wheel/sdist hashes are retained in [sources.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/sources.json).
 
 ## Small production change
 
@@ -101,7 +103,7 @@ sensitive to allocator residency and sampling.
 ## Final matched measurements and shard selection
 
 Full raw values, CPU/I/O counters, lifetime high-water RSS, source fingerprints and
-all file hashes are in [measurements.json](streaming_checkpoint/evidence/measurements.json).
+all file hashes are in [measurements.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/measurements.json).
 Each old/new pair uses identical newly generated states and physical partitioning.
 Times below are seconds; RAM is MiB. These are single controlled pairs, not
 statistically established speedups.
@@ -235,9 +237,9 @@ The endgame starts with direct ESTIMATE(42), tree/effective FORCED(35), and one
 terminal child. After M3 its direct value is ESTIMATE(30.484771728515625), while
 tree/effective remain FORCED(35) and the terminal certificate remains intact.
 This is expected explicit neural refresh, not an accidental target-certainty change.
-See [initial endgame](streaming_checkpoint/evidence/endgame-initial.json),
-[final endgame](streaming_checkpoint/evidence/endgame-summary.json) and
-[opening result](streaming_checkpoint/evidence/opening-summary.json).
+See [initial endgame](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/endgame-initial.json),
+[final endgame](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/endgame-summary.json) and
+[opening result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/opening-summary.json).
 
 The reused recipe deliberately retains its original supplied logical producer
 revision label `4ada2471...`; it does not discover the executing Git revision.
@@ -289,7 +291,7 @@ overlap independent correctness work, so these are validation durations rather
 than CI performance comparisons. FAST⊂PR⊂FULL and exhaustive⊂FULL are verified.
 All installed source hashes still match after validation. These are local
 equivalents of the required CI gates, not a remote GitHub workflow run.
-See [validation.json](streaming_checkpoint/evidence/validation.json).
+See [validation.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/validation.json).
 
 The implementation is followed only by report/evidence changes; FULL is not rerun
 for those. Pytest's existing failed-only retention policy applies to new disposable
@@ -297,7 +299,7 @@ CI temporary directories; all experiment workspaces, raw logs, failures, source
 fingerprints and reports remain. It does not retire any historical pipeline artifact.
 The preservation audit matches all **48 pre-existing Chipiron and 14 Anemone**
 worktree registrations, HEADs, statuses and tracked-diff fingerprints.
-See [protected.json](streaming_checkpoint/evidence/protected.json).
+See [protected.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/streaming_checkpoint/evidence/protected.json).
 
 Early harness errors are retained in scratch logs: wrong expected exception class
 for nonempty output, the typed loader's unsupported split layout, relative export

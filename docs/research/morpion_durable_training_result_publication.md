@@ -1,5 +1,7 @@
 # Lean durable Training result publication
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Base: `1dec3f79af0989d52921d16ffb1785d2fa801a25`, containing Dataset implementation
 `fb81af3b9b2b7a6adf83cf04d4ef95c6de2c8eee` and atomic Reevaluation
 `58176ff3b7278f893c9cc4deb282d57f163c30a8`. No implementation was reapplied.
@@ -13,7 +15,7 @@ Private input/cache cleanup: `403b3d407947fb881494bceb3204ecba0b7b0605`.
 Continuation test head: `e63f2b01f564db8e711233150015bf573a6c612a`.
 The exact 476 production source hashes, installed-wheel identity, dependency
 versions, ancestry and measurements are in
-[`durable_training/evidence/`](durable_training/evidence/).
+[`durable_training/evidence/`](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_training/evidence).
 
 ## Scope and ownership
 

@@ -1,5 +1,7 @@
 # Amortize existing publication with bounded batches
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Three 360-second real four-worker sessions copied the same fresh legal G1:
 10,005 nodes / 11,014 edges. Model, scientific configuration, executable, 2-second
 pause, 240-second worker ownership wait and monitoring limits were fixed. No CI or
@@ -50,5 +52,5 @@ be measured at the larger graph size.
 
 Exact acceptance identities, per-role contention, native CPU, sampled process-group
 RSS, staging/scratch peaks, checkpoint/scientific allocation and acceptance latency
-are preserved in [the comparison](evidence/batching-comparison.json) and each actual
+are preserved in [the comparison](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/batching-comparison.json) and each actual
 case's artifact report. No candidate was activated during the matched comparison.

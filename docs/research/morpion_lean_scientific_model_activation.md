@@ -1,5 +1,7 @@
 # Lean scientific model activation: contract and blockers
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Base: `dc142573a1163178ae8fd5fc9feb90ff8ffee21e` (accepted Training, no activation).
 New isolated secondary-ext4 worktree:
 `/home/pompote/oldata/victor/morpion-scratch/model-activation-20261024/worktree`.
@@ -258,7 +260,7 @@ volatile cache; POSIX durability still relies on the existing fsync contract.
 All three serial fresh-process runs completed successfully. The requested sizes
 are lower bounds because real expansion batches add multiple children. Raw phase
 records, CPU/I/O counters, fingerprints and profiler attribution are in
-[`model_activation/evidence/`](model_activation/evidence/). These are component
+[`model_activation/evidence/`](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/model_activation/evidence). These are component
 measurements, **not timings of a committed M2 activation**.
 
 | Requested | Nodes / links | Multi-parent nodes | Maximum depth | Model evaluations | Peak RSS, MiB |

@@ -1,9 +1,0 @@
-{
-  "anemone_commit": "74bbd1250f31b72497166e624659d547324a0e5a",
-  "anemone_wheel_sha256": "225f78efa26f9937ad078a1fd4129b1e7e1ed309ae50c0de0a3cecb0b176c742",
-  "anemone_verified_modules": 288,
-  "chipiron_verified_modules": 476,
-  "chipiron_wheel_sha256": "49109987160c5c17e52fbc292f4212f5c9deb1e462f6dea7d908ca0522dd0741",
-  "manifest": "docs/research/corrected_anemone_refresh/evidence/dependencies.json",
-  "python": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/bin/python"
-}

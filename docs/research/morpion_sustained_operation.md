@@ -1,5 +1,7 @@
 # Morpion: bounded sustained operation, 26 October 2026
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 The real four-worker pipeline completed two positive learning cycles at 5k and
 10k scale. The larger fresh experiment ended at **G16, 11,766 legal nodes and
 13,099 DAG edges**, with explicit M2 and M3 activations followed by Growth.
@@ -33,7 +35,7 @@ production activation; every activation below belongs to a new private experimen
 | Earlier sustained-5k / matched-profile B wheel | `eddf00f3077aa0a38ba1c92a02f9576df95cc7b581460c0da7ea5ae5490f546e` |
 | Final four-worker shell | `c2ac56091196324a6683762edc4712f30911cf632bfdea6a711ac83e4b7ef1bb` |
 
-[Final source inventory](sustained_operation/evidence/source-identities-final.json)
+[Final source inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/source-identities-final.json)
 compares all **478 Chipiron and 289 Anemone Python files** across the specified
 Git archives, wheels and actual installed distributions. The same checks ran
 before the 10k launch and after CI/experiments. No installed package changed
@@ -43,7 +45,7 @@ results are not attributed to the later guard wheel.
 Python 3.13.5, Torch 2.14.0+cpu, Coral 0.1.15, Atomheart 0.2.11, Valanga 0.2.5,
 Zstandard 0.25.0/libzstd 1.5.7, ijson 3.6.0 and psutil 7.2.2 were used. Tool
 pins are pytest 9.1.1, Ruff 0.15.20, mypy 2.1.0, pyright 1.1.411 and pylint
-4.0.6. [Dependency evidence](sustained_operation/evidence/dependency-identities.json)
+4.0.6. [Dependency evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/dependency-identities.json)
 records exact installed-file manifest digests, native-library hashes, interpreter
 hash and the retained full inventory. No unverified Git origin is inferred from
 another dependency's version. Frozen research producer `revision` labels are
@@ -70,7 +72,7 @@ engine, scientific writer or rollback engine was added.
 | `b71891ec` | Record actual copied genesis size in research budget | 0 / 0 / 0 |
 | `99a63802` | Expose explicit per-call research time cap | 0 / 0 / 0 |
 
-[Full commit SHAs and counts](sustained_operation/evidence/implementation-commits.json)
+[Full commit SHAs and counts](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/implementation-commits.json)
 make each stage independently reviewable. The ten removed production lines replace
 previous acquisition/call forms; no obsolete production subsystem was found that
 needed removal. Serial/xdist fixture duplication was simplified in test code.
@@ -85,7 +87,7 @@ data and prior operational final-5k workspace. `/home/pompote/morpion_runs` reso
 to the inventoried historical Morpion directory. Every SHA-256, size, `mtime_ns`
 and `ctime_ns` matches afterward. The historical leaderboard's raw bytes also
 match. All **48 pre-existing worktrees** match their captured HEAD, status and
-tracked binary diff. [Protection proof](sustained_operation/evidence/protected-verification.json)
+tracked binary diff. [Protection proof](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/protected-verification.json)
 identifies the retained 39 MB before inventory and raw after report by hash.
 
 The raw snapshot script's relative-path exclusion accidentally included this new
@@ -145,8 +147,8 @@ comparisons. Counts below come from committed checkpoints, not attempted log wor
 | pb: 2s / 60s / 4 | 841 / 908 | 6.617 | 278.25 (4.637) | 2 / 2 | 2.03 | 1,108.8 |
 
 \* GNU-time user+system CPU seconds divided by elapsed seconds; not host CPU percent.
-[Metrics, including every measured acceptance latency](sustained_operation/evidence/pacing-metrics.json)
-and [committed counts](sustained_operation/evidence/pacing-comparison.json) are
+[Metrics, including every measured acceptance latency](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/pacing-metrics.json)
+and [committed counts](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/pacing-comparison.json) are
 retained. pb is **12.12× p90** and **3.58× p2** by durable nodes/minute. Even
 one-step waiting improved Growth by 26% over p2 while restoring learning acceptance.
 
@@ -182,7 +184,7 @@ these times are not substituted into the native throughput comparison.
 | Receipt-state validation, nested | 0.187 |
 | Immutable directory publication / authority replacement | 0.013 / 0.014 |
 
-[Profile evidence](sustained_operation/evidence/growth-phases.json) contains function
+[Profile evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/growth-phases.json) contains function
 identities. Inclusive validation/index timings overlap restore/export paths and
 must not be summed as exclusive phases. Current-head validation appears in the
 publication-state/capsule validation calls. Useful selection/evaluation is a small
@@ -215,7 +217,7 @@ committed capsules, authority bytes, exact cold payload, selector and both RNGs
 were preserved. The source workspace's complete file inventory was unchanged.
 No claim or committed capsule was retired. Copying separates some hardlinks, so
 this reclaimed-byte count is not attributed to the original p2 allocation.
-[Exact cleanup witness](sustained_operation/evidence/orphan-copy.json).
+[Exact cleanup witness](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/orphan-copy.json).
 
 | Workspace | Files | Logical bytes | Unique allocated file bytes | Committed boundaries |
 | --- | ---: | ---: | ---: | ---: |
@@ -233,12 +235,12 @@ The auditor identifies G2/4/6/9/11/13 as conditional future candidates totaling
 permitted committed reclamation is zero.** s5 has zero conditional candidates.
 pb's report explicitly refuses validation because of unresolved staging ownership;
 that blocker is retained rather than converted into deletion permission.
-[Retention summaries](sustained_operation/evidence/retention-summary.json) and full
+[Retention summaries](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/retention-summary.json) and full
 reports distinguish hypothetical candidates from authorized reclamation.
 
 Current s10 checkpoint: **1,537,605 logical bytes, 130.68 bytes/node**. Scientific
 snapshot: **817,067 bytes, 69.44 bytes/node**. Per-generation capsule/checkpoint/
-scientific allocation is in [s10 artifacts](sustained_operation/evidence/s10-artifacts.json).
+scientific allocation is in [s10 artifacts](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/s10-artifacts.json).
 Ordinary capsule allocation grows from 1.58 MB at G1 to 2.52 MB at G16, with larger
 changes at model refresh. The whole workspace grew by 36,229,120 allocated bytes
 from its initialized measurement; transient peak was 49,516,544 bytes, including
@@ -317,9 +319,9 @@ M1 bundle, common to all runs:
 | s10 M2 | G5, linear_b | `2b48e2ca6048f7ad8574a873f789c93576785d512c607befc0dd806730d4befd` |
 | s10 M3 | G10, linear_a | `5b82bfb48626b83b8d959e9a6b725bcecb7e3234d19ed0fc09a9532df0bb6bc0` |
 
-[b5](sustained_operation/evidence/b5-artifacts.json),
-[s5](sustained_operation/evidence/s5-artifacts.json), and
-[s10](sustained_operation/evidence/s10-artifacts.json) preserve **every actual
+[b5](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/b5-artifacts.json),
+[s5](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/s5-artifacts.json), and
+[s10](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/s10-artifacts.json) preserve **every actual
 accepted Dataset reference and rows digest, scientific source identity, accepted
 Training reference, selected bundle and every alternative candidate's bundle/
 parameter digest and real sample/loss metrics**. These static reports derive from
@@ -341,7 +343,7 @@ was G7→G8, explicit M3 activation G14→G15; subsequent M3 Growth added 155 no
 at G16. Checkpoint selector counts prove **48 committed session steps plus four
 continued steps**, rather than counting the two abandoned final batches in logs.
 
-[Paired 10k decision witnesses](sustained_operation/evidence/s10-decision-comparison.json)
+[Paired 10k decision witnesses](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/s10-decision-comparison.json)
 use fresh processes on a disposable copy, eight real search steps per boundary.
 With the same starting graph and identical initial search/rollout RNG hashes,
 M1→M2 changed the first selected node **7199→8002**; M2→M3 changed it
@@ -353,7 +355,7 @@ runtime budget; their empty output is excluded from this claim.
 
 ## Larger-run resource and record evidence
 
-The [10k preflight](sustained_operation/evidence/s10-preflight.json) recorded a fresh
+The [10k preflight](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/s10-preflight.json) recorded a fresh
 exclusive destination, 50,003,890,176 disk bytes and 79,367,512,064 available RAM
 bytes, exact source/dependencies/configuration, and no living members of 32 prior
 owned worker groups. Raw config SHA-256:
@@ -368,7 +370,7 @@ headroom, 2 GiB workspace and 1 GiB private scratch. The existing research monit
 checks them every 200 ms and sends TERM through the existing supervisor on risk.
 No ceiling was reached. Sampling is not an instantaneous allocation guarantee.
 
-[Experiment evidence](sustained_operation/evidence/experiments.json) contains all
+[Experiment evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/experiments.json) contains all
 native call resources, observations, committed per-generation nodes/edges/selector
 counts, and reader allocations. Important s10 observations:
 
@@ -434,13 +436,13 @@ isolate one next Growth step. The existing oracle predicted G17 with **11,777
 nodes / 13,113 edges**. Actual one-step Growth matched the **entire checkpoint
 payload**, all three scientific files byte-for-byte, selector and both RNG states.
 Routine recovery then passed. Source s10 file inventory and original pending
-proposal were unchanged. [Continuation witness](sustained_operation/evidence/continuation-copy.json).
+proposal were unchanged. [Continuation witness](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/continuation-copy.json).
 This is same-executable continuation; no cross-version search history was mixed.
 
 ## Scientific, crash and final CI evidence
 
 Final checks ran against the installed guard wheel, with all selected test IDs
-retained in [CI evidence](sustained_operation/evidence/final-ci.json):
+retained in [CI evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/final-ci.json):
 
 | Tier/check | Result |
 | --- | --- |
@@ -479,7 +481,7 @@ not rerun FULL.
 All retained paths are under `/home/pompote/oldata/victor/morpion-scratch/s26/`:
 `b5`, `s5`, `s10`, `i5`, `p90`, `p2`, `pw`, `pb`, disposable probes, wheels,
 private environment, caches, logs and inventories. Raw paths and hashes are listed
-in [the evidence manifest](sustained_operation/evidence/raw-evidence-manifest.json).
+in [the evidence manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/sustained_operation/evidence/raw-evidence-manifest.json).
 The report and curated JSON are review artifacts; raw workspaces preserve the
 accepted rows, all candidates, checkpoints, science and exact authority.
 

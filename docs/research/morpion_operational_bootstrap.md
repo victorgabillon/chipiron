@@ -1,5 +1,7 @@
 # Operational scientific Morpion bootstrap
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Scope and source identity
 
 This is a bounded experimental workflow for fresh Morpion 5T trees. It combines the existing four workers, real nonempty training, explicit accepted-model activation and cold continuation. It does not establish improved playing strength, authorize a record attempt, or retire any historical capsule.

@@ -1,5 +1,7 @@
 # Durable scientific v2 generation publication
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Local implementation and synthetic validation, 2026-10-21. No production option,
 CLI, experiment, remote branch or existing PR has been activated or changed.
 
@@ -12,9 +14,9 @@ The new isolated worktree is `/tmp/chipiron-durable-scientific-v2`, branch
 version-aware capsule boundaries, explicit initialization, and regression tests.
 No pre-existing implementation was replayed.
 
-[Exact ancestry and containment](durable_scientific_v2/evidence/ancestry.json),
-[production file fingerprints](durable_scientific_v2/evidence/source_manifest.json),
-and [unchanged scientific policy blobs](durable_scientific_v2/evidence/unchanged_policies.json)
+[Exact ancestry and containment](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/ancestry.json),
+[production file fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/source_manifest.json),
+and [unchanged scientific policy blobs](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/unchanged_policies.json)
 accompany this report. The original consolidation report and boundary patch were
 read before editing. All eight pinned PR heads and both earlier local scientific
 commits were verified as ancestors of the base.
@@ -202,9 +204,9 @@ All ten source JSONL pairs and all 24 flat/export source fingerprints also match
 The separately generated fixture patch differs only in its two retained scratch
 model-path fields; it is not claimed byte-identical. Managed worker tests above
 compare literal full patch/cursor bytes for the same source/model identity.
-[Exact comparison report](durable_scientific_v2/evidence/parity.json) and compressed
-complete [before](durable_scientific_v2/evidence/confidence-before.json.gz)/
-[after](durable_scientific_v2/evidence/confidence-after.json.gz) outputs are retained.
+[Exact comparison report](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/parity.json) and compressed
+complete [before](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/confidence-before.json.gz)/
+[after](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/confidence-after.json.gz) outputs are retained.
 The unchanged fixture retains its fixed producer revision label; actual executing
 source SHAs and fingerprints are recorded separately.
 
@@ -213,9 +215,9 @@ Full installed-wheel CI passes **2,130 tests, two CUDA skips, zero failures** in
 cases; no test exclusion was added. This includes all 101 new v2 publication tests
 and the existing scientific reader/writer, nine-policy streaming, confidence,
 neural-certainty, checkpoint/selector, receipt and v1 durability suites.
-[Exact CI selection and artifacts](durable_scientific_v2/evidence/validation.json).
+[Exact CI selection and artifacts](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/validation.json).
 All 25 pre-existing worktrees retain their captured HEAD, status and tracked-diff
-fingerprints ([verification](durable_scientific_v2/evidence/protected_after.json)).
+fingerprints ([verification](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/protected_after.json)).
 
 Ruff lint/format and toolchain coherence pass. Wheel/sdist build and installed
 package guards pass; all **470 production Python files** match the installed wheel.
@@ -310,8 +312,8 @@ scientific JSON metadata grows from 42,260 to 63,110 bytes at 1k G2→G3 and fro
 194,260 to 291,110 at 5k. All capsule seal/catalog/run-state sizes are retained.
 Hard links prevent duplicate payload allocation, not cumulative metadata growth.
 
-[Complete resource measurements, source hashes and cache allocation](durable_scientific_v2/evidence/resources.json)
-and [separate profiler sample](durable_scientific_v2/evidence/profile-1000.json).
+[Complete resource measurements, source hashes and cache allocation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/resources.json)
+and [separate profiler sample](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_scientific_v2/evidence/profile-1000.json).
 
 [Reproducer](durable_scientific_v2/measure.py) uses existing `StageMeasurement`,
 CPU/I/O helpers, unique-inode disk accounting and standard cProfile. Inputs are

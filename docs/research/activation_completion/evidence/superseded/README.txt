@@ -1,1 +1,0 @@
-Exploratory observations only. The G4 conditional retirement estimate omitted the actual exact-receipt model lookup scan. It is superseded by final-reachability.json. Moved payloads in the exploratory disposable copy were restored. No original workspace was changed.

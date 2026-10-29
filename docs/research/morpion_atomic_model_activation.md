@@ -1,5 +1,7 @@
 # Explicit atomic Morpion model activation
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Result and exact foundation
 
 Implemented an explicit accepted-Training M1 → M2 operation for **fresh, independently
@@ -40,15 +42,15 @@ distributed deployment, package publication or merge was performed.
 The protection audit compares all 43 pre-existing Chipiron and 13 Anemone worktree
 registrations, including 26/12 present worktrees' HEAD, status and tracked diff
 digest. Pre-existing absent `/tmp` registrations remain untouched. See
-[`protected_worktrees.json`](atomic_activation/evidence/protected_worktrees.json).
+[`protected_worktrees.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/protected_worktrees.json).
 
 The exact Anemone archive was built and installed independently. Its unchanged
 package version `0.2.26` is insufficient to identify this dependency. Wheel SHA-256:
 `5f3015c1a07d7a838a729896a388fad2b31f666f9abea7e82eb6f3381cb52890`.
 All 289 installed Anemone Python files and 477 installed Chipiron Python files
 match their recorded sources. See
-[`dependencies.json`](atomic_activation/evidence/dependencies.json) and
-[`installed_source.json`](atomic_activation/evidence/installed_source.json).
+[`dependencies.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/dependencies.json) and
+[`installed_source.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/installed_source.json).
 The latter also records the built Chipiron wheel/sdist digests. No package was
 published; consumers must integrate the pinned dependency before this branch.
 
@@ -207,7 +209,7 @@ checkpoint layouts. No assertion or scientific expected value was weakened.
 | Static baseline comparison | 206 current vs 209 baseline; **0 new**, 3 removed | `static_summary.json` |
 | Wheel/sdist and installed-source checks | Pass; all 477/289 modules match | `installed_source.json` |
 
-JUnit and compact results are in [`atomic_activation/evidence/`](atomic_activation/evidence/).
+JUnit and compact results are in [`atomic_activation/evidence/`](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence).
 The 109 research cases comprise 45 prior policy cases, 56 corrected-refresh
 integration cases, two unchanged checkpoint witnesses and six new activation
 cases. The six new cases were rerun after strengthening the bytewise assertions.
@@ -217,7 +219,7 @@ cases, two activation layouts, 22 process-death cases and 22 edge/concurrency
 cases. It also runs the complete existing affected checkpoint, durable publication,
 receipt/cursor, Dataset, Training and numerical-policy matrices, without the PR
 target's `exhaustive` exclusion. Per-file counts and complete JUnit identities are
-in [`validation.json`](atomic_activation/evidence/validation.json) and `full.xml`.
+in [`validation.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/validation.json) and `full.xml`.
 The execution recorder reports 2,759 unique selected identities, four deselected
 by the existing integration/external-data markers, and zero missing/duplicate
 executions. The only skips are the two CUDA-only tests.
@@ -316,7 +318,7 @@ allocated bytes; the sampled private staging peak is 3,928,064 allocated bytes
 bytes. These totals include existing source/result dependencies and are not a
 per-node storage forecast.
 
-[`matched_inputs.json`](atomic_activation/evidence/matched_inputs.json) contains
+[`matched_inputs.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/matched_inputs.json) contains
 the identical input request, model identity, source record, input checkpoint and
 scientific digests, and the equal resulting checkpoint/scientific digests for the
 profiled/unprofiled pair. Resource JSON files preserve all counters. The raw profile

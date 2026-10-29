@@ -1,5 +1,7 @@
 # Repeated durable scientific v2 publication: committed canonical validation reuse
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Local, explicitly opt-in investigation, 2026-10-21. No historical artifacts,
 production routing, existing PR branches, or validated original worktrees changed.
 
@@ -276,11 +278,11 @@ explicit runtime/parser identity binding; final CI was rebuilt and rerun in full
 These logs are not counted as successful validation. The final original/new test
 IDs, exact CI selection, source hashes and all reports are included in evidence.
 
-[Resource/counter data](durable_v2_reuse/evidence/resources-final.json),
-[profile attribution](durable_v2_reuse/evidence/profile-attribution-final.json),
-[scientific parity](durable_v2_reuse/evidence/scientific-parity.json),
-[CI/static validation](durable_v2_reuse/evidence/validation.json), and
-[validator environment](durable_v2_reuse/evidence/validator-environment.json).
+[Resource/counter data](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_v2_reuse/evidence/resources-final.json),
+[profile attribution](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_v2_reuse/evidence/profile-attribution-final.json),
+[scientific parity](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_v2_reuse/evidence/scientific-parity.json),
+[CI/static validation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_v2_reuse/evidence/validation.json), and
+[validator environment](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_v2_reuse/evidence/validator-environment.json).
 
 ## Remaining limits and safe review order
 

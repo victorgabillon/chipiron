@@ -1,5 +1,7 @@
 # Corrected Anemone refresh: Morpion integration and remaining activation gates
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Result and scope
 
 The corrected public Anemone refresh is usable directly by the existing Morpion
@@ -192,7 +194,7 @@ All paired output checkpoints **and every scientific snapshot file** are identic
 byte-for-byte. Model, full scientific fingerprint, ordered-link digest and RNG also
 match. Raw source identities, phase CPU/I/O/fsync/codec counters, profiles selected
 by function, disk allocations and process measurements are in
-[`resources.json`](corrected_anemone_refresh/evidence/resources.json) and the adjacent
+[`resources.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/corrected_anemone_refresh/evidence/resources.json) and the adjacent
 per-run JSON files. Both runs retain the same existing ordered-link discrepancy
 between the newly generated graph and its restored checkpoint.
 
