@@ -177,10 +177,12 @@ def grow(args: MorpionBootstrapArgs) -> MorpionBootstrapRunState:
 
 
 @pytest.mark.fast
+@pytest.mark.parametrize("candidate_workers", [1, 2, 4])
 def test_three_accepted_rounds_and_idempotent_retry(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, candidate_workers: int
 ) -> None:
     """W1→W2→W3 for every candidate; receipts rather than active-model paths win."""
+    monkeypatch.setenv("CHIPIRON_CANDIDATE_WORKERS", str(candidate_workers))
     local_leaderboard(monkeypatch, tmp_path)
     args, paths = setup_continual(tmp_path / "workspace")
     previous = None

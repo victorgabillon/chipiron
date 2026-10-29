@@ -154,10 +154,19 @@ def load_or_materialize_entity_token_cache(
     max_rows: int | None,
     entity_max_tokens: int,
     legacy_graph_tokens: LegacyGraphConfig | None = None,
+    read_only: bool = False,
 ) -> MorpionEntityTokenCache:
     """Load a valid entity-token cache or rebuild it from Morpion rows."""
     if legacy_graph_tokens is not None:
         entity_max_tokens = legacy_graph_tokens.graph_max_tokens
+    if read_only:
+        return load_entity_token_cache(
+            rows_path=rows_path,
+            max_rows=max_rows,
+            entity_max_tokens=entity_max_tokens,
+            legacy_graph_tokens=legacy_graph_tokens,
+        )
+
     paths = default_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
