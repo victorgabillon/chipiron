@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -96,3 +97,39 @@ def test_reporter_preserves_real_execution_and_collection(
     assert report["collect_only"] is collect_only
     assert report["execution_errors"] == []
     assert bool(report["reports"]) is not collect_only
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("workers", [0, 2])
+@pytest.mark.parametrize("fails", [False, True])
+def test_module_plugin_preserves_phases_and_exit_status(
+    tmp_path: Path, workers: int, fails: bool
+) -> None:
+    """The integration observer records real distributed passes, skips and failures."""
+    (tmp_path / "test_probe.py").write_text(
+        f"import pytest\ndef test_result(): assert {not fails}\n"
+        "@pytest.mark.skip(reason='probe skip')\ndef test_skip(): pass\n"
+    )
+    root = Path(__file__).resolve().parents[2]
+    output = tmp_path / "integration.json"
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(root),
+        "PYTEST_PLUGINS": "scripts.ci_test_metrics",
+        "CI_TEST_METRICS_OUTPUT": str(output),
+    }
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-n", str(workers), "test_probe.py"],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == int(fails), result.stdout + result.stderr
+    report = json.loads(output.read_text())
+    assert len(report["selected_ids"]) == 2
+    assert report["execution_errors"] == []
+    assert report["exit_code"] == int(fails)
+    assert len(report["reports"]) == 5
+    assert len(report["worker_collections"]) == workers
