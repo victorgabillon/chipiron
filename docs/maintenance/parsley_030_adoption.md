@@ -108,3 +108,28 @@ explicit null, default isolation, source precedence, final training validation,
 GUI input, and preset resolution. Existing chess integration expectations remain
 unchanged. This configuration evidence does not qualify a training backend or
 change historical numerical findings.
+
+## First Morpion adopter: growth recap
+
+`bootstrap/growth_recap.py` now wraps its existing argparse options in the public
+`Parsley` constructor and calls `parse_arguments(argv=argv, strict=True)`. It does
+not use `Script.initiate` or initialize an output/work directory. The existing
+required `--work-dir` Path, invocation-time worker-cycle environment fallback,
+`--rich`/`--no-rich` precedence, tolerant reads and rendering are preserved.
+There are no new YAML options or alias rules. Parsley's informational parsing
+logs are suppressed at this CLI boundary to preserve recap output.
+
+The private input dataclass is deliberately not frozen: 0.3.0's root CLI schema
+extension cannot inherit from a frozen dataclass. Existing frozen recap results,
+artifact dataclasses and codecs are unchanged.
+
+Regression coverage runs real subprocess help, errors and successful recap on
+read-only fixture directories, comparing contents, modes and modification times.
+It also checks missing directories remain absent, explicit argv ignores host
+arguments, environment changes apply to successive calls, and CLI overrides win.
+The same preservation cases were run against the original argparse implementation
+before migration.
+
+Further adoption candidates remain the launcher, operator and recovery CLIs.
+They need separate side-effect/routing reviews and are intentionally excluded
+here, along with broad parser replacement and new configuration features.

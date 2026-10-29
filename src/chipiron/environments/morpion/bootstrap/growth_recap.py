@@ -2,11 +2,15 @@
 
 import argparse
 import json
+import logging
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
+
+from parsley import Parsley
+from parsley.logger import set_verbosity
 
 from .bootstrap_paths import MorpionBootstrapPaths
 from .operator_console import render_operator_panel
@@ -222,6 +226,16 @@ def _format_float(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.1f}"
 
 
+@dataclass
+class _GrowthRecapArgs:
+    """Typed CLI input; paths are required and no workspace is initialized."""
+
+    work_dir: Path
+    worker_max_cycles: str | None = None
+    force_rich: bool = False
+    force_plain: bool = False
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the growth recap CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -232,7 +246,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--rich", action="store_true", dest="force_rich")
     parser.add_argument("--no-rich", action="store_true", dest="force_plain")
-    args = parser.parse_args(argv)
+    set_verbosity(logging.WARNING)
+    args = Parsley(parser=parser, args_dataclass_name=_GrowthRecapArgs).parse_arguments(
+        argv=argv, strict=True
+    )
 
     recap = collect_growth_recap(
         args.work_dir,
