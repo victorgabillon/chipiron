@@ -30,6 +30,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training.v
     learning_rate_at_step,
     train_entity_value,
 )
+from chipiron.learning.torch_runtime import TorchDeviceUnavailableError
 from tests.environments.morpion_nn_test_helpers import tiny_entity_model_args
 from tests.environments.test_morpion_entity_token_cache import _build_jsonl_rows_file
 
@@ -177,6 +178,29 @@ def test_nonfinite_loss_is_rejected_before_update(
         symmetry_diagnostic_rows=0,
     )
     with pytest.raises(ValueError, match="Non-finite training loss"):
+        train_entity_value(config, states, tmp_path / "run", provenance={})
+
+
+@pytest.mark.parametrize("device", ["cuda", "mps", "xpu"])
+def test_value_training_uses_shared_availability_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, device: str
+) -> None:
+    """Reject unavailable devices at the resolver, before model construction."""
+    path, _ = _build_jsonl_rows_file(
+        tmp_path, target_values=tuple(float(i) for i in range(10))
+    )
+    states = prepare_state_cache(path, tmp_path / "states.sqlite", max_rows=10)
+    config = EntityValueTrainingConfig(
+        model=tiny_entity_model_args(relational=True), device=device
+    )
+    for api in (torch.cuda, torch.backends.mps, torch.xpu):
+        monkeypatch.setattr(api, "is_available", lambda: False)
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("unavailable device reached model construction")
+
+    monkeypatch.setattr(value_training, "build_morpion_regressor", forbidden)
+    with pytest.raises(TorchDeviceUnavailableError, match="unavailable"):
         train_entity_value(config, states, tmp_path / "run", provenance={})
 
 

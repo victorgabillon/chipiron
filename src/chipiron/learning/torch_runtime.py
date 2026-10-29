@@ -27,9 +27,10 @@ class TorchDeviceUnavailableError(RuntimeError):
         cls,
         requested_device: str,
     ) -> TorchDeviceUnavailableError:
-        """Return the error for a CUDA request on a machine without CUDA."""
+        """Return the error for an unavailable CUDA-namespace device."""
         return cls(
-            f"Requested torch device {requested_device!r}, but CUDA is unavailable."
+            f"Requested torch device {requested_device!r}, but the CUDA namespace "
+            "is unavailable (NVIDIA CUDA or AMD ROCm, depending on the Torch build)."
         )
 
     @classmethod
@@ -56,13 +57,18 @@ class TorchDeviceInfo:
     cuda_available: bool
     cuda_device_count: int
     cuda_device_name: str | None
+    backend: str = "unknown"
+    cuda_version: str | None = None
+    hip_version: str | None = None
 
 
 def resolve_torch_device(requested_device: str = "auto") -> torch.device:
     """Resolve a user-facing device request into a concrete torch.device.
 
-    ``"auto"`` chooses CUDA when it is available, otherwise CPU. Explicit CUDA
-    requests require CUDA availability and valid device indices.
+    ``"auto"`` chooses the CUDA namespace (NVIDIA CUDA or AMD ROCm) when
+    available, otherwise CPU. It never selects MPS or XPU automatically.
+    Explicit CUDA, MPS and XPU requests require availability and valid indices;
+    availability does not establish operator support or training qualification.
     """
     if not isinstance(requested_device, str) or not requested_device.strip():
         raise TorchDeviceUnavailableError.empty_request()
@@ -82,7 +88,27 @@ def resolve_torch_device(requested_device: str = "auto") -> torch.device:
         _validate_cuda_device(
             device_index=device.index, requested_device=requested_device
         )
+    elif device.type in {"mps", "xpu"}:
+        _validate_optional_accelerator(
+            device_type=device.type,
+            device_index=device.index,
+            requested_device=requested_device,
+        )
     return device
+
+
+def synchronize_torch_device_if_needed(device: torch.device) -> None:
+    """Wait for device work using backend APIs present in pinned Torch 2.14.1.
+
+    CPU is a no-op. ROCm uses the CUDA API; MPS synchronization is device-wide
+    and takes no device argument. Errors propagate instead of hiding bad timings.
+    """
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+    elif device.type == "mps":
+        torch.mps.synchronize()
+    elif device.type == "xpu":
+        torch.xpu.synchronize(device)
 
 
 def torch_device_info(
@@ -105,6 +131,13 @@ def torch_device_info(
         cuda_available=cuda_available,
         cuda_device_count=cuda_device_count,
         cuda_device_name=cuda_device_name,
+        backend=(
+            ("amd_rocm" if torch.version.hip is not None else "nvidia_cuda")
+            if resolved_device.type == "cuda"
+            else resolved_device.type
+        ),
+        cuda_version=torch.version.cuda,
+        hip_version=torch.version.hip,
     )
 
 
@@ -141,3 +174,30 @@ def _validate_cuda_device(
             device_index=device_index,
             cuda_device_count=cuda_device_count,
         )
+
+
+def _validate_optional_accelerator(
+    *, device_type: str, device_index: int | None, requested_device: str
+) -> None:
+    """Check explicit MPS/XPU requests without qualifying training support."""
+    available = (
+        torch.backends.mps.is_available()
+        if device_type == "mps"
+        else torch.xpu.is_available()
+    )
+    if not available:
+        message = (
+            f"Requested torch device {requested_device!r}, but "
+            f"{device_type.upper()} is unavailable in this Torch build or host."
+        )
+        raise TorchDeviceUnavailableError(message)
+    count = (
+        torch.mps.device_count() if device_type == "mps" else torch.xpu.device_count()
+    )
+    if device_index is not None and not 0 <= device_index < count:
+        message = (
+            f"Requested torch device {requested_device!r}, but "
+            f"{device_type.upper()} device index {device_index} is outside "
+            f"the available range [0, {count})."
+        )
+        raise TorchDeviceUnavailableError(message)
