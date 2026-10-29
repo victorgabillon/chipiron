@@ -95,7 +95,7 @@ def cpu_capacity() -> float:
 
 def available_memory_mb() -> int:
     """Reserve actual host/container headroom, including other cgroup members."""
-    available = psutil.virtual_memory().available
+    available = int(psutil.virtual_memory().available)
     for directory in _cgroup_directories("memory"):
         for limit_name, usage_name in (
             ("memory.max", "memory.current"),
