@@ -1,0 +1,412 @@
+{
+  "chipiron": [
+    {
+      "path": "/home/pompote/oldata/victor/chipiron",
+      "unchanged": true,
+      "present": true,
+      "head": "f545304c24a7889f20471de0944d8097a9d192c8",
+      "diff_sha256": "6b632c20e46a64585c51935337b3e22579389d30ff92b201640916a5aa5b138d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-canonicalization",
+      "unchanged": true,
+      "present": true,
+      "head": "90d012ddac42e1b8c026a7ec34ea86a6326bbbb5",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-dashboard-perf",
+      "unchanged": true,
+      "present": true,
+      "head": "af4b69415b7f137b569f158f670209e3919c927b",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-benchmark-v1",
+      "unchanged": true,
+      "present": true,
+      "head": "6c5b92981223ac5715770b100f0760e55a9ef98d",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-v1",
+      "unchanged": true,
+      "present": true,
+      "head": "16fbec5a9f517b8117446cb25184d4867f2163e4",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-main-operator",
+      "unchanged": true,
+      "present": true,
+      "head": "9464847a43261fa712c5602f5d891ee6e9938013",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-training-export-profile",
+      "unchanged": true,
+      "present": true,
+      "head": "67a7cfd1955f43d5947af01dbb324fb5efd93a0d",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-transformer-v1-bootstrap",
+      "unchanged": true,
+      "present": true,
+      "head": "fb0c126966d4be9a0da74492fc1db77a22f7c264",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-warm-growth-runtime",
+      "unchanged": true,
+      "present": true,
+      "head": "aeece2c1694a90bb79880db1733966d22c36c6a1",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "1da1c59ae37d901f5c5277a6a2c04149046c49d0",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/atomic-activation-impl-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "4ada24712dca95d1114d3e838a13c3447af998ac",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/atomic-model-activation-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "448d65970ca6c7acdac54e792e54ceb8f9a6f715",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/atomic-patch-cursor-20261023/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "58176ff3b7278f893c9cc4deb282d57f163c30a8",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "f7230d13ba6dd5dfba1e5c88fd741907af8286bc",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/closed-scientific-snapshots-20261022/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "27b92ff342f5dea4e96dcaca25c9d313a95018c3",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "dc142573a1163178ae8fd5fc9feb90ff8ffee21e",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "3623bb0f60d784476294f93fa533f7ec2d0e35db",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-reuse-20261021/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "1f335acfa362469dae3636329fa1054365caeb0b",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "640de9b98d0fb7f950904ef48acc65f750486b8c",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "1dec3f79af0989d52921d16ffb1785d2fa801a25",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "f1a4a6e61bcfd5925e5151c7caa1b7e2daced72c",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "fa9955a2b9fc31ac43a97ed358affda801029a3b",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/model-activation-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "60fdf85bb26e34f7d502122f34f3208ae2fc19d9",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/rolling-recovery-contract-20261023/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "089fec3106bdbc690435e61a5b0ce236a5b4821e",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/rolling-snapshot-design-20261022/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "f05d418c42b9292410702f51de2d976fbf693059",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/safe-recovery-epochs-20261023/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "8530ec6e12a6876c30aa41ce60be9c971a11c2e0",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/selected-generation-verification-20261021/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "0790c596f52e4d3360a416a385b771cf70049d25",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-certainty-streaming",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-bound-patch-receipts",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-lifecycle-integration",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-dataset-v2-confidence",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-durable-reevaluation-publication",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-durable-scientific-v2",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-durable-sharded-publication",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-export-main-before",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-before",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-integration",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-scientific-durable-v2",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader-profile",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-sharded-training-v2",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-streaming-dataset",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-streaming-reevaluation",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    },
+    {
+      "path": "/tmp/chipiron-value-certainty",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    }
+  ],
+  "anemone": [
+    {
+      "path": "/home/pompote/oldata/victor/anemone",
+      "unchanged": true,
+      "present": true,
+      "head": "7950881f436d3b1ca3dba1d3ed733bb3a43bfd14",
+      "diff_sha256": "3941140fd722d7254dd408025b4f6a5aedf1052452a36f6c1c80e06779767218"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/anemone-checkpoint-lifecycle",
+      "unchanged": true,
+      "present": true,
+      "head": "fbd984ac5845fa6481f734bdcd3cdbe15be54f49",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/anemone-release-0.2.22",
+      "unchanged": true,
+      "present": true,
+      "head": "8821d0c2b4711a279f1e29850a30e70db931fb90",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/anemone-release-0.2.23",
+      "unchanged": true,
+      "present": true,
+      "head": "53cd6f7e2d8407dbb2b9c11fc1cff5c5e2ad9cff",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/anemone-state-free-compare",
+      "unchanged": true,
+      "present": true,
+      "head": "ec9fec7e47ca661eb1dd9330d115d010d9e5e64d",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-bounded-resolver-score-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "28d4e77f5b446d725c6cd483d38043d7c4e761ea",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-checkpoint-continuation-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "32a7fb0fad5c62a9c49beafa7ee536c545d51fb1",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-scientific-refresh-20261024/worktree",
+      "unchanged": true,
+      "present": true,
+      "head": "74bbd1250f31b72497166e624659d547324a0e5a",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/reconciliation_execution_2026-09-20/worktrees/anemone-alternating",
+      "unchanged": true,
+      "present": true,
+      "head": "87ad317c1a04d210a1e1dd1b634510318dc3509a",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/reconciliation_execution_2026-09-20/worktrees/anemone-integration",
+      "unchanged": true,
+      "present": true,
+      "head": "53cd6f7e2d8407dbb2b9c11fc1cff5c5e2ad9cff",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/reconciliation_execution_2026-09-20/worktrees/anemone-publish-0.2.24",
+      "unchanged": true,
+      "present": true,
+      "head": "31528014dda463ff3df40bb48bb5c8acce696e73",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/reconciliation_execution_2026-09-20/worktrees/anemone-release-0.2.24",
+      "unchanged": true,
+      "present": true,
+      "head": "35d54102ba6be5061e3a9d286bc2f48625b1f50a",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/anemone-checkpoint-lifecycle-pr77",
+      "unchanged": true,
+      "present": false,
+      "head": null,
+      "diff_sha256": null
+    }
+  ]
+}

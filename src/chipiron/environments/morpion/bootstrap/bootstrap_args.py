@@ -12,6 +12,9 @@ from .bootstrap_errors import (
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, MorpionBootstrapSearchConfig
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_family import morpion_evaluators_config_from_preset
+from .learning_policy import (
+    MorpionContinualLearningPolicy,  # noqa: TC001 - dataclass introspection
+)
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
@@ -23,6 +26,10 @@ from .pipeline_config import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from chipiron.environments.morpion.learning.target_confidence import (
+        DatasetConfidencePolicy,
+    )
 
     from .pv_family_targets import PvFamilyTargetPolicy
 
@@ -225,6 +232,7 @@ class MorpionBootstrapArgs:
     min_visit_count: int | None = None
     max_rows: int | None = None
     use_backed_up_value: bool = True
+    dataset_confidence_policy: DatasetConfidencePolicy = "legacy_v1"
     dataset_family_target_policy: PvFamilyTargetPolicy = "none"
     dataset_family_prediction_blend: float = 0.25
     memory_diagnostics: bool = False
@@ -246,6 +254,7 @@ class MorpionBootstrapArgs:
     validation_fraction: float = 0.2
     validation_seed: int = 0
     training_device: str = "auto"
+    continual_learning: MorpionContinualLearningPolicy | None = None
     model_kind: str = "linear"
     hidden_dim: int | None = None
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (

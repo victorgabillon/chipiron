@@ -1,0 +1,26 @@
+{
+  "docs/research/dataset_confidence_v2/audit.py": {
+    "source_commit": "05fa885796aa66441926ed300fda269ede89cc5f",
+    "blob": "4e6016f4f7014ce6f0e0207664a9c67c4d019201"
+  },
+  "tests/environments/morpion_scientific_reader_helpers.py": {
+    "source_commit": "05fa885796aa66441926ed300fda269ede89cc5f",
+    "blob": "4dceb4b3d5371f7b89de7978ac660a9c2c1697f9"
+  },
+  "scripts/benchmark_morpion_scientific_reader.py": {
+    "source_commit": "05fa885796aa66441926ed300fda269ede89cc5f",
+    "blob": "83e2d2c738aa3552dc2bf5c4beae60d401ad1ddb"
+  },
+  "tests/environments/morpion_generation_publication_helpers.py": {
+    "source_commit": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+    "blob": "bb0b497df18c18959d1852db9ddfdde52757ef3f"
+  },
+  "tests/environments/morpion_patch_receipt_helpers.py": {
+    "source_commit": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+    "blob": "2697a512a5802170ebe829b64f3365ef8fb9b8e7"
+  },
+  "scripts/measure_morpion_generation_publication.py": {
+    "source_commit": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+    "blob": "5f52b0d6d7f91e32a77048f6e1c28be17bbb2191"
+  }
+}

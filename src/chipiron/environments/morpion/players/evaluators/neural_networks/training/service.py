@@ -31,13 +31,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.entity_rel
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_tokens import (
     is_morpion_entity_token_model_kind,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
-    MorpionRegressor,
-    build_morpion_regressor,
-)
 from chipiron.learning.supervised import (
     RegressionEvaluationStats,
     TensorSupervisedBatch,
+    infer_batch_sample_count,
     move_supervised_batch_to_device,
     regression_quality_stats_to_metadata,
     train_regression_batch,
@@ -54,6 +51,7 @@ from .cached_index_schedule import (
     cached_index_schedule,
     split_indices_for_streaming_policy,
 )
+from .continuation import finish_training, initialize_training
 from .device_logging import log_training_device
 from .entity_token_cache import (
     MorpionEntityTokenCache,
@@ -102,10 +100,15 @@ from .scale_diagnostics import (
     tensor_scale_stats,
     tensor_scale_stats_to_metadata,
 )
+from .state_split import prepare_state_split
 from .streaming import streaming_split_policy, train_streaming_epoch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
+        MorpionRegressor,
+    )
 
     from .args import MorpionStreamingTrainingArgs, MorpionTrainingArgs
 
@@ -118,6 +121,7 @@ def train_morpion_regressor(
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor on persisted supervised rows."""
     total_started_at = perf_counter()
+    args, state_split = prepare_state_split(args)
     timings = PhaseDurations()
     train_timings = PhaseDurations()
     collate_fn: Callable[[Any], Any] | None
@@ -153,11 +157,18 @@ def train_morpion_regressor(
                 )
             )
             collate_fn = collate_morpion_supervised_samples
-    train_dataset, validation_dataset = _split_train_validation_dataset(
-        dataset,
-        validation_fraction=args.validation_fraction,
-        validation_seed=args.validation_seed,
-    )
+    if args.validation_indices is None:
+        train_dataset, validation_dataset = _split_train_validation_dataset(
+            dataset,
+            validation_fraction=args.validation_fraction,
+            validation_seed=args.validation_seed,
+        )
+    else:
+        train_dataset = Subset(
+            dataset,
+            [i for i in range(len(dataset)) if i not in args.validation_indices],
+        )
+        validation_dataset = Subset(dataset, sorted(args.validation_indices))
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -168,23 +179,32 @@ def train_morpion_regressor(
     resolved_hidden_sizes = resolve_hidden_sizes(args)
     model_args = morpion_regressor_args_from_training_args(args)
     device = resolve_torch_device(args.device)
-    model = build_morpion_regressor(model_args).to(device)
+    model, optimizer, continuation = initialize_training(
+        model_args,
+        args.continuation,
+        output_dir=os.fspath(args.output_dir),
+        device=device,
+        learning_rate=args.learning_rate,
+    )
     log_training_device(
         model=model,
         requested_device=args.device,
         resolved_device=device,
         model_kind=args.model_kind,
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     criterion = torch.nn.MSELoss()
 
     model.train()
+    optimizer_steps = 0
+    training_examples_seen = 0
     for epoch_index in range(args.num_epochs):
         epoch_timings = PhaseDurations()
         batch_count = 0
         with epoch_timings.time_phase("epoch_total"):
             for sample_batch in train_loader:
                 batch_count += 1
+                optimizer_steps += 1
+                training_examples_seen += infer_batch_sample_count(sample_batch)
                 train_regression_batch(
                     model=model,
                     optimizer=optimizer,
@@ -307,7 +327,17 @@ def train_morpion_regressor(
             {} if validation_stats is None else validation_stats.phase_durations
         ),
     }
-    training_metadata = {
+    continuation = finish_training(
+        model,
+        optimizer,
+        continuation,
+        output_dir=os.fspath(args.output_dir),
+        optimizer_steps=optimizer_steps,
+        training_examples_seen=training_examples_seen,
+    )
+    training_metadata: dict[str, object] = {
+        "continuation": continuation,
+        "state_split": state_split,
         "dataset_file": os.fspath(args.dataset_file),
         "output_dir": os.fspath(args.output_dir),
         "batch_size": args.batch_size,
@@ -387,20 +417,29 @@ def train_morpion_regressor_streaming(
     total_started_at = perf_counter()
     timings = PhaseDurations()
     train_timings = PhaseDurations()
-    training_args = args.training_args
+    training_args, state_split = prepare_state_split(args.training_args, args.max_rows)
     resolved_hidden_sizes = resolve_hidden_sizes(training_args)
     model_args = morpion_regressor_args_from_training_args(training_args)
     device = resolve_torch_device(training_args.device)
-    model = build_morpion_regressor(model_args).to(device)
+    model, optimizer, continuation = initialize_training(
+        model_args,
+        training_args.continuation,
+        output_dir=os.fspath(training_args.output_dir),
+        device=device,
+        learning_rate=training_args.learning_rate,
+    )
     log_training_device(
         model=model,
         requested_device=training_args.device,
         resolved_device=device,
         model_kind=training_args.model_kind,
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=training_args.learning_rate)
     criterion = torch.nn.MSELoss()
-    split_policy = streaming_split_policy(training_args.validation_fraction)
+    split_policy = (
+        "canonical_state_sha256_v1"
+        if training_args.stable_validation_split
+        else streaming_split_policy(training_args.validation_fraction)
+    )
     flat_cache: FlatTensorCache | None = None
     entity_token_cache: MorpionEntityTokenCache | None = None
     relational_entity_token_cache: MorpionRelationalEntityTokenCache | None = None
@@ -525,6 +564,7 @@ def train_morpion_regressor_streaming(
         cached_row_count=cached_row_count,
         max_rows=args.max_rows,
         validation_fraction=training_args.validation_fraction,
+        validation_indices=training_args.validation_indices,
         shuffle=training_args.shuffle,
         cache_used=(
             flat_cache is not None
@@ -558,6 +598,8 @@ def train_morpion_regressor_streaming(
             prediction_stats=prediction_before_stats,
         )
 
+    optimizer_steps = 0
+    training_examples_seen = 0
     for epoch_index in range(training_args.num_epochs):
         if flat_cache is not None:
             epoch_stats = train_flat_cache_streaming_epoch(
@@ -610,6 +652,8 @@ def train_morpion_regressor_streaming(
                 progress_callback=args.progress_callback,
                 device=device,
             )
+        optimizer_steps += epoch_stats.batch_count
+        training_examples_seen += epoch_stats.train_count
         add_phase_durations(train_timings, epoch_stats.phase_durations)
         timings.add_duration("train_epochs_total", epoch_stats.elapsed_seconds)
         LOGGER.info(
@@ -767,6 +811,7 @@ def train_morpion_regressor_streaming(
             cached_row_count=cached_row_count,
             max_rows=args.max_rows,
             validation_fraction=training_args.validation_fraction,
+            validation_indices=training_args.validation_indices,
             batch_size=training_args.batch_size,
             device=device,
             sample_max_rows=REGRESSION_QUALITY_SAMPLE_MAX_ROWS,
@@ -888,7 +933,17 @@ def train_morpion_regressor_streaming(
         "train_metrics": train_stats.phase_durations,
         "validation_metrics": validation_stats.phase_durations,
     }
-    training_metadata = {
+    continuation = finish_training(
+        model,
+        optimizer,
+        continuation,
+        output_dir=os.fspath(training_args.output_dir),
+        optimizer_steps=optimizer_steps,
+        training_examples_seen=training_examples_seen,
+    )
+    training_metadata: dict[str, object] = {
+        "continuation": continuation,
+        "state_split": state_split,
         "dataset_file": os.fspath(training_args.dataset_file),
         "output_dir": os.fspath(training_args.output_dir),
         "batch_size": training_args.batch_size,
@@ -1053,6 +1108,7 @@ def _cached_training_schedule_metadata(
     cached_row_count: int,
     max_rows: int | None,
     validation_fraction: float,
+    validation_indices: frozenset[int] | None = None,
     shuffle: bool,
     cache_used: bool,
 ) -> dict[str, object]:
@@ -1068,6 +1124,7 @@ def _cached_training_schedule_metadata(
     schedule = cached_index_schedule(
         row_count=effective_row_count,
         validation_fraction=validation_fraction,
+        validation_indices=validation_indices,
     )
     return {
         "global_shuffle": True,
@@ -1086,6 +1143,7 @@ def _cached_regression_quality_metadata(
     cached_row_count: int,
     max_rows: int | None,
     validation_fraction: float,
+    validation_indices: frozenset[int] | None = None,
     batch_size: int,
     device: torch.device,
     sample_max_rows: int,
@@ -1097,11 +1155,13 @@ def _cached_regression_quality_metadata(
     train_indices = split_indices_for_streaming_policy(
         row_count=effective_row_count,
         validation_fraction=validation_fraction,
+        validation_indices=validation_indices,
         split="train",
     )
-    validation_indices = split_indices_for_streaming_policy(
+    held_out_indices = split_indices_for_streaming_policy(
         row_count=effective_row_count,
         validation_fraction=validation_fraction,
+        validation_indices=validation_indices,
         split="validation",
     )
     train_diagnostics = cached_split_regression_quality_diagnostics(
@@ -1116,7 +1176,7 @@ def _cached_regression_quality_metadata(
     validation_diagnostics = cached_split_regression_quality_diagnostics(
         model=model,
         batch_builder=batch_builder,
-        row_indices=validation_indices,
+        row_indices=held_out_indices,
         batch_size=batch_size,
         device=device,
         max_rows=sample_max_rows,

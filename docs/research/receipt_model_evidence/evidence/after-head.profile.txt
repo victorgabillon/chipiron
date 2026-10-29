@@ -1,0 +1,43 @@
+         47304 function calls (45571 primitive calls) in 0.015 seconds
+
+   Ordered by: cumulative time
+   List reduced from 142 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.015    0.015 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:87(operation)
+        1    0.000    0.000    0.015    0.015 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:272(committed_evaluator)
+        1    0.000    0.000    0.014    0.014 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:134(validate)
+        1    0.000    0.000    0.014    0.014 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:419(validate_capsule)
+       23    0.000    0.000    0.008    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/derived/provenance.py:54(inside)
+       26    0.000    0.000    0.005    0.000 {built-in method builtins.any}
+      335    0.000    0.000    0.005    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/derived/provenance.py:63(<genexpr>)
+      990    0.000    0.000    0.004    0.000 <frozen _collections_abc>:1027(__iter__)
+      872    0.001    0.000    0.004    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:44(__getitem__)
+     1249    0.000    0.000    0.004    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:245(_from_parsed_parts)
+       29    0.000    0.000    0.004    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:96(file_digest)
+        1    0.000    0.000    0.004    0.004 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:723(validate_committed_identity)
+       29    0.000    0.000    0.003    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:124(hashed)
+      118    0.000    0.000    0.003    0.000 <frozen _collections_abc>:1037(__contains__)
+       31    0.000    0.000    0.003    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:113(relative)
+     1319    0.000    0.000    0.003    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:252(_from_parsed_string)
+     1410    0.001    0.000    0.003    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:130(with_segments)
+       57    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:393(is_relative_to)
+       61    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:365(relative_to)
+        2    0.000    0.000    0.002    0.001 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:138(model)
+        2    0.000    0.000    0.002    0.001 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:122(artifact_digest)
+      524    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:510(stat)
+      985    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:193(__eq__)
+      524    0.001    0.000    0.002    0.000 {built-in method posix.stat}
+     1485    0.001    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:498(__init__)
+      673    0.001    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:289(drive)
+     1998    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:227(__str__)
+     1986    0.001    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:174(_str_normcase)
+       46    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:664(resolve)
+     1485    0.001    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:117(__init__)
+       46    0.000    0.000    0.001    0.000 <frozen posixpath>:391(realpath)
+      339    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:329(parent)
+        1    0.000    0.000    0.001    0.001 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/generation_publication_io.py:373(read_committed_descriptor)
+      603    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:166(__fspath__)
+      380    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:513(is_symlink)
+
+

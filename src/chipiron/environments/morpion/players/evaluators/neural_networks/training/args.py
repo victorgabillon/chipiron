@@ -19,6 +19,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_gra
     LegacyGraphConfig,  # noqa: TC001 - dataclass runtime type introspection
 )
 
+from .continuation import (
+    MorpionTrainingContinuation,  # noqa: TC001 - dataclass introspection
+)
+
 type MorpionTrainingProgressCallback = Callable[[int, int, int, int], None]
 
 
@@ -62,6 +66,9 @@ class MorpionTrainingArgs:
     validation_fraction: float = 0.2
     validation_seed: int = 0
     device: str = "auto"
+    continuation: MorpionTrainingContinuation | None = None
+    stable_validation_split: bool = False
+    validation_indices: frozenset[int] | None = None
 
     def __post_init__(self) -> None:
         """Normalize feature subset metadata into a canonical explicit form."""

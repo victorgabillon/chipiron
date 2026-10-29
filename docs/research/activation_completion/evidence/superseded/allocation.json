@@ -1,0 +1,3637 @@
+{
+  "authority_bytes": 31531,
+  "current": {
+    "files": 17,
+    "unique_inodes": 17,
+    "logical_unique_bytes": 388467,
+    "allocated_unique_bytes": 430080,
+    "inodes": [
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 997,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7002,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 18726,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 6093,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2115,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 6350,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 43997,
+        "allocated": 45056,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 263095,
+        "allocated": 266240,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl"
+        ]
+      }
+    ]
+  },
+  "rollback_candidates": {
+    "files": 38,
+    "unique_inodes": 34,
+    "logical_unique_bytes": 602635,
+    "allocated_unique_bytes": 696320,
+    "inodes": [
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 16882,
+        "allocated": 20480,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1213,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 12804,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1728,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14258,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 872,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 197127,
+        "allocated": 200704,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/updates.jsonl"
+        ]
+      }
+    ]
+  },
+  "current_plus_rollback": {
+    "files": 55,
+    "unique_inodes": 47,
+    "logical_unique_bytes": 968818,
+    "allocated_unique_bytes": 1093632,
+    "inodes": [
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 16882,
+        "allocated": 20480,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1213,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 12804,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1728,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14258,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 872,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 197127,
+        "allocated": 200704,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 997,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7002,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 18726,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 6093,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2115,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 6350,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 43997,
+        "allocated": 45056,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 263095,
+        "allocated": 266240,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl"
+        ]
+      }
+    ]
+  },
+  "all_capsules": {
+    "files": 144,
+    "unique_inodes": 116,
+    "logical_unique_bytes": 2199634,
+    "allocated_unique_bytes": 2519040,
+    "inodes": [
+      {
+        "bytes": 8513,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 1002,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7001,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 6421,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2778,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 831,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 3010,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1995,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 517,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 16985,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 115456,
+        "allocated": 118784,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8593,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 9693,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1225,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182089,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8593,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 9693,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1225,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182089,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 12609,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 13016,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 881,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 16882,
+        "allocated": 20480,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1213,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182735,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 12804,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1728,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 14258,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 872,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 197127,
+        "allocated": 200704,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 997,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7002,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 18726,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 6093,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2115,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 6350,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 43997,
+        "allocated": 45056,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 263095,
+        "allocated": 266240,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl"
+        ]
+      }
+    ]
+  },
+  "workspace": {
+    "files": 235,
+    "unique_inodes": 207,
+    "logical_unique_bytes": 2862706,
+    "allocated_unique_bytes": 3366912,
+    "inodes": [
+      {
+        "bytes": 6903,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "latest_status.json"
+        ]
+      },
+      {
+        "bytes": 274,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "control.json"
+        ]
+      },
+      {
+        "bytes": 31531,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "run_state.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 16103,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "history.jsonl"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-science/generation.json"
+        ]
+      },
+      {
+        "bytes": 16985,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "genesis-science/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 115456,
+        "allocated": 118784,
+        "nlink": 1,
+        "paths": [
+          "genesis-science/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 9831,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/reevaluation_patch.json"
+        ]
+      },
+      {
+        "bytes": 1896,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/latest_linoo_selection_table.json"
+        ]
+      },
+      {
+        "bytes": 398,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/active_model.json"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "pipeline/.growth_patch_consumer.lock"
+        ]
+      },
+      {
+        "bytes": 114,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "logs/reevaluation_worker_state.json"
+        ]
+      },
+      {
+        "bytes": 1995,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "seed/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "seed/param.pt"
+        ]
+      },
+      {
+        "bytes": 517,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "seed/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "seed/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7001,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 24340,
+        "allocated": 24576,
+        "nlink": 1,
+        "paths": [
+          "dataset_publications_v1/objects/8d337497b9ec48aeb27ab292d2bf30c3/proposal.json"
+        ]
+      },
+      {
+        "bytes": 30879,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "dataset_publications_v1/objects/8d337497b9ec48aeb27ab292d2bf30c3/rows.jsonl"
+        ]
+      },
+      {
+        "bytes": 24447,
+        "allocated": 24576,
+        "nlink": 1,
+        "paths": [
+          "dataset_publications_v1/objects/1634fb29e2de469cb53c8354860d7e38/proposal.json"
+        ]
+      },
+      {
+        "bytes": 31035,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "dataset_publications_v1/objects/1634fb29e2de469cb53c8354860d7e38/rows.jsonl"
+        ]
+      },
+      {
+        "bytes": 831,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 6421,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 3010,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2778,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1002,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "genesis-checkpoint/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/d9cc01b857344823b8f7a1ae925dd026.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/40e8b71c11974186b623b90284d2b913.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/604dab6bf3f74492aba9a4ea181665e7.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/9ab511f0053c473b8fbd0f57fe054b83.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/42fee54987004ab084dd85ae7fb15ba7.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/0d15ff31c89d45ba837869f86dd774dd.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/0efcce24e4bc4dd3a65d1e0ecdeaabb2.lock"
+        ]
+      },
+      {
+        "bytes": 0,
+        "allocated": 0,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/pins/981d54238c80451c8c9f76571bc6d335.lock"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8593,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8513,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 12804,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 12609,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8593,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 117,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json"
+        ]
+      },
+      {
+        "bytes": 8789,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 5627,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 43997,
+        "allocated": 45056,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 263095,
+        "allocated": 266240,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 2,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7002,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 2115,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 18726,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 6350,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 6093,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 997,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 16882,
+        "allocated": 20480,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.pt"
+        ]
+      },
+      {
+        "bytes": 1213,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json",
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/models/6f4b4824123dcb12235badd1a01b0a74ba1ee65b3a88666b1fd2040efdb56b77/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/604dab6bf3f74492aba9a4ea181665e7/checkpoint/generation_000005.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182089,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1995,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt"
+        ]
+      },
+      {
+        "bytes": 517,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 4,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 1225,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 9693,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/9ab511f0053c473b8fbd0f57fe054b83/checkpoint/generation_000003.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 195656,
+        "allocated": 196608,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 1153,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 14148,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/d9cc01b857344823b8f7a1ae925dd026/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182735,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6998,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 881,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 13016,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 31025,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 197127,
+        "allocated": 200704,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1728,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 872,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 14258,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4857,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4635,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 444,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 16985,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 115456,
+        "allocated": 118784,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1729,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/manifest.json"
+        ]
+      },
+      {
+        "bytes": 7001,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 831,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 6421,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 3010,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 2778,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1002,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/checkpoint/genesis-checkpoint/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 1545,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/generation.json"
+        ]
+      },
+      {
+        "bytes": 28933,
+        "allocated": 32768,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/records.jsonl"
+        ]
+      },
+      {
+        "bytes": 182089,
+        "allocated": 184320,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/updates.jsonl"
+        ]
+      },
+      {
+        "bytes": 1730,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/manifest.json"
+        ]
+      },
+      {
+        "bytes": 6999,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/metadata.json.zst"
+        ]
+      },
+      {
+        "bytes": 1225,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/selector/selector.json.zst"
+        ]
+      },
+      {
+        "bytes": 9693,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4560,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 4336,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/node_shells/nodes_000000.jsonl.zst"
+        ]
+      },
+      {
+        "bytes": 1030,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded/latest_expansions/latest_expansions.json.zst"
+        ]
+      },
+      {
+        "bytes": 10352,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000005/manifest.json"
+        ]
+      },
+      {
+        "bytes": 10151,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000005/dataset_status.json"
+        ]
+      },
+      {
+        "bytes": 2413,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000005/training_status.json"
+        ]
+      },
+      {
+        "bytes": 8156,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000003/manifest.json"
+        ]
+      },
+      {
+        "bytes": 8266,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000007/manifest.json"
+        ]
+      },
+      {
+        "bytes": 8157,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000008/manifest.json"
+        ]
+      },
+      {
+        "bytes": 8261,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000004/manifest.json"
+        ]
+      },
+      {
+        "bytes": 10347,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000002/manifest.json"
+        ]
+      },
+      {
+        "bytes": 10146,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000002/dataset_status.json"
+        ]
+      },
+      {
+        "bytes": 2412,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000002/training_status.json"
+        ]
+      },
+      {
+        "bytes": 8161,
+        "allocated": 8192,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000006/manifest.json"
+        ]
+      },
+      {
+        "bytes": 3381,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/generation_000001/manifest.json"
+        ]
+      },
+      {
+        "bytes": 1177,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/checkpoint-1067418-1792883028158384399.json"
+        ]
+      },
+      {
+        "bytes": 3932,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/reevaluation-1067481-1792883041614567319.json"
+        ]
+      },
+      {
+        "bytes": 637,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/growth-1067418-1792883027459742463.json"
+        ]
+      },
+      {
+        "bytes": 668,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/patch_apply-1068048-1792883098120092392.json"
+        ]
+      },
+      {
+        "bytes": 461,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/cycle-1067418-1792883028158976329.json"
+        ]
+      },
+      {
+        "bytes": 2321,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/export-1067418-1792883028158749684.json"
+        ]
+      },
+      {
+        "bytes": 1797,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000005/dataset-1067540-1792883054132270234.json"
+        ]
+      },
+      {
+        "bytes": 2317,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000008/export-1068231-1792883139586498620.json"
+        ]
+      },
+      {
+        "bytes": 642,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000008/growth-1068231-1792883138745388222.json"
+        ]
+      },
+      {
+        "bytes": 461,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000008/cycle-1068231-1792883139586678637.json"
+        ]
+      },
+      {
+        "bytes": 1172,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000008/checkpoint-1068231-1792883139586156628.json"
+        ]
+      },
+      {
+        "bytes": 3920,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000008/reevaluation-1068292-1792883153849394177.json"
+        ]
+      },
+      {
+        "bytes": 450,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/cycle-1066798-1792882918833568160.json"
+        ]
+      },
+      {
+        "bytes": 3926,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/reevaluation-1066864-1792882932336419343.json"
+        ]
+      },
+      {
+        "bytes": 1788,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/dataset-1066921-1792882944877529227.json"
+        ]
+      },
+      {
+        "bytes": 1164,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/checkpoint-1066798-1792882918832795050.json"
+        ]
+      },
+      {
+        "bytes": 639,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/growth-1066798-1792882918089017685.json"
+        ]
+      },
+      {
+        "bytes": 2320,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/export-1066798-1792882918833249592.json"
+        ]
+      },
+      {
+        "bytes": 662,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "pipeline/performance/generation_000002/patch_apply-1067228-1792882988473968448.json"
+        ]
+      },
+      {
+        "bytes": 24547,
+        "allocated": 24576,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/admission.json"
+        ]
+      },
+      {
+        "bytes": 28331,
+        "allocated": 28672,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/proposal.json"
+        ]
+      },
+      {
+        "bytes": 24547,
+        "allocated": 24576,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/admission.json"
+        ]
+      },
+      {
+        "bytes": 28332,
+        "allocated": 28672,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/proposal.json"
+        ]
+      },
+      {
+        "bytes": 17574,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_a/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_a/param.pt"
+        ]
+      },
+      {
+        "bytes": 1224,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_a/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_a/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 17577,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_b/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_b/param.pt"
+        ]
+      },
+      {
+        "bytes": 1212,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_b/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/models/generation_000005/linear_b/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 698,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/pipeline/performance/generation_000005/evaluator-1067623-1792883073228420801.json"
+        ]
+      },
+      {
+        "bytes": 693,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/267b429f18ec4d1c89967e608f5754ec/pipeline/performance/generation_000005/evaluator-1067623-1792883073052778822.json"
+        ]
+      },
+      {
+        "bytes": 16856,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_a/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_a/param.pt"
+        ]
+      },
+      {
+        "bytes": 1216,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_a/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_a/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 16882,
+        "allocated": 20480,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b/morpion_manifest.json"
+        ]
+      },
+      {
+        "bytes": 1941,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b/param.pt"
+        ]
+      },
+      {
+        "bytes": 1213,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b/param.json"
+        ]
+      },
+      {
+        "bytes": 1554,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b/morpion_regressor_args.json"
+        ]
+      },
+      {
+        "bytes": 699,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/pipeline/performance/generation_000002/evaluator-1067004-1792882963565317995.json"
+        ]
+      },
+      {
+        "bytes": 691,
+        "allocated": 4096,
+        "nlink": 1,
+        "paths": [
+          "training_publications_v1/objects/a349051175164d828df14c68fc99028c/pipeline/performance/generation_000002/evaluator-1067004-1792882963376142548.json"
+        ]
+      }
+    ]
+  },
+  "commitments": {
+    "files": 3,
+    "unique_inodes": 3,
+    "logical_unique_bytes": 33926,
+    "allocated_unique_bytes": 45056,
+    "inodes": [
+      {
+        "bytes": 12609,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 12804,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/40e8b71c11974186b623b90284d2b913/.generation_publication_v3.json"
+        ]
+      },
+      {
+        "bytes": 8513,
+        "allocated": 12288,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/981d54238c80451c8c9f76571bc6d335/.generation_publication_v3.json"
+        ]
+      }
+    ]
+  },
+  "g4_descriptor": {
+    "files": 1,
+    "unique_inodes": 1,
+    "logical_unique_bytes": 12609,
+    "allocated_unique_bytes": 16384,
+    "inodes": [
+      {
+        "bytes": 12609,
+        "allocated": 16384,
+        "nlink": 1,
+        "paths": [
+          "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json"
+        ]
+      }
+    ]
+  },
+  "conditional_payload_bytes": 251508,
+  "conditional_payload_file_blocks": 286720,
+  "actual_reclaimable_bytes": 0,
+  "before_after_roots": [
+    {
+      "generation": 1,
+      "before_payload_reasons": [
+        "explicit-scientific-retention"
+      ],
+      "after_payload_reasons": [
+        "explicit-scientific-retention"
+      ],
+      "descriptor_retained": true
+    },
+    {
+      "generation": 2,
+      "before_payload_reasons": [
+        "exact-receipt-source-conservative",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "after_payload_reasons": [
+        "exact-receipt-source-conservative",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "descriptor_retained": false
+    },
+    {
+      "generation": 3,
+      "before_payload_reasons": [
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "after_payload_reasons": [
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "descriptor_retained": false
+    },
+    {
+      "generation": 4,
+      "before_payload_reasons": [
+        "historical-activation-retry"
+      ],
+      "after_payload_reasons": [],
+      "descriptor_retained": true
+    },
+    {
+      "generation": 5,
+      "before_payload_reasons": [
+        "exact-receipt-source-conservative",
+        "authoritative-accepted-cursor",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "after_payload_reasons": [
+        "exact-receipt-source-conservative",
+        "authoritative-accepted-cursor",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "descriptor_retained": false
+    },
+    {
+      "generation": 6,
+      "before_payload_reasons": [
+        "rollback-candidate-not-executable",
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "after_payload_reasons": [
+        "rollback-candidate-not-executable",
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "descriptor_retained": false
+    },
+    {
+      "generation": 7,
+      "before_payload_reasons": [
+        "rollback-candidate-not-executable",
+        "historical-activation-retry"
+      ],
+      "after_payload_reasons": [
+        "rollback-candidate-not-executable"
+      ],
+      "descriptor_retained": true
+    },
+    {
+      "generation": 8,
+      "before_payload_reasons": [
+        "current-crash-recovery",
+        "pending-patch"
+      ],
+      "after_payload_reasons": [
+        "current-crash-recovery",
+        "pending-patch"
+      ],
+      "descriptor_retained": false
+    }
+  ]
+}

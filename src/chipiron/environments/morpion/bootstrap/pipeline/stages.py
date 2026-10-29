@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+from contextlib import ExitStack
 from dataclasses import replace
 from typing import TYPE_CHECKING, NoReturn
 
@@ -19,10 +20,17 @@ from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
     runtime_checkpoint_artifact_exists,
 )
+from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
+    RECEIPTS_METADATA_KEY,
+    CheckpointPatchReceiptError,
+    GrowthPatchReceiptSession,
+    growth_receipt_ownership,
+)
 from chipiron.environments.morpion.bootstrap.config import (
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
+    bootstrap_config_to_dict,
     load_bootstrap_config,
     save_bootstrap_config,
     validate_bootstrap_config_change,
@@ -65,6 +73,7 @@ from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     GROWTH_BUDGET_ALREADY_EXHAUSTED_STATUS,
     GROWTH_STATUS_METADATA_KEY,
     CandidateCheckpointLoadDeferredError,
+    ResolvedActiveMorpionModelBundle,
 )
 from chipiron.environments.morpion.bootstrap.cycle_runtime import (
     build_growth_budget_exhausted_run_state as _build_growth_budget_exhausted_run_state,
@@ -121,6 +130,19 @@ from chipiron.environments.morpion.bootstrap.cycle_validation import (
 from chipiron.environments.morpion.bootstrap.cycle_validation import (
     validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
 )
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    DatasetAttempt,
+    accept_dataset,
+    admit_dataset,
+    publish_dataset,
+)
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    enabled as fenced_dataset_enabled,
+)
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    PUBLICATION_KEY,
+    validate_manifest_publication,
+)
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapHistoryRecorder,
 )
@@ -130,6 +152,7 @@ from chipiron.environments.morpion.bootstrap.performance import (
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
@@ -170,6 +193,17 @@ from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
+    ShardedTrainingGenerationView,
+    is_scientific_generation_manifest,
+    is_sharded_generation_manifest,
+    require_scientific_opt_in,
+)
+from chipiron.environments.morpion.bootstrap.streaming_dataset import (
+    IndexedDatasetSource,
+    UnsupportedStreamingDatasetError,
+    disk_dataset_context,
+)
 from chipiron.environments.morpion.bootstrap.training_logging import (
     TrainingActiveModelCursorSummary,
     log_training_cycle_done,
@@ -178,9 +212,15 @@ from chipiron.environments.morpion.bootstrap.training_logging import (
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRowsSource,
     load_morpion_supervised_rows,
+    load_morpion_supervised_rows_metadata,
     morpion_supervised_rows_source_from_path,
     save_morpion_supervised_rows,
     save_morpion_supervised_rows_streaming,
+)
+from chipiron.environments.morpion.learning.target_confidence import (
+    DatasetConfidenceError,
+    dataset_format_version,
+    validate_confidence_policy,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
     morpion_streaming_split_policy,
@@ -205,7 +245,7 @@ from .growth_budget import growth_budget_runtime_config
 from .manifests import (
     MissingPipelineRowsFileError,
     MissingPipelineTreeSnapshotFileError,
-    load_generation_manifest,
+    pinned_generation_manifest,
     pipeline_manifest_path,
     require_manifest_rows_path,
     require_manifest_tree_snapshot_path,
@@ -213,6 +253,7 @@ from .manifests import (
     resolve_previous_pipeline_record_status,
     save_dataset_manifest_status,
     save_training_manifest_status,
+    verified_generation_rows,
 )
 from .observability import (
     build_observability_metadata_for_dashboard as _build_observability_metadata_for_dashboard,
@@ -237,6 +278,9 @@ if TYPE_CHECKING:
     )
     from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
         MorpionSearchRunner,
+    )
+    from chipiron.environments.morpion.learning.tree_to_dataset import (
+        TrainingTreeSource,
     )
 
 LOGGER = logging.getLogger(__name__)
@@ -372,32 +416,188 @@ def run_pipeline_growth_stage(
     *,
     max_cycles: int = 1,
     derived_sequential: bool = False,
+    checkpoint_bound_receipts: bool = False,
+    durable_generation_publication: bool = False,
+    scientific_v2_producer: Mapping[str, str] | None = None,
+    closed_scientific_snapshot: bool = False,
 ) -> MorpionBootstrapRunState:
-    """Run the Phase 4 growth-only stage for artifact-pipeline mode."""
+    """Run Growth, with explicit experimental checkpoint-bound receipt activation.
+
+    Receipt mode alone supports flat/skipped exports. The additional explicit
+    durable_generation_publication option supports immutable scientific v1
+    sharded/both exports too. Supplying scientific_v2_producer selects the explicit
+    v2 adapter in an already initialized v2 workspace. No CLI or production worker
+    enables these options.
+    """
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    if paths.run_state_path.exists():
+        from chipiron.environments.morpion.bootstrap.learning_policy import (
+            validate_continual_context,
+        )
 
-    current_config = bootstrap_config_from_args(args)
-    if paths.bootstrap_config_path.is_file():
-        persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
-        validate_bootstrap_config_change(persisted_config, current_config)
-    save_bootstrap_config(current_config, paths.bootstrap_config_path)
-    config_hash = bootstrap_config_sha256(current_config)
+        validate_continual_context(
+            paths,
+            load_bootstrap_run_state(paths.run_state_path),
+            args.continual_learning,
+        )
+    if closed_scientific_snapshot and (
+        scientific_v2_producer is None or not durable_generation_publication
+    ):
+        message = "Closed snapshots require explicit scientific durable publication."
+        raise CheckpointPatchReceiptError(message)
+    if scientific_v2_producer is not None and not durable_generation_publication:
+        message = "Scientific v2 requires durable publication."
+        raise CheckpointPatchReceiptError(message)
+    if durable_generation_publication and not checkpoint_bound_receipts:
+        message = (
+            "Durable generation publication requires checkpoint-bound receipt mode."
+        )
+        raise CheckpointPatchReceiptError(message)
+    if args.continual_learning is not None:
+        from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+            publication_records,
+            require,
+        )
 
+        require(
+            closed_scientific_snapshot,
+            "Continual learning requires the full scientific pipeline.",
+        )
+        setter = getattr(runner, "set_unique_node_budget", None)
+        require(
+            callable(setter),
+            "Continual Growth requires an enforced unique-node budget.",
+        )
+        assert callable(setter)
+        setter(args.continual_learning.max_tree_nodes)
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if state.metadata.get("experiment_termination") is not None:
+            return state
+        head = publication_records(state.metadata)[-1]
+        learning = args.continual_learning
+        if (
+            state.generation > 1
+            and "activation_request_sha256" not in head
+            and state.generation % learning.dataset_every_generations == 0
+            and state.generation % learning.training_every_generations == 0
+            and "accepted_training" not in head
+        ):
+            LOGGER.info(
+                "[pipeline] growth_wait reason=learning_boundary generation=%s",
+                state.generation,
+            )
+            return state
+        if args.continual_learning.automatic_activation:
+            from chipiron.environments.morpion.bootstrap.model_activation import (
+                activate_selected_round_automatically,
+            )
+
+            activate_selected_round_automatically(paths)
+            state = load_bootstrap_run_state(paths.run_state_path)
+            scientific_v2_producer = publication_records(state.metadata)[-1][
+                "scientific_identity"
+            ]["producer"]["identity"]
+    # Updated legacy callers also take this lease and cannot race a receipt owner.
+    # Old binaries must be quiesced before adoption; they do not know this lock.
+    with growth_receipt_ownership(paths):
+        session = (
+            GrowthPatchReceiptSession(
+                paths,
+                runner,
+                durable_generation_publication=durable_generation_publication,
+                scientific_v2_producer=scientific_v2_producer,
+                closed_scientific_snapshot=closed_scientific_snapshot,
+            )
+            if checkpoint_bound_receipts
+            else None
+        )
+        try:
+            return _run_pipeline_growth_stage_owned(
+                args,
+                runner,
+                paths=paths,
+                max_cycles=max_cycles,
+                derived_sequential=derived_sequential,
+                receipt_session=session,
+            )
+        finally:
+            if session is not None:
+                try:
+                    session.discard_runtime()
+                finally:
+                    if session.publication is not None:
+                        session.publication.close()
+
+
+def _run_pipeline_growth_stage_owned(
+    args: MorpionBootstrapArgs,
+    runner: MorpionSearchRunner,
+    *,
+    paths: MorpionBootstrapPaths,
+    max_cycles: int,
+    derived_sequential: bool,
+    receipt_session: GrowthPatchReceiptSession | None,
+) -> MorpionBootstrapRunState:
+    """Hold Growth ownership across cold restore, commitment and acknowledgement."""
+    if receipt_session is not None and (
+        derived_sequential or not paths.run_state_path.is_file()
+    ):
+        message = (
+            "Receipt activation requires ordinary Growth with an existing run state."
+        )
+        raise CheckpointPatchReceiptError(message)
     run_state = (
         load_bootstrap_run_state(paths.run_state_path)
         if paths.run_state_path.is_file()
         else initialize_bootstrap_run_state()
     )
+    if receipt_session is None and RECEIPTS_METADATA_KEY in run_state.metadata:
+        message = "Receipt-enabled run state requires checkpoint_bound_receipts=True; downgrade refused."
+        raise CheckpointPatchReceiptError(message)
+    if PUBLICATION_KEY in run_state.metadata and (
+        receipt_session is None or receipt_session.publication is None
+    ):
+        message = "Durable generation run state requires durable_generation_publication=True; downgrade refused."
+        raise CheckpointPatchReceiptError(message)
+
+    if receipt_session is not None:
+        receipt_session.validate_options(args)
+        receipt_session.validate_publication_version(run_state)
+    current_config = bootstrap_config_from_args(args)
+    if paths.bootstrap_config_path.is_file():
+        persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
+        validate_bootstrap_config_change(persisted_config, current_config)
+    if receipt_session is not None and receipt_session.publication is not None:
+        from chipiron.environments.morpion.bootstrap.derived.provenance import (
+            atomic_json,
+        )
+
+        atomic_json(
+            paths.bootstrap_config_path, bootstrap_config_to_dict(current_config)
+        )
+    else:
+        save_bootstrap_config(current_config, paths.bootstrap_config_path)
+    config_hash = bootstrap_config_sha256(current_config)
+
     run_state = _with_config_hash_metadata(run_state, config_hash=config_hash)
+    if receipt_session is not None:
+        run_state = receipt_session.prepare(run_state, args)
 
     LOGGER.info("[pipeline] growth_start max_cycles=%s", max_cycles)
     cycles_run = 0
     while cycles_run < max_cycles:
+        previous_state = run_state
         previous_generation = run_state.generation
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
+        if (
+            receipt_session is not None
+            and receipt_session.publication is not None
+            and receipt_session.publication.version in (2, 3)
+        ):
+            receipt_session.validate_options(effective_args)
         run_state = _run_one_pipeline_growth_cycle(
             args=effective_args,
             paths=paths,
@@ -407,8 +607,11 @@ def run_pipeline_growth_stage(
             config_hash=config_hash,
             bootstrap_config=current_config,
             force_save=derived_sequential,
+            receipt_session=receipt_session,
         )
-        if derived_sequential:
+        if receipt_session is not None:
+            run_state = receipt_session.commit(previous_state, run_state)
+        elif derived_sequential:
             from dataclasses import asdict
 
             from chipiron.environments.morpion.bootstrap.derived.provenance import (
@@ -425,7 +628,7 @@ def run_pipeline_growth_stage(
             atomic_json(paths.run_state_path, asdict(run_state))
         else:
             save_bootstrap_run_state(run_state, paths.run_state_path)
-        if run_state.generation > previous_generation:
+        if run_state.generation > previous_generation and receipt_session is None:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
         if (
@@ -471,6 +674,7 @@ def _run_one_pipeline_growth_cycle(
     bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None = None,
     force_save: bool = False,
+    receipt_session: GrowthPatchReceiptSession | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one growth-only artifact-pipeline cycle with memory hooks."""
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
@@ -487,6 +691,7 @@ def _run_one_pipeline_growth_cycle(
             now_unix_s=now_unix_s,
             memory=memory,
             force_save=force_save,
+            receipt_session=receipt_session,
         )
     finally:
         log_after_cycle_gc(memory)
@@ -505,6 +710,7 @@ def _run_one_pipeline_growth_cycle_impl(
     now_unix_s: float | None,
     memory: MemoryDiagnostics,
     force_save: bool = False,
+    receipt_session: GrowthPatchReceiptSession | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one artifact-pipeline cycle that only grows and exports artifacts."""
     cycle_measurement = StageMeasurement()
@@ -544,31 +750,51 @@ def _run_one_pipeline_growth_cycle_impl(
         event="start",
     )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
-    resolved_active_model = resolve_pipeline_active_model_for_growth(
-        paths=paths,
-        force_evaluator=resolved_control.force_evaluator,
+    committed_model = (
+        receipt_session is not None
+        and receipt_session.publication is not None
+        and receipt_session.publication.version in (2, 3)
     )
-    try:
-        restore_tree_path = _resolve_runtime_restore_path(
-            paths=paths,
-            run_state=run_state,
-            before_candidate_checkpoint_load=lambda _source, _path: (
-                should_load_candidate_checkpoint(
-                    args=args,
-                    generation=run_state.generation,
-                    source=_source,
-                    candidate_path=_path,
-                )
-            ),
-            after_candidate_checkpoint_load=log_candidate_checkpoint_load_profile
-            if args.growth_memory_profile
-            else None,
-            candidate_checkpoint_payload_loader=(
-                candidate_checkpoint_payload_loader(args)
-                if args.growth_memory_profile
-                else None
-            ),
+    resolved_active_model = (
+        ResolvedActiveMorpionModelBundle(None, None)
+        if committed_model
+        else resolve_pipeline_active_model_for_growth(
+            paths=paths, force_evaluator=resolved_control.force_evaluator
         )
+    )
+    restore_tree_path: Path | None
+    try:
+        if receipt_session is not None:
+            receipt_session.validate_options(args)
+            receipt_session.begin_cycle(resolved_active_model.model_bundle_path)
+            if committed_model:
+                model = receipt_session.runtime_model
+                resolved_active_model = ResolvedActiveMorpionModelBundle(
+                    None if model is None else model["name"],
+                    None if model is None else paths.work_dir / model["path"],
+                )
+            restore_tree_path = receipt_session.validate_state(run_state)
+        else:
+            restore_tree_path = _resolve_runtime_restore_path(
+                paths=paths,
+                run_state=run_state,
+                before_candidate_checkpoint_load=lambda _source, _path: (
+                    should_load_candidate_checkpoint(
+                        args=args,
+                        generation=run_state.generation,
+                        source=_source,
+                        candidate_path=_path,
+                    )
+                ),
+                after_candidate_checkpoint_load=log_candidate_checkpoint_load_profile
+                if args.growth_memory_profile
+                else None,
+                candidate_checkpoint_payload_loader=(
+                    candidate_checkpoint_payload_loader(args)
+                    if args.growth_memory_profile
+                    else None
+                ),
+            )
     except CandidateCheckpointLoadDeferredError as exc:
         LOGGER.info(
             "[pipeline] growth_skip generation=%s reason=low_available_ram action=%s",
@@ -601,7 +827,9 @@ def _run_one_pipeline_growth_cycle_impl(
         return run_state
     runner.load_or_create(
         restore_tree_path,
-        resolved_active_model.model_bundle_path,
+        receipt_session.runtime_model_path(resolved_active_model.model_bundle_path)
+        if receipt_session is not None
+        else resolved_active_model.model_bundle_path,
         effective_runtime_config,
         reevaluate_tree=reevaluate_tree,
     )
@@ -647,9 +875,10 @@ def _run_one_pipeline_growth_cycle_impl(
             reason="low_available_ram",
         )
         return run_state
-    reevaluation_patch_result = apply_pending_reevaluation_patch_to_runner(
-        paths=paths,
-        runner=runner,
+    reevaluation_patch_result = (
+        receipt_session.apply(run_state, effective_runtime_config)
+        if receipt_session is not None
+        else apply_pending_reevaluation_patch_to_runner(paths=paths, runner=runner)
     )
     memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
@@ -723,10 +952,18 @@ def _run_one_pipeline_growth_cycle_impl(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     )
+    receipt_requires_save = (
+        receipt_session is not None and reevaluation_patch_result.patch_applied
+    )
     persist_stage_measurement(
         paths.work_dir,
         run_state.generation
-        + int(save_triggered or args.growth_save_and_exit or force_save),
+        + int(
+            save_triggered
+            or args.growth_save_and_exit
+            or force_save
+            or receipt_requires_save
+        ),
         "growth",
         {
             **growth_observation,
@@ -757,6 +994,13 @@ def _run_one_pipeline_growth_cycle_impl(
     if args.growth_save_and_exit:
         save_triggered = True
         save_reason = "growth_save_and_exit"
+    if receipt_requires_save:
+        save_triggered = True
+        save_reason = "checkpoint_bound_patch"
+    node_budget_stop = getattr(runner, "last_node_budget_stop_reason", None)
+    if node_budget_stop is not None:
+        save_triggered = True
+        save_reason = "unique_node_budget"
 
     if args.diagnostic_stop_after_growth:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -884,6 +1128,7 @@ def _run_one_pipeline_growth_cycle_impl(
         and has_no_growth
         and did_not_expand_tree
         and has_no_reevaluation_patch
+        and node_budget_stop is None
     ):
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info(
@@ -969,10 +1214,24 @@ def _run_one_pipeline_growth_cycle_impl(
     LOGGER.info(
         "[save] decision_done triggered=true reason=%s", save_reason or "unknown"
     )
-    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation_with_format(
-        generation,
-        args.runtime_checkpoint_format,
+    runtime_checkpoint_path = (
+        receipt_session.checkpoint_path(generation, args.runtime_checkpoint_format)
+        if receipt_session is not None
+        else paths.runtime_checkpoint_path_for_generation_with_format(
+            generation, args.runtime_checkpoint_format
+        )
     )
+    closed_export_path: Path | None = None
+    closed_export_observation: dict[str, object] | None = None
+    if (
+        receipt_session is not None
+        and receipt_session.publication is not None
+        and receipt_session.publication.version == 3
+    ):
+        closed_measurement = StageMeasurement()
+        closed_export_path = receipt_session.export_scientific(generation)
+        closed_export_observation = closed_measurement.finish()
+
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
@@ -1112,28 +1371,42 @@ def _run_one_pipeline_growth_cycle_impl(
         training_export_override = {"status": "skipped", "reason": "config"}
     else:
         export_measurement = StageMeasurement()
-        tree_snapshot_path = _export_training_snapshot_for_generation(
-            args=args,
-            paths=paths,
-            runner=runner,
-            generation=generation,
+        scientific_publication = (
+            receipt_session is not None
+            and receipt_session.publication is not None
+            and receipt_session.publication.version in (2, 3)
+        )
+        tree_snapshot_path = closed_export_path or (
+            receipt_session.export_scientific(generation)
+            if scientific_publication and receipt_session is not None
+            else _export_training_snapshot_for_generation(
+                args=args,
+                paths=receipt_session.export_paths(
+                    sharded=args.training_export_mode in {"sharded", "both"}
+                )
+                if receipt_session is not None
+                else paths,
+                runner=runner,
+                generation=generation,
+            )
         )
         persist_stage_measurement(
             paths.work_dir,
             generation,
             "export",
-            export_measurement.finish(
-                components=optional_runner_mapping(
+            {
+                **(closed_export_observation or export_measurement.finish()),
+                "components": optional_runner_mapping(
                     runner, "latest_training_export_stats"
                 ),
-                profile=optional_runner_mapping(
+                "profile": optional_runner_mapping(
                     runner, "latest_training_export_profile"
                 ),
-                state_eviction=optional_runner_mapping(
+                "state_eviction": optional_runner_mapping(
                     runner, "profile_state_eviction_runtime"
                 ),
-                node_count=current_tree_size,
-            ),
+                "node_count": current_tree_size,
+            },
         )
         if not tree_snapshot_path.is_file():
             raise MissingSavedBootstrapArtifactError(
@@ -1182,6 +1455,15 @@ def _run_one_pipeline_growth_cycle_impl(
         effective_runtime_config=effective_runtime_config,
     )
     run_state_metadata.update(observability_metadata)
+    if node_budget_stop is not None:
+        assert args.continual_learning is not None
+        run_state_metadata["growth_status"] = "growth_budget_already_exhausted"
+        run_state_metadata["experiment_termination"] = {
+            "reason": node_budget_stop,
+            "maximum_unique_nodes": args.continual_learning.max_tree_nodes,
+            "committed_unique_nodes": current_tree_size,
+            "timestamp_utc": timestamp_utc,
+        }
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,
@@ -1228,19 +1510,20 @@ def _run_one_pipeline_growth_cycle_impl(
             },
         )
     )
-    _write_pipeline_manifest_for_generation(
-        paths=paths,
-        generation=generation,
-        timestamp_utc=timestamp_utc,
-        relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
-        relative_tree_snapshot_path=relative_tree_snapshot_path,
-        relative_rows_path=None,
-        model_bundle_paths={},
-        selected_evaluator_name=None,
-        dataset_status="not_started",
-        training_status="not_started",
-        metadata={**_pipeline_metadata(args=args), **observability_metadata},
-    )
+    if receipt_session is None:
+        _write_pipeline_manifest_for_generation(
+            paths=paths,
+            generation=generation,
+            timestamp_utc=timestamp_utc,
+            relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+            relative_tree_snapshot_path=relative_tree_snapshot_path,
+            relative_rows_path=None,
+            model_bundle_paths={},
+            selected_evaluator_name=None,
+            dataset_status="not_started",
+            training_status="not_started",
+            metadata={**_pipeline_metadata(args=args), **observability_metadata},
+        )
     LOGGER.info(
         "[pipeline] growth_cycle_done cycle=%s generation=%s saved=true elapsed=%.3fs",
         cycle_index,
@@ -1315,6 +1598,69 @@ def run_pipeline_dataset_stage(
     generation: int,
     claim_ttl_seconds: float = 3600.0,
     claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
+) -> MorpionPipelineGenerationManifest:
+    """Extract supervised rows for one persisted pipeline generation."""
+    validate_confidence_policy(
+        args.dataset_confidence_policy, args.dataset_family_target_policy
+    )
+    if args.dataset_confidence_policy == "selected_value_v2" and not (
+        use_streaming_sharded_reader and allow_scientific_v2
+    ):
+        raise DatasetConfidenceError.missing_source()
+    _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        if paths.run_state_path.exists() and fenced_dataset_enabled(
+            load_bootstrap_run_state(paths.run_state_path)
+        ):
+            if not (
+                use_streaming_sharded_reader
+                and allow_scientific_v2
+                and args.training_export_mode == "sharded"
+            ):
+                raise DatasetConfidenceError.missing_source()
+            # Dataset options are scalar fields; capture a separate immutable-in-use copy.
+            args = replace(args)
+            with admit_dataset(
+                paths, args, manifest, ttl_seconds=claim_ttl_seconds, owner=claim_owner
+            ) as attempt:
+                if isinstance(attempt, MorpionPipelineGenerationManifest):
+                    return attempt
+                return _run_pipeline_dataset_stage(
+                    args,
+                    generation=generation,
+                    manifest=manifest,
+                    use_streaming_sharded_reader=True,
+                    reader_cache_dir=reader_cache_dir,
+                    allow_scientific_v2=True,
+                    dataset_attempt=attempt,
+                )
+        return _run_pipeline_dataset_stage(
+            args,
+            generation=generation,
+            manifest=manifest,
+            claim_ttl_seconds=claim_ttl_seconds,
+            claim_owner=claim_owner,
+            use_streaming_sharded_reader=use_streaming_sharded_reader,
+            reader_cache_dir=reader_cache_dir,
+            allow_scientific_v2=allow_scientific_v2,
+        )
+
+
+def _run_pipeline_dataset_stage(
+    args: MorpionBootstrapArgs,
+    *,
+    generation: int,
+    manifest: MorpionPipelineGenerationManifest,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
+    dataset_attempt: DatasetAttempt | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
@@ -1322,7 +1668,24 @@ def run_pipeline_dataset_stage(
     stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = load_generation_manifest(paths=paths, generation=generation)
+    if (
+        dataset_attempt is None
+        and args.dataset_confidence_policy == "selected_value_v2"
+    ):
+        existing_rows = (
+            paths.resolve_work_dir_path(manifest.rows_path)
+            if manifest.rows_path is not None
+            else paths.rows_jsonl_path_for_generation(generation)
+        )
+        if (
+            existing_rows is not None
+            and existing_rows.exists()
+            and dataset_format_version(
+                load_morpion_supervised_rows_metadata(existing_rows)
+            )
+            != 2
+        ):
+            raise DatasetConfidenceError.invalid_envelope()
     guard_tree_snapshot_path = (
         paths.resolve_work_dir_path(manifest.tree_snapshot_path)
         if manifest.tree_snapshot_path is not None
@@ -1349,21 +1712,23 @@ def run_pipeline_dataset_stage(
             reason="low_available_ram",
         )
         return manifest
-    claim = claim_pipeline_stage(
-        generation=generation,
-        stage="dataset",
-        claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
-        ttl_seconds=claim_ttl_seconds,
-        owner=claim_owner,
-        metadata={"entrypoint": "run_pipeline_dataset_stage"},
-    )
-    LOGGER.info(
-        "[pipeline] dataset_claim_created generation=%s claim_path=%s owner=%s expires_at=%s",
-        generation,
-        paths.pipeline_dataset_claim_path_for_generation(generation),
-        "none" if claim.owner is None else claim.owner,
-        claim.expires_at_utc,
-    )
+    claim = None
+    if dataset_attempt is None:
+        claim = claim_pipeline_stage(
+            generation=generation,
+            stage="dataset",
+            claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+            ttl_seconds=claim_ttl_seconds,
+            owner=claim_owner,
+            metadata={"entrypoint": "run_pipeline_dataset_stage"},
+        )
+        LOGGER.info(
+            "[pipeline] dataset_claim_created generation=%s claim_path=%s owner=%s expires_at=%s",
+            generation,
+            paths.pipeline_dataset_claim_path_for_generation(generation),
+            "none" if claim.owner is None else claim.owner,
+            claim.expires_at_utc,
+        )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] dataset_start generation=%s", generation)
     log_pipeline_memory(
@@ -1371,12 +1736,16 @@ def run_pipeline_dataset_stage(
         generation=generation,
         event="start",
     )
-    manifest = save_dataset_manifest_status(
-        paths=paths,
-        manifest=manifest,
-        dataset_status="extracting_rows",
-        timestamp_utc=timestamp_utc,
-    )
+    if dataset_attempt is None:
+        manifest = save_dataset_manifest_status(
+            paths=paths,
+            manifest=manifest,
+            dataset_status="extracting_rows",
+            timestamp_utc=timestamp_utc,
+        )
+    resources = ExitStack()
+    reader_mode = "legacy_full_snapshot"
+    reader_observation: dict[str, object] = {}
     try:
         tree_snapshot_path = paths.resolve_work_dir_path(
             require_manifest_tree_snapshot_path(manifest)
@@ -1388,6 +1757,8 @@ def run_pipeline_dataset_stage(
         )
         if rows_path is None:
             rows_path = paths.rows_jsonl_path_for_generation(generation)
+        if dataset_attempt is not None:
+            rows_path = dataset_attempt.rows_path
         LOGGER.info(
             "[pipeline] dataset_export_start generation=%s tree_export=%s rows_output=%s config={min_depth=%s, min_visit_count=%s, max_rows=%s, target_policy=%s, use_backed_up_value=%s, require_exact_or_terminal=%s}",
             generation,
@@ -1416,9 +1787,59 @@ def run_pipeline_dataset_stage(
             tree_snapshot_path=tree_snapshot_path,
         )
         snapshot_started = time.perf_counter()
-        snapshot = _load_training_snapshot_for_generation(
-            args=args,
-            artifact_path=tree_snapshot_path,
+        snapshot: TrainingTreeSource | None = None
+        view = None
+        family_context = None
+        fallback_reason = "disabled"
+        if use_streaming_sharded_reader:
+            if is_scientific_generation_manifest(tree_snapshot_path):
+                require_scientific_opt_in(
+                    allow_scientific_v2
+                    and args.training_export_mode == "sharded"
+                    and rows_path.suffix == ".jsonl"
+                )
+            fallback_reason = "unsupported_format_or_output"
+            if (
+                args.training_export_mode == "sharded"
+                and rows_path.suffix == ".jsonl"
+                and (
+                    dataset_attempt is not None
+                    or is_sharded_generation_manifest(tree_snapshot_path)
+                )
+            ):
+                try:
+                    view = resources.enter_context(
+                        ShardedTrainingGenerationView(
+                            tree_snapshot_path,
+                            cache_dir=reader_cache_dir,
+                            allow_scientific_v2=allow_scientific_v2,
+                            allow_closed_snapshot=dataset_attempt is not None,
+                        )
+                    )
+                    # Check root reconstruction via the shared keyed loading API.
+                    if view.node_count():
+                        view.load_nodes((view.root_node_id,))
+                    indexed_source = IndexedDatasetSource(view)
+                    family_context = resources.enter_context(
+                        disk_dataset_context(indexed_source, args)
+                    )
+                    snapshot = indexed_source
+                    reader_mode = "sharded_indexed"
+                    reader_observation = view.initialization_observation
+                    fallback_reason = "none"
+                except UnsupportedStreamingDatasetError as exc:
+                    if view is not None and view.format_version == 2:
+                        raise  # Never invoke a full reader on the indexed v2 path.
+                    fallback_reason = str(exc)
+                    resources.close()
+                    family_context = None
+        if family_context is None:
+            snapshot = _load_training_snapshot_for_generation(
+                args=args, artifact_path=tree_snapshot_path
+            )
+        assert snapshot is not None
+        LOGGER.info(
+            "[dataset-reader] mode=%s fallback_reason=%s", reader_mode, fallback_reason
         )
         log_pipeline_memory(
             stage="dataset",
@@ -1483,10 +1904,12 @@ def run_pipeline_dataset_stage(
             node_count=len(snapshot.nodes),
         )
         rows_started = time.perf_counter()
-        streaming_rows = _streaming_rows_from_training_snapshot(
-            args=args,
-            snapshot=snapshot,
-            generation=generation,
+        streaming_rows = (
+            family_context.stream(generation)
+            if family_context is not None
+            else _streaming_rows_from_training_snapshot(
+                args=args, snapshot=snapshot, generation=generation
+            )
         )
         LOGGER.info(
             "[pipeline] dataset_rows_stream_start generation=%s path=%s",
@@ -1494,7 +1917,9 @@ def run_pipeline_dataset_stage(
             rows_path,
         )
         write_stats = save_morpion_supervised_rows_streaming(
-            rows=streaming_rows.rows,
+            rows=verified_generation_rows(
+                streaming_rows.rows, paths=paths, manifest=manifest
+            ),
             metadata=streaming_rows.metadata,
             path=rows_path,
             progress_callback=lambda row_count: LOGGER.info(
@@ -1545,13 +1970,38 @@ def run_pipeline_dataset_stage(
         manifest_metadata["dataset_completed_at_utc"] = timestamp_utc
         manifest_metadata["dataset_rows"] = write_stats.row_count
         manifest_metadata["dataset_rows_bytes"] = rows_bytes
+        if args.dataset_confidence_policy == "selected_value_v2":
+            for key in (
+                "dataset_version",
+                "dataset_confidence_policy",
+                "dataset_confidence_contract",
+                "dataset_extraction_identity",
+                "scientific_source_provenance",
+            ):
+                manifest_metadata[key] = streaming_rows.metadata[key]
         manifest = replace(
             manifest,
             rows_path=paths.relative_to_work_dir(rows_path),
             dataset_status="done",
             metadata=manifest_metadata,
         )
-        save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
+        if dataset_attempt is None:
+            save_pipeline_manifest(manifest, pipeline_manifest_path(paths, generation))
+        else:
+            reference = publish_dataset(
+                paths,
+                dataset_attempt,
+                manifest,
+                MorpionPipelineDatasetStatusArtifact(
+                    generation=generation,
+                    status="done",
+                    updated_at_utc=timestamp_utc,
+                    metadata=manifest.metadata,
+                    record_status=record_status,
+                    frontier_status=frontier_status,
+                ),
+            )
+            manifest = accept_dataset(paths, reference)
         LOGGER.info(
             "[leaderboard] persist_start generation=%s cycle=%s",
             generation,
@@ -1572,6 +2022,14 @@ def run_pipeline_dataset_stage(
                 time.perf_counter() - leaderboard_started_at,
             )
         dataset_observation = dataset_measurement.finish(
+            reader_mode=reader_mode,
+            reader=reader_observation,
+            reader_source_bytes_read=view.source_bytes_read
+            if view is not None and family_context is not None
+            else None,
+            family_scratch_logical_bytes=family_context.scratch_bytes()
+            if family_context is not None
+            else None,
             input_tree_generation=generation,
             rows_considered=len(snapshot.nodes),
             rows_emitted=write_stats.row_count,
@@ -1586,15 +2044,16 @@ def run_pipeline_dataset_stage(
         persist_stage_measurement(
             paths.work_dir, generation, "dataset", dataset_observation
         )
-        save_pipeline_dataset_status_file(
-            generation=generation,
-            dataset_status=manifest.dataset_status,
-            updated_at_utc=timestamp_utc,
-            metadata=manifest.metadata,
-            record_status=record_status,
-            frontier_status=frontier_status,
-            path=paths.pipeline_dataset_status_path_for_generation(generation),
-        )
+        if dataset_attempt is None:
+            save_pipeline_dataset_status_file(
+                generation=generation,
+                dataset_status=manifest.dataset_status,
+                updated_at_utc=timestamp_utc,
+                metadata=manifest.metadata,
+                record_status=record_status,
+                frontier_status=frontier_status,
+                path=paths.pipeline_dataset_status_path_for_generation(generation),
+            )
         LOGGER.info(
             "[pipeline] dataset_manifest_written generation=%s manifest=%s created_at=%s rows=%s",
             generation,
@@ -1615,12 +2074,13 @@ def run_pipeline_dataset_stage(
         )
     except Exception:
         timestamp_utc = _now_timestamp_utc()
-        save_dataset_manifest_status(
-            paths=paths,
-            manifest=manifest,
-            dataset_status="failed",
-            timestamp_utc=timestamp_utc,
-        )
+        if dataset_attempt is None:
+            save_dataset_manifest_status(
+                paths=paths,
+                manifest=manifest,
+                dataset_status="failed",
+                timestamp_utc=timestamp_utc,
+            )
         LOGGER.exception("[pipeline] dataset_fail generation=%s", generation)
         raise
     else:
@@ -1631,10 +2091,12 @@ def run_pipeline_dataset_stage(
         )
         return manifest
     finally:
-        release_pipeline_stage_claim(
-            claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
-            claim_id=claim.claim_id,
-        )
+        resources.close()
+        if claim is not None:
+            release_pipeline_stage_claim(
+                claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+                claim_id=claim.claim_id,
+            )
 
 
 def run_pipeline_training_stage(
@@ -1647,8 +2109,52 @@ def run_pipeline_training_stage(
     """Train evaluators and select the active model for one pipeline generation."""
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    from chipiron.environments.morpion.bootstrap.training_publication import (
+        enabled as training_enabled,
+    )
+    from chipiron.environments.morpion.bootstrap.training_publication import (
+        run_training,
+    )
+
+    with pinned_generation_manifest(paths=paths, generation=generation) as manifest:
+        if paths.run_state_path.exists() and training_enabled(
+            load_bootstrap_run_state(paths.run_state_path)
+        ):
+            if not log_available_ram_guard(
+                stage="training",
+                generation=generation,
+                action="rows_load",
+                required_mb=args.min_available_ram_mb,
+            ):
+                return manifest
+            return run_training(
+                replace(args),
+                paths,
+                manifest,
+                ttl_seconds=claim_ttl_seconds,
+                owner=claim_owner,
+            )
+        return _run_pipeline_training_stage(
+            args,
+            generation=generation,
+            manifest=manifest,
+            claim_ttl_seconds=claim_ttl_seconds,
+            claim_owner=claim_owner,
+        )
+
+
+def _run_pipeline_training_stage(
+    args: MorpionBootstrapArgs,
+    *,
+    generation: int,
+    manifest: MorpionPipelineGenerationManifest,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+) -> MorpionPipelineGenerationManifest:
+    """Train evaluators and select the active model for one pipeline generation."""
+    _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    manifest = load_generation_manifest(paths=paths, generation=generation)
     lower_bound = training_lower_bound_details(paths)
     stage_lower_bound_generation = lower_bound.generation
     if started_cursor_generation_is_safely_reclaimable(
@@ -1894,6 +2400,7 @@ def run_pipeline_training_stage(
         manifest_metadata["training_evaluator_names"] = list(
             resolved_evaluators_config.evaluators
         )
+        validate_manifest_publication(paths.work_dir, manifest)
         manifest = replace(
             manifest,
             model_bundle_paths=training_result.model_bundle_paths,

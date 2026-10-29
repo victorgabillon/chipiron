@@ -317,6 +317,12 @@ def load_dashboard_snapshot(work_dir: Path) -> BootstrapDashboardSnapshot:
         process=process,
         has_progress=bool(state or event),
     )
+    transaction = mapping(state.get("metadata")).get("atomic_reevaluation")
+    reevaluation = (
+        mapping(mapping(transaction).get("accepted_cursor"))
+        if "atomic_reevaluation" in mapping(state.get("metadata"))
+        else read_artifact(work_dir / "pipeline/reevaluation_cursor.json", errors)
+    )
     workers = []
     for name, artifact in [
         ("Growth", event),
@@ -324,7 +330,7 @@ def load_dashboard_snapshot(work_dir: Path) -> BootstrapDashboardSnapshot:
         ("Training", training),
         (
             "Reevaluation",
-            read_artifact(work_dir / "pipeline/reevaluation_cursor.json", errors),
+            reevaluation,
         ),
     ]:
         reported = artifact.get("status")

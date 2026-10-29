@@ -1,0 +1,69 @@
+{
+  "sqlite_version": "3.50.2",
+  "automatic_index": 1,
+  "queries": [
+    {
+      "sql": "SELECT u.node_id,COUNT(p.parent) FROM updates u LEFT JOIN v2_parents p ON p.child=u.node_id GROUP BY u.node_id",
+      "plan": [
+        [
+          7,
+          0,
+          216,
+          "SCAN u USING COVERING INDEX sqlite_autoindex_updates_1"
+        ],
+        [
+          18,
+          0,
+          53,
+          "SEARCH p USING AUTOMATIC COVERING INDEX (child=?) LEFT-JOIN"
+        ]
+      ]
+    },
+    {
+      "sql": "UPDATE v2_degrees SET degree=degree-1 WHERE id IN (SELECT child FROM v2_children WHERE parent=?)",
+      "plan": [
+        [
+          4,
+          0,
+          91,
+          "SEARCH v2_degrees USING COVERING INDEX sqlite_autoindex_v2_degrees_1 (id=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          11,
+          8,
+          56,
+          "SEARCH v2_children USING COVERING INDEX sqlite_autoindex_v2_children_1 (parent=?)"
+        ],
+        [
+          21,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "sql": "SELECT id FROM v2_degrees JOIN v2_children ON id=child WHERE parent=? AND degree=0",
+      "plan": [
+        [
+          4,
+          0,
+          56,
+          "SEARCH v2_children USING COVERING INDEX sqlite_autoindex_v2_children_1 (parent=?)"
+        ],
+        [
+          10,
+          0,
+          47,
+          "SEARCH v2_degrees USING INDEX sqlite_autoindex_v2_degrees_1 (id=?)"
+        ]
+      ]
+    }
+  ]
+}

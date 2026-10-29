@@ -1,0 +1,94 @@
+Makefile:52: ML_FLOW_URI_PATH was set in the environment and will override .env and Makefile defaults
+Makefile:55: ML_FLOW_URI_PATH_TEST was set in the environment and will override .env and Makefile defaults
+/home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/bin/python scripts/ci_test_metrics.py -n 2 --dist=loadfile --strict-markers --no-cov -m 'not exhaustive and not integration and not external_data' -p docs.research.benchmarks.morpion_training_export_20261020.validation_safety --basetemp=/home/pompote/oldata/victor/mz25/pr --junitxml=../pr.xml -o tmp_path_retention_policy=failed
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/worktree
+configfile: pyproject.toml
+testpaths: tests
+plugins: xdist-3.8.0, platformdirs-4.13.5, anyio-4.15.1, cov-7.1.0
+created: 2/2 workers
+2 workers [2739 items]
+
+........................................................................ [  2%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+.............................s.......................................... [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+.................................s...................................... [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+...                                                                      [100%]
+=============================== warnings summary ===============================
+tests/environments/test_morpion_anemone_runner.py::test_checkpoint_restore_does_not_retain_full_payload_graph
+  /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/worktree/tests/environments/test_morpion_anemone_runner.py:1711: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+    sum(1 for obj in gc.get_objects() if isinstance(obj, payload_type))
+
+tests/environments/test_morpion_bootstrap_growth_memory_profile.py::test_gc_shallow_size_summary_skips_reverse_referrer_scan
+  /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/lib/python3.13/site-packages/chipiron/environments/morpion/bootstrap/profiling/recursive/frozenset_ownership.py:101: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+    if isinstance(value, frozenset):
+
+tests/environments/test_morpion_relational_model_integration.py: 23 warnings
+tests/environments/test_morpion_entity_tokens.py: 7 warnings
+tests/environments/test_morpion_model_bundle.py: 1 warning
+tests/environments/test_morpion_legacy_graph.py: 11 warnings
+tests/environments/test_morpion_evaluator_v1.py: 6 warnings
+tests/environments/test_morpion_canonical_evaluators.py: 2 warnings
+tests/environments/test_morpion_training_scale_diagnostics.py: 2 warnings
+tests/environments/test_morpion_value_training.py: 1 warning
+tests/environments/test_morpion_training_diagnostics.py: 1 warning
+tests/environments/test_morpion_training_quality_diagnostics.py: 1 warning
+  /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/lib/python3.13/site-packages/coral/neural_networks/models/entity_token_transformer_value_net.py:120: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+    self.encoder: nn.Module = nn.TransformerEncoder(
+
+tests/environments/test_morpion_fenced_dataset_crashes.py: 4 warnings
+tests/integration_test/one_match/test_integration.py: 36 warnings
+tests/scripts/learn_nn_supervised/test_learn_nn_from_supervised_datasets.py: 1 warning
+  /home/pompote/miniconda3/lib/python3.13/multiprocessing/popen_fork.py:67: DeprecationWarning: This process (pid=1590313) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+tests/boardevaluators/test_oracle_wiring.py: 3 warnings
+tests/players/test_tree_value.py: 2 warnings
+tests/integration_test/one_match/test_integration.py: 3 warnings
+tests/integration_test/test_modification_integration.py: 2 warnings
+tests/players/test_creation.py: 2 warnings
+tests/scripts/learn_nn_supervised/test_learn_nn_from_supervised_datasets.py: 1 warning
+tests/integration_test/base_tree_exploration/test_base_tree_exploration.py: 1 warning
+tests/scripts/learn_from_scratch_value_and_fixed_boards/test_learn_nn_from_scratch_and_fixed_boards.py: 1 warning
+tests/integration_test/test_universal_behavior.py: 1 warning
+  /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/venv/lib/python3.13/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /home/pompote/oldata/victor/morpion-scratch/science-compression-20261025/pr.xml -
+========== 2737 passed, 2 skipped, 114 warnings in 1141.54s (0:19:01) ==========

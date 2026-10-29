@@ -1,0 +1,182 @@
+{
+  "instrumentation": "Existing StageMeasurement + cProfile + codec/fsync counters; serial fresh processes, OS-cache-warm sources. Phase totals exclude interpreter startup/final fingerprints. Disk is final allocation, not observed instantaneous high-water.",
+  "runs": [
+    {
+      "checkpoint_disk": {
+        "allocated_bytes_unique_inodes": 131072,
+        "apparent_file_bytes": 91955,
+        "file_names": 7,
+        "unique_file_bytes": 91955,
+        "unique_inodes": 13
+      },
+      "dag_nodes": 106,
+      "edges": 1114,
+      "evaluations": 1001,
+      "max_depth": 20,
+      "max_window": 64,
+      "model_sha256": "d88d21ba545da5bf868bccee46cbba4a606cf23391fa832d834ea6e9754910da",
+      "nodes": 1003,
+      "phase_cpu_sum_s": 29.642143,
+      "phase_sum_s": 30.270083187999262,
+      "phase_wall_s": {
+        "accepted_training_verification": 0.011525834001076873,
+        "backup": 0.3082858519992442,
+        "checkpoint": 0.31990465199487517,
+        "inference": 23.37824109000212,
+        "model_loading": 0.0037751989948446862,
+        "restore": 0.24761679700168315,
+        "selector": 0.019047998001042288,
+        "snapshot": 3.6214477100002114,
+        "snapshot_validation": 2.3590724099994986,
+        "source_verification": 0.0011656460046651773
+      },
+      "process_peak_rss_mib": 310.40625,
+      "refreshed_restore_ordered_links_equal": true,
+      "requested": 1000,
+      "restart_restore_s": 0.2370891929967911,
+      "restart_values_rng_verified": true,
+      "snapshot_disk": {
+        "allocated_bytes_unique_inodes": 1044480,
+        "apparent_file_bytes": 1033510,
+        "file_names": 3,
+        "unique_file_bytes": 1033510,
+        "unique_inodes": 4
+      },
+      "snapshot_validation_io": {
+        "cancelled_write_bytes": 0,
+        "rchar": 6654060,
+        "read_bytes": 0,
+        "syscr": 497,
+        "syscw": 573,
+        "wchar": 1805388,
+        "write_bytes": 1904640
+      },
+      "source_restore_ordered_links_equal": false,
+      "temporary_disk": {
+        "allocated_bytes_unique_inodes": 2666496,
+        "apparent_file_bytes": 2567114,
+        "file_names": 18,
+        "unique_file_bytes": 2567114,
+        "unique_inodes": 33
+      }
+    },
+    {
+      "checkpoint_disk": {
+        "allocated_bytes_unique_inodes": 491520,
+        "apparent_file_bytes": 453979,
+        "file_names": 7,
+        "unique_file_bytes": 453979,
+        "unique_inodes": 13
+      },
+      "dag_nodes": 759,
+      "edges": 5931,
+      "evaluations": 5005,
+      "max_depth": 62,
+      "max_window": 64,
+      "model_sha256": "d88d21ba545da5bf868bccee46cbba4a606cf23391fa832d834ea6e9754910da",
+      "nodes": 5013,
+      "phase_cpu_sum_s": 218.93295299999997,
+      "phase_sum_s": 221.0611312500041,
+      "phase_wall_s": {
+        "accepted_training_verification": 0.019848746997013222,
+        "backup": 1.5925231240034918,
+        "checkpoint": 1.1427692319994094,
+        "inference": 142.4762457809993,
+        "model_loading": 0.0041253230010624975,
+        "restore": 0.946903903997736,
+        "selector": 0.09292147600353928,
+        "snapshot": 44.799375308997696,
+        "snapshot_validation": 29.985046455003612,
+        "source_verification": 0.0013718990012421273
+      },
+      "process_peak_rss_mib": 410.37890625,
+      "refreshed_restore_ordered_links_equal": true,
+      "requested": 5000,
+      "restart_restore_s": 0.8899935959998402,
+      "restart_values_rng_verified": true,
+      "snapshot_disk": {
+        "allocated_bytes_unique_inodes": 6094848,
+        "apparent_file_bytes": 6081508,
+        "file_names": 3,
+        "unique_file_bytes": 6081508,
+        "unique_inodes": 4
+      },
+      "snapshot_validation_io": {
+        "cancelled_write_bytes": 3567616,
+        "rchar": 61586481,
+        "read_bytes": 0,
+        "syscr": 8021,
+        "syscw": 6354,
+        "wchar": 15078060,
+        "write_bytes": 15581184
+      },
+      "source_restore_ordered_links_equal": false,
+      "temporary_disk": {
+        "allocated_bytes_unique_inodes": 14819328,
+        "apparent_file_bytes": 14719425,
+        "file_names": 18,
+        "unique_file_bytes": 14719425,
+        "unique_inodes": 33
+      }
+    },
+    {
+      "checkpoint_disk": {
+        "allocated_bytes_unique_inodes": 950272,
+        "apparent_file_bytes": 910482,
+        "file_names": 7,
+        "unique_file_bytes": 910482,
+        "unique_inodes": 13
+      },
+      "dag_nodes": 1391,
+      "edges": 11846,
+      "evaluations": 10009,
+      "max_depth": 62,
+      "max_window": 64,
+      "model_sha256": "d88d21ba545da5bf868bccee46cbba4a606cf23391fa832d834ea6e9754910da",
+      "nodes": 10018,
+      "phase_cpu_sum_s": 462.551806,
+      "phase_sum_s": 466.5095928800074,
+      "phase_wall_s": {
+        "accepted_training_verification": 0.020050126004207414,
+        "backup": 3.2478057140033343,
+        "checkpoint": 1.9992407480021939,
+        "inference": 281.5161483269985,
+        "model_loading": 0.004754634996061213,
+        "restore": 1.8424760150010115,
+        "selector": 0.1919857309985673,
+        "snapshot": 106.44918550800503,
+        "snapshot_validation": 71.23652181000216,
+        "source_verification": 0.0014242659963201731
+      },
+      "process_peak_rss_mib": 543.81640625,
+      "refreshed_restore_ordered_links_equal": true,
+      "requested": 10000,
+      "restart_restore_s": 1.7360732160013868,
+      "restart_values_rng_verified": true,
+      "snapshot_disk": {
+        "allocated_bytes_unique_inodes": 12554240,
+        "apparent_file_bytes": 12540400,
+        "file_names": 3,
+        "unique_file_bytes": 12540400,
+        "unique_inodes": 4
+      },
+      "snapshot_validation_io": {
+        "cancelled_write_bytes": 10194944,
+        "rchar": 127644918,
+        "read_bytes": 0,
+        "syscr": 16615,
+        "syscw": 16503,
+        "wchar": 36528548,
+        "write_bytes": 37466112
+      },
+      "source_restore_ordered_links_equal": false,
+      "temporary_disk": {
+        "allocated_bytes_unique_inodes": 30326784,
+        "apparent_file_bytes": 30220258,
+        "file_names": 18,
+        "unique_file_bytes": 30220258,
+        "unique_inodes": 33
+      }
+    }
+  ]
+}

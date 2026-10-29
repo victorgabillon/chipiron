@@ -1,0 +1,357 @@
+{
+  "unchanged": true,
+  "changed": [],
+  "before": [
+    {
+      "path": "/home/pompote/oldata/victor/chipiron",
+      "head": "f545304c24a7889f20471de0944d8097a9d192c8",
+      "status": " M docs/model_bundles.md\n M src/chipiron/environments/morpion/bootstrap/config.py\n M src/chipiron/environments/morpion/bootstrap/cycle_training.py\n M src/chipiron/environments/morpion/bootstrap/evaluator_config.py\n M src/chipiron/environments/morpion/bootstrap/evaluator_family.py\n M src/chipiron/environments/morpion/bootstrap/runtime/runner.py\n M src/chipiron/environments/morpion/players/evaluators/datasets/datasets.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/__init__.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/bundle.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/entity_relations.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/entity_tokens.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/__init__.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/args.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/model_args.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relational_entity_token_cache.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/row_batches.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py\n M tests/environments/test_morpion_entity_tokens.py\n?? feature\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/latent_window_features.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/target_transform.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/batch.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/optimizer_schedule.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relation_bias_verification.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relation_input.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/target_transform.py\n?? tests/environments/test_morpion_global_geometry_feature.py\n?? tests/environments/test_morpion_latent_window_move_features.py\n?? tests/environments/test_morpion_latent_window_shared_scoring.py\n?? tests/environments/test_morpion_optimizer_schedule.py\n?? tests/environments/test_morpion_prospective_segment_tokens.py\n?? tests/environments/test_morpion_relation_bias_scale.py\n?? tests/environments/test_morpion_relation_training_ablation.py\n?? tests/environments/test_morpion_standardized_targets.py\n",
+      "diff_sha256": "6b632c20e46a64585c51935337b3e22579389d30ff92b201640916a5aa5b138d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-canonicalization",
+      "head": "90d012ddac42e1b8c026a7ec34ea86a6326bbbb5",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-dashboard-perf",
+      "head": "af4b69415b7f137b569f158f670209e3919c927b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-benchmark-v1",
+      "head": "6c5b92981223ac5715770b100f0760e55a9ef98d",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-v1",
+      "head": "16fbec5a9f517b8117446cb25184d4867f2163e4",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-main-operator",
+      "head": "9464847a43261fa712c5602f5d891ee6e9938013",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-training-export-profile",
+      "head": "67a7cfd1955f43d5947af01dbb324fb5efd93a0d",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-transformer-v1-bootstrap",
+      "head": "fb0c126966d4be9a0da74492fc1db77a22f7c264",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-warm-growth-runtime",
+      "head": "aeece2c1694a90bb79880db1733966d22c36c6a1",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree",
+      "head": "3623bb0f60d784476294f93fa533f7ec2d0e35db",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-reuse-20261021/worktree",
+      "head": "1f335acfa362469dae3636329fa1054365caeb0b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/worktree",
+      "head": "fa9955a2b9fc31ac43a97ed358affda801029a3b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-certainty-streaming",
+      "head": "5828f91448f1c406c269a19740fe758e338e86a3",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-bound-patch-receipts",
+      "head": "7313ecfad36667ab2a8dd1bbd4b894aa682a7e9b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-lifecycle-integration",
+      "head": "027231820f1b2a192d1adb4ec0d90469dac19dbe",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-dataset-v2-confidence",
+      "head": "05fa885796aa66441926ed300fda269ede89cc5f",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-reevaluation-publication",
+      "head": "b0980ab41cb1ebf178d4ef26d49e82dd5d57ca76",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-scientific-v2",
+      "head": "69534167486f980afebc4a07af4e9f6c95784370",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-sharded-publication",
+      "head": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-main-before",
+      "head": "50fb67a42577e195bc565f4d03e38d919640d08a",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-before",
+      "head": "aeece2c1694a90bb79880db1733966d22c36c6a1",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-integration",
+      "head": "65b00a77968e3c4120b10865be56b22846838e99",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-durable-v2",
+      "head": "9b08cdf77202cca07f41c1ade4aad9e737e647e6",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader",
+      "head": "02212bc6130205b7d2ef898c7b1eb0f7d384f7aa",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader-profile",
+      "head": "7d808c37113b5ea127bd473bc8c5b8e774492b8a",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-sharded-training-v2",
+      "head": "bfd8f2ab05f017ffda5e14af5dbf6e1f1afa3fde",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-streaming-dataset",
+      "head": "5c8906ba0d520c63d821e14a2d52530f8bed2307",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-streaming-reevaluation",
+      "head": "79693ce2dc59c6d6ccb951951c9ba75fa69057f3",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-value-certainty",
+      "head": "cae9ec523edaaed277c8f953fafae5d9ac766701",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "after": [
+    {
+      "path": "/home/pompote/oldata/victor/chipiron",
+      "head": "f545304c24a7889f20471de0944d8097a9d192c8",
+      "status": " M docs/model_bundles.md\n M src/chipiron/environments/morpion/bootstrap/config.py\n M src/chipiron/environments/morpion/bootstrap/cycle_training.py\n M src/chipiron/environments/morpion/bootstrap/evaluator_config.py\n M src/chipiron/environments/morpion/bootstrap/evaluator_family.py\n M src/chipiron/environments/morpion/bootstrap/runtime/runner.py\n M src/chipiron/environments/morpion/players/evaluators/datasets/datasets.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/__init__.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/bundle.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/entity_relations.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/entity_tokens.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/__init__.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/args.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/diagnostics.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/entity_token_cache_streaming.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/evaluation.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/flat_cache_streaming.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/model_args.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/quality_diagnostics.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relational_entity_token_cache.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/row_batches.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/service.py\n M src/chipiron/environments/morpion/players/evaluators/neural_networks/training/streaming.py\n M tests/environments/test_morpion_entity_tokens.py\n?? feature\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/latent_window_features.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/target_transform.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/batch.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/optimizer_schedule.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relation_bias_verification.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/relation_input.py\n?? src/chipiron/environments/morpion/players/evaluators/neural_networks/training/target_transform.py\n?? tests/environments/test_morpion_global_geometry_feature.py\n?? tests/environments/test_morpion_latent_window_move_features.py\n?? tests/environments/test_morpion_latent_window_shared_scoring.py\n?? tests/environments/test_morpion_optimizer_schedule.py\n?? tests/environments/test_morpion_prospective_segment_tokens.py\n?? tests/environments/test_morpion_relation_bias_scale.py\n?? tests/environments/test_morpion_relation_training_ablation.py\n?? tests/environments/test_morpion_standardized_targets.py\n",
+      "diff_sha256": "6b632c20e46a64585c51935337b3e22579389d30ff92b201640916a5aa5b138d"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-canonicalization",
+      "head": "90d012ddac42e1b8c026a7ec34ea86a6326bbbb5",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-dashboard-perf",
+      "head": "af4b69415b7f137b569f158f670209e3919c927b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-benchmark-v1",
+      "head": "6c5b92981223ac5715770b100f0760e55a9ef98d",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-evaluator-v1",
+      "head": "16fbec5a9f517b8117446cb25184d4867f2163e4",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-main-operator",
+      "head": "9464847a43261fa712c5602f5d891ee6e9938013",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-training-export-profile",
+      "head": "67a7cfd1955f43d5947af01dbb324fb5efd93a0d",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-transformer-v1-bootstrap",
+      "head": "fb0c126966d4be9a0da74492fc1db77a22f7c264",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/chipiron-warm-growth-runtime",
+      "head": "aeece2c1694a90bb79880db1733966d22c36c6a1",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree",
+      "head": "3623bb0f60d784476294f93fa533f7ec2d0e35db",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-reuse-20261021/worktree",
+      "head": "1f335acfa362469dae3636329fa1054365caeb0b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/worktree",
+      "head": "fa9955a2b9fc31ac43a97ed358affda801029a3b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-certainty-streaming",
+      "head": "5828f91448f1c406c269a19740fe758e338e86a3",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-bound-patch-receipts",
+      "head": "7313ecfad36667ab2a8dd1bbd4b894aa682a7e9b",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-checkpoint-lifecycle-integration",
+      "head": "027231820f1b2a192d1adb4ec0d90469dac19dbe",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-dataset-v2-confidence",
+      "head": "05fa885796aa66441926ed300fda269ede89cc5f",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-reevaluation-publication",
+      "head": "b0980ab41cb1ebf178d4ef26d49e82dd5d57ca76",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-scientific-v2",
+      "head": "69534167486f980afebc4a07af4e9f6c95784370",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-durable-sharded-publication",
+      "head": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-main-before",
+      "head": "50fb67a42577e195bc565f4d03e38d919640d08a",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-before",
+      "head": "aeece2c1694a90bb79880db1733966d22c36c6a1",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-export-profile-integration",
+      "head": "65b00a77968e3c4120b10865be56b22846838e99",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-durable-v2",
+      "head": "9b08cdf77202cca07f41c1ade4aad9e737e647e6",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader",
+      "head": "02212bc6130205b7d2ef898c7b1eb0f7d384f7aa",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-scientific-v2-reader-profile",
+      "head": "7d808c37113b5ea127bd473bc8c5b8e774492b8a",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-sharded-training-v2",
+      "head": "bfd8f2ab05f017ffda5e14af5dbf6e1f1afa3fde",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-streaming-dataset",
+      "head": "5c8906ba0d520c63d821e14a2d52530f8bed2307",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-streaming-reevaluation",
+      "head": "79693ce2dc59c6d6ccb951951c9ba75fa69057f3",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/chipiron-value-certainty",
+      "head": "cae9ec523edaaed277c8f953fafae5d9ac766701",
+      "status": "",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "implementation_sha": "a2904d106daccce2f44d7de58d4410dc924e0c79"
+}

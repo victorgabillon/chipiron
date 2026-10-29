@@ -1,0 +1,12 @@
+{
+  "local_base": {
+    "ref": "integrate/morpion-scientific-durable-base",
+    "sha": "d4ce35d1ce40cf45e93db866e39323fa6499c4d0"
+  },
+  "local_boundary_delta": {
+    "ref": "review/morpion-scientific-durable-boundaries",
+    "sha": "3c9ce1c2d45ccf686c34c8bf0d53ec908a1fdac1"
+  },
+  "remote_pr_opened": false,
+  "reason": "Upstream sibling PR stacks remain open drafts. Local refs preserve exact existing commits without replaying implementations."
+}

@@ -1,0 +1,896 @@
+{
+  "1k": {
+    "retained_indexes": [
+      {
+        "path": "../bench/1k/patch-cache/v2-9fc5ed69fab119f80b3369c0f421f771fdedd78c5f01b488c8712d4550a131ad.sqlite3",
+        "allocated_bytes": 1359872,
+        "schema": 2,
+        "generation": 1,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 1,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/5c7503bc0cdf41e6b9418e1bb6c5e4a2/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/5c7503bc0cdf41e6b9418e1bb6c5e4a2/scientific_snapshot/generation.json",
+              "sha256": "cbf72cdab600b77757a9d0583d0ef8206cdaa11636d68454c617bc31bb318a76",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/5c7503bc0cdf41e6b9418e1bb6c5e4a2/scientific_snapshot/records.jsonl.zst",
+              "sha256": "650432a98a376c48b224b482793ff5113024ed55073db3c73130d8602340c819",
+              "size": 9172
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/5c7503bc0cdf41e6b9418e1bb6c5e4a2/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "3ae357f11f85c6e090b938149179fd2f0cef4d3b08cd81efaf8a2a8681f2aa60",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/patch-cache/v2-b601c3a9653efe49a9ee23395aeb3f44ed4c6b791f9bc29eb7f90b387e68337a.sqlite3",
+        "allocated_bytes": 1359872,
+        "schema": 2,
+        "generation": 2,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 2,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/79c48afb07684b34a581f8fe8b32a50e/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/79c48afb07684b34a581f8fe8b32a50e/scientific_snapshot/generation.json",
+              "sha256": "54aa83dfb717e03c158cc5206428cbd88b5c63a764a858baf27f458c91099591",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/79c48afb07684b34a581f8fe8b32a50e/scientific_snapshot/records.jsonl.zst",
+              "sha256": "593264bed2c1cbe826b148af8cd67eb1a04c5da11e966afe906e218ee3b9c63b",
+              "size": 9173
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/79c48afb07684b34a581f8fe8b32a50e/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "7d2d6b393f088220114ec5e40767814323b1082d4f50230db9f0354b75b8a16e",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/patch-cache/v3-0572a0090492faf1919db2324d49f150a0115cab546c61df1d02ff474374d8f4.sqlite3",
+        "allocated_bytes": 675840,
+        "schema": 3,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+              "sha256": "cacf0fe5cdd5574523582ea7ab981aa00f1fe9785e882efeca013185adf5cabd",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/records.jsonl.zst",
+              "sha256": "2e1db7f5ba7d897eeeebc2eb898b15acc5054e3d10fd4c9914f7235aa96e9290",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "26ee03fc194b1fe003c417849a54fdbdf635908314e2e073f7d1d0ad6981f3c2",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/patch-cache/v3-f02fdf84d0f77468b0656a3c3800b2cc9fcacc33ce61a19da1637318330a7274.sqlite3",
+        "allocated_bytes": 675840,
+        "schema": 3,
+        "generation": 4,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 4,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/1ddbb8a24b964afb82754c0a62cafee0/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/1ddbb8a24b964afb82754c0a62cafee0/scientific_snapshot/generation.json",
+              "sha256": "4bddcaf55ba91b486e7b72d7a922232dee92b232cd77dfb2b085feb3241eaa95",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/1ddbb8a24b964afb82754c0a62cafee0/scientific_snapshot/records.jsonl.zst",
+              "sha256": "2f35b2255116bab51a69ac7682ee40e212f33d162068b12e93a80de017f3770e",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/1ddbb8a24b964afb82754c0a62cafee0/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "3aa81ff8f6618cca358f8e3be594a22246ed13b0916da397db145c30cb5be7b5",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/reader-cache/v2-0288dcfb5f252e22dac9231f957ee2893b94c1189e2abdf404eea78e3b8dc28d.sqlite3",
+        "allocated_bytes": 1359872,
+        "schema": 2,
+        "generation": 5,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 5,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/generation.json",
+              "sha256": "4ba2e3cd1b04e0eaf6bd8e3d87d3901d0cebf7fe88934a259fcb0c312828c672",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/records.jsonl.zst",
+              "sha256": "520fbc70f724d2fb1bf6f5c85d0e75c1a08e697e6166df56f32997b1a9bca3b4",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "9537851823264eba6d1c18ac17bf6cea452102984435adb05e403d48167b130d",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/reader-cache/v2-96897355bc94e4f2a6eb6807da9849f8a69eb9be0210fb4a201dc9fe96103e0f.sqlite3",
+        "allocated_bytes": 1359872,
+        "schema": 2,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+              "sha256": "cacf0fe5cdd5574523582ea7ab981aa00f1fe9785e882efeca013185adf5cabd",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/records.jsonl.zst",
+              "sha256": "2e1db7f5ba7d897eeeebc2eb898b15acc5054e3d10fd4c9914f7235aa96e9290",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "26ee03fc194b1fe003c417849a54fdbdf635908314e2e073f7d1d0ad6981f3c2",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/reader-cache/v3-0572a0090492faf1919db2324d49f150a0115cab546c61df1d02ff474374d8f4.sqlite3",
+        "allocated_bytes": 675840,
+        "schema": 3,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/generation.json",
+              "sha256": "cacf0fe5cdd5574523582ea7ab981aa00f1fe9785e882efeca013185adf5cabd",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/records.jsonl.zst",
+              "sha256": "2e1db7f5ba7d897eeeebc2eb898b15acc5054e3d10fd4c9914f7235aa96e9290",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/363464c8fd4b4d33b1aece14cac2319b/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "26ee03fc194b1fe003c417849a54fdbdf635908314e2e073f7d1d0ad6981f3c2",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/1k/reader-cache/v3-b19225575a41793b8f87d922ed895de4c9d93c7870ce93db31b4ba4799cdc9b6.sqlite3",
+        "allocated_bytes": 675840,
+        "schema": 3,
+        "generation": 5,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 5,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/generation.json",
+              "sha256": "4ba2e3cd1b04e0eaf6bd8e3d87d3901d0cebf7fe88934a259fcb0c312828c672",
+              "size": 1758
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/records.jsonl.zst",
+              "sha256": "520fbc70f724d2fb1bf6f5c85d0e75c1a08e697e6166df56f32997b1a9bca3b4",
+              "size": 9174
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/1k/work/generation_publications_v3/objects/a7105c4859024154bff43e78fbf3cfe5/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "9537851823264eba6d1c18ac17bf6cea452102984435adb05e403d48167b130d",
+              "size": 19803
+            }
+          ]
+        },
+        "freelist_pages": 0
+      }
+    ],
+    "retained_sqlite_allocation": 8142848
+  },
+  "5k": {
+    "retained_indexes": [
+      {
+        "path": "../bench/5k/patch-cache/v2-2c616052df0ebdec3f1518e1286e3e3fbcf156b62e413b0ae7f8dd2172f3eb5a.sqlite3",
+        "allocated_bytes": 7766016,
+        "schema": 2,
+        "generation": 2,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 2,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2fa0ae4ac95e4aee83b6671ef2a4ec26/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2fa0ae4ac95e4aee83b6671ef2a4ec26/scientific_snapshot/generation.json",
+              "sha256": "1c4bce95b7d2898a0613ef96c4f0b66d3a47018b988f73b40e1af4158efb454a",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2fa0ae4ac95e4aee83b6671ef2a4ec26/scientific_snapshot/records.jsonl.zst",
+              "sha256": "b1c3cbd8c602b2bdfb235cccd7986878e3684e68af5a88fa3d0aaf7c3c699f07",
+              "size": 54463
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2fa0ae4ac95e4aee83b6671ef2a4ec26/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "3479ec8833ad825cba2c1b77e5f47dec045c50d8d418781a6933284596e02974",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/patch-cache/v2-50258fa85aedcded919af95c4eee17fa29ee0f21b42299ecb5e40e21bd125e12.sqlite3",
+        "allocated_bytes": 7766016,
+        "schema": 2,
+        "generation": 1,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 1,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/72133b4da6d249d68d9d50053e26f715/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/72133b4da6d249d68d9d50053e26f715/scientific_snapshot/generation.json",
+              "sha256": "b2a941d389fa39bf0098f1460de2245f5d0aebf889b4fce78f46a654e3413763",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/72133b4da6d249d68d9d50053e26f715/scientific_snapshot/records.jsonl.zst",
+              "sha256": "9890714fd412418adeb1ebd1a8a5ccea1d98f74aafee61d678fe07dc44688087",
+              "size": 54461
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/72133b4da6d249d68d9d50053e26f715/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "2b820e2b2d28b41684aebfb6146b471efa29cc501ab130ecccd6f7b7c8f01203",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/patch-cache/v3-27fb0db684ca3ef08b0b4c23040c2cd1c917c8ae9fbafdc8c26fdb4a334b40cd.sqlite3",
+        "allocated_bytes": 3612672,
+        "schema": 3,
+        "generation": 4,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 4,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/59732bca5c8242fa943da31b9a70abbc/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/59732bca5c8242fa943da31b9a70abbc/scientific_snapshot/generation.json",
+              "sha256": "a3f68d991e7dec96c3a5f6a588ecc7fde1735b42515b5130cc85ab904f725015",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/59732bca5c8242fa943da31b9a70abbc/scientific_snapshot/records.jsonl.zst",
+              "sha256": "d4ccaba28ecb88d0ae49624ade46fa728b8e13ef2f7651c826d54c9d7fb70569",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/59732bca5c8242fa943da31b9a70abbc/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "a804fa14495f65b37601c086b631d0dc83ed7978bbe1ea4cca5373862ba588d3",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/patch-cache/v3-ff8680bd8b75ef66fa557c084fbdabcfeb1f19c6146c012d321a8b61d928090d.sqlite3",
+        "allocated_bytes": 3612672,
+        "schema": 3,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+              "sha256": "f5bab9921b36731425a8019f21e2ea580b2765e5ef8b1ed6bb943c7c1985bb8b",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/records.jsonl.zst",
+              "sha256": "d1dc47783ca00a29af58cc85716b54c930e4a6a3f1d3f565fc087401dc142845",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "f63ec1fa7498c3d8aaee7f67f15a2244e8834523589de06d6ea542653e1cc908",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/profile-reader-cache/v3-ff8680bd8b75ef66fa557c084fbdabcfeb1f19c6146c012d321a8b61d928090d.sqlite3",
+        "allocated_bytes": 3612672,
+        "schema": 3,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+              "sha256": "f5bab9921b36731425a8019f21e2ea580b2765e5ef8b1ed6bb943c7c1985bb8b",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/records.jsonl.zst",
+              "sha256": "d1dc47783ca00a29af58cc85716b54c930e4a6a3f1d3f565fc087401dc142845",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "f63ec1fa7498c3d8aaee7f67f15a2244e8834523589de06d6ea542653e1cc908",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/reader-cache/v2-8372610a320bc2eab14c2380ea4747ca51495f43e0114762f7f2f96d6b199b45.sqlite3",
+        "allocated_bytes": 7766016,
+        "schema": 2,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+              "sha256": "f5bab9921b36731425a8019f21e2ea580b2765e5ef8b1ed6bb943c7c1985bb8b",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/records.jsonl.zst",
+              "sha256": "d1dc47783ca00a29af58cc85716b54c930e4a6a3f1d3f565fc087401dc142845",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "f63ec1fa7498c3d8aaee7f67f15a2244e8834523589de06d6ea542653e1cc908",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/reader-cache/v2-b00616d1d72f5687563d521b8a724d511312c0e115438058f9a10fe6b4f54450.sqlite3",
+        "allocated_bytes": 7766016,
+        "schema": 2,
+        "generation": 5,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 5,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 2,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/generation.json",
+              "sha256": "59c7e0657dda09c12727e8ed71726b862561a348482d25bea105c1ba0ba8eb81",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/records.jsonl.zst",
+              "sha256": "1a0ca0de922064d28790a8f30caa0d8dcf3259b21a6d0e39e25061dcd108d8be",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "96271a8dcd28a51b93690432660d319ea96e3060f0b1e2118ffdbf957e5e42f5",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/reader-cache/v3-ad4a0c8847a07aa3fcf41dd8785f8fe797af1bf00e2e70518c97bb140fbffa9b.sqlite3",
+        "allocated_bytes": 3612672,
+        "schema": 3,
+        "generation": 5,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 5,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/generation.json",
+              "sha256": "59c7e0657dda09c12727e8ed71726b862561a348482d25bea105c1ba0ba8eb81",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/records.jsonl.zst",
+              "sha256": "1a0ca0de922064d28790a8f30caa0d8dcf3259b21a6d0e39e25061dcd108d8be",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/2c555580c99a43cca381b5e8659474de/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "96271a8dcd28a51b93690432660d319ea96e3060f0b1e2118ffdbf957e5e42f5",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      },
+      {
+        "path": "../bench/5k/reader-cache/v3-ff8680bd8b75ef66fa557c084fbdabcfeb1f19c6146c012d321a8b61d928090d.sqlite3",
+        "allocated_bytes": 3612672,
+        "schema": 3,
+        "generation": 3,
+        "identity": {
+          "format": 2,
+          "format_kind": "morpion_closed_scientific_snapshot",
+          "generation": 3,
+          "manifest": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "adf3a70adb51b09d4a5bd2ee715002f87e0f6bf15aa542245ead06318cb9216e",
+              "evaluator": "default-runtime",
+              "revision": "durable-closed-generated-fixture"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "schema": 3,
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "sources": [
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/generation.json",
+              "sha256": "f5bab9921b36731425a8019f21e2ea580b2765e5ef8b1ed6bb943c7c1985bb8b",
+              "size": 1762
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/records.jsonl.zst",
+              "sha256": "d1dc47783ca00a29af58cc85716b54c930e4a6a3f1d3f565fc087401dc142845",
+              "size": 54464
+            },
+            {
+              "path": "/home/pompote/oldata/victor/morpion-scratch/scientific-index-20261025/bench/5k/work/generation_publications_v3/objects/dc5c41bc6fe8475f91d183c5e853ea58/scientific_snapshot/updates.jsonl.zst",
+              "sha256": "f63ec1fa7498c3d8aaee7f67f15a2244e8834523589de06d6ea542653e1cc908",
+              "size": 112347
+            }
+          ]
+        },
+        "freelist_pages": 0
+      }
+    ],
+    "retained_sqlite_allocation": 49127424
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "regressions": {
+    "testcases": {
+      "tests.environments.test_morpion_rolling_recovery_report": 22,
+      "tests.environments.test_morpion_durable_closed_crashes": 28,
+      "tests.environments.test_morpion_durable_closed_science": 44,
+      "tests.environments.test_morpion_durable_closed_snapshot": 48,
+      "tests.environments.test_morpion_checkpoint_patch_receipts": 51,
+      "tests.environments.test_morpion_patch_receipt_concurrency": 3,
+      "tests.environments.test_morpion_generation_publication": 25,
+      "tests.environments.test_morpion_generation_publication_concurrency": 6,
+      "tests.environments.test_morpion_generation_publication_crashes": 30,
+      "tests.environments.test_morpion_durable_scientific_v2": 68,
+      "tests.environments.test_morpion_durable_scientific_v2_crashes": 33,
+      "tests.environments.test_morpion_dataset_target_confidence": 62,
+      "tests.environments.test_morpion_scientific_training_reader": 71,
+      "tests.environments.test_morpion_sharded_training_reader": 25,
+      "tests.environments.test_morpion_streaming_dataset": 134,
+      "tests.environments.test_morpion_streaming_reevaluation": 30,
+      "tests.environments.test_morpion_value_certainty": 96,
+      "tests.environments.test_morpion_discovery_projection": 32,
+      "tests.environments.test_morpion_selected_generation_verification": 29,
+      "tests.environments.test_morpion_closed_scientific_snapshot": 44
+    },
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "881",
+        "time": "866.187",
+        "timestamp": "2026-10-23T10:08:58.965292+02:00",
+        "hostname": "pompote-AORUS-15P-KD"
+      }
+    ],
+    "sha256": "d54598638706fec1c23fc158381d2521e0231b4d3162c7eb5ae0c778a17fd7be"
+  },
+  "guard-tests": {
+    "testcases": {
+      "tests.environments.test_morpion_rolling_recovery_report": 24
+    },
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "24",
+        "time": "22.385",
+        "timestamp": "2026-10-23T10:32:38.897400+02:00",
+        "hostname": "pompote-AORUS-15P-KD"
+      }
+    ],
+    "sha256": "8837b1c5df08fb9cad138157cfbf866c72caf430b332709c4acf64286c173822"
+  },
+  "static": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "ruff_check": "passed",
+  "ruff_format": "692 files formatted",
+  "toolchain": "coherent",
+  "full_installed_package_ci_rerun": false
+}

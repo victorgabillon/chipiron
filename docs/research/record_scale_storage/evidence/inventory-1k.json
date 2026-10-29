@@ -1,0 +1,2299 @@
+{
+  "root": "/home/pompote/oldata/victor/morpion-scratch/atomic-activation-impl-20261024/measurements/phases-1k",
+  "generations": [
+    {
+      "generation": 1,
+      "nodes": 1003,
+      "checkpoint": {
+        "paths": 7,
+        "inodes": 7,
+        "logical": 106710,
+        "allocated": 118784
+      },
+      "science": {
+        "paths": 3,
+        "inodes": 3,
+        "logical": 1039845,
+        "allocated": 1048576
+      },
+      "capsule": {
+        "paths": 17,
+        "inodes": 17,
+        "logical": 1165538,
+        "allocated": 1204224
+      },
+      "checkpoint_files": {
+        "latest_expansions/latest_expansions.json.zst": {
+          "sha256": "d01eeaac2f5f1d48e1f0e236216e20bfd461cc7aa7e6d8bf19a28bdf8ef7f094",
+          "bytes": 331,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708503
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502553352469,
+          "ctime_ns": 1792862502553352469
+        },
+        "manifest.json": {
+          "sha256": "ce7aeb2469df9a9683de99601d6a226fa5fa7e1b71437fa7b173debd94f830f7",
+          "bytes": 1740,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708504
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502553423893,
+          "ctime_ns": 1792862502553423893
+        },
+        "metadata.json.zst": {
+          "sha256": "a184c5bc43f69b32505fa81d313f69d1c9516c189f651dd73f8570995a441051",
+          "bytes": 3880,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708505
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502553483174,
+          "ctime_ns": 1792862502553483174
+        },
+        "node_runtime/node_runtime_000000.jsonl.zst": {
+          "sha256": "880f34233811801287581e7f7d89323c9943606525e0a0a61624963038560e97",
+          "bytes": 39122,
+          "allocated": 40960,
+          "inode": [
+            66308,
+            44708507
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502553572512,
+          "ctime_ns": 1792862502553572512
+        },
+        "node_shells/nodes_000000.jsonl.zst": {
+          "sha256": "bde36a48b1e04ad4aad9daaeeffd2b659096884db679dca538717a46bee01be6",
+          "bytes": 23268,
+          "allocated": 24576,
+          "inode": [
+            66308,
+            44708509
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502553679102,
+          "ctime_ns": 1792862502553679102
+        },
+        "selector/selector.json.zst": {
+          "sha256": "73b111e42e02473afb843a7c7a076bda38597e75846af2daee175f1589f6f48b",
+          "bytes": 15101,
+          "allocated": 16384,
+          "inode": [
+            66308,
+            44708511
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502554967580,
+          "ctime_ns": 1792862502554967580
+        },
+        "state_payloads/state_payloads_000000.jsonl.zst": {
+          "sha256": "9d51f04a4f6456e762f86ade64738beb7534bda8cc8d274b15d2cb5814744418",
+          "bytes": 23268,
+          "allocated": 24576,
+          "inode": [
+            66308,
+            44708513
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502555420350,
+          "ctime_ns": 1792862502555420350
+        }
+      },
+      "descriptor_bytes": 8487,
+      "overlap_value_json_bytes": {
+        "direct": 82129,
+        "tree": 9009
+      },
+      "science_files": {
+        "generation.json": {
+          "sha256": "1f85a85cfb657b17f8e3d220d64eb608f53ba8682ae705364c6fb2f0222cbf87",
+          "bytes": 1535,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708515
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502556748954,
+          "ctime_ns": 1792862502556748954
+        },
+        "records.jsonl": {
+          "sha256": "a8d2046466a93a9be4b8c8cbfe58bfca28353b91f3dc79f0a244d3f58a17e6e4",
+          "bytes": 210848,
+          "allocated": 212992,
+          "inode": [
+            66308,
+            44708516
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502556822553,
+          "ctime_ns": 1792862502556822553
+        },
+        "updates.jsonl": {
+          "sha256": "fabf3235aacdbf108e4967e51995195394ccd7b944b21d86dc065dca0a98e4a8",
+          "bytes": 827462,
+          "allocated": 831488,
+          "inode": [
+            66308,
+            44708517
+          ],
+          "links": 1,
+          "mtime_ns": 1792862502556947627,
+          "ctime_ns": 1792862502556947627
+        }
+      },
+      "record_field_example": {
+        "node_id": "0",
+        "creation_generation": 1,
+        "state_ref_payload": [
+          0,
+          []
+        ]
+      },
+      "update_field_example": {
+        "node_id": "0",
+        "parent_ids": [],
+        "child_ids": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "depth": 0,
+        "direct_value_scalar": -21.35443687438965,
+        "tree_value_scalar": 21.0,
+        "effective_value_scalar": 21.0,
+        "effective_value_source": "tree_child",
+        "target_value_scalar": 21.0,
+        "backed_up_value_scalar": 21.0,
+        "is_terminal": false,
+        "is_exact": false,
+        "over_event_label": null,
+        "visit_count": null,
+        "metadata": {},
+        "order_index": 0,
+        "value_contract": {
+          "target_source": "tree_value",
+          "values": {
+            "direct": {
+              "score": -21.35443687438965,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "tree": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "effective": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "target": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            }
+          },
+          "certainties": {
+            "direct": "ESTIMATE",
+            "tree": "ESTIMATE",
+            "effective": "ESTIMATE",
+            "target": "ESTIMATE"
+          },
+          "all_branches_generated": true,
+          "backup_exactness_compatible": true
+        }
+      },
+      "checkpoint_field_examples": {
+        "node_shells": {
+          "branch_from_parent": null,
+          "depth": 0,
+          "generated_all_branches": true,
+          "node_id": 0,
+          "parent_node_id": null,
+          "parent_node_order": null,
+          "state_summary": {
+            "is_terminal": false,
+            "tag": -1242415135950127136
+          }
+        },
+        "state_payloads": {
+          "node_id": 0,
+          "state_payload": {
+            "anchor_ref": [
+              0,
+              []
+            ],
+            "state_summary": {
+              "is_terminal": false,
+              "tag": -1242415135950127136
+            }
+          }
+        },
+        "node_runtime": {
+          "evaluation": {
+            "backed_up_value": {
+              "certainty": "ESTIMATE",
+              "line": null,
+              "over_event": null,
+              "score": 21.0
+            },
+            "backup_runtime": {
+              "best_branch": {
+                "items": [
+                  0,
+                  -6,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "exact_child_count": 0,
+              "is_initialized": true,
+              "second_best_branch": {
+                "items": [
+                  0,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "selected_child_pv_version": 8
+            },
+            "branch_frontier": {
+              "frontier_branches": [
+                {
+                  "items": [
+                    0,
+                    -3,
+                    -5,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -5,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -6,
+                    -2,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -5,
+                    0,
+                    2
+                  ],
+                  "type": "tuple"
+                }
+              ]
+            },
+            "decision_ordering": {
+              "branch_ordering": [
+                {
+                  "branch_key": {
+                    "items": [
+                      2,
+                      -5,
+                      0,
+                      2
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -19.37059079107866,
+                  "stable_tiebreak_id": 1,
+                  "tactical_tiebreak": 2
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -3,
+                      -5,
+                      0
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -14.04347203853834,
+                  "stable_tiebreak_id": 4,
+                  "tactical_tiebreak": 4
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -5,
+                      -2,
+                      4
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -12.488378320408643,
+                  "stable_tiebreak_id": 3,
+                  "tactical_tiebreak": 5
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -6,
+                      -2,
+                      0
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": 21.0,
+                  "stable_tiebreak_id": 2,
+                  "tactical_tiebreak": 20
+                }
+              ]
+            },
+            "direct_evaluation_version": 0,
+            "direct_value": {
+              "certainty": "ESTIMATE",
+              "line": null,
+              "over_event": null,
+              "score": -21.35443687438965
+            },
+            "principal_variation": {
+              "best_branch_sequence": [
+                {
+                  "items": [
+                    0,
+                    -6,
+                    -2,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -2,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    1,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -2,
+                    -5,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    1,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -2,
+                    4,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    0,
+                    1,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -3,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    1,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -6,
+                    1,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -3,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    4,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -5,
+                    0,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -3,
+                    -5,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    0,
+                    -5,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    1,
+                    2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -2,
+                    1,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -6,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -5,
+                    -3,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -5,
+                    -1,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    0,
+                    4,
+                    2
+                  ],
+                  "type": "tuple"
+                }
+              ],
+              "cached_best_child_version": 8,
+              "pv_version": 9
+            }
+          },
+          "exploration_index": null,
+          "linked_children": [
+            {
+              "branch_key": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 1
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -6,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 2
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 3
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -3,
+                  -5,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 4
+            }
+          ],
+          "node_id": 0,
+          "unopened_branches": []
+        }
+      },
+      "model_pins": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986",
+          "sha256": "1548a772aa683040355545d971ce3bd80d360dcd2d35380d70e659aefdf34055",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ]
+    },
+    {
+      "generation": 2,
+      "nodes": 1003,
+      "checkpoint": {
+        "paths": 7,
+        "inodes": 7,
+        "logical": 94116,
+        "allocated": 106496
+      },
+      "science": {
+        "paths": 3,
+        "inodes": 3,
+        "logical": 1039477,
+        "allocated": 1044480
+      },
+      "capsule": {
+        "paths": 21,
+        "inodes": 21,
+        "logical": 1178895,
+        "allocated": 1224704
+      },
+      "checkpoint_files": {
+        "latest_expansions/latest_expansions.json.zst": {
+          "sha256": "d01eeaac2f5f1d48e1f0e236216e20bfd461cc7aa7e6d8bf19a28bdf8ef7f094",
+          "bytes": 331,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708681
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525863985685,
+          "ctime_ns": 1792862525863985685
+        },
+        "manifest.json": {
+          "sha256": "e6fa8f5766c9768d2ceaf602a0ce45fed3dc7de9b824844a316b2f3e8e7771cc",
+          "bytes": 1738,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708682
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525864114567,
+          "ctime_ns": 1792862525864114567
+        },
+        "metadata.json.zst": {
+          "sha256": "78689ac0112450dbccbfc53712523588d45889796b40963c9453f5ae0894279b",
+          "bytes": 3885,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708671
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525837372428,
+          "ctime_ns": 1792862525837372428
+        },
+        "node_runtime/node_runtime_000000.jsonl.zst": {
+          "sha256": "3f6072d1be367ee9d8a202d6c60b76f8d38aa00fc4d12010f19fe7af00675aa2",
+          "bytes": 38794,
+          "allocated": 40960,
+          "inode": [
+            66308,
+            44708677
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525863404494,
+          "ctime_ns": 1792862525863404494
+        },
+        "node_shells/nodes_000000.jsonl.zst": {
+          "sha256": "bde36a48b1e04ad4aad9daaeeffd2b659096884db679dca538717a46bee01be6",
+          "bytes": 23268,
+          "allocated": 24576,
+          "inode": [
+            66308,
+            44708673
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525842932244,
+          "ctime_ns": 1792862525842932244
+        },
+        "selector/selector.json.zst": {
+          "sha256": "fb51ccfcedd13b6d39fd4ec32bc772c26e8918cae02d76b10f8cc24e2fcd28a9",
+          "bytes": 2832,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708679
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525863893342,
+          "ctime_ns": 1792862525863893342
+        },
+        "state_payloads/state_payloads_000000.jsonl.zst": {
+          "sha256": "9d51f04a4f6456e762f86ade64738beb7534bda8cc8d274b15d2cb5814744418",
+          "bytes": 23268,
+          "allocated": 24576,
+          "inode": [
+            66308,
+            44708675
+          ],
+          "links": 1,
+          "mtime_ns": 1792862525846963362,
+          "ctime_ns": 1792862525846963362
+        }
+      },
+      "descriptor_bytes": 12566,
+      "overlap_value_json_bytes": {
+        "direct": 82032,
+        "tree": 9011
+      },
+      "science_files": {
+        "generation.json": {
+          "sha256": "980a177654b4a62f2acf500d116833186fb4a3a766b1a8f1d8f7565900a4cdd5",
+          "bytes": 1535,
+          "allocated": 4096,
+          "inode": [
+            66308,
+            44708689
+          ],
+          "links": 1,
+          "mtime_ns": 1792862526546117877,
+          "ctime_ns": 1792862526546117877
+        },
+        "records.jsonl": {
+          "sha256": "6e686aa468d496c2ee3e83a16bf7d6b7f95984acecc459705c692fe5b9aa51d4",
+          "bytes": 210848,
+          "allocated": 212992,
+          "inode": [
+            66308,
+            44708687
+          ],
+          "links": 1,
+          "mtime_ns": 1792862526544262233,
+          "ctime_ns": 1792862526544262233
+        },
+        "updates.jsonl": {
+          "sha256": "13b55cc4c96e1ba0422ad7e1d9b5d7c47770cc59f1a7775fa23ea5b1eaf2c11c",
+          "bytes": 827094,
+          "allocated": 827392,
+          "inode": [
+            66308,
+            44708688
+          ],
+          "links": 1,
+          "mtime_ns": 1792862526532262208,
+          "ctime_ns": 1792862526532262208
+        }
+      },
+      "record_field_example": {
+        "node_id": "0",
+        "creation_generation": 1,
+        "state_ref_payload": [
+          0,
+          []
+        ]
+      },
+      "update_field_example": {
+        "node_id": "0",
+        "parent_ids": [],
+        "child_ids": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "depth": 0,
+        "direct_value_scalar": -25.261579513549805,
+        "tree_value_scalar": 21.0,
+        "effective_value_scalar": 21.0,
+        "effective_value_source": "tree_child",
+        "target_value_scalar": 21.0,
+        "backed_up_value_scalar": 21.0,
+        "is_terminal": false,
+        "is_exact": false,
+        "over_event_label": null,
+        "visit_count": null,
+        "metadata": {},
+        "order_index": 0,
+        "value_contract": {
+          "target_source": "tree_value",
+          "values": {
+            "direct": {
+              "score": -25.261579513549805,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "tree": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "effective": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            },
+            "target": {
+              "score": 21.0,
+              "certainty": "ESTIMATE",
+              "over_event": null,
+              "line": null
+            }
+          },
+          "certainties": {
+            "direct": "ESTIMATE",
+            "tree": "ESTIMATE",
+            "effective": "ESTIMATE",
+            "target": "ESTIMATE"
+          },
+          "all_branches_generated": true,
+          "backup_exactness_compatible": true
+        }
+      },
+      "checkpoint_field_examples": {
+        "node_shells": {
+          "branch_from_parent": null,
+          "depth": 0,
+          "generated_all_branches": true,
+          "node_id": 0,
+          "parent_node_id": null,
+          "parent_node_order": null,
+          "state_summary": {
+            "is_terminal": false,
+            "tag": -1242415135950127136
+          }
+        },
+        "state_payloads": {
+          "node_id": 0,
+          "state_payload": {
+            "anchor_ref": [
+              0,
+              []
+            ],
+            "state_summary": {
+              "is_terminal": false,
+              "tag": -1242415135950127136
+            }
+          }
+        },
+        "node_runtime": {
+          "evaluation": {
+            "backed_up_value": {
+              "certainty": "ESTIMATE",
+              "line": null,
+              "over_event": null,
+              "score": 21.0
+            },
+            "backup_runtime": {
+              "best_branch": {
+                "items": [
+                  0,
+                  -6,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "exact_child_count": 0,
+              "is_initialized": true,
+              "second_best_branch": {
+                "items": [
+                  0,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "selected_child_pv_version": 8
+            },
+            "branch_frontier": {
+              "frontier_branches": [
+                {
+                  "items": [
+                    0,
+                    -3,
+                    -5,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -5,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -6,
+                    -2,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -5,
+                    0,
+                    2
+                  ],
+                  "type": "tuple"
+                }
+              ]
+            },
+            "decision_ordering": {
+              "branch_ordering": [
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -3,
+                      -5,
+                      0
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -24.67017819982214,
+                  "stable_tiebreak_id": 4,
+                  "tactical_tiebreak": 2
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      2,
+                      -5,
+                      0,
+                      2
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -24.35135723688837,
+                  "stable_tiebreak_id": 1,
+                  "tactical_tiebreak": 2
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -5,
+                      -2,
+                      4
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": -24.00203776840097,
+                  "stable_tiebreak_id": 3,
+                  "tactical_tiebreak": 2
+                },
+                {
+                  "branch_key": {
+                    "items": [
+                      0,
+                      -6,
+                      -2,
+                      0
+                    ],
+                    "type": "tuple"
+                  },
+                  "primary_score": 21.0,
+                  "stable_tiebreak_id": 2,
+                  "tactical_tiebreak": 20
+                }
+              ]
+            },
+            "direct_evaluation_version": 2,
+            "direct_value": {
+              "certainty": "ESTIMATE",
+              "line": null,
+              "over_event": null,
+              "score": -25.261579513549805
+            },
+            "principal_variation": {
+              "best_branch_sequence": [
+                {
+                  "items": [
+                    0,
+                    -6,
+                    -2,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -2,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    1,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -2,
+                    -5,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    1,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -2,
+                    4,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    0,
+                    1,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -3,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    1,
+                    1,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -6,
+                    1,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -3,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    4,
+                    -2,
+                    4
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -5,
+                    0,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    0,
+                    -3,
+                    -5,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    0,
+                    -5,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    1,
+                    2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -2,
+                    1,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    2,
+                    -6,
+                    -2,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    1,
+                    -5,
+                    -3,
+                    0
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    -5,
+                    -1,
+                    2
+                  ],
+                  "type": "tuple"
+                },
+                {
+                  "items": [
+                    3,
+                    0,
+                    4,
+                    2
+                  ],
+                  "type": "tuple"
+                }
+              ],
+              "cached_best_child_version": 8,
+              "pv_version": 9
+            }
+          },
+          "exploration_index": null,
+          "linked_children": [
+            {
+              "branch_key": {
+                "items": [
+                  2,
+                  -5,
+                  0,
+                  2
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 1
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -6,
+                  -2,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 2
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -5,
+                  -2,
+                  4
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 3
+            },
+            {
+              "branch_key": {
+                "items": [
+                  0,
+                  -3,
+                  -5,
+                  0
+                ],
+                "type": "tuple"
+              },
+              "child_node_id": 4
+            }
+          ],
+          "node_id": 0,
+          "unopened_branches": []
+        }
+      },
+      "model_pins": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986",
+          "sha256": "1548a772aa683040355545d971ce3bd80d360dcd2d35380d70e659aefdf34055",
+          "source": "external_seed",
+          "source_generation": 1
+        },
+        {
+          "generation": 1,
+          "local_trained_generation": 1,
+          "name": "linear",
+          "origin": "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/models/generation_000001/linear",
+          "path": "models/63dc443910140897c61ab3c9d583db05757bb6ca4d971b1a5e611edbbf64fc56",
+          "sha256": "999a188277c46e5c5828fcd708e003c8e5566af2f15297f06c1904de00566753",
+          "source": "local_training",
+          "source_generation": 1
+        }
+      ],
+      "changes": {
+        "node_shells": {
+          "new": 0,
+          "removed": 0,
+          "changed_existing": 0,
+          "fields": {},
+          "changed_rows_json_bytes": 0,
+          "changed_rows_zstd_bytes_lower_bound": 9
+        },
+        "state_payloads": {
+          "new": 0,
+          "removed": 0,
+          "changed_existing": 0,
+          "fields": {},
+          "changed_rows_json_bytes": 0,
+          "changed_rows_zstd_bytes_lower_bound": 9
+        },
+        "node_runtime": {
+          "new": 0,
+          "removed": 0,
+          "changed_existing": 1002,
+          "fields": {
+            "evaluation": 1002
+          },
+          "changed_rows_json_bytes": 868084,
+          "changed_rows_zstd_bytes_lower_bound": 38767
+        },
+        "records": {
+          "new": 0,
+          "removed": 0,
+          "changed_existing": 0,
+          "fields": {},
+          "changed_rows_json_bytes": 0,
+          "changed_rows_zstd_bytes_lower_bound": 9
+        },
+        "updates": {
+          "new": 0,
+          "removed": 0,
+          "changed_existing": 1002,
+          "fields": {
+            "direct_value_scalar": 1002,
+            "value_contract": 1002,
+            "effective_value_scalar": 975,
+            "tree_value_scalar": 40,
+            "target_value_scalar": 40,
+            "backed_up_value_scalar": 40
+          },
+          "changed_rows_json_bytes": 825650,
+          "changed_rows_zstd_bytes_lower_bound": 34294
+        }
+      },
+      "identical_checkpoint_files": [
+        "latest_expansions/latest_expansions.json.zst",
+        "node_shells/nodes_000000.jsonl.zst",
+        "state_payloads/state_payloads_000000.jsonl.zst"
+      ],
+      "identical_checkpoint_allocated": 53248
+    }
+  ],
+  "current_plus_two": {
+    "paths": 38,
+    "inodes": 34,
+    "logical": 2337732,
+    "allocated": 2412544
+  },
+  "all_capsules": {
+    "paths": 38,
+    "inodes": 34,
+    "logical": 2337732,
+    "allocated": 2412544
+  },
+  "whole_workspace": {
+    "paths": 74,
+    "inodes": 70,
+    "logical": 3615918,
+    "allocated": 3764224
+  },
+  "source_files": {
+    "bootstrap_config.json": {
+      "sha256": "4dc77ebd0b06c4ec1140b9f6793e622a5789983ea282745e0458d656067ededf",
+      "bytes": 3678,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708468
+      ],
+      "links": 1,
+      "mtime_ns": 1792862487293063348,
+      "ctime_ns": 1792862487308176889
+    },
+    "dataset_publications_v1/objects/e58fd85554e14709a7314a8033b0b0d1/proposal.json": {
+      "sha256": "f10a223e678aa8e6853f1a4fbed9d9d6ff36d26a041cd54bec2697de730ea8cb",
+      "bytes": 14247,
+      "allocated": 16384,
+      "inode": [
+        66308,
+        44708535
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506214218261,
+      "ctime_ns": 1792862506223218281
+    },
+    "dataset_publications_v1/objects/e58fd85554e14709a7314a8033b0b0d1/rows.jsonl": {
+      "sha256": "c6e623bdf1e9330c60c2e9e2d80d367beb6e1b5b1e5d75f6d75e847b1fd6e432",
+      "bytes": 16029,
+      "allocated": 16384,
+      "inode": [
+        66308,
+        44708534
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506211218255,
+      "ctime_ns": 1792862506211218255
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/.generation_publication_v3.json": {
+      "sha256": "b663331a99ce9d676f176fec8c3fd305789ca41d52b76391194a627bff00e75e",
+      "bytes": 8487,
+      "allocated": 12288,
+      "inode": [
+        66308,
+        44708524
+      ],
+      "links": 1,
+      "mtime_ns": 1792862504166196550,
+      "ctime_ns": 1792862504174213820
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/.publication_attempt_v1.json": {
+      "sha256": "0a034e57d6de17a52712d85247affeddb1c4cc9b148554a30181b154035c059d",
+      "bytes": 117,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708498
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502526984351,
+      "ctime_ns": 1792862502543210265
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/bootstrap_config.json": {
+      "sha256": "4dc77ebd0b06c4ec1140b9f6793e622a5789983ea282745e0458d656067ededf",
+      "bytes": 3678,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708499
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553040914,
+      "ctime_ns": 1792862502553040914
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/latest_expansions/latest_expansions.json.zst": {
+      "sha256": "d01eeaac2f5f1d48e1f0e236216e20bfd461cc7aa7e6d8bf19a28bdf8ef7f094",
+      "bytes": 331,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708503
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553352469,
+      "ctime_ns": 1792862502553352469
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/manifest.json": {
+      "sha256": "ce7aeb2469df9a9683de99601d6a226fa5fa7e1b71437fa7b173debd94f830f7",
+      "bytes": 1740,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708504
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553423893,
+      "ctime_ns": 1792862502553423893
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/metadata.json.zst": {
+      "sha256": "a184c5bc43f69b32505fa81d313f69d1c9516c189f651dd73f8570995a441051",
+      "bytes": 3880,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708505
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553483174,
+      "ctime_ns": 1792862502553483174
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/node_runtime/node_runtime_000000.jsonl.zst": {
+      "sha256": "880f34233811801287581e7f7d89323c9943606525e0a0a61624963038560e97",
+      "bytes": 39122,
+      "allocated": 40960,
+      "inode": [
+        66308,
+        44708507
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553572512,
+      "ctime_ns": 1792862502553572512
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/node_shells/nodes_000000.jsonl.zst": {
+      "sha256": "bde36a48b1e04ad4aad9daaeeffd2b659096884db679dca538717a46bee01be6",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708509
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502553679102,
+      "ctime_ns": 1792862502553679102
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/selector/selector.json.zst": {
+      "sha256": "73b111e42e02473afb843a7c7a076bda38597e75846af2daee175f1589f6f48b",
+      "bytes": 15101,
+      "allocated": 16384,
+      "inode": [
+        66308,
+        44708511
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502554967580,
+      "ctime_ns": 1792862502554967580
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/checkpoint/source-checkpoint/state_payloads/state_payloads_000000.jsonl.zst": {
+      "sha256": "9d51f04a4f6456e762f86ade64738beb7534bda8cc8d274b15d2cb5814744418",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708513
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502555420350,
+      "ctime_ns": 1792862502555420350
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/morpion_manifest.json": {
+      "sha256": "6205330360317dde258a2047218f94fc203fe196d3a8070ae93596ef20cc7c4a",
+      "bytes": 1995,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708520
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558117053,
+      "ctime_ns": 1792862512974232941
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/morpion_regressor_args.json": {
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7",
+      "bytes": 1554,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708521
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558163259,
+      "ctime_ns": 1792862512975751833
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/param.json": {
+      "sha256": "b1bf93764028c5a1b766a689cc5571a120ebcc00050aa6f52cfaf755cef7e227",
+      "bytes": 1211,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708522
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558199057,
+      "ctime_ns": 1792862512975781518
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/param.pt": {
+      "sha256": "b79c3eee07b4b9defa52200d0a7cd171232a633351cb6f7d3fe3244b518f7609",
+      "bytes": 1941,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708523
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558232720,
+      "ctime_ns": 1792862512975802828
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/scientific_snapshot/generation.json": {
+      "sha256": "1f85a85cfb657b17f8e3d220d64eb608f53ba8682ae705364c6fb2f0222cbf87",
+      "bytes": 1535,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708515
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502556748954,
+      "ctime_ns": 1792862502556748954
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/scientific_snapshot/records.jsonl": {
+      "sha256": "a8d2046466a93a9be4b8c8cbfe58bfca28353b91f3dc79f0a244d3f58a17e6e4",
+      "bytes": 210848,
+      "allocated": 212992,
+      "inode": [
+        66308,
+        44708516
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502556822553,
+      "ctime_ns": 1792862502556822553
+    },
+    "generation_publications_v3/objects/02368a01f2974e71be5c6e7120277568/scientific_snapshot/updates.jsonl": {
+      "sha256": "fabf3235aacdbf108e4967e51995195394ccd7b944b21d86dc065dca0a98e4a8",
+      "bytes": 827462,
+      "allocated": 831488,
+      "inode": [
+        66308,
+        44708517
+      ],
+      "links": 1,
+      "mtime_ns": 1792862502556947627,
+      "ctime_ns": 1792862502556947627
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/.generation_publication_v3.json": {
+      "sha256": "5083670d3aee212fe5146824271da3ce0779b182899375f94b2c41af1c98fa8d",
+      "bytes": 12566,
+      "allocated": 16384,
+      "inode": [
+        66308,
+        44708684
+      ],
+      "links": 1,
+      "mtime_ns": 1792862527503153071,
+      "ctime_ns": 1792862527511264312
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/.publication_attempt_v1.json": {
+      "sha256": "25bddb51fc6e3688d2a8702c1fa6f3129be5170f1fdccec6ed8bfdf77edfe992",
+      "bytes": 117,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708660
+      ],
+      "links": 1,
+      "mtime_ns": 1792862512952582610,
+      "ctime_ns": 1792862512960232911
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/bootstrap_config.json": {
+      "sha256": "4dc77ebd0b06c4ec1140b9f6793e622a5789983ea282745e0458d656067ededf",
+      "bytes": 3678,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708661
+      ],
+      "links": 1,
+      "mtime_ns": 1792862512970546922,
+      "ctime_ns": 1792862512970546922
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/latest_expansions/latest_expansions.json.zst": {
+      "sha256": "d01eeaac2f5f1d48e1f0e236216e20bfd461cc7aa7e6d8bf19a28bdf8ef7f094",
+      "bytes": 331,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708681
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525863985685,
+      "ctime_ns": 1792862525863985685
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/manifest.json": {
+      "sha256": "e6fa8f5766c9768d2ceaf602a0ce45fed3dc7de9b824844a316b2f3e8e7771cc",
+      "bytes": 1738,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708682
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525864114567,
+      "ctime_ns": 1792862525864114567
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/metadata.json.zst": {
+      "sha256": "78689ac0112450dbccbfc53712523588d45889796b40963c9453f5ae0894279b",
+      "bytes": 3885,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708671
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525837372428,
+      "ctime_ns": 1792862525837372428
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000000.jsonl.zst": {
+      "sha256": "3f6072d1be367ee9d8a202d6c60b76f8d38aa00fc4d12010f19fe7af00675aa2",
+      "bytes": 38794,
+      "allocated": 40960,
+      "inode": [
+        66308,
+        44708677
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525863404494,
+      "ctime_ns": 1792862525863404494
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/node_shells/nodes_000000.jsonl.zst": {
+      "sha256": "bde36a48b1e04ad4aad9daaeeffd2b659096884db679dca538717a46bee01be6",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708673
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525842932244,
+      "ctime_ns": 1792862525842932244
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/selector/selector.json.zst": {
+      "sha256": "fb51ccfcedd13b6d39fd4ec32bc772c26e8918cae02d76b10f8cc24e2fcd28a9",
+      "bytes": 2832,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708679
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525863893342,
+      "ctime_ns": 1792862525863893342
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000000.jsonl.zst": {
+      "sha256": "9d51f04a4f6456e762f86ade64738beb7534bda8cc8d274b15d2cb5814744418",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708675
+      ],
+      "links": 1,
+      "mtime_ns": 1792862525846963362,
+      "ctime_ns": 1792862525846963362
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/63dc443910140897c61ab3c9d583db05757bb6ca4d971b1a5e611edbbf64fc56/morpion_manifest.json": {
+      "sha256": "c9cd9b6ef39af6f6a491c65491f046895a1061419ce76d9bd5048ab32449f6a9",
+      "bytes": 17537,
+      "allocated": 20480,
+      "inode": [
+        66308,
+        44708665
+      ],
+      "links": 1,
+      "mtime_ns": 1792862514256027598,
+      "ctime_ns": 1792862514256027598
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/63dc443910140897c61ab3c9d583db05757bb6ca4d971b1a5e611edbbf64fc56/morpion_regressor_args.json": {
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7",
+      "bytes": 1554,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708666
+      ],
+      "links": 1,
+      "mtime_ns": 1792862514256115883,
+      "ctime_ns": 1792862514256115883
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/63dc443910140897c61ab3c9d583db05757bb6ca4d971b1a5e611edbbf64fc56/param.json": {
+      "sha256": "5310d3282946d6329e4745a42d87866ca4ed2fa8412bf8f650e1b22142650cbe",
+      "bytes": 1208,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708667
+      ],
+      "links": 1,
+      "mtime_ns": 1792862514256160367,
+      "ctime_ns": 1792862514256160367
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/63dc443910140897c61ab3c9d583db05757bb6ca4d971b1a5e611edbbf64fc56/param.pt": {
+      "sha256": "09b80c35347d8631729d0a7fc26c85e5d94d04b392742711b105d6ae5f72720b",
+      "bytes": 1941,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708668
+      ],
+      "links": 1,
+      "mtime_ns": 1792862514256199751,
+      "ctime_ns": 1792862514256199751
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/morpion_manifest.json": {
+      "sha256": "6205330360317dde258a2047218f94fc203fe196d3a8070ae93596ef20cc7c4a",
+      "bytes": 1995,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708520
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558117053,
+      "ctime_ns": 1792862512974232941
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/morpion_regressor_args.json": {
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7",
+      "bytes": 1554,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708521
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558163259,
+      "ctime_ns": 1792862512975751833
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/param.json": {
+      "sha256": "b1bf93764028c5a1b766a689cc5571a120ebcc00050aa6f52cfaf755cef7e227",
+      "bytes": 1211,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708522
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558199057,
+      "ctime_ns": 1792862512975781518
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/models/915af33bebf11ea2537c1c364918e4f7b361dc5b3d01655af3b3ac60c02f4986/param.pt": {
+      "sha256": "b79c3eee07b4b9defa52200d0a7cd171232a633351cb6f7d3fe3244b518f7609",
+      "bytes": 1941,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708523
+      ],
+      "links": 2,
+      "mtime_ns": 1792862502558232720,
+      "ctime_ns": 1792862512975802828
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/scientific_snapshot/generation.json": {
+      "sha256": "980a177654b4a62f2acf500d116833186fb4a3a766b1a8f1d8f7565900a4cdd5",
+      "bytes": 1535,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708689
+      ],
+      "links": 1,
+      "mtime_ns": 1792862526546117877,
+      "ctime_ns": 1792862526546117877
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/scientific_snapshot/records.jsonl": {
+      "sha256": "6e686aa468d496c2ee3e83a16bf7d6b7f95984acecc459705c692fe5b9aa51d4",
+      "bytes": 210848,
+      "allocated": 212992,
+      "inode": [
+        66308,
+        44708687
+      ],
+      "links": 1,
+      "mtime_ns": 1792862526544262233,
+      "ctime_ns": 1792862526544262233
+    },
+    "generation_publications_v3/objects/ebf0120b06de4d738df78d86cb801c22/scientific_snapshot/updates.jsonl": {
+      "sha256": "13b55cc4c96e1ba0422ad7e1d9b5d7c47770cc59f1a7775fa23ea5b1eaf2c11c",
+      "bytes": 827094,
+      "allocated": 827392,
+      "inode": [
+        66308,
+        44708688
+      ],
+      "links": 1,
+      "mtime_ns": 1792862526532262208,
+      "ctime_ns": 1792862526532262208
+    },
+    "generation_publications_v3/pins/02368a01f2974e71be5c6e7120277568.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "allocated": 0,
+      "inode": [
+        66308,
+        44708529
+      ],
+      "links": 1,
+      "mtime_ns": 1792862504405214323,
+      "ctime_ns": 1792862504405214323
+    },
+    "generation_publications_v3/pins/ebf0120b06de4d738df78d86cb801c22.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "allocated": 0,
+      "inode": [
+        66308,
+        44708690
+      ],
+      "links": 1,
+      "mtime_ns": 1792862530907271602,
+      "ctime_ns": 1792862530907271602
+    },
+    "leaderboard.jsonl": {
+      "sha256": "b82b168878f96aeb191adc7db31d7455c18dfa712bba8c437714455b6b552cdf",
+      "bytes": 905,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708538
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506357218573,
+      "ctime_ns": 1792862506357218573
+    },
+    "pipeline/.growth_patch_consumer.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "allocated": 0,
+      "inode": [
+        66308,
+        44708489
+      ],
+      "links": 1,
+      "mtime_ns": 1792862501351207665,
+      "ctime_ns": 1792862501351207665
+    },
+    "pipeline/active_model.json": {
+      "sha256": "5fde67b7735b60bce7306f2f2028a8730f4c6312239403b29cb96bd29e2a94cd",
+      "bytes": 394,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708548
+      ],
+      "links": 1,
+      "mtime_ns": 1792862527701285945,
+      "ctime_ns": 1792862527701285945
+    },
+    "pipeline/generation_000001/dataset_status.json": {
+      "sha256": "ca54fb52b3fb18b658a4d14abf91c9a966fe56998b4eb622c54ba9ffd13a3fe3",
+      "bytes": 5371,
+      "allocated": 8192,
+      "inode": [
+        66308,
+        44708527
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506319147972,
+      "ctime_ns": 1792862506327218507
+    },
+    "pipeline/generation_000001/manifest.json": {
+      "sha256": "2c3d8a2074f87d5cda9ac30e73ba44d2b6bfe10d9a8ab647f803ee96870fced7",
+      "bytes": 5398,
+      "allocated": 8192,
+      "inode": [
+        66308,
+        44708537
+      ],
+      "links": 1,
+      "mtime_ns": 1792862509178086215,
+      "ctime_ns": 1792862509186224722
+    },
+    "pipeline/generation_000001/training_status.json": {
+      "sha256": "f5c097a3f447d1399038e906664b0c1f19133b7769a19b50833893a3fed3d52f",
+      "bytes": 1360,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708525
+      ],
+      "links": 1,
+      "mtime_ns": 1792862509195993590,
+      "ctime_ns": 1792862509204224761
+    },
+    "pipeline/generation_000002/manifest.json": {
+      "sha256": "30d52ccfba5be78a6c2addb9d311c3721ff6ce0965395d9fb857dac6024ff3ce",
+      "bytes": 3524,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708686
+      ],
+      "links": 1,
+      "mtime_ns": 1792862527701580308,
+      "ctime_ns": 1792862527709264738
+    },
+    "pipeline/performance/generation_000001/dataset-985758-1792862506357968215.json": {
+      "sha256": "a0708fe87d99c9076b7e7dd99f2cb5b76d795aabcb9d0ca4917b8599bca3f882",
+      "bytes": 1812,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708541
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506358095143,
+      "ctime_ns": 1792862506358095143
+    },
+    "request.json": {
+      "sha256": "6a036d894aa43d9312804ebd5272802257bb3e8f3935f2aca8a9687fcb000f2e",
+      "bytes": 1670,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708530
+      ],
+      "links": 1,
+      "mtime_ns": 1792862509220884595,
+      "ctime_ns": 1792862509220884595
+    },
+    "run_state.json": {
+      "sha256": "45aa4001d8f655c206faff82e89ff01e7d7807d4c712cd412adfe261524db342",
+      "bytes": 7618,
+      "allocated": 8192,
+      "inode": [
+        66308,
+        44708685
+      ],
+      "links": 1,
+      "mtime_ns": 1792862527665291458,
+      "ctime_ns": 1792862527673264660
+    },
+    "seed/morpion_manifest.json": {
+      "sha256": "6205330360317dde258a2047218f94fc203fe196d3a8070ae93596ef20cc7c4a",
+      "bytes": 1995,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708473
+      ],
+      "links": 1,
+      "mtime_ns": 1792862487319193709,
+      "ctime_ns": 1792862487319193709
+    },
+    "seed/morpion_regressor_args.json": {
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7",
+      "bytes": 1554,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708472
+      ],
+      "links": 1,
+      "mtime_ns": 1792862487319136752,
+      "ctime_ns": 1792862487319136752
+    },
+    "seed/param.json": {
+      "sha256": "b1bf93764028c5a1b766a689cc5571a120ebcc00050aa6f52cfaf755cef7e227",
+      "bytes": 1211,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708471
+      ],
+      "links": 1,
+      "mtime_ns": 1792862487319082220,
+      "ctime_ns": 1792862487319082220
+    },
+    "seed/param.pt": {
+      "sha256": "b79c3eee07b4b9defa52200d0a7cd171232a633351cb6f7d3fe3244b518f7609",
+      "bytes": 1941,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708470
+      ],
+      "links": 1,
+      "mtime_ns": 1792862487318691867,
+      "ctime_ns": 1792862487318691867
+    },
+    "source-checkpoint/latest_expansions/latest_expansions.json.zst": {
+      "sha256": "d01eeaac2f5f1d48e1f0e236216e20bfd461cc7aa7e6d8bf19a28bdf8ef7f094",
+      "bytes": 331,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708486
+      ],
+      "links": 1,
+      "mtime_ns": 1792862499000407996,
+      "ctime_ns": 1792862499000407996
+    },
+    "source-checkpoint/manifest.json": {
+      "sha256": "ce7aeb2469df9a9683de99601d6a226fa5fa7e1b71437fa7b173debd94f830f7",
+      "bytes": 1740,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708487
+      ],
+      "links": 1,
+      "mtime_ns": 1792862499000564981,
+      "ctime_ns": 1792862499000564981
+    },
+    "source-checkpoint/metadata.json.zst": {
+      "sha256": "a184c5bc43f69b32505fa81d313f69d1c9516c189f651dd73f8570995a441051",
+      "bytes": 3880,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708476
+      ],
+      "links": 1,
+      "mtime_ns": 1792862498972612078,
+      "ctime_ns": 1792862498972612078
+    },
+    "source-checkpoint/node_runtime/node_runtime_000000.jsonl.zst": {
+      "sha256": "880f34233811801287581e7f7d89323c9943606525e0a0a61624963038560e97",
+      "bytes": 39122,
+      "allocated": 40960,
+      "inode": [
+        66308,
+        44708482
+      ],
+      "links": 1,
+      "mtime_ns": 1792862498999410113,
+      "ctime_ns": 1792862498999410113
+    },
+    "source-checkpoint/node_shells/nodes_000000.jsonl.zst": {
+      "sha256": "bde36a48b1e04ad4aad9daaeeffd2b659096884db679dca538717a46bee01be6",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708478
+      ],
+      "links": 1,
+      "mtime_ns": 1792862498978135426,
+      "ctime_ns": 1792862498978135426
+    },
+    "source-checkpoint/selector/selector.json.zst": {
+      "sha256": "73b111e42e02473afb843a7c7a076bda38597e75846af2daee175f1589f6f48b",
+      "bytes": 15101,
+      "allocated": 16384,
+      "inode": [
+        66308,
+        44708484
+      ],
+      "links": 1,
+      "mtime_ns": 1792862499000311986,
+      "ctime_ns": 1792862499000311986
+    },
+    "source-checkpoint/state_payloads/state_payloads_000000.jsonl.zst": {
+      "sha256": "9d51f04a4f6456e762f86ade64738beb7534bda8cc8d274b15d2cb5814744418",
+      "bytes": 23268,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708480
+      ],
+      "links": 1,
+      "mtime_ns": 1792862498982205266,
+      "ctime_ns": 1792862498982205266
+    },
+    "source-science/generation.json": {
+      "sha256": "1f85a85cfb657b17f8e3d220d64eb608f53ba8682ae705364c6fb2f0222cbf87",
+      "bytes": 1535,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708492
+      ],
+      "links": 1,
+      "mtime_ns": 1792862500882068552,
+      "ctime_ns": 1792862500882068552
+    },
+    "source-science/records.jsonl": {
+      "sha256": "a8d2046466a93a9be4b8c8cbfe58bfca28353b91f3dc79f0a244d3f58a17e6e4",
+      "bytes": 210848,
+      "allocated": 212992,
+      "inode": [
+        66308,
+        44708490
+      ],
+      "links": 1,
+      "mtime_ns": 1792862500880206637,
+      "ctime_ns": 1792862500880206637
+    },
+    "source-science/updates.jsonl": {
+      "sha256": "fabf3235aacdbf108e4967e51995195394ccd7b944b21d86dc065dca0a98e4a8",
+      "bytes": 827462,
+      "allocated": 831488,
+      "inode": [
+        66308,
+        44708491
+      ],
+      "links": 1,
+      "mtime_ns": 1792862500880206637,
+      "ctime_ns": 1792862500880206637
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/admission.json": {
+      "sha256": "a727b57cad501187e9176d1aa8a428c4f8d3a0813ecdcf79784087f1b3b3cb3f",
+      "bytes": 18916,
+      "allocated": 20480,
+      "inode": [
+        66308,
+        44708545
+      ],
+      "links": 1,
+      "mtime_ns": 1792862506375781153,
+      "ctime_ns": 1792862506384218631
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/models/generation_000001/linear/morpion_manifest.json": {
+      "sha256": "c9cd9b6ef39af6f6a491c65491f046895a1061419ce76d9bd5048ab32449f6a9",
+      "bytes": 17537,
+      "allocated": 20480,
+      "inode": [
+        66308,
+        44708557
+      ],
+      "links": 1,
+      "mtime_ns": 1792862508716848264,
+      "ctime_ns": 1792862508716848264
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/models/generation_000001/linear/morpion_regressor_args.json": {
+      "sha256": "2a4d2e76db1060f3916dbdee718b81e3c4de99de29bd655648e373425817f3e7",
+      "bytes": 1554,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708556
+      ],
+      "links": 1,
+      "mtime_ns": 1792862508715882882,
+      "ctime_ns": 1792862508715882882
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/models/generation_000001/linear/param.json": {
+      "sha256": "5310d3282946d6329e4745a42d87866ca4ed2fa8412bf8f650e1b22142650cbe",
+      "bytes": 1208,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708555
+      ],
+      "links": 1,
+      "mtime_ns": 1792862508715816697,
+      "ctime_ns": 1792862508715816697
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/models/generation_000001/linear/param.pt": {
+      "sha256": "09b80c35347d8631729d0a7fc26c85e5d94d04b392742711b105d6ae5f72720b",
+      "bytes": 1941,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708554
+      ],
+      "links": 1,
+      "mtime_ns": 1792862508715522726,
+      "ctime_ns": 1792862508715522726
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/pipeline/performance/generation_000001/evaluator-985758-1792862508717362549.json": {
+      "sha256": "783b6de118a5aa2954d39dd0b68ff4f0973b010ff57eb2fc74d7ae5f1ace7cdc",
+      "bytes": 695,
+      "allocated": 4096,
+      "inode": [
+        66308,
+        44708561
+      ],
+      "links": 1,
+      "mtime_ns": 1792862508717476293,
+      "ctime_ns": 1792862508717476293
+    },
+    "training_publications_v1/objects/a2455e891aff44c89c00200bd8c7df65/proposal.json": {
+      "sha256": "40f5d776ef1e67292fceebe6ca8925206ffac266e1415ab2b85d64d55e517530",
+      "bytes": 21073,
+      "allocated": 24576,
+      "inode": [
+        66308,
+        44708546
+      ],
+      "links": 1,
+      "mtime_ns": 1792862509053685294,
+      "ctime_ns": 1792862509071224473
+    }
+  },
+  "source_unchanged": true,
+  "observation": {
+    "started_unix_s": 1792914748.2150612,
+    "finished_unix_s": 1792914748.5248268,
+    "elapsed_s": 0.3097657760081347,
+    "pid": 1222351,
+    "rss_before_mb": 294.40234375,
+    "rss_after_mb": 315.08203125,
+    "process_peak_rss_mb": 321.8671875,
+    "available_ram_before_mb": 69856.75390625,
+    "available_ram_after_mb": 69829.0546875,
+    "cuda_before": null,
+    "cuda_after": null
+  },
+  "costs": {
+    "cpu_user_s": 0.29506999999999994,
+    "cpu_system_s": 0.014935000000000004,
+    "io": {
+      "rchar": 16478940,
+      "wchar": 0,
+      "syscr": 850,
+      "syscw": 0,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cancelled_write_bytes": 0
+    }
+  }
+}

@@ -22,12 +22,12 @@ def _process_has_exited(pid: int) -> bool:
         status = Path(f"/proc/{pid}/stat").read_text()
     except (FileNotFoundError, ProcessLookupError):
         return True
-    return status.rsplit(") ", 1)[1].startswith("Z")
+    return status.rsplit(") ", 1)[1].startswith(("Z", "X"))
 
 
-@pytest.mark.parametrize("interrupt", [False, True])
+@pytest.mark.parametrize("interrupt", [False, True, "monitor_death"])
 def test_headless_cluster_stops_all_four_worker_groups(
-    tmp_path: Path, *, interrupt: bool
+    tmp_path: Path, *, interrupt: bool | str
 ) -> None:
     """Real shell supervision terminates even descendants that ignore TERM."""
     stub = tmp_path / "python_stub"
@@ -35,9 +35,17 @@ def test_headless_cluster_stops_all_four_worker_groups(
 import json, os, signal, subprocess, sys, time
 from pathlib import Path
 if "--pipeline-stage" not in sys.argv:
-    if "-c" in sys.argv: sys.exit(1)
+    if "-c" in sys.argv:
+        if "latest_tree_snapshot_path" in sys.argv[2]:
+            print("fixed-source")
+            sys.exit(0)
+        sys.exit(1)
     sys.exit(0)
 stage=sys.argv[sys.argv.index("--pipeline-stage")+1]
+if "--reader-cache-dir" in sys.argv:
+    cache=Path(sys.argv[sys.argv.index("--reader-cache-dir")+1])
+    cache.mkdir(parents=True,exist_ok=True)
+    (cache/"owned.sqlite3").write_bytes(b"private lifecycle fixture")
 child=subprocess.Popen([sys.executable, "-c", "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)"])
 Path(os.environ["MORPION_WORK_DIR"], stage+".json").write_text(json.dumps({"pid":os.getpid(),"child":child.pid}))
 time.sleep(60)
@@ -56,6 +64,13 @@ time.sleep(60)
         MORPION_CLUSTER_WORKERS="all",
         MORPION_SEED_MODELS_FROM_WORK_DIR="",
     )
+    owner = None
+    if interrupt == "monitor_death":
+        owner = subprocess.Popen(["sleep", "60"])
+        env["MORPION_RESOURCE_MONITOR_PID"] = str(owner.pid)
+        env["MORPION_RESOURCE_MONITOR_START_TICKS"] = (
+            Path(f"/proc/{owner.pid}/stat").read_text().rsplit(") ", 1)[1].split()[19]
+        )
     process = subprocess.Popen(
         ["bash", str(_SCRIPT)],
         env=env,
@@ -72,21 +87,31 @@ time.sleep(60)
         ):
             time.sleep(0.05)
         assert all((tmp_path / f"{stage}.json").exists() for stage in stages)
-        if interrupt:
+        if owner is not None:
+            owner.kill()
+            owner.wait(timeout=3)
+        elif interrupt:
             process.send_signal(signal.SIGTERM)
-        output, _ = process.communicate(timeout=8)
-        assert process.returncode == (143 if interrupt else 0), output
+        output, _ = process.communicate(timeout=13)
+        assert process.returncode == (143 if interrupt is True else 0), output
+        if owner is not None:
+            assert "resource monitor exited" in output
+        assert "all worker groups stopped" in output
+        for line in output.splitlines():
+            if "private_reader_cache=" in line:
+                assert not Path(line.split("private_reader_cache=")[1]).exists()
         for stage in stages:
             for pid in json.loads((tmp_path / f"{stage}.json").read_text()).values():
-                # SIGKILL delivery is asynchronous for grandchildren we cannot waitpid.
-                exit_deadline = time.monotonic() + 1
-                while not _process_has_exited(pid) and time.monotonic() < exit_deadline:
-                    time.sleep(0.01)
+                # Successful launcher exit itself confirms quiescence, without a
+                # second test-only grace period that hides incomplete shutdown.
                 assert _process_has_exited(pid), (pid, output)
     finally:
+        if owner is not None and owner.poll() is None:
+            owner.kill()
+            owner.wait(timeout=3)
         if process.poll() is None:
             process.send_signal(signal.SIGTERM)
-            process.communicate(timeout=8)
+            process.communicate(timeout=13)
 
 
 def test_cluster_rejects_horizon_over_twelve_hours(tmp_path: Path) -> None:
@@ -104,3 +129,14 @@ def test_cluster_rejects_horizon_over_twelve_hours(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert "at most 43200" in result.stderr
     assert not list(tmp_path.glob("*.json"))
+
+
+def test_scientific_cache_cleanup_follows_group_quiescence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the supervisor's private cache is retired after ignoring-TERM children stop."""
+    monkeypatch.setenv("MORPION_SCIENTIFIC", "1")
+    (tmp_path / "run_state.json").write_text(
+        '{"latest_tree_snapshot_path": "fixed-source"}'
+    )
+    test_headless_cluster_stops_all_four_worker_groups(tmp_path, interrupt=True)

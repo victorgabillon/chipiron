@@ -1,0 +1,29 @@
+{
+  "source": "/home/pompote/oldata/victor/morpion-scratch/s26/s10/workspace",
+  "copy": "/home/pompote/oldata/victor/morpion-scratch/s26/continuation/workspace",
+  "source_files_unchanged": true,
+  "source_inventory_sha256": "2dcb2556cf6924edaec18086dd23ef65cb72d0daf91e078053f91ff3251ae650",
+  "pending_proposal_archived_only_in_copy_sha256": "3c46aab3cefce26b36cf930c55f8cc2d0a77df02f1223b76427c4443b2aecb7b",
+  "nodes": 11777,
+  "edges": 13113,
+  "generation": 17,
+  "one_step_complete_checkpoint_sha256": "e51efb11415c14d7759bb82cb099cfaa8f263d5b47e0ecb183bc661af9196f31",
+  "complete_scientific_file_hashes": {
+    "generation.json": "0098fade1584f9f950878a18d4de6a8e5e2244781f25c1a3a7d5f0b8004afea6",
+    "updates.jsonl.zst": "565b39b6e7f895cbb698bd36e8ad7cb40e670dd26dbbab335ed98095ca5ca3e8",
+    "records.jsonl.zst": "bc971323e76929ac5092b376e8484ddd5f387f9dc9bf1baad94d448cf6e36868"
+  },
+  "complete_checkpoint_exact": true,
+  "scientific_files_byte_exact": true,
+  "selector_and_search_rollout_rng_exact": true,
+  "steps": 1,
+  "model": {
+    "generation": 10,
+    "local_trained_generation": 10,
+    "name": "linear_a",
+    "path": "training_publications_v1/objects/bea28fd5592d4d1792410817379089c0/models/generation_000010/linear_a",
+    "sha256": "5b82bfb48626b83b8d959e9a6b725bcecb7e3234d19ed0fc09a9532df0bb6bc0",
+    "source": "local_training",
+    "source_generation": 10
+  }
+}

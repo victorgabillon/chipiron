@@ -1,0 +1,256 @@
+{
+  "1k": {
+    "generations": [
+      {
+        "generation": 1,
+        "science": {
+          "record_shard": {
+            "bytes": 207548,
+            "sha256": "21387969749f9f38d187892e7e6b5b4fcb589d7278ad0cb2dc19a48e3f5f3675"
+          },
+          "update_shard": {
+            "bytes": 821746,
+            "sha256": "4364c0f072075d2861038b33aa2f11674074c9db17764a84e37f1576d8a0cc53"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "b4e456be5d22df3a471cbeec580fc4813e47130c3ea6476e15247c70ba5d37a6",
+          "node_shells": "c75d377f76fbf176fc65284fd55b2b7c84acf3fcebd0502c75f733ae77017764",
+          "state_payloads": "ba6f3d7fd45f27c246bad6167f61db170bdecf0e1c294b650890a20af11ffbc5",
+          "node_runtime": "3ea40d4f4141e9e09f0dc1fe53a744093820546189b4b1c4238672bd391e81e3",
+          "selector": "8a038eaf24683d1f5e63241440f50bc7c100a258220852c46aef0daee12517f6",
+          "latest_expansions": "1f327cf346616f14c45b90d265f67cfcdec0b1172ebf618f3d944b48f54ba9b7"
+        }
+      },
+      {
+        "generation": 2,
+        "science": {
+          "record_shard": {
+            "bytes": 207548,
+            "sha256": "04369183f1c354cf58aa7e90d7a3f7268120577dca4e3793042a3417d48d06af"
+          },
+          "update_shard": {
+            "bytes": 821746,
+            "sha256": "a6a918a74744c1979d4c2c6e371764e9ea187fb3c88d5d3086d371d80ac05293"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "b4e456be5d22df3a471cbeec580fc4813e47130c3ea6476e15247c70ba5d37a6",
+          "node_shells": "c75d377f76fbf176fc65284fd55b2b7c84acf3fcebd0502c75f733ae77017764",
+          "state_payloads": "ba6f3d7fd45f27c246bad6167f61db170bdecf0e1c294b650890a20af11ffbc5",
+          "node_runtime": "3ea40d4f4141e9e09f0dc1fe53a744093820546189b4b1c4238672bd391e81e3",
+          "selector": "8a038eaf24683d1f5e63241440f50bc7c100a258220852c46aef0daee12517f6",
+          "latest_expansions": "1f327cf346616f14c45b90d265f67cfcdec0b1172ebf618f3d944b48f54ba9b7"
+        }
+      },
+      {
+        "generation": 3,
+        "science": {
+          "record_shard": {
+            "bytes": 207548,
+            "sha256": "1d27398945a81ee977971632256e2b01b53f1cef53d18aabbcd9bd51612814e3"
+          },
+          "update_shard": {
+            "bytes": 821746,
+            "sha256": "f807b7fdc916c843d2c3420f7753b6ec9cbed2dfa952a2e3a47d12315d42c5e7"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "b4e456be5d22df3a471cbeec580fc4813e47130c3ea6476e15247c70ba5d37a6",
+          "node_shells": "c75d377f76fbf176fc65284fd55b2b7c84acf3fcebd0502c75f733ae77017764",
+          "state_payloads": "ba6f3d7fd45f27c246bad6167f61db170bdecf0e1c294b650890a20af11ffbc5",
+          "node_runtime": "3ea40d4f4141e9e09f0dc1fe53a744093820546189b4b1c4238672bd391e81e3",
+          "selector": "8a038eaf24683d1f5e63241440f50bc7c100a258220852c46aef0daee12517f6",
+          "latest_expansions": "1f327cf346616f14c45b90d265f67cfcdec0b1172ebf618f3d944b48f54ba9b7"
+        }
+      }
+    ],
+    "policies": [
+      {
+        "confidence": "selected_value_v2",
+        "policy": "none",
+        "rows": 64,
+        "jsonl_sha256": "44170f80fde49b71fc429c7d4d5aede8f3b945ee1b8c9f6a5ff4e9313e4a2d99"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_blend_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "d90dbcd35dcd883748e441804bed088905962941c26d9507fa07594cf0b9dd69"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_blend_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "c10561be7f67de8eecc99778c2fb77c63001e0ccdf42250f4e52cf16cdfedb0f"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "0db761067fcbd3326cd7cd16c15f44b5776fdd4646d37c9ba2e350aa75572242"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "ca8728a8d507e20120ea89464ad7b44b49fcce4b025206de9942c7d64bc8f789"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "none",
+        "rows": 64,
+        "jsonl_sha256": "3b809ed25b49e2f20685951f2d01cd519dd1b547d7ec381482b388dc4a0a1a91"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "ba7ff94a082024c48537b78dcec0f60a66b71b036c06c4ce5b5770e1f4367810"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "31652e64d283e85b06bff8801971cef0312680d53f6a96107cf8d61a7a7010b2"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_blend_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "d14801d804af8caea0336da88c92224a94194312bb5705817ce5132772029b2b"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_blend_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "f98567c02b45f25fa3fc8e5256dff5989c262b60aba2f08e9d05fa2071934070"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_exact_then_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "acd765bfc1a53a307d2b31ce8e7a4cc5c1ac575f672028dcaff37e5f12f0fadd"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_exact_then_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "f9529d47b14a1fbbe2ef7f27fed734377f5eff7a4787493f76cf2e4727d9ac7a"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_exact_then_blend_mean_prediction",
+        "rows": 64,
+        "jsonl_sha256": "036d0c97ec036a425b16ebe23f73b5e8bb98bf8e2174aecc09e7805e09c69ab1"
+      },
+      {
+        "confidence": "legacy_v1",
+        "policy": "pv_exact_then_blend_min_prediction",
+        "rows": 64,
+        "jsonl_sha256": "2d26cf23cab66ad06e8e198c37285407708cf28b6877165da7f9b5a00dd3e0c0"
+      }
+    ],
+    "paired_jsonl_rows": 896
+  },
+  "5k": {
+    "generations": [
+      {
+        "generation": 1,
+        "science": {
+          "record_shard": {
+            "bytes": 1921738,
+            "sha256": "d6de8af17014975092bc185bcd75638434c68b2e98d4751af0fb7fa2d21fce69"
+          },
+          "update_shard": {
+            "bytes": 4142287,
+            "sha256": "55dc237660552d0ddb365c0a418eb85fa8935754d8d3fbdf426d92bd346590d6"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "4375d16c578a629552af677be55b9fe79f0d5ce929bfd8dbef04af3edd67ea94",
+          "node_shells": "c1667f60addad7a35957e2c7a4f8f95c2f19de913395fdb4ebb79c3f743d641c",
+          "state_payloads": "69f070c057092f231904629fb76c5b293c4707c770f69688e9566c56a74f7951",
+          "node_runtime": "b5ee1bcc979d66a394625197d16982d4fe45ae5e8115e408958ad8dd750d8891",
+          "selector": "fdfdc0a6b5e541a535ec883455fcab4420db5496f880118603d6310dc32f7dc5",
+          "latest_expansions": "b3899519034e3e037fd76af01054ccfe9c8bffafbdb184ea76b1b288ae36aec9"
+        }
+      },
+      {
+        "generation": 2,
+        "science": {
+          "record_shard": {
+            "bytes": 1921738,
+            "sha256": "f2dd7032ac67a863885732cf23e2436cf9df9dcda60a14793254bdb3d1e499ed"
+          },
+          "update_shard": {
+            "bytes": 4142287,
+            "sha256": "acf7505b78e96e01787f4c39dc77f10ebacbcbc1e02491baf7347ae19d6ecc3c"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "4375d16c578a629552af677be55b9fe79f0d5ce929bfd8dbef04af3edd67ea94",
+          "node_shells": "c1667f60addad7a35957e2c7a4f8f95c2f19de913395fdb4ebb79c3f743d641c",
+          "state_payloads": "69f070c057092f231904629fb76c5b293c4707c770f69688e9566c56a74f7951",
+          "node_runtime": "b5ee1bcc979d66a394625197d16982d4fe45ae5e8115e408958ad8dd750d8891",
+          "selector": "fdfdc0a6b5e541a535ec883455fcab4420db5496f880118603d6310dc32f7dc5",
+          "latest_expansions": "b3899519034e3e037fd76af01054ccfe9c8bffafbdb184ea76b1b288ae36aec9"
+        }
+      },
+      {
+        "generation": 3,
+        "science": {
+          "record_shard": {
+            "bytes": 1921738,
+            "sha256": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36"
+          },
+          "update_shard": {
+            "bytes": 4142287,
+            "sha256": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+          }
+        },
+        "checkpoint_sections": {
+          "metadata": "4375d16c578a629552af677be55b9fe79f0d5ce929bfd8dbef04af3edd67ea94",
+          "node_shells": "c1667f60addad7a35957e2c7a4f8f95c2f19de913395fdb4ebb79c3f743d641c",
+          "state_payloads": "69f070c057092f231904629fb76c5b293c4707c770f69688e9566c56a74f7951",
+          "node_runtime": "b5ee1bcc979d66a394625197d16982d4fe45ae5e8115e408958ad8dd750d8891",
+          "selector": "fdfdc0a6b5e541a535ec883455fcab4420db5496f880118603d6310dc32f7dc5",
+          "latest_expansions": "b3899519034e3e037fd76af01054ccfe9c8bffafbdb184ea76b1b288ae36aec9"
+        }
+      }
+    ],
+    "policies": [
+      {
+        "confidence": "selected_value_v2",
+        "policy": "none",
+        "rows": 374,
+        "jsonl_sha256": "36c2b129e230d2ccdcec31797d2da6b8cda8c619bff95bbfaba0835342ba4cc2"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_blend_mean_prediction",
+        "rows": 374,
+        "jsonl_sha256": "dfd11a9c2e5925024227a2e61ed96897d734aabc438009c37ae3b07821a92c65"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_blend_min_prediction",
+        "rows": 374,
+        "jsonl_sha256": "23c903f7f3fbbe3b67d0863f0a7eda44315e48f109eadad834191797c382a9df"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_mean_prediction",
+        "rows": 374,
+        "jsonl_sha256": "d63417bab6247a3793aa2908599698ed91a4bf0ad962173ef4be722bef5d4782"
+      },
+      {
+        "confidence": "selected_value_v2",
+        "policy": "pv_min_prediction",
+        "rows": 374,
+        "jsonl_sha256": "5db6e887d7da429d6212fd677d7ca6b438d5556a50e79bebbcfc9900959c8e01"
+      }
+    ],
+    "paired_jsonl_rows": 1870
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "base_commit": "02212bc6130205b7d2ef898c7b1eb0f7d384f7aa",
+  "profiling_commit": "90360dd3f91f1c339111e1760ee5adf6212629be",
+  "optimization_commit": "ae35addb85ce75bd2438214fbadfe22ad677c307",
+  "local_ci": {
+    "selected": 1716,
+    "deselected": [
+      "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+      "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+    ],
+    "passed": 1714,
+    "skipped": [
+      "tests/environments/test_morpion_relational_model_integration.py::test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "tests/learning/supervised/test_multi_input.py::test_multi_input_batch_moves_all_inputs_to_cuda"
+    ],
+    "exit_code": 0,
+    "elapsed_s": 438.79381552900304,
+    "command": "PYTHONPATH=. CHIPIRON_TEST_INSTALLED=1 QT_QPA_PLATFORM=offscreen python scripts/ci_test_metrics.py -n 2 --dist=loadfile --durations=30 --cov-report=json:.ci-reports/coverage.json --junitxml=.ci-reports/pytest.xml --basetemp=/tmp/morpion-perf-full-ci-pytest -m 'not integration and not external_data' -p docs.research.benchmarks.morpion_training_export_20261020.validation_safety",
+    "safety": "Inherited fixture redirects only default optional leaderboard output to pytest temp directories; target logic/assertions/selection/HOME unchanged"
+  },
+  "static": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "quality": {
+    "toolchain": "passed",
+    "ruff_check": "passed",
+    "ruff_format": "635 files formatted",
+    "diff_check": "passed",
+    "sdist_wheel": "built and isolated wheel installed",
+    "installed_distribution_guard": "passed"
+  },
+  "evidence_sha256": {
+    ".ci-reports/tests.json": "758a192cadb6996277d74261f9e4ddf83a0dae0291e8fdc61d7a7d3d670ef3d7",
+    ".ci-reports/pytest.xml": "13ebd47f8396310df4b03d8b3edad409d5635ececd92749a413d7c13b9da1a97",
+    ".ci-reports/coverage.json": "45fe8f2722116147b3fee7613d3dccf2b8676fec2d72d2a6f47ea6191e73eda8",
+    "dist/chipiron-0.2.4-py3-none-any.whl": "9d554a2f11c523a074526bad3cbe2f26d1dfd3f3bb1e2296c42cf9e4bbed760c"
+  }
+}

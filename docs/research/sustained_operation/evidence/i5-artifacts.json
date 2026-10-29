@@ -1,0 +1,67 @@
+{
+  "root": "/home/pompote/oldata/victor/morpion-scratch/s26/i5",
+  "run_state_sha256": "8923def1b3c1b8147d8768703de86aaaa27a46bcf06e0635bdbf1b24f061a5ac",
+  "head": 1,
+  "nodes": 5017,
+  "edges": 5515,
+  "selection_step_count": 137,
+  "active_model": {
+    "generation": 1,
+    "local_trained_generation": null,
+    "name": "seed",
+    "path": "genesis/seed",
+    "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+    "source": "external_seed",
+    "source_generation": 1
+  },
+  "accepted_results": [],
+  "workspace": {
+    "files": 61,
+    "logical_bytes": 1512023,
+    "allocated_bytes": 1642496
+  },
+  "current_checkpoint": {
+    "files": 19,
+    "logical_bytes": 555406,
+    "allocated_bytes": 593920
+  },
+  "current_science": {
+    "files": 3,
+    "logical_bytes": 178809,
+    "allocated_bytes": 184320
+  },
+  "capsules": [
+    {
+      "generation": 1,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 757272,
+        "allocated_bytes": 819200
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 555406,
+        "allocated_bytes": 593920
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 178809,
+        "allocated_bytes": 184320
+      },
+      "checkpoint_manifest": 5017
+    }
+  ],
+  "allocation": {
+    "current_boundary_file_blocks": 835584,
+    "historical_capsule_exclusive_blocks": 0,
+    "current_and_historical_shared_blocks": 0,
+    "outside_current_and_historical_capsules_blocks": 806912,
+    "last_three_capsule_union_blocks": 819200,
+    "all_workspace_unique_blocks": 1642496
+  },
+  "bytes_per_node": {
+    "checkpoint_logical": 110.7048036675304,
+    "scientific_logical": 35.640621885589
+  },
+  "checkpoint_manifest_files": 2
+}

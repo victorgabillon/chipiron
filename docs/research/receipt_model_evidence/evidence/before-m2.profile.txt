@@ -1,0 +1,43 @@
+         229762 function calls (221784 primitive calls) in 0.086 seconds
+
+   Ordered by: cumulative time
+   List reduced from 382 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.086    0.086 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:87(operation)
+        1    0.000    0.000    0.086    0.086 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:34(acknowledge)
+        1    0.000    0.000    0.085    0.085 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:935(acknowledge_pending)
+        4    0.000    0.000    0.055    0.014 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:134(validate)
+        4    0.000    0.000    0.055    0.014 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:419(validate_capsule)
+        1    0.000    0.000    0.034    0.034 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:414(validate_state)
+        1    0.000    0.000    0.031    0.031 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication.py:306(validate_state)
+       96    0.000    0.000    0.031    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:54(inside)
+        1    0.000    0.000    0.030    0.030 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication.py:353(model_pin)
+      112    0.000    0.000    0.020    0.000 {built-in method builtins.any}
+     1400    0.001    0.000    0.018    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:63(<genexpr>)
+     4529    0.001    0.000    0.018    0.000 <frozen _collections_abc>:1027(__iter__)
+        4    0.018    0.004    0.018    0.004 {built-in method posix.fsync}
+     3978    0.002    0.000    0.017    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:44(__getitem__)
+     5593    0.002    0.000    0.016    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:245(_from_parsed_parts)
+      143    0.000    0.000    0.016    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:124(hashed)
+      555    0.001    0.000    0.015    0.000 <frozen _collections_abc>:1037(__contains__)
+      128    0.000    0.000    0.015    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:96(file_digest)
+        4    0.000    0.000    0.014    0.004 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:723(validate_committed_identity)
+      154    0.000    0.000    0.014    0.000 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:113(relative)
+        1    0.000    0.000    0.013    0.013 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:272(committed_evaluator)
+     5907    0.001    0.000    0.012    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:252(_from_parsed_string)
+     6295    0.003    0.000    0.012    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:130(with_segments)
+      262    0.000    0.000    0.011    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:393(is_relative_to)
+      293    0.001    0.000    0.011    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:365(relative_to)
+       10    0.000    0.000    0.010    0.001 /home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/docs/research/receipt_model_evidence/measure.py:138(model)
+       10    0.000    0.000    0.009    0.001 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:122(artifact_digest)
+        1    0.000    0.000    0.009    0.009 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:401(sync_artifact)
+        1    0.000    0.000    0.009    0.009 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:110(sync_checkpoint)
+        2    0.000    0.000    0.009    0.004 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:75(sync_directory)
+     4510    0.002    0.000    0.009    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:193(__eq__)
+     6636    0.002    0.000    0.008    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:498(__init__)
+     9108    0.003    0.000    0.006    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:174(_str_normcase)
+     2323    0.000    0.000    0.006    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:510(stat)
+     6636    0.004    0.000    0.006    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:117(__init__)
+
+

@@ -67,6 +67,7 @@ def train_flat_cache_streaming_epoch(
         schedule = cached_index_schedule(
             row_count=row_limit,
             validation_fraction=args.validation_fraction,
+            validation_indices=args.validation_indices,
         )
         epoch_train_indices = shuffled_epoch_train_indices(
             train_indices=schedule.train_indices,
@@ -163,6 +164,7 @@ def evaluate_flat_cache_streaming_metrics(
             selected_indices = split_indices_for_streaming_policy(
                 row_count=selected_row_count,
                 validation_fraction=args.validation_fraction,
+                validation_indices=args.validation_indices,
                 split=split,
             )
         batch_iter = iter(index_batches(selected_indices, batch_size=args.batch_size))

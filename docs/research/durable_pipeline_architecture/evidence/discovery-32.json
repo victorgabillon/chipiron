@@ -1,0 +1,74 @@
+{
+  "costs": {
+    "cpu_user_s": 1.219722,
+    "cpu_system_s": 0.176011,
+    "io": {
+      "rchar": 19446098,
+      "wchar": 0,
+      "syscr": 5810,
+      "syscw": 0,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cancelled_write_bytes": 0
+    }
+  },
+  "hashing": {
+    "calls": 1872,
+    "bytes": 13376151
+  },
+  "started_unix_s": 1792594584.522898,
+  "finished_unix_s": 1792594585.9188719,
+  "elapsed_s": 1.3959739480051212,
+  "pid": 307915,
+  "rss_before_mb": 284.21875,
+  "rss_after_mb": 286.73828125,
+  "process_peak_rss_mb": 292.3125,
+  "available_ram_before_mb": 7957.078125,
+  "available_ram_after_mb": 7959.984375,
+  "cuda_before": null,
+  "cuda_after": null,
+  "calls": [
+    {
+      "file": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+      "line": 249,
+      "function": "validate_capsule",
+      "calls": 32,
+      "inclusive_s": 1.353302413
+    },
+    {
+      "file": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+      "line": 182,
+      "function": "publication_records",
+      "calls": 32,
+      "inclusive_s": 0.012540427000000002
+    },
+    {
+      "file": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py",
+      "line": 79,
+      "function": "read_object",
+      "calls": 64,
+      "inclusive_s": 0.015590618
+    }
+  ],
+  "generation": 32,
+  "traced_discovery_retained_bytes": 2848593,
+  "traced_discovery_peak_bytes": 3363203,
+  "manifest_publication_records": 528,
+  "manifest_receipts": 496,
+  "structure": {
+    "capsule_file_paths": 1776,
+    "unique_capsule_file_inodes": 257,
+    "head_descriptor_record_entries": 528,
+    "head_creation_index_entries": 128,
+    "head_historical_metadata_bytes": 124890,
+    "pipeline_manifest_bytes": 1876607,
+    "run_state_bytes": 112407,
+    "disk": {
+      "apparent_file_bytes": 15372964,
+      "unique_file_bytes": 3729354,
+      "allocated_bytes_unique_inodes": 8142848,
+      "file_names": 2007,
+      "unique_inodes": 1257
+    }
+  }
+}

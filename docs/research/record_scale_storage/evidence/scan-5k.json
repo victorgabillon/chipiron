@@ -1,0 +1,259 @@
+{
+  "samples": [
+    {
+      "iteration": 0,
+      "mode": "copy",
+      "elapsed_s": 0.002960432000691071,
+      "costs": {
+        "cpu_user_s": 0.0019649999999993284,
+        "cpu_system_s": 0.0009969999999999979,
+        "io": {
+          "rchar": 6064131,
+          "wchar": 0,
+          "syscr": 30,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 0,
+      "mode": "compressed",
+      "elapsed_s": 0.0042438789969310164,
+      "costs": {
+        "cpu_user_s": 0.003242000000000189,
+        "cpu_system_s": 0.0010039999999999771,
+        "io": {
+          "rchar": 164841,
+          "wchar": 0,
+          "syscr": 8,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 1,
+      "mode": "copy",
+      "elapsed_s": 0.0028187129937577993,
+      "costs": {
+        "cpu_user_s": 0.0018270000000004671,
+        "cpu_system_s": 0.0009930000000000216,
+        "io": {
+          "rchar": 6064131,
+          "wchar": 0,
+          "syscr": 30,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 1,
+      "mode": "compressed",
+      "elapsed_s": 0.003358146990649402,
+      "costs": {
+        "cpu_user_s": 0.003350000000000186,
+        "cpu_system_s": 9.999999999982245e-06,
+        "io": {
+          "rchar": 164841,
+          "wchar": 0,
+          "syscr": 8,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 2,
+      "mode": "copy",
+      "elapsed_s": 0.002758278016699478,
+      "costs": {
+        "cpu_user_s": 0.0007690000000000197,
+        "cpu_system_s": 0.0019899999999999918,
+        "io": {
+          "rchar": 6064131,
+          "wchar": 0,
+          "syscr": 30,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 2,
+      "mode": "compressed",
+      "elapsed_s": 0.00331539599574171,
+      "costs": {
+        "cpu_user_s": 0.0033080000000005327,
+        "cpu_system_s": 9.000000000009e-06,
+        "io": {
+          "rchar": 164841,
+          "wchar": 0,
+          "syscr": 8,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 3,
+      "mode": "copy",
+      "elapsed_s": 0.0027317880012560636,
+      "costs": {
+        "cpu_user_s": 0.001742999999999384,
+        "cpu_system_s": 0.0009909999999999919,
+        "io": {
+          "rchar": 6064131,
+          "wchar": 0,
+          "syscr": 30,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 3,
+      "mode": "compressed",
+      "elapsed_s": 0.003482632979284972,
+      "costs": {
+        "cpu_user_s": 0.003485999999999656,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 164841,
+          "wchar": 0,
+          "syscr": 8,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 4,
+      "mode": "copy",
+      "elapsed_s": 0.00284585400368087,
+      "costs": {
+        "cpu_user_s": 0.0028489999999994353,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 6064131,
+          "wchar": 0,
+          "syscr": 30,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    },
+    {
+      "iteration": 4,
+      "mode": "compressed",
+      "elapsed_s": 0.0033624250208958983,
+      "costs": {
+        "cpu_user_s": 0.0033639999999994785,
+        "cpu_system_s": 0.0,
+        "io": {
+          "rchar": 164841,
+          "wchar": 0,
+          "syscr": 8,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "digests": {
+        "records": "5014490e4f13ad110dee702d4e8c51a99e83cc65da4cdff1a8e8af454e184a36",
+        "updates": "b3d5b7fc861698da99ff0f94aec44b3f312d951aa8fa470770fb1f92740f4e15"
+      }
+    }
+  ],
+  "valid_changed_content_refused_by_expected_hash": true,
+  "truncated_refused": true,
+  "shared_corruption_affects_both_links": true,
+  "all_output_disk": {
+    "files": 4,
+    "logical_bytes": 3870759,
+    "allocated_bytes": 1957888
+  },
+  "note": "Component hash checks, not a production new-format corruption/recovery matrix.",
+  "observation": {
+    "started_unix_s": 1792914553.2049828,
+    "finished_unix_s": 1792914553.241101,
+    "elapsed_s": 0.036117957992246374,
+    "pid": 1219159,
+    "rss_before_mb": 294.13671875,
+    "rss_after_mb": 295.92578125,
+    "process_peak_rss_mb": 294.76953125,
+    "available_ram_before_mb": 70795.15234375,
+    "available_ram_after_mb": 70786.69140625,
+    "cuda_before": null,
+    "cuda_after": null
+  },
+  "costs": {
+    "cpu_user_s": 0.029309999999999725,
+    "cpu_system_s": 0.006994,
+    "io": {
+      "rchar": 38896439,
+      "wchar": 1949022,
+      "syscr": 261,
+      "syscw": 5,
+      "read_bytes": 0,
+      "write_bytes": 1957888,
+      "cancelled_write_bytes": 0
+    }
+  }
+}

@@ -1,0 +1,5738 @@
+{
+  "opening": {
+    "processes": [
+      {
+        "label": "00-init",
+        "stage": "init",
+        "pid": 1039308,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 7.782867786998395,
+        "worker_wall_s": 2.5637221270008013,
+        "process_cpu_s": 9.291136,
+        "worker_cpu_s": 1.9082559999999997,
+        "process_peak_rss_mib": 375.1875,
+        "io": {
+          "rchar": 5761889,
+          "wchar": 992360,
+          "syscr": 1672,
+          "syscw": 304,
+          "read_bytes": 0,
+          "write_bytes": 1196032,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 37,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "088f86f10a61356628bcfbe615a3a30a254b9aa9591e39184ce20c7dbda9237a",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "01-check",
+        "stage": "check",
+        "pid": 1039489,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 6.25471313399612,
+        "worker_wall_s": 0.9848437280015787,
+        "process_cpu_s": 7.94855,
+        "worker_cpu_s": 0.5705769999999999,
+        "process_peak_rss_mib": 372.3984375,
+        "io": {
+          "rchar": 5582266,
+          "wchar": 1463697,
+          "syscr": 1737,
+          "syscw": 255,
+          "read_bytes": 0,
+          "write_bytes": 1581056,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "f7815d016c4d5a803b89cef3abddec01a2e99ef60c31067f4afd4e53192af03d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "02-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1039522,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 6.945140536001418,
+        "worker_wall_s": 1.6066766370058758,
+        "process_cpu_s": 8.787793,
+        "worker_cpu_s": 1.181870999999999,
+        "process_peak_rss_mib": 375.6328125,
+        "io": {
+          "rchar": 6398345,
+          "wchar": 2116049,
+          "syscr": 1623,
+          "syscw": 290,
+          "read_bytes": 0,
+          "write_bytes": 2232320,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "f72c9c51246d9e298b09156cb38bf7291d3879befa4d2079a73e606e7644bae2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "03-growth",
+        "stage": "growth",
+        "pid": 1039549,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 7.66857906099176,
+        "worker_wall_s": 2.4003573119989596,
+        "process_cpu_s": 9.098597999999999,
+        "worker_cpu_s": 1.5842230000000006,
+        "process_peak_rss_mib": 374.40625,
+        "io": {
+          "rchar": 16929160,
+          "wchar": 1463762,
+          "syscr": 4900,
+          "syscw": 456,
+          "read_bytes": 0,
+          "write_bytes": 1691648,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 63,
+          "logical_bytes": 650625,
+          "allocated_bytes": 790528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "5d2c51a191ffe813809026f1c25463195cd5a928b068bfea6caee13bb072dc11",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "04-check",
+        "stage": "check",
+        "pid": 1039578,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.802369318000274,
+        "worker_wall_s": 1.382615254013217,
+        "process_cpu_s": 8.441129,
+        "worker_cpu_s": 0.7765059999999993,
+        "process_peak_rss_mib": 372.7265625,
+        "io": {
+          "rchar": 11204015,
+          "wchar": 2436020,
+          "syscr": 2689,
+          "syscw": 432,
+          "read_bytes": 0,
+          "write_bytes": 2609152,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 64,
+          "logical_bytes": 650625,
+          "allocated_bytes": 790528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "5662db8c260a3613a80ec302107cf99fef387b0806f588412f7679c3cfdbdc7d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "05-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1039620,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.8015579389903,
+        "worker_wall_s": 0.4674680969910696,
+        "process_cpu_s": 7.769602,
+        "worker_cpu_s": 0.2391150000000003,
+        "process_peak_rss_mib": 373.578125,
+        "io": {
+          "rchar": 6037077,
+          "wchar": 434630,
+          "syscr": 1621,
+          "syscw": 146,
+          "read_bytes": 0,
+          "write_bytes": 499712,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 67,
+          "logical_bytes": 663582,
+          "allocated_bytes": 811008
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 7,
+        "source_observation_sha256": "e39289cc71bcb6043cf7e1c91fded841925fc065e49e41e85e6254f1aec9a2fe",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "06-check",
+        "stage": "check",
+        "pid": 1039647,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.926813555997796,
+        "worker_wall_s": 1.4360843439935707,
+        "process_cpu_s": 8.452213,
+        "worker_cpu_s": 0.8368939999999996,
+        "process_peak_rss_mib": 376.9296875,
+        "io": {
+          "rchar": 11244299,
+          "wchar": 2444970,
+          "syscr": 2710,
+          "syscw": 433,
+          "read_bytes": 0,
+          "write_bytes": 2621440,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 67,
+          "logical_bytes": 663582,
+          "allocated_bytes": 811008
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "bb140180e6049b6dda4a59a67d8c0e1186b011ef7f9d50b375b1644615df5be6",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "07-dataset",
+        "stage": "dataset",
+        "pid": 1039680,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.632291423011338,
+        "worker_wall_s": 0.24157433400978334,
+        "process_cpu_s": 7.761551,
+        "worker_cpu_s": 0.10383899999999993,
+        "process_peak_rss_mib": 367.05078125,
+        "io": {
+          "rchar": 5314914,
+          "wchar": 89749,
+          "syscr": 1382,
+          "syscw": 15,
+          "read_bytes": 0,
+          "write_bytes": 106496,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732810,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 16,
+        "source_observation_sha256": "7b739fce10bfcc790813e4572e80ffa5b58abb3b5bbe750275be1befa80ce1af",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "08-restart",
+        "stage": "restart",
+        "pid": 1039705,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.7740923240053235,
+        "worker_wall_s": 0.4309320479951566,
+        "process_cpu_s": 7.88832,
+        "worker_cpu_s": 0.4303460000000008,
+        "process_peak_rss_mib": 370.93359375,
+        "io": {
+          "rchar": 2468348,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732810,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "3a6247935f18ac6e101856dc56c9fe304e8d94b10fa1ea8937338fafa000d0a8",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "09-check",
+        "stage": "check",
+        "pid": 1039733,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.9164886090002256,
+        "worker_wall_s": 1.5614821449999,
+        "process_cpu_s": 8.556185,
+        "worker_cpu_s": 0.950422000000001,
+        "process_peak_rss_mib": 377.30859375,
+        "io": {
+          "rchar": 12773503,
+          "wchar": 2475849,
+          "syscr": 2885,
+          "syscw": 437,
+          "read_bytes": 0,
+          "write_bytes": 2654208,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732810,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "14af8456229f767993bf13609f166b9b54336951f67ff2f5bff30553a4f9494c",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "10-training",
+        "stage": "training",
+        "pid": 1039760,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.27611048000108,
+        "worker_wall_s": 0.8892933879978955,
+        "process_cpu_s": 8.269639999999999,
+        "worker_cpu_s": 0.6681529999999996,
+        "process_peak_rss_mib": 378.640625,
+        "io": {
+          "rchar": 3038165,
+          "wchar": 194756,
+          "syscr": 843,
+          "syscw": 38,
+          "read_bytes": 0,
+          "write_bytes": 249856,
+          "cancelled_write_bytes": 90112
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833392,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 16,
+        "source_observation_sha256": "4bb0673fa7900db5944423bc47e92dd615337fc19d21595a3e189fb251046f5f",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "11-restart",
+        "stage": "restart",
+        "pid": 1039797,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.800963660993148,
+        "worker_wall_s": 0.4095139220007695,
+        "process_cpu_s": 8.050709,
+        "worker_cpu_s": 0.4014050000000004,
+        "process_peak_rss_mib": 371.51171875,
+        "io": {
+          "rchar": 2470223,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833392,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "7f0d227f52d2def43d0051ffb46860b20f6df91c9bc087c6dabc79844ac5c646",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "12-check",
+        "stage": "check",
+        "pid": 1039825,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.858017196005676,
+        "worker_wall_s": 1.5544847279961687,
+        "process_cpu_s": 8.504723,
+        "worker_cpu_s": 0.947467,
+        "process_peak_rss_mib": 377.87109375,
+        "io": {
+          "rchar": 13037616,
+          "wchar": 2475849,
+          "syscr": 2929,
+          "syscw": 437,
+          "read_bytes": 0,
+          "write_bytes": 2654208,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833392,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "5a45357b585e3f4c06b708aa9a1ec310df813e549679eb4b03ee6e29e8e1ff40",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "13-prepare",
+        "stage": "prepare",
+        "pid": 1039873,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.303059314988786,
+        "worker_wall_s": 0.02325673600716982,
+        "process_cpu_s": 7.551103,
+        "worker_cpu_s": 0.02321599999999982,
+        "process_peak_rss_mib": 366.52734375,
+        "io": {
+          "rchar": 1845497,
+          "wchar": 1674,
+          "syscr": 522,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833392,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "0485f656527625b6cbfd40b0e14134af099550bcf482033e52af9447e35e0326",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "14-activate",
+        "stage": "activate",
+        "pid": 1039906,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 10.142958800002816,
+        "worker_wall_s": 4.855565749006928,
+        "process_cpu_s": 10.678806999999999,
+        "worker_cpu_s": 3.241807,
+        "process_peak_rss_mib": 384.1015625,
+        "io": {
+          "rchar": 34246214,
+          "wchar": 3125227,
+          "syscr": 8128,
+          "syscw": 956,
+          "read_bytes": 0,
+          "write_bytes": 3555328,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 1402652,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "e40c2cb25410286374b0a8eb2f463eff7fba8972742a1af8c5cdb6abe88aed1e",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "15-restart",
+        "stage": "restart",
+        "pid": 1039936,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.816164668998681,
+        "worker_wall_s": 0.42485016299178824,
+        "process_cpu_s": 8.071169,
+        "worker_cpu_s": 0.40772600000000037,
+        "process_peak_rss_mib": 371.90234375,
+        "io": {
+          "rchar": 2970019,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402652,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "fe78fc416c62e1c4b64a6d3822919aec3d60b172489e60e48a118691e568b871",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "16-check",
+        "stage": "check",
+        "pid": 1040000,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 10.51444841400371,
+        "worker_wall_s": 5.071845134996693,
+        "process_cpu_s": 11.902318999999999,
+        "worker_cpu_s": 4.452781000000001,
+        "process_peak_rss_mib": 379.88671875,
+        "io": {
+          "rchar": 18309144,
+          "wchar": 2560378,
+          "syscr": 3844,
+          "syscw": 461,
+          "read_bytes": 0,
+          "write_bytes": 2732032,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402652,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "d6079b8185af3fbe5797ef0240996227d01c27d03f412239fe7870d39eea283a",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "17-activate",
+        "stage": "activate",
+        "pid": 1040028,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.401739793989691,
+        "worker_wall_s": 0.09046295601001475,
+        "process_cpu_s": 7.652762,
+        "worker_cpu_s": 0.06211400000000036,
+        "process_peak_rss_mib": 366.34765625,
+        "io": {
+          "rchar": 4540610,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402652,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "57986759aa511abe7b146b19bd2192c52ba8bb92b3b4e0c3022fe54a731267ae",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "18-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1040054,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.391007116995752,
+        "worker_wall_s": 1.0381260510039283,
+        "process_cpu_s": 8.12469,
+        "worker_cpu_s": 0.6409779999999995,
+        "process_peak_rss_mib": 376.10546875,
+        "io": {
+          "rchar": 8710414,
+          "wchar": 2302530,
+          "syscr": 1868,
+          "syscw": 322,
+          "read_bytes": 0,
+          "write_bytes": 2416640,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402652,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "bbc74811c7e16857548e8c79889f85e25a0823f7e78b60e01e672a9ff89ca131",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "19-growth",
+        "stage": "growth",
+        "pid": 1040109,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.370233722002013,
+        "worker_wall_s": 1.9169698790065013,
+        "process_cpu_s": 8.812439,
+        "worker_cpu_s": 1.116014999999999,
+        "process_peak_rss_mib": 382.6328125,
+        "io": {
+          "rchar": 22512737,
+          "wchar": 1637670,
+          "syscr": 5529,
+          "syscw": 494,
+          "read_bytes": 0,
+          "write_bytes": 1863680,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 148,
+          "logical_bytes": 1722107,
+          "allocated_bytes": 2015232
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "9823237fc68d30c2c996165cb33de6b8a0b4c8ca02c7ad9954cdc624dc5ffd24",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "20-check",
+        "stage": "check",
+        "pid": 1040172,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.8303020049934275,
+        "worker_wall_s": 1.4950669029931305,
+        "process_cpu_s": 8.473765,
+        "worker_cpu_s": 0.882698,
+        "process_peak_rss_mib": 374.359375,
+        "io": {
+          "rchar": 15982298,
+          "wchar": 2669958,
+          "syscr": 3321,
+          "syscw": 473,
+          "read_bytes": 0,
+          "write_bytes": 2838528,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 149,
+          "logical_bytes": 1722107,
+          "allocated_bytes": 2015232
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "5a5ece466b2490d51572d3fd7981456e798f4c077a7e08abdb11d243475ce7ff",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "21-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1040200,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.714930271002231,
+        "worker_wall_s": 0.48476566599856596,
+        "process_cpu_s": 7.755986,
+        "worker_cpu_s": 0.25198,
+        "process_peak_rss_mib": 373.28515625,
+        "io": {
+          "rchar": 7265163,
+          "wchar": 456131,
+          "syscr": 1640,
+          "syscw": 151,
+          "read_bytes": 0,
+          "write_bytes": 520192,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 151,
+          "logical_bytes": 1735970,
+          "allocated_bytes": 2031616
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": 7,
+        "source_observation_sha256": "4f5f925c20b09f75742bab0c771b1039411679222af7ebc9687e4279d139a830",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "22-check",
+        "stage": "check",
+        "pid": 1040225,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.841099718993064,
+        "worker_wall_s": 1.5604450080136303,
+        "process_cpu_s": 8.431476,
+        "worker_cpu_s": 0.950719,
+        "process_peak_rss_mib": 377.625,
+        "io": {
+          "rchar": 16040472,
+          "wchar": 2679883,
+          "syscr": 3342,
+          "syscw": 474,
+          "read_bytes": 0,
+          "write_bytes": 2850816,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 151,
+          "logical_bytes": 1735970,
+          "allocated_bytes": 2031616
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "ee3efd990cdec779f395933adda7f0e071a347ce12384b5f8501353469792ef2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "23-dataset",
+        "stage": "dataset",
+        "pid": 1040253,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.587881439991179,
+        "worker_wall_s": 0.2505925909936195,
+        "process_cpu_s": 7.670769,
+        "worker_cpu_s": 0.10653800000000022,
+        "process_peak_rss_mib": 367.1953125,
+        "io": {
+          "rchar": 6155347,
+          "wchar": 99811,
+          "syscr": 1392,
+          "syscw": 16,
+          "read_bytes": 0,
+          "write_bytes": 114688,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": 16,
+        "source_observation_sha256": "41e921ff272c6134a356a6bc9779b63bc96e19426fb07e99c247c3f8ddf360d2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "24-restart",
+        "stage": "restart",
+        "pid": 1040281,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.845969151996542,
+        "worker_wall_s": 0.42590402500354685,
+        "process_cpu_s": 8.105294,
+        "worker_cpu_s": 0.4173890000000003,
+        "process_peak_rss_mib": 372.046875,
+        "io": {
+          "rchar": 2984824,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "66d44c36bb8bea6a4a5369b4bca22a8133a7bd4f461483f05b042ea477774593",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "25-check",
+        "stage": "check",
+        "pid": 1040313,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.033343716990203,
+        "worker_wall_s": 1.720403647996136,
+        "process_cpu_s": 8.56974,
+        "worker_cpu_s": 1.0538720000000001,
+        "process_peak_rss_mib": 379.0859375,
+        "io": {
+          "rchar": 17699535,
+          "wchar": 2710918,
+          "syscr": 3517,
+          "syscw": 478,
+          "read_bytes": 0,
+          "write_bytes": 2883584,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "fab6749799c6d124e5914cf246af7210834a1b8fdd58d16d0d1cc7c36725a213",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "26-training",
+        "stage": "training",
+        "pid": 1040340,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.169101443010732,
+        "worker_wall_s": 0.8915998250013217,
+        "process_cpu_s": 8.180525,
+        "worker_cpu_s": 0.668946,
+        "process_peak_rss_mib": 379.80078125,
+        "io": {
+          "rchar": 3520419,
+          "wchar": 207529,
+          "syscr": 843,
+          "syscw": 39,
+          "read_bytes": 0,
+          "write_bytes": 258048,
+          "cancelled_write_bytes": 90112
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907441,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": 16,
+        "source_observation_sha256": "5377bbaef439ee3777639f71edd826784a1cd52e2b371f09435b23ae7cf44b7e",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "27-restart",
+        "stage": "restart",
+        "pid": 1040371,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.958405874000164,
+        "worker_wall_s": 0.43981794400315266,
+        "process_cpu_s": 8.174558,
+        "worker_cpu_s": 0.4311529999999991,
+        "process_peak_rss_mib": 371.9609375,
+        "io": {
+          "rchar": 2986695,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907441,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "2a4e2fae67d04456254bd6ed429525893b99e20f844d7400dc96e79fcf31eb47",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "28-check",
+        "stage": "check",
+        "pid": 1040549,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.379172203000053,
+        "worker_wall_s": 1.858129613014171,
+        "process_cpu_s": 8.930059,
+        "worker_cpu_s": 1.1727140000000005,
+        "process_peak_rss_mib": 378.94921875,
+        "io": {
+          "rchar": 17965639,
+          "wchar": 2710918,
+          "syscr": 3561,
+          "syscw": 478,
+          "read_bytes": 0,
+          "write_bytes": 2883584,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907441,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "f198926745a2dee9deef7fb2717ce0ecf68155a707023edb6fcb96d03bd393a6",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "29-prepare",
+        "stage": "prepare",
+        "pid": 1040718,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.586383322995971,
+        "worker_wall_s": 0.024800127008347772,
+        "process_cpu_s": 7.421547,
+        "worker_cpu_s": 0.02469300000000041,
+        "process_peak_rss_mib": 366.69140625,
+        "io": {
+          "rchar": 2177189,
+          "wchar": 1771,
+          "syscr": 522,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907441,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21674,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "54feb2254d7c3a42531a4f1c6d975f40c1c7ca6b5467cbf7c2c565a0049e59eb",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "30-activate",
+        "stage": "activate",
+        "pid": 1040823,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 10.737152943998808,
+        "worker_wall_s": 5.119742936003604,
+        "process_cpu_s": 11.208978,
+        "worker_cpu_s": 3.532810999999999,
+        "process_peak_rss_mib": 384.67578125,
+        "io": {
+          "rchar": 38400022,
+          "wchar": 3306258,
+          "syscr": 8138,
+          "syscw": 992,
+          "read_bytes": 0,
+          "write_bytes": 3731456,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 209,
+          "logical_bytes": 2545602,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "b8b177b06f057df5a1ff4a82534c8a214bcc547caf584dba9e0ef9ba0b37d5ee",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "31-restart",
+        "stage": "restart",
+        "pid": 1040864,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.261039442004403,
+        "worker_wall_s": 0.4376656289969105,
+        "process_cpu_s": 8.416901,
+        "worker_cpu_s": 0.42020100000000005,
+        "process_peak_rss_mib": 371.1953125,
+        "io": {
+          "rchar": 3423500,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545602,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "64be382383f8f91b68c48fba454d71bdd43c374eae00b59cc4eb9cbc13f0d98b",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "32-check",
+        "stage": "check",
+        "pid": 1040892,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 11.31609745300375,
+        "worker_wall_s": 5.854108619998442,
+        "process_cpu_s": 12.85563,
+        "worker_cpu_s": 5.170748,
+        "process_peak_rss_mib": 381.00390625,
+        "io": {
+          "rchar": 22930188,
+          "wchar": 2721808,
+          "syscr": 4407,
+          "syscw": 482,
+          "read_bytes": 0,
+          "write_bytes": 2895872,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545602,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "2a7d92e1bc37262414bc44e48f0f703f9c669202f52f989a30f6c79bda2ea872",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "33-activate",
+        "stage": "activate",
+        "pid": 1040929,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.373932168004103,
+        "worker_wall_s": 0.09264967001217883,
+        "process_cpu_s": 7.59313,
+        "worker_cpu_s": 0.06326900000000021,
+        "process_peak_rss_mib": 366.0859375,
+        "io": {
+          "rchar": 5181945,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545602,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "3986c6e189c56cc376bf727f81739a46670127e79ad5a76b6a4c66741fab3838",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "34-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1040956,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.015580975014018,
+        "worker_wall_s": 1.6897327870101435,
+        "process_cpu_s": 8.803882,
+        "worker_cpu_s": 1.2048240000000006,
+        "process_peak_rss_mib": 378.9453125,
+        "io": {
+          "rchar": 10003625,
+          "wchar": 2977444,
+          "syscr": 1883,
+          "syscw": 398,
+          "read_bytes": 0,
+          "write_bytes": 3108864,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545602,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "5823bcdf42119dcaba0e0fdb206030b38c037df1d3291385c8d93590d51aa7a4",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "35-growth",
+        "stage": "growth",
+        "pid": 1041004,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 7.936749833999784,
+        "worker_wall_s": 2.6741574949992355,
+        "process_cpu_s": 9.283325999999999,
+        "worker_cpu_s": 1.7391930000000007,
+        "process_peak_rss_mib": 383.05859375,
+        "io": {
+          "rchar": 26169987,
+          "wchar": 2095350,
+          "syscr": 5565,
+          "syscw": 632,
+          "read_bytes": 0,
+          "write_bytes": 2347008,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 232,
+          "logical_bytes": 2954994,
+          "allocated_bytes": 3350528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "51512748525d39be438c0822714693b45f3b32d252f6403c17a803a6de27a08a",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "36-check",
+        "stage": "check",
+        "pid": 1041035,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 7.4978300020011375,
+        "worker_wall_s": 2.1386921369994525,
+        "process_cpu_s": 8.922291,
+        "worker_cpu_s": 1.3593389999999994,
+        "process_peak_rss_mib": 377.2734375,
+        "io": {
+          "rchar": 21971725,
+          "wchar": 3510141,
+          "syscr": 4049,
+          "syscw": 614,
+          "read_bytes": 0,
+          "write_bytes": 3715072,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 233,
+          "logical_bytes": 2954994,
+          "allocated_bytes": 3350528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "cb8678df6697a814678ef600ac5b0a47d852bfddca5f9e79f29538f6b8c78f1d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "37-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1041068,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 6.21631208799954,
+        "worker_wall_s": 0.5828493560111383,
+        "process_cpu_s": 8.175533,
+        "worker_cpu_s": 0.29390100000000063,
+        "process_peak_rss_mib": 372.62890625,
+        "io": {
+          "rchar": 9401676,
+          "wchar": 625182,
+          "syscr": 1682,
+          "syscw": 212,
+          "read_bytes": 0,
+          "write_bytes": 704512,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968860,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": 7,
+        "source_observation_sha256": "4a78d2e053a145097daa241b61dd5ed8868e6f6116b7f869245d5e04bdfa6507",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "38-check",
+        "stage": "check",
+        "pid": 1041096,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 7.451740876989788,
+        "worker_wall_s": 2.131922201006091,
+        "process_cpu_s": 8.939185,
+        "worker_cpu_s": 1.3832089999999995,
+        "process_peak_rss_mib": 379.7734375,
+        "io": {
+          "rchar": 22030605,
+          "wchar": 3520070,
+          "syscr": 4070,
+          "syscw": 615,
+          "read_bytes": 0,
+          "write_bytes": 3727360,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968860,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "ac786a396cd126ee8bcd52c1b65dfd2c56ac13e8f43000b27e6d634f450338d9",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "39-activate",
+        "stage": "activate",
+        "pid": 1041123,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "382d95ece18f71f3e3d1f1e6e24fa7eb8dc15654467ab92712524c0c807d2e82",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 5.38512513700698,
+        "worker_wall_s": 0.09388507199764717,
+        "process_cpu_s": 7.636356999999999,
+        "worker_cpu_s": 0.05540900000000029,
+        "process_peak_rss_mib": 366.15625,
+        "io": {
+          "rchar": 5627533,
+          "wchar": 398,
+          "syscr": 1146,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968860,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22366,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "38ed94b58f357c0484a7d3628887aedb2a53d63abad9903f502c8c1a2fc64b2e",
+        "activation_includes_pending_drain": false
+      }
+    ],
+    "complete_recipe_process_wall_s": 274.5177669219702,
+    "final_default_reader_indices": [
+      {
+        "source_generation": 2,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-1bd2d5e68055c92b342b640f30d4b1e370e6b4161a0b9bcf82f83f1a41edef29.sqlite3",
+        "logical_bytes": 311296,
+        "allocated_bytes": 315392,
+        "sha256": "67dcd70d0376e0ca2d163e1928ee3e829c925e9823841f27da9900ff9d720df4"
+      },
+      {
+        "source_generation": 5,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-d7404144d6a46944fd3350ac6c2e1427eadad3dcc0b812a6679e2d97aee99a99.sqlite3",
+        "logical_bytes": 331776,
+        "allocated_bytes": 335872,
+        "sha256": "d454d8ddf3f7d0d1e2d18197b73598a681ecb1656e00c495fb225781c9906503"
+      },
+      {
+        "source_generation": 8,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-5f723c8d5d0075514e16954ac6be9427d7cf664084af8401f9cd72b95639cdc7.sqlite3",
+        "logical_bytes": 434176,
+        "allocated_bytes": 438272,
+        "sha256": "d6867829700c8af5d3a7ad0963024d5abf8d17ddf7935f7cf0925774169aac91"
+      }
+    ],
+    "unique_accepted_rows": 32,
+    "check_row_comparisons": 240,
+    "full_reference_checks": 13,
+    "receipts": 2
+  },
+  "repeat": {
+    "processes": [
+      {
+        "label": "00-init",
+        "stage": "init",
+        "pid": 1041174,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 7.93907919000776,
+        "worker_wall_s": 2.6172913929913193,
+        "process_cpu_s": 9.43873,
+        "worker_cpu_s": 1.967436000000001,
+        "process_peak_rss_mib": 375.1484375,
+        "io": {
+          "rchar": 5761888,
+          "wchar": 992360,
+          "syscr": 1672,
+          "syscw": 304,
+          "read_bytes": 0,
+          "write_bytes": 1196032,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 37,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "1e0508323b63f204fa4151e0d19dc3fbaf45a03d988521d1c46d1f40f578e451",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "01-check",
+        "stage": "check",
+        "pid": 1041209,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 6.478589266000199,
+        "worker_wall_s": 1.0163737279945053,
+        "process_cpu_s": 8.236388999999999,
+        "worker_cpu_s": 0.578546,
+        "process_peak_rss_mib": 371.73046875,
+        "io": {
+          "rchar": 5582264,
+          "wchar": 1463697,
+          "syscr": 1737,
+          "syscw": 255,
+          "read_bytes": 0,
+          "write_bytes": 1581056,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "d18bd10e5d310b2df7a6697b1d5fd98b1ddca66529385a05b13f51acacc58bf9",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "02-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1041236,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 123,
+        "edges": 123,
+        "process_wall_s": 6.892034420001437,
+        "worker_wall_s": 1.5485876180027844,
+        "process_cpu_s": 8.6584,
+        "worker_cpu_s": 1.132797,
+        "process_peak_rss_mib": 375.70703125,
+        "io": {
+          "rchar": 6398341,
+          "wchar": 2116049,
+          "syscr": 1623,
+          "syscw": 290,
+          "read_bytes": 0,
+          "write_bytes": 2232320,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 353798,
+          "allocated_bytes": 446464
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 22772,
+          "allocated_bytes": 36864
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 133986,
+          "allocated_bytes": 143360
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "3929df285a5ca8e1310f693f8ffa907704f02eb23e9cc82fbdf28abcd04bd839",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "03-growth",
+        "stage": "growth",
+        "pid": 1041262,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 7.742517243998009,
+        "worker_wall_s": 2.4026040339958854,
+        "process_cpu_s": 9.121960999999999,
+        "worker_cpu_s": 1.5883089999999989,
+        "process_peak_rss_mib": 374.41015625,
+        "io": {
+          "rchar": 16929203,
+          "wchar": 1463826,
+          "syscr": 4900,
+          "syscw": 456,
+          "read_bytes": 0,
+          "write_bytes": 1691648,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 63,
+          "logical_bytes": 650689,
+          "allocated_bytes": 790528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "b00449480cfbc7dc7892caaafa871fbc21c8c453acb4d419d40877bb20f99810",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "04-check",
+        "stage": "check",
+        "pid": 1041290,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.812539762002416,
+        "worker_wall_s": 1.3745091160089942,
+        "process_cpu_s": 8.456788,
+        "worker_cpu_s": 0.7736500000000002,
+        "process_peak_rss_mib": 373.40625,
+        "io": {
+          "rchar": 11204182,
+          "wchar": 2436020,
+          "syscr": 2689,
+          "syscw": 432,
+          "read_bytes": 0,
+          "write_bytes": 2609152,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 64,
+          "logical_bytes": 650689,
+          "allocated_bytes": 790528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "376a2af0e5daa167e76911c7d7ca381834c5f266822c6e8fdb92755cf2e0ee30",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "05-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1041334,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.894343980005942,
+        "worker_wall_s": 0.45271487600984983,
+        "process_cpu_s": 7.922817,
+        "worker_cpu_s": 0.23177399999999945,
+        "process_peak_rss_mib": 373.5625,
+        "io": {
+          "rchar": 6037300,
+          "wchar": 434632,
+          "syscr": 1621,
+          "syscw": 146,
+          "read_bytes": 0,
+          "write_bytes": 499712,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 67,
+          "logical_bytes": 663648,
+          "allocated_bytes": 811008
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 7,
+        "source_observation_sha256": "bbfecdd8d805ee94e55844b27b5aad402198618c6a225c0467dc86b2dddda82f",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "06-check",
+        "stage": "check",
+        "pid": 1041372,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.705273972009309,
+        "worker_wall_s": 1.4426593870011857,
+        "process_cpu_s": 8.296655999999999,
+        "worker_cpu_s": 0.8353810000000008,
+        "process_peak_rss_mib": 377.3125,
+        "io": {
+          "rchar": 11244441,
+          "wchar": 2444963,
+          "syscr": 2710,
+          "syscw": 433,
+          "read_bytes": 0,
+          "write_bytes": 2621440,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 67,
+          "logical_bytes": 663648,
+          "allocated_bytes": 811008
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "a0043fbc1866295ca648862be1cfbe62f2789504224f6e13d1884b05833b8b24",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "07-dataset",
+        "stage": "dataset",
+        "pid": 1041400,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.523421630001394,
+        "worker_wall_s": 0.24079782399348915,
+        "process_cpu_s": 7.654745,
+        "worker_cpu_s": 0.1012590000000001,
+        "process_peak_rss_mib": 366.60546875,
+        "io": {
+          "rchar": 5315222,
+          "wchar": 89800,
+          "syscr": 1382,
+          "syscw": 15,
+          "read_bytes": 0,
+          "write_bytes": 106496,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732905,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 16,
+        "source_observation_sha256": "29e461f30ded3308710e8118c58efb370409ecd5d0a85afdbb5554eac347f3e3",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "08-restart",
+        "stage": "restart",
+        "pid": 1041426,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.742849861999275,
+        "worker_wall_s": 0.4206099729926791,
+        "process_cpu_s": 7.923578,
+        "worker_cpu_s": 0.4032969999999999,
+        "process_peak_rss_mib": 371.55859375,
+        "io": {
+          "rchar": 2468449,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732905,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "3327004ea530d1233bad6093a58ffa173f07298c5f9b97d13bf92ddbcfb7ab9e",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "09-check",
+        "stage": "check",
+        "pid": 1041454,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 7.048428663998493,
+        "worker_wall_s": 1.662653997002053,
+        "process_cpu_s": 8.649148,
+        "worker_cpu_s": 1.0246119999999996,
+        "process_peak_rss_mib": 377.69140625,
+        "io": {
+          "rchar": 12773748,
+          "wchar": 2475842,
+          "syscr": 2885,
+          "syscw": 437,
+          "read_bytes": 0,
+          "write_bytes": 2654208,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 71,
+          "logical_bytes": 732905,
+          "allocated_bytes": 892928
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "2f885fa3bf6399730aaef83c625461406774bbcfdfe6ddfeb68e893b00710743",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "10-training",
+        "stage": "training",
+        "pid": 1041481,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.072485412005335,
+        "worker_wall_s": 0.8652674100012518,
+        "process_cpu_s": 8.085636,
+        "worker_cpu_s": 0.6474329999999998,
+        "process_peak_rss_mib": 379.5078125,
+        "io": {
+          "rchar": 3038471,
+          "wchar": 194732,
+          "syscr": 843,
+          "syscw": 38,
+          "read_bytes": 0,
+          "write_bytes": 249856,
+          "cancelled_write_bytes": 90112
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833469,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 16,
+        "source_observation_sha256": "c0df038f20ac2442e610d62c2d2f60792ef9dc48e0cd02a163575885e2d3cdb7",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "11-restart",
+        "stage": "restart",
+        "pid": 1041514,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.723584941006266,
+        "worker_wall_s": 0.4062749299919233,
+        "process_cpu_s": 7.964398,
+        "worker_cpu_s": 0.3977290000000005,
+        "process_peak_rss_mib": 371.23828125,
+        "io": {
+          "rchar": 2470320,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833469,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "9db902008839678971a99b73668a47ef5aa81326bfc889c7d700819caa3918b7",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "12-check",
+        "stage": "check",
+        "pid": 1041540,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.93668999899819,
+        "worker_wall_s": 1.592712756988476,
+        "process_cpu_s": 8.487722000000002,
+        "worker_cpu_s": 0.9443120000000004,
+        "process_peak_rss_mib": 377.484375,
+        "io": {
+          "rchar": 13037884,
+          "wchar": 2475842,
+          "syscr": 2929,
+          "syscw": 437,
+          "read_bytes": 0,
+          "write_bytes": 2654208,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833469,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "dddca8fdc2dac1b8ec42dce77479b0f427af50275be06cde6d05ade8db484d92",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "13-prepare",
+        "stage": "prepare",
+        "pid": 1041567,
+        "generation": 2,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.32458508000127,
+        "worker_wall_s": 0.02336977700178977,
+        "process_cpu_s": 7.5878000000000005,
+        "worker_cpu_s": 0.02338100000000079,
+        "process_peak_rss_mib": 366.4765625,
+        "io": {
+          "rchar": 1845574,
+          "wchar": 1674,
+          "syscr": 522,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 84,
+          "logical_bytes": 833469,
+          "allocated_bytes": 1024000
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 29573,
+          "allocated_bytes": 49152
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 212567,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "9e2c09440064277b6b45484e732c17690a49cd741972bb42b46c2985f95327be",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "14-activate",
+        "stage": "activate",
+        "pid": 1041598,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 10.183934296990628,
+        "worker_wall_s": 4.795522582993726,
+        "process_cpu_s": 10.830586,
+        "worker_cpu_s": 3.1811519999999995,
+        "process_peak_rss_mib": 384.18359375,
+        "io": {
+          "rchar": 34246266,
+          "wchar": 3125250,
+          "syscr": 8128,
+          "syscw": 956,
+          "read_bytes": 0,
+          "write_bytes": 3555328,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 1402738,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "4360c8233a47b6fe67d66fe6117d1c0571fcfa44ac1e97189dfd425e60ce13f2",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "15-restart",
+        "stage": "restart",
+        "pid": 1041632,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.660601261013653,
+        "worker_wall_s": 0.4240412350045517,
+        "process_cpu_s": 7.925318,
+        "worker_cpu_s": 0.4099909999999998,
+        "process_peak_rss_mib": 371.81640625,
+        "io": {
+          "rchar": 2969935,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402738,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "1d54e20da366c163ef0105d2f7e1246e315c88ea38f92980e3df802f4b80c98d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "16-check",
+        "stage": "check",
+        "pid": 1041663,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 10.550956485996721,
+        "worker_wall_s": 5.1359834619943285,
+        "process_cpu_s": 11.774045000000001,
+        "worker_cpu_s": 4.503167000000001,
+        "process_peak_rss_mib": 379.8828125,
+        "io": {
+          "rchar": 18309182,
+          "wchar": 2560378,
+          "syscr": 3844,
+          "syscw": 461,
+          "read_bytes": 0,
+          "write_bytes": 2732032,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402738,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "cd59fed4ac4a2419f3dad603d75f1853495198b0d2b141dbb4912e5533d68b0f",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "17-activate",
+        "stage": "activate",
+        "pid": 1041702,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 5.392201921000378,
+        "worker_wall_s": 0.0903641369950492,
+        "process_cpu_s": 7.636210999999999,
+        "worker_cpu_s": 0.06121399999999988,
+        "process_peak_rss_mib": 366.10546875,
+        "io": {
+          "rchar": 4540456,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402738,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "e8dc97dda90e4edb6b7d93c4ea742a670efbdd183956da7b76cff17addeb40fc",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "18-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1041730,
+        "generation": 4,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 194,
+        "edges": 195,
+        "process_wall_s": 6.470243427989772,
+        "worker_wall_s": 1.0777353599987691,
+        "process_cpu_s": 8.24498,
+        "worker_cpu_s": 0.6547489999999999,
+        "process_peak_rss_mib": 376.8359375,
+        "io": {
+          "rchar": 8710289,
+          "wchar": 2302530,
+          "syscr": 1868,
+          "syscw": 322,
+          "read_bytes": 0,
+          "write_bytes": 2416640,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 126,
+          "logical_bytes": 1402738,
+          "allocated_bytes": 1671168
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 32551,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 213213,
+          "allocated_bytes": 221184
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "757ff792653fd19fa3c35796d817e1a5833d1948ba7ce88ba6aa221defaa0765",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "19-growth",
+        "stage": "growth",
+        "pid": 1041778,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.496118082010071,
+        "worker_wall_s": 1.9303648010100005,
+        "process_cpu_s": 8.945521,
+        "worker_cpu_s": 1.1190819999999995,
+        "process_peak_rss_mib": 381.4375,
+        "io": {
+          "rchar": 22512066,
+          "wchar": 1637639,
+          "syscr": 5529,
+          "syscw": 494,
+          "read_bytes": 0,
+          "write_bytes": 1863680,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 148,
+          "logical_bytes": 1722130,
+          "allocated_bytes": 2015232
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "1bbdad933f4b06af88719661db7130db863fbc770600369e5fdc9213179ba458",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "20-check",
+        "stage": "check",
+        "pid": 1041842,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.895026379002957,
+        "worker_wall_s": 1.5443790730059845,
+        "process_cpu_s": 8.506307,
+        "worker_cpu_s": 0.9137889999999993,
+        "process_peak_rss_mib": 374.9296875,
+        "io": {
+          "rchar": 15982052,
+          "wchar": 2669958,
+          "syscr": 3321,
+          "syscw": 473,
+          "read_bytes": 0,
+          "write_bytes": 2838528,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 149,
+          "logical_bytes": 1722130,
+          "allocated_bytes": 2015232
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "d22092247d3be7e5806c70649939f44296d0a9e5c49a83b52bbe1fb6c8aa5b6f",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "21-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1041869,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.875613004012848,
+        "worker_wall_s": 0.5017131289932877,
+        "process_cpu_s": 7.876602,
+        "worker_cpu_s": 0.24475300000000025,
+        "process_peak_rss_mib": 373.08984375,
+        "io": {
+          "rchar": 7264877,
+          "wchar": 456127,
+          "syscr": 1640,
+          "syscw": 151,
+          "read_bytes": 0,
+          "write_bytes": 520192,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 151,
+          "logical_bytes": 1735990,
+          "allocated_bytes": 2031616
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": 7,
+        "source_observation_sha256": "9e15e32f69af9065a624f4e979edd8e938dddfbdde68bbd83a7ec6f5eceeb4f2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "22-check",
+        "stage": "check",
+        "pid": 1041898,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.965811692003626,
+        "worker_wall_s": 1.607919115005643,
+        "process_cpu_s": 8.584273000000001,
+        "worker_cpu_s": 0.9598000000000002,
+        "process_peak_rss_mib": 377.88671875,
+        "io": {
+          "rchar": 16040195,
+          "wchar": 2679876,
+          "syscr": 3342,
+          "syscw": 474,
+          "read_bytes": 0,
+          "write_bytes": 2850816,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 151,
+          "logical_bytes": 1735990,
+          "allocated_bytes": 2031616
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "3e78c4d81bee24105afeb3806826673bd5659a7858b62071e5164543a63c98b7",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "23-dataset",
+        "stage": "dataset",
+        "pid": 1041931,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.550098927007639,
+        "worker_wall_s": 0.2604842220025603,
+        "process_cpu_s": 7.630843,
+        "worker_cpu_s": 0.11941899999999972,
+        "process_peak_rss_mib": 366.0078125,
+        "io": {
+          "rchar": 6155063,
+          "wchar": 99786,
+          "syscr": 1392,
+          "syscw": 16,
+          "read_bytes": 0,
+          "write_bytes": 114688,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": 16,
+        "source_observation_sha256": "adee139d5805ea987418d920ff1194c4d3d66cc476671c1676510171083cd52a",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "24-restart",
+        "stage": "restart",
+        "pid": 1041959,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.806652434999705,
+        "worker_wall_s": 0.42398060800042003,
+        "process_cpu_s": 8.053362,
+        "worker_cpu_s": 0.41624400000000067,
+        "process_peak_rss_mib": 372.0546875,
+        "io": {
+          "rchar": 2984631,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "7c1ef9571f793341770da2ee7d34e33e57588dc55c7fa5f256aac151e9419dd0",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "25-check",
+        "stage": "check",
+        "pid": 1041988,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.060630338994088,
+        "worker_wall_s": 1.7175640219938941,
+        "process_cpu_s": 8.617994,
+        "worker_cpu_s": 1.0778519999999994,
+        "process_peak_rss_mib": 378.38671875,
+        "io": {
+          "rchar": 17699211,
+          "wchar": 2710911,
+          "syscr": 3517,
+          "syscw": 478,
+          "read_bytes": 0,
+          "write_bytes": 2883584,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 155,
+          "logical_bytes": 1805441,
+          "allocated_bytes": 2109440
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "8133f73b6a76b02132067d0f38f08dfae60f911fc2f223c3747dd45b094c7aff",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "26-training",
+        "stage": "training",
+        "pid": 1042017,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 6.211358979999204,
+        "worker_wall_s": 0.8758334169979207,
+        "process_cpu_s": 8.243723000000001,
+        "worker_cpu_s": 0.6602469999999995,
+        "process_peak_rss_mib": 378.98828125,
+        "io": {
+          "rchar": 3520141,
+          "wchar": 207498,
+          "syscr": 843,
+          "syscw": 39,
+          "read_bytes": 0,
+          "write_bytes": 258048,
+          "cancelled_write_bytes": 90112
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907436,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": 16,
+        "source_observation_sha256": "1d8f33b06f7d1d8b2219578ada86a00013700e5d1ea8c4a8f191b267f0c36715",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "27-restart",
+        "stage": "restart",
+        "pid": 1042044,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.7804215920041315,
+        "worker_wall_s": 0.4422930119908415,
+        "process_cpu_s": 7.892134,
+        "worker_cpu_s": 0.43372699999999986,
+        "process_peak_rss_mib": 371.86328125,
+        "io": {
+          "rchar": 2986502,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907436,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "34c68950e420dffdc6e04bef76017c96ff689db5ab4b773aff4a0116ef53d426",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "28-check",
+        "stage": "check",
+        "pid": 1042071,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.047823900007643,
+        "worker_wall_s": 1.7178288209979655,
+        "process_cpu_s": 8.604922,
+        "worker_cpu_s": 1.0694880000000004,
+        "process_peak_rss_mib": 378.62109375,
+        "io": {
+          "rchar": 17965293,
+          "wchar": 2710911,
+          "syscr": 3561,
+          "syscw": 478,
+          "read_bytes": 0,
+          "write_bytes": 2883584,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907436,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "a739d8f757b82b0cdde51def17a98413d2e736dd32eb8dc8e5204d8b374d9b7e",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "29-prepare",
+        "stage": "prepare",
+        "pid": 1042124,
+        "generation": 5,
+        "model_era": 2,
+        "model_sha256": "04821a791b3bfd108bc8075ffe19b9cab11480df72292968fa351ac57b04f344",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.539756256999681,
+        "worker_wall_s": 0.032435204993817024,
+        "process_cpu_s": 7.549907,
+        "worker_cpu_s": 0.02442800000000042,
+        "process_peak_rss_mib": 366.5,
+        "io": {
+          "rchar": 2177049,
+          "wchar": 1771,
+          "syscr": 522,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 168,
+          "logical_bytes": 1907436,
+          "allocated_bytes": 2240512
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33964,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 228226,
+          "allocated_bytes": 233472
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21663,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "ec2dd77d44c13b5f84f5cb7d116f94cafa99b44434bcdd6c578ad865da6ce485",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "30-activate",
+        "stage": "activate",
+        "pid": 1042151,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 10.366977482000948,
+        "worker_wall_s": 4.967148959010956,
+        "process_cpu_s": 10.862129,
+        "worker_cpu_s": 3.3336910000000004,
+        "process_peak_rss_mib": 384.328125,
+        "io": {
+          "rchar": 38398389,
+          "wchar": 3306241,
+          "syscr": 8138,
+          "syscw": 992,
+          "read_bytes": 0,
+          "write_bytes": 3731456,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 209,
+          "logical_bytes": 2545570,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "ed15770cbfc15ab0441004db7831d284d23040867ac19e92dcb0ae9071d518f4",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "31-restart",
+        "stage": "restart",
+        "pid": 1042178,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.856501137997839,
+        "worker_wall_s": 0.44080081798892934,
+        "process_cpu_s": 8.07356,
+        "worker_cpu_s": 0.4270099999999998,
+        "process_peak_rss_mib": 372.23828125,
+        "io": {
+          "rchar": 3423196,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545570,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "2e2b5d033c41ed017692c800aee15d5b37a4fbff2401cb97604db249cdf8de29",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "32-check",
+        "stage": "check",
+        "pid": 1042208,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 11.157008875001338,
+        "worker_wall_s": 5.761610660993028,
+        "process_cpu_s": 12.63705,
+        "worker_cpu_s": 5.092791,
+        "process_peak_rss_mib": 380.98828125,
+        "io": {
+          "rchar": 22929563,
+          "wchar": 2721808,
+          "syscr": 4407,
+          "syscw": 482,
+          "read_bytes": 0,
+          "write_bytes": 2895872,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545570,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "828089f4b43ce9385140efd40d6facac55c9088106116dedd52570cb89e03445",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "33-activate",
+        "stage": "activate",
+        "pid": 1042245,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 5.379861811001319,
+        "worker_wall_s": 0.09137221799755935,
+        "process_cpu_s": 7.6170040000000006,
+        "worker_cpu_s": 0.06297099999999978,
+        "process_peak_rss_mib": 366.265625,
+        "io": {
+          "rchar": 5181518,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545570,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "c080948c47d6de3938e46a800b5e80ba7f1e78ff2e79dc6febec124cf5bdd637",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "34-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1042271,
+        "generation": 7,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 208,
+        "edges": 212,
+        "process_wall_s": 7.0887396990001434,
+        "worker_wall_s": 1.6929453829943668,
+        "process_cpu_s": 8.799158,
+        "worker_cpu_s": 1.2183360000000003,
+        "process_peak_rss_mib": 378.04296875,
+        "io": {
+          "rchar": 10003202,
+          "wchar": 2977444,
+          "syscr": 1883,
+          "syscw": 398,
+          "read_bytes": 0,
+          "write_bytes": 3108864,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 210,
+          "logical_bytes": 2545570,
+          "allocated_bytes": 2924544
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 33793,
+          "allocated_bytes": 53248
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 229697,
+          "allocated_bytes": 237568
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "f11d24516dd59ba4775177e927c6b71153e21c2787833a448522f66be4466729",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "35-growth",
+        "stage": "growth",
+        "pid": 1042303,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 8.151391926992801,
+        "worker_wall_s": 2.6749121280008694,
+        "process_cpu_s": 9.405944,
+        "worker_cpu_s": 1.7488060000000007,
+        "process_peak_rss_mib": 383.01953125,
+        "io": {
+          "rchar": 26168795,
+          "wchar": 2095347,
+          "syscr": 5565,
+          "syscw": 632,
+          "read_bytes": 0,
+          "write_bytes": 2347008,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 232,
+          "logical_bytes": 2954960,
+          "allocated_bytes": 3350528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "86bea325dacd05abb95e191f5b84b2f0122a898671840d4271a15a7427167540",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "36-check",
+        "stage": "check",
+        "pid": 1042334,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 7.529726196007687,
+        "worker_wall_s": 2.1286394339986145,
+        "process_cpu_s": 9.005927,
+        "worker_cpu_s": 1.369666,
+        "process_peak_rss_mib": 376.515625,
+        "io": {
+          "rchar": 21971367,
+          "wchar": 3510141,
+          "syscr": 4049,
+          "syscw": 614,
+          "read_bytes": 0,
+          "write_bytes": 3715072,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 233,
+          "logical_bytes": 2954960,
+          "allocated_bytes": 3350528
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "678529d3e9d20560de8cfc2e388a85649d8e2785bebda165fdf4d45ebfa22b9b",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "37-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1042365,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 5.986105515999952,
+        "worker_wall_s": 0.5908962829998927,
+        "process_cpu_s": 7.936481000000001,
+        "worker_cpu_s": 0.2973990000000001,
+        "process_peak_rss_mib": 373.62109375,
+        "io": {
+          "rchar": 9401473,
+          "wchar": 625165,
+          "syscr": 1682,
+          "syscw": 212,
+          "read_bytes": 0,
+          "write_bytes": 704512,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968810,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": 7,
+        "source_observation_sha256": "b45ef458f26cc860f00f334bc334ce3e81c7bc67b512024e31ec6acbbabc2807",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "38-check",
+        "stage": "check",
+        "pid": 1042394,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 7.774686987992027,
+        "worker_wall_s": 2.258224394012359,
+        "process_cpu_s": 9.127785000000001,
+        "worker_cpu_s": 1.4470170000000002,
+        "process_peak_rss_mib": 379.77734375,
+        "io": {
+          "rchar": 22030233,
+          "wchar": 3520063,
+          "syscr": 4070,
+          "syscw": 615,
+          "read_bytes": 0,
+          "write_bytes": 3727360,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968810,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "2dbb9961fec4a9117b23dd5e0a34d421f780c5cbe8f6e4d7ca53c4f729f81011",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "39-activate",
+        "stage": "activate",
+        "pid": 1042438,
+        "generation": 8,
+        "model_era": 3,
+        "model_sha256": "29780d64a353a999525625b9a93b450415d0a9f10aca07fe0f3c1f86888c5e7e",
+        "nodes": 277,
+        "edges": 281,
+        "process_wall_s": 5.528338948992314,
+        "worker_wall_s": 0.08439756599545944,
+        "process_cpu_s": 7.703599,
+        "worker_cpu_s": 0.05522399999999958,
+        "process_peak_rss_mib": 364.79296875,
+        "io": {
+          "rchar": 5627341,
+          "wchar": 398,
+          "syscr": 1146,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 235,
+          "logical_bytes": 2968810,
+          "allocated_bytes": 3366912
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 43013,
+          "allocated_bytes": 57344
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 308637,
+          "allocated_bytes": 315392
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 22359,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "b461637ddc4275514699da3ad7a17e8a4ec76a7847dee9ddcae1f4b5116d6ddb",
+        "activation_includes_pending_drain": false
+      }
+    ],
+    "complete_recipe_process_wall_s": 274.1430109830544,
+    "final_default_reader_indices": [
+      {
+        "source_generation": 2,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-4a91bb45c3b11efe6bef03e083763cc420eb86181c96dd781f6454646d66aca3.sqlite3",
+        "logical_bytes": 311296,
+        "allocated_bytes": 315392,
+        "sha256": "a4c8ba64086a8b597d3e04f2d952b46a591c8be738feb93b7299ef41b68fb0c5"
+      },
+      {
+        "source_generation": 5,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-87b0c20d28ce438c593e4d6866475b324e397f2dab7e36d61f488bf22106d913.sqlite3",
+        "logical_bytes": 331776,
+        "allocated_bytes": 335872,
+        "sha256": "51e9b1fb4f798b31a7665a7d2670bcfb5e131c03268928761a4b1403341b39a9"
+      },
+      {
+        "source_generation": 8,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-0399b53f1e2b746271ec81908b57528636793d84f091105dba032859ee6fdca8.sqlite3",
+        "logical_bytes": 434176,
+        "allocated_bytes": 438272,
+        "sha256": "dbfbaaa76b88f292a5e2c1d64e5acd89271fb8abef41084889f2f8e8d722054f"
+      }
+    ],
+    "unique_accepted_rows": 32,
+    "check_row_comparisons": 240,
+    "full_reference_checks": 13,
+    "receipts": 2
+  },
+  "endgame": {
+    "processes": [
+      {
+        "label": "00-init",
+        "stage": "init",
+        "pid": 1042500,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.728303176001646,
+        "worker_wall_s": 1.2489978469966445,
+        "process_cpu_s": 8.210140999999998,
+        "worker_cpu_s": 0.5911089999999996,
+        "process_peak_rss_mib": 373.9296875,
+        "io": {
+          "rchar": 2832799,
+          "wchar": 359851,
+          "syscr": 1670,
+          "syscw": 201,
+          "read_bytes": 0,
+          "write_bytes": 573440,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 37,
+          "logical_bytes": 73545,
+          "allocated_bytes": 176128
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "0d9ed13940c0e301e81c6a8a882cd8129a75cf6208fd4900040050246c0daa4b",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "01-check",
+        "stage": "check",
+        "pid": 1042542,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.094712384001468,
+        "worker_wall_s": 0.7910371150064748,
+        "process_cpu_s": 7.857953999999999,
+        "worker_cpu_s": 0.33026999999999984,
+        "process_peak_rss_mib": 370.5,
+        "io": {
+          "rchar": 1692244,
+          "wchar": 321777,
+          "syscr": 1446,
+          "syscw": 152,
+          "read_bytes": 0,
+          "write_bytes": 438272,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 73545,
+          "allocated_bytes": 176128
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "ca360043e93698a7d04d771694716c9a05ed2fcbab5bfeeb3a3b7edaac52f72d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "02-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1042568,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.842966290001641,
+        "worker_wall_s": 0.5100350350112421,
+        "process_cpu_s": 7.8188960000000005,
+        "worker_cpu_s": 0.26059000000000054,
+        "process_peak_rss_mib": 369.98828125,
+        "io": {
+          "rchar": 1092093,
+          "wchar": 182114,
+          "syscr": 959,
+          "syscw": 78,
+          "read_bytes": 0,
+          "write_bytes": 245760,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 38,
+          "logical_bytes": 73545,
+          "allocated_bytes": 176128
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "2b211125d9d2d3ab04acbf7fd314575ee4b88ed2d8b897b08403c4d95661c3c4",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "03-growth",
+        "stage": "growth",
+        "pid": 1042595,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.914580475990078,
+        "worker_wall_s": 0.6273230020015035,
+        "process_cpu_s": 8.038058,
+        "worker_cpu_s": 0.4695329999999996,
+        "process_peak_rss_mib": 370.08984375,
+        "io": {
+          "rchar": 3167606,
+          "wchar": 21282,
+          "syscr": 2958,
+          "syscw": 9,
+          "read_bytes": 0,
+          "write_bytes": 45056,
+          "cancelled_write_bytes": 8192
+        },
+        "retained_workspace_disk": {
+          "files": 42,
+          "logical_bytes": 78729,
+          "allocated_bytes": 188416
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "191b1f80b8fc628be7df82923d61334e04573ee9d74afd743680b6677a00129e",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "04-check",
+        "stage": "check",
+        "pid": 1042623,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.160670326004038,
+        "worker_wall_s": 0.7558314220077591,
+        "process_cpu_s": 7.973633,
+        "worker_cpu_s": 0.3267389999999998,
+        "process_peak_rss_mib": 368.53125,
+        "io": {
+          "rchar": 1698659,
+          "wchar": 321777,
+          "syscr": 1446,
+          "syscw": 152,
+          "read_bytes": 0,
+          "write_bytes": 438272,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 42,
+          "logical_bytes": 78729,
+          "allocated_bytes": 188416
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "ab52daf434ed094a814ce69513358bb84a5c2d6b76ff7e27c98a5250cf58fa85",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "05-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1042651,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.653976945002796,
+        "worker_wall_s": 0.36568619099853095,
+        "process_cpu_s": 7.617108,
+        "worker_cpu_s": 0.11924099999999932,
+        "process_peak_rss_mib": 372.671875,
+        "io": {
+          "rchar": 1385631,
+          "wchar": 153673,
+          "syscr": 1601,
+          "syscw": 78,
+          "read_bytes": 0,
+          "write_bytes": 217088,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 45,
+          "logical_bytes": 89257,
+          "allocated_bytes": 204800
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 2,
+        "source_observation_sha256": "fd59c97b0954cfe746c771f312cf6fed6dc183a094ae3f02ab090fcdac242a67",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "06-check",
+        "stage": "check",
+        "pid": 1042693,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.250654835996102,
+        "worker_wall_s": 0.8181180969986599,
+        "process_cpu_s": 7.46807,
+        "worker_cpu_s": 0.3614000000000005,
+        "process_peak_rss_mib": 373.7265625,
+        "io": {
+          "rchar": 1731655,
+          "wchar": 328300,
+          "syscr": 1467,
+          "syscw": 153,
+          "read_bytes": 0,
+          "write_bytes": 446464,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 45,
+          "logical_bytes": 89257,
+          "allocated_bytes": 204800
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "b099eb29a07fc44e19621dbe9f9f529c1e3205362c26a5e7545dda4c47da0e28",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "07-dataset",
+        "stage": "dataset",
+        "pid": 1042725,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.65529422799591,
+        "worker_wall_s": 0.23366116799297743,
+        "process_cpu_s": 7.765594,
+        "worker_cpu_s": 0.09187499999999926,
+        "process_peak_rss_mib": 367.078125,
+        "io": {
+          "rchar": 1202514,
+          "wchar": 41302,
+          "syscr": 1245,
+          "syscw": 9,
+          "read_bytes": 0,
+          "write_bytes": 61440,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 49,
+          "logical_bytes": 120710,
+          "allocated_bytes": 245760
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 2,
+        "source_observation_sha256": "cf0697389bfec38ff084ea3eac8f570be8803d78996c7a8d6dc97addff2d05e8",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "08-restart",
+        "stage": "restart",
+        "pid": 1042765,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.566539170991746,
+        "worker_wall_s": 0.237277582011302,
+        "process_cpu_s": 7.770731,
+        "worker_cpu_s": 0.22891800000000004,
+        "process_peak_rss_mib": 369.84765625,
+        "io": {
+          "rchar": 669999,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 49,
+          "logical_bytes": 120710,
+          "allocated_bytes": 245760
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "56787327226ffd0087be868eb012c811ef9dad948ceaa7377c691d3371ed732c",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "09-check",
+        "stage": "check",
+        "pid": 1042791,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.109950337006012,
+        "worker_wall_s": 0.8080254369997419,
+        "process_cpu_s": 7.977629,
+        "worker_cpu_s": 0.388201,
+        "process_peak_rss_mib": 373.2109375,
+        "io": {
+          "rchar": 2050759,
+          "wchar": 336214,
+          "syscr": 1638,
+          "syscw": 154,
+          "read_bytes": 0,
+          "write_bytes": 454656,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 49,
+          "logical_bytes": 120710,
+          "allocated_bytes": 245760
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "310ccc53b8c196a948b2389a351dcc6394a9235a52af9facebab0a54dc785943",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "10-training",
+        "stage": "training",
+        "pid": 1042825,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.175564089993713,
+        "worker_wall_s": 0.8375512540078489,
+        "process_cpu_s": 8.018707000000001,
+        "worker_cpu_s": 0.621372,
+        "process_peak_rss_mib": 379.16796875,
+        "io": {
+          "rchar": 1179674,
+          "wchar": 154374,
+          "syscr": 839,
+          "syscw": 32,
+          "read_bytes": 0,
+          "write_bytes": 192512,
+          "cancelled_write_bytes": 53248
+        },
+        "retained_workspace_disk": {
+          "files": 62,
+          "logical_bytes": 219639,
+          "allocated_bytes": 368640
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": 2,
+        "source_observation_sha256": "e70f4187e3ff13997add040a43a5dd7dd7f41baa90bfb65d192753837e5de86b",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "11-restart",
+        "stage": "restart",
+        "pid": 1042853,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.573051074999967,
+        "worker_wall_s": 0.22010562800278421,
+        "process_cpu_s": 7.824339999999999,
+        "worker_cpu_s": 0.21153999999999978,
+        "process_peak_rss_mib": 369.87890625,
+        "io": {
+          "rchar": 671869,
+          "wchar": 0,
+          "syscr": 794,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 62,
+          "logical_bytes": 219639,
+          "allocated_bytes": 368640
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "335e5f917d41b03c660fa28e2cc796491d22ddf86295c6f6dd3aea7299c76f8d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "12-check",
+        "stage": "check",
+        "pid": 1042883,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.125881836996996,
+        "worker_wall_s": 0.8074466789985308,
+        "process_cpu_s": 7.993007,
+        "worker_cpu_s": 0.3961089999999994,
+        "process_peak_rss_mib": 373.4296875,
+        "io": {
+          "rchar": 2269291,
+          "wchar": 336214,
+          "syscr": 1682,
+          "syscw": 154,
+          "read_bytes": 0,
+          "write_bytes": 454656,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 62,
+          "logical_bytes": 219639,
+          "allocated_bytes": 368640
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "4f182f90c1269aed1a061b7d280c9c2553b3ff149b010c292d24cdcba3251618",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "13-prepare",
+        "stage": "prepare",
+        "pid": 1042909,
+        "generation": 1,
+        "model_era": 1,
+        "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.279846285004169,
+        "worker_wall_s": 0.022494017001008615,
+        "process_cpu_s": 7.550794,
+        "worker_cpu_s": 0.022520000000000623,
+        "process_peak_rss_mib": 366.31640625,
+        "io": {
+          "rchar": 540932,
+          "wchar": 1674,
+          "syscr": 522,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 62,
+          "logical_bytes": 219639,
+          "allocated_bytes": 368640
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10392,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6245,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 6007,
+          "allocated_bytes": 16384
+        },
+        "rows": null,
+        "source_observation_sha256": "ece1a90b7c5e1ca4d075ac7dff78669ca29726804d695244ab3e5b890b8fe71d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "14-activate",
+        "stage": "activate",
+        "pid": 1042937,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 8.09776612900896,
+        "worker_wall_s": 2.7068369180051377,
+        "process_cpu_s": 8.709499000000001,
+        "worker_cpu_s": 1.122860999999999,
+        "process_peak_rss_mib": 380.8515625,
+        "io": {
+          "rchar": 12900142,
+          "wchar": 976240,
+          "syscr": 8088,
+          "syscw": 491,
+          "read_bytes": 0,
+          "write_bytes": 1400832,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 103,
+          "logical_bytes": 327716,
+          "allocated_bytes": 552960
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "0ad322feb3ab4ab914bd2f432aa78f1bb0af4f5919630eded89a6a30b823679c",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "15-restart",
+        "stage": "restart",
+        "pid": 1042966,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.651891430999967,
+        "worker_wall_s": 0.2372519460041076,
+        "process_cpu_s": 7.862881,
+        "worker_cpu_s": 0.22274200000000005,
+        "process_peak_rss_mib": 369.44921875,
+        "io": {
+          "rchar": 1112742,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 104,
+          "logical_bytes": 327716,
+          "allocated_bytes": 552960
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "5b0962ad080defe3ceed46ce54955a8926dd24ee7f053c54b411c4ac7127d612",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "16-check",
+        "stage": "check",
+        "pid": 1042995,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.673583956013317,
+        "worker_wall_s": 1.3312724470015382,
+        "process_cpu_s": 8.215798,
+        "worker_cpu_s": 0.7165189999999998,
+        "process_peak_rss_mib": 373.3515625,
+        "io": {
+          "rchar": 5398618,
+          "wchar": 472772,
+          "syscr": 3264,
+          "syscw": 227,
+          "read_bytes": 0,
+          "write_bytes": 643072,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 104,
+          "logical_bytes": 327716,
+          "allocated_bytes": 552960
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "392390e9416ab3ce362423e2ce2b998e760573a91a85725aba4a3c08a055cb36",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "17-activate",
+        "stage": "activate",
+        "pid": 1043038,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.445261540997308,
+        "worker_wall_s": 0.08885543199721724,
+        "process_cpu_s": 7.318295999999999,
+        "worker_cpu_s": 0.060706999999999955,
+        "process_peak_rss_mib": 366.46875,
+        "io": {
+          "rchar": 1684653,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 104,
+          "logical_bytes": 327716,
+          "allocated_bytes": 552960
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "35d6581f36b2758e51834b78d1fe9b3b3d0ead2cf751c54568520734310013ab",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "18-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1043062,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.07731537600921,
+        "worker_wall_s": 0.6865327709965641,
+        "process_cpu_s": 7.899075,
+        "worker_cpu_s": 0.2678640000000001,
+        "process_peak_rss_mib": 370.2265625,
+        "io": {
+          "rchar": 3231025,
+          "wchar": 325195,
+          "syscr": 1807,
+          "syscw": 152,
+          "read_bytes": 0,
+          "write_bytes": 442368,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 104,
+          "logical_bytes": 327716,
+          "allocated_bytes": 552960
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "26946611f525ea70286f718539705f24da378a12f7c5cd9a8d7a526022b21801",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "19-growth",
+        "stage": "growth",
+        "pid": 1043093,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.1744297000113875,
+        "worker_wall_s": 0.6483265099959681,
+        "process_cpu_s": 8.163984000000001,
+        "worker_cpu_s": 0.5027999999999998,
+        "process_peak_rss_mib": 369.8828125,
+        "io": {
+          "rchar": 4699526,
+          "wchar": 28580,
+          "syscr": 3606,
+          "syscw": 10,
+          "read_bytes": 0,
+          "write_bytes": 49152,
+          "cancelled_write_bytes": 8192
+        },
+        "retained_workspace_disk": {
+          "files": 106,
+          "logical_bytes": 330036,
+          "allocated_bytes": 557056
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "74276821e7d986d8aa7ea69fb9f0ed5fe42a02c2f2e2e51fb4e8ac82ae70fab2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "20-check",
+        "stage": "check",
+        "pid": 1043134,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.631260927009862,
+        "worker_wall_s": 1.267638082994381,
+        "process_cpu_s": 8.160086999999999,
+        "worker_cpu_s": 0.6517080000000001,
+        "process_peak_rss_mib": 373.4453125,
+        "io": {
+          "rchar": 5398621,
+          "wchar": 472772,
+          "syscr": 3264,
+          "syscw": 227,
+          "read_bytes": 0,
+          "write_bytes": 643072,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 106,
+          "logical_bytes": 330036,
+          "allocated_bytes": 557056
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "cec777336eec7314d3ad20f7ca6cad0defcdb93233da9446412f22a66b830c90",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "21-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1043160,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.734763745000237,
+        "worker_wall_s": 0.3681574689981062,
+        "process_cpu_s": 7.7444679999999995,
+        "worker_cpu_s": 0.13332900000000006,
+        "process_peak_rss_mib": 372.8828125,
+        "io": {
+          "rchar": 2363406,
+          "wchar": 154199,
+          "syscr": 1953,
+          "syscw": 78,
+          "read_bytes": 0,
+          "write_bytes": 217088,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 108,
+          "logical_bytes": 340975,
+          "allocated_bytes": 569344
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": 2,
+        "source_observation_sha256": "a232360b673e507e06b785ea204fac8720ccbd7133bcf0509387f7b0ce09d8b2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "22-check",
+        "stage": "check",
+        "pid": 1043186,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.77715054100554,
+        "worker_wall_s": 1.293569537010626,
+        "process_cpu_s": 8.294203,
+        "worker_cpu_s": 0.6727599999999996,
+        "process_peak_rss_mib": 373.61328125,
+        "io": {
+          "rchar": 5447347,
+          "wchar": 479794,
+          "syscr": 3285,
+          "syscw": 228,
+          "read_bytes": 0,
+          "write_bytes": 651264,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 108,
+          "logical_bytes": 340975,
+          "allocated_bytes": 569344
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "df270ce98c7ccd8a98e48dd0b0c1c73f491728099bcb8b477d059e3bf37251c1",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "23-dataset",
+        "stage": "dataset",
+        "pid": 1043230,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.587462110997876,
+        "worker_wall_s": 0.2425898029905511,
+        "process_cpu_s": 7.705169,
+        "worker_cpu_s": 0.10506599999999991,
+        "process_peak_rss_mib": 366.6640625,
+        "io": {
+          "rchar": 1872352,
+          "wchar": 52040,
+          "syscr": 1511,
+          "syscw": 10,
+          "read_bytes": 0,
+          "write_bytes": 69632,
+          "cancelled_write_bytes": 4096
+        },
+        "retained_workspace_disk": {
+          "files": 112,
+          "logical_bytes": 375257,
+          "allocated_bytes": 610304
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": 2,
+        "source_observation_sha256": "1931ef94ad6584c0d0e97aec5d65970287774627b1b40acb28085c4d02b68e54",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "24-restart",
+        "stage": "restart",
+        "pid": 1043255,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.468013756006258,
+        "worker_wall_s": 0.2259036030009156,
+        "process_cpu_s": 7.758817,
+        "worker_cpu_s": 0.21918200000000004,
+        "process_peak_rss_mib": 370.23828125,
+        "io": {
+          "rchar": 1114610,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 112,
+          "logical_bytes": 375257,
+          "allocated_bytes": 610304
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "036aea3d185b5aca525c0d432b128c7cfb1b08332760a68501978ebd475958ed",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "25-check",
+        "stage": "check",
+        "pid": 1043284,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.679361251997761,
+        "worker_wall_s": 1.347306297000614,
+        "process_cpu_s": 8.194319,
+        "worker_cpu_s": 0.7236799999999994,
+        "process_peak_rss_mib": 373.37109375,
+        "io": {
+          "rchar": 5833730,
+          "wchar": 487806,
+          "syscr": 3480,
+          "syscw": 229,
+          "read_bytes": 0,
+          "write_bytes": 659456,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 112,
+          "logical_bytes": 375257,
+          "allocated_bytes": 610304
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "7a47848a66f6aa9d3ba687d68579e598c080c3082403d56713e61eb6e0a15366",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "26-training",
+        "stage": "training",
+        "pid": 1043349,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.348354504996678,
+        "worker_wall_s": 0.8235862889996497,
+        "process_cpu_s": 8.329714000000001,
+        "worker_cpu_s": 0.6104029999999997,
+        "process_peak_rss_mib": 379.7890625,
+        "io": {
+          "rchar": 1605530,
+          "wchar": 163491,
+          "syscr": 983,
+          "syscw": 37,
+          "read_bytes": 0,
+          "write_bytes": 217088,
+          "cancelled_write_bytes": 61440
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 474745,
+          "allocated_bytes": 741376
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": 2,
+        "source_observation_sha256": "4b1db8a73d63eb2fef65b103d228d48921b0b98ed5c3cd4af054e877d144eb3c",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "27-restart",
+        "stage": "restart",
+        "pid": 1043375,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.631760361007764,
+        "worker_wall_s": 0.22816331998910755,
+        "process_cpu_s": 7.811788,
+        "worker_cpu_s": 0.2267590000000005,
+        "process_peak_rss_mib": 370.3671875,
+        "io": {
+          "rchar": 1116483,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 474745,
+          "allocated_bytes": 741376
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "bacb780879dc6e1a9c6467453fc5de22e4595c4712b29b49712bd51ffd4f29dc",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "28-check",
+        "stage": "check",
+        "pid": 1043400,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.740110617989558,
+        "worker_wall_s": 1.3512928179989103,
+        "process_cpu_s": 8.35296,
+        "worker_cpu_s": 0.721956,
+        "process_peak_rss_mib": 373.078125,
+        "io": {
+          "rchar": 6058386,
+          "wchar": 487806,
+          "syscr": 3524,
+          "syscw": 229,
+          "read_bytes": 0,
+          "write_bytes": 659456,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 474745,
+          "allocated_bytes": 741376
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "a93c7a5bc6ae3174823c2540fceb9604e48fcb28c7ff1571afb8aea16bcbb88b",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "29-prepare",
+        "stage": "prepare",
+        "pid": 1043435,
+        "generation": 3,
+        "model_era": 2,
+        "model_sha256": "da54c12e3b41556ded264d6f836530b744a2448bb0ac7f0356ffadc3204012a6",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.396328866991098,
+        "worker_wall_s": 0.02704972198989708,
+        "process_cpu_s": 7.579319,
+        "worker_cpu_s": 0.027077000000000434,
+        "process_peak_rss_mib": 366.33984375,
+        "io": {
+          "rchar": 832094,
+          "wchar": 1771,
+          "syscr": 642,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 125,
+          "logical_bytes": 474745,
+          "allocated_bytes": 741376
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10414,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 20938,
+          "allocated_bytes": 28672
+        },
+        "rows": null,
+        "source_observation_sha256": "0ada1766cb8e5737b97d7fb0aac75102b030ed36c708fd02bf44a7e72c14eb1e",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "30-activate",
+        "stage": "activate",
+        "pid": 1043460,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 8.087134588990011,
+        "worker_wall_s": 2.7413607180060353,
+        "process_cpu_s": 8.662779,
+        "worker_cpu_s": 1.1593220000000002,
+        "process_peak_rss_mib": 378.45703125,
+        "io": {
+          "rchar": 15445407,
+          "wchar": 990906,
+          "syscr": 8644,
+          "syscw": 492,
+          "read_bytes": 0,
+          "write_bytes": 1417216,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 166,
+          "logical_bytes": 612545,
+          "allocated_bytes": 929792
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "4eddb2d6559957db058ec2acd6a6549fd6bc3a879f01ffe8d5c422c95a10dcd1",
+        "activation_includes_pending_drain": true
+      },
+      {
+        "label": "31-restart",
+        "stage": "restart",
+        "pid": 1043488,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.567009291989962,
+        "worker_wall_s": 0.23644117701041978,
+        "process_cpu_s": 7.829754,
+        "worker_cpu_s": 0.22191899999999953,
+        "process_peak_rss_mib": 369.4765625,
+        "io": {
+          "rchar": 1391080,
+          "wchar": 0,
+          "syscr": 962,
+          "syscw": 0,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 167,
+          "logical_bytes": 612545,
+          "allocated_bytes": 929792
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "b1b7203d65618a2102fd279b6718f5c0ee5469bb7600c132b26bdeef1b29b508",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "32-check",
+        "stage": "check",
+        "pid": 1043514,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.639095359991188,
+        "worker_wall_s": 1.3412901179981418,
+        "process_cpu_s": 8.24872,
+        "worker_cpu_s": 0.7142240000000001,
+        "process_peak_rss_mib": 373.6171875,
+        "io": {
+          "rchar": 6861130,
+          "wchar": 480784,
+          "syscr": 3713,
+          "syscw": 228,
+          "read_bytes": 0,
+          "write_bytes": 651264,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 167,
+          "logical_bytes": 612545,
+          "allocated_bytes": 929792
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "4a2482f5e7c11adff02d5eed3a10356aeb5710ef8c081e35c6196b9ceaeffca2",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "33-activate",
+        "stage": "activate",
+        "pid": 1043542,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.368067500996403,
+        "worker_wall_s": 0.0814705299999332,
+        "process_cpu_s": 7.57849,
+        "worker_cpu_s": 0.060978000000000504,
+        "process_peak_rss_mib": 366.19921875,
+        "io": {
+          "rchar": 2071805,
+          "wchar": 398,
+          "syscr": 1374,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 167,
+          "logical_bytes": 612545,
+          "allocated_bytes": 929792
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "9f9f17fed3f18ce156085a0d7661a397797bedee717e4dfe07a5ed9d8258bb2a",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "34-predict-growth",
+        "stage": "predict-growth",
+        "pid": 1043570,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.050888189987745,
+        "worker_wall_s": 0.6860514300060458,
+        "process_cpu_s": 7.801126,
+        "worker_cpu_s": 0.2691009999999999,
+        "process_peak_rss_mib": 370.765625,
+        "io": {
+          "rchar": 3614750,
+          "wchar": 325195,
+          "syscr": 1807,
+          "syscw": 152,
+          "read_bytes": 0,
+          "write_bytes": 442368,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 167,
+          "logical_bytes": 612545,
+          "allocated_bytes": 929792
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "fad85ca1f6d7297e213d1010f5c39a99a59f867f639f5fd1024c80fa4adf65eb",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "35-growth",
+        "stage": "growth",
+        "pid": 1043600,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.954048721992876,
+        "worker_wall_s": 0.6355352859973209,
+        "process_cpu_s": 8.001066,
+        "worker_cpu_s": 0.5019030000000005,
+        "process_peak_rss_mib": 369.8671875,
+        "io": {
+          "rchar": 5635707,
+          "wchar": 35507,
+          "syscr": 3606,
+          "syscw": 11,
+          "read_bytes": 0,
+          "write_bytes": 61440,
+          "cancelled_write_bytes": 8192
+        },
+        "retained_workspace_disk": {
+          "files": 169,
+          "logical_bytes": 614853,
+          "allocated_bytes": 937984
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "3fac3208fe31a872e5cfd801a27cddfc322a10dcd485a355590c71ea39f9d69c",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "36-check",
+        "stage": "check",
+        "pid": 1043629,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.860630663999473,
+        "worker_wall_s": 1.3694601909955963,
+        "process_cpu_s": 8.35836,
+        "worker_cpu_s": 0.7314620000000011,
+        "process_peak_rss_mib": 373.3671875,
+        "io": {
+          "rchar": 6861127,
+          "wchar": 480784,
+          "syscr": 3713,
+          "syscw": 228,
+          "read_bytes": 0,
+          "write_bytes": 651264,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 169,
+          "logical_bytes": 614853,
+          "allocated_bytes": 937984
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "243ad05bcfa372bac4391ddf7c8b7ce4c1d938617ffe9653ac9c5fa8c4f9a54c",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "37-reevaluation",
+        "stage": "reevaluation",
+        "pid": 1043659,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.672872177005047,
+        "worker_wall_s": 0.36493599000095855,
+        "process_cpu_s": 7.572554,
+        "worker_cpu_s": 0.1328749999999996,
+        "process_peak_rss_mib": 373.62890625,
+        "io": {
+          "rchar": 3050462,
+          "wchar": 154179,
+          "syscr": 1969,
+          "syscw": 78,
+          "read_bytes": 0,
+          "write_bytes": 217088,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 171,
+          "logical_bytes": 625773,
+          "allocated_bytes": 950272
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": 2,
+        "source_observation_sha256": "656ac6bd6286ecfdfd929095a944eebe6a7f4e05a730c9d0b2ab146e5486ef98",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "38-check",
+        "stage": "check",
+        "pid": 1043687,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 6.796078595012659,
+        "worker_wall_s": 1.3759422929870198,
+        "process_cpu_s": 8.384663,
+        "worker_cpu_s": 0.7144229999999995,
+        "process_peak_rss_mib": 373.21484375,
+        "io": {
+          "rchar": 6910123,
+          "wchar": 487806,
+          "syscr": 3734,
+          "syscw": 229,
+          "read_bytes": 0,
+          "write_bytes": 659456,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 171,
+          "logical_bytes": 625773,
+          "allocated_bytes": 950272
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "a0428342c4c7a75f4204ad209a4d98a8e83b761487df3e737e8b2250a6150d5d",
+        "activation_includes_pending_drain": false
+      },
+      {
+        "label": "39-activate",
+        "stage": "activate",
+        "pid": 1043732,
+        "generation": 5,
+        "model_era": 3,
+        "model_sha256": "33f75954d7478ce881b693c1c7c00a9955fd743d4047d7badf2fcbacc94d8b0d",
+        "nodes": 2,
+        "edges": 1,
+        "process_wall_s": 5.382453379002982,
+        "worker_wall_s": 0.090718730003573,
+        "process_cpu_s": 7.594567,
+        "worker_cpu_s": 0.06118999999999991,
+        "process_peak_rss_mib": 365.46875,
+        "io": {
+          "rchar": 2047952,
+          "wchar": 398,
+          "syscr": 1376,
+          "syscw": 1,
+          "read_bytes": 0,
+          "write_bytes": 4096,
+          "cancelled_write_bytes": 0
+        },
+        "retained_workspace_disk": {
+          "files": 171,
+          "logical_bytes": 625773,
+          "allocated_bytes": 950272
+        },
+        "checkpoint_disk": {
+          "files": 7,
+          "logical_bytes": 10415,
+          "allocated_bytes": 32768
+        },
+        "scientific_disk": {
+          "files": 3,
+          "logical_bytes": 6273,
+          "allocated_bytes": 12288
+        },
+        "active_model_disk": {
+          "files": 4,
+          "logical_bytes": 21199,
+          "allocated_bytes": 32768
+        },
+        "rows": null,
+        "source_observation_sha256": "8f544fa91e72c2dcf4b4cd24194f8ef745f7f6aad982569ec5ab5fd72d5e8807",
+        "activation_includes_pending_drain": false
+      }
+    ],
+    "complete_recipe_process_wall_s": 244.6250847409974,
+    "final_default_reader_indices": [
+      {
+        "source_generation": 1,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-d3bf952135f9860913df97713bfb9990a68745c537167dd0ddde273b2171f7ea.sqlite3",
+        "logical_bytes": 32768,
+        "allocated_bytes": 36864,
+        "sha256": "4a2714f5ac7f95d0aaebc1f13be950a844e713c7292ddeba9fc2d0828ee6bf53"
+      },
+      {
+        "source_generation": 3,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-976c73230cbd5e27b0090b961e41e684bcd06c973932013b793de0f7ffbc8797.sqlite3",
+        "logical_bytes": 32768,
+        "allocated_bytes": 36864,
+        "sha256": "474a471f86a8ea7c9d73af7eae936b0fe413c04ffd2e694904981c474ef0165e"
+      },
+      {
+        "source_generation": 5,
+        "path": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/cache/chipiron/sharded_training_reader/v2-0827bdeec9c7cf21b87c71abbed3a014a2908a1b66966c35d15d3b666269bf1e.sqlite3",
+        "logical_bytes": 32768,
+        "allocated_bytes": 36864,
+        "sha256": "ffbffecbd8e4f1cfebb5b1ba5a7dccc8c005082b67ba56fc858b3f02f077e76d"
+      }
+    ],
+    "unique_accepted_rows": 4,
+    "check_row_comparisons": 30,
+    "full_reference_checks": 13,
+    "receipts": 2
+  }
+}

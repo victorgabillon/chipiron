@@ -1,0 +1,16 @@
+{
+  "review_only": true,
+  "base": "1f335acfa362469dae3636329fa1054365caeb0b",
+  "production_files_unchanged": 471,
+  "existing_test_diff_empty": true,
+  "protected_worktrees_unchanged": 27,
+  "history_probe_generations": 64,
+  "history_probe_nodes": 4,
+  "ruff_check": "passed",
+  "ruff_format": "passed",
+  "final_probe_smoke_generations": 3,
+  "full_ci_rerun": false,
+  "prior_full_ci": "2152 passed, 2 CUDA skips; retained evidence at exact unchanged base",
+  "metadata_capacity": "header-only declarations accepted at 1000/5000/10000; rejected at 20000; not a full-source validation test",
+  "report_links": "all local targets exist"
+}

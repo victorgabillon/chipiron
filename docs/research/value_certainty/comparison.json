@@ -1,0 +1,1330 @@
+{
+  "cases": {
+    "ordinary-prediction-42.0-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 10.53
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 10.53
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 10.53
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 10.53
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "ordinary-prediction-42.0-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "ordinary-prediction-None-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 0.04
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 0.04
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "ordinary-prediction-None-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 0.04
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 0.04
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 1.1400000114000004
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "proved-prediction-42.0-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": true
+    },
+    "proved-prediction-42.0-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": true
+    },
+    "proved-prediction-None-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 34.01
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 34.01
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "proved-prediction-None-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 34.01
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 34.01
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "effective": {
+            "certainty": "TERMINAL",
+            "line": null,
+            "over_event": {
+              "outcome": "WIN",
+              "termination": {
+                "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                "name": "NO_LEGAL_MOVES",
+                "qualname": "MorpionTermination",
+                "type": "enum"
+              },
+              "winner": null
+            },
+            "score": 35.0
+          },
+          "source": "direct_self",
+          "tree": null
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "synthetic-prediction-42.0-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "changed_outputs": 108,
+      "datasets": 108,
+      "value_payloads_changed": true
+    },
+    "synthetic-prediction-42.0-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 42.0
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "changed_outputs": 108,
+      "datasets": 108,
+      "value_payloads_changed": true
+    },
+    "synthetic-prediction-None-alpha-0.25": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    },
+    "synthetic-prediction-None-alpha-1.0": {
+      "after_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "before_values": {
+        "0": {
+          "direct": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "effective": {
+            "certainty": "FORCED",
+            "line": null,
+            "over_event": null,
+            "score": 9
+          },
+          "source": "direct_self",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 3
+          }
+        },
+        "1": {
+          "direct": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "effective": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          },
+          "source": "tree_child",
+          "tree": {
+            "certainty": "ESTIMATE",
+            "line": null,
+            "over_event": null,
+            "score": 2
+          }
+        }
+      },
+      "changed_outputs": 0,
+      "datasets": 108,
+      "value_payloads_changed": false
+    }
+  },
+  "changed_outputs": 216,
+  "outputs_per_revision": 1296
+}

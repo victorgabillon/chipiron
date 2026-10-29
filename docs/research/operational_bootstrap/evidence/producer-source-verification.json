@@ -1,0 +1,14 @@
+{
+  "producer": {
+    "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651",
+    "config_sha256": "a981cac0dc89f98526c076e14681ac44146606f23ad2a656fedd804560ce6a8b",
+    "evaluator": "dcbaa0a12d1429cc2bfcf7db4cb262a7b8214a278777c5c29f0a020394119cb3",
+    "objective": "maximum_total_moves",
+    "revision": "731f21f0bffd560f7020f92184fcfcecf9b9b0250d7b6ecf08f746bd3bfa74f4"
+  },
+  "installed_fingerprints": {
+    "revision": "731f21f0bffd560f7020f92184fcfcecf9b9b0250d7b6ecf08f746bd3bfa74f4",
+    "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651"
+  },
+  "equal": true
+}

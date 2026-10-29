@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -23,6 +24,34 @@ class TestMetrics:
         self.deselected: list[str] = []
         self.reports: list[dict[str, object]] = []
         self.worker_collections: dict[str, dict[str, list[str]]] = {}
+        self.collect_only = False
+
+    def execution_errors(self) -> list[str]:
+        """Fail closed on missing or duplicate executions, including setup skips."""
+        errors = []
+        expected = Counter(self.selected)
+        if any(count != 1 for count in expected.values()):
+            errors.append("Duplicate selected test identities")
+        for phase in ("setup", "call", "teardown"):
+            required = (
+                Counter(
+                    str(report["nodeid"])
+                    for report in self.reports
+                    if report["phase"] == "setup" and report["outcome"] == "passed"
+                )
+                if phase == "call"
+                else expected
+            )
+            observed = Counter(
+                str(report["nodeid"])
+                for report in self.reports
+                if report["phase"] == phase
+            )
+            if required != observed:
+                errors.append(
+                    f"{phase}: missing={required - observed}; extra={observed - required}"
+                )
+        return errors
 
     def pytest_collection_finish(self, session: pytest.Session) -> None:
         """Retain the final selection after marker filtering."""
@@ -71,6 +100,7 @@ def pytest_configure(config: pytest.Config) -> None:
     """Register the same observer in the controller and every xdist worker."""
     global RECORDER
     RECORDER = TestMetrics()
+    RECORDER.collect_only = config.option.collectonly
     config.pluginmanager.register(RECORDER, "ci-test-metrics-recorder")
 
 
@@ -81,6 +111,11 @@ def main() -> int:
     code = pytest.main(["-p", "ci_test_metrics", *sys.argv[1:]])
     recorder = sys.modules["ci_test_metrics"].RECORDER
     assert recorder is not None
+    execution_errors = [] if recorder.collect_only else recorder.execution_errors()
+    if execution_errors and code == pytest.ExitCode.OK:
+        code = pytest.ExitCode.TESTS_FAILED
+    for error in execution_errors:
+        print(f"CI execution identity failure: {error}", file=sys.stderr)
     output = Path(".ci-reports")
     output.mkdir(exist_ok=True)
     (output / "tests.json").write_text(
@@ -90,6 +125,8 @@ def main() -> int:
                 "deselected_ids": recorder.deselected,
                 "reports": recorder.reports,
                 "worker_collections": recorder.worker_collections,
+                "collect_only": recorder.collect_only,
+                "execution_errors": execution_errors,
                 "elapsed_seconds": time.monotonic() - started,
                 "exit_code": int(code),
             },

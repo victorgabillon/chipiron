@@ -1,0 +1,69 @@
+{
+  "costs": {
+    "cpu_user_s": 0.36577899999999985,
+    "cpu_system_s": 0.048955,
+    "io": {
+      "rchar": 5060029,
+      "wchar": 0,
+      "syscr": 1754,
+      "syscw": 0,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cancelled_write_bytes": 0
+    }
+  },
+  "hashing": {
+    "calls": 552,
+    "bytes": 3445143
+  },
+  "started_unix_s": 1792597361.5392616,
+  "finished_unix_s": 1792597361.9542115,
+  "elapsed_s": 0.41495002699957695,
+  "pid": 311702,
+  "rss_before_mb": 284.1484375,
+  "rss_after_mb": 284.640625,
+  "process_peak_rss_mb": 284.9140625,
+  "available_ram_before_mb": 8481.765625,
+  "available_ram_after_mb": 8449.09375,
+  "cuda_before": null,
+  "cuda_after": null,
+  "calls": [
+    {
+      "function": "validate_capsule",
+      "calls": 16,
+      "inclusive_s": 0.399800403
+    },
+    {
+      "function": "publication_records",
+      "calls": 16,
+      "inclusive_s": 0.003416601
+    },
+    {
+      "function": "read_object",
+      "calls": 32,
+      "inclusive_s": 0.0054101620000000005
+    }
+  ],
+  "generation": 16,
+  "traced_discovery_retained_bytes": 818071,
+  "traced_discovery_peak_bytes": 1212461,
+  "traced_manifest_retained_bytes": 796389,
+  "traced_manifest_peak_bytes": 857003,
+  "retained_manifest_allocations": 8384,
+  "artifacts": {
+    "manifest": {
+      "count": 16,
+      "bytes": 496882,
+      "publication_entries": 136,
+      "receipt_entries": 120
+    },
+    "status": {
+      "count": 32,
+      "bytes": 982724,
+      "publication_entries": 272,
+      "receipt_entries": 240
+    }
+  },
+  "run_state_bytes": 57319,
+  "source_module": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree/src/chipiron/environments/morpion/bootstrap/pipeline_artifacts.py"
+}

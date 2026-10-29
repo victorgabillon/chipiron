@@ -1,0 +1,19 @@
+{
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": ".",
+    "TMPDIR": "/home/pompote/oldata/victor/br24ci",
+    "XDG_CACHE_HOME": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/cache",
+    "MPLCONFIGDIR": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/cache/matplotlib",
+    "CHIPIRON_OUTPUT_DIR": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/tmp/output",
+    "QT_QPA_PLATFORM": "offscreen",
+    "PIP_CACHE_DIR": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/cache/pip",
+    "ML_FLOW_URI_PATH": "sqlite:////home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/tmp/mlruns.db",
+    "ML_FLOW_URI_PATH_TEST": "sqlite:////home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/tmp/mlruns-test.db",
+    "CHIPIRON_TEST_INSTALLED": "1"
+  },
+  "python": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/venv/bin/python",
+  "worktree": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/worktree",
+  "final_implementation": "ecccef061fc8ed0198cefaccef7ab95f61d8d33d",
+  "final_basetemp": "/home/pompote/oldata/victor/br24ci/full-ci-strict"
+}

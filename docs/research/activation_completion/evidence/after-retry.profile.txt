@@ -1,0 +1,41 @@
+         323100 function calls (312267 primitive calls) in 0.114 seconds
+
+   Ordered by: cumulative time
+   List reduced from 425 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.114    0.114 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/docs/research/activation_completion/measure.py:49(operation)
+        1    0.000    0.000    0.114    0.114 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/model_activation.py:274(activate_model)
+        6    0.001    0.000    0.084    0.014 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:419(validate_capsule)
+        2    0.000    0.000    0.063    0.032 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication.py:306(validate_state)
+        1    0.000    0.000    0.047    0.047 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication.py:420(prepare)
+        1    0.000    0.000    0.046    0.046 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:935(acknowledge_pending)
+        3    0.000    0.000    0.045    0.015 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:272(committed_evaluator)
+      138    0.001    0.000    0.045    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:54(inside)
+        1    0.000    0.000    0.033    0.033 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:414(validate_state)
+      158    0.000    0.000    0.029    0.000 {built-in method builtins.any}
+     2009    0.002    0.000    0.026    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:63(<genexpr>)
+     6125    0.001    0.000    0.025    0.000 <frozen _collections_abc>:1027(__iter__)
+        6    0.000    0.000    0.024    0.004 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:723(validate_committed_identity)
+     5409    0.003    0.000    0.023    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:44(__getitem__)
+     7700    0.003    0.000    0.023    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:245(_from_parsed_parts)
+      190    0.001    0.000    0.022    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/docs/research/activation_completion/measure.py:72(hash_file)
+      175    0.000    0.000    0.021    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:96(file_digest)
+     8132    0.002    0.000    0.021    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:252(_from_parsed_string)
+     8697    0.004    0.000    0.021    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:130(with_segments)
+      723    0.001    0.000    0.020    0.000 <frozen _collections_abc>:1037(__contains__)
+        1    0.000    0.000    0.018    0.018 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:870(publish_manifest)
+        1    0.000    0.000    0.018    0.018 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:327(active_model_projection)
+       12    0.000    0.000    0.016    0.001 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:122(artifact_digest)
+    14/12    0.000    0.000    0.016    0.001 {built-in method builtins.next}
+      347    0.000    0.000    0.015    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:393(is_relative_to)
+     9173    0.007    0.000    0.015    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:498(__init__)
+      3/2    0.000    0.000    0.015    0.007 /home/pompote/miniconda3/lib/python3.13/contextlib.py:136(__enter__)
+        2    0.000    0.000    0.015    0.007 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:521(generation_read_pin)
+        1    0.000    0.000    0.015    0.015 /home/pompote/miniconda3/lib/python3.13/contextlib.py:515(enter_context)
+      376    0.001    0.000    0.014    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:365(relative_to)
+        2    0.000    0.000    0.012    0.006 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:110(sync_checkpoint)
+        6    0.012    0.002    0.012    0.002 {built-in method posix.fsync}
+     6081    0.002    0.000    0.012    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:193(__eq__)
+        1    0.000    0.000    0.012    0.012 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py:401(sync_artifact)
+        2    0.000    0.000    0.009    0.005 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py:262(_producer)

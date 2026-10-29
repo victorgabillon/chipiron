@@ -1,0 +1,42 @@
+{
+  "costs": {
+    "cpu_user_s": 0.3114549999999996,
+    "cpu_system_s": 0.06685500000000011,
+    "io": {
+      "rchar": 10526402,
+      "wchar": 347819,
+      "syscr": 4067,
+      "syscw": 117,
+      "read_bytes": 0,
+      "write_bytes": 442368,
+      "cancelled_write_bytes": 4096
+    }
+  },
+  "counters": {
+    "state_decodes": 0,
+    "state_decode_seconds": 0.0,
+    "file_fsync_count": 73,
+    "directory_fsync_count": 83,
+    "file_fsync_seconds": 0.10715841397177428,
+    "directory_fsync_seconds": 0.0756714339950122
+  },
+  "started_unix_s": 1792594563.7516634,
+  "finished_unix_s": 1792594564.4444158,
+  "elapsed_s": 0.6927521500037983,
+  "pid": 307810,
+  "rss_before_mb": 285.45703125,
+  "rss_after_mb": 285.45703125,
+  "process_peak_rss_mb": 284.6875,
+  "available_ram_before_mb": 8123.2265625,
+  "available_ram_after_mb": 8112.7265625,
+  "cuda_before": null,
+  "cuda_after": null,
+  "profile": [],
+  "disk": {
+    "apparent_file_bytes": 4040041,
+    "unique_file_bytes": 1315947,
+    "allocated_bytes_unique_inodes": 3035136,
+    "file_names": 623,
+    "unique_inodes": 513
+  }
+}

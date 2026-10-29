@@ -13,6 +13,27 @@ from typing import Literal
 LOGGER = logging.getLogger(__name__)
 
 
+def directory_disk_usage(root: Path) -> dict[str, int]:
+    """Sample logical bytes and inode-aware allocation using the research monitor's accounting."""
+    files = 0
+    logical = 0
+    allocation: dict[tuple[int, int], int] = {}
+    for path in root.rglob("*"):
+        try:
+            if path.is_file():
+                stat = path.stat()
+                files += 1
+                logical += stat.st_size
+                allocation[stat.st_dev, stat.st_ino] = stat.st_blocks * 512
+        except FileNotFoundError:
+            continue  # Publication can atomically rename a sampled staging file.
+    return {
+        "files": files,
+        "logical_bytes": logical,
+        "allocated_bytes": sum(allocation.values()),
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateCheckpointLoadMemoryForecast:
     """Forecast whether candidate checkpoint load has enough RAM headroom."""

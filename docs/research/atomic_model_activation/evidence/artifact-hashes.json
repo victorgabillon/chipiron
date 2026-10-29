@@ -1,0 +1,94 @@
+{
+  "science.xml": {
+    "bytes": 19183,
+    "sha256": "5b042fdc5fad8250289d12c15acc7ed9f64f848cbdba47bc8f6faf716571fa10"
+  },
+  "ruff-check.log": {
+    "bytes": 19,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "install.log": {
+    "bytes": 572,
+    "sha256": "1640e3f81f31c260b15b8e3c48954386d503d6079931d53156746ed9e34590c7"
+  },
+  "dependencies.json": {
+    "bytes": 104431,
+    "sha256": "fd79a34ab1a079b9e9b5a5e361f66aa75db260c8335a1302c120f991b23ddaf4"
+  },
+  "checkpoint-sharded.json": {
+    "bytes": 206950,
+    "sha256": "9ae98500a1f4ac4b41fe76321bc49b5da6ea097d45a1c1b39e707ca2510cb1d4"
+  },
+  "probe-1k-refresh.time": {
+    "bytes": 980,
+    "sha256": "c1aab86c99e04ba8394833dc3818c789c32c2ffb4606104ef6a28e34edcb0e12"
+  },
+  "toolchain.log": {
+    "bytes": 33,
+    "sha256": "ab756adedfea0d2d4a3a16cdaa5769cc30be200f5421cfe1516c664d09b58ae6"
+  },
+  "ruff-format.log": {
+    "bytes": 28,
+    "sha256": "6c2b2a5fb4588f7857bd7fe4a2e21764dfe4f39545380e8abfecc7b3e647d259"
+  },
+  "protected-after.json": {
+    "bytes": 360,
+    "sha256": "55e4f6a4439889c693e23af81d75c335998b6beb99058f4bdd3d55422ef7d968"
+  },
+  "probe-1k-rollout.json": {
+    "bytes": 179527,
+    "sha256": "e513ca8ac0f8ff045692cf93775a0dac6fc8d3c539eae7a8622267d7cfebcbb7"
+  },
+  "components.xml": {
+    "bytes": 8445,
+    "sha256": "dab63db1bc0576e162e0d64eaaefb51ac34afc07746ee868af4aa5954d44111b"
+  },
+  "static-summary.json": {
+    "bytes": 68,
+    "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121"
+  },
+  "probe-measured.py.txt": {
+    "bytes": 5670,
+    "sha256": "4ff11fe287e44ca690dd83262b6e171e60377045402897d360d90b9c22542186"
+  },
+  "static.log": {
+    "bytes": 39366,
+    "sha256": "8be2979bfeb3cb71a9c5c808bcd1a5926cf197be60419ffb8e2f5d92e2dba725"
+  },
+  "ancestry.txt": {
+    "bytes": 1856,
+    "sha256": "5ecdc31e312cf174a923fa4970dcaaa676cf2105b5aae85dc43062b5550658a8"
+  },
+  "probe-1k-rollout.time": {
+    "bytes": 979,
+    "sha256": "9756e3a8a16c3d4749eaba90890d16c685a3ad07a109c4669a2c37855a503bcf"
+  },
+  "validation.json": {
+    "bytes": 51733,
+    "sha256": "34f86fc6b6c6c3759f8b4a56353fea02294a154630d3a690509aca33d1d99b5d"
+  },
+  "checkpoint-gate.xml": {
+    "bytes": 8743,
+    "sha256": "e244af3262a8276bc4b5f8e16ab025f4e4ada7f4cccef1c5d4a7f148c134fda6"
+  },
+  "fast.xml": {
+    "bytes": 23756,
+    "sha256": "10f6f2d22d16aa0dd2c60893ea07d9aa0ed3a08c9d00f4c5d426ada0bfb17eae"
+  },
+  "probe-1k-refresh.json": {
+    "bytes": 474682,
+    "sha256": "6f79410eb6d5e616d4e2febc3e1f1ac2f9db1582bfe96fd4a3e6c280fde8bdc3"
+  },
+  "checkpoint-json-zst.json": {
+    "bytes": 206950,
+    "sha256": "9ae98500a1f4ac4b41fe76321bc49b5da6ea097d45a1c1b39e707ca2510cb1d4"
+  },
+  "installed-candidate.log": {
+    "bytes": 1000,
+    "sha256": "5ae5d379a2acba4f3e2ac1dbec5f529d7c88a04429e227deba0b8b3b802f8a08"
+  },
+  "probe-1k-sharded.json": {
+    "bytes": 248124,
+    "sha256": "cce68031ab769d689df293604ee4d44339e4b57b2032711586cfd9432487bf84"
+  }
+}

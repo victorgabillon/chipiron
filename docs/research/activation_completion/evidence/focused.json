@@ -1,0 +1,161 @@
+{
+  "stale": {
+    "error_type": "GenerationPublicationError",
+    "error": "Stale or conflicting model activation request.",
+    "authority_unchanged": true
+  },
+  "invalid": {
+    "error_type": "InvalidMorpionPipelineArtifactError",
+    "error": "Morpion pipeline artifact field `patch_id` must be a string.",
+    "authority_unchanged": true
+  },
+  "stale_projection": {
+    "authority_unchanged": true,
+    "cold_restored_model": {
+      "generation": 2,
+      "local_trained_generation": 2,
+      "name": "linear_b",
+      "path": "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b",
+      "sha256": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+      "source": "local_training",
+      "source_generation": 2
+    }
+  },
+  "late": {
+    "before": {
+      "run_state_sha256": "8f8bc3c0da1b9a5a30f84ff177de7555aa1484b55ef8e9ffa62cf59ecf0f9247",
+      "generation": 2,
+      "nodes": 194,
+      "head": {
+        "accepted_dataset": {
+          "attempt_id": "8d337497b9ec48aeb27ab292d2bf30c3",
+          "descriptor_sha256": "410751b38ec55000e23aad71b8f5210d6f0e94156489d515fadad342dbc0ba9c"
+        },
+        "accepted_training": {
+          "attempt_id": "a349051175164d828df14c68fc99028c",
+          "descriptor_sha256": "b0a234fa8e7b2ddfd50663295a79775937f82bfd479f8ec169b663f654a86d7b"
+        },
+        "checkpoint_path": "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/checkpoint/generation_000002.sharded",
+        "descriptor_path": "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/.generation_publication_v3.json",
+        "descriptor_sha256": "a4e9965eef2ad5d565a1025bcd3e42930a0a8ef7457529815682a3b4380bd9d7",
+        "generation": 2,
+        "id": "0d15ff31c89d45ba837869f86dd774dd",
+        "parent_id": "981d54238c80451c8c9f76571bc6d335",
+        "publication_version": 3,
+        "scientific_identity": {
+          "checkpoint_sha256": "68c4409da4b56d08ad9347297786d90b6e559342245086576b80c18ba78c9ce8",
+          "generation_descriptor_sha256": "7895f18b081e0587bb8dfd84a42afb4f7a1036a15ce3caf2f62ce58f8315d149",
+          "generation_mapping": "growth-equals-scientific-from-1",
+          "growth_generation": 2,
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+              "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+              "objective": "maximum_total_moves",
+              "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "producer_sha256": "bec8bcbc6f0b59753f33ff67a3273f5b3994106349553b0e531958ecd120cb29",
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "source_format_kind": "morpion_closed_scientific_snapshot",
+          "source_format_version": 2,
+          "source_generation": 2,
+          "storage_layout_version": 1
+        },
+        "tree_snapshot_path": "generation_publications_v3/objects/0d15ff31c89d45ba837869f86dd774dd/scientific_snapshot/generation.json"
+      },
+      "model": {
+        "generation": 1,
+        "local_trained_generation": null,
+        "name": "seed",
+        "path": "seed",
+        "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+        "source": "external_seed",
+        "source_generation": 1
+      },
+      "workspace_epoch": {
+        "workspace_id": "d321bef8cd7549d89aa81aa82e84dd1b",
+        "epoch_id": "1f58629abede4a788250fe72f7b9488c"
+      }
+    },
+    "after": {
+      "run_state_sha256": "3a85d9cc6c616a216e989a2e94786e16b84bd8fafb6979f184625c9ed9db7e33",
+      "generation": 3,
+      "nodes": 194,
+      "head": {
+        "activation_request_sha256": "f67d8df9cd13f878565ddcca4a782f0911e9de25c56fd10b570bf2c59619b9e7",
+        "checkpoint_path": "generation_publications_v3/objects/1676b3285bf24e7eb525ee7ab62bf78f/checkpoint/generation_000003.sharded",
+        "descriptor_path": "generation_publications_v3/objects/1676b3285bf24e7eb525ee7ab62bf78f/.generation_publication_v3.json",
+        "descriptor_sha256": "bb0f03af1ce715cab532c3c48a4f33c982abf89eefdaf2b95e09e82bc58bb4b1",
+        "generation": 3,
+        "id": "1676b3285bf24e7eb525ee7ab62bf78f",
+        "parent_id": "0d15ff31c89d45ba837869f86dd774dd",
+        "publication_version": 3,
+        "scientific_identity": {
+          "checkpoint_sha256": "b37f5f26945e4928b4b2b806dff4794bd95fe41eed1b3ec18e399c7fe86bd069",
+          "generation_descriptor_sha256": "f3fbea767ccbd91209daff74f2ce0c4f9574faae2b2a70eda8f3a4381f6ced75",
+          "generation_mapping": "growth-equals-scientific-from-1",
+          "growth_generation": 3,
+          "producer": {
+            "api_sha256": {
+              "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+              "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+              "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+              "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+            },
+            "identity": {
+              "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+              "evaluator": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+              "objective": "maximum_total_moves",
+              "revision": "4ada24712dca95d1114d3e838a13c3447af998ac"
+            },
+            "packages": {
+              "algorhino-anemone": "0.2.26",
+              "atomheart": "0.2.11",
+              "chipiron": "0.2.4",
+              "valanga": "0.2.5"
+            },
+            "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+          },
+          "producer_sha256": "9644f444131765aab2611de811e64a1fcb8e46c61fa8350db22b9fec5dd4e5e2",
+          "scientific_contract": "anemone-values-canonical-morpion-1",
+          "source_format_kind": "morpion_closed_scientific_snapshot",
+          "source_format_version": 2,
+          "source_generation": 3,
+          "storage_layout_version": 1
+        },
+        "tree_snapshot_path": "generation_publications_v3/objects/1676b3285bf24e7eb525ee7ab62bf78f/scientific_snapshot/generation.json"
+      },
+      "model": {
+        "generation": 2,
+        "local_trained_generation": 2,
+        "name": "linear_b",
+        "path": "training_publications_v1/objects/a349051175164d828df14c68fc99028c/models/generation_000002/linear_b",
+        "sha256": "18e9fcd03e14b77de08156054a99855802b14309208d8d95231b5078c5bea8fb",
+        "source": "local_training",
+        "source_generation": 2
+      },
+      "workspace_epoch": {
+        "workspace_id": "d321bef8cd7549d89aa81aa82e84dd1b",
+        "epoch_id": "1f58629abede4a788250fe72f7b9488c"
+      }
+    },
+    "refusal": {
+      "error": "Model changed during proposal computation."
+    },
+    "producer_pid": 1068413
+  }
+}

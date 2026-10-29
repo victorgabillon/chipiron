@@ -1,0 +1,2086 @@
+{
+  "tool": "standard cProfile/pstats",
+  "interpretation": "inclusive nested function costs; overhead bearing; not unprofiled throughput samples; SQL/parser counters are in separate operation-timer passes",
+  "profiles": [
+    {
+      "size": "1k",
+      "case": "profile-detail-baseline-v2-g1",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-1k/profile-detail-baseline-v2-g1/cold.prof",
+      "sha256": "95a337143c9f08e82fce66ffe0e8dc9066763db5eb6d330130467a0df8637b8f",
+      "total_calls": 13208687,
+      "total_profiled_s": 6.283970417999994,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 8.6276e-05,
+            "cumulative_s": 6.303956071
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 0.000101737,
+            "cumulative_s": 0.008441613
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_s": 0.00021199100000000002,
+            "cumulative_s": 0.002229357
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.7915e-05,
+            "cumulative_s": 0.001776248
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 3.7299e-05,
+            "cumulative_s": 0.0028210070000000004
+          }
+        ],
+        "immutable_and_update_build": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 777,
+            "function": "_build_scientific_rows",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.015403051000000001,
+            "cumulative_s": 6.0995264360000006
+          }
+        ],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.0048949250000000005,
+            "cumulative_s": 0.023142919
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.000448018,
+            "cumulative_s": 2.7848863450000003
+          }
+        ],
+        "canonical_redump": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 465,
+            "function": "dump_state_ref",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.00040845400000000004,
+            "cumulative_s": 2.7427667330000003
+          }
+        ],
+        "canonical_order": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 312,
+            "function": "_ordered_played_moves",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.02084137,
+            "cumulative_s": 2.712791945
+          }
+        ],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 15974,
+            "total_calls": 15974,
+            "self_s": 0.0323349,
+            "cumulative_s": 5.313066063
+          }
+        ],
+        "graph_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 893,
+            "function": "_validate_scientific_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.001256479,
+            "cumulative_s": 0.041843526000000006
+          }
+        ],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.024958927000000002,
+            "cumulative_s": 0.036458121
+          }
+        ],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 1000,
+            "total_calls": 10987,
+            "self_s": 0.006157584000000001,
+            "cumulative_s": 0.008272161
+          }
+        ],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 4003,
+            "total_calls": 4003,
+            "self_s": 0.004339954,
+            "cumulative_s": 0.044596719
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "1k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-1k/profile-detail-baseline-v2-g2/cold.prof",
+      "sha256": "5464f77a435c70975568495e4985f6724f962426ec96ef5300c20389d91fd5dd",
+      "total_calls": 13209369,
+      "total_profiled_s": 6.421287258999999,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 8.3417e-05,
+            "cumulative_s": 6.4417086690000005
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 0.00011198800000000001,
+            "cumulative_s": 0.008242577000000001
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_s": 0.000238497,
+            "cumulative_s": 0.002278258
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.5214e-05,
+            "cumulative_s": 0.0020449820000000003
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.8267000000000004e-05,
+            "cumulative_s": 0.003309166
+          }
+        ],
+        "immutable_and_update_build": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 777,
+            "function": "_build_scientific_rows",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.016350062000000002,
+            "cumulative_s": 6.237353766
+          }
+        ],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.004839550000000001,
+            "cumulative_s": 0.022659396000000002
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.00046801300000000003,
+            "cumulative_s": 2.8493030540000004
+          }
+        ],
+        "canonical_redump": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 465,
+            "function": "dump_state_ref",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.00044749300000000003,
+            "cumulative_s": 2.803944054
+          }
+        ],
+        "canonical_order": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 312,
+            "function": "_ordered_played_moves",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.021859052,
+            "cumulative_s": 2.77261819
+          }
+        ],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 15974,
+            "total_calls": 15974,
+            "self_s": 0.033051638,
+            "cumulative_s": 5.430045697000001
+          }
+        ],
+        "graph_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 893,
+            "function": "_validate_scientific_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.001293824,
+            "cumulative_s": 0.042818332
+          }
+        ],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 1000,
+            "total_calls": 1000,
+            "self_s": 0.025375794,
+            "cumulative_s": 0.036930494
+          }
+        ],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 1000,
+            "total_calls": 10987,
+            "self_s": 0.006342286000000001,
+            "cumulative_s": 0.008581245000000001
+          }
+        ],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 4003,
+            "total_calls": 4003,
+            "self_s": 0.004520873,
+            "cumulative_s": 0.045793149000000005
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "1k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "reuse",
+      "file": "/tmp/morpion-v2-profile-new-1k/profile-detail-baseline-v2-g2/reuse.prof",
+      "sha256": "84a2c0bfefd16a4ba91871f9583cd546943d1be40c22852e693bd606d858ecfa",
+      "total_calls": 27141,
+      "total_profiled_s": 0.03556491800000001,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 7.4504e-05,
+            "cumulative_s": 0.035546847
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.5322000000000004e-05,
+            "cumulative_s": 0.004076008
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 1.1447e-05,
+            "cumulative_s": 0.000250478
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.4690000000000002e-05,
+            "cumulative_s": 0.001815193
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.8703000000000004e-05,
+            "cumulative_s": 0.002983971
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.004969063,
+            "cumulative_s": 0.023463964
+          }
+        ],
+        "canonical_decode": [],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [],
+        "graph_validation": [],
+        "value_contract_validation": [],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 2002,
+            "total_calls": 2002,
+            "self_s": 0.000583404,
+            "cumulative_s": 0.014131372000000001
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "1k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-1k/profile-detail-baseline-v2-g2/dataset.prof",
+      "sha256": "1279b367c986f27daf76deb841b26e8d29a402c5037248fec4f68e53a2cae804",
+      "total_calls": 11421124,
+      "total_profiled_s": 5.48912943599999,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 7.467900000000001e-05,
+            "cumulative_s": 0.036630075000000005
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_s": 0.000213725,
+            "cumulative_s": 0.017346963
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 1.1771000000000001e-05,
+            "cumulative_s": 0.00026655900000000003
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.4568e-05,
+            "cumulative_s": 0.0018222440000000002
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 3.951e-05,
+            "cumulative_s": 0.0030787090000000002
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.004835863,
+            "cumulative_s": 0.024072636
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.000671686,
+            "cumulative_s": 4.740331641
+          }
+        ],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 13036,
+            "total_calls": 13036,
+            "self_s": 0.028763849,
+            "cumulative_s": 4.528854276000001
+          }
+        ],
+        "graph_validation": [],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.140580286,
+            "cumulative_s": 0.20303272500000002
+          }
+        ],
+        "family_context": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 95,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.007301238000000001,
+            "cumulative_s": 0.224954813
+          }
+        ],
+        "representatives": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 180,
+            "function": "_resolve_representatives",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.002957818,
+            "cumulative_s": 0.0168939
+          }
+        ],
+        "family_construction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 235,
+            "function": "_build_family",
+            "primitive_calls": 500,
+            "total_calls": 500,
+            "self_s": 0.002503567,
+            "cumulative_s": 0.029757188
+          }
+        ],
+        "target_computation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/pv_family_targets.py",
+            "line": 157,
+            "function": "family_node_target",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.0015712730000000002,
+            "cumulative_s": 0.0027265870000000004
+          }
+        ],
+        "row_adjustment": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 291,
+            "function": "adjust_row",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.012501693000000001,
+            "cumulative_s": 0.118542355
+          }
+        ],
+        "summary": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 355,
+            "function": "summary",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.004141201000000001,
+            "cumulative_s": 2.5950540930000003
+          }
+        ],
+        "node_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 938,
+            "function": "_scientific_node",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.019063238,
+            "cumulative_s": 0.23622622100000001
+          }
+        ],
+        "node_lookup": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 1070,
+            "function": "_load_node",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.015845642,
+            "cumulative_s": 0.39977776800000003
+          }
+        ],
+        "row_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 202,
+            "function": "training_node_to_morpion_supervised_row",
+            "primitive_calls": 2000,
+            "total_calls": 2000,
+            "self_s": 0.006848652,
+            "cumulative_s": 4.776252311
+          }
+        ],
+        "validating_normalizer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 584,
+            "function": "_validate_and_normalize_state_ref_payload",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.006361544,
+            "cumulative_s": 4.764484232
+          }
+        ],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 2448,
+            "total_calls": 26898,
+            "self_s": 0.014246307000000001,
+            "cumulative_s": 0.018963011000000002
+          }
+        ],
+        "json_loads": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 299,
+            "function": "loads",
+            "primitive_calls": 19826,
+            "total_calls": 19826,
+            "self_s": 0.016263204,
+            "cumulative_s": 0.15085219700000002
+          }
+        ],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 6138,
+            "total_calls": 6138,
+            "self_s": 0.004258871,
+            "cumulative_s": 0.050881595
+          }
+        ],
+        "jsonl_writer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 414,
+            "function": "save_morpion_supervised_rows_streaming",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.002347399,
+            "cumulative_s": 2.5728497700000004
+          }
+        ],
+        "jsonl_record_serialization": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 774,
+            "function": "_write_jsonl_record",
+            "primitive_calls": 817,
+            "total_calls": 817,
+            "self_s": 0.001621231,
+            "cumulative_s": 0.029673787000000004
+          }
+        ],
+        "row_to_dict": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 758,
+            "function": "_row_to_dict",
+            "primitive_calls": 816,
+            "total_calls": 816,
+            "self_s": 0.001154627,
+            "cumulative_s": 0.007100221
+          }
+        ]
+      }
+    },
+    {
+      "size": "1k",
+      "case": "profile-detail-optimized-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-1k/profile-detail-optimized-v2-g2/dataset.prof",
+      "sha256": "12cc7db2c62b072b42122fc91a918b72f6b2b6160daf0bfc3d7ac6f2f737632c",
+      "total_calls": 1118972,
+      "total_profiled_s": 0.6392658770000001,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 9.1916e-05,
+            "cumulative_s": 0.034710382000000005
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_s": 0.00018921700000000001,
+            "cumulative_s": 0.016691366000000003
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 1.1375e-05,
+            "cumulative_s": 0.000275846
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.2796e-05,
+            "cumulative_s": 0.0017827490000000001
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 6.609e-05,
+            "cumulative_s": 0.0029915510000000003
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.004670541,
+            "cumulative_s": 0.022790802000000002
+          }
+        ],
+        "canonical_decode": [],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [],
+        "graph_validation": [],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.123907945,
+            "cumulative_s": 0.182665607
+          }
+        ],
+        "family_context": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 96,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.00689436,
+            "cumulative_s": 0.21601730600000002
+          }
+        ],
+        "representatives": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 181,
+            "function": "_resolve_representatives",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.002648609,
+            "cumulative_s": 0.015972848
+          }
+        ],
+        "family_construction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 236,
+            "function": "_build_family",
+            "primitive_calls": 500,
+            "total_calls": 500,
+            "self_s": 0.002349635,
+            "cumulative_s": 0.028062693000000003
+          }
+        ],
+        "target_computation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/pv_family_targets.py",
+            "line": 157,
+            "function": "family_node_target",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.001104371,
+            "cumulative_s": 0.0019826410000000003
+          }
+        ],
+        "row_adjustment": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 292,
+            "function": "adjust_row",
+            "primitive_calls": 1632,
+            "total_calls": 1632,
+            "self_s": 0.008070168,
+            "cumulative_s": 0.08792499200000001
+          }
+        ],
+        "summary": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 363,
+            "function": "summary",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.00286605,
+            "cumulative_s": 0.15660221800000002
+          }
+        ],
+        "node_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 938,
+            "function": "_scientific_node",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.015683747,
+            "cumulative_s": 0.21096309300000002
+          }
+        ],
+        "node_lookup": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 1070,
+            "function": "_load_node",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.013590223,
+            "cumulative_s": 0.353180255
+          }
+        ],
+        "row_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 202,
+            "function": "training_node_to_morpion_supervised_row",
+            "primitive_calls": 2000,
+            "total_calls": 2000,
+            "self_s": 0.004335744,
+            "cumulative_s": 0.019150317
+          }
+        ],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 2448,
+            "total_calls": 26898,
+            "self_s": 0.012453608000000001,
+            "cumulative_s": 0.016784321
+          }
+        ],
+        "json_loads": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 299,
+            "function": "loads",
+            "primitive_calls": 19826,
+            "total_calls": 19826,
+            "self_s": 0.014044515,
+            "cumulative_s": 0.12985348500000002
+          }
+        ],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 6138,
+            "total_calls": 6138,
+            "self_s": 0.003337931,
+            "cumulative_s": 0.042354694000000005
+          }
+        ],
+        "jsonl_writer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 421,
+            "function": "save_morpion_supervised_rows_streaming",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.0014979470000000001,
+            "cumulative_s": 0.16647852600000002
+          }
+        ],
+        "jsonl_record_serialization": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 781,
+            "function": "_write_jsonl_record",
+            "primitive_calls": 817,
+            "total_calls": 817,
+            "self_s": 0.001053441,
+            "cumulative_s": 0.020263931000000002
+          }
+        ],
+        "row_to_dict": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 765,
+            "function": "_row_to_dict",
+            "primitive_calls": 816,
+            "total_calls": 816,
+            "self_s": 0.000773276,
+            "cumulative_s": 0.006258662000000001
+          }
+        ]
+      }
+    },
+    {
+      "size": "5k",
+      "case": "profile-detail-baseline-v2-g1",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-5k/profile-detail-baseline-v2-g1/cold.prof",
+      "sha256": "f1bc24282b9d4a3183c83b2e3cb43a7f078b971a802ddb36f7c745bb7bcb9bc1",
+      "total_calls": 108737162,
+      "total_profiled_s": 52.780952308999964,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 8.6919e-05,
+            "cumulative_s": 52.916706892
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 0.00011319900000000001,
+            "cumulative_s": 0.037096481
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_s": 0.0008611010000000001,
+            "cumulative_s": 0.010212746
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.5795e-05,
+            "cumulative_s": 0.006537605
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 3.9808e-05,
+            "cumulative_s": 0.007645416
+          }
+        ],
+        "immutable_and_update_build": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 777,
+            "function": "_build_scientific_rows",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.090559945,
+            "cumulative_s": 52.552762567
+          }
+        ],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.027121956000000003,
+            "cumulative_s": 0.12005099100000001
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.0025763220000000002,
+            "cumulative_s": 24.957155751000002
+          }
+        ],
+        "canonical_redump": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 465,
+            "function": "dump_state_ref",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.002538369,
+            "cumulative_s": 24.560543998
+          }
+        ],
+        "canonical_order": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 312,
+            "function": "_ordered_played_moves",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.148754136,
+            "cumulative_s": 24.358185149
+          }
+        ],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 103644,
+            "total_calls": 103644,
+            "self_s": 0.23617427900000001,
+            "cumulative_s": 48.106411316000006
+          }
+        ],
+        "graph_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 893,
+            "function": "_validate_scientific_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.006147644000000001,
+            "cumulative_s": 0.101020575
+          }
+        ],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.130257163,
+            "cumulative_s": 0.18991163400000002
+          }
+        ],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 5000,
+            "total_calls": 66822,
+            "self_s": 0.038253204,
+            "cumulative_s": 0.051430181000000005
+          }
+        ],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 20003,
+            "total_calls": 20003,
+            "self_s": 0.024569281000000002,
+            "cumulative_s": 0.24253605500000003
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "5k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "cold",
+      "file": "/tmp/morpion-v2-profile-new-5k/profile-detail-baseline-v2-g2/cold.prof",
+      "sha256": "bd7b33c0d1d717f04e13b81947752a3db94efa18acaf1384b750d2ce68b623ed",
+      "total_calls": 108737844,
+      "total_profiled_s": 48.80502476600003,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 8.9034e-05,
+            "cumulative_s": 48.931973282
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 0.000121009,
+            "cumulative_s": 0.037435668000000005
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_s": 0.0007691870000000001,
+            "cumulative_s": 0.009458485
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.5552e-05,
+            "cumulative_s": 0.006868021
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.0612000000000004e-05,
+            "cumulative_s": 0.008162993
+          }
+        ],
+        "immutable_and_update_build": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 777,
+            "function": "_build_scientific_rows",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.081972953,
+            "cumulative_s": 48.572520746
+          }
+        ],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.026525836,
+            "cumulative_s": 0.118513962
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.002224953,
+            "cumulative_s": 22.969248247000003
+          }
+        ],
+        "canonical_redump": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 465,
+            "function": "dump_state_ref",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.0022414320000000002,
+            "cumulative_s": 22.687669337000003
+          }
+        ],
+        "canonical_order": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 312,
+            "function": "_ordered_played_moves",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.135285061,
+            "cumulative_s": 22.502702664
+          }
+        ],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 103644,
+            "total_calls": 103644,
+            "self_s": 0.21388300500000001,
+            "cumulative_s": 44.358856243000005
+          }
+        ],
+        "graph_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 893,
+            "function": "_validate_scientific_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.005992147000000001,
+            "cumulative_s": 0.10137217300000001
+          }
+        ],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 5000,
+            "total_calls": 5000,
+            "self_s": 0.127531161,
+            "cumulative_s": 0.185732536
+          }
+        ],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 5000,
+            "total_calls": 66822,
+            "self_s": 0.035842653,
+            "cumulative_s": 0.048030806
+          }
+        ],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 20003,
+            "total_calls": 20003,
+            "self_s": 0.022258882,
+            "cumulative_s": 0.227373387
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "5k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "reuse",
+      "file": "/tmp/morpion-v2-profile-new-5k/profile-detail-baseline-v2-g2/reuse.prof",
+      "sha256": "f075f8117772fa8a6a909b87d9db0adf4f54eb543fc1db54dada813dd4b9c2e3",
+      "total_calls": 115313,
+      "total_profiled_s": 0.16033831200000004,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 8.136200000000001e-05,
+            "cumulative_s": 0.160317747
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 6.3038e-05,
+            "cumulative_s": 0.019761530000000003
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 2.1206e-05,
+            "cumulative_s": 0.00031961500000000004
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.7303e-05,
+            "cumulative_s": 0.006969444000000001
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.1393e-05,
+            "cumulative_s": 0.00822744
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.025116769,
+            "cumulative_s": 0.11870149
+          }
+        ],
+        "canonical_decode": [],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [],
+        "graph_validation": [],
+        "value_contract_validation": [],
+        "family_context": [],
+        "representatives": [],
+        "family_construction": [],
+        "target_computation": [],
+        "row_adjustment": [],
+        "summary": [],
+        "node_reconstruction": [],
+        "node_lookup": [],
+        "row_reconstruction": [],
+        "validating_normalizer": [],
+        "json_normalizer": [],
+        "json_loads": [],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 10002,
+            "total_calls": 10002,
+            "self_s": 0.0029594540000000003,
+            "cumulative_s": 0.071275689
+          }
+        ],
+        "jsonl_writer": [],
+        "jsonl_record_serialization": [],
+        "row_to_dict": []
+      }
+    },
+    {
+      "size": "5k",
+      "case": "profile-detail-baseline-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-5k/profile-detail-baseline-v2-g2/dataset.prof",
+      "sha256": "a414c0825b98ee7923a6a562535e8975191e4b275ba2ffa964a643812941e649",
+      "total_calls": 92102601,
+      "total_profiled_s": 41.340732990999996,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 7.533400000000001e-05,
+            "cumulative_s": 0.15906013800000002
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_s": 0.000248895,
+            "cumulative_s": 0.076963218
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 1.7251e-05,
+            "cumulative_s": 0.00034147100000000004
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.6454000000000002e-05,
+            "cumulative_s": 0.006915109
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 4.1697000000000004e-05,
+            "cumulative_s": 0.00819168
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.025927930000000002,
+            "cumulative_s": 0.118830664
+          }
+        ],
+        "canonical_decode": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 469,
+            "function": "load_state_ref",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.0033470830000000003,
+            "cumulative_s": 37.734815915000006
+          }
+        ],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+            "line": 302,
+            "function": "_apply_move",
+            "primitive_calls": 84512,
+            "total_calls": 84512,
+            "self_s": 0.18293964100000001,
+            "cumulative_s": 36.498390165
+          }
+        ],
+        "graph_validation": [],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.6831785020000001,
+            "cumulative_s": 0.9931182550000001
+          }
+        ],
+        "family_context": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 95,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.036318301000000004,
+            "cumulative_s": 1.1295795990000002
+          }
+        ],
+        "representatives": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 180,
+            "function": "_resolve_representatives",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.01309498,
+            "cumulative_s": 0.081917971
+          }
+        ],
+        "family_construction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 235,
+            "function": "_build_family",
+            "primitive_calls": 2500,
+            "total_calls": 2500,
+            "self_s": 0.011875124,
+            "cumulative_s": 0.13817549
+          }
+        ],
+        "target_computation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/pv_family_targets.py",
+            "line": 157,
+            "function": "family_node_target",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.007428522000000001,
+            "cumulative_s": 0.012725410000000001
+          }
+        ],
+        "row_adjustment": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 291,
+            "function": "adjust_row",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.060770519,
+            "cumulative_s": 0.591958997
+          }
+        ],
+        "summary": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 355,
+            "function": "summary",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.019838523,
+            "cumulative_s": 19.983832716000002
+          }
+        ],
+        "node_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 938,
+            "function": "_scientific_node",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.09346522800000001,
+            "cumulative_s": 1.153538956
+          }
+        ],
+        "node_lookup": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 1070,
+            "function": "_load_node",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.079504246,
+            "cumulative_s": 1.956904795
+          }
+        ],
+        "row_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 202,
+            "function": "training_node_to_morpion_supervised_row",
+            "primitive_calls": 10000,
+            "total_calls": 10000,
+            "self_s": 0.032326336000000004,
+            "cumulative_s": 37.921846003
+          }
+        ],
+        "validating_normalizer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 584,
+            "function": "_validate_and_normalize_state_ref_payload",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.034505936,
+            "cumulative_s": 37.864743281
+          }
+        ],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 12231,
+            "total_calls": 163461,
+            "self_s": 0.079407188,
+            "cumulative_s": 0.105692008
+          }
+        ],
+        "json_loads": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 299,
+            "function": "loads",
+            "primitive_calls": 99121,
+            "total_calls": 99121,
+            "self_s": 0.078503205,
+            "cumulative_s": 0.725950125
+          }
+        ],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 30660,
+            "total_calls": 30660,
+            "self_s": 0.020807726000000002,
+            "cumulative_s": 0.247911118
+          }
+        ],
+        "jsonl_writer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 414,
+            "function": "save_morpion_supervised_rows_streaming",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.011182975000000001,
+            "cumulative_s": 19.853451097
+          }
+        ],
+        "jsonl_record_serialization": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 774,
+            "function": "_write_jsonl_record",
+            "primitive_calls": 4078,
+            "total_calls": 4078,
+            "self_s": 0.00781899,
+            "cumulative_s": 0.145061287
+          }
+        ],
+        "row_to_dict": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 758,
+            "function": "_row_to_dict",
+            "primitive_calls": 4077,
+            "total_calls": 4077,
+            "self_s": 0.005635614000000001,
+            "cumulative_s": 0.039199345000000003
+          }
+        ]
+      }
+    },
+    {
+      "size": "5k",
+      "case": "profile-detail-optimized-v2-g2",
+      "mode": "dataset",
+      "file": "/tmp/morpion-v2-profile-new-5k/profile-detail-optimized-v2-g2/dataset.prof",
+      "sha256": "d4d65e399d4a415426f92384ec5eeaa3ab948cd1e63d376d40a112a40b74bc46",
+      "total_calls": 5739291,
+      "total_profiled_s": 3.2506876860000014,
+      "functions": {
+        "constructor": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 354,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.00010240600000000001,
+            "cumulative_s": 0.159661424
+          }
+        ],
+        "source_hashing": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 584,
+            "function": "_source_identity",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_s": 0.000261757,
+            "cumulative_s": 0.078241749
+          }
+        ],
+        "surrogate_preflight": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 75,
+            "function": "_has_surrogate_escape",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_s": 1.8160000000000002e-05,
+            "cumulative_s": 0.000324956
+          }
+        ],
+        "manifest_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 230,
+            "function": "_scientific_manifest",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_s": 1.5832e-05,
+            "cumulative_s": 0.006891606000000001
+          }
+        ],
+        "source_preparation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 487,
+            "function": "_prepare_scientific_source",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 3.953e-05,
+            "cumulative_s": 0.008080656
+          }
+        ],
+        "immutable_and_update_build": [],
+        "cache_digest": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 761,
+            "function": "_cache_digest",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.025315028000000003,
+            "cumulative_s": 0.11841237900000001
+          }
+        ],
+        "canonical_decode": [],
+        "canonical_redump": [],
+        "canonical_order": [],
+        "replay_steps": [],
+        "graph_validation": [],
+        "value_contract_validation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py",
+            "line": 485,
+            "function": "_validate_update",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.6295599150000001,
+            "cumulative_s": 0.9211515950000001
+          }
+        ],
+        "family_context": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 96,
+            "function": "__init__",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.034894094,
+            "cumulative_s": 1.088787836
+          }
+        ],
+        "representatives": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 181,
+            "function": "_resolve_representatives",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.013397027,
+            "cumulative_s": 0.083100173
+          }
+        ],
+        "family_construction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 236,
+            "function": "_build_family",
+            "primitive_calls": 2500,
+            "total_calls": 2500,
+            "self_s": 0.011874461000000001,
+            "cumulative_s": 0.13962154000000002
+          }
+        ],
+        "target_computation": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/pv_family_targets.py",
+            "line": 157,
+            "function": "family_node_target",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.005545556,
+            "cumulative_s": 0.009914510000000001
+          }
+        ],
+        "row_adjustment": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 292,
+            "function": "adjust_row",
+            "primitive_calls": 8154,
+            "total_calls": 8154,
+            "self_s": 0.040174239,
+            "cumulative_s": 0.47050999400000004
+          }
+        ],
+        "summary": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/streaming_dataset.py",
+            "line": 363,
+            "function": "summary",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.014436272000000002,
+            "cumulative_s": 0.7967323850000001
+          }
+        ],
+        "node_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 938,
+            "function": "_scientific_node",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.076433122,
+            "cumulative_s": 1.061553859
+          }
+        ],
+        "node_lookup": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py",
+            "line": 1070,
+            "function": "_load_node",
+            "primitive_calls": 25000,
+            "total_calls": 25000,
+            "self_s": 0.068527612,
+            "cumulative_s": 1.781120674
+          }
+        ],
+        "row_reconstruction": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 202,
+            "function": "training_node_to_morpion_supervised_row",
+            "primitive_calls": 10000,
+            "total_calls": 10000,
+            "self_s": 0.0217906,
+            "cumulative_s": 0.10544455400000001
+          }
+        ],
+        "validating_normalizer": [],
+        "json_normalizer": [
+          {
+            "file": "/tmp/chipiron-dataset-ci-venv/lib/python3.13/site-packages/anemone/checkpoints/io.py",
+            "line": 96,
+            "function": "checkpoint_payload_to_jsonable",
+            "primitive_calls": 12231,
+            "total_calls": 163461,
+            "self_s": 0.072774858,
+            "cumulative_s": 0.097946926
+          }
+        ],
+        "json_loads": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 299,
+            "function": "loads",
+            "primitive_calls": 99121,
+            "total_calls": 99121,
+            "self_s": 0.07129368700000001,
+            "cumulative_s": 0.6545536550000001
+          }
+        ],
+        "json_dumps": [
+          {
+            "file": "/home/pompote/miniconda3/lib/python3.13/json/__init__.py",
+            "line": 183,
+            "function": "dumps",
+            "primitive_calls": 30660,
+            "total_calls": 30660,
+            "self_s": 0.01671903,
+            "cumulative_s": 0.21696173900000001
+          }
+        ],
+        "jsonl_writer": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 421,
+            "function": "save_morpion_supervised_rows_streaming",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_s": 0.007831982000000001,
+            "cumulative_s": 0.8821821120000001
+          }
+        ],
+        "jsonl_record_serialization": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 781,
+            "function": "_write_jsonl_record",
+            "primitive_calls": 4078,
+            "total_calls": 4078,
+            "self_s": 0.005333846000000001,
+            "cumulative_s": 0.112026333
+          }
+        ],
+        "row_to_dict": [
+          {
+            "file": "/tmp/chipiron-scientific-v2-reader-profile/src/chipiron/environments/morpion/learning/tree_to_dataset.py",
+            "line": 765,
+            "function": "_row_to_dict",
+            "primitive_calls": 4077,
+            "total_calls": 4077,
+            "self_s": 0.0040000370000000006,
+            "cumulative_s": 0.036206452
+          }
+        ]
+      }
+    }
+  ]
+}

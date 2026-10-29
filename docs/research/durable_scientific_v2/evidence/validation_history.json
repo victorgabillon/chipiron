@@ -1,0 +1,33 @@
+{
+  "strict_static_final": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "development_logs_retained": [
+    "crash-first.log",
+    "crash-second.log",
+    "crash-third.log",
+    "first-tests.log",
+    "focused-final.log",
+    "focused.log",
+    "layering-tests.log",
+    "managed-second.log",
+    "second-tests.log",
+    "static-final.log",
+    "static-second.log",
+    "static.log"
+  ],
+  "successful_focused": [
+    "focused-final.log: 169 passed",
+    "genesis-tests.log: 5 passed"
+  ],
+  "ci": "full-ci.log: 2130 passed, 2 skipped in 671.24s",
+  "notes": [
+    "Early fixture assertions/signatures/imports corrected before implementation commit.",
+    "Five child imports in focused.log encountered an in-progress refactor; that batch was invalidated and rerun against fixed source.",
+    "No production source changed after wheel build; all 470 installed files match implementation commit.",
+    "No tests/baselines/suppressions weakened."
+  ]
+}

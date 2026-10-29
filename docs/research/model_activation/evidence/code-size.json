@@ -1,0 +1,13 @@
+{
+  "description": "Oracle, resource driver and executable regression witnesses only; no production API or persistent authority introduced.",
+  "production_lines_added": 0,
+  "production_lines_changed": 0,
+  "production_lines_removed": 0,
+  "research_python_lines": {
+    "docs/research/model_activation/measure.py": 289,
+    "docs/research/model_activation/probe.py": 202,
+    "docs/research/model_activation/test_contract.py": 357,
+    "docs/research/model_activation/test_science.py": 136
+  },
+  "research_python_total": 984
+}

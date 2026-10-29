@@ -1,0 +1,526 @@
+{
+  "action": "read-only",
+  "activation_completion_evidence": [
+    {
+      "descriptor_path": "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/.generation_publication_v3.json",
+      "descriptor_sha256": "0ca228aa2a6fc84a45ad771b4f87c0ce4fb0a11f5ee37817f81a8d8d96ca6407",
+      "generation": 4,
+      "historical_payload_required_for_acknowledgement": false,
+      "request_sha256": "8c3bce5e47be3a2f7a325713a31c0153e07220e5ab93d3e758f7344b87adbe85"
+    },
+    {
+      "descriptor_path": "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/.generation_publication_v3.json",
+      "descriptor_sha256": "ed34d74d851bea5b841b3bc4b652b4337848fd205b4c9c98fdcb7934b74b3ec6",
+      "generation": 7,
+      "historical_payload_required_for_acknowledgement": false,
+      "request_sha256": "bb5edb2b56b8690f0f688059510bf9f2fff0db202b831eef69fdf2c1e7fd1e76"
+    }
+  ],
+  "active_root_bytes": 1303,
+  "blockers": [],
+  "capsule_unique_file_blocks": 2519040,
+  "conditional_candidates": [],
+  "conditional_reclaimable_file_blocks": 0,
+  "conditional_reclaimable_file_bytes": 0,
+  "conditional_reclaimable_files": [],
+  "current_contract_reclaimable_bytes": 0,
+  "current_publication_metadata_bytes": 17155,
+  "deletion_authorized": false,
+  "generations": [
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/.generation_publication_v3.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/bootstrap_config.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/manifest.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/metadata.json.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/selector/selector.json.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/checkpoint/genesis-checkpoint/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 1,
+      "id": "7c52cc9afbc3441ebc174f9a8099cf82",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "explicit-scientific-retention"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/.generation_publication_v3.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/bootstrap_config.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/manifest.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/5ca5ffca4f4e4941bf0407a7199abb93/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 2,
+      "id": "5ca5ffca4f4e4941bf0407a7199abb93",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-source-conservative",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/.generation_publication_v3.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/bootstrap_config.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/manifest.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/7730e8d67d854b84a4006de38c97bbab/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 3,
+      "id": "7730e8d67d854b84a4006de38c97bbab",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/.generation_publication_v3.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/bootstrap_config.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/manifest.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_manifest.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_regressor_args.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.pt",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_manifest.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/morpion_regressor_args.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3/param.pt",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 4,
+      "id": "6d3b6a8be6814b44a9c8044a9534cf52",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "seed",
+          "path": "models/e3d4078a89b782b0a5f0a4199f3ae083f2f013c12a86804fa8982f0a5c4c8af3",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        },
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_b",
+          "path": "models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a",
+          "sha256": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-model-lookup"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/.generation_publication_v3.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/bootstrap_config.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/manifest.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_manifest.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_regressor_args.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.pt",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/e904b686c05d478bb27bfcfdffafee96/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 5,
+      "id": "e904b686c05d478bb27bfcfdffafee96",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_b",
+          "path": "models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a",
+          "sha256": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-source-conservative",
+        "authoritative-accepted-cursor",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative",
+        "exact-receipt-model-lookup"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/.generation_publication_v3.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/bootstrap_config.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/manifest.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_manifest.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_regressor_args.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.pt",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/b2e6557a58144fd69d42aed26590426d/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 6,
+      "id": "b2e6557a58144fd69d42aed26590426d",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_b",
+          "path": "models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a",
+          "sha256": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable",
+        "exact-receipt-checkpoint-conservative",
+        "exact-receipt-model-lookup"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/.generation_publication_v3.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/bootstrap_config.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/manifest.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/morpion_manifest.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/morpion_regressor_args.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/param.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/param.pt",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_manifest.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/morpion_regressor_args.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a/param.pt",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 7,
+      "id": "4cd92f2f63d7402491dae8c59cc2ffbf",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/339b15acfcda497db6bef85489ace919/models/generation_000002/linear_b",
+          "path": "models/8b18bd76ab29473223114d63f87a235ca81ae6431c823021ccb317e8d3924e2a",
+          "sha256": "8771aa7b0c936a18526bda0d6ef3176440977ca651cfdac89172be27f823e8d2",
+          "source": "local_training",
+          "source_generation": 2
+        },
+        {
+          "generation": 5,
+          "local_trained_generation": 5,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cfa23429d9c34aa6819f7fbe76e6711c/models/generation_000005/linear_b",
+          "path": "models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58",
+          "sha256": "bd587e402189ba1db6c6c72fb9586bb69f7e0577847ab563124849e4f8c7a334",
+          "source": "local_training",
+          "source_generation": 5
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable",
+        "exact-receipt-model-lookup"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/.generation_publication_v3.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/bootstrap_config.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/manifest.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/morpion_manifest.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/morpion_regressor_args.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/param.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58/param.pt",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/scientific_snapshot/records.jsonl",
+        "generation_publications_v3/objects/24236e3643f44478b43909df4670c748/scientific_snapshot/updates.jsonl"
+      ],
+      "generation": 8,
+      "id": "24236e3643f44478b43909df4670c748",
+      "models": [
+        {
+          "generation": 5,
+          "local_trained_generation": 5,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cfa23429d9c34aa6819f7fbe76e6711c/models/generation_000005/linear_b",
+          "path": "models/325d280d62d0f3a70f54343e8fc6e9a5c3d5633bfabff83f688bad41f07a2e58",
+          "sha256": "bd587e402189ba1db6c6c72fb9586bb69f7e0577847ab563124849e4f8c7a334",
+          "source": "local_training",
+          "source_generation": 5
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "current-crash-recovery",
+        "pending-patch",
+        "exact-receipt-model-lookup"
+      ],
+      "rolling_required": true
+    }
+  ],
+  "limitations": [
+    "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
+    "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
+    "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
+    "Exact receipt model lookup still validates its historical capsule scan; alternate model copies do not authorize skipping it.",
+    "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
+    "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
+    "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing."
+  ],
+  "outside_capsules": "all retained; not inventoried for reclamation",
+  "proposed_active_roots": {
+    "additional": [
+      {
+        "descriptor_sha256": "ad6a4ffd180391089e502323abffa288b6cc4676a5c675571c724202abec104a",
+        "generation": 1,
+        "id": "7c52cc9afbc3441ebc174f9a8099cf82"
+      },
+      {
+        "descriptor_sha256": "d487874941952ca1fcfd598ac482dec0ae51605568484e67b4bc440802f7e4da",
+        "generation": 2,
+        "id": "5ca5ffca4f4e4941bf0407a7199abb93"
+      },
+      {
+        "descriptor_sha256": "6c30d4b0dfd1a2c8b643c7c3b23c504c0bfa6af0894842173c6cb2f5c258e87e",
+        "generation": 3,
+        "id": "7730e8d67d854b84a4006de38c97bbab"
+      },
+      {
+        "descriptor_sha256": "0ca228aa2a6fc84a45ad771b4f87c0ce4fb0a11f5ee37817f81a8d8d96ca6407",
+        "generation": 4,
+        "id": "6d3b6a8be6814b44a9c8044a9534cf52"
+      },
+      {
+        "descriptor_sha256": "35b322f3d6f7fcafbb5bdd9e4a815a78748db753717010bb6f494454772a0e84",
+        "generation": 5,
+        "id": "e904b686c05d478bb27bfcfdffafee96"
+      }
+    ],
+    "capsule_publication_version": 3,
+    "contract": "morpion-rolling-recovery-roots-draft",
+    "current": {
+      "descriptor_sha256": "7b3333dbfbd2b5d68135fa5b69700ced0d631161febdf7184756930a64bc9f20",
+      "generation": 8,
+      "id": "24236e3643f44478b43909df4670c748"
+    },
+    "rollback_candidates": [
+      {
+        "descriptor_sha256": "88f0c3adfd5acc72f01592eb75cb43d8f9aedd846d736103375b2eadd94515b8",
+        "generation": 6,
+        "id": "b2e6557a58144fd69d42aed26590426d"
+      },
+      {
+        "descriptor_sha256": "ed34d74d851bea5b841b3bc4b652b4337848fd205b4c9c98fdcb7934b74b3ec6",
+        "generation": 7,
+        "id": "4cd92f2f63d7402491dae8c59cc2ffbf"
+      }
+    ],
+    "schema_version": 1
+  },
+  "receipt_count": 2,
+  "receipt_metadata_bytes": 1753,
+  "report_version": 1,
+  "retained_commitment_files": [
+    "generation_publications_v3/objects/4cd92f2f63d7402491dae8c59cc2ffbf/.generation_publication_v3.json",
+    "generation_publications_v3/objects/6d3b6a8be6814b44a9c8044a9534cf52/.generation_publication_v3.json",
+    "generation_publications_v3/objects/7c52cc9afbc3441ebc174f9a8099cf82/.generation_publication_v3.json"
+  ],
+  "retained_control_files": {
+    "pipeline/active_model.json": "657f76d23ddd0a496c176db9b4fcda467e56c2e5e2fe1b8b67b5024a7b4fe2b2",
+    "pipeline/generation_000001/manifest.json": "71d5b658859479776578ed72eab820eb7bb7a12c59ef7edd1f918271b06db60c",
+    "pipeline/generation_000002/dataset_status.json": "c24c24297ca496b8e2c0cfeaa995aa116c80e877f533063a87798508b3a37c41",
+    "pipeline/generation_000002/manifest.json": "0b0f154e00b55fef1b98f78ff907b7d2c61507ba0f618b0bf941418ad1e06797",
+    "pipeline/generation_000002/training_status.json": "f36158259acd4a8ef3248a1ffdb991f0b6254617af6f68a57e5b4e7d8ff363f5",
+    "pipeline/generation_000003/manifest.json": "11ef0c9b40974a5274fd0667da667e8315d60a0980bdfa352f8e20f57f8fee57",
+    "pipeline/generation_000004/manifest.json": "616d1ed63a64f756bbaefd77bcb662190937c26dfc94fcc5172370bb06178504",
+    "pipeline/generation_000005/dataset_status.json": "efd30a75a581cead9ffb142be0c448e83d2085bafd99082f52029f3096822012",
+    "pipeline/generation_000005/manifest.json": "c98b9e9be4d5a8bdd06b171f08ae531b6b5afae84a2274f4a7e66cad3da15194",
+    "pipeline/generation_000005/training_status.json": "21dab358141690b9af7d9b2bf57233120130c6318e7afe862a35ee82a6a2da13",
+    "pipeline/generation_000006/manifest.json": "81d358a9dc4d7b1af7205e9171ea9e61c01bb7f06e230dfe23c982451178c230",
+    "pipeline/generation_000007/manifest.json": "c8e2e4f57ce00f6a9631f73e6d95e41eef8025d2654e82d03587b05b3363edd8",
+    "pipeline/generation_000008/manifest.json": "34eec46621440ba253c98612560c08015c30d9cc6c1f284d22c6683e68361ad1",
+    "pipeline/latest_linoo_selection_table.json": "44940999ade964de2a63f07593383b19618acd49ddcac0dd1b977133f21e3c5c",
+    "pipeline/reevaluation_patch.json": "90fa4171abd57119288be5b7fbd1674632f23343b4bf77d033f4bebd6dc093bf",
+    "run_state.json": "104a38a3113ef4694f005d8516cd5bd1dc7d3c32ec5fd52b40f640c28723b858"
+  },
+  "scientific_unique_file_blocks": 1826816,
+  "source_run_state_sha256": "104a38a3113ef4694f005d8516cd5bd1dc7d3c32ec5fd52b40f640c28723b858",
+  "validated": true
+}

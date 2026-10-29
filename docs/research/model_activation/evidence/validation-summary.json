@@ -1,0 +1,40 @@
+{
+  "earlier_harness_issues": [
+    "Restore used mismatched branch limit; corrected to identical configuration.",
+    "Ordered child-link fingerprint differed after restore; now retained separately from edge-set identity.",
+    "Existing regression first invocation failed at temporary-directory setup; writable secondary-disk location used for successful run."
+  ],
+  "full_ci_run": false,
+  "new_activation_death_matrix": "Required before implementing/enabling activation; not yet built.",
+  "production_activation_tested": false,
+  "reason": "Investigation only; 476 production files match validated dc142573 exactly. Focused existing regressions and new executable research tests run.",
+  "ruff": "All checks passed; four Python files already formatted",
+  "suites": {
+    "existing-regressions": {
+      "by_module": {
+        "tests.environments.test_morpion_atomic_reevaluation": 31,
+        "tests.environments.test_morpion_atomic_reevaluation_crashes": 32,
+        "tests.environments.test_morpion_atomic_reevaluation_science": 38,
+        "tests.environments.test_morpion_checkpoint_parity": 8,
+        "tests.environments.test_morpion_durable_closed_crashes": 28,
+        "tests.environments.test_morpion_durable_closed_science": 44,
+        "tests.environments.test_morpion_durable_closed_snapshot": 48,
+        "tests.environments.test_morpion_value_certainty": 96
+      },
+      "errors": 0,
+      "failures": 0,
+      "seconds": 361.11,
+      "tests": 325
+    },
+    "research-tests": {
+      "by_module": {
+        "docs.research.model_activation.test_contract": 17,
+        "docs.research.model_activation.test_science": 45
+      },
+      "errors": 0,
+      "failures": 0,
+      "seconds": 46.419,
+      "tests": 62
+    }
+  }
+}

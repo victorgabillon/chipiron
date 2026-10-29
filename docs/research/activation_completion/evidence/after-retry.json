@@ -1,0 +1,812 @@
+{
+  "operation": "retry",
+  "implementation": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/src/chipiron/__init__.py",
+  "generation": 8,
+  "authority_sha256": "a397a5f72af5005aa7ed6a8b966b834c26a531ae43166e638fbddb5ce3635d84",
+  "authority_bytes": 31531,
+  "authority_unchanged": true,
+  "peak_rss_mib": 293.00390625,
+  "uninstrumented_seconds": [
+    0.060090316997957416,
+    0.05195439700037241,
+    0.042567821001284756,
+    0.04437383900221903,
+    0.04328300300403498
+  ],
+  "median_seconds": 0.04437383900221903,
+  "five_call_costs": {
+    "cpu_user_s": 0.12507499999999983,
+    "cpu_system_s": 0.033937999999999996,
+    "io": {
+      "rchar": 16472121,
+      "wchar": 1990,
+      "syscr": 3212,
+      "syscw": 5,
+      "read_bytes": 0,
+      "write_bytes": 20480,
+      "cancelled_write_bytes": 0
+    }
+  },
+  "workspace_disk": {
+    "files": 235,
+    "logical_bytes": 2967781,
+    "allocated_bytes": 3366912
+  },
+  "profile_file_hash_calls": 190,
+  "profile_file_hash_bytes": 2912232,
+  "profile_hashed_files": [
+    {
+      "path": "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json",
+      "bytes": 12609
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/training_export/builders.py",
+      "bytes": 27859
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/node_evaluation/common/value_snapshot.py",
+      "bytes": 2474
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/node_evaluation/common/canonical_value.py",
+      "bytes": 9132
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+      "bytes": 22913
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+      "bytes": 8789
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.publication_attempt_v1.json",
+      "bytes": 117
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/bootstrap_config.json",
+      "bytes": 5627
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/records.jsonl",
+      "bytes": 43997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/updates.jsonl",
+      "bytes": 263095
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_manifest.json",
+      "bytes": 17577
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/morpion_regressor_args.json",
+      "bytes": 1554
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.json",
+      "bytes": 1212
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/models/0132753f65968b84e8e78ad0f0790dce543b0a75c6b6ec610eacb2f09bfb8999/param.pt",
+      "bytes": 1941
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/scientific_snapshot/generation.json",
+      "bytes": 1545
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+      "bytes": 997
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/manifest.json",
+      "bytes": 1730
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/metadata.json.zst",
+      "bytes": 7002
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+      "bytes": 18726
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+      "bytes": 6093
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+      "bytes": 2115
+    },
+    {
+      "path": "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+      "bytes": 6350
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/training_export/builders.py",
+      "bytes": 27859
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/node_evaluation/common/value_snapshot.py",
+      "bytes": 2474
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/anemone/node_evaluation/common/canonical_value.py",
+      "bytes": 9132
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/venv/lib/python3.13/site-packages/atomheart/games/morpion/checkpoints.py",
+      "bytes": 22913
+    }
+  ],
+  "profile_descriptor_reads": [
+    "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json",
+    "generation_publications_v3/objects/42fee54987004ab084dd85ae7fb15ba7/.generation_publication_v3.json"
+  ],
+  "historical_descriptors_opened": [
+    "generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/.generation_publication_v3.json"
+  ],
+  "historical_payload_files_hashed": []
+}

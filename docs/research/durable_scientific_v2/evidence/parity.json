@@ -1,0 +1,26 @@
+{
+  "before_source": "9b08cdf77202cca07f41c1ade4aad9e737e647e6",
+  "after_source": "27fa302a7768d55776a6b58d025d1cc1ae518e8b",
+  "decisions": 3780,
+  "legacy_decisions": 1890,
+  "enabled_v2_decisions": 1050,
+  "gated_v2_decisions": 840,
+  "entire_case_outputs_equal": true,
+  "family_counterexample_equal": true,
+  "paired_supervised_jsonl_files": 8820,
+  "paired_source_jsonl_files": 10,
+  "source_files_equal": 24,
+  "patch_differences": [
+    [
+      "/rows/0/metadata/model_bundle_path",
+      "/tmp/morpion-durable-v2-evidence/confidence-before/model",
+      "/tmp/morpion-durable-v2-evidence/confidence-after/model"
+    ],
+    [
+      "/rows/1/metadata/model_bundle_path",
+      "/tmp/morpion-durable-v2-evidence/confidence-before/model",
+      "/tmp/morpion-durable-v2-evidence/confidence-after/model"
+    ]
+  ],
+  "note": "The unchanged fixture retains its fixed producer/revision label; actual executing code SHAs are separately pinned. Patch scratch model paths differ; the managed worker tests compare literal same-source/same-model patch bytes."
+}

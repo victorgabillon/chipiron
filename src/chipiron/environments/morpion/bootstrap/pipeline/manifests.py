@@ -3,9 +3,19 @@
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from chipiron.environments.morpion.bootstrap.dataset_publication import (
+    enabled,
+    project_dataset,
+)
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    manifest_read_pin,
+    require,
+    validate_manifest_publication,
+)
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     MorpionPipelineDatasetStatus,
     MorpionPipelineDatasetStatusArtifact,
@@ -20,6 +30,7 @@ from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
     from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
@@ -77,7 +88,60 @@ def load_generation_manifest(
     generation: int,
 ) -> MorpionPipelineGenerationManifest:
     """Load the persisted pipeline manifest for one generation."""
-    return load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    manifest = load_pipeline_manifest(pipeline_manifest_path(paths, generation))
+    validate_manifest_publication(paths.work_dir, manifest)
+    return manifest
+
+
+@contextmanager
+def pinned_generation_manifest(
+    *, paths: MorpionBootstrapPaths, generation: int
+) -> Iterator[MorpionPipelineGenerationManifest]:
+    """Keep one selected generation pinned through its consuming operation."""
+    path = pipeline_manifest_path(paths, generation)
+    state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.exists()
+        else None
+    )
+    fenced = state is not None and enabled(state)
+    manifest = load_pipeline_manifest(path) if path.exists() else None
+    if fenced:
+        assert state is not None
+        manifest = project_dataset(paths, state, generation, manifest)
+    require(manifest is not None, "Missing selected generation discovery manifest.")
+    assert manifest is not None
+    require(
+        manifest.generation == generation, "Selected discovery generation mismatch."
+    )
+    with manifest_read_pin(paths.work_dir, manifest):
+        if fenced:
+            # Re-observe acceptance while holding the scientific lifetime pin.
+            state = load_bootstrap_run_state(paths.run_state_path)
+            manifest = project_dataset(
+                paths, state, generation, manifest, verify_rows=True
+            )
+        from chipiron.environments.morpion.bootstrap.training_publication import (
+            enabled as training_enabled,
+        )
+        from chipiron.environments.morpion.bootstrap.training_publication import (
+            project_training,
+        )
+
+        if state is not None and training_enabled(state):
+            manifest = project_training(paths, state, manifest, verify=True)
+        yield manifest
+
+
+def verified_generation_rows[T](
+    rows: Iterable[T],
+    *,
+    paths: MorpionBootstrapPaths,
+    manifest: MorpionPipelineGenerationManifest,
+) -> Iterator[T]:
+    """Recheck source bytes before the existing streaming writer replaces its output."""
+    yield from rows
+    validate_manifest_publication(paths.work_dir, manifest)
 
 
 def latest_prior_dataset_status_artifact(

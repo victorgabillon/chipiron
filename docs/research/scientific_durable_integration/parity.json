@@ -1,0 +1,29 @@
+{
+  "comparisons": 3780,
+  "cases_identical": true,
+  "counterexample_identical": true,
+  "literal_jsonl_pairs": 8820,
+  "counts": {
+    "legacy_v1:exact_parity": 1890,
+    "selected_value_v2:exact_parity": 1050,
+    "selected_value_v2:gated_all_three_paths": 840
+  },
+  "input_hash_differences": {
+    "patch.json": {
+      "before": "e02f41abc8aa15e552121769658fc020e0943c9083bc2b6ec67e5973a9737045",
+      "after": "7ae40ab0893b0dfbe9336e115171a4c54cd665ffaa9f4ebdf1fcbe1005489a58"
+    }
+  },
+  "generated_patch_path_differences": [
+    {
+      "field": "/rows/0/metadata/model_bundle_path",
+      "before": "/tmp/morpion-consolidation-confidence-before/model",
+      "after": "/tmp/morpion-consolidation-confidence-after/model"
+    },
+    {
+      "field": "/rows/1/metadata/model_bundle_path",
+      "before": "/tmp/morpion-consolidation-confidence-before/model",
+      "after": "/tmp/morpion-consolidation-confidence-after/model"
+    }
+  ]
+}

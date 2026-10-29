@@ -1,0 +1,6 @@
+{
+  "git_numstat": "0\t9\tsrc/chipiron/environments/morpion/bootstrap/generation_publication.py\n95\t22\tsrc/chipiron/environments/morpion/bootstrap/generation_publication_io.py\n28\t0\tsrc/chipiron/environments/morpion/bootstrap/pipeline/manifests.py\n55\t4\tsrc/chipiron/environments/morpion/bootstrap/pipeline/stages.py\n5\t6\tsrc/chipiron/environments/morpion/bootstrap/pipeline_orchestrator.py\n296\t274\tsrc/chipiron/environments/morpion/bootstrap/reevaluation_worker.py\n",
+  "git_numstat_ignore_whitespace": "0\t9\tsrc/chipiron/environments/morpion/bootstrap/generation_publication.py\n95\t22\tsrc/chipiron/environments/morpion/bootstrap/generation_publication_io.py\n28\t0\tsrc/chipiron/environments/morpion/bootstrap/pipeline/manifests.py\n55\t4\tsrc/chipiron/environments/morpion/bootstrap/pipeline/stages.py\n5\t6\tsrc/chipiron/environments/morpion/bootstrap/pipeline_orchestrator.py\n24\t2\tsrc/chipiron/environments/morpion/bootstrap/reevaluation_worker.py\n",
+  "note": "Reevaluation retains its existing ExitStack through publication; most conventional diff churn is indentation. Both figures are reported.",
+  "implementation_sha": "a2904d106daccce2f44d7de58d4410dc924e0c79"
+}

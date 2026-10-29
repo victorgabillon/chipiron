@@ -1,0 +1,38 @@
+[
+  {
+    "configuration": "p90",
+    "initial_nodes": 5017,
+    "final_nodes": 5086,
+    "committed_new_nodes": 69,
+    "edges": 5587,
+    "dataset_acceptances": 3,
+    "training_acceptances": 2
+  },
+  {
+    "configuration": "p2",
+    "initial_nodes": 5017,
+    "final_nodes": 5252,
+    "committed_new_nodes": 235,
+    "edges": 5758,
+    "dataset_acceptances": 0,
+    "training_acceptances": 0
+  },
+  {
+    "configuration": "pw",
+    "initial_nodes": 5017,
+    "final_nodes": 5313,
+    "committed_new_nodes": 296,
+    "edges": 5824,
+    "dataset_acceptances": 3,
+    "training_acceptances": 2
+  },
+  {
+    "configuration": "pb",
+    "initial_nodes": 5017,
+    "final_nodes": 5858,
+    "committed_new_nodes": 841,
+    "edges": 6423,
+    "dataset_acceptances": 2,
+    "training_acceptances": 2
+  }
+]

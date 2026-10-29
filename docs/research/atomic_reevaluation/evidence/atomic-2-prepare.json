@@ -1,0 +1,65 @@
+{
+  "active_cursor_bytes": 242,
+  "disk": {
+    "allocated_bytes_unique_inodes": 192512,
+    "apparent_file_bytes": 38855,
+    "file_names": 24,
+    "unique_file_bytes": 38855,
+    "unique_inodes": 47
+  },
+  "hashing": {
+    "bytes": 15132,
+    "calls": 12
+  },
+  "observation": {
+    "available_ram_after_mb": 73868.671875,
+    "available_ram_before_mb": 73868.6640625,
+    "costs": {
+      "cpu_system_s": 0.0020050000000000068,
+      "cpu_user_s": 0.0022529999999996164,
+      "io": {
+        "cancelled_write_bytes": 0,
+        "rchar": 44748,
+        "read_bytes": 0,
+        "syscr": 54,
+        "syscw": 1,
+        "wchar": 5878,
+        "write_bytes": 8192
+      }
+    },
+    "counters": {
+      "directory_fsync_count": 4,
+      "directory_fsync_seconds": 0.025845082993328106,
+      "file_fsync_count": 2,
+      "file_fsync_seconds": 0.009037681000336306,
+      "state_decode_seconds": 0.0,
+      "state_decodes": 0
+    },
+    "cuda_after": null,
+    "cuda_before": null,
+    "disk": {
+      "allocated_bytes_unique_inodes": 192512,
+      "apparent_file_bytes": 38855,
+      "file_names": 24,
+      "unique_file_bytes": 38855,
+      "unique_inodes": 47
+    },
+    "elapsed_s": 0.03929345299911802,
+    "finished_unix_s": 1792760439.855043,
+    "pid": 185455,
+    "process_peak_rss_mb": 292.05859375,
+    "profile": [],
+    "rss_after_mb": 293.16015625,
+    "rss_before_mb": 293.16015625,
+    "started_unix_s": 1792760439.8157482
+  },
+  "pending": true,
+  "protocol": "atomic",
+  "receipt_bytes": 271,
+  "run_state_bytes": 4019,
+  "scientific": {
+    "records.jsonl": "00586dd8efe6c3b1583eb74d0dd053f0f7b40afc6ebbabe22b203b52ba29e207",
+    "updates.jsonl": "768da2010f232f49aaa0337019eccc708c4ecc27c09e431fe54c0fbf8db63300"
+  },
+  "stage": "prepare"
+}

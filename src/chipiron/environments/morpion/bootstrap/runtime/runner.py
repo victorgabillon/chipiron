@@ -8,14 +8,17 @@ import os
 import time
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
+from dataclasses import replace as dataclasses_replace
 from pathlib import Path
 from random import Random
+from tempfile import TemporaryDirectory
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
 from anemone.checkpoints import (
+    CHECKPOINT_FORMAT_VERSION,
     AnchorCheckpointStatePayload,
     CheckpointAtomPayload,
     DeltaCheckpointStatePayload,
@@ -25,7 +28,7 @@ from anemone.checkpoints import (
     load_search_from_sharded_checkpoint,
     read_sharded_checkpoint_manifest,
     write_checkpoint_json_payload,
-    write_sharded_search_checkpoint,
+    write_sharded_search_checkpoint_from_search,
 )
 from anemone.checkpoints.state_handles import (
     CheckpointBackedStateHandle,
@@ -62,6 +65,15 @@ from chipiron.environments.morpion.bootstrap.config import (
 )
 from chipiron.environments.morpion.bootstrap.cycle_timing import (
     timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
+)
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    artifact_digest,
+    assert_artifact_writable,
+    committed_evaluator,
+    generation_read_pin,
+    locate_capsule,
+    read_object,
+    require,
 )
 from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapTreeStatus
 from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
@@ -113,6 +125,7 @@ from .reevaluation_patching import (
     _blend_average,
     _uninitialized_reevaluation_patch_runtime_error,
     apply_blended_reevaluation_patch,
+    protect_exact_values_from_model_predictions,
 )
 from .restore_memory_logging import (
     RestoreMemoryLogger,
@@ -175,6 +188,9 @@ if TYPE_CHECKING:
     )
 
 LOGGER = logging.getLogger(__name__)
+
+# Bound node serialization while avoiding excessively small physical shard files.
+CHECKPOINT_NODES_PER_SHARD = 1024
 _GROWTH_STEP_SEPARATOR = (
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 )
@@ -241,6 +257,7 @@ class AnemoneMorpionSearchRunnerArgs:
     restore_memory_profile_recursive_max_objects: int | None = None
     restore_memory_profile_recursive_max_depth: int | None = None
     runtime_checkpoint_format: str = "json-zst"
+    max_tree_nodes: int | None = None
     growth_state_eviction_policy: str = "none"
     growth_state_eviction_recent_window: int = 1000
     growth_state_rematerialization_cache_size: int = 10000
@@ -258,6 +275,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         args: AnemoneMorpionSearchRunnerArgs | None = None,
     ) -> None:
         """Initialize the real runner with explicit or default runtime settings."""
+        require(
+            CHECKPOINT_FORMAT_VERSION == 3,
+            "Morpion requires Anemone checkpoint format 3 (90c7ef4454ed or its validated successor).",
+        )
         self._args = args if args is not None else AnemoneMorpionSearchRunnerArgs()
         self._runtime: object | None = None
         self._random_generator = Random(self._args.random_seed)
@@ -294,6 +315,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._linoo_selection_table_generation: int | None = None
         self._last_reevaluation_patch_apply_metrics: dict[str, object] | None = None
         self.last_growth_steps: int | None = None
+        self.last_node_budget_stop_reason: str | None = None
+        self._node_budget_resources = ExitStack()
         self._latest_checkpoint_metrics: dict[str, object] | None = None
         self._latest_training_export_stats: dict[str, object] | None = None
         self._latest_training_export_profile: dict[str, object] | None = None
@@ -383,17 +406,50 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "none" if resolved_bundle_path is None else str(resolved_bundle_path),
         )
         started_at = time.perf_counter()
-        runtime = self._load_runtime_from_checkpoint(
-            Path(tree_snapshot_path),
-            search_args=self._args.search_args,
-        )
+        checkpoint_path = Path(tree_snapshot_path)
+        location = locate_capsule(checkpoint_path)
+        committed = location is not None and location[2] in (2, 3)
+        with generation_read_pin(checkpoint_path):
+            if committed:
+                from chipiron.environments.morpion.bootstrap.run_state import (
+                    load_bootstrap_run_state,
+                )
+
+                assert location is not None
+                work_dir = location[0]
+                authority = load_bootstrap_run_state(work_dir / "run_state.json")
+                require(
+                    checkpoint_path.absolute()
+                    == work_dir / str(authority.latest_runtime_checkpoint_path),
+                    "Only the committed head can restore the Growth runtime.",
+                )
+                model, pinned = committed_evaluator(work_dir, authority)
+                require(not reevaluate_tree, "Committed restore is not model refresh.")
+                require(
+                    resolved_bundle_path is None
+                    or (
+                        model is not None
+                        and artifact_digest(resolved_bundle_path) == model["sha256"]
+                    ),
+                    "Requested evaluator differs from the committed model.",
+                )
+                resolved_bundle_path = pinned
+            runtime = self._load_runtime_from_checkpoint(
+                checkpoint_path,
+                search_args=self._args.search_args,
+                model_bundle_path=resolved_bundle_path if committed else None,
+            )
         elapsed_s = time.perf_counter() - started_at
         self._runtime = runtime
         apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
         self._install_state_rematerialization_phase_hooks(runtime)
         LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
-        self._current_evaluator_bundle_path = None
-        if resolved_bundle_path is not None:
+        self._current_evaluator_bundle_path = (
+            resolved_bundle_path if committed else None
+        )
+        if committed:
+            LOGGER.info("[runtime] evaluator_restored_from_committed_head")
+        elif resolved_bundle_path is not None:
             if not reevaluate_tree:
                 LOGGER.info("[reeval] skipped reason=resume_restore")
             self._set_runtime_evaluator_from_bundle(
@@ -402,6 +458,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
+
+    def set_unique_node_budget(self, maximum: int) -> None:
+        """Bind a configured cap without changing Anemone's all-children executor."""
+        require(
+            isinstance(maximum, int) and not isinstance(maximum, bool) and maximum > 0,
+            "The unique-node budget must be a positive integer.",
+        )
+        require(
+            self._args.search_args.opening_type == OpeningType.ALL_CHILDREN,
+            "The unique-node budget requires all-children expansion.",
+        )
+        self._args = dataclasses_replace(self._args, max_tree_nodes=maximum)
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
@@ -424,7 +492,41 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._clear_linoo_selection_table_artifact()
         steps_executed = 0
         stop_reason = "max_steps_reached"
+        self.last_node_budget_stop_reason = None
+        budget_checkpoint: Path | None = None
+        budget_start_step = 0
         for _step_index in range(max_growth_steps):
+            node_limit = self._args.max_tree_nodes
+            if node_limit is not None:
+                if _live_tree_node_count(runtime) >= node_limit:
+                    stop_reason = "maximum_unique_nodes"
+                    self.last_node_budget_stop_reason = stop_reason
+                    break
+                # A fixed-start Morpion position with P points has at most 20P
+                # legal line placements. Default Linoo selects one parent's
+                # complete children; each bounded rollout adds at most K edges.
+                expansion = self._args.search_args.opening_expansion
+                extra = (
+                    0
+                    if str(expansion.kind.value) != "rollout"
+                    else expansion.rollout.max_extra_steps
+                )
+                require(
+                    extra is not None, "A unique-node budget requires bounded rollouts."
+                )
+                assert extra is not None
+                max_depth = max(runtime.tree.descendants, default=0)
+                upper_bound = 20 * (36 + max_depth) * (1 + extra)
+                if (
+                    budget_checkpoint is None
+                    and node_limit - _live_tree_node_count(runtime) <= upper_bound
+                ):
+                    temporary = self._node_budget_resources.enter_context(
+                        TemporaryDirectory(prefix="morpion-node-budget-")
+                    )
+                    budget_checkpoint = Path(temporary) / "checkpoint"
+                    self.save_checkpoint(budget_checkpoint)
+                    budget_start_step = steps_executed
             if runtime.tree.root_node.tree_evaluation.has_exact_value():
                 stop_reason = "exact_solution_found"
                 break
@@ -443,6 +545,35 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             step_report = runtime.step()
             steps_executed += 1
             current_tree_size = _live_tree_node_count(runtime)
+            if node_limit is not None and current_tree_size > node_limit:
+                require(
+                    budget_checkpoint is not None,
+                    "Unexpected expansion size; oversized runtime cannot publish.",
+                )
+                assert budget_checkpoint is not None
+                safe_steps = steps_executed - budget_start_step - 1
+                runtime = self._load_runtime_from_checkpoint(
+                    budget_checkpoint,
+                    search_args=self._args.search_args,
+                    model_bundle_path=self._current_evaluator_bundle_path,
+                )
+                self._runtime = runtime
+                apply_runtime_config_to_runtime(
+                    runtime, self._last_applied_runtime_config
+                )
+                self._install_state_rematerialization_phase_hooks(runtime)
+                # Replay the safe prefix from the exact selector/search/rollout
+                # RNG checkpoint. The rejected expansion is never published.
+                configured_args = self._args
+                self._args = dataclasses_replace(self._args, max_tree_nodes=None)
+                try:
+                    self.grow(safe_steps)
+                finally:
+                    self._args = configured_args
+                steps_executed = budget_start_step + safe_steps
+                stop_reason = "next_complete_expansion_exceeds_unique_node_budget"
+                self.last_node_budget_stop_reason = stop_reason
+                break
             tree = getattr(runtime, "tree", None)
             branch_count = getattr(tree, "branch_count", None)
             selected_node_id = None
@@ -632,6 +763,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         self.last_growth_steps = steps_executed
         final_tree_size = _live_tree_node_count(runtime)
+        if (
+            self._args.max_tree_nodes is not None
+            and final_tree_size == self._args.max_tree_nodes
+        ):
+            self.last_node_budget_stop_reason = "maximum_unique_nodes"
         LOGGER.info(
             "[growth] done steps=%s nodes_added=%s final_size=%s stop_reason=%s",
             steps_executed,
@@ -1209,6 +1345,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         LOGGER.info(
             "[save] tree_export_start output=%s nodes=%s",
@@ -1268,6 +1405,60 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             time.perf_counter() - started_at,
         )
         return manifest_path
+
+    def export_scientific_training_snapshot(
+        self, output_dir: str | Path, *, generation: int, producer: Mapping[str, str]
+    ) -> Path:
+        """Explicit v2 export from the same quiescent runtime as its checkpoint.
+
+        Only the opt-in durable scientific session selects this method. Source
+        values and target choice use the unchanged scientific writer contract.
+        """
+        from chipiron.environments.morpion.bootstrap.sharded_training_v2 import (
+            save_scientific_training_generation,
+        )
+
+        runtime = self._require_runtime()
+        nodes = runtime._all_nodes_in_tree_order()  # pylint: disable=protected-access
+        path, _stats = save_scientific_training_generation(
+            nodes=nodes,
+            root_node_id=str(runtime.tree.root_node.id),
+            output_dir=output_dir,
+            generation=generation,
+            producer=producer,
+        )
+        return path
+
+    def export_closed_scientific_snapshot(
+        self,
+        destination: str | Path,
+        *,
+        generation: int,
+        producer: Mapping[str, str],
+        committed_source: Path | None = None,
+        _validation_result: dict[str, Any] | None = None,
+        previous_producer: Mapping[str, str] | None = None,
+        encoding: str | None = None,
+    ) -> Path:
+        """Explicit closed export from the same frozen runtime as its checkpoint."""
+        from chipiron.environments.morpion.bootstrap.closed_scientific_snapshot import (
+            save_closed_scientific_snapshot,
+        )
+
+        runtime = self._require_runtime()
+        path, stats = save_closed_scientific_snapshot(
+            nodes=runtime._iter_nodes_by_depth(),  # pylint: disable=protected-access
+            root_node_id=str(runtime.tree.root_node.id),
+            destination=Path(destination),
+            generation=generation,
+            producer=producer,
+            committed_source=committed_source,
+            _validation_result=_validation_result,
+            previous_producer=previous_producer,
+            encoding=encoding,
+        )
+        self._latest_training_export_stats = stats
+        return path
 
     def build_training_tree_snapshot_payload(
         self,
@@ -1467,6 +1658,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             depth_node_counts=depth_node_counts,
         )
 
+    def discard_uncommitted_runtime(self) -> None:
+        """Require a cold restore after an aborted checkpoint/patch transaction."""
+        self._runtime = None
+        self._current_evaluator_bundle_path = None
+        self._last_reevaluation_patch_apply_metrics = None
+        self._reset_growth_state_eviction_runtime()
+        self._node_budget_resources.close()
+        self._node_budget_resources = ExitStack()
+
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""
         runtime = self._runtime
@@ -1474,6 +1674,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise _uninitialized_reevaluation_patch_runtime_error()
         runtime = cast("Any", runtime)
         blend_alpha = self._last_applied_runtime_config.reevaluation_blend_alpha
+        patch, skipped_exact_node_ids = protect_exact_values_from_model_predictions(
+            runtime=runtime, patch=patch
+        )
         LOGGER.info(
             "[reevaluation-patch] runner_apply_start patch_id=%s rows=%s",
             patch.patch_id,
@@ -1530,6 +1733,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "recomputed": result.recomputed_count,
             "selector_invalidated": selector_invalidated,
         }
+        if skipped_exact_node_ids:
+            self._last_reevaluation_patch_apply_metrics["skipped_exact_node_ids"] = (
+                skipped_exact_node_ids
+            )
         LOGGER.info(
             "[reevaluation-patch] backup_refresh_done affected_nodes=%s ancestors_recomputed=%s selector_invalidated=%s",
             result.applied_count,
@@ -1595,6 +1802,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         tree_snapshot_path: Path,
         *,
         search_args: SearchArgs,
+        model_bundle_path: Path | None = None,
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
         LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
@@ -1622,6 +1830,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 search_args=search_args,
                 started_at=started_at,
                 restore_memory_logger=restore_memory_logger,
+                model_bundle_path=model_bundle_path,
             )
         cached_payload = _pop_cached_morpion_search_checkpoint_payload_for_restore(
             tree_snapshot_path
@@ -1697,7 +1906,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     dynamics=self._dynamics,
                     args=search_args,
                     state_type=MorpionState,
-                    master_state_value_evaluator=self._build_master_evaluator(None),
+                    master_state_value_evaluator=self._build_master_evaluator(
+                        model_bundle_path
+                    ),
                     random_generator=self._random_generator,
                     state_representation_factory=None,
                     node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
@@ -1777,8 +1988,16 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         search_args: SearchArgs,
         started_at: float,
         restore_memory_logger: RestoreMemoryLogger | None,
+        model_bundle_path: Path | None = None,
     ) -> object:
         """Restore one live runtime from an opt-in sharded checkpoint directory."""
+        require(
+            read_object(tree_snapshot_path / "manifest.json").get(
+                "checkpoint_format_version"
+            )
+            == 3,
+            "Explicit checkpoint format 3 required; no historical conversion.",
+        )
         manifest = read_sharded_checkpoint_manifest(
             tree_snapshot_path / "manifest.json"
         )
@@ -1794,7 +2013,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 dynamics=self._dynamics,
                 args=search_args,
                 state_type=MorpionState,
-                master_state_value_evaluator=self._build_master_evaluator(None),
+                master_state_value_evaluator=self._build_master_evaluator(
+                    model_bundle_path
+                ),
                 random_generator=self._random_generator,
                 state_representation_factory=None,
                 node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
@@ -1920,65 +2141,121 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise UninitializedMorpionSearchRunnerError
         return self._runtime
 
+    def refresh_model_estimates(self, model_bundle_path: Path) -> Any:
+        """One bounded full scientific refresh in a private, quiescent runtime.
+
+        The owning transaction must verify terminal facts/scores first and discard
+        this runtime on any failure.
+        Loading weights must not consume the caller's unrelated Torch RNG.
+        """
+        import torch
+
+        with torch.random.fork_rng(devices=[]):
+            evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
+        report = self._require_runtime().refresh_with_evaluator(
+            evaluator,
+            scope="all",
+            batch_size=64,
+        )
+        self._current_evaluator_bundle_path = model_bundle_path
+        return report
+
+    def validate_model_refresh_certificates(self) -> None:
+        """Strict bounded preflight, independent of diagnostic iterator fallbacks."""
+        from anemone.node_evaluation.evaluator_refresh import validate_refresh_node
+        from valanga.evaluations import Certainty
+
+        evaluator = MorpionStateEvaluator()
+        runtime = self._require_runtime()
+        for node in runtime._iter_nodes_by_depth(reverse=True):  # pylint: disable=protected-access
+            direct = node.tree_evaluation.direct_value
+            terminal = node.state.is_game_over()
+            if terminal or (
+                direct is not None and direct.certainty == Certainty.TERMINAL
+            ):
+                require(
+                    terminal and direct == evaluator.evaluate(node.state),
+                    "Terminal certificate disagrees with the actual state or terminal score.",
+                )
+            # Unknown external direct FORCED certificates have no admitted proof.
+            validate_refresh_node(node, None)
+
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint file."""
+        assert_artifact_writable(Path(output_path))
         runtime = self._require_runtime()
         output = Path(output_path)
 
         LOGGER.info("[checkpoint] save_start path=%s", str(output))
         rss_before_mb = current_rss_mb()
         save_started_at = time.perf_counter()
-        payload_started_at = time.perf_counter()
-        log_morpion_checkpoint_memory_phase(
-            "before_checkpoint_save_payload_build",
-            path=output,
-            generation=generation_from_checkpoint_path(output),
-        )
-        with self._state_rematerialization_phase("checkpoint"):
-            payload = build_search_checkpoint_payload(
-                runtime,
-                state_codec=self._state_codec,
-            )
-        checkpoint_selector_state = checkpoint_selector_state_fields(
-            payload,
-            prefix="checkpoint",
-        )
-        payload_elapsed_s = time.perf_counter() - payload_started_at
-        LOGGER.info(
-            "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
-            str(output),
-            payload_elapsed_s,
-        )
-        LOGGER.info(
-            "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
-            str(output),
-            _metric_value(
-                checkpoint_selector_state["checkpoint_selector_state_present"]
-            ),
-            _metric_value(checkpoint_selector_state["checkpoint_selector_state_type"]),
-            _metric_value(
-                checkpoint_selector_state["checkpoint_selector_state_version"]
-            ),
-        )
-        node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
-        log_morpion_checkpoint_memory_phase(
-            "after_checkpoint_save_payload_build",
-            path=output,
-            nodes=node_count,
-            generation=generation_from_checkpoint_path(output),
-        )
         manifest = None
+        payload_elapsed_s = None
+        anchor_count = delta_count = None
         if self._args.runtime_checkpoint_format == "sharded":
-            manifest = write_sharded_search_checkpoint(
-                payload,
-                output,
-                layout="split",
+            log_morpion_checkpoint_memory_phase(
+                "before_checkpoint_save_stream",
+                path=output,
+                generation=generation_from_checkpoint_path(output),
             )
+            # The publication owner provides a fresh private path. Anemone rejects
+            # nonempty directories, including partial output from a failed attempt.
+            with self._state_rematerialization_phase("checkpoint"):
+                manifest = write_sharded_search_checkpoint_from_search(
+                    runtime,
+                    output,
+                    state_codec=self._state_codec,
+                    layout="split",
+                    node_count_per_shard=CHECKPOINT_NODES_PER_SHARD,
+                )
+            node_count = manifest.total_node_count
             checkpoint_bytes = _checkpoint_artifact_bytes(output)
             write_stats = None
         else:
+            payload_started_at = time.perf_counter()
+            log_morpion_checkpoint_memory_phase(
+                "before_checkpoint_save_payload_build",
+                path=output,
+                generation=generation_from_checkpoint_path(output),
+            )
+            with self._state_rematerialization_phase("checkpoint"):
+                payload = build_search_checkpoint_payload(
+                    runtime,
+                    state_codec=self._state_codec,
+                )
+            checkpoint_selector_state = checkpoint_selector_state_fields(
+                payload,
+                prefix="checkpoint",
+            )
+            payload_elapsed_s = time.perf_counter() - payload_started_at
+            LOGGER.info(
+                "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
+                str(output),
+                payload_elapsed_s,
+            )
+            LOGGER.info(
+                "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
+                str(output),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_present"]
+                ),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_type"]
+                ),
+                _metric_value(
+                    checkpoint_selector_state["checkpoint_selector_state_version"]
+                ),
+            )
+            node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+            log_morpion_checkpoint_memory_phase(
+                "after_checkpoint_save_payload_build",
+                path=output,
+                nodes=node_count,
+                generation=generation_from_checkpoint_path(output),
+            )
             write_stats = write_checkpoint_json_payload(payload, output)
             checkpoint_bytes = write_stats.compressed_bytes
+            del payload
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_write",
             path=output,
@@ -2060,7 +2337,6 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output if write_stats is None else write_stats.output_path),
             elapsed_s,
         )
-        del payload
         gc.collect()
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_cleanup",

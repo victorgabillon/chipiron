@@ -1,0 +1,131 @@
+{
+  "unchanged": {
+    "wall_s": 0.03349546800018288,
+    "allocated": 1347584,
+    "bytes": 1347584,
+    "dbstat": [
+      [
+        "export_order",
+        20480,
+        9642,
+        7773
+      ],
+      [
+        "records",
+        245760,
+        225248,
+        13738
+      ],
+      [
+        "sqlite_autoindex_records_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_autoindex_updates_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_schema",
+        4096,
+        455,
+        3512
+      ],
+      [
+        "updates",
+        1044480,
+        905547,
+        129007
+      ]
+    ]
+  },
+  "minified": {
+    "wall_s": 0.04870612299419008,
+    "allocated": 1265664,
+    "bytes": 1265664,
+    "dbstat": [
+      [
+        "export_order",
+        20480,
+        9642,
+        7773
+      ],
+      [
+        "records",
+        233472,
+        213269,
+        13477
+      ],
+      [
+        "sqlite_autoindex_records_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_autoindex_updates_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_schema",
+        4096,
+        455,
+        3512
+      ],
+      [
+        "updates",
+        974848,
+        833225,
+        131965
+      ]
+    ]
+  },
+  "zstd": {
+    "wall_s": 0.042313015001127496,
+    "allocated": 663552,
+    "bytes": 663552,
+    "dbstat": [
+      [
+        "export_order",
+        20480,
+        9642,
+        7773
+      ],
+      [
+        "records",
+        184320,
+        169123,
+        8689
+      ],
+      [
+        "sqlite_autoindex_records_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_autoindex_updates_1",
+        16384,
+        7789,
+        5542
+      ],
+      [
+        "sqlite_schema",
+        4096,
+        455,
+        3512
+      ],
+      [
+        "updates",
+        421888,
+        395751,
+        18623
+      ]
+    ]
+  }
+}

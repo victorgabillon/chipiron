@@ -300,7 +300,7 @@ def _connectivity_features(points: frozenset[Point]) -> dict[str, float]:
 
 
 def _candidate_segments(state: MorpionState) -> tuple[CandidateSegment, ...]:
-    """Scan the same bounded lattice box used by atomheart raw action generation."""
+    """Scan the same lattice box, retaining only segments consumed by features."""
     bbox = _bbox(state.points)
     if bbox is None:
         return ()
@@ -319,6 +319,10 @@ def _candidate_segments(state: MorpionState) -> tuple[CandidateSegment, ...]:
                 missing_points = tuple(
                     point for point in points5 if point not in state.points
                 )
+                # Aggregates consume only 3/4-present segments. Fully occupied
+                # segments contribute no missing cells to the frontier features.
+                if len(missing_points) not in (1, 2):
+                    continue
                 unit_segments4 = _unit_segments_on_line(points5)
                 overlap_blocked = any(
                     segment in state.used_unit_segments for segment in unit_segments4

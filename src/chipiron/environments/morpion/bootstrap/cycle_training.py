@@ -20,6 +20,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training i
     train_morpion_regressor,
     train_morpion_regressor_streaming,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.training.continuation import (
+    MorpionTrainingContinuation,
+    candidate_training_seed,
+)
 
 from .bootstrap_errors import (
     MissingBootstrapSelectedEvaluatorError,
@@ -124,6 +128,7 @@ def morpion_training_args_from_evaluator_spec(
     validation_fraction: float,
     validation_seed: int,
     device: str,
+    continuation: MorpionTrainingContinuation | None = None,
 ) -> MorpionTrainingArgs:
     """Build training args for one evaluator spec."""
     return MorpionTrainingArgs(
@@ -154,6 +159,43 @@ def morpion_training_args_from_evaluator_spec(
         validation_fraction=validation_fraction,
         validation_seed=validation_seed,
         device=device,
+        continuation=continuation,
+        stable_validation_split=continuation is not None,
+    )
+
+
+def _candidate_continuation(
+    args: MorpionBootstrapArgs,
+    run_state: MorpionBootstrapRunState,
+    generation: int,
+    name: str,
+) -> MorpionTrainingContinuation | None:
+    """Use only parents captured by durable admission, independently of diagnostics."""
+    if args.continual_learning is None:
+        return None
+    parents = run_state.metadata.get("candidate_training_parents")
+    from .generation_publication_io import require
+
+    require(
+        isinstance(parents, dict) and name in parents,
+        "Continual training requires captured accepted candidate parents.",
+    )
+    assert isinstance(parents, dict)
+    parent = parents[name]
+    path = (run_state.latest_model_bundle_paths or {}).get(name)
+    require(
+        (parent is None) == (path is None),
+        "Accepted parent path is missing or ambiguous.",
+    )
+    seed = candidate_training_seed(args.continual_learning.seed, name, generation)
+    return MorpionTrainingContinuation(
+        candidate_name=name,
+        seed=seed,
+        parent_bundle=path,
+        parent_bundle_sha256=None if parent is None else parent["model"]["sha256"],
+        parent_weights_sha256=None if parent is None else parent["weights_sha256"],
+        optimizer_state_policy=args.continual_learning.optimizer_state_policy,
+        training_policy=args.continual_learning.training_policy,
     )
 
 
@@ -210,16 +252,31 @@ def persist_evaluator_training_diagnostics(
 
 def select_active_evaluator_name(
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
+    *,
+    validation_only: bool = False,
 ) -> str:
     """Select the active evaluator using validation loss, falling back to final loss."""
     selectable_losses: list[tuple[str, float]] = []
     for evaluator_name, metrics in evaluator_metrics.items():
-        selection_loss = _selection_loss(metrics)
+        selection_loss = (
+            metrics.validation_loss if validation_only else _selection_loss(metrics)
+        )
+        if validation_only and (
+            selection_loss is None
+            or not math.isfinite(selection_loss)
+            or not metrics.num_validation_samples
+        ):
+            raise NoSelectableMorpionEvaluatorError
         if selection_loss is not None:
             selectable_losses.append((evaluator_name, selection_loss))
     if not selectable_losses:
         raise NoSelectableMorpionEvaluatorError
-    return min(selectable_losses, key=lambda item: item[1])[0]
+    return min(
+        selectable_losses,
+        key=(lambda item: (item[1], item[0]))
+        if validation_only
+        else (lambda item: (item[1],)),
+    )[0]
 
 
 def _required_metric_float(value: float | None, *, key: str) -> float:
@@ -290,13 +347,16 @@ def select_or_force_active_evaluator_name(
     *,
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
     force_evaluator: str | None,
+    validation_only: bool = False,
 ) -> str:
     """Return the forced evaluator when present, else the default auto-selection."""
     if force_evaluator is not None:
         if force_evaluator not in evaluator_metrics:
             raise UnknownForcedMorpionEvaluatorError(force_evaluator)
         return force_evaluator
-    return select_active_evaluator_name(evaluator_metrics)
+    return select_active_evaluator_name(
+        evaluator_metrics, validation_only=validation_only
+    )
 
 
 def restrict_evaluators_config(
@@ -479,6 +539,9 @@ def train_and_select_evaluators(
                     validation_fraction=args.validation_fraction,
                     validation_seed=args.validation_seed,
                     device=args.training_device,
+                    continuation=_candidate_continuation(
+                        args, run_state, generation, evaluator_name
+                    ),
                 )
             )
         except Exception as exc:
@@ -637,6 +700,7 @@ def train_and_select_evaluators(
             select_or_force_active_evaluator_name(
                 evaluator_metrics=evaluator_metrics,
                 force_evaluator=resolved_control.force_evaluator,
+                validation_only=args.continual_learning is not None,
             ),
         )
     finally:
@@ -793,6 +857,9 @@ def train_and_select_evaluators_streaming(
                         validation_fraction=args.validation_fraction,
                         validation_seed=args.validation_seed,
                         device=args.training_device,
+                        continuation=_candidate_continuation(
+                            args, run_state, generation, evaluator_name
+                        ),
                     ),
                     row_chunk_size=chunk_size,
                     max_rows=max_rows,
@@ -954,6 +1021,7 @@ def train_and_select_evaluators_streaming(
             select_or_force_active_evaluator_name(
                 evaluator_metrics=evaluator_metrics,
                 force_evaluator=resolved_control.force_evaluator,
+                validation_only=args.continual_learning is not None,
             ),
         )
     finally:

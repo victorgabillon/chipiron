@@ -425,13 +425,45 @@ def _build_dataset_selection_diagnostics(
 def load_available_pipeline_manifests(
     paths: MorpionBootstrapPaths,
 ) -> dict[int, MorpionPipelineGenerationManifest]:
-    """Load all valid persisted manifests under the pipeline directory."""
-    return {
+    """Load advisory eligibility metadata; selected operations verify their own closure.
+
+    This is not an archive audit. Malformed manifests still fail decoding; capsule
+    integrity is checked under a lifetime pin after the existing selection rules.
+    """
+    from .dataset_publication import enabled, project_dataset
+    from .generation_publication_io import publication_records
+    from .run_state import load_bootstrap_run_state
+
+    state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if paths.run_state_path.exists()
+        else None
+    )
+    manifests = {
         generation: load_pipeline_manifest(
             paths.pipeline_manifest_path_for_generation(generation)
         )
         for generation in list_pipeline_manifest_generations(paths)
     }
+    if state is not None and enabled(state):
+        from .training_publication import enabled as training_enabled
+        from .training_publication import project_training
+
+        training = training_enabled(state)
+        for record in publication_records(state.metadata):
+            generation = record["generation"]
+            if "retired_payload_v1" in record:
+                manifests.pop(generation, None)
+                continue
+            manifest = project_dataset(
+                paths, state, generation, manifests.get(generation), record=record
+            )
+            manifests[generation] = (
+                project_training(paths, state, manifest, record=record)
+                if training
+                else manifest
+            )
+    return manifests
 
 
 def _recover_stale_training_states(
@@ -441,6 +473,13 @@ def _recover_stale_training_states(
     now_unix_s: float | None,
 ) -> tuple[StaleTrainingState, ...]:
     """Recover safely stale training state before selection."""
+    from .run_state import load_bootstrap_run_state
+    from .training_publication import enabled as training_enabled
+
+    if paths.run_state_path.exists() and training_enabled(
+        load_bootstrap_run_state(paths.run_state_path)
+    ):
+        return ()  # Claims can expire; legacy recovery must not unlink a replacement.
     auto_recover = _bool_env("MORPION_TRAINING_AUTO_RECOVER_STALE_CLAIMS", default=True)
     stale_grace_seconds = _int_env(
         "MORPION_TRAINING_CLAIM_STALE_GRACE_SECONDS",
@@ -582,6 +621,9 @@ def run_next_pipeline_dataset_stage_once(
     *,
     claim_ttl_seconds: float = 3600.0,
     claim_owner: str | None = None,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending dataset generation once, if any."""
@@ -596,6 +638,12 @@ def run_next_pipeline_dataset_stage_once(
     )
     manifests = load_available_pipeline_manifests(paths)
     latest_dataset = _latest_dataset_summary(paths, manifests)
+    if args.continual_learning is not None:
+        manifests = {
+            g: m
+            for g, m in manifests.items()
+            if g > 1 and g % args.continual_learning.dataset_every_generations == 0
+        }
     LOGGER.info(
         "[pipeline] dataset_status latest_dataset_generation=%s latest_dataset_manifest=%s latest_dataset_created_at=%s latest_dataset_rows=%s",
         _render_optional_log_value(latest_dataset.generation),
@@ -641,12 +689,23 @@ def run_next_pipeline_dataset_stage_once(
     )
 
     try:
-        run_pipeline_dataset_stage(
-            args,
-            generation=generation,
-            claim_ttl_seconds=claim_ttl_seconds,
-            claim_owner=claim_owner,
-        )
+        if use_streaming_sharded_reader:
+            run_pipeline_dataset_stage(
+                args,
+                generation=generation,
+                claim_ttl_seconds=claim_ttl_seconds,
+                claim_owner=claim_owner,
+                use_streaming_sharded_reader=True,
+                reader_cache_dir=reader_cache_dir,
+                **({"allow_scientific_v2": True} if allow_scientific_v2 else {}),
+            )
+        else:
+            run_pipeline_dataset_stage(
+                args,
+                generation=generation,
+                claim_ttl_seconds=claim_ttl_seconds,
+                claim_owner=claim_owner,
+            )
     except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[pipeline] dataset_worker_done action=error generation=%s elapsed=%.3fs",
@@ -690,6 +749,12 @@ def run_next_pipeline_training_stage_once(
         default=True,
     ):
         manifests = load_available_pipeline_manifests(paths)
+    if args.continual_learning is not None:
+        manifests = {
+            g: m
+            for g, m in manifests.items()
+            if g > 1 and g % args.continual_learning.training_every_generations == 0
+        }
     lower_bound = _training_lower_bound(paths)
     selection_lower_bound_generation = _training_selection_lower_bound_generation(
         paths,

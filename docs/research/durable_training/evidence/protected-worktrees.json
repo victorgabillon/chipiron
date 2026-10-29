@@ -1,0 +1,227 @@
+[
+  {
+    "path": "/home/pompote/oldata/victor/chipiron",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-canonicalization",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-dashboard-perf",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-evaluator-benchmark-v1",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-evaluator-v1",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-main-operator",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-training-export-profile",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-transformer-v1-bootstrap",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/chipiron-warm-growth-runtime",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/atomic-patch-cursor-20261023/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/closed-scientific-snapshots-20261022/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/durable-closed-snapshots-20261022/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-architecture-review-20261021/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/durable-v2-reuse-20261021/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/rolling-recovery-contract-20261023/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/rolling-snapshot-design-20261022/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/safe-recovery-epochs-20261023/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/home/pompote/oldata/victor/morpion-scratch/selected-generation-verification-20261021/worktree",
+    "registration_same": true,
+    "exists_same": true,
+    "status_same": true,
+    "diff_same": true
+  },
+  {
+    "path": "/tmp/chipiron-certainty-streaming",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-checkpoint-bound-patch-receipts",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-checkpoint-lifecycle-integration",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-dataset-v2-confidence",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-durable-reevaluation-publication",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-durable-scientific-v2",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-durable-sharded-publication",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-export-main-before",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-export-profile-before",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-export-profile-integration",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-scientific-durable-v2",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-scientific-v2-reader",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-scientific-v2-reader-profile",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-sharded-training-v2",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-streaming-dataset",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-streaming-reevaluation",
+    "registration_same": true,
+    "exists_same": true
+  },
+  {
+    "path": "/tmp/chipiron-value-certainty",
+    "registration_same": true,
+    "exists_same": true
+  }
+]

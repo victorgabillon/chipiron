@@ -1,0 +1,244 @@
+{
+  "validated": true,
+  "deletion_authorized": false,
+  "conditional_candidates": [
+    2,
+    4,
+    6,
+    9,
+    11,
+    13
+  ],
+  "conditional_reclaimable_file_blocks": 11821056,
+  "source_run_state_sha256": "1042d5209755e51d72d2fbfe28009db2ce0a2a322ac9770aeef5eabf36c7f2aa",
+  "blockers": [],
+  "references": [
+    {
+      "generation": 1,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 2,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 3,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 4,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 5,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 6,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 7,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "dataset-claim-even-if-expired"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 8,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 9,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 10,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 11,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 12,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "authoritative-accepted-cursor",
+        "accepted-dataset-source-and-results",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training-claim-even-if-expired"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 13,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [],
+      "rolling_required": false,
+      "payload_retired": false
+    },
+    {
+      "generation": 14,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 15,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    },
+    {
+      "generation": 16,
+      "current_contract_required": true,
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "observed_reader": false,
+      "rolling_reasons": [
+        "current-crash-recovery",
+        "pending-patch"
+      ],
+      "rolling_required": true,
+      "payload_retired": false
+    }
+  ]
+}

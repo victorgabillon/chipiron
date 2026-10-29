@@ -6,6 +6,7 @@
     recursive-include src/chipiron/data/starting_boards *.text
     recursive-include src/chipiron/scripts/one_match/inputs *.yaml
     recursive-include tests/data/trees *.yaml
+    include tests/data/morpion_features_baseline.json
 
 
 # Never ship runtime/generated outputs

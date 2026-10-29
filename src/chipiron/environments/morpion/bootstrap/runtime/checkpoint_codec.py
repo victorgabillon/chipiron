@@ -317,6 +317,12 @@ def load_morpion_search_checkpoint_payload(
             f"invalid checkpoint payload: {exc}",
         ) from exc
 
+    if not isinstance(raw_payload, dict) or raw_payload.get("format_version") != 3:
+        raise InvalidMorpionSearchCheckpointError(
+            resolved_path,
+            "explicit checkpoint format 3 required; no historical conversion",
+        )
+
     try:
         payload_decode_started_at = time.perf_counter()
         normalized_payload = _normalize_search_checkpoint_payload_for_dacite(

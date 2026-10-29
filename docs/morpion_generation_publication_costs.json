@@ -1,0 +1,147 @@
+{
+  "base_sha": "7313ecfad36667ab2a8dd1bbd4b894aa682a7e9b",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+  "python": "3.13.5",
+  "results": [
+    {
+      "baseline_disk": {
+        "allocated_bytes_unique_inodes": 716800,
+        "apparent_file_bytes": 636053,
+        "file_names": 12,
+        "unique_file_bytes": 636053,
+        "unique_inodes": 24
+      },
+      "baseline_peak_rss_mib": 277.0078125,
+      "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+      "final_disk": {
+        "allocated_bytes_unique_inodes": 1986560,
+        "apparent_file_bytes": 1866506,
+        "file_names": 25,
+        "unique_file_bytes": 1866506,
+        "unique_inodes": 37
+      },
+      "fixture_elapsed_seconds": 0.1464424189980491,
+      "mode": "legacy",
+      "nodes": 1000,
+      "peak_rss_growth_mib": 0.0,
+      "peak_rss_mib": 277.0078125,
+      "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+      "steady_generations": 3,
+      "steady_process_io": {
+        "cancelled_write_bytes": 32768,
+        "rchar": 68160,
+        "read_bytes": 0,
+        "syscr": 46,
+        "syscw": 27,
+        "wchar": 1299616,
+        "write_bytes": 1388544
+      }
+    },
+    {
+      "baseline_disk": {
+        "allocated_bytes_unique_inodes": 1413120,
+        "apparent_file_bytes": 1272742,
+        "file_names": 21,
+        "unique_file_bytes": 1272742,
+        "unique_inodes": 42
+      },
+      "baseline_peak_rss_mib": 278.9609375,
+      "checkpoint_sha256": "3d126687aa385748240f38bcb6d7954fcc2ad0a3291cb24f1d00fd3826ec42d2",
+      "final_disk": {
+        "allocated_bytes_unique_inodes": 3031040,
+        "apparent_file_bytes": 5565625,
+        "file_names": 90,
+        "unique_file_bytes": 2633059,
+        "unique_inodes": 120
+      },
+      "fixture_elapsed_seconds": 1.3097955630000797,
+      "mode": "durable",
+      "nodes": 1000,
+      "peak_rss_growth_mib": 0.125,
+      "peak_rss_mib": 279.0859375,
+      "scientific_export_sha256": "ae8d307d87b1dcd6a45e7066e40c7eb0de3c3671f9f685f2bd69b844ac88b729",
+      "steady_generations": 3,
+      "steady_process_io": {
+        "cancelled_write_bytes": 90112,
+        "rchar": 57394605,
+        "read_bytes": 0,
+        "syscr": 2628,
+        "syscw": 74,
+        "wchar": 1458524,
+        "write_bytes": 1646592
+      },
+      "steady_wchar_ratio_vs_legacy": 1.122273040652008
+    },
+    {
+      "baseline_disk": {
+        "allocated_bytes_unique_inodes": 6414336,
+        "apparent_file_bytes": 6333053,
+        "file_names": 12,
+        "unique_file_bytes": 6333053,
+        "unique_inodes": 24
+      },
+      "baseline_peak_rss_mib": 299.71875,
+      "checkpoint_sha256": "f0a4db17e0bc1797a1dc71c17a3bcdc2c70f1d30a767f1b8733f8363fff77174",
+      "final_disk": {
+        "allocated_bytes_unique_inodes": 18841600,
+        "apparent_file_bytes": 18714500,
+        "file_names": 25,
+        "unique_file_bytes": 18714500,
+        "unique_inodes": 37
+      },
+      "fixture_elapsed_seconds": 0.7819961790009984,
+      "mode": "legacy",
+      "nodes": 10000,
+      "peak_rss_growth_mib": 0.0,
+      "peak_rss_mib": 299.71875,
+      "scientific_export_sha256": "1bd818791c66fce29ba5dc6093ddecc353983c49d76c0b490d925c09d283a72e",
+      "steady_generations": 3,
+      "steady_process_io": {
+        "cancelled_write_bytes": 221184,
+        "rchar": 635163,
+        "read_bytes": 0,
+        "syscr": 46,
+        "syscw": 27,
+        "wchar": 13017613,
+        "write_bytes": 13111296
+      }
+    },
+    {
+      "baseline_disk": {
+        "allocated_bytes_unique_inodes": 12808192,
+        "apparent_file_bytes": 12666745,
+        "file_names": 21,
+        "unique_file_bytes": 12666745,
+        "unique_inodes": 42
+      },
+      "baseline_peak_rss_mib": 303.01953125,
+      "checkpoint_sha256": "f0a4db17e0bc1797a1dc71c17a3bcdc2c70f1d30a767f1b8733f8363fff77174",
+      "final_disk": {
+        "allocated_bytes_unique_inodes": 26148864,
+        "apparent_file_bytes": 55164608,
+        "file_names": 90,
+        "unique_file_bytes": 25745039,
+        "unique_inodes": 120
+      },
+      "fixture_elapsed_seconds": 3.711657803003618,
+      "mode": "durable",
+      "nodes": 10000,
+      "peak_rss_growth_mib": 1.109375,
+      "peak_rss_mib": 304.12890625,
+      "scientific_export_sha256": "1bd818791c66fce29ba5dc6093ddecc353983c49d76c0b490d925c09d283a72e",
+      "steady_generations": 3,
+      "steady_process_io": {
+        "cancelled_write_bytes": 655360,
+        "rchar": 570530106,
+        "read_bytes": 0,
+        "syscr": 4090,
+        "syscw": 74,
+        "wchar": 13743522,
+        "write_bytes": 13934592
+      },
+      "steady_wchar_ratio_vs_legacy": 1.0557636027434523
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Generated scalar checkpoints, real v1 exports, tiny synthetic model; no search or workers."
+}

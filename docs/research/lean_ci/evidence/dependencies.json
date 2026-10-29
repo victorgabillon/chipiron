@@ -1,0 +1,17 @@
+{
+  "anemone": {
+    "modules": 289,
+    "source_match": true
+  },
+  "chipiron": {
+    "modules": 476,
+    "source_match": true
+  },
+  "anemone_commit": "c015194533857a52d07bafdd603b762314692cfb",
+  "anemone_wheel_sha256": "16aaa5b3a3ac339b8aef34ef75a93134136ed07010e9c2da0816d412dd109c47",
+  "inherited_manifest_sha256": "8eee217c2e935b8aec691ec525a09970954d5fde3a68e6385eea30237f0565ad",
+  "chipiron_implementation": "b67bd94572a1398bd82cb6187e70c0e20240a06c",
+  "chipiron_wheel": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/dist/chipiron-0.2.4-py3-none-any.whl",
+  "chipiron_wheel_sha256": "0fd52731093f27ddc7266f7133bda3d7c8859f8fd8688b1b5cb8f7f002388a68",
+  "installed_source_hashes_match": true
+}

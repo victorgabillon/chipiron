@@ -1,0 +1,17 @@
+{
+  "filename": "v3-c939a99967606bffccfe2014344aea57e82c9a22591ef2ae8be9dca45c33d275.sqlite3",
+  "logical_bytes": 3796992,
+  "allocated_bytes": 3801088,
+  "payloads": {
+    "records": [
+      5142,
+      "blob",
+      1130586
+    ],
+    "updates": [
+      5142,
+      "blob",
+      2098162
+    ]
+  }
+}

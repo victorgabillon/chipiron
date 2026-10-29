@@ -12,6 +12,19 @@ set -u
 
 SESSION_NAME="morpion_bootstrap"
 MORPION_WORK_DIR="${MORPION_WORK_DIR:-$HOME/oldata/victor/morpion_runs/big_run_01}"
+
+# Refuse research destinations before shell startup can create logs or controls.
+if [[ -n "${CHIPIRON_TEST_OUTPUT_ROOT:-}" ]]; then
+  test_work_root="$(realpath -m -- "$MORPION_WORK_DIR")" || exit 1
+  for test_protected_root in "$HOME/morpion_runs" "$HOME/oldata/victor/morpion_runs" "${XDG_DATA_HOME:-$HOME/.local/share}/chipiron"; do
+    test_protected_root="$(realpath -m -- "$test_protected_root")" || exit 1
+    if [[ "$test_work_root/" == "$test_protected_root/"* ]]; then
+      echo "Protected persistence destination selected during tests: $MORPION_WORK_DIR" >&2
+      exit 1
+    fi
+  done
+fi
+# Test destination guard ends before any startup side effects.
 ANEMONE_REPO_ROOT="${ANEMONE_REPO_ROOT:-$HOME/oldata/victor/anemone}"
 CORAL_REPO_ROOT="${CORAL_REPO_ROOT:-$HOME/oldata/victor/coral}"
 ATOMHEART_REPO_ROOT="${ATOMHEART_REPO_ROOT:-$HOME/oldata/victor/atomheart}"

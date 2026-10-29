@@ -1,0 +1,93 @@
+{
+  "implementation": "d8e26e6e9b21156841963e54d4e85d7f44bb7b0f",
+  "suites": {
+    "fast": {
+      "selected": 152,
+      "passed": 152,
+      "skipped": 0,
+      "time_s": 97.918
+    },
+    "pr": {
+      "selected": 2664,
+      "passed": 2662,
+      "skipped": 2,
+      "time_s": 978.432
+    },
+    "full": {
+      "selected": 2811,
+      "passed": 2809,
+      "skipped": 2,
+      "time_s": 1470.882
+    },
+    "exhaustive": {
+      "selected": 90,
+      "passed": 90,
+      "skipped": 0,
+      "time_s": 494.503
+    },
+    "focused": {
+      "selected": 20,
+      "passed": 20,
+      "skipped": 0,
+      "time_s": 25.07
+    },
+    "strict_1k": {
+      "selected": 2,
+      "passed": 2,
+      "skipped": 0,
+      "time_s": 20.587
+    }
+  },
+  "coverage": {
+    "covered_lines": 29500,
+    "num_statements": 35369,
+    "percent_covered": 80.42079599069915,
+    "percent_covered_display": "80",
+    "missing_lines": 5869,
+    "excluded_lines": 908,
+    "percent_statements_covered": 83.4063728123498,
+    "percent_statements_covered_display": "83",
+    "num_branches": 8928,
+    "num_partial_branches": 1526,
+    "covered_branches": 6124,
+    "missing_branches": 2804,
+    "percent_branches_covered": 68.5931899641577,
+    "percent_branches_covered_display": "69"
+  },
+  "fast_subset_pr_subset_full": true,
+  "affected_exhaustive_subset_full": true,
+  "missing_or_duplicate_test_phases": false,
+  "installed_sources_unchanged_after_validation": true,
+  "full_runs": 1,
+  "source_and_tests_unchanged_since_implementation": true,
+  "e2e": {
+    "opening_processes": 40,
+    "endgame_processes": 40,
+    "opening_generations": 8,
+    "endgame_generations": 5
+  },
+  "quality": {
+    "ruff": "pass",
+    "format": "754 files pass",
+    "strict_static": {
+      "baseline": 209,
+      "current": 206,
+      "new": 0,
+      "removed": 3
+    },
+    "build": "wheel and sdist pass",
+    "twine": "pass, existing metadata-only tool environment",
+    "installed_distribution": "pass",
+    "toolchain": "pass"
+  },
+  "production_delta": {
+    "added": 63,
+    "removed": 45,
+    "net": 18,
+    "files": 1
+  },
+  "tests_added": 185,
+  "benchmarks_serial": true,
+  "e2e_and_exhaustive_overlap_pr": true,
+  "remote_ci_run": false
+}

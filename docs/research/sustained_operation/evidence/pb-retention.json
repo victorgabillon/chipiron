@@ -1,0 +1,11 @@
+{
+  "action": "read-only",
+  "blockers": [
+    "GenerationPublicationError: Unresolved staging ownership; recover separately."
+  ],
+  "conditional_reclaimable_file_blocks": 0,
+  "current_contract_reclaimable_bytes": 0,
+  "deletion_authorized": false,
+  "report_version": 1,
+  "validated": false
+}

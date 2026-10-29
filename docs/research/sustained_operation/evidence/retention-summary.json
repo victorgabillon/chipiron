@@ -1,0 +1,45 @@
+{
+  "historical-5k": {
+    "validated": true,
+    "deletion_authorized": false,
+    "current_contract_reclaimable_bytes": 0,
+    "conditional_candidates": [],
+    "conditional_reclaimable_file_blocks": 0,
+    "current_publication_metadata_bytes": 18379,
+    "receipt_count": 2,
+    "receipt_metadata_bytes": 1761
+  },
+  "s5": {
+    "validated": true,
+    "deletion_authorized": false,
+    "current_contract_reclaimable_bytes": 0,
+    "conditional_candidates": [],
+    "conditional_reclaimable_file_blocks": 0,
+    "current_publication_metadata_bytes": 27298,
+    "receipt_count": 4,
+    "receipt_metadata_bytes": 3264
+  },
+  "s10": {
+    "validated": true,
+    "deletion_authorized": false,
+    "current_contract_reclaimable_bytes": 0,
+    "conditional_candidates": [
+      2,
+      4,
+      6,
+      9,
+      11,
+      13
+    ],
+    "conditional_reclaimable_file_blocks": 11943936,
+    "current_publication_metadata_bytes": 36375,
+    "receipt_count": 6,
+    "receipt_metadata_bytes": 4769
+  },
+  "pb": {
+    "validated": false,
+    "deletion_authorized": false,
+    "current_contract_reclaimable_bytes": 0,
+    "conditional_reclaimable_file_blocks": 0
+  }
+}

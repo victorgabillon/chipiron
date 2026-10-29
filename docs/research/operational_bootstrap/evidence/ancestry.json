@@ -1,0 +1,40 @@
+{
+  "base": "7326a6f567252f6d43cfa4def7a07ee21de0e624",
+  "prior_production": "109757835630fa01acb23d98dcb914cf6a5767ca",
+  "is_descendant": true,
+  "foundation_changes": [
+    "docs/research/morpion_scientific_index_storage.md",
+    "docs/research/scientific_index/compare.py",
+    "docs/research/scientific_index/evidence/compression-only.json",
+    "docs/research/scientific_index/evidence/installed-sources.json",
+    "docs/research/scientific_index/evidence/integrity-check.json",
+    "docs/research/scientific_index/evidence/payload-experiment.json",
+    "docs/research/scientific_index/evidence/protected-worktrees.json",
+    "docs/research/scientific_index/evidence/renamed-source.json",
+    "docs/research/scientific_index/evidence/results.json",
+    "docs/research/scientific_index/evidence/retention-through-g5.json",
+    "docs/research/scientific_index/evidence/source-manifest.json",
+    "docs/research/scientific_index/evidence/unchanged-launcher.json",
+    "docs/research/scientific_index/evidence/validation.json",
+    "docs/research/scientific_index/measure.py"
+  ],
+  "production_test_configuration_changes": [],
+  "new_branch": "feat/morpion-operational-bootstrap",
+  "executable": "39c7abe8452bb55f76ad59b93c78533389433f52",
+  "local_commits": [
+    "e590ab970c95915f0f79f61b5e7cd3873ca64774 research(morpion): measure owned indexes at the real committed workspace path",
+    "43e5694ae835f402fb868992572c598df1db10b3 research(morpion): require both learning cycles to complete through the four real worker loops",
+    "39c7abe8452bb55f76ad59b93c78533389433f52 fix(morpion): expose Growth pacing so fenced learning workers can complete",
+    "26122ee886c6d5aa5f4b9734003edec065fa66e5 research(morpion): wait for owned command cleanup when a budget stops the recipe",
+    "9840ee9cb0ebd5b8ea695b329cb5a1baf9d9a49b test(morpion): isolate default leaderboard persistence from operator records",
+    "bcabf807114214eeffb5c15a6bd7ed3d3c3c9842 research(morpion): add bounded real-worker recipe and matched export checks",
+    "02b8c90e56b939b29778f84c1e94f73c6a5169d5 refactor(morpion): enter reader cache ownership directly in its context",
+    "d6d0a35b2f3ff6755d21ae444f68526a33f9ff6b fix(morpion): continue bounded initialization after a zero-new-node step",
+    "9f2ccebcf368c6e8166da6277ffa9bd56293a67b fix(morpion): bind fresh producer identity to complete loaded Python sources",
+    "7e640c76c77e5f7c6a7920439c49b6342bff4e9d fix(morpion): scope standalone reader caches and report scientific settings",
+    "13ba073860f68cd93d62ec2a38c51393dc313fcd fix(morpion): refuse empty training results and zero-sample activation",
+    "a25fe09f037159c6c73fa2d7f940a0bc6a37dab6 feat(morpion): expose the closed scientific workflow and owned worker caches",
+    "a23fc49bf70e068cd3d3815f40430165849cc8d2 perf(morpion): stream closed snapshot traversal without a node reference list",
+    "864e54111d3a2e746f95e677d2c3642c9502dac0 fix(morpion): confirm whole worker-group shutdown before launcher exit"
+  ]
+}

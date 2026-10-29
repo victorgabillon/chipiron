@@ -1,0 +1,81 @@
+{
+  "selected": 2689,
+  "passed": 2687,
+  "skipped": [
+    {
+      "classname": "tests.environments.test_morpion_relational_model_integration",
+      "name": "test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "reason": "CUDA unavailable"
+    },
+    {
+      "classname": "tests.learning.supervised.test_multi_input",
+      "name": "test_multi_input_batch_moves_all_inputs_to_cuda",
+      "reason": "CUDA unavailable"
+    }
+  ],
+  "deselected": [
+    "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 2245.360421288002,
+  "junit": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "2",
+    "tests": "2689",
+    "time": "2243.468",
+    "timestamp": "2026-10-24T12:44:15.802435+02:00",
+    "hostname": "pompote-AORUS-15P-KD"
+  },
+  "coverage": {
+    "covered_lines": 29237,
+    "num_statements": 35109,
+    "percent_covered": 80.27640761030163,
+    "percent_covered_display": "80",
+    "missing_lines": 5872,
+    "excluded_lines": 904,
+    "percent_statements_covered": 83.27494374661768,
+    "percent_statements_covered_display": "83",
+    "num_branches": 8884,
+    "num_partial_branches": 1527,
+    "covered_branches": 6079,
+    "missing_branches": 2805,
+    "percent_branches_covered": 68.42638451148132,
+    "percent_branches_covered_display": "68"
+  },
+  "static": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "artifacts": {
+    "tests.json": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/ci-initial/tests.json",
+      "sha256": "20492d530fb6023c396d00144b7e9fbc517956cdc4bf716b41632834158c636c",
+      "bytes": 2285694
+    },
+    "coverage.json": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/ci-initial/coverage.json",
+      "sha256": "5b8d91bb7f12ca7153ae2532a4440b4558f9f77a9d437526eccd9b08f867e198",
+      "bytes": 4094527
+    },
+    "pytest.xml": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/ci-initial/pytest.xml",
+      "sha256": "7b1db4f4b5a4671524856998da423c1e499b7ce11d7b0d33563b33c2b7f5f4e9",
+      "bytes": 427017
+    },
+    "full-ci.log": {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/bounded-anemone-chipiron-20261024/logs/full-ci.log",
+      "sha256": "d48afb4497dff67785110ea712252f6a743a9b8972c2f01f1427f7241a8710b5",
+      "bytes": 134619
+    }
+  },
+  "command": "scripts/ci_test_metrics.py -n 0 --durations=30 --durations-min=0 --cov-report=json:.ci-reports/coverage.json --junitxml=.ci-reports/pytest.xml --basetemp=/home/pompote/oldata/victor/br24ci/full-ci -m 'not integration and not external_data' -p docs.research.benchmarks.morpion_training_export_20261020.validation_safety",
+  "installed_package": true,
+  "implementation": "690201efb6138779cf13d3ce0f41af541069dfdf"
+}

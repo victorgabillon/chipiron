@@ -1,0 +1,387 @@
+{
+  "implementation_commit": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+  "method": "existing StageMeasurement and scientific-reader benchmark costs/delta; fresh processes, serial prepare/cold/legacy/v2; all-estimate synthetic source; same source and warmed verified index for both confidence contracts",
+  "resource_reproducer_sha256": "f13c99c44d7dd1e4746a0d70c90ba91947cad5303a4992209e193c82deab09ba",
+  "trials": [
+    {
+      "cold": {
+        "dataset": null,
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7145.47265625,
+          "available_ram_before_mb": 7176.140625,
+          "costs": {
+            "cpu_system_s": 0.01825199999999999,
+            "cpu_user_s": 2.824003,
+            "io": {
+              "cancelled_write_bytes": 356352,
+              "rchar": 33265973,
+              "read_bytes": 0,
+              "syscr": 3254,
+              "syscw": 1907,
+              "wchar": 6703904,
+              "write_bytes": 6828032
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 3.147817799996119,
+          "finished_unix_s": 1792573953.1192114,
+          "index_reused": false,
+          "node_count": 1000,
+          "pid": 7,
+          "process_peak_rss_mb": 254.2421875,
+          "rss_after_mb": 254.56640625,
+          "rss_before_mb": 253.66015625,
+          "started_unix_s": 1792573949.971393
+        },
+        "mode": "cold",
+        "size": 1000,
+        "source_identity_sha256": "0b734358ae594ad4336621300a96f2bcfbc54b75651de2f163ad248b2d889f9e",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+          "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+          "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": null
+      },
+      "disk_bytes": {
+        "cache": 5857280,
+        "source": 5284158
+      },
+      "identical_targets_refs_flags": true,
+      "legacy_confidence": {
+        "dataset": {
+          "available_ram_after_mb": 7147.23828125,
+          "available_ram_before_mb": 7144.3984375,
+          "costs": {
+            "cpu_system_s": 0.01097200000000001,
+            "cpu_user_s": 0.31745899999999994,
+            "io": {
+              "cancelled_write_bytes": 266240,
+              "rchar": 32777046,
+              "read_bytes": 0,
+              "syscr": 5493,
+              "syscw": 645,
+              "wchar": 5240187,
+              "write_bytes": 5246976
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.32862200700037647,
+          "finished_unix_s": 1792573955.0823762,
+          "output_bytes": 4980611,
+          "pid": 23,
+          "process_peak_rss_mb": 254.0,
+          "rows": 1000,
+          "rss_after_mb": 254.37109375,
+          "rss_before_mb": 254.30859375,
+          "started_unix_s": 1792573954.7537546,
+          "temp_bytes": 266240
+        },
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7144.3984375,
+          "available_ram_before_mb": 7144.6796875,
+          "costs": {
+            "cpu_system_s": 0.0010099999999999831,
+            "cpu_user_s": 0.027189999999999603,
+            "io": {
+              "cancelled_write_bytes": 0,
+              "rchar": 16641313,
+              "read_bytes": 0,
+              "syscr": 2829,
+              "syscw": 0,
+              "wchar": 0,
+              "write_bytes": 0
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.028367603998049162,
+          "finished_unix_s": 1792573954.7537029,
+          "index_reused": true,
+          "node_count": 1000,
+          "pid": 23,
+          "process_peak_rss_mb": 254.0,
+          "rss_after_mb": 254.30859375,
+          "rss_before_mb": 253.64453125,
+          "started_unix_s": 1792573954.7253351
+        },
+        "mode": "legacy_v1",
+        "size": 1000,
+        "source_identity_sha256": "0b734358ae594ad4336621300a96f2bcfbc54b75651de2f163ad248b2d889f9e",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+          "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+          "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": "93df7c7f618a305def4a23339c60044d886375e04e4fe7093d8c9c1620709a56"
+      },
+      "selected_value_confidence": {
+        "dataset": {
+          "available_ram_after_mb": 7157.4609375,
+          "available_ram_before_mb": 7161.12890625,
+          "costs": {
+            "cpu_system_s": 0.010001999999999983,
+            "cpu_user_s": 0.527838,
+            "io": {
+              "cancelled_write_bytes": 266240,
+              "rchar": 49161078,
+              "read_bytes": 0,
+              "syscr": 9495,
+              "syscw": 645,
+              "wchar": 6247468,
+              "write_bytes": 6254592
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.5380635019973852,
+          "finished_unix_s": 1792573957.254999,
+          "output_bytes": 5987892,
+          "pid": 39,
+          "process_peak_rss_mb": 253.9296875,
+          "rows": 1000,
+          "rss_after_mb": 254.3046875,
+          "rss_before_mb": 254.2421875,
+          "started_unix_s": 1792573956.7169359,
+          "temp_bytes": 266240
+        },
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7161.12890625,
+          "available_ram_before_mb": 7161.12890625,
+          "costs": {
+            "cpu_system_s": 0.0030200000000000227,
+            "cpu_user_s": 0.02462199999999992,
+            "io": {
+              "cancelled_write_bytes": 0,
+              "rchar": 16641313,
+              "read_bytes": 0,
+              "syscr": 2829,
+              "syscw": 0,
+              "wchar": 0,
+              "write_bytes": 0
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.027797401999123394,
+          "finished_unix_s": 1792573956.716884,
+          "index_reused": true,
+          "node_count": 1000,
+          "pid": 39,
+          "process_peak_rss_mb": 253.9296875,
+          "rss_after_mb": 254.2421875,
+          "rss_before_mb": 253.578125,
+          "started_unix_s": 1792573956.689086
+        },
+        "mode": "selected_value_v2",
+        "size": 1000,
+        "source_identity_sha256": "0b734358ae594ad4336621300a96f2bcfbc54b75651de2f163ad248b2d889f9e",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "e3bb4a0f30eefc72811f526f45b038d892fbbc68babb5cfc49d41500cf0d3e80",
+          "source/generation_000001/records.jsonl": "63cd8336e58b7b9203b60fde2260eb5b6c495973b57f828c74b0bb9c16d555a2",
+          "source/generation_000001/updates.jsonl": "74f097a5770969db65fea2b94680a4511446ac6e86cc25e328c61b6f9d842c1f",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": "93df7c7f618a305def4a23339c60044d886375e04e4fe7093d8c9c1620709a56"
+      },
+      "size": 1000
+    },
+    {
+      "cold": {
+        "dataset": null,
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7136.55078125,
+          "available_ram_before_mb": 7113.046875,
+          "costs": {
+            "cpu_system_s": 0.07333299999999998,
+            "cpu_user_s": 22.456917,
+            "io": {
+              "cancelled_write_bytes": 2387968,
+              "rchar": 174702006,
+              "read_bytes": 0,
+              "syscr": 17727,
+              "syscw": 10389,
+              "wchar": 34748168,
+              "write_bytes": 35172352
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 23.61067051999271,
+          "finished_unix_s": 1792574048.2060652,
+          "index_reused": false,
+          "node_count": 5000,
+          "pid": 23,
+          "process_peak_rss_mb": 256.5703125,
+          "rss_after_mb": 257.00390625,
+          "rss_before_mb": 253.77734375,
+          "started_unix_s": 1792574024.5953941
+        },
+        "mode": "cold",
+        "size": 5000,
+        "source_identity_sha256": "038d4aebcba96bccb53e76b437a958668bfad86ef6d9d862e4e7e197416465ec",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+          "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+          "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": null
+      },
+      "disk_bytes": {
+        "cache": 29433856,
+        "source": 26655555
+      },
+      "identical_targets_refs_flags": true,
+      "legacy_confidence": {
+        "dataset": {
+          "available_ram_after_mb": 7096.29296875,
+          "available_ram_before_mb": 7090.80859375,
+          "costs": {
+            "cpu_system_s": 0.05888099999999999,
+            "cpu_user_s": 1.6041680000000005,
+            "io": {
+              "cancelled_write_bytes": 1228800,
+              "rchar": 200316770,
+              "read_bytes": 0,
+              "syscr": 36123,
+              "syscw": 3348,
+              "wchar": 26361053,
+              "write_bytes": 26370048
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 1.6633380130078876,
+          "finished_unix_s": 1792574051.6331878,
+          "output_bytes": 25140629,
+          "pid": 39,
+          "process_peak_rss_mb": 255.53125,
+          "rows": 5000,
+          "rss_after_mb": 255.921875,
+          "rss_before_mb": 254.80859375,
+          "started_unix_s": 1792574049.9698503,
+          "temp_bytes": 1200128
+        },
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7090.80859375,
+          "available_ram_before_mb": 7088.69140625,
+          "costs": {
+            "cpu_system_s": 0.014008999999999994,
+            "cpu_user_s": 0.11919900000000005,
+            "io": {
+              "cancelled_write_bytes": 0,
+              "rchar": 94474643,
+              "read_bytes": 0,
+              "syscr": 16630,
+              "syscw": 0,
+              "wchar": 0,
+              "write_bytes": 0
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.13342152500990778,
+          "finished_unix_s": 1792574049.9697683,
+          "index_reused": true,
+          "node_count": 5000,
+          "pid": 39,
+          "process_peak_rss_mb": 254.40625,
+          "rss_after_mb": 254.80859375,
+          "rss_before_mb": 253.6953125,
+          "started_unix_s": 1792574049.836346
+        },
+        "mode": "legacy_v1",
+        "size": 5000,
+        "source_identity_sha256": "038d4aebcba96bccb53e76b437a958668bfad86ef6d9d862e4e7e197416465ec",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+          "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+          "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": "46cc329a4b6af52e4307e1c809ba496f2bc61b2205538afae4d7c316f5ff7e58"
+      },
+      "selected_value_confidence": {
+        "dataset": {
+          "available_ram_after_mb": 7093.89453125,
+          "available_ram_before_mb": 7084.1796875,
+          "costs": {
+            "cpu_system_s": 0.07839400000000002,
+            "cpu_user_s": 2.574212,
+            "io": {
+              "cancelled_write_bytes": 1228800,
+              "rchar": 282236802,
+              "read_bytes": 0,
+              "syscr": 56125,
+              "syscw": 3348,
+              "wchar": 31392639,
+              "write_bytes": 31404032
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 2.6531681350024883,
+          "finished_unix_s": 1792574056.0702655,
+          "output_bytes": 30172215,
+          "pid": 55,
+          "process_peak_rss_mb": 255.40625,
+          "rows": 5000,
+          "rss_after_mb": 255.8359375,
+          "rss_before_mb": 254.7578125,
+          "started_unix_s": 1792574053.417098,
+          "temp_bytes": 1200128
+        },
+        "implementation": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+        "initialization": {
+          "available_ram_after_mb": 7084.1796875,
+          "available_ram_before_mb": 7080.56640625,
+          "costs": {
+            "cpu_system_s": 0.022455000000000003,
+            "cpu_user_s": 0.10942200000000035,
+            "io": {
+              "cancelled_write_bytes": 0,
+              "rchar": 94474643,
+              "read_bytes": 0,
+              "syscr": 16630,
+              "syscw": 0,
+              "wchar": 0,
+              "write_bytes": 0
+            }
+          },
+          "cuda_after": null,
+          "cuda_before": null,
+          "elapsed_s": 0.13208163499075454,
+          "finished_unix_s": 1792574053.4170465,
+          "index_reused": true,
+          "node_count": 5000,
+          "pid": 55,
+          "process_peak_rss_mb": 254.40625,
+          "rss_after_mb": 254.7578125,
+          "rss_before_mb": 253.64453125,
+          "started_unix_s": 1792574053.2849643
+        },
+        "mode": "selected_value_v2",
+        "size": 5000,
+        "source_identity_sha256": "038d4aebcba96bccb53e76b437a958668bfad86ef6d9d862e4e7e197416465ec",
+        "source_sha256": {
+          "source/generation_000001/generation.json": "bed2809b66c5e0f4f4f4f993ef1d8071e5c4c97b3ed86c49287791db83c9ff39",
+          "source/generation_000001/records.jsonl": "2648c7fc62b0a7016d50ef496717fa0fd753db30baecfc7363def6143c52ae30",
+          "source/generation_000001/updates.jsonl": "4bb7857a73cfc468555d4d98f47027b0d5c0164efe291297b66a3c5e07a5ad0e",
+          "source/manifest.json": "c624458132dc378d8a1f60dd886c67edea14d393eb4187dfeca6fc9346010f8a"
+        },
+        "targets_refs_flags_sha256": "46cc329a4b6af52e4307e1c809ba496f2bc61b2205538afae4d7c316f5ff7e58"
+      },
+      "size": 5000
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "clean": false,
+    "head": "f545304c24a7889f20471de0944d8097a9d192c8",
+    "matches_pinned_head": true,
+    "path": "/home/pompote/oldata/victor/chipiron",
+    "status_lines": 41,
+    "status_sha256": "8a6845fb433e1a22ad2fbba43b77ba774daa0dbc2372b80b2787828e5362a195"
+  },
+  {
+    "clean": true,
+    "head": "79693ce2dc59c6d6ccb951951c9ba75fa69057f3",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-streaming-reevaluation",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "5c8906ba0d520c63d821e14a2d52530f8bed2307",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-streaming-dataset",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "67a7cfd1955f43d5947af01dbb324fb5efd93a0d",
+    "matches_pinned_head": true,
+    "path": "/home/pompote/oldata/victor/chipiron-training-export-profile",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "bfd8f2ab05f017ffda5e14af5dbf6e1f1afa3fde",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-sharded-training-v2",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "cae9ec523edaaed277c8f953fafae5d9ac766701",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-value-certainty",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "02212bc6130205b7d2ef898c7b1eb0f7d384f7aa",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-scientific-v2-reader",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "clean": true,
+    "head": "7d808c37113b5ea127bd473bc8c5b8e774492b8a",
+    "matches_pinned_head": true,
+    "path": "/tmp/chipiron-scientific-v2-reader-profile",
+    "status_lines": 0,
+    "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

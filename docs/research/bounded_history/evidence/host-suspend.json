@@ -1,0 +1,19 @@
+{
+  "captured_unix_s": 1793044561.7329178,
+  "clock_realtime": 1793044561.7329183,
+  "clock_monotonic": 30987.118796649,
+  "clock_boottime": 40771.316929214,
+  "boottime_minus_monotonic_s": 9784.198130903002,
+  "kernel_log": "Oct 26 18:05:32 pompote-AORUS-15P-KD kernel: PM: suspend entry (s2idle)\nOct 26 20:48:40 pompote-AORUS-15P-KD kernel: printk: Suspending console(s) (use no_console_suspend to debug)\nOct 26 20:48:40 pompote-AORUS-15P-KD kernel: PM: suspend exit\n",
+  "affected_native_resource_file": "/home/pompote/oldata/victor/morpion-scratch/s27/long/04-M2-cold-check.resources.json",
+  "affected_native_resources": {
+    "wall_s": 10841.52,
+    "user_s": 1038.32,
+    "system_s": 1.32,
+    "peak_rss_kib": 837028,
+    "input_blocks": 8,
+    "output_blocks": 395264
+  },
+  "time_contract": "Existing experiment/session/check budgets use CLOCK_MONOTONIC; host suspend is excluded. GNU time elapsed and civil log timestamps include suspend. No budget was changed while running.",
+  "interpretation": "Kernel confirms s2idle from 18:05:32 to 20:48:40 local time. Preserve raw elapsed values. Main audit wall time and initial PR civil span include this interruption; do not use them as uninterrupted throughput evidence. Both controlled batching and metadata studies finished before it; main worker session M1 finished before and M2 began after resume."
+}

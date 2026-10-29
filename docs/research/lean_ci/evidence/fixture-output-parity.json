@@ -1,0 +1,12 @@
+{
+  "legacy.jsonl": {
+    "before_count": 27,
+    "after_count": 27,
+    "same_complete_file_hash_multiset": true
+  },
+  "indexed.jsonl": {
+    "before_count": 27,
+    "after_count": 27,
+    "same_complete_file_hash_multiset": true
+  }
+}

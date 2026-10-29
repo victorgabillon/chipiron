@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "identity": {
+    "workspace_id": "260e7ddebba04abdb9bb0b312b3a2dcc",
+    "epoch_id": "820961c64e9b4ba5813de1c45e30384c"
+  },
+  "expected_head": "2a533e5d554a46d889e487c5878d9445",
+  "previous_model": {
+    "generation": 1,
+    "local_trained_generation": null,
+    "name": "seed",
+    "path": "seed",
+    "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+    "source": "external_seed",
+    "source_generation": 1
+  },
+  "training_generation": 2,
+  "accepted_training": {
+    "attempt_id": "bbe274805dda491084fe6aa20225450e",
+    "descriptor_sha256": "10c281769ecd6da1c77d9af973621cbf98c41dfff6b16cf7e2f569d707fed2f6"
+  },
+  "candidate": {
+    "path": "training_publications_v1/objects/bbe274805dda491084fe6aa20225450e/models/generation_000002/linear_b",
+    "sha256": "e02352f29a1295744e20b0f1726bf16150686201b1021e2189d36fd6df0f930e",
+    "generation": 2,
+    "name": "linear_b",
+    "source": "local_training",
+    "source_generation": 2,
+    "local_trained_generation": 2
+  },
+  "config_sha256": "0a4c4b2c4adf9b8b28cf9e0c178e63695558e60f0f54efb73fde74abc03fe82f",
+  "effective_runtime": {
+    "reevaluation_blend_alpha": 1.0,
+    "tree_branch_limit": 100000
+  },
+  "policy": {
+    "checkpoint_format": 3,
+    "search": "morpion_default_max_linoo_alternating_all_children_v1",
+    "confidence": "selected_value_v2",
+    "numeric": "anemone_depth_scaled_nonterminal_v1",
+    "refresh_scope": "all",
+    "batch_size": 64
+  },
+  "expected_cursor_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+  "receipt_ledger_sha256": "f139e3d58589877687cd9790dbfc95449a77eaf2b3ec85cb6e8022e23b858aa1"
+}

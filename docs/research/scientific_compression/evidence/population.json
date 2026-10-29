@@ -1,0 +1,26 @@
+[
+  {
+    "label": "1k-raw",
+    "nodes": 1003,
+    "max_record_bytes": 468,
+    "record_bytes": 207358,
+    "edges": 1114,
+    "manifest_sha256": "11edf2cda32ae461724ef5ebd5ceeadd5f5efa7abdb560f93432c0194e779365",
+    "canonical_payload_type": "list",
+    "history_items_mean": 6.942173479561316,
+    "history_items_max": 20,
+    "max_update_bytes": 1614
+  },
+  {
+    "label": "5k-raw",
+    "nodes": 5013,
+    "max_record_bytes": 1309,
+    "record_bytes": 1921548,
+    "edges": 5931,
+    "manifest_sha256": "53e3ab5919271627d9411a1bcfe7c5cc161ec2c10cf9f3e3b40bf36a831cc929",
+    "canonical_payload_type": "list",
+    "history_items_mean": 15.726710552563336,
+    "history_items_max": 62,
+    "max_update_bytes": 1621
+  }
+]

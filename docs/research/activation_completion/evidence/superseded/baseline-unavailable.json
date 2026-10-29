@@ -1,0 +1,7 @@
+{
+  "implementation": "/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/__init__.py",
+  "refused": true,
+  "error_type": "DerivationError",
+  "message": "Missing or external artifact: /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/experiments/separation-copy/workspace/generation_publications_v3/objects/0efcce24e4bc4dd3a65d1e0ecdeaabb2/checkpoint/generation_000004.sharded/latest_expansions/latest_expansions.json.zst",
+  "authority_unchanged": true
+}

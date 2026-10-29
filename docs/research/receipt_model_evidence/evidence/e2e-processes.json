@@ -1,0 +1,548 @@
+[
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "init",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "00-init"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.058126857009484
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "01-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.544995407981332
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "02-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.162680778972572
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "03-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.179347073979443
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "04-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.151587966014631
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "05-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.108009657997172
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "06-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.450073576997966
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "07-dataset",
+      "--generation",
+      "2"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.971673752006609
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "08-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.952289071021369
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "09-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.112525229982566
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "10-training",
+      "--generation",
+      "2"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.656006650999188
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "11-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.98517169902334
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "12-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.3634521100029815
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "13-prepare",
+      "--generation",
+      "2",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.61443907598732
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "14-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 10.76215835599578
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "15-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.30759639700409
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "16-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 11.769698577991221
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "17-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.046099091996439
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "18-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.1609801670128945
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "19-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.00420838399441
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "20-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.742993682011729
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "21-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.330337938008597
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "22-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.08105012399028
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "dataset",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "23-dataset",
+      "--generation",
+      "5"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.348814475000836
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "24-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.428853663004702
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "25-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.873232476995327
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "training",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "26-training",
+      "--generation",
+      "5"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.868341837020125
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "27-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.409830425021937
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "28-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.958785952010658
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "prepare",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "29-prepare",
+      "--generation",
+      "5",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.776880198012805
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "30-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 10.768443433014909
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "restart",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "31-restart"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.902808531973278
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "32-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 11.601804646023083
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "33-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M3-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 5.575481195002794
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "predict-growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "34-predict-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.51863295500516
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "growth",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "35-growth"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.388899858982768
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "36-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 7.757347942999331
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "reevaluation",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "37-reevaluation"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.285695692000445
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "check",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "38-check"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 8.098459414992249
+  },
+  {
+    "command": [
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree/../venv/bin/python",
+      "-m",
+      "docs.research.e2e_bootstrap.worker",
+      "activate",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/workspace",
+      "--label",
+      "39-activate",
+      "--request",
+      "/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/experiments/opening/M2-request.json"
+    ],
+    "exit_code": 0,
+    "process_wall_s": 6.126350548001938
+  }
+]

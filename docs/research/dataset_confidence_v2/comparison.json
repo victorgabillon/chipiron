@@ -1,0 +1,1447 @@
+{
+  "base_commit": "77267b64a675602f9567920be74555999792cc68",
+  "case_summaries": [
+    {
+      "case": "actual-endgame",
+      "frozen_legacy_outputs": 378,
+      "generation": 1,
+      "v2_gates": 168,
+      "v2_parity": 210
+    },
+    {
+      "case": "actual-endgame",
+      "frozen_legacy_outputs": 378,
+      "generation": 2,
+      "v2_gates": 168,
+      "v2_parity": 210
+    },
+    {
+      "case": "ordinary",
+      "frozen_legacy_outputs": 378,
+      "generation": 1,
+      "v2_gates": 168,
+      "v2_parity": 210
+    },
+    {
+      "case": "declared-api-proof",
+      "frozen_legacy_outputs": 378,
+      "generation": 1,
+      "v2_gates": 168,
+      "v2_parity": 210
+    },
+    {
+      "case": "unequal-state-family",
+      "frozen_legacy_outputs": 378,
+      "generation": 1,
+      "v2_gates": 168,
+      "v2_parity": 210
+    }
+  ],
+  "decision_counts": {
+    "exact_parity": 2940,
+    "gated_all_three_paths": 840
+  },
+  "failing_before_passing_after": [
+    {
+      "after": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": false,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_certified_member_count": 1,
+          "family_exact_target": null,
+          "family_has_certified_member": true,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 1,
+          "family_proof_contract": null,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "raw_backup",
+          "raw_target": 42.0,
+          "raw_target_source": "direct_value",
+          "selected_child_id": "1",
+          "target_confidence": {
+            "contract": "morpion-selected-value-confidence-1",
+            "node_effective_certainty": "FORCED",
+            "node_is_exact": true,
+            "node_is_terminal": false,
+            "raw_target_certainty": "ESTIMATE",
+            "raw_target_source": "direct_value",
+            "raw_target_value": 42.0,
+            "source_value_contract": {
+              "all_branches_generated": true,
+              "backup_exactness_compatible": true,
+              "certainties": {
+                "direct": "ESTIMATE",
+                "effective": "FORCED",
+                "target": "FORCED",
+                "tree": "FORCED"
+              },
+              "target_source": "tree_value",
+              "values": {
+                "direct": {
+                  "certainty": "ESTIMATE",
+                  "line": null,
+                  "over_event": null,
+                  "score": 42.0
+                },
+                "effective": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "target": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "tree": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                }
+              }
+            },
+            "training_target_certainty": "ESTIMATE",
+            "training_target_source": "raw_target",
+            "training_target_value": 42.0
+          },
+          "target_selection_rule": "exact_or_terminal_direct_value",
+          "target_source": "direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "after_passes": true,
+      "assertion": "estimated_direct_target_must_not_be_exact",
+      "before": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": true,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "hard_exact_anchor",
+          "raw_target": 42.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": "1",
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "before_passes": false,
+      "policy": "none"
+    },
+    {
+      "after": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": false,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 38.5,
+          "effective_target_source": "pv_mean_prediction",
+          "family_certified_member_count": 1,
+          "family_exact_target": null,
+          "family_has_certified_member": true,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 1,
+          "family_proof_contract": null,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_mean_prediction",
+          "raw_target": 42.0,
+          "raw_target_source": "direct_value",
+          "selected_child_id": "1",
+          "target_confidence": {
+            "contract": "morpion-selected-value-confidence-1",
+            "node_effective_certainty": "FORCED",
+            "node_is_exact": true,
+            "node_is_terminal": false,
+            "raw_target_certainty": "ESTIMATE",
+            "raw_target_source": "direct_value",
+            "raw_target_value": 42.0,
+            "source_value_contract": {
+              "all_branches_generated": true,
+              "backup_exactness_compatible": true,
+              "certainties": {
+                "direct": "ESTIMATE",
+                "effective": "FORCED",
+                "target": "FORCED",
+                "tree": "FORCED"
+              },
+              "target_source": "tree_value",
+              "values": {
+                "direct": {
+                  "certainty": "ESTIMATE",
+                  "line": null,
+                  "over_event": null,
+                  "score": 42.0
+                },
+                "effective": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "target": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "tree": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                }
+              }
+            },
+            "training_target_certainty": "ESTIMATE",
+            "training_target_source": "pv_mean_prediction",
+            "training_target_value": 38.5
+          },
+          "target_selection_rule": "exact_or_terminal_direct_value",
+          "target_source": "direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 38.5,
+        "visit_count": null
+      },
+      "after_passes": true,
+      "assertion": "estimated_direct_target_must_not_be_exact",
+      "before": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": true,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "hard_exact_anchor",
+          "raw_target": 42.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": "1",
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "before_passes": false,
+      "policy": "pv_mean_prediction"
+    },
+    {
+      "after": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": false,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 35.0,
+          "effective_target_source": "pv_min_prediction",
+          "family_certified_member_count": 1,
+          "family_exact_target": null,
+          "family_has_certified_member": true,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 1,
+          "family_proof_contract": null,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_min_prediction",
+          "raw_target": 42.0,
+          "raw_target_source": "direct_value",
+          "selected_child_id": "1",
+          "target_confidence": {
+            "contract": "morpion-selected-value-confidence-1",
+            "node_effective_certainty": "FORCED",
+            "node_is_exact": true,
+            "node_is_terminal": false,
+            "raw_target_certainty": "ESTIMATE",
+            "raw_target_source": "direct_value",
+            "raw_target_value": 42.0,
+            "source_value_contract": {
+              "all_branches_generated": true,
+              "backup_exactness_compatible": true,
+              "certainties": {
+                "direct": "ESTIMATE",
+                "effective": "FORCED",
+                "target": "FORCED",
+                "tree": "FORCED"
+              },
+              "target_source": "tree_value",
+              "values": {
+                "direct": {
+                  "certainty": "ESTIMATE",
+                  "line": null,
+                  "over_event": null,
+                  "score": 42.0
+                },
+                "effective": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "target": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "tree": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                }
+              }
+            },
+            "training_target_certainty": "ESTIMATE",
+            "training_target_source": "pv_min_prediction",
+            "training_target_value": 35.0
+          },
+          "target_selection_rule": "exact_or_terminal_direct_value",
+          "target_source": "direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 35.0,
+        "visit_count": null
+      },
+      "after_passes": true,
+      "assertion": "estimated_direct_target_must_not_be_exact",
+      "before": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": true,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "hard_exact_anchor",
+          "raw_target": 42.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": "1",
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "before_passes": false,
+      "policy": "pv_min_prediction"
+    },
+    {
+      "after": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": false,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 41.125,
+          "effective_target_source": "pv_blend_mean_prediction",
+          "family_certified_member_count": 1,
+          "family_exact_target": null,
+          "family_has_certified_member": true,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 1,
+          "family_proof_contract": null,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_blend_mean_prediction",
+          "raw_target": 42.0,
+          "raw_target_source": "direct_value",
+          "selected_child_id": "1",
+          "target_confidence": {
+            "contract": "morpion-selected-value-confidence-1",
+            "node_effective_certainty": "FORCED",
+            "node_is_exact": true,
+            "node_is_terminal": false,
+            "raw_target_certainty": "ESTIMATE",
+            "raw_target_source": "direct_value",
+            "raw_target_value": 42.0,
+            "source_value_contract": {
+              "all_branches_generated": true,
+              "backup_exactness_compatible": true,
+              "certainties": {
+                "direct": "ESTIMATE",
+                "effective": "FORCED",
+                "target": "FORCED",
+                "tree": "FORCED"
+              },
+              "target_source": "tree_value",
+              "values": {
+                "direct": {
+                  "certainty": "ESTIMATE",
+                  "line": null,
+                  "over_event": null,
+                  "score": 42.0
+                },
+                "effective": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "target": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "tree": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                }
+              }
+            },
+            "training_target_certainty": "ESTIMATE",
+            "training_target_source": "pv_blend_mean_prediction",
+            "training_target_value": 41.125
+          },
+          "target_selection_rule": "exact_or_terminal_direct_value",
+          "target_source": "direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 41.125,
+        "visit_count": null
+      },
+      "after_passes": true,
+      "assertion": "estimated_direct_target_must_not_be_exact",
+      "before": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": true,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "hard_exact_anchor",
+          "raw_target": 42.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": "1",
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "before_passes": false,
+      "policy": "pv_blend_mean_prediction"
+    },
+    {
+      "after": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": false,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 40.25,
+          "effective_target_source": "pv_blend_min_prediction",
+          "family_certified_member_count": 1,
+          "family_exact_target": null,
+          "family_has_certified_member": true,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 1,
+          "family_proof_contract": null,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_blend_min_prediction",
+          "raw_target": 42.0,
+          "raw_target_source": "direct_value",
+          "selected_child_id": "1",
+          "target_confidence": {
+            "contract": "morpion-selected-value-confidence-1",
+            "node_effective_certainty": "FORCED",
+            "node_is_exact": true,
+            "node_is_terminal": false,
+            "raw_target_certainty": "ESTIMATE",
+            "raw_target_source": "direct_value",
+            "raw_target_value": 42.0,
+            "source_value_contract": {
+              "all_branches_generated": true,
+              "backup_exactness_compatible": true,
+              "certainties": {
+                "direct": "ESTIMATE",
+                "effective": "FORCED",
+                "target": "FORCED",
+                "tree": "FORCED"
+              },
+              "target_source": "tree_value",
+              "values": {
+                "direct": {
+                  "certainty": "ESTIMATE",
+                  "line": null,
+                  "over_event": null,
+                  "score": 42.0
+                },
+                "effective": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "target": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                },
+                "tree": {
+                  "certainty": "FORCED",
+                  "line": null,
+                  "over_event": {
+                    "outcome": "WIN",
+                    "termination": {
+                      "module": "chipiron.environments.morpion.players.evaluators.morpion_state_evaluator",
+                      "name": "NO_LEGAL_MOVES",
+                      "qualname": "MorpionTermination",
+                      "type": "enum"
+                    },
+                    "winner": null
+                  },
+                  "score": 35.0
+                }
+              }
+            },
+            "training_target_certainty": "ESTIMATE",
+            "training_target_source": "pv_blend_min_prediction",
+            "training_target_value": 40.25
+          },
+          "target_selection_rule": "exact_or_terminal_direct_value",
+          "target_source": "direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 40.25,
+        "visit_count": null
+      },
+      "after_passes": true,
+      "assertion": "estimated_direct_target_must_not_be_exact",
+      "before": {
+        "depth": 0,
+        "direct_value": 42.0,
+        "is_exact": true,
+        "is_terminal": false,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "raw_target",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "hard_exact_anchor",
+          "raw_target": 42.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": "1",
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "0",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "before_passes": false,
+      "policy": "pv_blend_min_prediction"
+    },
+    {
+      "after_behavior": "explicit rejection before output",
+      "after_passes": true,
+      "assertion": "certified_terminal_35_must_not_be_overwritten",
+      "before_passes": false,
+      "before_terminal": {
+        "depth": 1,
+        "direct_value": 35.0,
+        "is_exact": true,
+        "is_terminal": true,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "pv_exact_family_multi_max",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_exact_family_multi_max",
+          "raw_target": 35.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": null,
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "1",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223512793670778880,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "policy": "pv_exact_then_mean_prediction"
+    },
+    {
+      "after_behavior": "explicit rejection before output",
+      "after_passes": true,
+      "assertion": "certified_terminal_35_must_not_be_overwritten",
+      "before_passes": false,
+      "before_terminal": {
+        "depth": 1,
+        "direct_value": 35.0,
+        "is_exact": true,
+        "is_terminal": true,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "pv_exact_family_multi_max",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_exact_family_multi_max",
+          "raw_target": 35.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": null,
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "1",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223512793670778880,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "policy": "pv_exact_then_min_prediction"
+    },
+    {
+      "after_behavior": "explicit rejection before output",
+      "after_passes": true,
+      "assertion": "certified_terminal_35_must_not_be_overwritten",
+      "before_passes": false,
+      "before_terminal": {
+        "depth": 1,
+        "direct_value": 35.0,
+        "is_exact": true,
+        "is_terminal": true,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "pv_exact_family_multi_max",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_exact_family_multi_max",
+          "raw_target": 35.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": null,
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "1",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223512793670778880,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "policy": "pv_exact_then_blend_mean_prediction"
+    },
+    {
+      "after_behavior": "explicit rejection before output",
+      "after_passes": true,
+      "assertion": "certified_terminal_35_must_not_be_overwritten",
+      "before_passes": false,
+      "before_terminal": {
+        "depth": 1,
+        "direct_value": 35.0,
+        "is_exact": true,
+        "is_terminal": true,
+        "metadata": {
+          "effective_target": 42.0,
+          "effective_target_source": "pv_exact_family_multi_max",
+          "family_exact_target": 42.0,
+          "family_has_exact_or_terminal": true,
+          "family_num_exact_or_terminal": 2,
+          "family_representative_node_id": "1",
+          "family_size": 2,
+          "family_target_rule": "pv_exact_family_multi_max",
+          "raw_target": 35.0,
+          "raw_target_source": "exact_or_terminal_direct_value",
+          "selected_child_id": null,
+          "target_source": "exact_or_terminal_direct_value"
+        },
+        "node_id": "1",
+        "over_event_label": "OverEvent(outcome=<Outcome.WIN: 1>, termination=<MorpionTermination.NO_LEGAL_MOVES: 'no_legal_moves'>, winner=None)",
+        "state_ref_payload": [
+          0,
+          [
+            9221823918040317950,
+            9221823918040317954,
+            9221823930925219841,
+            9221823930925219837,
+            9222105388721864705,
+            9222105397312061435,
+            9222105401607028740,
+            9222668330085744635,
+            9222668368740450308,
+            9222949800767291390,
+            9221823918040317946,
+            9222386859403673600,
+            9221823913745350653,
+            9221823913745350657,
+            9222668338675417089,
+            9221823935220187134,
+            9222949800767553534,
+            9222949826537095172,
+            9221823909450383360,
+            9221823926630252544,
+            9221823913745088513,
+            9221542447358509055,
+            9221823922335285243,
+            9221823909450383356,
+            9223512755016073215,
+            9223512767900975102,
+            9222668355855548413,
+            9222105380132192255,
+            9223512780785876993,
+            9223512793670778880,
+            9223794225697619966,
+            9223794251467423748,
+            9222668368740450304,
+            9222668360150515714,
+            9224638663512850433
+          ]
+        ],
+        "target_value": 42.0,
+        "visit_count": null
+      },
+      "policy": "pv_exact_then_blend_min_prediction"
+    }
+  ],
+  "implementation_commit": "eea417271a822311e08dd8b88ee938ccb32ef2f4",
+  "intentional_v1_to_v2_changes": {
+    "added_after_filter_or_limit": 0,
+    "exact_flag_changes": 165,
+    "removed_rows": 60,
+    "shared_rows": 1185,
+    "target_changes": 85
+  },
+  "legacy_loader_refusal": [
+    {
+      "error": "MalformedMorpionSupervisedRowsError",
+      "message": "Morpion supervised rows payload field `rows` must be a list.",
+      "path": "/tmp/morpion-confidence-legacy-refusal/rows.json",
+      "refused": true
+    },
+    {
+      "error": "MalformedMorpionSupervisedRowsError",
+      "message": "Unexpected Morpion supervised rows JSONL record kind at line 1: 'morpion_scientific_supervised_rows_metadata'.",
+      "path": "/tmp/morpion-confidence-legacy-refusal/rows.jsonl",
+      "refused": true
+    }
+  ],
+  "matched_source_fingerprints": {
+    "different_files": [
+      "patch.json"
+    ],
+    "exact_patch_field_differences": [
+      {
+        "after": "/tmp/morpion-dataset-confidence-v2-matrix/model",
+        "before": "/tmp/morpion-dataset-confidence-before/model",
+        "field": ".rows.0.metadata.model_bundle_path"
+      },
+      {
+        "after": "/tmp/morpion-dataset-confidence-v2-matrix/model",
+        "before": "/tmp/morpion-dataset-confidence-before/model",
+        "field": ".rows.1.metadata.model_bundle_path"
+      }
+    ],
+    "identical_flat_and_export_files": 24
+  },
+  "requirements_probe": {
+    "after_passed": 9,
+    "before_failed": 9,
+    "scope": "v2 scientific requirements evaluated on actual retained baseline/new Dataset outputs; v1 remains unchanged; four after cases pass by explicit gating",
+    "script_sha256": "47886f99b4c3308e051faf3fa9321944f13ef29e4eb4d6a92455795c700a9262"
+  },
+  "source_code_sha256": {
+    "src/chipiron/environments/morpion/bootstrap/bootstrap_args.py": "6a2587d591f939ede9ee4b11c2ec3dfc2c4dca6109ff7bb26f4adc141d3b3b7d",
+    "src/chipiron/environments/morpion/bootstrap/cycle_dataset.py": "4f4baa0a83f30157f4df8f23f914db6889402f9d0802433bfab0d54df1415eea",
+    "src/chipiron/environments/morpion/bootstrap/dataset_family_targets.py": "6c22be27353f90323f5add9560db5f35ddd5b6861bbd8e5cbffeb0352411b58f",
+    "src/chipiron/environments/morpion/bootstrap/pipeline/stages.py": "831c49b1a699a30b293a86de4a447cc70b334d6b9b49cf3d90e3d60a8c1e011f",
+    "src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py": "7a17482982146a3a35db1761fa8f3155bab38940bb6b2625aa08655ac899c76a",
+    "src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py": "ac63b5524c5dcd41f9a28534ddfd62c0f5bff4b131f275704fec8752c3a2827b",
+    "src/chipiron/environments/morpion/bootstrap/streaming_dataset.py": "59473e0fe51f9355257d485bf2bb145e3c91620b8371001e9cb72f1996a8d4b2",
+    "src/chipiron/environments/morpion/learning/target_confidence.py": "445a8fe622546dea5842e334bd9477fd698ca155183dd00f99d8031c6c3fffa3",
+    "src/chipiron/environments/morpion/learning/tree_to_dataset.py": "a7896908b2e1d6dc655c8d070bede468e71f42ed45ed71565a0911337f2191b4"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "path": "/home/pompote/morpion_runs/morpion_leaderboard.jsonl",
+  "observed_sha256": "0ca0dbacf66626bfb20cbacecb780eb6cc4861ccbf2ac2c8222631123b21d519",
+  "observed_stat": {
+    "size": 183663,
+    "mtime_ns": 1792954873646977565
+  },
+  "entries": 100,
+  "new_task_entries_observed": 0,
+  "pre_task_bytes_not_recorded": true,
+  "incident": "Existing CI default persistence rewrote home leaderboard; stopped PR, isolated default in tests/conftest.py. No restore attempted without a pre-task source."
+}

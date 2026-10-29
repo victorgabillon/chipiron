@@ -1,0 +1,662 @@
+{
+  "action": "read-only",
+  "activation_completion_evidence": [
+    {
+      "descriptor_path": "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/.generation_publication_v3.json",
+      "descriptor_sha256": "51a31ebd9bf68b4ee6b33dc9ad8d4aef025c581046e912d41c3bd3e1f51b1b6f",
+      "generation": 4,
+      "historical_payload_required_for_acknowledgement": false,
+      "request_sha256": "c2ce800823ddcfea0f0ec1824026050ba31a2845317f9c793ae513bcd76f9226"
+    },
+    {
+      "descriptor_path": "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/.generation_publication_v3.json",
+      "descriptor_sha256": "812d54d423aa1babf99950ae4127af79a01169959b60956f07e2bcb8d2e6ad99",
+      "generation": 7,
+      "historical_payload_required_for_acknowledgement": false,
+      "request_sha256": "0a6d7c5ec4a092b609f1527d6a6b74a3781c54397e6dd9b32e7986fa13388039"
+    }
+  ],
+  "active_root_bytes": 1303,
+  "blockers": [],
+  "capsule_unique_file_blocks": 7860224,
+  "conditional_candidates": [],
+  "conditional_reclaimable_file_blocks": 0,
+  "conditional_reclaimable_file_bytes": 0,
+  "conditional_reclaimable_files": [],
+  "current_contract_reclaimable_bytes": 0,
+  "current_publication_metadata_bytes": 18379,
+  "deletion_authorized": false,
+  "generations": [
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/.generation_publication_v3.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/bootstrap_config.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/manifest.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/metadata.json.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/selector/selector.json.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/checkpoint/checkpoint/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_manifest.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_regressor_args.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.pt",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 1,
+      "id": "1094b372103d4171905afef3ca2c0834",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "genesis/seed",
+          "path": "models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "dataset-claim-even-if-expired"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/.generation_publication_v3.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/bootstrap_config.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/manifest.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/checkpoint/generation_000002.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_manifest.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_regressor_args.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.pt",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/e807bea7a0a048dc9b5489ec985d54d3/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 2,
+      "id": "e807bea7a0a048dc9b5489ec985d54d3",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "genesis/seed",
+          "path": "models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-source-conservative",
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/.generation_publication_v3.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/bootstrap_config.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/manifest.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/checkpoint/generation_000003.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_manifest.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_regressor_args.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.pt",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/208e4daf0a3b4d8b8b8faa283811facb/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 3,
+      "id": "208e4daf0a3b4d8b8b8faa283811facb",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "genesis/seed",
+          "path": "models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-checkpoint-conservative",
+        "accepted-dataset-source-and-results",
+        "dataset_status-conservative",
+        "stage-status-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/.generation_publication_v3.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/bootstrap_config.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/manifest.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/checkpoint/generation_000004.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_manifest.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_regressor_args.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.pt",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_manifest.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_regressor_args.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.pt",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 4,
+      "id": "175ae005d5f34c94bb706dd71fc9a41a",
+      "models": [
+        {
+          "generation": 1,
+          "local_trained_generation": null,
+          "name": "seed",
+          "origin": "genesis/seed",
+          "path": "models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f",
+          "sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+          "source": "external_seed",
+          "source_generation": 1
+        },
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cb044b4fe4464745bf98b786dd93c4ed/models/generation_000002/linear_b",
+          "path": "models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1",
+          "sha256": "4c89b71ea810c1aaf0a8814458ba16f235b2b0f877064f18657b83a26f792cb9",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "exact-receipt-source-conservative",
+        "authoritative-accepted-cursor",
+        "accepted-dataset-source-and-results",
+        "dataset_status-conservative",
+        "stage-status-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/.generation_publication_v3.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/bootstrap_config.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/manifest.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/checkpoint/generation_000005.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_manifest.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_regressor_args.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.pt",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 5,
+      "id": "0da71bc08afc4b21bc27e9b745758163",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cb044b4fe4464745bf98b786dd93c4ed/models/generation_000002/linear_b",
+          "path": "models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1",
+          "sha256": "4c89b71ea810c1aaf0a8814458ba16f235b2b0f877064f18657b83a26f792cb9",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "accepted-dataset-source-and-results",
+        "accepted-training-source-and-all-candidates",
+        "dataset_status-conservative",
+        "stage-status-conservative",
+        "training_status-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry",
+        "exact-receipt-checkpoint"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/.generation_publication_v3.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/bootstrap_config.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/manifest.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/checkpoint/generation_000006.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_manifest.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_regressor_args.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.pt",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 6,
+      "id": "0543e6d65c4d401c98746c4e8bb216ca",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cb044b4fe4464745bf98b786dd93c4ed/models/generation_000002/linear_b",
+          "path": "models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1",
+          "sha256": "4c89b71ea810c1aaf0a8814458ba16f235b2b0f877064f18657b83a26f792cb9",
+          "source": "local_training",
+          "source_generation": 2
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable",
+        "exact-receipt-checkpoint-conservative"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/.generation_publication_v3.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/bootstrap_config.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/manifest.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/checkpoint/generation_000007.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_manifest.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_regressor_args.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.pt",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/morpion_manifest.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/morpion_regressor_args.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/param.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/param.pt",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 7,
+      "id": "c23ef9d516d24f16bcb2f810841f446a",
+      "models": [
+        {
+          "generation": 2,
+          "local_trained_generation": 2,
+          "name": "linear_b",
+          "origin": "training_publications_v1/objects/cb044b4fe4464745bf98b786dd93c4ed/models/generation_000002/linear_b",
+          "path": "models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1",
+          "sha256": "4c89b71ea810c1aaf0a8814458ba16f235b2b0f877064f18657b83a26f792cb9",
+          "source": "local_training",
+          "source_generation": 2
+        },
+        {
+          "generation": 5,
+          "local_trained_generation": 5,
+          "name": "linear_a",
+          "origin": "training_publications_v1/objects/beed4260d1ea4c3bba39467059454bdd/models/generation_000005/linear_a",
+          "path": "models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d",
+          "sha256": "dcbaa0a12d1429cc2bfcf7db4cb262a7b8214a278777c5c29f0a020394119cb3",
+          "source": "local_training",
+          "source_generation": 5
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "rollback-candidate-not-executable"
+      ],
+      "rolling_required": true
+    },
+    {
+      "current_contract_reasons": [
+        "committed-publication-ancestry"
+      ],
+      "current_contract_required": true,
+      "files": [
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/.generation_publication_v3.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/.publication_attempt_v1.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/bootstrap_config.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/latest_expansions/latest_expansions.json.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/manifest.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/metadata.json.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000000.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000001.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000002.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000003.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000004.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_runtime/node_runtime_000005.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000000.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000001.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000002.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000003.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000004.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/node_shells/nodes_000005.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/selector/selector.json.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000000.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000001.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000002.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000003.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000004.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/checkpoint/generation_000008.sharded/state_payloads/state_payloads_000005.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/morpion_manifest.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/morpion_regressor_args.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/param.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d/param.pt",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/scientific_snapshot/generation.json",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/scientific_snapshot/records.jsonl.zst",
+        "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/scientific_snapshot/updates.jsonl.zst"
+      ],
+      "generation": 8,
+      "id": "2697e8c657d74131830b7c4738b8225c",
+      "models": [
+        {
+          "generation": 5,
+          "local_trained_generation": 5,
+          "name": "linear_a",
+          "origin": "training_publications_v1/objects/beed4260d1ea4c3bba39467059454bdd/models/generation_000005/linear_a",
+          "path": "models/fc59f2bc6237be00d7f2ac86356d39e0a7a49e73983a4ce5f5fffb9daafc741d",
+          "sha256": "dcbaa0a12d1429cc2bfcf7db4cb262a7b8214a278777c5c29f0a020394119cb3",
+          "source": "local_training",
+          "source_generation": 5
+        }
+      ],
+      "observed_reader": false,
+      "rollback_executable": false,
+      "rolling_reasons": [
+        "current-crash-recovery",
+        "pending-patch"
+      ],
+      "rolling_required": true
+    }
+  ],
+  "limitations": [
+    "Protocol 3 and receipt v1 retain every committed generation; current reclaimability is zero.",
+    "Conditional candidates mean payload retirement only; listed commitment descriptors remain required.",
+    "Accepted results and exact receipt sources/checkpoints are conservatively retained for explicit evaluator workspaces.",
+    "Exact receipt lookup retains its descriptor scan and exact chosen frozen models, independently of historical trees.",
+    "Rollback candidates lack sealed producer cursor/receipt recovery context; no in-place rollback.",
+    "Control fingerprints detect observed changes, not ABA or future readers; no deletion fence.",
+    "Conditional blocks exclude directory overhead, external links, open-FD delays and filesystem sharing."
+  ],
+  "outside_capsules": "all retained; not inventoried for reclamation",
+  "proposed_active_roots": {
+    "additional": [
+      {
+        "descriptor_sha256": "b5f5b2d70eae24320009befab66154b9ae42ee7e068216572df9e7862d91730b",
+        "generation": 1,
+        "id": "1094b372103d4171905afef3ca2c0834"
+      },
+      {
+        "descriptor_sha256": "9094db8d9f169f9aa908168c1f07d9d200c1a4291197bd466a316606d00e3379",
+        "generation": 2,
+        "id": "e807bea7a0a048dc9b5489ec985d54d3"
+      },
+      {
+        "descriptor_sha256": "892be54001a8807d678f518aa28ffc30e300760b693928be0e859037a32178a6",
+        "generation": 3,
+        "id": "208e4daf0a3b4d8b8b8faa283811facb"
+      },
+      {
+        "descriptor_sha256": "51a31ebd9bf68b4ee6b33dc9ad8d4aef025c581046e912d41c3bd3e1f51b1b6f",
+        "generation": 4,
+        "id": "175ae005d5f34c94bb706dd71fc9a41a"
+      },
+      {
+        "descriptor_sha256": "6b1f6bfae177acbd566a43a04504646b3ce11870b8f0edf81f1b5068acec46e8",
+        "generation": 5,
+        "id": "0da71bc08afc4b21bc27e9b745758163"
+      }
+    ],
+    "capsule_publication_version": 3,
+    "contract": "morpion-rolling-recovery-roots-draft",
+    "current": {
+      "descriptor_sha256": "eff8bf73476c67db9447c79b5fee610e6cfc64e176296dabe155a95e6a561b01",
+      "generation": 8,
+      "id": "2697e8c657d74131830b7c4738b8225c"
+    },
+    "rollback_candidates": [
+      {
+        "descriptor_sha256": "a7a99b5aaa15cb9559650f0fde777f293b9c2e1587f9df8ae4b9fece298418b0",
+        "generation": 6,
+        "id": "0543e6d65c4d401c98746c4e8bb216ca"
+      },
+      {
+        "descriptor_sha256": "812d54d423aa1babf99950ae4127af79a01169959b60956f07e2bcb8d2e6ad99",
+        "generation": 7,
+        "id": "c23ef9d516d24f16bcb2f810841f446a"
+      }
+    ],
+    "schema_version": 1
+  },
+  "receipt_count": 2,
+  "receipt_metadata_bytes": 1761,
+  "receipt_model_evidence": [
+    {
+      "descriptor_path": "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/.generation_publication_v3.json",
+      "descriptor_sha256": "51a31ebd9bf68b4ee6b33dc9ad8d4aef025c581046e912d41c3bd3e1f51b1b6f",
+      "holder_generation": 4,
+      "logical_origin": "genesis/seed",
+      "model_sha256": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+      "patch_id": "068e3815-7f67-4f15-82a7-334782ce0a59",
+      "physical_bundle": "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f"
+    },
+    {
+      "descriptor_path": "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/.generation_publication_v3.json",
+      "descriptor_sha256": "812d54d423aa1babf99950ae4127af79a01169959b60956f07e2bcb8d2e6ad99",
+      "holder_generation": 7,
+      "logical_origin": "training_publications_v1/objects/cb044b4fe4464745bf98b786dd93c4ed/models/generation_000002/linear_b",
+      "model_sha256": "4c89b71ea810c1aaf0a8814458ba16f235b2b0f877064f18657b83a26f792cb9",
+      "patch_id": "1f1741b7-8818-4d26-a292-9c2e6f106dce",
+      "physical_bundle": "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1"
+    }
+  ],
+  "report_version": 1,
+  "retained_commitment_files": [
+    "generation_publications_v3/objects/0543e6d65c4d401c98746c4e8bb216ca/.generation_publication_v3.json",
+    "generation_publications_v3/objects/0da71bc08afc4b21bc27e9b745758163/.generation_publication_v3.json",
+    "generation_publications_v3/objects/1094b372103d4171905afef3ca2c0834/.generation_publication_v3.json",
+    "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/.generation_publication_v3.json",
+    "generation_publications_v3/objects/2697e8c657d74131830b7c4738b8225c/.generation_publication_v3.json",
+    "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/.generation_publication_v3.json"
+  ],
+  "retained_control_files": {
+    "pipeline/active_model.json": "24b8f16aca5b3997edd77724ae3d49ef753ad5ba9abd3704c3a9f03fc3b79a70",
+    "pipeline/generation_000001/dataset_claim.json": "d0deb393b66326c71f138c2c8e003a7d922eddcf49d6ce0a908621904aa55089",
+    "pipeline/generation_000001/manifest.json": "8e27b82af277b9d7410f2d98de5edb0aaf91feb78d45086773498b28d7aff4f7",
+    "pipeline/generation_000002/dataset_status.json": "e6541b321b76ee657bc9d6ebff238634a837f783dc2c2453254a2b6870b1c9b9",
+    "pipeline/generation_000002/manifest.json": "f4c79ba7755fcfb0eed6e683db2a4e2a3c193c9036073ade55ba27508378b2aa",
+    "pipeline/generation_000002/training_status.json": "a349c773c9cfa2689ae2c5cdf7d688d38a944ec76d5635feedf1aa28a16b5e7e",
+    "pipeline/generation_000003/dataset_status.json": "68b5b476888cd4bf7b6e6cb618e0935369d715d6a675f2d9f4ab2024216114d0",
+    "pipeline/generation_000003/manifest.json": "24acdb911a574092f32e78b6ede53c453546b2771a77eac27d64b85878929fdc",
+    "pipeline/generation_000004/dataset_status.json": "0c9c63d8ba7f1a85797e7c951a4fcd5386bb00dc65e605a84a7ee9922d8dc5e6",
+    "pipeline/generation_000004/manifest.json": "8366d5a0a0edac37c047014156205d119854d50fb68aa70fe1d378ab230d5807",
+    "pipeline/generation_000005/dataset_status.json": "f8668c068a50a0bc0ef35dcdea934a4678d725a16bd18f53990edaf984b992fb",
+    "pipeline/generation_000005/manifest.json": "5231b5386605b24baeadefd79fe0ad22aab76d5403c46668046f9a8648a5866c",
+    "pipeline/generation_000005/training_status.json": "1f009b390c7de67b752f543f58f66b8744d5512822b4af95b4bb80fa50329b57",
+    "pipeline/generation_000006/manifest.json": "91f83d94e13ebbdccbef4a67082b2239550b8200de4a19e11e3e82a0b401cad9",
+    "pipeline/generation_000007/manifest.json": "19db7112b42d36582675f065d7127a964f30d2d1cce5ec380eb304d48b850858",
+    "pipeline/generation_000008/manifest.json": "3933d8d7201bcf1f561559b0715ddee389e4e9b4e31f7afd1a1da19cf0fd865f",
+    "pipeline/latest_linoo_selection_table.json": "6e1226ad9a7f08c3e05d8c4560d52d4650b2df7d28af42d2be9bc1a26252fd22",
+    "pipeline/reevaluation_patch.json": "5e46fb8437632513fdb95d8697b27c8d4bb94c132a5d3084543c1636693e313a",
+    "run_state.json": "fbd20b0b131c8ddbcdc51a51ebe799e879eb89c8030d4390022ab863365ae236"
+  },
+  "retained_receipt_model_files": [
+    "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_manifest.json",
+    "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/morpion_regressor_args.json",
+    "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.json",
+    "generation_publications_v3/objects/175ae005d5f34c94bb706dd71fc9a41a/models/b9292f042a281e8b5808e02ec57ce5b837f90f94676f88baa699f7cafdd8604f/param.pt",
+    "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_manifest.json",
+    "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/morpion_regressor_args.json",
+    "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.json",
+    "generation_publications_v3/objects/c23ef9d516d24f16bcb2f810841f446a/models/2abed520716284963275a6b306624b64c5077363c781e775748cac2bcd5080a1/param.pt"
+  ],
+  "scientific_unique_file_blocks": 2306048,
+  "source_run_state_sha256": "fbd20b0b131c8ddbcdc51a51ebe799e879eb89c8030d4390022ab863365ae236",
+  "validated": true
+}

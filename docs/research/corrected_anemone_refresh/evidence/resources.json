@@ -1,0 +1,761 @@
+{
+  "note": "Single serial cProfile-instrumented trial per engine and size; nested cumulative times overlap. All four output checkpoints and scientific files exactly match their paired control; neither commits a generation.",
+  "measurements": [
+    {
+      "requested": 1000,
+      "engine": "prior_kernel",
+      "nodes": 1003,
+      "edges": 1114,
+      "evaluations": 1001,
+      "peak_rss_mib": 310.42578125,
+      "decoded_cache_before": 0,
+      "decoded_cache_after": 1003,
+      "phase_seconds": {
+        "source_verification": 0.0011522589993546717,
+        "restore": 0.25319014200067613,
+        "accepted_training_verification": 0.02216600700194249,
+        "model_loading": 0.003956274995289277,
+        "inference": 24.040977299002407,
+        "backup": 0.31411620000289986,
+        "selector": 0.018973662998178042,
+        "checkpoint": 0.3437056010006927,
+        "snapshot": 3.766425675996288,
+        "snapshot_validation": 2.4759522810054477
+      },
+      "phase_cpu_seconds": {
+        "source_verification": 0.0010120000000000962,
+        "restore": 0.25307500000000044,
+        "accepted_training_verification": 0.004662999999999862,
+        "model_loading": 0.003842999999999888,
+        "inference": 24.035616,
+        "backup": 0.31386700000000023,
+        "selector": 0.0188030000000019,
+        "checkpoint": 0.27471800000000046,
+        "snapshot": 3.383577,
+        "snapshot_validation": 2.1199289999999995
+      },
+      "phase_codec_calls": {
+        "source_verification": {},
+        "restore": {},
+        "accepted_training_verification": {},
+        "model_loading": {},
+        "inference": {
+          "load_anchor_ref": 268,
+          "load_child_from_delta": 735
+        },
+        "backup": {},
+        "selector": {},
+        "checkpoint": {},
+        "snapshot": {
+          "dump_state_ref": 2006,
+          "load_anchor_ref": 1003
+        },
+        "snapshot_validation": {
+          "load_anchor_ref": 1003,
+          "dump_state_ref": 1003
+        }
+      },
+      "profile": [
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/state_to_tensor.py",
+          "line": 52,
+          "function": "state_to_model_input_tensors",
+          "calls": 1001,
+          "own_s": 0.002016158,
+          "cumulative_s": 18.331060656000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 83,
+          "function": "extract_morpion_features",
+          "calls": 1001,
+          "own_s": 0.024314258000000002,
+          "cumulative_s": 17.930257790000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 302,
+          "function": "_candidate_segments",
+          "calls": 1001,
+          "own_s": 4.173432914,
+          "cumulative_s": 16.099823834000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 142,
+          "function": "resolve",
+          "calls": 4741,
+          "own_s": 0.002898697,
+          "cumulative_s": 2.0869297120000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 174,
+          "function": "_resolve_delta",
+          "calls": 735,
+          "own_s": 0.0009080370000000001,
+          "cumulative_s": 1.357954067
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 170,
+          "function": "_resolve_anchor",
+          "calls": 268,
+          "own_s": 0.000128271,
+          "cumulative_s": 0.723691537
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py",
+          "line": 442,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.002238861,
+          "cumulative_s": 0.080326479
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/container.py",
+          "line": 254,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.00399579,
+          "cumulative_s": 0.060130121
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/linear.py",
+          "line": 130,
+          "function": "forward",
+          "calls": 2002,
+          "own_s": 0.002112886,
+          "cumulative_s": 0.037125398000000004
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/activation.py",
+          "line": 139,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.001330952,
+          "cumulative_s": 0.011001802000000001
+        }
+      ],
+      "science_files_sha256": {
+        "generation.json": "e76e66eb04e8f1cba2b5e88a0dec71334b21c865477b02866518ac0f56eb8dd4",
+        "records.jsonl": "21387969749f9f38d187892e7e6b5b4fcb589d7278ad0cb2dc19a48e3f5f3675",
+        "updates.jsonl": "010759832e1df595548a27bbac5420334b1a201780afe3cb6df8c89f5262e48e"
+      },
+      "checkpoint_sha256": "bfb56931d7ab360597204f69c0fc3909b5b075f2f13289043069ef701cb2d000",
+      "model_sha256": "d47316f829e057191e8cf71c61b89dc6760f243f9f3b281dd6b9b39bda1597ba",
+      "science_sha256": "2b4f43f05999201a04e137436b16ca0b5e7ff7595e8b6b5c62387fb24155a905",
+      "rng_sha256": "3a843ee03eb0d00e7c1d6c832f65e09ac3b8492870e958da15e9c2eea2f7e026",
+      "ordered_links_source_restore_equal": false,
+      "checkpoint_disk": {
+        "apparent_file_bytes": 91955,
+        "unique_file_bytes": 91955,
+        "allocated_bytes_unique_inodes": 131072,
+        "file_names": 7,
+        "unique_inodes": 13
+      },
+      "snapshot_disk": {
+        "apparent_file_bytes": 1033510,
+        "unique_file_bytes": 1033510,
+        "allocated_bytes_unique_inodes": 1044480,
+        "file_names": 3,
+        "unique_inodes": 4
+      },
+      "temporary_disk": {
+        "apparent_file_bytes": 2567114,
+        "unique_file_bytes": 2567114,
+        "allocated_bytes_unique_inodes": 2666496,
+        "file_names": 18,
+        "unique_inodes": 33
+      }
+    },
+    {
+      "requested": 1000,
+      "engine": "anemone",
+      "nodes": 1003,
+      "edges": 1114,
+      "evaluations": 1001,
+      "peak_rss_mib": 310.80859375,
+      "decoded_cache_before": 0,
+      "decoded_cache_after": 1003,
+      "phase_seconds": {
+        "source_verification": 0.0011013440016540699,
+        "restore": 0.25484204899839824,
+        "accepted_training_verification": 0.0222590709963697,
+        "model_loading": 0.003778482998313848,
+        "checkpoint": 0.34290742500161286,
+        "snapshot": 3.7004332010037615,
+        "snapshot_validation": 2.463046069002303,
+        "complete_refresh": 24.294970866001677
+      },
+      "phase_cpu_seconds": {
+        "source_verification": 0.0009709999999999996,
+        "restore": 0.25471200000000005,
+        "accepted_training_verification": 0.005030000000000617,
+        "model_loading": 0.003686999999999746,
+        "checkpoint": 0.2750399999999976,
+        "snapshot": 3.309708999999999,
+        "snapshot_validation": 2.1094300000000037,
+        "complete_refresh": 24.293159
+      },
+      "phase_codec_calls": {
+        "source_verification": {},
+        "restore": {},
+        "accepted_training_verification": {},
+        "model_loading": {},
+        "checkpoint": {},
+        "snapshot": {
+          "dump_state_ref": 2006,
+          "load_anchor_ref": 1003
+        },
+        "snapshot_validation": {
+          "load_anchor_ref": 1003,
+          "dump_state_ref": 1003
+        },
+        "complete_refresh": {
+          "load_anchor_ref": 268,
+          "load_child_from_delta": 735
+        }
+      },
+      "profile": [
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/state_to_tensor.py",
+          "line": 52,
+          "function": "state_to_model_input_tensors",
+          "calls": 1001,
+          "own_s": 0.0019222820000000002,
+          "cumulative_s": 18.206790010000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 83,
+          "function": "extract_morpion_features",
+          "calls": 1001,
+          "own_s": 0.024319506,
+          "cumulative_s": 17.820151541
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 302,
+          "function": "_candidate_segments",
+          "calls": 1001,
+          "own_s": 4.166827621,
+          "cumulative_s": 15.985213274000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 142,
+          "function": "resolve",
+          "calls": 53041,
+          "own_s": 0.011133812,
+          "cumulative_s": 2.0965765970000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 174,
+          "function": "_resolve_delta",
+          "calls": 735,
+          "own_s": 0.000992285,
+          "cumulative_s": 1.370359343
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 170,
+          "function": "_resolve_anchor",
+          "calls": 268,
+          "own_s": 0.00012911000000000002,
+          "cumulative_s": 0.7126237280000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_evaluation/tree/node_tree_evaluation.py",
+          "line": 616,
+          "function": "backup_from_children",
+          "calls": 62,
+          "own_s": 0.00011269900000000001,
+          "cumulative_s": 0.330366912
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/backup_policies/explicit_tree.py",
+          "line": 51,
+          "function": "backup_from_children",
+          "calls": 62,
+          "own_s": 0.000130703,
+          "cumulative_s": 0.228035446
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py",
+          "line": 442,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.002351534,
+          "cumulative_s": 0.07392617700000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/container.py",
+          "line": 254,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.0037181410000000003,
+          "cumulative_s": 0.054568119000000005
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_evaluation/evaluator_refresh.py",
+          "line": 43,
+          "function": "validate_refresh_node",
+          "calls": 2006,
+          "own_s": 0.001445286,
+          "cumulative_s": 0.033587408
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/linear.py",
+          "line": 130,
+          "function": "forward",
+          "calls": 2002,
+          "own_s": 0.002281673,
+          "cumulative_s": 0.033162665
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_selector/composed/composed_node_selector.py",
+          "line": 72,
+          "function": "refresh_state_for_checkpoint",
+          "calls": 1,
+          "own_s": 2.346e-06,
+          "cumulative_s": 0.020565317
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_selector/linoo/linoo.py",
+          "line": 210,
+          "function": "refresh_state_for_checkpoint",
+          "calls": 1,
+          "own_s": 2.955e-06,
+          "cumulative_s": 0.020561279000000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/activation.py",
+          "line": 139,
+          "function": "forward",
+          "calls": 1001,
+          "own_s": 0.0012612930000000001,
+          "cumulative_s": 0.010266632000000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/tree_manager/algorithm_node_tree_manager.py",
+          "line": 236,
+          "function": "refresh_exploration_indices",
+          "calls": 1,
+          "own_s": 3.1560000000000004e-06,
+          "cumulative_s": 4.949e-06
+        }
+      ],
+      "science_files_sha256": {
+        "generation.json": "e76e66eb04e8f1cba2b5e88a0dec71334b21c865477b02866518ac0f56eb8dd4",
+        "records.jsonl": "21387969749f9f38d187892e7e6b5b4fcb589d7278ad0cb2dc19a48e3f5f3675",
+        "updates.jsonl": "010759832e1df595548a27bbac5420334b1a201780afe3cb6df8c89f5262e48e"
+      },
+      "checkpoint_sha256": "bfb56931d7ab360597204f69c0fc3909b5b075f2f13289043069ef701cb2d000",
+      "model_sha256": "d47316f829e057191e8cf71c61b89dc6760f243f9f3b281dd6b9b39bda1597ba",
+      "science_sha256": "2b4f43f05999201a04e137436b16ca0b5e7ff7595e8b6b5c62387fb24155a905",
+      "rng_sha256": "3a843ee03eb0d00e7c1d6c832f65e09ac3b8492870e958da15e9c2eea2f7e026",
+      "ordered_links_source_restore_equal": false,
+      "checkpoint_disk": {
+        "apparent_file_bytes": 91955,
+        "unique_file_bytes": 91955,
+        "allocated_bytes_unique_inodes": 131072,
+        "file_names": 7,
+        "unique_inodes": 13
+      },
+      "snapshot_disk": {
+        "apparent_file_bytes": 1033510,
+        "unique_file_bytes": 1033510,
+        "allocated_bytes_unique_inodes": 1044480,
+        "file_names": 3,
+        "unique_inodes": 4
+      },
+      "temporary_disk": {
+        "apparent_file_bytes": 2567114,
+        "unique_file_bytes": 2567114,
+        "allocated_bytes_unique_inodes": 2666496,
+        "file_names": 18,
+        "unique_inodes": 33
+      }
+    },
+    {
+      "requested": 5000,
+      "engine": "prior_kernel",
+      "nodes": 5013,
+      "edges": 5931,
+      "evaluations": 5005,
+      "peak_rss_mib": 410.95703125,
+      "decoded_cache_before": 0,
+      "decoded_cache_after": 5013,
+      "phase_seconds": {
+        "source_verification": 0.0012697300044237636,
+        "restore": 0.9534256729966728,
+        "accepted_training_verification": 0.0231133229972329,
+        "model_loading": 0.0037722810011473484,
+        "inference": 135.11880283200298,
+        "backup": 1.604174886997498,
+        "selector": 0.09162828500120668,
+        "checkpoint": 1.1416403670009458,
+        "snapshot": 44.978458689001855,
+        "snapshot_validation": 30.490276196003833
+      },
+      "phase_cpu_seconds": {
+        "source_verification": 0.0011339999999999961,
+        "restore": 0.9532460000000009,
+        "accepted_training_verification": 0.004993999999999915,
+        "model_loading": 0.003680999999999379,
+        "inference": 135.07922000000002,
+        "backup": 1.6037320000000008,
+        "selector": 0.09145100000000891,
+        "checkpoint": 1.0702530000000177,
+        "snapshot": 43.73871899999999,
+        "snapshot_validation": 29.151891000000006
+      },
+      "phase_codec_calls": {
+        "source_verification": {},
+        "restore": {},
+        "accepted_training_verification": {},
+        "model_loading": {},
+        "inference": {
+          "load_anchor_ref": 1372,
+          "load_child_from_delta": 3641
+        },
+        "backup": {},
+        "selector": {},
+        "checkpoint": {},
+        "snapshot": {
+          "dump_state_ref": 10026,
+          "load_anchor_ref": 5013
+        },
+        "snapshot_validation": {
+          "load_anchor_ref": 5013,
+          "dump_state_ref": 5013
+        }
+      },
+      "profile": [
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/state_to_tensor.py",
+          "line": 52,
+          "function": "state_to_model_input_tensors",
+          "calls": 5005,
+          "own_s": 0.008995748000000001,
+          "cumulative_s": 102.30506079400001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 83,
+          "function": "extract_morpion_features",
+          "calls": 5005,
+          "own_s": 0.12021592700000001,
+          "cumulative_s": 100.28438782
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 302,
+          "function": "_candidate_segments",
+          "calls": 5005,
+          "own_s": 20.804446948000002,
+          "cumulative_s": 90.85257663
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 142,
+          "function": "resolve",
+          "calls": 23669,
+          "own_s": 0.015237109,
+          "cumulative_s": 13.512371412
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 174,
+          "function": "_resolve_delta",
+          "calls": 3641,
+          "own_s": 0.004538301000000001,
+          "cumulative_s": 7.4581947390000005
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 170,
+          "function": "_resolve_anchor",
+          "calls": 1372,
+          "own_s": 0.00064019,
+          "cumulative_s": 6.026769900000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py",
+          "line": 442,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.011017329000000001,
+          "cumulative_s": 0.36637466300000004
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/container.py",
+          "line": 254,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.018965833,
+          "cumulative_s": 0.27211213500000003
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/linear.py",
+          "line": 130,
+          "function": "forward",
+          "calls": 10010,
+          "own_s": 0.010553031000000001,
+          "cumulative_s": 0.16695363500000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/lib/python3.13/site-packages/torch/nn/modules/activation.py",
+          "line": 139,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.006646890000000001,
+          "cumulative_s": 0.049351881
+        }
+      ],
+      "science_files_sha256": {
+        "generation.json": "64f1bd3fdb4eea6e72e80757a2cd9f18aaa13b16431a5210900ddf716bac2732",
+        "records.jsonl": "d6de8af17014975092bc185bcd75638434c68b2e98d4751af0fb7fa2d21fce69",
+        "updates.jsonl": "6736e0b9ad822aaeb8227269d7518f1f9b457ca49370e2f3742efc421f223640"
+      },
+      "checkpoint_sha256": "e2e149a7b85561cc4074b8ce5097190bc09677d1f97872f0e927b1c8b50442ab",
+      "model_sha256": "d47316f829e057191e8cf71c61b89dc6760f243f9f3b281dd6b9b39bda1597ba",
+      "science_sha256": "b7d161d9c295b7a2fa3dfa86ff5749e76939a62152359bdacc385a039cd66e55",
+      "rng_sha256": "7b22ced71ee8a1496e89fe9c9f2e69828dd04eed4e194b0d6930f77ba9d51883",
+      "ordered_links_source_restore_equal": false,
+      "checkpoint_disk": {
+        "apparent_file_bytes": 453979,
+        "unique_file_bytes": 453979,
+        "allocated_bytes_unique_inodes": 491520,
+        "file_names": 7,
+        "unique_inodes": 13
+      },
+      "snapshot_disk": {
+        "apparent_file_bytes": 6081508,
+        "unique_file_bytes": 6081508,
+        "allocated_bytes_unique_inodes": 6094848,
+        "file_names": 3,
+        "unique_inodes": 4
+      },
+      "temporary_disk": {
+        "apparent_file_bytes": 14719425,
+        "unique_file_bytes": 14719425,
+        "allocated_bytes_unique_inodes": 14819328,
+        "file_names": 18,
+        "unique_inodes": 33
+      }
+    },
+    {
+      "requested": 5000,
+      "engine": "anemone",
+      "nodes": 5013,
+      "edges": 5931,
+      "evaluations": 5005,
+      "peak_rss_mib": 411.453125,
+      "decoded_cache_before": 0,
+      "decoded_cache_after": 5013,
+      "phase_seconds": {
+        "source_verification": 0.0012398040053085424,
+        "restore": 0.9628141600042,
+        "accepted_training_verification": 0.018137536993890535,
+        "model_loading": 0.004462554003112018,
+        "checkpoint": 1.1520407310017617,
+        "snapshot": 45.272879732001456,
+        "snapshot_validation": 30.64239885900315,
+        "complete_refresh": 135.83503918500355
+      },
+      "phase_cpu_seconds": {
+        "source_verification": 0.0011090000000000544,
+        "restore": 0.9626980000000003,
+        "accepted_training_verification": 0.004817999999999739,
+        "model_loading": 0.004324000000000355,
+        "checkpoint": 1.0836010000000031,
+        "snapshot": 44.029682999999984,
+        "snapshot_validation": 29.281849000000022,
+        "complete_refresh": 135.79281600000002
+      },
+      "phase_codec_calls": {
+        "source_verification": {},
+        "restore": {},
+        "accepted_training_verification": {},
+        "model_loading": {},
+        "checkpoint": {},
+        "snapshot": {
+          "dump_state_ref": 10026,
+          "load_anchor_ref": 5013
+        },
+        "snapshot_validation": {
+          "load_anchor_ref": 5013,
+          "dump_state_ref": 5013
+        },
+        "complete_refresh": {
+          "load_anchor_ref": 1372,
+          "load_child_from_delta": 3641
+        }
+      },
+      "profile": [
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/state_to_tensor.py",
+          "line": 52,
+          "function": "state_to_model_input_tensors",
+          "calls": 5005,
+          "own_s": 0.008913529,
+          "cumulative_s": 101.87280541300001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 83,
+          "function": "extract_morpion_features",
+          "calls": 5005,
+          "own_s": 0.126499322,
+          "cumulative_s": 99.738087652
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/feature_extractor.py",
+          "line": 302,
+          "function": "_candidate_segments",
+          "calls": 5005,
+          "own_s": 20.746671933000002,
+          "cumulative_s": 90.309522914
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 142,
+          "function": "resolve",
+          "calls": 267581,
+          "own_s": 0.053379367000000004,
+          "cumulative_s": 13.12499571
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 174,
+          "function": "_resolve_delta",
+          "calls": 3641,
+          "own_s": 0.005158442,
+          "cumulative_s": 7.329179532
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/checkpoints/state_handles.py",
+          "line": 170,
+          "function": "_resolve_anchor",
+          "calls": 1372,
+          "own_s": 0.00070903,
+          "cumulative_s": 5.759024422
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_evaluation/tree/node_tree_evaluation.py",
+          "line": 616,
+          "function": "backup_from_children",
+          "calls": 366,
+          "own_s": 0.000639425,
+          "cumulative_s": 1.60944715
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/backup_policies/explicit_tree.py",
+          "line": 51,
+          "function": "backup_from_children",
+          "calls": 366,
+          "own_s": 0.000668993,
+          "cumulative_s": 1.1115175800000001
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/src/chipiron/environments/morpion/players/evaluators/neural_networks/model.py",
+          "line": 442,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.011609373000000001,
+          "cumulative_s": 0.37008702200000004
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/container.py",
+          "line": 254,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.019715279000000002,
+          "cumulative_s": 0.272880464
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_evaluation/evaluator_refresh.py",
+          "line": 43,
+          "function": "validate_refresh_node",
+          "calls": 10026,
+          "own_s": 0.007565024,
+          "cumulative_s": 0.17123533700000002
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/linear.py",
+          "line": 130,
+          "function": "forward",
+          "calls": 10010,
+          "own_s": 0.010936076000000001,
+          "cumulative_s": 0.165290068
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_selector/composed/composed_node_selector.py",
+          "line": 72,
+          "function": "refresh_state_for_checkpoint",
+          "calls": 1,
+          "own_s": 4.349e-06,
+          "cumulative_s": 0.093678498
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/node_selector/linoo/linoo.py",
+          "line": 210,
+          "function": "refresh_state_for_checkpoint",
+          "calls": 1,
+          "own_s": 3.626e-06,
+          "cumulative_s": 0.093671715
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/torch/nn/modules/activation.py",
+          "line": 139,
+          "function": "forward",
+          "calls": 5005,
+          "own_s": 0.007279048000000001,
+          "cumulative_s": 0.049584554
+        },
+        {
+          "file": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/venv/lib/python3.13/site-packages/anemone/tree_manager/algorithm_node_tree_manager.py",
+          "line": 236,
+          "function": "refresh_exploration_indices",
+          "calls": 1,
+          "own_s": 4.9900000000000005e-06,
+          "cumulative_s": 7.825e-06
+        }
+      ],
+      "science_files_sha256": {
+        "generation.json": "64f1bd3fdb4eea6e72e80757a2cd9f18aaa13b16431a5210900ddf716bac2732",
+        "records.jsonl": "d6de8af17014975092bc185bcd75638434c68b2e98d4751af0fb7fa2d21fce69",
+        "updates.jsonl": "6736e0b9ad822aaeb8227269d7518f1f9b457ca49370e2f3742efc421f223640"
+      },
+      "checkpoint_sha256": "e2e149a7b85561cc4074b8ce5097190bc09677d1f97872f0e927b1c8b50442ab",
+      "model_sha256": "d47316f829e057191e8cf71c61b89dc6760f243f9f3b281dd6b9b39bda1597ba",
+      "science_sha256": "b7d161d9c295b7a2fa3dfa86ff5749e76939a62152359bdacc385a039cd66e55",
+      "rng_sha256": "7b22ced71ee8a1496e89fe9c9f2e69828dd04eed4e194b0d6930f77ba9d51883",
+      "ordered_links_source_restore_equal": false,
+      "checkpoint_disk": {
+        "apparent_file_bytes": 453979,
+        "unique_file_bytes": 453979,
+        "allocated_bytes_unique_inodes": 491520,
+        "file_names": 7,
+        "unique_inodes": 13
+      },
+      "snapshot_disk": {
+        "apparent_file_bytes": 6081508,
+        "unique_file_bytes": 6081508,
+        "allocated_bytes_unique_inodes": 6094848,
+        "file_names": 3,
+        "unique_inodes": 4
+      },
+      "temporary_disk": {
+        "apparent_file_bytes": 14719425,
+        "unique_file_bytes": 14719425,
+        "allocated_bytes_unique_inodes": 14819328,
+        "file_names": 18,
+        "unique_inodes": 33
+      }
+    }
+  ]
+}

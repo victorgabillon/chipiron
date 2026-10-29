@@ -1,0 +1,22 @@
+{
+  "selected_count": 145,
+  "selected_ids_sha256": "cd7bbfd4dc6bac9b9dd3c8ad920409d34f652a37c04e7f8579d4c180b48b7d0f",
+  "setup": {
+    "passed": 145,
+    "skipped": 0,
+    "failed": 0
+  },
+  "call": {
+    "passed": 145,
+    "skipped": 0,
+    "failed": 0
+  },
+  "exit_code": 0,
+  "execution_errors": [],
+  "worker_ids": [
+    "gw1",
+    "gw0"
+  ],
+  "raw_identity_report": "/home/pompote/oldata/victor/morpion-scratch/lean-ci-20261024/fast-worksteal-tests.json",
+  "raw_identity_report_sha256": "371a9160a9a30247f3bfb0a9c36d84b5929e2564bf4d0321633f7e4b9ec8b834"
+}

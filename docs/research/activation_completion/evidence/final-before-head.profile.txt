@@ -1,0 +1,41 @@
+         46637 function calls (44932 primitive calls) in 0.014 seconds
+
+   Ordered by: cumulative time
+   List reduced from 138 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.014    0.014 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/docs/research/activation_completion/measure.py:49(operation)
+        1    0.000    0.000    0.014    0.014 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:272(committed_evaluator)
+        1    0.000    0.000    0.013    0.013 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:373(validate_capsule)
+       23    0.000    0.000    0.008    0.000 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:54(inside)
+       26    0.000    0.000    0.005    0.000 {built-in method builtins.any}
+      335    0.000    0.000    0.004    0.000 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/derived/provenance.py:63(<genexpr>)
+      973    0.000    0.000    0.004    0.000 <frozen _collections_abc>:1027(__iter__)
+      858    0.001    0.000    0.004    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:44(__getitem__)
+     1232    0.000    0.000    0.004    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:245(_from_parsed_parts)
+       29    0.000    0.000    0.003    0.000 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:96(file_digest)
+        1    0.000    0.000    0.003    0.003 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:705(validate_committed_identity)
+       29    0.000    0.000    0.003    0.000 /home/pompote/oldata/victor/morpion-scratch/activation-evidence-20261025/worktree/docs/research/activation_completion/measure.py:72(hash_file)
+      115    0.000    0.000    0.003    0.000 <frozen _collections_abc>:1037(__contains__)
+     1302    0.000    0.000    0.003    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:252(_from_parsed_string)
+     1389    0.001    0.000    0.003    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:130(with_segments)
+       55    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:393(is_relative_to)
+       60    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:365(relative_to)
+        2    0.000    0.000    0.002    0.001 /home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree/src/chipiron/environments/morpion/bootstrap/generation_publication_io.py:122(artifact_digest)
+      968    0.000    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:193(__eq__)
+     1464    0.001    0.000    0.002    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:498(__init__)
+     1952    0.001    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:174(_str_normcase)
+       46    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:664(resolve)
+      522    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:510(stat)
+     1464    0.001    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:117(__init__)
+      337    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:329(parent)
+      522    0.001    0.000    0.001    0.000 {built-in method posix.stat}
+       46    0.000    0.000    0.001    0.000 <frozen posixpath>:391(realpath)
+      666    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:289(drive)
+     1980    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:227(__str__)
+      380    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:513(is_symlink)
+      380    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_abc.py:432(lstat)
+      158    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:257(_parse_path)
+3836/2143    0.000    0.000    0.001    0.000 {built-in method builtins.len}
+      596    0.001    0.000    0.001    0.000 {built-in method posix.lstat}
+     1336    0.000    0.000    0.001    0.000 /home/pompote/miniconda3/lib/python3.13/pathlib/_local.py:237(_format_parsed_parts)

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import logging
+import os
 import time
 from collections import Counter
 from dataclasses import dataclass
@@ -12,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from anemone.checkpoints import checkpoint_payload_to_jsonable
+from anemone.training_export import TrainingTreeSnapshot
 
 from chipiron.environments.morpion.learning import (
     InvalidMorpionStateRefPayloadError,
@@ -30,7 +33,13 @@ MORPION_RECORD_SCAN_PROGRESS_INTERVAL = 1000
 LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from anemone.training_export import TrainingNodeSnapshot, TrainingTreeSnapshot
+    from collections.abc import Iterable, Iterator
+
+    from anemone.training_export import TrainingNodeSnapshot
+
+    from chipiron.environments.morpion.learning.tree_to_dataset import (
+        TrainingTreeSource,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,7 +200,7 @@ def carried_forward_morpion_frontier_status(
 
 
 def extract_certified_record_candidates_from_training_tree_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     variant: str = MORPION_BOOTSTRAP_VARIANT,
     initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -282,8 +291,34 @@ def extract_certified_record_candidates_from_training_tree_snapshot(
     return tuple(candidates)
 
 
+def iter_certified_record_candidates(
+    snapshot: TrainingTreeSource,
+    *,
+    variant: str = MORPION_BOOTSTRAP_VARIANT,
+    initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+) -> Iterator[MorpionCertifiedRecordCandidate]:
+    """Yield certified candidates in export order using the existing decoder."""
+    for node in snapshot.nodes:
+        if node.state_ref_payload is None or not node.is_terminal or not node.is_exact:
+            continue
+        try:
+            payload, moves = _decoded_payload_and_moves(node=node, variant=variant)
+        except InvalidMorpionStateRefPayloadError:
+            continue
+        yield MorpionCertifiedRecordCandidate(
+            node_id=node.node_id,
+            variant=variant,
+            initial_pattern=initial_pattern,
+            initial_point_count=initial_point_count,
+            moves_since_start=moves,
+            total_points=initial_point_count + moves,
+            state_ref_payload=payload,
+        )
+
+
 def extract_morpion_record_status_from_training_tree_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     variant: str = MORPION_BOOTSTRAP_VARIANT,
     initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -291,12 +326,21 @@ def extract_morpion_record_status_from_training_tree_snapshot(
     generation: int | None = None,
 ) -> MorpionBootstrapRecordStatus:
     """Extract the best strict certified Morpion record from one training snapshot."""
-    candidates = extract_certified_record_candidates_from_training_tree_snapshot(
-        snapshot,
-        variant=variant,
-        initial_pattern=initial_pattern,
-        initial_point_count=initial_point_count,
-        generation=generation,
+    candidates = (
+        extract_certified_record_candidates_from_training_tree_snapshot(
+            snapshot,
+            variant=variant,
+            initial_pattern=initial_pattern,
+            initial_point_count=initial_point_count,
+            generation=generation,
+        )
+        if isinstance(snapshot, TrainingTreeSnapshot)
+        else iter_certified_record_candidates(
+            snapshot,
+            variant=variant,
+            initial_pattern=initial_pattern,
+            initial_point_count=initial_point_count,
+        )
     )
     best_candidate = _best_certified_candidate(candidates)
     if best_candidate is None:
@@ -305,7 +349,7 @@ def extract_morpion_record_status_from_training_tree_snapshot(
 
 
 def select_best_certified_record_candidate_from_training_tree_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     variant: str = MORPION_BOOTSTRAP_VARIANT,
     initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -313,18 +357,27 @@ def select_best_certified_record_candidate_from_training_tree_snapshot(
     generation: int | None = None,
 ) -> MorpionCertifiedRecordCandidate | None:
     """Return the strongest strict certified Morpion candidate from one snapshot."""
-    candidates = extract_certified_record_candidates_from_training_tree_snapshot(
-        snapshot,
-        variant=variant,
-        initial_pattern=initial_pattern,
-        initial_point_count=initial_point_count,
-        generation=generation,
+    candidates = (
+        extract_certified_record_candidates_from_training_tree_snapshot(
+            snapshot,
+            variant=variant,
+            initial_pattern=initial_pattern,
+            initial_point_count=initial_point_count,
+            generation=generation,
+        )
+        if isinstance(snapshot, TrainingTreeSnapshot)
+        else iter_certified_record_candidates(
+            snapshot,
+            variant=variant,
+            initial_pattern=initial_pattern,
+            initial_point_count=initial_point_count,
+        )
     )
     return _best_certified_candidate(candidates)
 
 
 def extract_morpion_frontier_status_from_training_tree_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     variant: str = MORPION_BOOTSTRAP_VARIANT,
     initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -379,7 +432,7 @@ def _frontier_status_from_candidates(
 
 
 def extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     *,
     limit: int = 100,
     initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
@@ -389,39 +442,39 @@ def extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
     if limit <= 0:
         return ()
 
-    terminal_candidates: list[MorpionFrontierNodeCandidate] = []
-    fallback_candidates: list[MorpionFrontierNodeCandidate] = []
-    for node in snapshot.nodes:
-        moves_since_start = morpion_score_from_snapshot_depth(
-            node.depth,
-            root_moves_offset=root_moves_offset,
-        )
-        candidate = MorpionFrontierNodeCandidate(
-            node_id=node.node_id,
-            moves_since_start=moves_since_start,
-            total_points=initial_point_count + moves_since_start,
-            is_terminal=node.is_terminal,
-            is_exact=node.is_exact,
-            source=_snapshot_source_for_node(node),
-        )
-        if node.is_terminal:
-            terminal_candidates.append(candidate)
-        else:
-            fallback_candidates.append(candidate)
+    def candidates(*, terminal: bool) -> Iterator[MorpionFrontierNodeCandidate]:
+        for node in snapshot.nodes:
+            if node.is_terminal != terminal:
+                continue
+            moves = morpion_score_from_snapshot_depth(
+                node.depth, root_moves_offset=root_moves_offset
+            )
+            yield MorpionFrontierNodeCandidate(
+                node_id=node.node_id,
+                moves_since_start=moves,
+                total_points=initial_point_count + moves,
+                is_terminal=node.is_terminal,
+                is_exact=node.is_exact,
+                source=_snapshot_source_for_node(node),
+            )
 
-    selected = sorted(terminal_candidates, key=_frontier_candidate_sort_key)[:limit]
+    selected = heapq.nsmallest(
+        limit, candidates(terminal=True), key=_frontier_candidate_sort_key
+    )
     if len(selected) < limit:
         selected.extend(
-            sorted(fallback_candidates, key=_frontier_candidate_sort_key)[
-                : limit - len(selected)
-            ]
+            heapq.nsmallest(
+                limit - len(selected),
+                candidates(terminal=False),
+                key=_frontier_candidate_sort_key,
+            )
         )
     return tuple(selected)
 
 
 def resolve_record_status_for_cycle(
     *,
-    snapshot: TrainingTreeSnapshot | None,
+    snapshot: TrainingTreeSource | None,
     previous_record_status: MorpionBootstrapRecordStatus | None,
     generation: int | None = None,
 ) -> MorpionBootstrapRecordStatus:
@@ -449,7 +502,7 @@ def resolve_record_status_for_cycle(
 
 def resolve_frontier_status_for_cycle(
     *,
-    snapshot: TrainingTreeSnapshot | None,
+    snapshot: TrainingTreeSource | None,
     previous_frontier_status: MorpionBootstrapFrontierStatus | None,
 ) -> MorpionBootstrapFrontierStatus:
     """Resolve the permissive frontier/debug status that should be written for one cycle."""
@@ -464,7 +517,7 @@ def resolve_frontier_status_for_cycle(
 
 def resolve_frontier_status_for_cycle_with_metadata(
     *,
-    snapshot: TrainingTreeSnapshot | None,
+    snapshot: TrainingTreeSource | None,
     previous_frontier_status: MorpionBootstrapFrontierStatus | None,
 ) -> MorpionFrontierResolution:
     """Resolve frontier status and report actual top-candidate count."""
@@ -489,7 +542,7 @@ def resolve_frontier_status_for_cycle_with_metadata(
 
 def persist_certified_leaderboard_candidates(
     *,
-    snapshot: TrainingTreeSnapshot,
+    snapshot: TrainingTreeSource,
     run_work_dir: str | Path,
     generation: int,
     cycle_index: int,
@@ -498,47 +551,42 @@ def persist_certified_leaderboard_candidates(
 ) -> None:
     """Update the persistent all-time certified leaderboard from one snapshot."""
     persist_started_at = time.perf_counter()
-    candidates = extract_certified_record_candidates_from_training_tree_snapshot(
-        snapshot,
-        generation=generation,
+    candidates = (
+        extract_certified_record_candidates_from_training_tree_snapshot(
+            snapshot, generation=generation
+        )
+        if isinstance(snapshot, TrainingTreeSnapshot)
+        else iter_certified_record_candidates(snapshot)
     )
+    candidate_total = len(candidates) if isinstance(candidates, tuple) else "streaming"
     resolved_path = (
-        Path.home() / "morpion_runs" / "morpion_leaderboard.jsonl"
+        Path(
+            os.environ.get(
+                "MORPION_LEADERBOARD_PATH",
+                str(Path.home() / "morpion_runs" / "morpion_leaderboard.jsonl"),
+            )
+        )
         if leaderboard_path is None
         else Path(leaderboard_path)
     )
+    from chipiron.utils.path_runtime import assert_test_output_path
+
+    assert_test_output_path(resolved_path)
     entries = _load_leaderboard_entries(resolved_path)
     existing_entry_count = len(entries)
-    candidate_total_points_buckets: Counter[int] = Counter(
-        candidate.total_points for candidate in candidates
-    )
-    inserted_total_points_buckets: Counter[int] = Counter()
+    candidate_count = 0
     inserted_count = 0
     skipped_duplicate_count = 0
     skipped_not_top_count = 0
     LOGGER.info(
-        "[leaderboard] persist_start candidates=%s existing_entries=%s limit=%s candidate_total_points_buckets=%s",
-        len(candidates),
+        "[leaderboard] persist_start candidates=%s existing_entries=%s limit=%s",
+        candidate_total,
         existing_entry_count,
         MORPION_LEADERBOARD_LIMIT_PER_VARIANT,
-        _format_total_points_buckets(candidate_total_points_buckets),
     )
-    if not candidates:
-        LOGGER.info(
-            "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s candidate_total_points_buckets=%s inserted_total_points_buckets=%s",
-            time.perf_counter() - persist_started_at,
-            0,
-            0,
-            0,
-            0,
-            len(entries),
-            _best_leaderboard_total_points(entries),
-            _format_total_points_buckets(candidate_total_points_buckets),
-            _format_total_points_buckets(inserted_total_points_buckets),
-        )
-        return
 
     for candidate in candidates:
+        candidate_count += 1
         fingerprint = fingerprint_morpion_state_payload(
             variant=candidate.variant,
             state_ref_payload=candidate.state_ref_payload,
@@ -590,25 +638,23 @@ def persist_certified_leaderboard_candidates(
         entries = _top_leaderboard_entries(entries)
         if any(entry.state_fingerprint == fingerprint for entry in entries):
             inserted_count += 1
-            inserted_total_points_buckets[candidate.total_points] += 1
             LOGGER.debug("[leaderboard] inserted fingerprint=%s", fingerprint)
         else:
             skipped_not_top_count += 1
             LOGGER.debug(
                 "[leaderboard] skipped_not_top_100 fingerprint=%s", fingerprint
             )
-    _save_leaderboard_entries(resolved_path, entries)
+    if candidate_count:
+        _save_leaderboard_entries(resolved_path, entries)
     LOGGER.info(
-        "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s candidate_total_points_buckets=%s inserted_total_points_buckets=%s",
+        "[leaderboard] persist_done elapsed=%.3fs candidates=%s inserted=%s skipped_duplicate=%s skipped_not_top=%s final_entries=%s best_total_points=%s",
         time.perf_counter() - persist_started_at,
-        len(candidates),
+        candidate_count,
         inserted_count,
         skipped_duplicate_count,
         skipped_not_top_count,
         len(entries),
         _best_leaderboard_total_points(entries),
-        _format_total_points_buckets(candidate_total_points_buckets),
-        _format_total_points_buckets(inserted_total_points_buckets),
     )
 
 
@@ -645,14 +691,13 @@ def _decoded_payload_and_moves(
 
 
 def _best_certified_candidate(
-    candidates: tuple[MorpionCertifiedRecordCandidate, ...],
+    candidates: Iterable[MorpionCertifiedRecordCandidate],
 ) -> MorpionCertifiedRecordCandidate | None:
     """Return the strongest certified candidate from one snapshot."""
-    if not candidates:
-        return None
     return max(
         candidates,
         key=lambda candidate: (candidate.total_points, candidate.moves_since_start),
+        default=None,
     )
 
 

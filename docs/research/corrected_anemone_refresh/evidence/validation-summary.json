@@ -1,0 +1,97 @@
+{
+  "implementation_commit": "7e29c9f58f2d9559e28565afc9371e963e570311",
+  "suite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "2",
+    "tests": "2640",
+    "time": "2131.056",
+    "timestamp": "2026-10-24T10:50:09.106890+02:00",
+    "hostname": "pompote-AORUS-15P-KD"
+  },
+  "passed": 2638,
+  "selected": 2640,
+  "deselected": [
+    "tests/checkmate/test_checkmate.py::test_check_in_one[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_one[False]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[True]",
+    "tests/checkmate/test_checkmate.py::test_check_in_two[False]"
+  ],
+  "skips": [
+    {
+      "class": "tests.environments.test_morpion_relational_model_integration",
+      "name": "test_relational_model_inputs_move_to_cuda_without_dtype_change",
+      "message": "CUDA unavailable"
+    },
+    {
+      "class": "tests.learning.supervised.test_multi_input",
+      "name": "test_multi_input_batch_moves_all_inputs_to_cuda",
+      "message": "CUDA unavailable"
+    }
+  ],
+  "elapsed_seconds": 2133.3395544930027,
+  "exit_code": 0,
+  "workers": 0,
+  "marker_filter": "not integration and not external_data",
+  "installed_wheel": true,
+  "source_modules_verified": {
+    "anemone": 288,
+    "chipiron": 476
+  },
+  "warnings": 141,
+  "coverage_totals": {
+    "covered_lines": 29177,
+    "num_statements": 35049,
+    "percent_covered": 80.24275271559675,
+    "percent_covered_display": "80",
+    "missing_lines": 5872,
+    "excluded_lines": 903,
+    "percent_statements_covered": 83.24631230562926,
+    "percent_statements_covered_display": "83",
+    "num_branches": 8864,
+    "num_partial_branches": 1526,
+    "covered_branches": 6060,
+    "missing_branches": 2804,
+    "percent_branches_covered": 68.36642599277978,
+    "percent_branches_covered_display": "68"
+  },
+  "static_summary": {
+    "baseline": 209,
+    "current": 206,
+    "new": 0,
+    "removed": 3
+  },
+  "raw_artifacts": [
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/.ci-reports/tests.json",
+      "sha256": "ca0835c16695f3baca06cc05dd928f2da306c51afcb6bc8bbe4c096b2052dc58",
+      "bytes": 2247350
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/.ci-reports/coverage.json",
+      "sha256": "845ddf0a028515f2f2948a6c43917bd427bcfb33524383e6c8608e9ff5fa82a3",
+      "bytes": 4093962
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/worktree/.ci-reports/pytest.xml",
+      "sha256": "515b46825b230adb5e1b0e2f5759184ca71a5657d41a28e4d28edd49565e9eac",
+      "bytes": 420101
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/logs/full-ci.log",
+      "sha256": "c3d50deb5324cdff07e9c5513fcb1c89fa8c1c8425df47aac182eed72ebdfb42",
+      "bytes": 135296
+    },
+    {
+      "path": "/home/pompote/oldata/victor/morpion-scratch/anemone-chipiron-integration-20261024/static/summary.json",
+      "sha256": "054b735dd23222ceae1f2431c4e14a6971aa4d702e8339c0e91249a0386d5121",
+      "bytes": 68
+    }
+  ],
+  "build_and_installed_smoke": "pass",
+  "toolchain_and_ruff": "pass",
+  "extra_twine_check": "unavailable: module not installed; release check, not a CI requirement",
+  "scientific_model_activation_enabled": false,
+  "raw_evidence_whitespace_note": "git diff --check reports four whitespace-only traceback lines in the verbatim race-real-baseline.xml. The raw failing-run evidence is preserved unchanged; source/document/JSON whitespace checks exclude JUnit XML."
+}

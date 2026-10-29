@@ -1,0 +1,571 @@
+{
+  "root": "/home/pompote/oldata/victor/morpion-scratch/s26/b5",
+  "run_state_sha256": "73f285a15844824c56584dd08030a34ac03d8466011e75bbc26f47764a0b26fa",
+  "head": 8,
+  "nodes": 5145,
+  "edges": 5644,
+  "selection_step_count": 140,
+  "active_model": {
+    "generation": 5,
+    "local_trained_generation": 5,
+    "name": "linear_b",
+    "path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_b",
+    "sha256": "11f29e29993a79a79edc1b94771b21014795dcb2759c7068ee5766280b8d3b4d",
+    "source": "local_training",
+    "source_generation": 5
+  },
+  "accepted_results": [
+    {
+      "generation": 2,
+      "dataset": {
+        "reference": {
+          "attempt_id": "6580f7c1034b4687867b3a0253b11477",
+          "descriptor_sha256": "db6c8052691d56c0ca878f642be147cc31b33b7e3e9fb8238338ef0ec289a327"
+        },
+        "source": {
+          "descriptor_sha256": "e48b6d212bb3eebfa200e0ecac9d069da46d4de0d4a30931fb34a6bf95287e7a",
+          "id": "8978d2b3bca9467ba95a957f7397dcc0",
+          "scientific_identity": {
+            "checkpoint_sha256": "4bb2f51201f63935b59eeaab58dd89c8b3915d88008e5cf3c69880d92a2f77a5",
+            "generation_descriptor_sha256": "c3d4f0d4b4b950ede79f47f5e004ed6eb27c36e5050294de9f14679695aa0658",
+            "generation_mapping": "growth-equals-scientific-from-1",
+            "growth_generation": 2,
+            "producer": {
+              "api_sha256": {
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "identity": {
+                "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651",
+                "config_sha256": "a981cac0dc89f98526c076e14681ac44146606f23ad2a656fedd804560ce6a8b",
+                "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+                "objective": "maximum_total_moves",
+                "revision": "8a6b88cf5098f8003673349a62f2c154ac6f491c07b418713eed966055cb64aa"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "chipiron": "0.2.4",
+                "valanga": "0.2.5"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "producer_sha256": "26c52dd135a1707bb9c14207f68b675db07d9ab07dd38575357db6d34e94d676",
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "source_generation": 2,
+            "storage_layout_version": 1
+          }
+        },
+        "rows_sha256": "24afca21aed45c7236fa1da63e9566811dc8f2dd2d3c2375d5fc8d97b0f9319b",
+        "rows_bytes": 233907
+      },
+      "rows": 128,
+      "source_model": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+      "training": {
+        "reference": {
+          "attempt_id": "7a2d4374a5d04a48a9c43e70817da5e7",
+          "descriptor_sha256": "51d661c2cb08efe3ae8257aca83a190df68af25c219639544823bcb9cde21c47"
+        },
+        "selected": {
+          "path": "training_publications_v1/objects/7a2d4374a5d04a48a9c43e70817da5e7/models/generation_000002/linear_b",
+          "sha256": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a",
+          "generation": 2,
+          "name": "linear_b",
+          "source": "local_training",
+          "source_generation": 2,
+          "local_trained_generation": 2
+        },
+        "candidates": {
+          "linear_a": {
+            "path": "training_publications_v1/objects/7a2d4374a5d04a48a9c43e70817da5e7/models/generation_000002/linear_a",
+            "sha256": "39346271a75f2bdf0e6210f5e4d201a6abbbee05f9de404ba599496a70126003",
+            "parameters_sha256": "c5f95fb938e1216727a6b2135539f7294ee7ac16b17105984ddb10fbaaba9258",
+            "metrics": {
+              "batch_size": 4,
+              "elapsed_s": 3.8224399170001107,
+              "final_loss": 512.7497825622559,
+              "learning_rate": 0.001,
+              "loss_name": "mse",
+              "model_bundle_path": "training_publications_v1/objects/7a2d4374a5d04a48a9c43e70817da5e7/models/generation_000002/linear_a",
+              "num_epochs": 1,
+              "num_train_samples": 96,
+              "num_validation_samples": 32,
+              "performance": {
+                "available_ram_after_mb": 75984.38671875,
+                "available_ram_before_mb": 75839.66015625,
+                "cuda_after": null,
+                "cuda_before": null,
+                "elapsed_s": 3.822424473999945,
+                "finished_unix_s": 1793004831.0942154,
+                "pid": 15629,
+                "process_peak_rss_mb": 337.4609375,
+                "rss_after_mb": 338.8046875,
+                "rss_before_mb": 245.83984375,
+                "started_unix_s": 1793004827.2717905
+              },
+              "train_loss": 512.2341804504395,
+              "train_mae": 22.611587921778362,
+              "validation_loss": 512.7497825622559,
+              "validation_mae": 22.623769998550415
+            }
+          },
+          "linear_b": {
+            "path": "training_publications_v1/objects/7a2d4374a5d04a48a9c43e70817da5e7/models/generation_000002/linear_b",
+            "sha256": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a",
+            "parameters_sha256": "c7cd194ea6240d5905399347d32e7365297ef5c7ac916ef511c661582bc17b4d",
+            "metrics": {
+              "batch_size": 4,
+              "elapsed_s": 0.010818859999972119,
+              "final_loss": 4.807763904333115,
+              "learning_rate": 0.003,
+              "loss_name": "mse",
+              "model_bundle_path": "training_publications_v1/objects/7a2d4374a5d04a48a9c43e70817da5e7/models/generation_000002/linear_b",
+              "num_epochs": 1,
+              "num_train_samples": 96,
+              "num_validation_samples": 32,
+              "performance": {
+                "available_ram_after_mb": 75982.78515625,
+                "available_ram_before_mb": 75982.71875,
+                "cuda_after": null,
+                "cuda_before": null,
+                "elapsed_s": 0.010786697999947137,
+                "finished_unix_s": 1793004831.261347,
+                "pid": 15629,
+                "process_peak_rss_mb": 337.4609375,
+                "rss_after_mb": 338.81640625,
+                "rss_before_mb": 338.8046875,
+                "started_unix_s": 1793004831.2505596
+              },
+              "train_loss": 5.087314248085022,
+              "train_mae": 2.0840516487757363,
+              "validation_loss": 4.807763904333115,
+              "validation_mae": 2.055901527404785
+            }
+          }
+        }
+      }
+    },
+    {
+      "generation": 3,
+      "dataset": {
+        "reference": {
+          "attempt_id": "aba172d5ab074f528f7bec57ab94b8da",
+          "descriptor_sha256": "03adf28e01775fbc9b45e1920ef896eeb725c6b240b8321d88eac37947899a91"
+        },
+        "source": {
+          "descriptor_sha256": "a55c1a021714fa11dd51620d058023c97a02b8bddd62e25d76009006f0087517",
+          "id": "9a6d91020406461f820866420499f389",
+          "scientific_identity": {
+            "checkpoint_sha256": "4bb2f51201f63935b59eeaab58dd89c8b3915d88008e5cf3c69880d92a2f77a5",
+            "generation_descriptor_sha256": "9e0c47416b4ef1862a3cc667f6cb988d10ce281407c11d00aa700d54c08c0b4b",
+            "generation_mapping": "growth-equals-scientific-from-1",
+            "growth_generation": 3,
+            "producer": {
+              "api_sha256": {
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "identity": {
+                "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651",
+                "config_sha256": "a981cac0dc89f98526c076e14681ac44146606f23ad2a656fedd804560ce6a8b",
+                "evaluator": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123",
+                "objective": "maximum_total_moves",
+                "revision": "8a6b88cf5098f8003673349a62f2c154ac6f491c07b418713eed966055cb64aa"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "chipiron": "0.2.4",
+                "valanga": "0.2.5"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "producer_sha256": "26c52dd135a1707bb9c14207f68b675db07d9ab07dd38575357db6d34e94d676",
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "source_generation": 3,
+            "storage_layout_version": 1
+          }
+        },
+        "rows_sha256": "981c72e57ff3469b34a5a721b0ffd7ca0ef9d5c44bc52f69d1da061a62133662",
+        "rows_bytes": 233907
+      },
+      "rows": 128,
+      "source_model": "fa030564a592bbc10ec4eb9ea432b924b4007d43149905e9d1b85aa12ac75123"
+    },
+    {
+      "generation": 4,
+      "dataset": {
+        "reference": {
+          "attempt_id": "a29b927f8f6f42459c2dc11413fac37d",
+          "descriptor_sha256": "f8a7eaa0699722fbbce31d15c3656fb3a66239fc012ebb65b5649d5005311b61"
+        },
+        "source": {
+          "descriptor_sha256": "9390106ee7839bc1985ab62dfa2b42830c3d00fa6d4dd6f600623ca13621c491",
+          "id": "5236a3ea68ca43f4aefbb66acdc821df",
+          "scientific_identity": {
+            "checkpoint_sha256": "d3f49a80cb4b918f2eba84e7e71940e661bf775dceb1d7607a8f211cc4968af3",
+            "generation_descriptor_sha256": "b6200641422575c9284e52e489e9fb1112d8a572c157e031b0bca15f2bc39790",
+            "generation_mapping": "growth-equals-scientific-from-1",
+            "growth_generation": 4,
+            "producer": {
+              "api_sha256": {
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "identity": {
+                "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651",
+                "config_sha256": "a981cac0dc89f98526c076e14681ac44146606f23ad2a656fedd804560ce6a8b",
+                "evaluator": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a",
+                "objective": "maximum_total_moves",
+                "revision": "8a6b88cf5098f8003673349a62f2c154ac6f491c07b418713eed966055cb64aa"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "chipiron": "0.2.4",
+                "valanga": "0.2.5"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "producer_sha256": "1d8795c68a538d68c9035be5366b5c9720530b926e5d7581e1061f43a44f0cd9",
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "source_generation": 4,
+            "storage_layout_version": 1
+          }
+        },
+        "rows_sha256": "5930f14e366011729cf149d88f19c614bc7e2df0b83c5e2c46b1293171814938",
+        "rows_bytes": 234449
+      },
+      "rows": 128,
+      "source_model": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a"
+    },
+    {
+      "generation": 5,
+      "dataset": {
+        "reference": {
+          "attempt_id": "70e8b5a848704c23a80686aa05505bca",
+          "descriptor_sha256": "9b23b6daad5b5c1c2688024e55ee9f43f04bdadd11c63556a910f85898dc73cf"
+        },
+        "source": {
+          "descriptor_sha256": "de93e7ab5ef2014e75fc2afb89e7c493d31fa80e9d07a2b068293fdfd173d749",
+          "id": "0724857a07804616800e57f2031fc995",
+          "scientific_identity": {
+            "checkpoint_sha256": "e20554ee19dc2f75a523095c3eb4ccdbd31d1078fe43e11118ab76c2ee10dbe1",
+            "generation_descriptor_sha256": "c7de8b8b7180d46851202cd1d3b6de40f2378c30dc4503da16caa7c63606b8ba",
+            "generation_mapping": "growth-equals-scientific-from-1",
+            "growth_generation": 5,
+            "producer": {
+              "api_sha256": {
+                "anemone.node_evaluation.common.canonical_value": "5b2f0d551205fa08e9cd323f7d633caf2e91a0425b2b000015056a56eafd6db6",
+                "anemone.node_evaluation.common.value_snapshot": "80415f582bc99274275220a27983a98960178a5fc4af76e950026cbea9ad3948",
+                "anemone.training_export.builders": "496a3f941adb452f87263e64a3f4c8574397cab1585eb9a70c13a5727df8b0a2",
+                "atomheart.games.morpion.checkpoints": "eb7e85145f485cdfb9abd37960e9fe99fefb0b6292df2277865a163b9d5a45e0"
+              },
+              "identity": {
+                "anemone_source_sha256": "64e9b2337173e69e8b6a7fe4cdc4575fea32281b1b081c75c2dcd115b9840651",
+                "config_sha256": "a981cac0dc89f98526c076e14681ac44146606f23ad2a656fedd804560ce6a8b",
+                "evaluator": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a",
+                "objective": "maximum_total_moves",
+                "revision": "8a6b88cf5098f8003673349a62f2c154ac6f491c07b418713eed966055cb64aa"
+              },
+              "packages": {
+                "algorhino-anemone": "0.2.26",
+                "atomheart": "0.2.11",
+                "chipiron": "0.2.4",
+                "valanga": "0.2.5"
+              },
+              "state_ref_contract": "atomheart-0.2.11-dump-state-ref"
+            },
+            "producer_sha256": "1d8795c68a538d68c9035be5366b5c9720530b926e5d7581e1061f43a44f0cd9",
+            "scientific_contract": "anemone-values-canonical-morpion-1",
+            "source_format_kind": "morpion_closed_scientific_snapshot",
+            "source_format_version": 2,
+            "source_generation": 5,
+            "storage_layout_version": 1
+          }
+        },
+        "rows_sha256": "6d803c27cf2eb9ced57845037041dbd9c99b88f5a0c26c551bd1e533cf5d77a8",
+        "rows_bytes": 234449
+      },
+      "rows": 128,
+      "source_model": "cffb62e881b4c310ba9f16359ccc2c3bbf5064d02a1ef2847adc34f6bc67324a",
+      "training": {
+        "reference": {
+          "attempt_id": "003df5e608c949ceaea13cbe09e80f2f",
+          "descriptor_sha256": "00168d561af5e45008b9123d48f7922060d41253d4234b4c18de10eb605ce8fc"
+        },
+        "selected": {
+          "path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_b",
+          "sha256": "11f29e29993a79a79edc1b94771b21014795dcb2759c7068ee5766280b8d3b4d",
+          "generation": 5,
+          "name": "linear_b",
+          "source": "local_training",
+          "source_generation": 5,
+          "local_trained_generation": 5
+        },
+        "candidates": {
+          "linear_a": {
+            "path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_a",
+            "sha256": "93dc5916afda53e1bc73a788cbd099eca7eeb9c3cf25877e583dfc0a1b193b43",
+            "parameters_sha256": "562a59e55d90507ec9dc5b66f1f2c74ca8dd8b71393cb8b6bef0f52de37a72c3",
+            "metrics": {
+              "batch_size": 4,
+              "elapsed_s": 2.9933203820000926,
+              "final_loss": 1403.1575164794922,
+              "learning_rate": 0.001,
+              "loss_name": "mse",
+              "model_bundle_path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_a",
+              "num_epochs": 1,
+              "num_train_samples": 96,
+              "num_validation_samples": 32,
+              "performance": {
+                "available_ram_after_mb": 75977.81640625,
+                "available_ram_before_mb": 76031.33203125,
+                "cuda_after": null,
+                "cuda_before": null,
+                "elapsed_s": 2.9932683550000547,
+                "finished_unix_s": 1793005373.2952573,
+                "pid": 19691,
+                "process_peak_rss_mb": 337.26953125,
+                "rss_after_mb": 338.59765625,
+                "rss_before_mb": 246.140625,
+                "started_unix_s": 1793005370.3019881
+              },
+              "train_loss": 1394.3001810709636,
+              "train_mae": 37.33087189992269,
+              "validation_loss": 1403.1575164794922,
+              "validation_mae": 37.448001861572266
+            }
+          },
+          "linear_b": {
+            "path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_b",
+            "sha256": "11f29e29993a79a79edc1b94771b21014795dcb2759c7068ee5766280b8d3b4d",
+            "parameters_sha256": "b0e6ecb6383a1a96a21ae47070469204f3945ef6d816237ffbaec757ebaae162",
+            "metrics": {
+              "batch_size": 4,
+              "elapsed_s": 0.009337870000081239,
+              "final_loss": 18.17662024497986,
+              "learning_rate": 0.003,
+              "loss_name": "mse",
+              "model_bundle_path": "training_publications_v1/objects/003df5e608c949ceaea13cbe09e80f2f/models/generation_000005/linear_b",
+              "num_epochs": 1,
+              "num_train_samples": 96,
+              "num_validation_samples": 32,
+              "performance": {
+                "available_ram_after_mb": 75918.2578125,
+                "available_ram_before_mb": 75925.265625,
+                "cuda_after": null,
+                "cuda_before": null,
+                "elapsed_s": 0.009299316999886287,
+                "finished_unix_s": 1793005373.4541652,
+                "pid": 19691,
+                "process_peak_rss_mb": 337.26953125,
+                "rss_after_mb": 338.609375,
+                "rss_before_mb": 338.59765625,
+                "started_unix_s": 1793005373.4448652
+              },
+              "train_loss": 18.710144956906635,
+              "train_mae": 4.197898070017497,
+              "validation_loss": 18.17662024497986,
+              "validation_mae": 4.116255044937134
+            }
+          }
+        }
+      }
+    }
+  ],
+  "workspace": {
+    "files": 366,
+    "logical_bytes": 10358118,
+    "allocated_bytes": 11034624
+  },
+  "current_checkpoint": {
+    "files": 22,
+    "logical_bytes": 659767,
+    "allocated_bytes": 708608
+  },
+  "current_science": {
+    "files": 3,
+    "logical_bytes": 344318,
+    "allocated_bytes": 352256
+  },
+  "capsules": [
+    {
+      "generation": 1,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 757272,
+        "allocated_bytes": 819200
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 555406,
+        "allocated_bytes": 593920
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 178809,
+        "allocated_bytes": 184320
+      },
+      "checkpoint_manifest": 5017
+    },
+    {
+      "generation": 2,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 763716,
+        "allocated_bytes": 827392
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 558670,
+        "allocated_bytes": 598016
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 181674,
+        "allocated_bytes": 188416
+      },
+      "checkpoint_manifest": 5049
+    },
+    {
+      "generation": 3,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 763716,
+        "allocated_bytes": 827392
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 558670,
+        "allocated_bytes": 598016
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 181674,
+        "allocated_bytes": 188416
+      },
+      "checkpoint_manifest": 5049
+    },
+    {
+      "generation": 4,
+      "whole_capsule": {
+        "files": 33,
+        "logical_bytes": 1025823,
+        "allocated_bytes": 1105920
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 638266,
+        "allocated_bytes": 684032
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 338667,
+        "allocated_bytes": 344064
+      },
+      "checkpoint_manifest": 5049
+    },
+    {
+      "generation": 5,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 1025152,
+        "allocated_bytes": 1093632
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 644554,
+        "allocated_bytes": 692224
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 341677,
+        "allocated_bytes": 344064
+      },
+      "checkpoint_manifest": 5088
+    },
+    {
+      "generation": 6,
+      "whole_capsule": {
+        "files": 29,
+        "logical_bytes": 1025151,
+        "allocated_bytes": 1093632
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 644554,
+        "allocated_bytes": 692224
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 341676,
+        "allocated_bytes": 344064
+      },
+      "checkpoint_manifest": 5088
+    },
+    {
+      "generation": 7,
+      "whole_capsule": {
+        "files": 33,
+        "logical_bytes": 1051501,
+        "allocated_bytes": 1130496
+      },
+      "checkpoint": {
+        "files": 19,
+        "logical_bytes": 645205,
+        "allocated_bytes": 692224
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 341201,
+        "allocated_bytes": 344064
+      },
+      "checkpoint_manifest": 5088
+    },
+    {
+      "generation": 8,
+      "whole_capsule": {
+        "files": 32,
+        "logical_bytes": 1044297,
+        "allocated_bytes": 1122304
+      },
+      "checkpoint": {
+        "files": 22,
+        "logical_bytes": 659767,
+        "allocated_bytes": 708608
+      },
+      "science": {
+        "files": 3,
+        "logical_bytes": 344318,
+        "allocated_bytes": 352256
+      },
+      "checkpoint_manifest": 5145
+    }
+  ],
+  "allocation": {
+    "current_boundary_file_blocks": 1171456,
+    "historical_capsule_exclusive_blocks": 6717440,
+    "current_and_historical_shared_blocks": 32768,
+    "outside_current_and_historical_capsules_blocks": 3145728,
+    "last_three_capsule_union_blocks": 3280896,
+    "all_workspace_unique_blocks": 11034624
+  },
+  "bytes_per_node": {
+    "checkpoint_logical": 128.23459669582118,
+    "scientific_logical": 66.92283770651117
+  },
+  "checkpoint_manifest_files": 9
+}

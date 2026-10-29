@@ -1,0 +1,6 @@
+{
+  "source": "8c883a95bdc308195384e9202c1f56ab9ebe2b48",
+  "exit": 0,
+  "stdout": "{\n  \"writer\": {\n    \"rejected\": true,\n    \"reason\": \"Missing or unsupported durable generation protocol.\"\n  },\n  \"bounded_reader\": {\n    \"rejected\": true,\n    \"reason\": \"Unsupported manifest format in /tmp/morpion-durable-v2-evidence/old-version-probe/generation_publications_v2/objects/3ff6028d1be54530878e22867b3fb2c5/tree_exports_sharded/generation_000001/generation.json\"\n  },\n  \"full_v1_reader\": {\n    \"rejected\": true,\n    \"reason\": \"'root_node_id'\"\n  }\n}\n",
+  "stderr": ""
+}
