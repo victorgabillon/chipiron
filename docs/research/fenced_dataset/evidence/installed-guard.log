@@ -1,7 +1,0 @@
-/home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/ci-venv/lib/python3.13/site-packages/coral/neural_networks/models/entity_token_transformer_value_net.py:120: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
-  self.encoder: nn.Module = nn.TransformerEncoder(
-chipiron 0.2.4: /home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/ci-venv/lib/python3.13/site-packages/chipiron/__init__.py
-coral 0.1.15: /home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/ci-venv/lib/python3.13/site-packages/coral/__init__.py
-anemone 0.2.26: /home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/ci-venv/lib/python3.13/site-packages/anemone/__init__.py
-atomheart 0.2.11: /home/pompote/oldata/victor/morpion-scratch/fenced-dataset-20261023/ci-venv/lib/python3.13/site-packages/atomheart/__init__.py
-Installed evaluator-v1 and checkpoint contracts passed.

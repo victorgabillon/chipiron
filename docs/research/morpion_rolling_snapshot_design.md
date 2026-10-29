@@ -1,5 +1,7 @@
 # Rolling scientific snapshots: measured design decision
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Design review, 2026-10-22. No production implementation, format migration,
 retirement, committed-artifact deletion, worker deployment or activation.
 
@@ -254,8 +256,8 @@ At 1,003 nodes, freshly exported scientific files before continuation and after
 and restored runtimes. RNG states, node counts and all compared selector report
 fields matched. This proves the tested continuation cases, not arbitrary future
 search equivalence; **full raw checkpoint round-trip parity is not established**.
-See [exact differences](rolling_snapshot/evidence/checkpoint-differences.json) and
-[raw measurements](rolling_snapshot/evidence/measurements.json).
+See [exact differences](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/checkpoint-differences.json) and
+[raw measurements](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/measurements.json).
 
 The checkpoint discrepancy is not removed or normalized. Anemone
 `checkpoints/build_state_payloads.py::_representative_parent_link` prefers an
@@ -458,9 +460,9 @@ unchanged. All **30 pre-existing worktrees**, including dirty research and prote
 PR/integration worktrees, retain their HEAD, status and tracked-diff fingerprints.
 Pinned ancestry includes PRs #75/#76/#80/#82 and #78/#79/#81; exact SHAs, installed
 distributions, validator implementation identity and driver hashes are in
-[sources.json](rolling_snapshot/evidence/sources.json). All 775 generated JSON,
+[sources.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/sources.json). All 775 generated JSON,
 JSONL and compressed-checkpoint files are fingerprinted in
-[fixture-fingerprints.json](rolling_snapshot/evidence/fixture-fingerprints.json).
+[fixture-fingerprints.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/fixture-fingerprints.json).
 Large fixtures and logs remain under the isolated task root; no existing evidence
 was replaced.
 
@@ -481,10 +483,10 @@ read-only inspection fell back to a new Matplotlib directory under `/tmp`; that
 specific temporary directory was removed and `MPLCONFIGDIR` is now explicit in
 the reproduction recipe. No committed or historical artifact was deleted.
 
-See [summary.json](rolling_snapshot/evidence/summary.json),
-[measurements.json](rolling_snapshot/evidence/measurements.json),
-[validation.json](rolling_snapshot/evidence/validation.json) and
-[protected-worktrees.json](rolling_snapshot/evidence/protected-worktrees.json).
+See [summary.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/summary.json),
+[measurements.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/measurements.json),
+[validation.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/validation.json) and
+[protected-worktrees.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/rolling_snapshot/evidence/protected-worktrees.json).
 The recommendation requires no new PR across the sibling implementation stacks:
 this local design branch is directly based on `0790c596`. Implement the independent
 contract/publication/root/retirement steps above only after their exact dependency

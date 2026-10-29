@@ -1,5 +1,7 @@
 # Lean scientific CI: explicit selection, unchanged FULL contract
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Base: `f7230d13ba6dd5dfba1e5c88fd741907af8286bc`.
 Implementation: `b67bd94572a1398bd82cb6187e70c0e20240a06c`.
 Branch: `perf/lean-scientific-ci`.
@@ -116,8 +118,8 @@ supported two-process configuration. This is not a measured GitHub speedup.
 
 FULL coverage is identical to the baseline: 80.2764% combined, 83.2749% statements,
 68.4264% branches, with identical executed/missing line and branch sets in all 468
-reported modules. The [complete JUnit evidence](lean_ci/evidence/full.xml) and
-[validation summary](lean_ci/evidence/validation-summary.json) retain the exact
+reported modules. The [complete JUnit evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_ci/evidence/full.xml) and
+[validation summary](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_ci/evidence/validation-summary.json) retain the exact
 tested commit, exclusions, counters and artifact identities.
 
 FAST meets the 1–3 minute target. PR is 11m52s, above the 5–10 minute target; this
@@ -165,7 +167,7 @@ new diagnostics (206 current against the unchanged 209 baseline).
 ## Identity, isolation and CI/release compatibility
 
 All original normally selected identities remain; the only additions are the 18
-cases above. [Selection evidence](lean_ci/evidence/selection.json) records the exact
+cases above. [Selection evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_ci/evidence/selection.json) records the exact
 base comparison, exclusions and subsets. The full selected list and raw-report
 fingerprints are retained, along with explicit execution accounting.
 

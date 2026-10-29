@@ -1,12 +1,14 @@
 # Minimal fenced Dataset publication
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Base: `58176ff3b7278f893c9cc4deb282d57f163c30a8`, the validated atomic
 Reevaluation implementation. Implementation commit: `fb81af3b9b2b7a6adf83cf04d4ef95c6de2c8eee`.
 Worktree: secondary ext4 disk,
 `morpion-scratch/fenced-dataset-20261023/worktree`; branch
 `fix/morpion-fenced-dataset`. Existing branches and experiments are not adopted.
 Implementation fingerprints and the exact production diff are in
-[`fenced_dataset/evidence/`](fenced_dataset/evidence/).
+[`fenced_dataset/evidence/`](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/fenced_dataset/evidence).
 
 ## Scope and explicit architectural decision
 

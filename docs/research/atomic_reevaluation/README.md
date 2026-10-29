@@ -1,5 +1,7 @@
 # Reproduction and evidence
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Use Python 3.13 with the repository's validated dependency/toolchain versions.
 All commands must use fresh scratch directories on the secondary disk. Never
 point them at an experiment. Tests deliberately terminate local test processes;

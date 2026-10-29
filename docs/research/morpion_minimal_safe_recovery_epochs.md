@@ -1,5 +1,7 @@
 # Minimal safe recovery epochs — contract and blocked implementation
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Status: **design and executable boundary investigation; no epoch activation or
 fork implementation**. Base `089fec3106bdbc690435e61a5b0ce236a5b4821e`, direct
 parent `ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3`. This report supersedes the
@@ -416,8 +418,8 @@ zero new findings**, against a reviewed baseline of 209; the three removals are
 inherited from the base, not changes made here. All 34 pre-existing worktree
 registrations/HEADs/statuses/tracked binary diffs remain unchanged.
 
-See [validation results](safe_recovery_epochs/evidence/validation.json),
-[source fingerprints](safe_recovery_epochs/evidence/source-manifest.json), and
+See [validation results](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/safe_recovery_epochs/evidence/validation.json),
+[source fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/safe_recovery_epochs/evidence/source-manifest.json), and
 [reproduction commands](safe_recovery_epochs/README.md). The research-only Python
 delta is 345 lines in two files: executable boundary counterexamples and a small
 reducer of existing measurement JSON. Neither is a production protocol or cache.

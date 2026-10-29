@@ -1,5 +1,7 @@
 # Reproduction: scientific model activation investigation
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Everything here is research code. There is no production activation route or new
 transaction format. Base: `dc142573a1163178ae8fd5fc9feb90ff8ffee21e`.
 Use a fresh isolated secondary-disk worktree and new scratch paths. Dependencies

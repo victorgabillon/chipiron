@@ -1,5 +1,7 @@
 # Durable closed scientific snapshot publication
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Local opt-in integration based exactly on `27b92ff342f5dea4e96dcaca25c9d313a95018c3`,
 whose parent is the rolling-design commit `f05d418c42b9292410702f51de2d976fbf693059`.
 The isolated branch is `feat/morpion-durable-closed-snapshots`, under
@@ -396,12 +398,12 @@ merge or production activation is part of this work.
 
 ## Evidence and reproduction
 
-The compact [evidence manifest](durable_closed_snapshot/evidence/evidence-manifest.json)
-binds the [resource/scientific observations](durable_closed_snapshot/evidence/benchmarks.json),
-[CI result](durable_closed_snapshot/evidence/ci-summary.json),
-[exact source ancestry and production hashes](durable_closed_snapshot/evidence/source-manifest.json),
-[raw checkpoint classification](durable_closed_snapshot/evidence/checkpoint-comparison.json),
-[profile attribution](durable_closed_snapshot/evidence/profile-summary.json),
+The compact [evidence manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/evidence-manifest.json)
+binds the [resource/scientific observations](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/benchmarks.json),
+[CI result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/ci-summary.json),
+[exact source ancestry and production hashes](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/source-manifest.json),
+[raw checkpoint classification](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/checkpoint-comparison.json),
+[profile attribution](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_closed_snapshot/evidence/profile-summary.json),
 package versions and machine details. Full logs, installed-package checks, profiles,
 fixtures, JSONL files, build outputs and development failures remain under:
 

@@ -1,5 +1,7 @@
 # Lean versioned Morpion discovery metadata
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 ## Scope and dependency base
 
 This is only the discovery-projection step from the
@@ -14,13 +16,13 @@ Python files above that implementation. The new isolated branch is
 All scratch, generated histories, caches, logs and CI outputs are on the secondary disk.
 
 The complete source stack is already contained in the base; no implementation was
-cherry-picked or applied twice. See [ancestry evidence](lean_discovery/evidence/ancestry.json)
+cherry-picked or applied twice. See [ancestry evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/ancestry.json)
 and the [existing consolidation graph](morpion_scientific_durable_consolidation.md).
 This remains a local implementation because the reviewed base is a local union of
 sibling scientific and durability stacks. A PR against one of those siblings would
 include unrelated, already proposed changes. No remote PR, merge or activation was
 performed. All **28 pre-existing worktrees** retain their HEAD, status and tracked-diff
-fingerprints; see [protection check](lean_discovery/evidence/protected-worktrees.json).
+fingerprints; see [protection check](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/protected-worktrees.json).
 Existing worktrees and historical evidence are preserved.
 
 ## Exact old/new contract
@@ -107,7 +109,7 @@ selected the durable JSON writer. The new marker now also selects that same writ
 | Dashboard training/model views | `training_config`, validation metrics, parameter counts, model source-row metadata |
 | Dashboard runtime/control/tree views | Authoritative run-state runtime/control/checkpoint fields; these remain untouched |
 
-See [consumer references](lean_discovery/evidence/consumer-references.json).
+See [consumer references](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/consumer-references.json).
 We retain all nonglobal metadata rather than introduce a fragile allowlist or
 remove extension diagnostics. Arbitrarily large user diagnostics can still be
 large; this change specifically removes the known cumulative ledgers.
@@ -147,8 +149,8 @@ cases explained below. After the test-only correction, all **22 cases** in that
 module passed. Final known outcomes across the full run and focused rerun are
 **2,184 passed and 2 CUDA-unavailable skips**, covering all 2,186 selected test
 identities. This is not represented as a single all-green full-suite invocation.
-See [validation summary](lean_discovery/evidence/validation.json) and
-[per-test initial outcomes and corrected rerun](lean_discovery/evidence/test-outcomes.json).
+See [validation summary](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/validation.json) and
+[per-test initial outcomes and corrected rerun](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/test-outcomes.json).
 The full serial run took 1,305.53 seconds of pytest time; no benchmarks overlapped it.
 
 The new regression fails on the exact review base because it still serializes the
@@ -206,8 +208,8 @@ calls over time. RSS is actual process peak, including imports. Logical I/O is
 `/proc/self/io`; it is distinct from hash bytes and physical disk reads. OS caches
 are warm and these are single samples, not statistically established speedups.
 
-[Raw measurements and assertions](lean_discovery/evidence/scaling.json),
-[scientific fingerprints](lean_discovery/evidence/scientific-fingerprints.json).
+[Raw measurements and assertions](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/scaling.json),
+[scientific fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/scientific-fingerprints.json).
 Before/after in each cell:
 
 | G | Retained manifest bytes | Dataset + Training status bytes | Historical publication / receipt entries in manifests |
@@ -291,7 +293,7 @@ status writers naturally inherit lean metadata. Production Git numstat is
 post-commit publisher, 13/0 in publication I/O, 71/4 in artifact types. There are
 no new production modules or public classes. Tests add 466/remove 4 lines; the
 measurement/assertion drivers are separate research code. See
-[exact counting method and per-file delta](lean_discovery/evidence/code-delta.json).
+[exact counting method and per-file delta](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/code-delta.json).
 The new lines predominantly enforce explicit version/reference validity and
 retain existing durability behavior; no performance cache is hidden in the delta.
 
@@ -339,7 +341,7 @@ The CI environment was newly created on the secondary disk. Third-party packages
 were reused read only; Chipiron and the checked evaluator/checkpoint dependencies
 are installed/copied locally. All **471 installed production Python files** match
 the implementation source byte for byte; only the three reported files differ
-from the review base. See [installed-source evidence](lean_discovery/evidence/installed-source.json).
+from the review base. See [installed-source evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/lean_discovery/evidence/installed-source.json).
 Full tests use `CHIPIRON_TEST_INSTALLED=1`, `PYTHONPATH=.` (no source override),
 `-n 0` and the repository's `not integration and not external_data` selection.
 The existing validation-safety plugin redirects default leaderboard writes to

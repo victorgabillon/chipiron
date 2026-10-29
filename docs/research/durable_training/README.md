@@ -1,5 +1,7 @@
 # Reproducing the durable Training checks
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Use a new secondary-disk workspace based on the exact source/test head in
 `evidence/source-manifest.json`. Do not use a historical experiment as a fixture.
 The source manifest records Python, package/tool versions and all installed

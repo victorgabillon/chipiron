@@ -1,5 +1,7 @@
 # Compact derived scientific indexes
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This experiment changes only the existing `ShardedTrainingGenerationView`.
 Scientific JSON row bodies are stored as ordinary Zstandard-compressed SQLite
 BLOBs, and a duplicate per-read field check is removed after validated index
@@ -120,7 +122,7 @@ sizes and content hashes. Renames or changed sources cannot reuse another key.
 A final four-node rename experiment keeps the manifest bytes unchanged, moves
 the generated standalone source, requires a distinct freshly built cache key,
 then confirms reuse and exact nodes at the new path. Both cache files remain;
-[renamed-source.json](scientific_index/evidence/renamed-source.json) records them.
+[renamed-source.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/renamed-source.json) records them.
 Existing capsule pins and committed canonical-record evidence retain exactly
 their existing lifetime; there is no persistent new proof cache. Cold construction
 still validates canonical states unless existing committed evidence applies.
@@ -360,7 +362,7 @@ the final cold run is about 3% slower than baseline, while reuse is about 31%
 faster. These short timings are observations, not statistical confidence bounds.
 All six private scopes retain one index across three opens and return to zero
 owned cache allocation after closing. Full raw observations are in
-[integrity-check.json](scientific_index/evidence/integrity-check.json).
+[integrity-check.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/integrity-check.json).
 
 ### Exact parity and review evidence
 
@@ -434,7 +436,7 @@ follow-up before integration; no speculative timeout increase or unrelated
 production fix is included.
 
 Machine-readable counts, skipped test identities and raw-log locations are in
-[validation.json](scientific_index/evidence/validation.json).
+[validation.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/validation.json).
 
 ## Remaining limits and next work
 
@@ -473,14 +475,14 @@ dependency versions.
 ## Reproduce and review
 
 All raw fixtures and logs remain under the isolated scratch root. Curated evidence
-is in [results.json](scientific_index/evidence/results.json), including CPU, RSS,
+is in [results.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/results.json), including CPU, RSS,
 I/O, source fingerprints, every policy timing, exact output hashes, SQLite dbstat,
 all retained index identities and publication counters. The
-[installed source inventory](scientific_index/evidence/installed-sources.json)
+[installed source inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/installed-sources.json)
 hashes actual Chipiron, Anemone, Coral, Atomheart, Valanga, ijson and Zstandard
 files. All 289 Anemone Python files were independently compared with the pinned
 Git archive; all 478 installed Chipiron Python files match the worktree.
-The [manifest](scientific_index/evidence/source-manifest.json) records exact
+The [manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_index/evidence/source-manifest.json) records exact
 commits, wheel/source-archive/native-library hashes and tool versions.
 
 For a new reproduction, use a **fresh secondary-disk fixture directory**, leaving

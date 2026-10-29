@@ -1,5 +1,7 @@
 # Lossless streaming scientific storage compression
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This change adds an explicitly selected byte encoding to the existing closed
 scientific writer and bounded reader. It preserves the scientific v2 contract,
 closed layout 1, checkpoint format 3 and the existing capsule/run-state authority.
@@ -19,9 +21,9 @@ Reproduction extensions: `6e52c314`; final normal tests and measurement fixes:
 `223f76d550b433461a91ff3d41c8fd0c332c4c90`. Subsequent report/evidence edits do
 not change executable production or normal tests. Python 3.13.5, zstandard
 0.25.0 / libzstd 1.5.7, ijson 3.6.0 and Torch 2.14.0+cpu were actually loaded.
-The [source manifest](scientific_compression/evidence/source-manifest.json)
+The [source manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/source-manifest.json)
 records source files, tool versions, installed compression binary and package
-hashes. The [installed-file inventory](scientific_compression/evidence/installed-sources.json)
+hashes. The [installed-file inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/installed-sources.json)
 records all 478 Chipiron and 289 Anemone Python files; Anemone was independently
 compared against its pinned Git archive, not just its version or wheel label.
 
@@ -214,7 +216,7 @@ remain intact through both model refreshes.
 In the compressed real endgame, G1 has direct ESTIMATE(42), tree/effective
 FORCED(35); after M3 at G5, direct is ESTIMATE(30.484771728515625) while
 tree/effective remain FORCED(35). The full per-value contracts and source hashes
-are retained in the [endgame witness](scientific_compression/evidence/endgame-witness.json).
+are retained in the [endgame witness](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/endgame-witness.json).
 The historical format-2 representative-parent discrepancy remains documented
 in the earlier report; current format 3 persists representative and codec parents
 separately. Compression changes neither interpretation nor continuation order.
@@ -236,9 +238,9 @@ The original raw writer extracted verbatim from `f0184c76` was also executed
 against the new raw writer with the same current dependencies and four-node
 fixture. All three files compare exactly for tree, effective and direct target
 selection, including explicit-null metadata and fixed creation time. See
-[baseline bytes](scientific_compression/evidence/raw-baseline.json),
-[matched scientific/Dataset parity](scientific_compression/evidence/parity.json)
-and [independent E2E comparisons](scientific_compression/evidence/e2e-parity.json).
+[baseline bytes](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/raw-baseline.json),
+[matched scientific/Dataset parity](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/parity.json)
+and [independent E2E comparisons](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/e2e-parity.json).
 The E2E comparison treats a missing key differently from an explicit null.
 
 ## Implemented allocation measurements
@@ -247,7 +249,7 @@ These are newly generated legal format-3 graphs: 1,003 and 5,013 nodes, seed 4,
 with 1,114 and 5,931 edges and exactly matched state histories. Canonical replay
 lists average 6.94/15.73 items and reach 20/62; maximum record lines are 468/1,309
 bytes and update lines 1,614/1,621 bytes. See the
-[population fingerprints](scientific_compression/evidence/population.json).
+[population fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/population.json).
 These are neither identical-complexity graphs across sizes nor the earlier tiny
 v1 references. G1 creates/commits the frozen graph;
 G2–G4 publish exact no-op estimate receipts through the actual durable Growth
@@ -335,7 +337,7 @@ For the five supported v2 policies, median total extraction/JSONL time is
 0.1386 → 0.1353 s (64 rows; 462 → 473 rows/s) at 1k and 0.7504 → 0.7135 s
 (374 rows; 498 → 524 rows/s) at 5k. Dataset peak RSS is about 290–292 MiB in
 both encodings. Per-policy CPU, I/O, timings and hashes are preserved in
-[native observations](scientific_compression/evidence/resources-native.json).
+[native observations](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/resources-native.json).
 The same process executes policies sequentially, so its RSS high-water includes
 earlier policies; the full-reference parity process is separate.
 
@@ -363,7 +365,7 @@ Compression reduces byte traffic, not the number of historical validations.
 Clean cProfile runs use the existing single-threaded measurement entry point,
 without the allocation sampler. Their absolute runtimes include profiler
 overhead and must not be compared with the unprofiled table. See the filtered
-[clean profiles](scientific_compression/evidence/profiles-clean.json), which
+[clean profiles](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/profiles-clean.json), which
 also identify the retained original `.prof` files by path and SHA-256.
 
 At 5k, raw/compressed index building takes 30.07/31.35 profiled seconds:
@@ -461,7 +463,7 @@ indexed outputs were retained and copied to these explicit names only after
 their original recorded hashes matched. The separate bounded-only G3 runs'
 hashes match those exact bytes as well. The comparison was rerun after all G4/G5
 measurements and produced the identical parity report. The
-[output preservation record](scientific_compression/evidence/generation-output-preservation.json)
+[output preservation record](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/generation-output-preservation.json)
 identifies the original files and verified copies. The allocation wrapper now
 rejects `--profile`, directing profiling to the existing thread-free entry point.
 
@@ -503,7 +505,7 @@ expected setup/call/teardown reports, including legitimate setup skips, and both
 pytest workers report identical collections. The complete affected matrices
 passed: 64 closed-snapshot cases, 29 compression cases, 49 activation-crash cases
 and 47 closed-publication crash/recovery cases (34 of those are FULL-only).
-See [CI identities and summary](scientific_compression/evidence/ci/summary.json).
+See [CI identities and summary](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/ci/summary.json).
 
 The 46 activation boundary cases span raw/compressed pre-load, inference,
 backup/selector refresh, checkpoint shards/manifest, science writing, actual
@@ -523,7 +525,7 @@ setup retries (relative output path rejected by ownership checks; obsolete outpu
 filename assumptions) and the rejected profiler/sampler runs are retained in the
 scratch log inventory. None is presented as passing final evidence.
 
-The [raw-log inventory](scientific_compression/evidence/raw-log-inventory.json)
+The [raw-log inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/raw-log-inventory.json)
 binds retained successful and unsuccessful development logs and binary profiles.
 The test execution evidence records outcomes rather than relying on collection
 counts; package, static and formatting logs are retained alongside it.
@@ -542,5 +544,5 @@ historical artifact deletion was performed.
 The protection audit found zero changes across all 63 prior registrations (45
 existing directories and 18 already-missing registrations): HEADs, registrations,
 working-tree status and binary-diff hashes match the captured baseline. See
-[protection audit](scientific_compression/evidence/protection.json). The original
+[protection audit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/scientific_compression/evidence/protection.json). The original
 dirty research checkout and all prior local commits/evidence remain intact.

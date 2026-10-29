@@ -1,5 +1,7 @@
 # Committed evaluator restoration and exact Reevaluation scoring
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This is a local integration on `1da1c59ae37d901f5c5277a6a2c04149046c49d0`.
 It prepares model activation; it does not implement, authorize or enable activation.
 All fixtures, environments and outputs are new, on the secondary ext4 partition.
@@ -21,7 +23,7 @@ version string, `0.2.26`, is not an implementation identity. Wheel SHA256:
 All 289 production Python modules match the archived source byte-for-byte.
 The installed Chipiron wheel also matches all 476 checkout production modules.
 Exact module hashes, interpreter, wheel and dependency identities are in
-[dependencies.json](bounded_anemone_integration/evidence/dependencies.json).
+[dependencies.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_anemone_integration/evidence/dependencies.json).
 
 ## A: committed restoration contract
 
@@ -151,8 +153,8 @@ four deselected, 2,243.52 s). It is preserved separately in `validation-initial.
 and `full-ci-initial.xml`; it is not used as the final implementation's CI result.
 
 Exact skipped/excluded identities, commands, coverage and artifact hashes are in
-[validation-summary.json](bounded_anemone_integration/evidence/validation-summary.json),
-with the complete [JUnit result](bounded_anemone_integration/evidence/full-ci.xml).
+[validation-summary.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_anemone_integration/evidence/validation-summary.json),
+with the complete [JUnit result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_anemone_integration/evidence/full-ci.xml).
 Focused outcomes and logs are fingerprinted in `targeted-validation.json`.
 The local CI uses the installed wheel, the repository's normal test selection and
 the same quality/static gates. Tests run serially (`-n 0`) instead of CI's two
@@ -249,7 +251,7 @@ The large resource measurements use sharded checkpoints. Both typed and sharded 
 
 The old integration control reproduces both caller differences on new typed and sharded capsules: expected evaluator version 1 becomes 2 after restore; the correction restores version 1. At checkpoint depth 1, a fresh raw estimate of 42 is `0x1.5000000000000p+5`; the explicitly selected Growth policy yields `0x1.500000385f172p+5`. Root depth zero remains unchanged. The control and candidate observations are retained as exact JSON, not rounded comparisons.
 
-Raw measurements, complete paired hash results, profiler attribution and `/usr/bin/time` observations are retained in [the evidence directory](bounded_anemone_integration/evidence). Raw checkpoints, models, logs and `.prof` files remain under the isolated parent `bench/` and `logs/` directories.
+Raw measurements, complete paired hash results, profiler attribution and `/usr/bin/time` observations are retained in [the evidence directory](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_anemone_integration/evidence). Raw checkpoints, models, logs and `.prof` files remain under the isolated parent `bench/` and `logs/` directories.
 
 Continuation scope: the small neural fixtures compare uninterrupted and restored execution directly, including both RNGs. The large 1k/5k runs compare two restored implementations after refresh; they do not prove arbitrary large-tree uninterrupted continuation in the presence of the separately recorded representative-parent/order discrepancy.
 
@@ -258,7 +260,7 @@ state reconstruction: the resolver's cumulative time increases from 13.000 to
 28.448 s across two passes. Candidate-segment work is 177.888 versus 180.621 s;
 neural `forward` is 0.610 versus 0.653 s. Thus this workload does not justify an
 additional Chipiron cache or a capacity override. Exact profile counters are in
-[profile-comparison5000.json](bounded_anemone_integration/evidence/profile-comparison5000.json).
+[profile-comparison5000.json](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_anemone_integration/evidence/profile-comparison5000.json).
 
 ## Production size and abstractions
 

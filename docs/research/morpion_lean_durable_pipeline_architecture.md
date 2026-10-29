@@ -1,5 +1,7 @@
 # Lean durable scientific v2 pipeline: architecture review
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Review date: 2026-10-21. **The current stack is not a bounded-history pipeline.**
 It has a useful bounded node reader and a sound, restricted Growth commit protocol,
 but ordinary worker discovery materializes quadratic historical metadata and
@@ -57,7 +59,7 @@ Node counts alone do not determine bytes or time. Define:
   redump CPU for all records, and `V(K_g)` that CPU for newly created records.
 
 For default SQLite B-tree lookup costs, write `B_g = O((N_g+E_g) log(N_g+E_g))`.
-The [SQL plans](durable_pipeline_architecture/evidence/sqlite-plans.json) were inspected: topology indegree construction uses an automatic covering
+The [SQL plans](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_pipeline_architecture/evidence/sqlite-plans.json) were inspected: topology indegree construction uses an automatic covering
 index on child, and traversal uses the parent/child primary key and node-ID index.
 There is no demonstrated repeated full-edge scan in that loop with the tested
 SQLite configuration. Do not claim a linear disk-index build independent of B-tree,
@@ -93,7 +95,7 @@ population-independent size cap. A node with many incoming links can itself be
 large. A metadata-only probe accepts 1k/5k/10k shard declarations and rejects 20k
 with this guard. Those artificial headers are not valid published generations;
 the result tests header capacity only, not a scientific source. See
-[capacity evidence](durable_pipeline_architecture/evidence/metadata-capacity.json). Keep these qualifications in any bounded-memory claim.
+[capacity evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_pipeline_architecture/evidence/metadata-capacity.json). Keep these qualifications in any bounded-memory claim.
 
 ### Historical growth, with time and storage distinguished
 
@@ -184,7 +186,7 @@ existing lightweight counters. These are tiny synthetic checkpoint costs.
 Discovery process peak RSS before the tracemalloc pass is 284.56 / 284.69 /
 292.31 / 298.68 MiB, dominated initially by imports; it is not a claim that the
 history dictionary is bounded. Raw RSS, CPU, physical/logical I/O, counts and
-metadata sizes are in [evidence](durable_pipeline_architecture/evidence/).
+metadata sizes are in [evidence](https://github.com/victorgabillon/chipiron/tree/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/durable_pipeline_architecture/evidence).
 
 The prior matched 1k/5k publication measurements remain valid for their three-
 generation scope: 5k G2/G3 fell from 27.418/26.794 s to 3.221/3.447 s by avoiding
