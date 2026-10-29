@@ -1,5 +1,7 @@
 # Reproduce the epoch boundary investigation
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Use the report's exact base plus this research-only commit and the dependencies
 listed in `evidence/source-manifest.json`. All destinations must be new secondary
 disk scratch directories. No production epoch fork implementation is included.

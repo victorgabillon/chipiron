@@ -1,5 +1,7 @@
 # Selected-generation verification for Morpion discovery
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Ordinary discovery now reads advisory manifests, preserves the existing selection
 rules, and verifies the selected generation under the existing lifetime pin.
 It no longer verifies every historical capsule on each poll. **Every file in the
@@ -14,7 +16,7 @@ Exact base: `fa9955a2b9fc31ac43a97ed358affda801029a3b`. Architecture review:
 branch `perf/morpion-selected-generation-verification`. Scratch, fixtures, profiles,
 CI environment and output are on the secondary ext4 filesystem. All **29 existing
 worktrees** retain their HEAD, status and tracked-diff fingerprints; see
-[protection evidence](selected_generation/evidence/protected-worktrees.json). All inputs to
+[protection evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/protected-worktrees.json). All inputs to
 experiments here were newly generated. No historical experiment, gen38 operation,
 distributed worker, remote PR, merge or production activation was performed.
 
@@ -106,7 +108,7 @@ reader/parser/index, Dataset target/confidence/family logic, neural evaluator,
 serialization, checkpoint/RNG and patch receipt implementations. AST checks also
 confirm that the capsule/integrity validators, lease implementation, six eligibility
 and selection functions, Dataset diagnostics and stale-stage recovery function are
-unchanged. See [source fingerprints](selected_generation/evidence/source-fingerprints.json).
+unchanged. See [source fingerprints](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/source-fingerprints.json).
 This is supplementary evidence; scientific output regression tests remain required.
 
 Dataset v1 retains all nine policies. Confidence v2 retains the five supported
@@ -152,7 +154,7 @@ G64 hashes fall 97.1% by call count and 96.9% by bytes. Profiled wall time is ab
 29.6 times lower in this single matched sample. These are warm-cache synthetic
 measurements, not production throughput forecasts or a substantial RSS-reduction
 claim. Physical read bytes were zero; logical reads are recorded separately in
-[scaling evidence](selected_generation/evidence/scaling.json). RSS is measured
+[scaling evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/scaling.json). RSS is measured
 before the separate allocation pass and includes imports/runtime overhead.
 
 | G | Manifest-only retained allocations old → new | Full operation retained traced bytes old → new |
@@ -204,8 +206,8 @@ selected-verification cases pass. The final strict mypy/pyright/Pylint ratchet h
 206 inherited diagnostics against the 209-entry reviewed baseline, **zero new
 errors**. Ruff, toolchain checks, sdist/wheel build and installed-distribution smoke
 checks pass; all 471 installed production Python files match this checkout.
-[Validation summary](selected_generation/evidence/validation.json) and
-[every final test outcome](selected_generation/evidence/test-outcomes.json) retain
+[Validation summary](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/validation.json) and
+[every final test outcome](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/test-outcomes.json) retain
 the interruption, failed identities, retries and exact evidence fingerprints.
 
 New regressions cover v1/v2 selection without capsule reads, exactly one selected
@@ -262,7 +264,7 @@ introduced.
 
 Production Git numstat is **479 added / 315 removed, net +164 lines** across six
 modules. Ignoring whitespace-only changes gives **207 added / 43 removed**, the
-same net +164. Replaced lines count on both sides. The exact per-file delta is in [Git numstat evidence](selected_generation/evidence/code-delta.json).
+same net +164. Replaced lines count on both sides. The exact per-file delta is in [Git numstat evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/code-delta.json).
 Most conventional Reevaluation diff churn is indentation: its existing `ExitStack`
 now encloses the existing inference/publication tail. Both conventional and
 whitespace-insensitive counts are reported, rather than hiding that review surface.
@@ -272,7 +274,7 @@ places verification before the existing atomic writer's commit. The ancestry che
 has one implementation, and the per-manifest historical validation loop is removed.
 
 All pinned prior stacks are already ancestors; nothing was cherry-picked twice.
-See [exact ancestry](selected_generation/evidence/ancestry.json). Local sequence:
+See [exact ancestry](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/selected_generation/evidence/ancestry.json). Local sequence:
 
 ```text
 1f335acf (reviewed implementation/report)

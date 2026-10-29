@@ -1,5 +1,7 @@
 # Exact receipt model evidence without unrelated historical trees
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Exact M1/M2 receipt acknowledgement at M3 now authenticates committed descriptors
 and verifies the actual selected frozen model bundle without validating unrelated
 historical checkpoint/scientific payloads. Current-head recovery and new-patch
@@ -18,14 +20,14 @@ policy, activation setting or deletion permission changes.
 - Isolated ext4 worktree:
   `/home/pompote/oldata/victor/morpion-scratch/receipt-evidence-20261025/worktree`.
 
-The exact [source manifest](receipt_model_evidence/evidence/sources.json) verifies
+The exact [source manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/sources.json) verifies
 all 477 installed Chipiron Python files against this checkout and all 289 Anemone
 files against both the exact pinned Git tree and actual wheel. Package version `0.2.26` alone is not used
 as dependency evidence. The new environment copies the small exact dependency
 packages and reads other dependencies from the previous environment without
 modifying it. No existing worktree, historical experiment or Anemone source is
 changed. Commits remain local; no PR, merge or production activation is performed.
-The final [preservation audit](receipt_model_evidence/evidence/protected.json)
+The final [preservation audit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/protected.json)
 matches all 46 pre-existing Chipiron and 13 Anemone worktrees' HEAD, status and
 tracked-diff fingerprints; original E2E bytes and installed dependencies also match.
 
@@ -76,7 +78,7 @@ Logical origin, physical location, model bytes and current evaluator remain
 different identities. M1's logical origin is `seed`, but this experiment resolves
 its chosen frozen bytes in G4; M2 resolves in G7. Their exact original digests,
 sealed descriptor digests and physical paths appear in
-[receipt model evidence](receipt_model_evidence/evidence/reachability-after.json).
+[receipt model evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/reachability-after.json).
 Identical weights elsewhere do not authorize discarding these bindings.
 
 The trust root remains the existing committed `run_state`, accessed under Growth
@@ -87,7 +89,7 @@ receipt UUIDs/digests, not generation watermarks, determine deduplication.
 
 ## Genuine E2E and lifetime separation
 
-The fresh [40-process experiment](receipt_model_evidence/evidence/e2e-processes.json)
+The fresh [40-process experiment](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/e2e-processes.json)
 ran the original configuration with actual accepted Dataset/Training results and
 two explicit activations: G2 Dataset/Training; G3 M1 receipt; G4 M2 activation;
 G5 Dataset/Training; G6 M2 receipt; G7 M3 activation; G8 Growth/pending M3 proposal.
@@ -97,8 +99,8 @@ search RNG and rollout RNG were compared throughout.
 
 Before changing production code, traces reproduced the full G8→G4 dependency;
 the new focused regression failed because the old graph retained G3 in its smaller
-fixture. Both [baseline traces](receipt_model_evidence/evidence/before-m1.json) and
-[failing-before output](receipt_model_evidence/evidence/failing-before.log) survive.
+fixture. Both [baseline traces](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/before-m1.json) and
+[failing-before output](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/failing-before.log) survive.
 
 The full original E2E graph was validated before inspecting conditional candidates.
 On a `cp -a` disposable copy, the corrected analyzer identifies **only G4** as
@@ -107,7 +109,7 @@ a preserved sibling directory, with every moved file hash checked. Descriptors,
 all model bundles and the current head remained in place. The new pending M3
 proposal was preserved separately while exact older proposals occupied its slot.
 
-The [lifetime result](receipt_model_evidence/evidence/lifetime.json) establishes:
+The [lifetime result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/lifetime.json) establishes:
 
 - Three exact M1 and three exact M2 retries leave authority bytes, accepted cursor,
   epoch, model, complete cold checkpoint payload and scientific state unchanged.
@@ -170,8 +172,8 @@ unchanged; cumulative receipt/publication metadata remain separate limitations.
 
 ## Complete roots and allocated-byte accounting
 
-The [before](receipt_model_evidence/evidence/reachability-before.json) and
-[after](receipt_model_evidence/evidence/reachability-after.json) graphs preserve:
+The [before](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/reachability-before.json) and
+[after](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/reachability-after.json) graphs preserve:
 
 | Generation | Remaining independent conditional root |
 | --- | --- |
@@ -209,7 +211,7 @@ counted twice or mistaken for reclaimable blocks. The original selected physical
 model paths remain protected even when another hardlink exists. Unknown external
 links suppress the conditional set. Directory overhead, reflinks, open descriptors
 and future readers are not represented as reclaimable space. The retention probe
-deletes/reclaims no bytes. See the [complete allocation](receipt_model_evidence/evidence/allocation.json).
+deletes/reclaims no bytes. See the [complete allocation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/allocation.json).
 
 ## Validation and code size
 
@@ -219,8 +221,8 @@ skips**, 935.30 seconds. All **47 affected exhaustive fault cases passed** in
 164.78 seconds. The single frozen-executable **FULL run passed 2,798 tests**, with
 two CUDA-unavailable skips, **80% coverage**, in 1,517.47 seconds. Its 196 complete
 certainty/Dataset/atomic-science matrix cases all passed, including the real
-FORCED(35)/ESTIMATE(42) endgame. See [validation](receipt_model_evidence/evidence/validation.json)
-and [FULL test identities/results](receipt_model_evidence/evidence/full.xml).
+FORCED(35)/ESTIMATE(42) endgame. See [validation](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/validation.json)
+and [FULL test identities/results](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/full.xml).
 FAST⊆PR⊆FULL and affected-exhaustive⊆FULL selections were checked, with no missing
 or duplicate test execution phases.
 
@@ -254,7 +256,7 @@ original experiments, baseline/lifetime copies, failure evidence, test reports a
 source fingerprints are preserved. This is test-fixture teardown, not a pipeline
 retirement operation.
 
-[Code delta](receipt_model_evidence/evidence/code-delta.json), excluding this report
+[Code delta](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/receipt_model_evidence/evidence/code-delta.json), excluding this report
 and generated evidence: production **+8/−3** (net +5, including docstrings), analyzer
 **+40/−10**, tests **+412/−5**, research probes **+349/−0**. The only executable
 production change is importing/calling the existing descriptor authenticator in

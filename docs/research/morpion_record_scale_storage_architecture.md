@@ -1,5 +1,7 @@
 # Record-scale Morpion storage: retain closed boundaries, remove measured overhead first
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Review date: 2026-10-25. **Select A with targeted changes, not a new persistence
 engine.** Preserve independently restorable closed generations and the existing
 single run-state commit. First stream checkpoint construction and add an explicitly
@@ -41,7 +43,7 @@ or topology equality alone.
 The two descendants of `fe0fe7a5` before this review contain evidence/documentation
 only. All 477 installed Chipiron Python files match this source; all 289 Anemone
 files match the installed package and exact pinned Git tree. See
-[sources](record_scale_storage/evidence/sources.json). No source stack is reapplied.
+[sources](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/sources.json). No source stack is reapplied.
 
 The earlier [A/B study](morpion_rolling_snapshot_design.md), at
 `f05d418c42b9292410702f51de2d976fbf693059`, explicitly favored A because copying
@@ -56,7 +58,7 @@ Inputs are the preceding task's fresh legal G1–G8 E2E workspace, the existing
 format-3 1,003-node M1→M2 activation pair, and the earlier generated 5,013-node,
 three-generation closed-snapshot corpus. No historical research search was loaded.
 The 5k checkpoint is format 2: the current strict loader correctly refused it
-([log](record_scale_storage/evidence/inventory-5k.log)). It is used only as a
+([log](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/inventory-5k.log)). It is used only as a
 fingerprinted byte corpus; its earlier scientific/continuation results retain their
 original implementation identity. No compatibility bypass or migration was added.
 The previous 10k/long-history results supply sufficient additional context; disk
@@ -97,8 +99,8 @@ use verified hardlinks where the existing publisher can reuse a committed pin.
 | Export metadata/producer | Runtime metadata does not replace this | Descriptor timestamp, root/count, target preference, metadata, codec/API/package/config/model identities | Explicit scientific contract; custom visit counts/metadata cannot be assumed available from generic checkpoint payloads. |
 | Final Dataset target | Not present | Raw scientific inputs only | Accepted `rows.jsonl` adds family representative/prediction blending, final target certainty/provenance, filtering and counters. It is a derived artifact with its own accepted identity. |
 
-The [small current inventory](record_scale_storage/evidence/inventory-opening.json)
-and [1k inventory](record_scale_storage/evidence/inventory-1k.json) compare complete
+The [small current inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/inventory-opening.json)
+and [1k inventory](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/inventory-1k.json) compare complete
 serialized direct/tree Values, including certainty/line/over-event, for every node.
 They also assert the exact documented child-ID projection and depth. They do **not**
 claim that matching those fields proves a new scientific view. Full field examples,
@@ -432,7 +434,7 @@ hardlink changes both linked names. Sharing therefore preserves process-crash
 rollback but reduces independent protection against device corruption. Neither
 three copies on one ext4 disk nor shared chunks establish hardware fault tolerance.
 A parent digest, pin, stat tuple or successful old index cannot replace reading and
-checking actual required bytes. See [scan/corruption evidence](record_scale_storage/evidence/scan-5k.json).
+checking actual required bytes. See [scan/corruption evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/scan-5k.json).
 
 For compression, version encoding and cache identity explicitly; bind compressed
 bytes, decoded byte count/hash, row count and contract in the existing descriptor.
@@ -556,8 +558,8 @@ row/metadata/JSONL checks, all nine legacy policies, five enabled v2 policies/fo
 gates, corruption and publication failure/restart tests. The earlier FULL result
 remains **2,798 passed, two CUDA skips at fe0fe7a5**; research-only changes do not
 require another FULL/FAST run. No production behavior/test expectation changed.
-See [focused JUnit](record_scale_storage/evidence/focused.xml) and
-[strict checkpoint JUnit](record_scale_storage/evidence/checkpoint-format3.xml).
+See [focused JUnit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/focused.xml) and
+[strict checkpoint JUnit](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/record_scale_storage/evidence/checkpoint-format3.xml).
 
 Byte probes compare every reconstructed scientific byte stream, not normalized
 values. Original E2E/1k inputs are fully fingerprinted before/after their read-only

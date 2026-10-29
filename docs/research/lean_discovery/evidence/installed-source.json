@@ -1,7 +1,0 @@
-{
-  "python_files_equal": 471,
-  "source_package": "src/chipiron",
-  "installed_package": "/home/pompote/oldata/victor/morpion-scratch/lean-discovery-v2-20261021/ci-venv/lib/python3.13/site-packages/chipiron",
-  "implementation": "a0666f45978a0daf44fddadc8eb9ba9e8b99d5c5",
-  "manifest_sha256": "4668f5c46d1c915ff76df098d0c614eef0c37251d2e84e6a5acdcd8dffa875b2"
-}

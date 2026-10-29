@@ -1,5 +1,7 @@
 # Morpion: bounded payload history and efficient sustained search
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 This work adds explicit retirement of dependency-free historical checkpoint and
 scientific payloads, using the existing run-state authority and capsule pins.
 It improves measured four-worker Growth throughput by choosing the existing
@@ -220,7 +222,7 @@ per-generation physical write counters at G100 are 1,609,728 / 2,002,944 bytes;
 aggregates are 141,733,888 / 146,243,584. These counters also include proposal,
 checkpoint, science and reader/index work, and exclude subsequent observer-report
 writes and separate sample probes. They are not checkpoint-only traffic.
-[Every generation’s descriptor/authority/I/O measurements](bounded_history/evidence/metadata-publication.json)
+[Every generation’s descriptor/authority/I/O measurements](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/metadata-publication.json)
 are retained. Metadata heap uses a recursive `sys.getsizeof` count, once per
 reachable object identity; it is separate from process RSS/native allocations.
 
@@ -265,7 +267,7 @@ claim. G12's incomplete Training claim is preserved independently of its accepte
 Dataset. G14/15/16 are the three recent complete boundaries. All exact receipts,
 model bytes, activation evidence and every nonpayload file survive. The current
 accepted cursor/pending roots and model proof classification are recorded in the
-[dependency projection](bounded_history/evidence/copy16-dependencies.json).
+[dependency projection](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/copy16-dependencies.json).
 
 G14 decodes with its actual M2 model
 `2b48e2ca6048f7ad8574a873f789c93576785d512c607befc0dd806730d4befd`;
@@ -275,7 +277,7 @@ All three complete payload, selector, search/rollout RNG and scientific file has
 match before/after. Accepted results and both historical activation ACKs validate;
 repeat cleanup removes nothing. Every other file hash is unchanged, and run-state
 JSON differs only by the six admitted flags. The original source inventory is
-unchanged. [Exact measurements and witnesses](bounded_history/evidence/copy16.json).
+unchanged. [Exact measurements and witnesses](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/copy16.json).
 
 The first offline audit probe tried to project a historical head while retaining
 retirement markers relative to today's head, and correctly hit the recent-boundary
@@ -353,7 +355,7 @@ RSS. M2’s suspend-affected raw elapsed is treated separately above.
 The final current-model seven-row Reevaluation is real pending work. Routine
 recovery verifies the final head and accepted identities; copy experiments below
 consume that exact pending work and independently predict another Growth step.
-Full [operational evidence](bounded_history/evidence/operational.json) retains all
+Full [operational evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/operational.json) retains all
 actual commands, budgets, native resources, per-session acceptance references,
 source evaluator identities and immutable audit reports.
 
@@ -401,13 +403,13 @@ before/after each audited activation: G5→G6 (14,335 nodes) and G10→G11
 (19,276 nodes). Each pair starts with equal search and rollout RNG states and
 the same graph size. **Both eight-step decision sequences differ** after the model
 refresh. Nothing is published by these probes. This demonstrates a model effect
-on selection, not a strength improvement. [Complete witnesses](bounded_history/evidence/decisions-long.json).
+on selection, not a strength improvement. [Complete witnesses](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/decisions-long.json).
 
 ## Resource and filesystem observations
 
 The host is a 24-logical-CPU / 12-core Ryzen AI 9 HX PRO 370 with 92,405,284,864
 bytes of RAM; task storage is ext4 on `/dev/nvme0n1p4`. BLAS/OpenMP threads are
-limited to one. [Host evidence](bounded_history/evidence/host.json). Desktop work
+limited to one. [Host evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/host.json). Desktop work
 was present; the controlled comparisons excluded this task’s CI/other benchmarks.
 
 Limits were written before initialization: two 600-second sessions, 32 steps per
@@ -462,8 +464,8 @@ this task adds no cache manager or weaker source validation. The matched batchin
 cases complete 5/3/3 checkpoint/science publications after copied genesis, writing
 5,745,002 / 3,672,808 / 4,057,068 logical checkpoint bytes respectively.
 
-[Per-role/session evidence](bounded_history/evidence/long-session-detail.json)
-and [per-generation allocation/inodes](bounded_history/evidence/long-file-inodes.json)
+[Per-role/session evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/long-session-detail.json)
+and [per-generation allocation/inodes](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/long-file-inodes.json)
 retain the full measurements. Filesystem `st_blocks` accounting excludes global
 inode-table/journal overhead; live staging and scratch peaks are samples, not
 continuous exact maxima. Capacity is not projected linearly from these figures.
@@ -489,7 +491,7 @@ errors. Both skips explicitly say `CUDA unavailable`, matching the CPU installat
 Strict static analysis is 206 findings versus the unchanged reviewed 209 baseline:
 zero new, three removed. Ruff passes and all 776 Python files pass format check.
 Wheel/sdist builds, installed-distribution contracts and pinned toolchain checks pass.
-[Exact CI identity evidence](bounded_history/evidence/ci.json).
+[Exact CI identity evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/ci.json).
 
 Two failures were found and corrected without changing the frozen production wheel.
 The initial PR found an existing operational fixture leaving its task-private
@@ -556,7 +558,7 @@ whole-archive evidence validation at G15. These extra copy generations are test
 evidence, not added to the original experiment’s progress. The original main
 workspace’s complete file inventory remains unchanged throughout.
 
-[Complete retirement/continuation witnesses](bounded_history/evidence/final-copy.json)
+[Complete retirement/continuation witnesses](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/final-copy.json)
 retain exact hashes, receipt UUIDs, models, removed paths, authority identities and
 separate no-op orphan accounting. The same protocol is exercised in the genuine
 nine-generation fixture and every authorization/unlink SIGKILL case described above.
@@ -587,7 +589,7 @@ allocation, allocator retention/shared pages and untraversed objects; it is not
 evidence of a leak. Native whole-process peak during profiling is 483,292 KiB.
 
 Both standalone probes have a 900-second timeout. Raw native resources, exact
-component byte counts and limits are in [resource evidence](bounded_history/evidence/resource-probes.json).
+component byte counts and limits are in [resource evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/resource-probes.json).
 Their source copies and output checkpoints remain retained.
 
 ## Protected worktrees and historical bytes
@@ -609,7 +611,7 @@ roots, the worktree check covers Git state rather than arbitrary ignored or
 untracked file content. This is not a whole-HOME claim.
 
 The full before-manifest and exact after-log remain private raw evidence;
-[manifest hash and complete scope/result](bounded_history/evidence/preservation.json)
+[manifest hash and complete scope/result](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/preservation.json)
 are committed. No historical model, record, experiment, worktree content or
 production activation was reconstructed or overwritten to make the comparison pass.
 
@@ -708,7 +710,7 @@ The final report is `docs/research/morpion_bounded_history.md`; compact evidence
 under `docs/research/bounded_history/evidence`. Large raw logs, full test metrics,
 exact inventories, wheels and original/copy workspaces are retained under `s27`.
 They are review evidence, never runtime authority or another provenance registry.
-The [static raw-evidence manifest](bounded_history/evidence/raw-evidence-manifest.json)
+The [static raw-evidence manifest](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/raw-evidence-manifest.json)
 records their exact file identities and retained experiment inventories.
 
 ## Readiness decision

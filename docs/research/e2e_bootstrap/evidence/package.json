@@ -1,9 +1,0 @@
-{
-  "wheel_sha256": "5e81523c5c00024890c3084f4b497eb6253f977247011b0adb859ac77a44de78",
-  "sdist_sha256": "fcf6ca0778ca94a4d5e03a91382b000cdf1b9ab61ea89e06fe1c79b16f06dd83",
-  "matching_source_files": {
-    "chipiron": 477,
-    "anemone": 289
-  },
-  "wheel_source_files": 477
-}

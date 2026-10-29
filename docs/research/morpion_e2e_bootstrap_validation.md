@@ -1,5 +1,7 @@
 # Morpion: end-to-end learning and explicit model activation
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 The existing pipeline completed two genuine learning-and-activation cycles without
 production changes. A second opening run reproduced the scientific state and model
 weights exactly, and an independent solved endgame preserved terminal/FORCED proofs
@@ -29,7 +31,7 @@ Exact foundation:
 - Fresh independent environment copied from the validated wheel environment;
   all 477 Chipiron and 289 Anemone installed Python files match the exact source
   manifests. No dependency was upgraded. See
-  [`sources.json`](e2e_bootstrap/evidence/sources.json).
+  [`sources.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/sources.json).
 - New branch `test/morpion-e2e-model-eras`, isolated worktree
   `/home/pompote/oldata/victor/morpion-scratch/e2e-bootstrap-validation-20261024/worktree`.
 - Final research executable `46430a0fafa81909c8e3d9e57016fd816dd4866a`;
@@ -37,9 +39,9 @@ Exact foundation:
 
 The final wheel was built locally, then installed with `--no-deps` into this new
 environment. All 477 Chipiron and 289 Anemone source hashes still matched afterward.
-The wheel and sdist fingerprints are in [`package.json`](e2e_bootstrap/evidence/package.json);
+The wheel and sdist fingerprints are in [`package.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/package.json);
 Python and exact dependency versions are in
-[`environment.json`](e2e_bootstrap/evidence/environment.json).
+[`environment.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/environment.json).
 
 ## Actual workflow
 
@@ -90,9 +92,9 @@ febfadb3982330ef28b1161af444b5bd582d1b758b81a5a7021b096cdfc236dd
 ```
 
 Exact accepted descriptors, configurations, original Dataset identities and source
-provenance are in [`opening.json`](e2e_bootstrap/evidence/opening.json),
-[`repeat.json`](e2e_bootstrap/evidence/repeat.json), and
-[`endgame.json`](e2e_bootstrap/evidence/endgame.json). The endgame accepts two rows
+provenance are in [`opening.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/opening.json),
+[`repeat.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/repeat.json), and
+[`endgame.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/endgame.json). The endgame accepts two rows
 at G1 and two at G3; both candidates train on both rows, with no held-out validation
 rows, so selection correctly uses final loss. Its final head is G5: solved Growth
 creates no additional generations.
@@ -153,11 +155,11 @@ hidden by dropping a field; the inherited representative-parent witness is rerun
 The endgame's original Dataset row for the nonterminal root has `node_is_exact=True`
 but selected direct target 42 remains ESTIMATE. Its terminal row remains 35 with
 TERMINAL certainty. Complete original rows are retained in
-[`endgame-rows-g1.jsonl`](e2e_bootstrap/evidence/endgame-rows-g1.jsonl), and the
-post-M2 rows in [`endgame-rows-g3.jsonl`](e2e_bootstrap/evidence/endgame-rows-g3.jsonl).
+[`endgame-rows-g1.jsonl`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/endgame-rows-g1.jsonl), and the
+post-M2 rows in [`endgame-rows-g3.jsonl`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/endgame-rows-g3.jsonl).
 The actual leaderboard is absent for both opening runs; every endgame record is a
 certified terminal leaf with 35 moves. See
-[`certified-records.json`](e2e_bootstrap/evidence/certified-records.json).
+[`certified-records.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/certified-records.json).
 
 Exploratory opening and endgame runs with `min_visit_count=0` produced zero rows,
 as the existing filter excludes unknown counts. The current Training implementation can
@@ -187,7 +189,7 @@ UUIDs, epochs, paths, timestamps and resource observations are likewise per-run.
 
 [`compare.py`](e2e_bootstrap/compare.py) checks exact files and rejects unexpected
 JSON differences; it retains every differing leaf and both values in
-[`repeat-comparison.json`](e2e_bootstrap/evidence/repeat-comparison.json). No source
+[`repeat-comparison.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/repeat-comparison.json). No source
 artifact is normalized, rewritten or assigned another run's identity. Inference
 loads the equal weights and model arguments; the differing execution timing/path
 fields do not configure inference. All full-reference/indexed JSONL comparisons
@@ -221,7 +223,7 @@ covers the stage plus authority checks after imports; `process` includes interpr
 startup and shutdown. CPU and peak RSS cover the whole child process, including
 imports. The driver holds no search tree. Full-oracle validation processes are
 reported separately from production worker costs in
-[`resources.json`](e2e_bootstrap/evidence/resources.json).
+[`resources.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/resources.json).
 
 | Opening call | G | Worker s | Process s | CPU s | Peak RSS MiB |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -269,7 +271,7 @@ stable capsule pins protect the quiescent audit. Every capsule and accepted resu
 is validated. Allocation uses `(st_dev, st_ino)` and `st_blocks * 512`; hard links
 are counted once. External hard links, unknown ownership and claims are retained.
 The complete generation-to-file/model graph, reasons and inode allocation are in
-[`retention.json`](e2e_bootstrap/evidence/retention.json).
+[`retention.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/retention.json).
 
 ```mermaid
 flowchart TD
@@ -321,7 +323,7 @@ such format/protocol change, deletion, quarantine or receipt compaction is made 
 ## Validation and code-size delta
 
 The serial lean CI runs and their exact selected test identities are retained in
-[`validation.json`](e2e_bootstrap/evidence/validation.json) and the adjacent JUnit
+[`validation.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/validation.json) and the adjacent JUnit
 and selection manifests. Counts overlap between suites; they are not a sum of
 distinct tests.
 
@@ -344,7 +346,7 @@ FULL was not rerun: production, normal tests and runtime configuration did not c
 Both the inherited executable and this branch have production tree
 `73c4e69788ff599ce78ae66f08d1a23757a2753c` and normal-test tree
 `ca9db89329b90340c4250d66f32f587f5685cdd0`. The inherited result is retained at
-[`atomic_activation/evidence/full.xml`](atomic_activation/evidence/full.xml).
+[`atomic_activation/evidence/full.xml`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/atomic_activation/evidence/full.xml).
 
 Ruff and formatting pass (744 files checked), toolchain checks pass, and the strict
 static ratchet reports 206 existing diagnostics against 209 baseline diagnostics,
@@ -361,12 +363,12 @@ serial recipe, focused interruption scenarios, a read-only dependency inventory
 and exact repeat comparison. These call existing production APIs and I/O utilities;
 none is an application coordinator, storage format, reader, registry or cache.
 The larger line count is test/oracle and evidence instrumentation, not a production
-architecture expansion. [`code-delta.json`](e2e_bootstrap/evidence/code-delta.json)
+architecture expansion. [`code-delta.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/code-delta.json)
 records per-file counts.
 
 All 44 pre-existing Chipiron and 13 Anemone worktree registrations, heads, dirty
 status and tracked diff fingerprints match their initial audit. See
-[`protected.json`](e2e_bootstrap/evidence/protected.json). Existing experiments and
+[`protected.json`](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/e2e_bootstrap/evidence/protected.json). Existing experiments and
 models remain untouched; exploratory fixture failures are retained separately and
 excluded from successful learning evidence.
 

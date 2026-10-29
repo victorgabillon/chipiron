@@ -1,5 +1,7 @@
 # One hundred valid fixed-graph generations
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Two independent disposable copies of one new legal G1 were run serially without
 CI or another benchmark. Both keep 123 nodes / 123 edges and perform **zero Growth
 steps**. Each actually computes and commits 99 seven-row neural Reevaluation
@@ -56,7 +58,7 @@ continues refusing missing pins; no ownership evidence is fabricated by retireme
 A fresh ten-generation pilot then passed before the two complete 100-generation
 arms. All failed-pilot artifacts are preserved.
 
-The full [measurements and trace evidence](evidence/metadata-scaling.json) identify
+The full [measurements and trace evidence](https://github.com/victorgabillon/chipiron/blob/d8c94d6c07dd072e6e25620ea194861644fa42e5/docs/research/bounded_history/evidence/metadata-scaling.json) identify
 the exact B package and tool, actual budgets and resources. Source/wheel
 identity is independent of package version. No model was activated or trained in
 this fixed-model study; genuine multi-era learning is validated separately.

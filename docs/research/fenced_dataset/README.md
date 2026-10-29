@@ -1,5 +1,7 @@
 # Reproduction and retained evidence
 
+> Historical generated outputs are available through the [evidence archive](../evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Read [`../morpion_fenced_dataset_publication.md`](../morpion_fenced_dataset_publication.md)
 for contract, admission/acceptance boundaries, complexity and remaining gates.
 `evidence/source-manifest.json` pins the exact implementation/parent commits,

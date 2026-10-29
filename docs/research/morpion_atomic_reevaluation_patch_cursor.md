@@ -1,5 +1,7 @@
 # Atomic Reevaluation patch and accepted-cursor recovery
 
+> Historical generated outputs are available through the [evidence archive](evidence-archive.md); original paths in reproduction commands refer to restored or newly generated outputs.
+
 Local implementation based on `8530ec6e12a6876c30aa41ce60be9c971a11c2e0`
 (investigation), whose parent is `089fec3106bdbc690435e61a5b0ce236a5b4821e`;
 validated closed publication ancestor `ffa5ea7d3d9624c5efc8a562a184cf3f402d43e3`.

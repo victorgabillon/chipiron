@@ -1,9 +1,0 @@
-{
-  "old_environment_verified_unchanged": true,
-  "interpreter": "/home/pompote/oldata/victor/morpion-scratch/durable-training-20261023/ci-venv/bin/python",
-  "prior_source_manifest": "docs/research/model_activation/evidence/source-manifest.json",
-  "prior_source_manifest_sha256": "efc96d90ef47937095f16bebfef12903630375786d33cc51a6201542e4c2c5d4",
-  "dependency_modules_verified": 344,
-  "production_modules_verified": 476,
-  "note": "Exact old dependency sources are identified by the inherited manifest, not by the shared 0.2.26 version string."
-}
