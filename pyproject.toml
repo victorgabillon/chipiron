@@ -32,7 +32,7 @@ dependencies = [
   # PyPI distribution names differ from their import packages:
   # parsley-coco -> parsley, algorhino-coral -> coral,
   # algorhino-anemone -> anemone.
-  "parsley-coco==0.2.0",
+  "parsley-coco==0.3.0",
   "gdown>=6.4.2",
   "orjson>=3.13.0",
   "ijson>=3.6.0,<4",

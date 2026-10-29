@@ -355,7 +355,7 @@ def test_candidate_retains_dependency_identity_checks(
     monkeypatch: pytest.MonkeyPatch,
     fault: str,
 ) -> None:
-    """Forward Chipiron development never relaxes frozen dependency identities."""
+    """Forward verification retains every selected dependency identity check."""
     module, root, site, reference = identity
     dependency = site / "dependency/__init__.py"
     dependency.parent.mkdir()
@@ -401,3 +401,147 @@ def test_candidate_retains_dependency_identity_checks(
         )
     with pytest.raises((RuntimeError, FileNotFoundError)):
         module.verify(contract, candidate=reference)
+
+
+@pytest.mark.fast
+def test_replay_contract_preserves_pre_e3_dependency_identities() -> None:
+    """Keep every frozen version/hash/member and the reviewed forward identity."""
+    root = Path(__file__).resolve().parents[2]
+    path = ".github/ci-source-contracts.json"
+    contract = json.loads((root / path).read_text())
+    frozen = json.loads(
+        git(root, "show", f"f6ff2fba53e307f7e56738fde9c276bb28f3ceed:{path}")
+    )
+    forward = json.loads(
+        git(root, "show", f"5bcceff7ab7aa8c549167b949563a663c84616be:{path}")
+    )
+    assert contract["packages"] == frozen["packages"]
+    assert contract["python"] == frozen["python"]
+    assert contract["chipiron_reference"] == frozen["chipiron_reference"]
+    assert contract["chipiron_reference"] == "a6987792796e21210315a2d76358aa48d71bce71"
+    assert contract["packages"]["parsley-coco"]["version"] == "0.2.0"
+    assert contract["candidate_package_overrides"] == {
+        "parsley-coco": forward["packages"]["parsley-coco"]
+    }
+    assert contract["candidate_package_overrides"]["parsley-coco"]["version"] == "0.3.0"
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "command",
+    ["verify", "verify-static", "verify-candidate", "verify-static-candidate"],
+)
+@pytest.mark.parametrize(
+    "fault",
+    ["version", "changed", "missing", "unexpected", "origin", "installed-origin"],
+)
+def test_cli_selects_dependency_identity_and_retains_all_guards(
+    identity: tuple[ModuleType, Path, Path, str],
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    fault: str,
+) -> None:
+    """All CLI modes accept only their own exact installed dependency identity."""
+    module, root, site, reference = identity
+    dependency = site / "parsley"
+    dependency.mkdir()
+    identities = {}
+    payloads = {
+        "0.2.0": {"parsley/__init__.py": "RELEASE = 'frozen'\n"},
+        "0.3.0": {
+            "parsley/__init__.py": "RELEASE = 'candidate'\n",
+            "parsley/construction.py": "CONSTRUCTION = True\n",
+        },
+    }
+    for version, files in payloads.items():
+        identities[version] = {
+            "version": version,
+            "module": "parsley",
+            "files": {
+                name: module.hashlib.sha256(content.encode()).hexdigest()
+                for name, content in files.items()
+            },
+        }
+    contract = {
+        "chipiron_reference": reference,
+        "python": module.platform.python_version(),
+        "packages": {"parsley-coco": identities["0.2.0"]},
+        "candidate_package_overrides": {"parsley-coco": identities["0.3.0"]},
+    }
+    contract_path = root / ".github/ci-source-contracts.json"
+    contract_path.write_text(json.dumps(contract))
+    git(root, "add", ".github/ci-source-contracts.json")
+    git(root, "commit", "-qm", "Separate candidate dependency identity")
+    candidate_mode = command.endswith("candidate")
+    selected_version = "0.3.0" if candidate_mode else "0.2.0"
+    other_version = "0.2.0" if candidate_mode else "0.3.0"
+    for name, content in payloads[selected_version].items():
+        (site / name).write_text(content)
+    monkeypatch.setattr(
+        module.importlib.metadata, "version", lambda _name: selected_version
+    )
+    chipiron_root = root / "src" if "static" in command else site
+    monkeypatch.setattr(
+        module.importlib.util,
+        "find_spec",
+        lambda name: SimpleNamespace(
+            origin=str(
+                (chipiron_root if name == "chipiron" else site) / name / "__init__.py"
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        module.sys,
+        "argv",
+        ["scientific_ci.py", command]
+        + ([git(root, "rev-parse", "HEAD")] if candidate_mode else []),
+    )
+    module.main()
+    report = json.loads(
+        (root / ".ci-reports/scientific-installed-identity.json").read_text()
+    )
+    assert report["parsley-coco"]["members"] == len(payloads[selected_version])
+    assert report["chipiron"]["mode"] == (
+        "build-candidate" if candidate_mode else "frozen-replay"
+    )
+    assert json.loads(contract_path.read_text()) == contract
+
+    if fault == "version":
+        # Install the other complete release, not just incorrect metadata.
+        for path in dependency.iterdir():
+            path.unlink()
+        for name, content in payloads[other_version].items():
+            (site / name).write_text(content)
+        monkeypatch.setattr(
+            module.importlib.metadata, "version", lambda _name: other_version
+        )
+        message = "Wrong scientific dependency version"
+    elif fault == "changed":
+        (dependency / "__init__.py").write_text(
+            payloads[other_version]["parsley/__init__.py"]
+        )
+        message = "Scientific source mismatch"
+    elif fault == "missing":
+        (dependency / "__init__.py").unlink()
+        message = "No such file"
+    elif fault == "unexpected":
+        (dependency / "unexpected.py").touch()
+        message = "Unexpected scientific package members"
+    else:
+        monkeypatch.setattr(
+            module.importlib.util,
+            "find_spec",
+            lambda _name: SimpleNamespace(
+                origin=str(
+                    (
+                        site / "chipiron"
+                        if fault == "installed-origin"
+                        else root / "parsley"
+                    )
+                    / "__init__.py"
+                )
+            ),
+        )
+        message = "Source override"
+    with pytest.raises((RuntimeError, FileNotFoundError), match=message):
+        module.main()
