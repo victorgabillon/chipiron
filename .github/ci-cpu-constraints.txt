@@ -116,7 +116,7 @@ opentelemetry-semantic-conventions==0.66b1
 orjson==3.13.0
 packaging==26.3
 pandas==3.1.0
-parsley-coco==0.2.0
+parsley-coco==0.3.0
 pathspec==1.1.1
 pillow==13.0.0
 pip==26.2.2

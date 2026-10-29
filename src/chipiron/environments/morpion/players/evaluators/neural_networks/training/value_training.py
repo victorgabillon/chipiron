@@ -34,6 +34,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
 from chipiron.environments.morpion.symmetry import transform_morpion_state
 from chipiron.learning.optimization import backward_and_step, forward_tensors
 from chipiron.learning.supervised import TensorSupervisedBatch, regression_quality_stats
+from chipiron.learning.torch_runtime import resolve_torch_device
+from chipiron.learning.torch_runtime import (
+    synchronize_torch_device_if_needed as _synchronize,
+)
 
 from .cached_index_schedule import cached_index_schedule, shuffled_epoch_train_indices
 
@@ -183,11 +187,6 @@ def _inputs(
     return tuple(t.to(device) for t in batch.get_model_input_tensors())
 
 
-def _synchronize(device: torch.device) -> None:
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-
-
 def symmetry_consistency(
     model: MorpionRegressor,
     dataset: AugmentedMorpionDataset,
@@ -267,7 +266,7 @@ def train_entity_value(
     result_path = output_dir / "result.json"
     if result_path.exists():
         return cast("dict[str, object]", json.loads(result_path.read_text()))
-    device = torch.device(config.device)
+    device = resolve_torch_device(config.device)
     torch.manual_seed(config.seed)
     if device.type == "cuda":
         torch.cuda.manual_seed_all(config.seed)

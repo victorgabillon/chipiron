@@ -52,7 +52,7 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
     create_content_to_input_from_folder,
     save_chipiron_nn_args,
 )
-from chipiron.learning import module_device
+from chipiron.learning import module_device, resolve_torch_device, torch_device_info
 from chipiron.learning.supervised import (
     RegressionBatchMetricSums,
     SupervisedBatch,
@@ -208,9 +208,13 @@ class LearnNNScript:
             assert self.args.base_script_args.experiment_output_folder is not None
             self.saving_folder = self.args.base_script_args.experiment_output_folder
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = resolve_torch_device("auto")
         self.nn_board_evaluator.net.to(self.device)
-        chipiron_logger.info("Model put to device %s", self.device)
+        chipiron_logger.info(
+            "Model put to device %s: %s",
+            self.device,
+            torch_device_info(requested_device="auto", resolved_device=self.device),
+        )
         self.criterion = torch.nn.L1Loss()
         self.optimizer, self.scheduler = _create_optimizer_and_scheduler(
             args=self.args.nn_trainer_args,

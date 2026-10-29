@@ -31,7 +31,8 @@ def log_training_device(
     LOGGER.info(
         "[train-device] model_kind=%s requested_device=%s resolved_device=%s "
         "model_device=%s cuda_available=%s cuda_device_count=%s "
-        "cuda_device_name=%s parameter_count=%s",
+        "cuda_device_name=%s parameter_count=%s backend=%s "
+        "cuda_version=%s hip_version=%s",
         model_kind,
         info.requested_device,
         info.resolved_device,
@@ -40,4 +41,7 @@ def log_training_device(
         info.cuda_device_count,
         info.cuda_device_name,
         parameter_count(model),
+        info.backend,
+        info.cuda_version,
+        info.hip_version,
     )
