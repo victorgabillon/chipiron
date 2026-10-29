@@ -32,6 +32,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.model impo
     build_morpion_regressor,
 )
 from chipiron.environments.morpion.symmetry import transform_morpion_state
+from chipiron.learning.optimization import backward_and_step, forward_tensors
 from chipiron.learning.supervised import TensorSupervisedBatch, regression_quality_stats
 
 from .cached_index_schedule import cached_index_schedule, shuffled_epoch_train_indices
@@ -344,14 +345,13 @@ def train_entity_value(
                 for group in optimizer.param_groups:
                     group["lr"] = learning_rate
                 optimizer.zero_grad(set_to_none=True)
-                prediction = model(*_inputs(batch, device))
+                prediction = forward_tensors(model, _inputs(batch, device))
                 loss = torch.nn.functional.mse_loss(
                     prediction, batch.target_tensor.to(device)
                 )
                 if not bool(torch.isfinite(loss)):
                     raise ValueError("Non-finite training loss.")
-                torch.autograd.backward(loss)
-                optimizer.step()
+                backward_and_step(loss, optimizer)
                 step += 1
                 now = time.monotonic()
                 if now - last_log >= 15 or step % steps_per_epoch == 0:

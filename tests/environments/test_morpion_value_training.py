@@ -22,6 +22,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.bundle imp
     load_morpion_model_bundle,
     save_morpion_model_bundle,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
+    value_training,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.training.value_training import (
     EntityValueTrainingConfig,
     learning_rate_at_step,
@@ -66,7 +69,16 @@ def test_canonical_cache_keeps_source_targets_and_reopens(tmp_path: Path) -> Non
         prepare_state_cache(path, tmp_path / "states.sqlite", max_rows=5)
 
 
-def test_mid_epoch_resume_matches_uninterrupted_with_dropout(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("warmup_fraction", "stop_after_steps"),
+    [(0.05, 3), (0.25, 1), (0.25, 2), (0.25, 3)],
+)
+def test_mid_epoch_resume_matches_uninterrupted_with_dropout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    warmup_fraction: float,
+    stop_after_steps: int,
+) -> None:
     """Restart preserves sample order, augmentation, optimizer schedule and RNG."""
     path, _ = _build_jsonl_rows_file(
         tmp_path, target_values=tuple(float(i) for i in range(10))
@@ -85,10 +97,30 @@ def test_mid_epoch_resume_matches_uninterrupted_with_dropout(tmp_path: Path) -> 
         device="cpu",
         d4_augmentation=True,
         symmetry_diagnostic_rows=2,
+        warmup_fraction=warmup_fraction,
     )
+    expected_rates = []
+    actual_rates = []
+    shared_update = value_training.backward_and_step
+
+    def legacy_update(loss: torch.Tensor, optimizer: torch.optim.Optimizer) -> None:
+        expected_rates.append(optimizer.param_groups[0]["lr"])
+        torch.autograd.backward(loss)
+        optimizer.step()
+
+    def observed_update(loss: torch.Tensor, optimizer: torch.optim.Optimizer) -> None:
+        actual_rates.append(optimizer.param_groups[0]["lr"])
+        shared_update(loss, optimizer)
+
+    monkeypatch.setattr(value_training, "backward_and_step", legacy_update)
     uninterrupted = train_entity_value(config, states, tmp_path / "full", provenance={})
+    monkeypatch.setattr(value_training, "backward_and_step", observed_update)
     partial = train_entity_value(
-        config, states, tmp_path / "resume", provenance={}, stop_after_steps=3
+        config,
+        states,
+        tmp_path / "resume",
+        provenance={},
+        stop_after_steps=stop_after_steps,
     )
     assert partial["status"] == "interrupted"
     assert not (tmp_path / "resume/result.json").exists()
@@ -100,10 +132,52 @@ def test_mid_epoch_resume_matches_uninterrupted_with_dropout(tmp_path: Path) -> 
         assert torch.equal(weight, second.state_dict()[name]), name
     assert resumed["metrics"] == uninterrupted["metrics"]
     assert resumed["symmetry_consistency"] == uninterrupted["symmetry_consistency"]
+    assert actual_rates == expected_rates
+    assert len(actual_rates) == 8
+    if warmup_fraction == 0.25:
+        assert actual_rates[:3] == [
+            config.learning_rate / 2,
+            config.learning_rate,
+            config.learning_rate,
+        ]
+    checkpoints = [
+        torch.load(tmp_path / name / "checkpoint.pt", weights_only=False)
+        for name in ("full", "resume")
+    ]
+    for key in ("model", "optimizer", "step", "torch_rng", "cuda_rng"):
+        torch.testing.assert_close(
+            checkpoints[0][key], checkpoints[1][key], rtol=0, atol=0
+        )
     with pytest.raises(ValueError, match="differs"):
         train_entity_value(
             replace(config, seed=1), states, tmp_path / "resume", provenance={}
         )
+
+
+def test_nonfinite_loss_is_rejected_before_update(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The standalone recipe retains its own finite-loss rejection boundary."""
+    path, _ = _build_jsonl_rows_file(
+        tmp_path, target_values=tuple(float(i) for i in range(10))
+    )
+    cached = prepare_state_cache(path, tmp_path / "states.sqlite", max_rows=10)
+    states = tuple((state, float("nan")) for state, _ in cached)
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("a non-finite loss reached the update")
+
+    monkeypatch.setattr(value_training, "backward_and_step", forbidden)
+    config = EntityValueTrainingConfig(
+        model=tiny_entity_model_args(relational=True),
+        num_epochs=1,
+        batch_size=2,
+        workers=0,
+        device="cpu",
+        symmetry_diagnostic_rows=0,
+    )
+    with pytest.raises(ValueError, match="Non-finite training loss"):
+        train_entity_value(config, states, tmp_path / "run", provenance={})
 
 
 def test_old_scale_default_and_new_scale_bundle_roundtrip(tmp_path: Path) -> None:

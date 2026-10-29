@@ -4,14 +4,14 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass
 from time import perf_counter
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
 
+from chipiron.learning.optimization import backward_and_step, forward_tensors
 from chipiron.learning.supervised.batches import (
     SupervisedBatch,
-    TensorSupervisedBatch,
     move_supervised_batch_to_device,
 )
 
@@ -101,14 +101,6 @@ def infer_batch_sample_count(batch: SupervisedBatch) -> int:
     return 1
 
 
-def _forward_supervised_batch(
-    model: nn.Module,
-    batch: TensorSupervisedBatch,
-) -> torch.Tensor:
-    """Run a model with every positional input tensor from one batch."""
-    return cast("torch.Tensor", model(*batch.get_model_input_tensors()))
-
-
 def train_regression_batch(
     *,
     model: nn.Module,
@@ -128,14 +120,16 @@ def train_regression_batch(
     with phase("zero_grad"):
         optimizer.zero_grad()
     with phase("forward"):
-        predictions = _forward_supervised_batch(model, device_batch)
+        predictions = forward_tensors(model, device_batch.get_model_input_tensors())
     targets = device_batch.get_target_value()
     with phase("loss"):
         loss = criterion(predictions, targets)
-    with phase("backward"):
-        loss.backward()
-    with phase("optimizer_step"):
-        optimizer.step()
+    backward_and_step(
+        loss,
+        optimizer,
+        backward_phase=phase("backward"),
+        optimizer_phase=phase("optimizer_step"),
+    )
     with phase("metric_accumulation"):
         errors = predictions.detach() - targets
         squared_error_sum = float(torch.sum(errors * errors).item())
@@ -166,7 +160,7 @@ def evaluate_regression_batch(
     with phase("batch_transfer"):
         device_batch = move_supervised_batch_to_device(batch, device)
     with phase("forward"):
-        predictions = _forward_supervised_batch(model, device_batch)
+        predictions = forward_tensors(model, device_batch.get_model_input_tensors())
     targets = device_batch.get_target_value()
     with phase("metric_accumulation"):
         errors = predictions - targets
@@ -203,3 +197,43 @@ def _phase_timer(
 
 
 type _PhaseTimer = Callable[[str], AbstractContextManager[None]]
+
+
+def scalar_loss_from_regression_metrics(
+    *,
+    criterion: torch.nn.Module,
+    metrics: RegressionBatchMetricSums,
+) -> float:
+    """Convert regression sums back to the configured scalar criterion."""
+    if metrics.target_count == 0:
+        return 0.0
+    if isinstance(criterion, torch.nn.MSELoss):
+        if criterion.reduction == "sum":
+            return metrics.squared_error_sum
+        if criterion.reduction == "mean":
+            return metrics.squared_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("MSELoss")
+    if isinstance(criterion, torch.nn.L1Loss):
+        if criterion.reduction == "sum":
+            return metrics.absolute_error_sum
+        if criterion.reduction == "mean":
+            return metrics.absolute_error_sum / metrics.target_count
+        if criterion.reduction == "none":
+            raise _unreduced_loss_reconstruction_error("L1Loss")
+    raise _unsupported_loss_reconstruction_error()
+
+
+def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
+    """Return a clear error for unreduced criterion reconstruction."""
+    return TypeError(
+        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
+    )
+
+
+def _unsupported_loss_reconstruction_error() -> TypeError:
+    """Return a clear error for unsupported criterion reconstruction."""
+    return TypeError(
+        "Can only reconstruct scalar losses for MSELoss "
+        "or L1Loss from common regression metric sums."
+    )

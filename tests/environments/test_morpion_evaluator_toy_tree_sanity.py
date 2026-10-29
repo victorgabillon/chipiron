@@ -1,5 +1,6 @@
 """Tests for the Morpion bootstrap toy-tree sanity laboratory."""
 
+import copy
 from typing import TYPE_CHECKING
 
 import pytest
@@ -138,6 +139,101 @@ def test_output_dir_writes_plotting_artifacts(tmp_path: Path) -> None:
     assert (tmp_path / "node_history.csv").is_file()
     assert (tmp_path / "metrics_copy.csv").is_file()
     assert (tmp_path / "summary.json").is_file()
+
+
+@pytest.mark.parametrize("batch_size", [2, 3])
+@pytest.mark.parametrize("training", [True, False])
+def test_weighted_updates_match_legacy_with_short_and_zero_batches(
+    batch_size: int, training: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Preserve Adam moments, pre-update metrics, dropout RNG and zero-weight steps."""
+    rows = tuple(
+        ToyTrainingRow(
+            node_id=index,
+            feature=(float(index) / 7, 1.0),
+            target=float(index % 3),
+            source="frontier_prediction",
+            weight=weight,
+        )
+        for index, weight in enumerate((0.0, 0.2, 0.0, 0.0, 2.0, 0.0, 0.0))
+    )
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(491)
+        actual = torch.nn.Sequential(
+            torch.nn.Linear(2, 4),
+            torch.nn.Tanh(),
+            torch.nn.Dropout(0.2),
+            torch.nn.Linear(4, 1),
+            torch.nn.Flatten(start_dim=0),
+        ).train(training)
+        reference = copy.deepcopy(actual)
+        features = torch.tensor([row.feature for row in rows], dtype=torch.float32)
+        targets = torch.tensor([row.target for row in rows], dtype=torch.float32)
+        weights = torch.tensor([row.weight for row in rows], dtype=torch.float32)
+        optimizer = torch.optim.Adam(reference.parameters(), lr=0.01)
+        initial_rng = torch.get_rng_state()
+        expected_trace = []
+        moved_on_zero_batch = False
+        for _ in range(4):
+            permutation = torch.randperm(len(rows))
+            numerator = denominator = 0.0
+            for start in range(0, len(rows), batch_size):
+                indices = permutation[start : start + batch_size]
+                prediction = reference(features[indices])
+                batch_weights, batch_targets = weights[indices], targets[indices]
+                loss = torch.sum(batch_weights * (prediction - batch_targets).square())
+                loss = loss / torch.clamp(torch.sum(batch_weights), min=1e-12)
+                optimizer.zero_grad()
+                loss.backward()
+                before = copy.deepcopy(reference.state_dict())
+                optimizer.step()
+                if not bool(batch_weights.any()):
+                    moved_on_zero_batch |= any(
+                        not torch.equal(before[key], value)
+                        for key, value in reference.state_dict().items()
+                    )
+                expected_trace.append((
+                    copy.deepcopy(reference.state_dict()),
+                    copy.deepcopy(optimizer.state_dict()),
+                    torch.get_rng_state(),
+                ))
+                numerator += float(
+                    torch.sum(
+                        batch_weights * (prediction.detach() - batch_targets).square()
+                    )
+                )
+                denominator += float(torch.sum(batch_weights))
+            expected_loss = numerator / max(denominator, 1e-12)
+        assert moved_on_zero_batch, (
+            "fixture must exercise Adam momentum on zero weights"
+        )
+        actual_trace = []
+        original_step = torch.optim.Adam.step
+
+        def observed_step(
+            optimizer: torch.optim.Adam, *args: object, **kwargs: object
+        ) -> object:
+            result = original_step(optimizer, *args, **kwargs)
+            actual_trace.append((
+                copy.deepcopy(actual.state_dict()),
+                copy.deepcopy(optimizer.state_dict()),
+                torch.get_rng_state(),
+            ))
+            return result
+
+        monkeypatch.setattr(torch.optim.Adam, "step", observed_step)
+        torch.set_rng_state(initial_rng)
+        actual_loss = train_weighted_regressor(
+            actual,
+            rows,
+            learning_rate=0.01,
+            train_epochs=4,
+            batch_size=batch_size,
+        )
+        assert actual_loss == expected_loss
+        assert actual.training == training
+        assert len(actual_trace) == len(expected_trace)
+        torch.testing.assert_close(actual_trace, expected_trace, rtol=0, atol=0)
 
 
 def test_case_f_tree_features_and_topology() -> None:
