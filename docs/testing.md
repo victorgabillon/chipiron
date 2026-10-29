@@ -75,6 +75,34 @@ also runs nightly and can be dispatched manually. No branch protection is change
 
 ## Strict source checks
 
+New builds verify their installed sources against an explicit immutable commit:
+
+```bash
+.tox/py314/bin/python .github/scripts/scientific_ci.py verify-candidate FULL_COMMIT_SHA
+.tox/static/bin/python .github/scripts/scientific_ci.py verify-static-candidate FULL_COMMIT_SHA
+```
+
+The commit must be the full SHA of the build checkout's HEAD (the merge candidate
+for pull requests). Installed package membership and bytes must match that commit,
+including Python/typing sources and package data declared by the immutable
+`pyproject.toml` and `MANIFEST.in`. Unexpected native implementations or data files
+also fail. The checkout must contain exactly those declared payload members and
+no extra executable sources; unpackaged documentation may remain in the checkout.
+Candidate verification also checks the bytes and presence/absence of the build
+inputs (`pyproject.toml`, `MANIFEST.in`, `setup.py`, `setup.cfg`) and scientific
+dependency contract. Unsupported package declaration syntax fails explicitly.
+Import origins and the frozen dependency versions, complete membership and hashes
+remain mandatory. Commit source changes before building and verifying a candidate.
+The identity report records the exact reference and verification mode.
+
+The existing `verify` and `verify-static` commands retain frozen replay semantics
+against `chipiron_reference` in `.github/ci-source-contracts.json` (`a6987792...`).
+Use them with an isolated historical installation and matching source checkout;
+they intentionally reject forward source changes. Do not update that historical
+reference to make a new candidate pass. The identity regression tests exercise
+both modes and reject changed, missing and unexpected members on either side,
+including package data and altered build declarations.
+
 `tox -e static` requires zero diagnostics from strict mypy, Pyright and Pylint.
 `tox -e ruff` requires clean formatting and lint. CI and releases use these gates;
 the historical Python 3.13 static baseline remains archival evidence and does not
