@@ -3,6 +3,27 @@
 Monitor an existing Morpion Solitaire workspace, inspect its records and models,
 and deliberately launch its prepared experiment.
 
+## Continual runtime boundary
+
+`runtime_capabilities.py` defines structural contracts for checkpoint creation,
+runtime discard, bounded growth, scientific export, patch application and
+certificate-checked evaluator refresh. The existing Anemone runner implements
+them. Growth, receipt handling, exports and activation consume the contracts
+directly; external adapters may still delegate hooks dynamically.
+
+Continual Growth validates its required operations before setting its node
+budget or invoking automatic activation. Fresh activation validates its private
+runtime before preparing a publication. Runtime checks reject missing and
+noncallable hooks; existing consumers retain return-value validation.
+
+Projection repair and accepted activation retries require no live runtime.
+Training acceptance continues each candidate's own lineage and does not activate
+a model. Growth remains the live-tree mutation and commit authority, using the
+same locks, receipts, checkpoint formats and explicit opt-in settings. The public
+`search_runner_protocol.MorpionSearchRunner` compatibility path is unchanged.
+
+## Operator commands
+
 Install dashboard support from this checkout:
 
 ```bash
