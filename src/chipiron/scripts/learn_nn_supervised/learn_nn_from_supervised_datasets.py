@@ -59,6 +59,9 @@ from chipiron.learning.supervised import (
     evaluate_regression_batch,
     train_regression_batch,
 )
+from chipiron.learning.supervised.regression import (
+    scalar_loss_from_regression_metrics as _scalar_loss_from_regression_metrics,
+)
 from chipiron.scripts.learn_nn_supervised.checkpoint_helpers import (
     get_folder_training_copies_path_from,
     safe_nn_architecture_save,
@@ -571,43 +574,3 @@ def _create_optimizer_and_scheduler(
         mkdir_if_not_existing(folder_path_training_copies)
 
     return optimizer, scheduler
-
-
-def _scalar_loss_from_regression_metrics(
-    *,
-    criterion: torch.nn.Module,
-    metrics: RegressionBatchMetricSums,
-) -> float:
-    """Convert regression sums back to the configured scalar criterion."""
-    if metrics.target_count == 0:
-        return 0.0
-    if isinstance(criterion, torch.nn.MSELoss):
-        if criterion.reduction == "sum":
-            return metrics.squared_error_sum
-        if criterion.reduction == "mean":
-            return metrics.squared_error_sum / metrics.target_count
-        if criterion.reduction == "none":
-            raise _unreduced_loss_reconstruction_error("MSELoss")
-    if isinstance(criterion, torch.nn.L1Loss):
-        if criterion.reduction == "sum":
-            return metrics.absolute_error_sum
-        if criterion.reduction == "mean":
-            return metrics.absolute_error_sum / metrics.target_count
-        if criterion.reduction == "none":
-            raise _unreduced_loss_reconstruction_error("L1Loss")
-    raise _unsupported_loss_reconstruction_error()
-
-
-def _unreduced_loss_reconstruction_error(loss_name: str) -> TypeError:
-    """Return a clear error for unreduced criterion reconstruction."""
-    return TypeError(
-        f"Cannot reconstruct unreduced {loss_name} from aggregate regression metrics."
-    )
-
-
-def _unsupported_loss_reconstruction_error() -> TypeError:
-    """Return a clear error for unsupported criterion reconstruction."""
-    return TypeError(
-        "Chess supervised learning can only reconstruct scalar losses for MSELoss "
-        "or L1Loss from common regression metric sums."
-    )
