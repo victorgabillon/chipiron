@@ -283,7 +283,12 @@ def verify(
         verify_build_inputs(reference)
     site = Path(sysconfig.get_path("purelib")).resolve()
     result = {}
-    for distribution, package in contract["packages"].items():
+    # Frozen replay keeps the historical map. Candidate overrides replace whole
+    # package identities, including membership, without mutating that map.
+    packages = contract["packages"]
+    if candidate is not None:
+        packages = packages | contract.get("candidate_package_overrides", {})
+    for distribution, package in packages.items():
         if importlib.metadata.version(distribution) != package["version"]:
             message = f"Wrong scientific dependency version: {distribution}"
             raise RuntimeError(message)

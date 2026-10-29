@@ -15,6 +15,11 @@ from chipiron.learning.supervised.batches import (
     move_supervised_batch_to_device,
 )
 
+# Explicit re-export preserves the legacy typed import path.
+from chipiron.learning.torch_runtime import (  # pylint: disable=useless-import-alias
+    synchronize_torch_device_if_needed as synchronize_torch_device_if_needed,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -67,12 +72,6 @@ class RegressionEvaluationStats:
     elapsed_seconds: float
 
 
-def synchronize_torch_device_if_needed(device: torch.device) -> None:
-    """Synchronize pending device work when required for accurate timings."""
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-
-
 @contextmanager
 def timed_torch_phase(
     timings: PhaseDurations,
@@ -81,7 +80,11 @@ def timed_torch_phase(
     *,
     synchronize_cuda: bool = True,
 ) -> Iterator[None]:
-    """Measure a Torch phase, optionally synchronizing CUDA around it."""
+    """Measure a phase, optionally synchronizing the selected accelerator.
+
+    ``synchronize_cuda`` retains its legacy name for API compatibility and now
+    controls synchronization for CUDA/ROCm, MPS and XPU alike.
+    """
     if synchronize_cuda:
         synchronize_torch_device_if_needed(device)
     started_at = perf_counter()

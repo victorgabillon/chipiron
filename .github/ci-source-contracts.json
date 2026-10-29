@@ -1,4 +1,24 @@
 {
+  "candidate_package_overrides": {
+    "parsley-coco": {
+      "files": {
+        "parsley/__init__.py": "09a982f3c914a9be6d3375e555d012ceb01620641fc65e77827605c6d978f45e",
+        "parsley/alternative_dataclasses.py": "45925a3ddf55f8a6b113390714a2731a15c0f20f0c51d31cbbb686b3f8efcb24",
+        "parsley/construction.py": "143d486c28f7730ae46f2b0261640b0612d9758ff27c3975613a566e2bfda79f",
+        "parsley/data/yaml_files/test_b.yaml": "0d4dcfcdbe870185535bdbb0a100e3bd080989c13312558958553420cd4e3577",
+        "parsley/errors.py": "4b7456d7b31f7a6e8402bab349b390c26a3f64d93a239a57279416bd89ddf97f",
+        "parsley/factory.py": "45b7caaa8942e690a86336970404360548a055a2390aa93c151249cbb98c44d0",
+        "parsley/logger.py": "59d85025ff126eaa3cfb0192d841209bf772bb386bc7a4b4499f094c9baa4198",
+        "parsley/parser.py": "7e69bb0607d8296ac4bd03c32821ebc368a28c6e22bc1f471415fc18ac764dee",
+        "parsley/py.typed": "c03386ae5502a19cda248c3eaa2e59ece858b5c41f342bfe1d8bd4f5430e3b83",
+        "parsley/recursive_dataclass_with_path_to_yaml.py": "9c5a7b43b91dfebb4df73635636e576115d9ab4cab60a574740b6ed76713bbe2",
+        "parsley/sentinels.py": "eda28e9c3bb130c5679bbd0c46e26189132247cea127bc2933e0b9f0802a0533",
+        "parsley/utils.py": "917463990e2fbc8cf2585703c7033a27e01ed2cbf9cccf2858f3ac798075600a"
+      },
+      "module": "parsley",
+      "version": "0.3.0"
+    }
+  },
   "chipiron_reference": "a6987792796e21210315a2d76358aa48d71bce71",
   "packages": {
     "algorhino-anemone": {
@@ -382,20 +402,18 @@
     "parsley-coco": {
       "files": {
         "parsley/__init__.py": "09a982f3c914a9be6d3375e555d012ceb01620641fc65e77827605c6d978f45e",
-        "parsley/alternative_dataclasses.py": "45925a3ddf55f8a6b113390714a2731a15c0f20f0c51d31cbbb686b3f8efcb24",
-        "parsley/construction.py": "143d486c28f7730ae46f2b0261640b0612d9758ff27c3975613a566e2bfda79f",
+        "parsley/alternative_dataclasses.py": "757f7f268b8de7b2e17ef0fa71d52ed17eb0f72e1a399b69b6afdfcc3c6a7f9d",
         "parsley/data/yaml_files/test_b.yaml": "0d4dcfcdbe870185535bdbb0a100e3bd080989c13312558958553420cd4e3577",
-        "parsley/errors.py": "4b7456d7b31f7a6e8402bab349b390c26a3f64d93a239a57279416bd89ddf97f",
         "parsley/factory.py": "45b7caaa8942e690a86336970404360548a055a2390aa93c151249cbb98c44d0",
         "parsley/logger.py": "59d85025ff126eaa3cfb0192d841209bf772bb386bc7a4b4499f094c9baa4198",
-        "parsley/parser.py": "7e69bb0607d8296ac4bd03c32821ebc368a28c6e22bc1f471415fc18ac764dee",
+        "parsley/parser.py": "0808b0e0ae432b3e12fc68d5d8603ddf0642ee0bafb23e517290f2f9cbd9a30c",
         "parsley/py.typed": "c03386ae5502a19cda248c3eaa2e59ece858b5c41f342bfe1d8bd4f5430e3b83",
-        "parsley/recursive_dataclass_with_path_to_yaml.py": "9c5a7b43b91dfebb4df73635636e576115d9ab4cab60a574740b6ed76713bbe2",
+        "parsley/recursive_dataclass_with_path_to_yaml.py": "3df854485747aa61dc3ef82464479952368cf380c49c413b5df6aff665a871e9",
         "parsley/sentinels.py": "eda28e9c3bb130c5679bbd0c46e26189132247cea127bc2933e0b9f0802a0533",
-        "parsley/utils.py": "917463990e2fbc8cf2585703c7033a27e01ed2cbf9cccf2858f3ac798075600a"
+        "parsley/utils.py": "1b6dc7b140ef15dfd0f8d1ad440349bce0998aa925f80fa7c3324b4509c63e7c"
       },
       "module": "parsley",
-      "version": "0.3.0"
+      "version": "0.2.0"
     },
     "valanga": {
       "files": {

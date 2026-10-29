@@ -30,9 +30,11 @@ Both chess scripts use this function through their existing private helper names
 | Toy `train_weighted_regressor` | Fresh Adam per invocation; `sum(weight * error²) / clamp(sum(weight), min=1e-12)` | Forward and construct loss **before** default `zero_grad()`. Every batch steps, including all-zero weights. Epoch metrics accumulate weighted errors from each batch's pre-update predictions and divide by total epoch weight (floor `1e-12`). |
 
 Model architecture, data validation, targets, splits, augmentation, shuffling,
-device selection, model mode, schedules, finite-loss policy, checkpoint schemas,
+device requests, model mode, schedules, finite-loss policy, checkpoint schemas,
 progress counters, bundle activation and scientific acceptance are domain-specific.
 The common operations introduce no trainer lifecycle or callback registry.
+Device resolution and synchronization use the shared
+[Torch runtime policy](torch_devices.md).
 
 ## Continuation contracts
 
