@@ -7,6 +7,24 @@ historical Git/replay contracts. Only the forward CI constraint and exact packag
 member hashes advance. The verifier still rejects missing, altered or additional
 installed members.
 
+The E3a review correction separates dependency selection explicitly:
+
+- `packages` remains exactly the pre-E3 frozen dependency map, including Parsley
+  0.2.0, its original hashes and package membership. `verify` and `verify-static`
+  use this map with the unchanged historical Chipiron reference
+  `a6987792796e21210315a2d76358aa48d71bce71`.
+- `candidate_package_overrides` contains the complete Parsley 0.3.0 identity.
+  `verify-candidate` and `verify-static-candidate` apply whole-package overrides
+  to the frozen map; all other dependency identities stay the same. File maps
+  are replaced, not merged, so membership is exact for the selected release.
+
+Candidate build-input verification still binds the complete contract file to the
+candidate commit. Both modes retain the same version, import-origin, byte-hash,
+package-membership and Chipiron source checks. The initial E3 change incorrectly
+advanced the shared map for both modes; earlier green candidate CI did not prove
+frozen dependency replay. Focused regressions now exercise all four CLI modes
+with matching identities and with wrong versions, content, origins and membership.
+
 Published release: [v0.3.0](https://github.com/victorgabillon/parsley/releases/tag/v0.3.0),
 commit `1c30745fbbf423777cbe2082d7e017032f226420`.
 The wheel SHA-256 is
