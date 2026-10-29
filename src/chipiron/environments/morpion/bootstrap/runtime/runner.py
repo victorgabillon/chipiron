@@ -177,6 +177,7 @@ from .training_export_profile import (
 
 if TYPE_CHECKING:
     from anemone.checkpoints._protocols import CheckpointStateSummary
+    from anemone.tree_exploration import ReevaluationReport
 
     from chipiron.environments.morpion.bootstrap.control import (
         MorpionBootstrapEffectiveRuntimeConfig,
@@ -2139,7 +2140,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise UninitializedMorpionSearchRunnerError
         return self._runtime
 
-    def refresh_model_estimates(self, model_bundle_path: Path) -> Any:
+    def refresh_model_estimates(self, model_bundle_path: Path) -> ReevaluationReport:
         """One bounded full scientific refresh in a private, quiescent runtime.
 
         The owning transaction must verify terminal facts/scores first and discard
@@ -2156,7 +2157,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             batch_size=64,
         )
         self._current_evaluator_bundle_path = model_bundle_path
-        return report
+        return cast("ReevaluationReport", report)
 
     def validate_model_refresh_certificates(self) -> None:
         """Strict bounded preflight, independent of diagnostic iterator fallbacks."""

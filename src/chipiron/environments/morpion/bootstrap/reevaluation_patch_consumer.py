@@ -11,6 +11,10 @@ from .pipeline_artifacts import (
     load_reevaluation_patch,
 )
 from .pipeline_memory import log_pipeline_memory
+from .runtime_capabilities import (
+    ReevaluationPatchRuntime,
+    supports_runtime_capability,
+)
 
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -131,8 +135,7 @@ def apply_pending_reevaluation_patch_to_runner(
         rows=len(patch.rows),
     )
 
-    apply_patch = getattr(runner, "apply_reevaluation_patch", None)
-    if not callable(apply_patch):
+    if not supports_runtime_capability(runner, ReevaluationPatchRuntime):
         raise _missing_runner_patch_hook_error()
 
     LOGGER.info(
@@ -142,7 +145,9 @@ def apply_pending_reevaluation_patch_to_runner(
     )
     measurement = StageMeasurement()
     try:
-        applied_count = _resolve_applied_count(patch, apply_patch(patch))
+        applied_count = _resolve_applied_count(
+            patch, runner.apply_reevaluation_patch(patch)
+        )
     except Exception:
         LOGGER.exception(
             "[reevaluation-patch] apply_fail patch_id=%s rows=%s",

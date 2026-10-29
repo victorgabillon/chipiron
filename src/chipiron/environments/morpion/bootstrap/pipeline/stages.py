@@ -191,6 +191,11 @@ from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from chipiron.environments.morpion.bootstrap.runtime_capabilities import (
+    CheckpointWriter,
+    ContinualGrowthRuntime,
+    supports_runtime_capability,
+)
 from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
     ShardedTrainingGenerationView,
     is_scientific_generation_manifest,
@@ -463,13 +468,14 @@ def run_pipeline_growth_stage(
             closed_scientific_snapshot,
             "Continual learning requires the full scientific pipeline.",
         )
-        setter = getattr(runner, "set_unique_node_budget", None)
-        require(
-            callable(setter),
-            "Continual Growth requires an enforced unique-node budget.",
-        )
-        assert callable(setter)
-        setter(args.continual_learning.max_tree_nodes)
+        continual_runner = runner
+        if not supports_runtime_capability(continual_runner, ContinualGrowthRuntime):
+            message = (
+                "Continual Growth requires an enforced unique-node budget and "
+                "checkpoint, discard, patch and closed scientific export capabilities."
+            )
+            raise CheckpointPatchReceiptError(message)
+        continual_runner.set_unique_node_budget(args.continual_learning.max_tree_nodes)
         state = load_bootstrap_run_state(paths.run_state_path)
         if state.metadata.get("experiment_termination") is not None:
             return state
@@ -1231,8 +1237,8 @@ def _run_one_pipeline_growth_cycle_impl(
         closed_export_observation = closed_measurement.finish()
 
     relative_runtime_checkpoint_path: str | None = None
-    save_checkpoint = getattr(runner, "save_checkpoint", None)
-    if callable(save_checkpoint):
+    checkpoint_writer = runner
+    if supports_runtime_capability(checkpoint_writer, CheckpointWriter):
         if not log_available_ram_guard(
             stage="growth",
             generation=generation,
@@ -1301,7 +1307,7 @@ def _run_one_pipeline_growth_cycle_impl(
             current_rss_mb() if args.growth_memory_profile else None
         )
         checkpoint_measurement = StageMeasurement()
-        save_checkpoint(runtime_checkpoint_path)
+        checkpoint_writer.save_checkpoint(runtime_checkpoint_path)
         checkpoint_observation = checkpoint_measurement.finish()
         persist_stage_measurement(
             paths.work_dir,

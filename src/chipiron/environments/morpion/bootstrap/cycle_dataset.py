@@ -40,6 +40,10 @@ from .record_status import (
     resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
+from .runtime_capabilities import (
+    ShardedTrainingExportRuntime,
+    supports_runtime_capability,
+)
 from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
@@ -263,11 +267,11 @@ def export_training_snapshot_for_generation(
         )
         return flat_path
 
-    export_sharded = getattr(runner, "export_sharded_training_tree_snapshot", None)
-    if not callable(export_sharded):
+    sharded_runner = runner
+    if not supports_runtime_capability(sharded_runner, ShardedTrainingExportRuntime):
         raise _unsupported_sharded_training_export_error()
 
-    exported_path = export_sharded(
+    exported_path = sharded_runner.export_sharded_training_tree_snapshot(
         paths.sharded_tree_snapshot_dir,
         generation=generation,
     )

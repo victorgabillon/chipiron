@@ -42,6 +42,14 @@ from .reevaluation_transaction import (
     validate_proposal,
 )
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
+from .runtime_capabilities import (
+    CheckpointWriter,
+    ClosedScientificExportRuntime,
+    ReevaluationPatchRuntime,
+    RuntimeDiscard,
+    ScientificTrainingExportRuntime,
+    supports_runtime_capability,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -389,12 +397,11 @@ class GrowthPatchReceiptSession:
 
     def discard_runtime(self) -> None:
         """Do not retain partial or uncommitted values across restore boundaries."""
-        discard = getattr(self.runner, "discard_uncommitted_runtime", None)
-        _require(
-            callable(discard), "Receipt mode requires a cold-runtime discard hook."
-        )
-        assert callable(discard)
-        discard()
+        runner = self.runner
+        if not supports_runtime_capability(runner, RuntimeDiscard):
+            message = "Receipt mode requires a cold-runtime discard hook."
+            raise CheckpointPatchReceiptError(message)
+        runner.discard_uncommitted_runtime()
 
     def sync_artifact(self, path: Path) -> None:
         """Sync payload and every new ancestor entry through the existing run root."""
@@ -453,14 +460,11 @@ class GrowthPatchReceiptSession:
                 "Scientific v2 publication requires a sharded export at every saved Growth generation.",
             )
             _require(
-                callable(
-                    getattr(
-                        self.runner,
-                        "export_closed_scientific_snapshot"
-                        if self.publication.version == 3
-                        else "export_scientific_training_snapshot",
-                        None,
-                    )
+                supports_runtime_capability(
+                    self.runner,
+                    ClosedScientificExportRuntime
+                    if self.publication.version == 3
+                    else ScientificTrainingExportRuntime,
                 ),
                 "Runner has no explicit scientific v2 export adapter.",
             )
@@ -479,8 +483,16 @@ class GrowthPatchReceiptSession:
             "Activation blocked: additive sharded exports need independent immutable publication.",
         )
         _require(
-            callable(getattr(self.runner, "save_checkpoint", None)),
+            supports_runtime_capability(self.runner, CheckpointWriter),
             "Receipt mode requires checkpoint creation.",
+        )
+        _require(
+            supports_runtime_capability(self.runner, RuntimeDiscard),
+            "Receipt mode requires a cold-runtime discard hook.",
+        )
+        _require(
+            supports_runtime_capability(self.runner, ReevaluationPatchRuntime),
+            "Receipt mode requires reevaluation patch application.",
         )
 
     def validate_publication_version(self, state: MorpionBootstrapRunState) -> None:
@@ -501,25 +513,22 @@ class GrowthPatchReceiptSession:
     def export_scientific(self, generation: int) -> Path:
         """Invoke the v2 writer only in the selected private capsule attempt."""
         assert self.publication is not None and self.publication.producer is not None
-        export = getattr(
-            self.runner,
-            "export_closed_scientific_snapshot"
-            if self.publication.version == 3
-            else "export_scientific_training_snapshot",
-            None,
-        )
-        _require(callable(export), "Runner has no scientific v2 export adapter.")
-        assert callable(export)
         if self.publication.version == 3:
             from .generation_publication_io import private_generation_validation
 
+            closed_runner = self.runner
+            if not supports_runtime_capability(
+                closed_runner, ClosedScientificExportRuntime
+            ):
+                message = "Runner has no scientific v2 export adapter."
+                raise CheckpointPatchReceiptError(message)
             assert (
                 self.publication.staging is not None
                 and self.publication.state is not None
             )
             assert self.publication.state.latest_tree_snapshot_path is not None
             with private_generation_validation(self.publication.staging):
-                result = export(
+                result = closed_runner.export_closed_scientific_snapshot(
                     self.publication.staging / "scientific_snapshot",
                     generation=generation,
                     producer=self.publication.producer,
@@ -544,8 +553,14 @@ class GrowthPatchReceiptSession:
                 )
                 assert isinstance(result, str | Path)
                 return Path(result)
+        scientific_runner = self.runner
+        if not supports_runtime_capability(
+            scientific_runner, ScientificTrainingExportRuntime
+        ):
+            message = "Runner has no scientific v2 export adapter."
+            raise CheckpointPatchReceiptError(message)
         paths = self.export_paths(sharded=True)
-        result = export(
+        result = scientific_runner.export_scientific_training_snapshot(
             paths.sharded_tree_snapshot_dir,
             generation=generation,
             producer=self.publication.producer,

@@ -56,6 +56,10 @@ from .runtime.runner import (
     AnemoneMorpionSearchRunnerArgs,
     default_search_args,
 )
+from .runtime_capabilities import (
+    ModelActivationRuntime,
+    supports_runtime_capability,
+)
 from .training_publication import accepted_selected_model
 from .worker_result_io import workspace_epoch
 
@@ -78,7 +82,7 @@ LOGGER = logging.getLogger(__name__)
 
 def _runner(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
-) -> tuple[AnemoneMorpionSearchRunner, MorpionBootstrapEffectiveRuntimeConfig]:
+) -> tuple[ModelActivationRuntime, MorpionBootstrapEffectiveRuntimeConfig]:
     config = load_bootstrap_config(paths.bootstrap_config_path)
     validate_confidence_policy("selected_value_v2", config.dataset.family_target_policy)
     require(
@@ -112,6 +116,10 @@ def validate_activation_genesis(
         "Genesis producer must bind the full model digest.",
     )
     runner, effective = _runner(paths, state)
+    require(
+        supports_runtime_capability(runner, ModelActivationRuntime),
+        "Activation requires a complete model activation runtime.",
+    )
     assert state.latest_runtime_checkpoint_path is not None
     try:
         with torch.random.fork_rng(devices=[]):
@@ -181,7 +189,7 @@ def prepare_model_activation_request(
 
 def _save(
     session: GrowthPatchReceiptSession,
-    runner: AnemoneMorpionSearchRunner,
+    runner: ModelActivationRuntime,
     state: MorpionBootstrapRunState,
 ) -> MorpionBootstrapRunState:
     generation = state.generation + 1
@@ -335,6 +343,10 @@ def activate_model(
         )
         measurement = StageMeasurement()
         runner, effective = _runner(paths, state)
+        require(
+            supports_runtime_capability(runner, ModelActivationRuntime),
+            "Activation requires a complete model activation runtime.",
+        )
         head = publication_records(state.metadata)[-1]
         producer = dict(head["scientific_identity"]["producer"]["identity"])
         session = GrowthPatchReceiptSession(
