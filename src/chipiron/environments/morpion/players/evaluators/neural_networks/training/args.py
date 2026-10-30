@@ -105,6 +105,7 @@ class MorpionStreamingTrainingArgs:
     row_chunk_size: int = 8192
     max_rows: int | None = None
     progress_callback: MorpionTrainingProgressCallback | None = None
+    cache_read_only: bool = False
 
     def __post_init__(self) -> None:
         """Validate streaming controls."""

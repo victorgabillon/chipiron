@@ -956,6 +956,17 @@ def run_training(
                 "training_evaluator_names": list(evaluators.evaluators),
                 "training_duration_s": result.training_duration_s,
                 "round_performance": round_measurement.finish(),
+                **(
+                    {
+                        "candidate_execution": read_object(
+                            attempt.directory / "candidate_execution" / "execution.json"
+                        )
+                    }
+                    if (
+                        attempt.directory / "candidate_execution" / "execution.json"
+                    ).exists()
+                    else {}
+                ),
                 **({"continual_selection": selection} if selection is not None else {}),
             },
         )

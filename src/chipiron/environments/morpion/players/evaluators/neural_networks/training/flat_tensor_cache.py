@@ -146,8 +146,12 @@ def load_or_materialize_flat_tensor_cache(
     rows_path: str | os.PathLike[str],
     row_chunk_size: int,
     max_rows: int | None,
+    read_only: bool = False,
 ) -> FlatTensorCache:
     """Load a valid flat tensor cache or rebuild it from Morpion rows."""
+    if read_only:
+        return load_flat_tensor_cache(rows_path=rows_path, max_rows=max_rows)
+
     paths = default_flat_tensor_cache_paths(rows_path, max_rows=max_rows)
     started_at = perf_counter()
     loaded = _try_load_valid_flat_tensor_cache(

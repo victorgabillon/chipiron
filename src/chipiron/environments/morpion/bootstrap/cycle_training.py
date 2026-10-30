@@ -784,6 +784,49 @@ def train_and_select_evaluators_streaming(
             rows_source=rows_source,
             max_rows=args.evaluator_diagnostics_max_rows,
         )
+    from .candidate_executor import execute_candidates
+    from .candidate_job import CandidateJob, run_candidate
+    from .candidate_resources import resolve_candidate_plan
+
+    jobs = {
+        name: CandidateJob(
+            name,
+            MorpionStreamingTrainingArgs(
+                training_args=morpion_training_args_from_evaluator_spec(
+                    spec=spec,
+                    dataset_file=rows_path,
+                    output_dir=paths.model_bundle_path_for_generation(generation, name),
+                    shuffle=args.shuffle,
+                    validation_fraction=args.validation_fraction,
+                    validation_seed=args.validation_seed,
+                    device=args.training_device,
+                    continuation=_candidate_continuation(
+                        args, run_state, generation, name
+                    ),
+                ),
+                row_chunk_size=chunk_size,
+                max_rows=max_rows,
+            ),
+        )
+        for name, spec in resolved_evaluators_config.evaluators.items()
+    }
+    plan = resolve_candidate_plan(
+        evaluator_count, args.continual_learning, args.training_device
+    )
+    parallel_results = None
+    if plan is None:
+        import torch
+
+        LOGGER.info(
+            "[train-stream] candidate_execution=inline workers=1 torch_threads=%s",
+            torch.get_num_threads(),
+        )
+    if plan is not None:
+        LOGGER.info("[train-stream] candidate_execution=%s", plan)
+        parallel_results = execute_candidates(
+            list(jobs.values()), plan, paths.work_dir / "candidate_execution"
+        )
+
     for evaluator_index, (evaluator_name, spec) in enumerate(
         resolved_evaluators_config.evaluators.items(),
         start=1,
@@ -845,25 +888,23 @@ def train_and_select_evaluators_streaming(
             )
 
         try:
-            trained_model, metrics = train_morpion_regressor_streaming(
-                MorpionStreamingTrainingArgs(
-                    training_args=morpion_training_args_from_evaluator_spec(
-                        spec=spec,
-                        dataset_file=rows_path,
-                        output_dir=model_bundle_path,
-                        shuffle=args.shuffle,
-                        validation_fraction=args.validation_fraction,
-                        validation_seed=args.validation_seed,
-                        device=args.training_device,
-                        continuation=_candidate_continuation(
-                            args, run_state, generation, evaluator_name
-                        ),
+            if parallel_results is None:
+                job = jobs[evaluator_name]
+                trained_model, metrics = run_candidate(
+                    replace(
+                        job,
+                        training=replace(job.training, progress_callback=_log_progress),
                     ),
-                    row_chunk_size=chunk_size,
-                    max_rows=max_rows,
-                    progress_callback=_log_progress,
+                    trainer=train_morpion_regressor_streaming,
                 )
-            )
+            else:
+                from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+                    load_morpion_model_bundle,
+                )
+
+                trained_model, _, _ = load_morpion_model_bundle(model_bundle_path)
+                metrics = parallel_results[evaluator_name]["metrics"]
+
         except Exception as exc:
             log_training_evaluator_failed(
                 generation=generation,
@@ -874,9 +915,17 @@ def train_and_select_evaluators_streaming(
                 error=exc,
             )
             raise
-        evaluator_observation = evaluator_measurement.finish()
+        evaluator_observation = (
+            evaluator_measurement.finish()
+            if parallel_results is None
+            else parallel_results[evaluator_name]["performance"]
+        )
         memory.log("after_model_save")
-        evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
+        evaluator_elapsed_s = (
+            time.perf_counter() - evaluator_started_at
+            if parallel_results is None
+            else float(cast("float", evaluator_observation["elapsed_s"]))
+        )
         learning_rate = _metric_optional_float(metrics, "learning_rate")
         evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
             final_loss=_metric_float(metrics, "final_loss"),

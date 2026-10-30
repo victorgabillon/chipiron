@@ -65,6 +65,7 @@ def setup_continual(
     proof: bool = False,
     maximum: int = 5000,
     training_cadence: int = 1,
+    memory_floor_mb: int = 8192,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
@@ -106,6 +107,7 @@ def setup_continual(
         continual_learning=MorpionContinualLearningPolicy(
             automatic_activation=automatic,
             max_tree_nodes=maximum,
+            min_available_ram_mb=memory_floor_mb,
             seed=1 if proof else 0,
             training_every_generations=training_cadence,
         ),
@@ -177,12 +179,15 @@ def grow(args: MorpionBootstrapArgs) -> MorpionBootstrapRunState:
 
 
 @pytest.mark.fast
+@pytest.mark.parametrize("candidate_workers", [1, 2, 4])
 def test_three_accepted_rounds_and_idempotent_retry(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, candidate_workers: int
 ) -> None:
     """W1→W2→W3 for every candidate; receipts rather than active-model paths win."""
+    monkeypatch.setenv("CHIPIRON_CANDIDATE_WORKERS", str(candidate_workers))
+    monkeypatch.setenv("CHIPIRON_CANDIDATE_RESERVED_CPUS", "1")
     local_leaderboard(monkeypatch, tmp_path)
-    args, paths = setup_continual(tmp_path / "workspace")
+    args, paths = setup_continual(tmp_path / "workspace", memory_floor_mb=1)
     previous = None
     for round_number in range(1, 4):
         state = grow(args)

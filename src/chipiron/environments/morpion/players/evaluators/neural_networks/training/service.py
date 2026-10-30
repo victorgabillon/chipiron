@@ -447,6 +447,7 @@ def train_morpion_regressor_streaming(
     if is_flat_morpion_training_model_kind(training_args.model_kind):
         flat_cache = load_or_materialize_flat_tensor_cache(
             rows_path=training_args.dataset_file,
+            read_only=args.cache_read_only,
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
         )
@@ -473,6 +474,7 @@ def train_morpion_regressor_streaming(
         relational_entity_token_cache = (
             load_or_materialize_relational_entity_token_cache(
                 rows_path=training_args.dataset_file,
+                read_only=args.cache_read_only,
                 row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 entity_max_tokens=training_args.entity_max_tokens,
@@ -511,6 +513,7 @@ def train_morpion_regressor_streaming(
     elif is_morpion_entity_token_model_kind(training_args.model_kind):
         entity_token_cache = load_or_materialize_entity_token_cache(
             rows_path=training_args.dataset_file,
+            read_only=args.cache_read_only,
             row_chunk_size=args.row_chunk_size,
             max_rows=args.max_rows,
             entity_max_tokens=training_args.entity_max_tokens,

@@ -86,7 +86,7 @@ def weights_digest(model: MorpionRegressor) -> str:
     return digest.hexdigest()
 
 
-def rng_state() -> dict[str, Any]:
+def rng_state(*, cuda: bool = True) -> dict[str, Any]:
     """Record all RNGs used by these trainers without claiming cross-round replay."""
     # The seeded global RandomState returns MT19937 state; NumPy stubs disagree
     # on the no-argument overload, so retain its observed runtime tuple explicitly.
@@ -98,7 +98,7 @@ def rng_state() -> dict[str, Any]:
         "torch_cuda_hex": [
             bytes(s.tolist()).hex() for s in torch.cuda.get_rng_state_all()
         ]
-        if torch.cuda.is_available()
+        if cuda and torch.cuda.is_available()
         else [],
     }
 
@@ -117,8 +117,12 @@ def initialize_training(
     if continuation is not None:
         random.seed(continuation.seed)
         np.random.seed(continuation.seed % 2**32)
-        torch.manual_seed(continuation.seed)
-        if torch.cuda.is_available():
+        if device.type == "cpu":
+            # torch.manual_seed also dispatches to accelerator generators.
+            torch.default_generator.manual_seed(continuation.seed)
+        else:
+            torch.manual_seed(continuation.seed)
+        if device.type == "cuda" and torch.cuda.is_available():
             torch.cuda.manual_seed_all(continuation.seed)
         provenance = {
             "candidate_name": continuation.candidate_name,
@@ -127,7 +131,7 @@ def initialize_training(
             "optimizer_state_policy": continuation.optimizer_state_policy,
             "rng_policy": "deterministic_seed_reset_each_round",
             "learning_rate_policy": "constant_configured_rate",
-            "rng_before_initialization": rng_state(),
+            "rng_before_initialization": rng_state(cuda=device.type == "cuda"),
             "parent_bundle_sha256": continuation.parent_bundle_sha256,
             "parent_weights_sha256": continuation.parent_weights_sha256,
         }
@@ -212,7 +216,7 @@ def initialize_training(
             provenance["initial_bundle_sha256"] = parent_metadata[
                 "initial_bundle_sha256"
             ]
-        provenance["rng_before_training"] = rng_state()
+        provenance["rng_before_training"] = rng_state(cuda=device.type == "cuda")
         provenance["starting_optimizer_step_count"] = optimizer_step_count(optimizer)
     return model, optimizer, provenance
 
@@ -258,5 +262,7 @@ def finish_training(
         + optimizer_steps,
         "final_weights_sha256": weights_digest(model),
         "optimizer_sha256": file_digest(directory / "optimizer.pt"),
-        "rng_after_training": rng_state(),
+        "rng_after_training": rng_state(
+            cuda=next(model.parameters()).device.type == "cuda"
+        ),
     }

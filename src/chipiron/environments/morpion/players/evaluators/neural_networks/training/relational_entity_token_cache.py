@@ -178,8 +178,14 @@ def load_or_materialize_relational_entity_token_cache(
     row_chunk_size: int,
     max_rows: int | None,
     entity_max_tokens: int,
+    read_only: bool = False,
 ) -> MorpionRelationalEntityTokenCache:
     """Load a valid relational cache or rebuild it from raw rows."""
+    if read_only:
+        return load_relational_entity_token_cache(
+            rows_path=rows_path, max_rows=max_rows, entity_max_tokens=entity_max_tokens
+        )
+
     paths = default_relational_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
