@@ -196,6 +196,7 @@ from chipiron.environments.morpion.bootstrap.runtime_capabilities import (
     ContinualGrowthRuntime,
     supports_runtime_capability,
 )
+from chipiron.environments.morpion.bootstrap.runtime_performance import observe_wait
 from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
     ShardedTrainingGenerationView,
     is_scientific_generation_manifest,
@@ -488,11 +489,15 @@ def run_pipeline_growth_stage(
             and state.generation % learning.training_every_generations == 0
             and "accepted_training" not in head
         ):
+            observe_wait(
+                paths.work_dir, "growth", "learning_boundary", state.generation
+            )
             LOGGER.info(
                 "[pipeline] growth_wait reason=learning_boundary generation=%s",
                 state.generation,
             )
             return state
+        observe_wait(paths.work_dir, "growth", None, state.generation)
         if args.continual_learning.automatic_activation:
             from chipiron.environments.morpion.bootstrap.model_activation import (
                 activate_selected_round_automatically,

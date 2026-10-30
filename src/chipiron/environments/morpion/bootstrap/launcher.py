@@ -72,6 +72,7 @@ from .runtime.runner import (
     default_search_args,
 )
 from .runtime.runtime_control import apply_runtime_control_to_runner_args
+from .runtime_performance import WorkerObservation
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1990,6 +1991,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     paths.ensure_directories()
     register_current_launcher_process(paths)
+    observation = WorkerObservation(paths.work_dir, launcher_args.pipeline_stage)
     exit_code = 0
     try:
         # A single CLI call owns its readers. The supervisor passes its explicit
@@ -2012,6 +2014,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         return exit_code
     finally:
+        observation.finish(exit_code)
         mark_current_launcher_process_stopped(paths, exit_code=exit_code)
 
 

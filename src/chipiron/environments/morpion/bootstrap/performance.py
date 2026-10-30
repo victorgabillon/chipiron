@@ -12,15 +12,33 @@ import resource
 import sys
 import time
 from contextlib import suppress
+from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from .pipeline_memory import available_ram_mb, current_rss_mb
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
+_IMPORT_TIME_NS = time.time_ns()
+
+
+@lru_cache(maxsize=16)
+def _process_identity(pid: int) -> str:
+    """Read process birth once per PID, including after a fork."""
+    try:
+        ticks = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()[19]
+        boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+    except OSError, ValueError, IndexError:
+        return f"{pid}:import-{_IMPORT_TIME_NS}"
+    return f"{boot}:{pid}:{ticks}"
+
+
+def process_identity() -> str:
+    """Keep forked processes distinct without polling or importing process profilers."""
+    return _process_identity(os.getpid())
 
 
 def process_peak_rss_mb() -> float | None:
@@ -28,6 +46,15 @@ def process_peak_rss_mb() -> float | None:
     try:
         peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         return peak / (1024 * 1024 if sys.platform == "darwin" else 1024)
+    except AttributeError, OSError, ValueError:
+        return None
+
+
+def reaped_children_cpu_s() -> float | None:
+    """CPU of waited-for children only; excludes live children and this process."""
+    try:
+        usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+        return usage.ru_utime + usage.ru_stime
     except AttributeError, OSError, ValueError:
         return None
 
@@ -57,6 +84,7 @@ class StageMeasurement:
         self.started_unix_s = time.time()
         self.started = time.perf_counter()
         self.cpu_started = time.process_time()
+        self.children_cpu_started = reaped_children_cpu_s()
         self.rss_before_mb = current_rss_mb()
         self.available_before_mb = available_ram_mb()
 
@@ -83,6 +111,7 @@ class StageMeasurement:
                 cuda_after = self._cuda_snapshot()
             except RuntimeError, ValueError, AssertionError:
                 LOGGER.warning("CUDA measurement unavailable", exc_info=True)
+        children_cpu = reaped_children_cpu_s()
         return {
             **details,
             "started_unix_s": self.started_unix_s,
@@ -90,6 +119,16 @@ class StageMeasurement:
             "elapsed_s": time.perf_counter() - self.started,
             "cpu_s": time.process_time() - self.cpu_started,
             "pid": os.getpid(),
+            "process_identity": process_identity(),
+            "cpu_scope": "current_process",
+            "children_cpu_s": children_cpu - self.children_cpu_started
+            if children_cpu is not None and self.children_cpu_started is not None
+            else None,
+            "children_cpu_scope": "reaped_children_only; live children excluded",
+            "rss_peak_scope": "process_lifetime",
+            "device_timing_scope": "host_wall_with_device_boundary_synchronization"
+            if self.cuda_before is not None and cuda_after is not None
+            else "host_wall; device completion unverified",
             "rss_before_mb": self.rss_before_mb,
             "rss_after_mb": current_rss_mb(),
             "process_peak_rss_mb": process_peak_rss_mb(),
