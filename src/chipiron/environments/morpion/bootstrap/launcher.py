@@ -259,6 +259,13 @@ def run_morpion_bootstrap_experiment(
     This launcher is the canonical human/operator entrypoint for one real
     Morpion bootstrap experiment backed by the Anemone search runner.
     """
+    if (
+        launcher_args.bootstrap_args.learning_schedule is not None
+        and not launcher_args.scientific
+    ):
+        from .generation_publication_io import require
+
+        require(False, "Bounded learning requires the scientific launcher.")
     if launcher_args.scientific:
         os.environ["MORPION_LEADERBOARD_PATH"] = str(
             launcher_args.work_dir / "leaderboard.jsonl"
@@ -462,6 +469,13 @@ def _scientific_args(
         "Scientific activation requires bounded rollout.",
     )
     validate_confidence_policy("selected_value_v2", config.dataset.family_target_policy)
+    from .learning_schedule import schedule_from_metadata
+
+    schedule = schedule_from_metadata(config.metadata)
+    require(
+        args.learning_schedule is None or args.learning_schedule == schedule,
+        "Learning schedule changed on resume.",
+    )
     policy = policy_from_metadata(config.metadata)
     training_settings = (
         config.metadata.get("continual_training_settings", {})
@@ -492,6 +506,7 @@ def _scientific_args(
         validation_seed=config.validation_seed,
         training_device=config.training_device,
         continual_learning=policy,
+        learning_schedule=schedule,
         **training_settings,
     )
 
@@ -544,6 +559,16 @@ def _scientific_operation(
             args.cluster_script is not None, "run-continuous requires --cluster-script."
         )
         assert args.cluster_script is not None
+        from .learning_schedule import schedule_from_metadata
+
+        persisted = schedule_from_metadata(
+            load_bootstrap_config(paths.bootstrap_config_path).metadata
+        )
+        require(
+            args.bootstrap_args.learning_schedule is None
+            or args.bootstrap_args.learning_schedule == persisted,
+            "Learning schedule changed on resume.",
+        )
         return run_monitored_continual_experiment(paths, args.cluster_script)
     if args.scientific_operation == "initialize":
         from .scientific_publication_initialization import (
@@ -1834,7 +1859,12 @@ def launcher_args_from_cli(
             diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
             tree_branch_limit_explicit=tree_branch_limit_explicit,
         )
+    from .learning_schedule import BoundedGrowthWindow
+
     bootstrap_args = MorpionBootstrapArgs(
+        learning_schedule=None
+        if parsed.growth_lookahead_cycles is None
+        else BoundedGrowthWindow(parsed.growth_lookahead_cycles),
         work_dir=parsed.work_dir,
         evaluator_family_preset=parsed.evaluator_family,
         training_device=parsed.training_device,

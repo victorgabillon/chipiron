@@ -50,6 +50,12 @@ if TYPE_CHECKING:
 
 def add_continual_arguments(parser: ArgumentParser) -> None:
     """Expose the explicit experiment policy through the existing launcher."""
+    parser.add_argument(
+        "--growth-lookahead-cycles",
+        type=int,
+        default=None,
+        help="Fresh opt-in bounded Growth window; full refresh remains owned.",
+    )
     defaults = MorpionContinualLearningPolicy()
     for name, default in asdict(defaults).items():
         if name == "transformer_cpu_threads":
@@ -114,7 +120,8 @@ def prepare_continual_experiment(
         "Preparation requires a new workspace, never a historical run.",
     )
     inputs = root.with_name(root.name + "-inputs")
-    inputs.mkdir(parents=True, exist_ok=False)
+    if args.learning_schedule is None:
+        inputs.mkdir(parents=True, exist_ok=False)
     args = replace(
         args,
         continual_learning=policy,
@@ -142,6 +149,11 @@ def prepare_continual_experiment(
         args.training_evaluator_names is None,
         "Preparation requires the full declared candidate lineup.",
     )
+    from .learning_schedule import validate_supported
+
+    validate_supported(args)
+    if args.learning_schedule is not None:
+        inputs.mkdir(parents=True, exist_ok=False)
     config = bootstrap_config_from_args(args)
     save_bootstrap_config(config, inputs / "bootstrap_config.json")
     model_args = MorpionRegressorArgs(
@@ -214,12 +226,21 @@ def run_monitored_continual_experiment(
         "run-continuous requires the verified installed Chipiron wheel.",
     )
 
-    policy = policy_from_metadata(
-        load_bootstrap_config(paths.bootstrap_config_path).metadata
-    )
+    config = load_bootstrap_config(paths.bootstrap_config_path)
+    policy = policy_from_metadata(config.metadata)
     require(policy is not None, "This workspace has no continual-learning policy.")
     assert policy is not None
     state = load_bootstrap_run_state(paths.run_state_path)
+    from .learning_policy import validate_continual_context
+    from .learning_schedule import WINDOW_KEY, schedule_from_metadata
+
+    schedule = schedule_from_metadata(config.metadata)
+    if (
+        schedule is not None
+        or WINDOW_KEY in state.metadata
+        or state.metadata.get("continual_learning") != {"schema_version": 1}
+    ):
+        validate_continual_context(paths, state, policy, schedule)
     if state.metadata.get("experiment_termination") is not None:
         return state
     producer = publication_records(state.metadata)[-1]["scientific_identity"][

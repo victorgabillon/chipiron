@@ -134,6 +134,11 @@ def configuration(
         json.loads(
             json.dumps({
                 **torch_execution_profile_metadata(),
+                **(
+                    {"learning_schedule": args.learning_schedule.to_metadata()}
+                    if args.learning_schedule is not None
+                    else {}
+                ),
                 "candidates": candidates,
                 "force_evaluator": control.force_evaluator,
                 "selection": "heldout_candidate_name_tie_incumbent_on_equal_v1"
@@ -292,8 +297,11 @@ def admit_training(
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Durable Training is not enabled.")
         from .learning_policy import policy_from_metadata, validate_continual_context
+        from .learning_schedule import schedule_from_metadata
 
-        validate_continual_context(paths, state, policy_from_metadata(config))
+        validate_continual_context(
+            paths, state, policy_from_metadata(config), schedule_from_metadata(config)
+        )
         record = publication_record(state, generation)
         if ACCEPTED in record:
             proposal = _proposal(paths, record[ACCEPTED])
@@ -307,7 +315,10 @@ def admit_training(
                 claim_path=claim_path, claim_id=proposal["admission"]["claim_id"]
             )
         else:
+            from .learning_schedule import validate_source
             from .pipeline.cursors import training_lower_bound_details
+
+            validate_source(paths, state, generation)
 
             bound = training_lower_bound_details(paths)
             # Active claims are scheduling guards, not evidence that a process died.
@@ -318,12 +329,16 @@ def admit_training(
                 result = manifest
             else:
                 source = dataset.accepted_dataset_identity(paths, state, generation)
+                from .learning_worker import claim_metadata
+
+                worker_metadata = claim_metadata(paths, state, generation, claim_path)
                 claim = claim_pipeline_stage(
                     generation=generation,
                     stage="training",
                     claim_path=claim_path,
                     ttl_seconds=ttl_seconds,
                     owner=owner,
+                    metadata=worker_metadata,
                 )
                 identifier = uuid.uuid4().hex
                 staging = _directory(paths, identifier, private=True)
@@ -371,9 +386,13 @@ def _validate(
     admission = proposal["admission"]
     validate_torch_execution_profile(admission["configuration"])
     from .learning_policy import policy_from_metadata, validate_continual_context
+    from .learning_schedule import schedule_from_metadata
 
     validate_continual_context(
-        paths, state, policy_from_metadata(admission["configuration"])
+        paths,
+        state,
+        policy_from_metadata(admission["configuration"]),
+        schedule_from_metadata(admission["configuration"]),
     )
     require(
         set(admission)
@@ -828,6 +847,9 @@ def accept_training(
                 previous in (None, reference), "Conflicting accepted Training attempt."
             )
             if previous is None:
+                from .learning_schedule import validate_source
+
+                validate_source(paths, state, generation)
                 if "parents" in admission:
                     require(
                         latest_candidate_parents(

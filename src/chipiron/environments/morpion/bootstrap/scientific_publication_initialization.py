@@ -226,6 +226,12 @@ def initialize_scientific_experiment(
     from .config import bootstrap_config_sha256, save_bootstrap_config
     from .control import MorpionBootstrapEffectiveRuntimeConfig
     from .derived.cli import package_fingerprint
+    from .learning_schedule import (
+        context_marker,
+        initial_window,
+        schedule_from_metadata,
+        validate_supported,
+    )
     from .pipeline_artifacts import (
         MorpionPipelineActiveModel,
         save_pipeline_active_model,
@@ -238,6 +244,11 @@ def initialize_scientific_experiment(
     )
     from .scientific_stream import ENCODING
 
+    validate_supported(args)
+    require(
+        schedule_from_metadata(config.metadata) == args.learning_schedule,
+        "Genesis learning schedule mismatch.",
+    )
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     with growth_receipt_ownership(paths):
         require(
@@ -328,7 +339,12 @@ def initialize_scientific_experiment(
                 latest_tree_snapshot_path=paths.relative_to_work_dir(source),
                 metadata={
                     **(
-                        {"continual_learning": {"schema_version": 1}}
+                        {
+                            "continual_learning": context_marker(
+                                args.learning_schedule
+                            ),
+                            **initial_window(args.learning_schedule),
+                        }
                         if args.continual_learning is not None
                         else {}
                     ),

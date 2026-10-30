@@ -643,6 +643,14 @@ def run_next_pipeline_dataset_stage_once(
             for g, m in manifests.items()
             if g > 1 and g % args.continual_learning.dataset_every_generations == 0
         }
+    from .learning_schedule import selected_source, window
+    from .run_state import load_bootstrap_run_state
+
+    if paths.run_state_path.exists():
+        scheduling_state = load_bootstrap_run_state(paths.run_state_path)
+        if window(scheduling_state) is not None:
+            source = selected_source(scheduling_state)
+            manifests = {g: m for g, m in manifests.items() if g == source}
     LOGGER.info(
         "[pipeline] dataset_status latest_dataset_generation=%s latest_dataset_manifest=%s latest_dataset_created_at=%s latest_dataset_rows=%s",
         _render_optional_log_value(latest_dataset.generation),
@@ -762,6 +770,14 @@ def run_next_pipeline_training_stage_once(
             for g, m in manifests.items()
             if g > 1 and g % args.continual_learning.training_every_generations == 0
         }
+    from .learning_schedule import selected_source, window
+    from .run_state import load_bootstrap_run_state
+
+    if paths.run_state_path.exists():
+        scheduling_state = load_bootstrap_run_state(paths.run_state_path)
+        if window(scheduling_state) is not None:
+            source = selected_source(scheduling_state)
+            manifests = {g: m for g, m in manifests.items() if g == source}
     lower_bound = _training_lower_bound(paths)
     selection_lower_bound_generation = _training_selection_lower_bound_generation(
         paths,
