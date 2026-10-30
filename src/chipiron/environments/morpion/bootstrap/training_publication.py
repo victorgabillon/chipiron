@@ -12,6 +12,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
+from chipiron.learning.torch_runtime import (
+    torch_execution_profile_metadata,
+    validate_torch_execution_profile,
+)
+
 from . import dataset_publication as dataset
 from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
@@ -127,6 +132,7 @@ def configuration(
         "dict[str, Any]",
         json.loads(
             json.dumps({
+                **torch_execution_profile_metadata(),
                 "candidates": candidates,
                 "force_evaluator": control.force_evaluator,
                 "selection": "heldout_candidate_name_tie_incumbent_on_equal_v1"
@@ -362,6 +368,7 @@ def _validate(
         "Incomplete Training result.",
     )
     admission = proposal["admission"]
+    validate_torch_execution_profile(admission["configuration"])
     from .learning_policy import policy_from_metadata, validate_continual_context
 
     validate_continual_context(
@@ -482,6 +489,10 @@ def _validate(
                 artifact_digest(inside(paths.work_dir, expected)) == model["sha256"],
                 "Training model missing or changed.",
             )
+            manifest = read_object(
+                inside(paths.work_dir, expected) / "morpion_manifest.json"
+            )
+            validate_torch_execution_profile(manifest.get("metadata", {}))
             if "parents" in admission:
                 _validate_continuation(paths, admission, name, model)
     if verify:
@@ -713,6 +724,7 @@ def publish_training(
         ),
         "Training publication requires positive effective samples and completed epochs.",
     )
+    validate_torch_execution_profile(attempt.admission["configuration"])
     final = _directory(paths, attempt.admission["attempt_id"])
     models = {}
     results = {}
@@ -723,6 +735,7 @@ def publish_training(
         with torch.random.fork_rng(devices=[]):
             model, model_args, model_manifest = load_morpion_model_bundle(bundle)
             del model
+        validate_torch_execution_profile(model_manifest.metadata)
         candidate = next(
             c
             for c in attempt.admission["configuration"]["candidates"]
