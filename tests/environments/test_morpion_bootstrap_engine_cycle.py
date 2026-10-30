@@ -17,6 +17,9 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap import (
     training_publication as training,
 )
+from chipiron.environments.morpion.bootstrap.dashboard.performance_view import (
+    load_performance_summary,
+)
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     artifact_digest,
     committed_evaluator,
@@ -211,6 +214,40 @@ def test_launcher_two_rounds_use_engine_and_preserve_retries(
             <= observation["finished_unix_s"]
             <= publication_started[-1]
         )
+        # The passive report must consume the new core's accepted publication
+        # without running another attempt or activating the accepted model.
+        authority = paths.run_state_path.read_bytes()
+        reported = load_performance_summary(paths.work_dir)
+        [reported_round] = [
+            row
+            for row in reported.timeline
+            if row["Generation"] == generation
+            and row["Stage"] == "training"
+            and row["Attempt"] == reference["attempt_id"]
+        ]
+        assert reported_round["Evidence status"] == "accepted"
+        assert reported_round["Elapsed (s)"] == observation["elapsed_s"]
+        reported_evaluators = [
+            row
+            for row in reported.timeline
+            if row["Parent"] == reported_round["Measurement"]
+            and row["Stage"] == "evaluator"
+        ]
+        assert {row["Evaluator"] for row in reported_evaluators} == {
+            "linear_a",
+            "linear_b",
+        }
+        assert all(row["Evidence status"] == "accepted" for row in reported_evaluators)
+        assert paths.run_state_path.read_bytes() == authority
+        assert events == [
+            "configuration",
+            "admission",
+            "compute",
+            "publish",
+            "accept",
+            "release",
+        ]
+        assert len(computed) == number
         if candidate_workers > 1:
             assert metadata["candidate_execution"]["children_reaped"]
             assert metadata["candidate_execution"]["completed"] == [
