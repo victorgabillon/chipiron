@@ -4,6 +4,8 @@ import json
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from chipiron.environments.morpion.bootstrap import runtime_performance as runtime
 from chipiron.environments.morpion.bootstrap.dashboard.performance_view import (
     load_performance_summary,
@@ -12,8 +14,6 @@ from chipiron.environments.morpion.bootstrap.performance import StageMeasurement
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
 
 def test_wait_decisions_coalesce_and_keep_open_interval_unknown(
@@ -51,8 +51,11 @@ def test_wait_decisions_coalesce_and_keep_open_interval_unknown(
     assert closed["Evidence status"] == "completed"
 
 
+@pytest.mark.parametrize("failure_type", [OSError, RuntimeError, ValueError])
 def test_runtime_ring_is_bounded_and_failures_are_best_effort(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_type: type[Exception],
 ) -> None:
     """Bound retained records and swallow I/O failures without changing caller control flow."""
     monkeypatch.setattr(runtime, "RUNTIME_SLOTS", 4)
@@ -69,7 +72,7 @@ def test_runtime_ring_is_bounded_and_failures_are_best_effort(
 
     def fail(*args: Any, **kwargs: Any) -> None:
         message = "injected metrics failure"
-        raise OSError(message)
+        raise failure_type(message)
 
     monkeypatch.setattr(runtime, "_write", fail)
     runtime.observe_wait(tmp_path, "training", "claim_contention", 96)

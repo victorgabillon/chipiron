@@ -29,8 +29,15 @@ _IMPORT_TIME_NS = time.time_ns()
 def _process_identity(pid: int) -> str:
     """Read process birth once per PID, including after a fork."""
     try:
-        ticks = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()[19]
-        boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+        ticks = (
+            Path(f"/proc/{pid}/stat")
+            .read_text(encoding="utf-8")
+            .rsplit(") ", 1)[1]
+            .split()[19]
+        )
+        boot = (
+            Path("/proc/sys/kernel/random/boot_id").read_text(encoding="utf-8").strip()
+        )
     except OSError, ValueError, IndexError:
         return f"{pid}:import-{_IMPORT_TIME_NS}"
     return f"{boot}:{pid}:{ticks}"

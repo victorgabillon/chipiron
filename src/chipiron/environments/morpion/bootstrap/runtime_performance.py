@@ -36,7 +36,8 @@ def _write(work_dir: Path, name: str, record: dict[str, Any]) -> None:
             return
         temporary.write_text(raw, encoding="utf-8")
         temporary.replace(path)
-    except Exception:  # Metrics cannot affect worker results or exception propagation.
+    # This observational boundary must contain every ordinary metrics failure.
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.debug("Runtime metrics unavailable", exc_info=True)
     finally:
         if temporary is not None:
@@ -60,7 +61,9 @@ def _read(path: Path) -> dict[str, Any]:
 
 def _boot_id() -> str | None:
     try:
-        return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+        return (
+            Path("/proc/sys/kernel/random/boot_id").read_text(encoding="utf-8").strip()
+        )
     except OSError:
         return None
 
@@ -72,7 +75,12 @@ def observe_wait(
     try:
         # The shell's creation ticks distinguish sequential invocations from PID reuse.
         parent = os.getppid()
-        ticks = Path(f"/proc/{parent}/stat").read_text().rsplit(") ", 1)[1].split()[19]
+        ticks = (
+            Path(f"/proc/{parent}/stat")
+            .read_text(encoding="utf-8")
+            .rsplit(") ", 1)[1]
+            .split()[19]
+        )
         stream_id = f"{worker}:{parent}:{ticks}"
         cursor_name = f"wait-current-{worker}-{_slot(stream_id)}"
         cursor = (
@@ -140,7 +148,8 @@ def observe_wait(
                 "process_identity": process_identity(),
             },
         )
-    except Exception:
+    # Reporting must never change the scheduling decision it observes.
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.debug("Wait metrics unavailable", exc_info=True)
 
 
@@ -176,7 +185,8 @@ def observe_ownership(
         _write(
             work_dir, f"ownership-{_slot(f'{process_identity()}:{started}')}", record
         )
-    except Exception:
+    # Ownership has already released; reporting must not replace its outcome.
+    except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.debug("Ownership metrics unavailable", exc_info=True)
 
 
@@ -205,14 +215,18 @@ class WorkerObservation:
                     "timing_scope": "launcher_dispatch_to_exit; startup/imports excluded",
                 },
             )
-        except Exception:
+        # A metrics failure must not prevent dispatch of the scientific worker.
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.debug("Worker metrics unavailable", exc_info=True)
 
     def _startup(self) -> None:
         """Linux process age to dispatch; Unix placement is explicitly boot-clock anchored."""
         try:
             ticks = float(
-                Path("/proc/self/stat").read_text().rsplit(") ", 1)[1].split()[19]
+                Path("/proc/self/stat")
+                .read_text(encoding="utf-8")
+                .rsplit(") ", 1)[1]
+                .split()[19]
             )
             tick_rate = os.sysconf("SC_CLK_TCK")
             boot_now = time.clock_gettime(time.CLOCK_BOOTTIME)
@@ -240,7 +254,8 @@ class WorkerObservation:
                     "clock_resolution_s": 1 / tick_rate,
                 },
             )
-        except Exception:
+        # Startup clocks are optional diagnostics, never a launch prerequisite.
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.debug("Startup clock unavailable", exc_info=True)
 
     def finish(self, exit_code: int) -> None:
@@ -260,5 +275,6 @@ class WorkerObservation:
                         "timing_scope": "launcher_dispatch_to_exit; startup/imports excluded",
                     },
                 )
-        except Exception:
+        # Preserve the worker's original exit code or scientific exception.
+        except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.debug("Worker metrics unavailable", exc_info=True)

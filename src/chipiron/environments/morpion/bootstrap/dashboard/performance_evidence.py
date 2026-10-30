@@ -51,7 +51,11 @@ class EvidenceReader:
         )
         records = publication.get("generations", [])
         for record in records if isinstance(records, list) else []:
-            if isinstance(record, dict) and type(record.get("generation")) is int:
+            if (
+                isinstance(record, dict)
+                and isinstance(record.get("generation"), int)
+                and not isinstance(record["generation"], bool)
+            ):
                 self.publications[record["generation"]] = record
 
     def read(
@@ -306,7 +310,7 @@ class EvidenceReader:
                 root / "admission.json"
             )
             generation = reference[0] if reference else admission.get("generation")
-            if type(generation) is not int:
+            if not isinstance(generation, int) or isinstance(generation, bool):
                 continue
             if not proposal and not admission and reference:
                 admission = {"attempt_id": attempt, "generation": generation}
@@ -476,7 +480,9 @@ class EvidenceReader:
             ):
                 continue
             generation = record.get("generation")
-            if generation is not None and type(generation) is not int:
+            if generation is not None and (
+                not isinstance(generation, int) or isinstance(generation, bool)
+            ):
                 continue
             self.add(
                 generation, record["stage"], record, str(path.relative_to(self.root))
