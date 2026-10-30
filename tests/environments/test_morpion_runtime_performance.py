@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from chipiron.environments.morpion.bootstrap import runtime_performance as runtime
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
 )
-from chipiron.environments.morpion.bootstrap.generation_publication_io import (
-    growth_receipt_ownership,
-)
-from chipiron.environments.morpion.bootstrap import runtime_performance as runtime
 from chipiron.environments.morpion.bootstrap.dashboard.performance_view import (
     load_performance_summary,
+)
+from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    growth_receipt_ownership,
 )
 from chipiron.environments.morpion.bootstrap.performance import StageMeasurement
 
