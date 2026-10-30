@@ -31,6 +31,7 @@ class MorpionContinualLearningPolicy:
     max_workspace_mb: int = 32_768
     max_scratch_mb: int = 4_096
     shutdown_grace_seconds: int = 30
+    transformer_cpu_threads: int | None = None
 
     def __post_init__(self) -> None:
         """Validate declared limits; budgets are never extended automatically."""
@@ -55,6 +56,7 @@ class MorpionContinualLearningPolicy:
                 "optimizer_state_policy",
                 "automatic_activation",
                 "seed",
+                "transformer_cpu_threads",
             }:
                 require(
                     isinstance(value, int)
@@ -68,6 +70,22 @@ class MorpionContinualLearningPolicy:
             and 0 <= self.seed < 2**63,
             "seed must be an integer in [0, 2**63).",
         )
+        require(
+            self.transformer_cpu_threads is None
+            or (
+                isinstance(self.transformer_cpu_threads, int)
+                and not isinstance(self.transformer_cpu_threads, bool)
+                and self.transformer_cpu_threads in {1, 2}
+            ),
+            "transformer_cpu_threads must be omitted, 1 or 2.",
+        )
+
+    def to_metadata(self) -> dict[str, Any]:
+        """Keep historical policy bytes/identities when threading is not opted in."""
+        payload = asdict(self)
+        if self.transformer_cpu_threads is None:
+            del payload["transformer_cpu_threads"]
+        return payload
 
 
 def policy_from_metadata(

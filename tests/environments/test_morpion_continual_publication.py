@@ -66,6 +66,8 @@ def setup_continual(
     maximum: int = 5000,
     training_cadence: int = 1,
     memory_floor_mb: int = 8192,
+    evaluators: MorpionEvaluatorsConfig | None = None,
+    transformer_cpu_threads: int | None = None,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
@@ -85,7 +87,8 @@ def setup_continual(
                 enabled=True, max_extra_steps=64, random_seed=23
             )
         ),
-        evaluators_config=MorpionEvaluatorsConfig(
+        evaluators_config=evaluators
+        or MorpionEvaluatorsConfig(
             evaluators={
                 name: MorpionEvaluatorSpec(
                     name=name,
@@ -110,6 +113,7 @@ def setup_continual(
             min_available_ram_mb=memory_floor_mb,
             seed=1 if proof else 0,
             training_every_generations=training_cadence,
+            transformer_cpu_threads=transformer_cpu_threads,
         ),
         search=replace(
             args.search,

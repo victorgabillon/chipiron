@@ -117,6 +117,11 @@ def resolve_candidate_plan(
 ) -> CandidateExecutionPlan | None:
     """Keep legacy inline execution unless concurrency is explicitly requested."""
     requested = _integer("WORKERS", 1)
+    if policy is not None and policy.transformer_cpu_threads is not None:
+        require_serial_cpu(device)
+        if candidate_cpu_budget()[2] < policy.transformer_cpu_threads:
+            message = "Transformer CPU budget is insufficient after pipeline reserves."
+            raise ValueError(message)
     if requested == 1:
         return None
     if policy is None or device.strip().lower() != "cpu":
@@ -124,9 +129,7 @@ def resolve_candidate_plan(
             "Parallel candidates require continual learning and explicit CPU training."
         )
         raise ValueError(message)
-    capacity = cpu_capacity()
-    reserved = _integer("RESERVED_CPUS", 2)
-    budget = min(_integer("CPU_BUDGET", 4), math.floor(capacity) - reserved)
+    capacity, reserved, budget = candidate_cpu_budget()
     threads = _integer("THREADS", 1)
     memory = min(
         _integer("MEMORY_MB", policy.max_group_rss_mb), policy.max_group_rss_mb
@@ -153,3 +156,18 @@ def resolve_candidate_plan(
         policy.min_available_ram_mb,
         policy.worker_max_seconds,
     )
+
+
+def candidate_cpu_budget() -> tuple[float, int, int]:
+    """Share affinity/quota and pipeline reserves across CPU execution modes."""
+    capacity = cpu_capacity()
+    reserved = _integer("RESERVED_CPUS", 2)
+    budget = min(_integer("CPU_BUDGET", 4), math.floor(capacity) - reserved)
+    return capacity, reserved, budget
+
+
+def require_serial_cpu(device: str) -> None:
+    """Reject parallel or implicit/non-CPU execution of scoped thread settings."""
+    if device.strip().lower() != "cpu" or _integer("WORKERS", 1) != 1:
+        message = "Transformer CPU threads require explicit CPU and serial candidates."
+        raise ValueError(message)

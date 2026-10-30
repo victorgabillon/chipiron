@@ -81,6 +81,14 @@ def configuration(
     from .cycle_training import morpion_training_args_from_evaluator_spec
 
     if args.continual_learning is not None:
+        if args.continual_learning.transformer_cpu_threads is not None:
+            from .candidate_resources import require_serial_cpu
+
+            require_serial_cpu(args.training_device)
+            require(
+                "transformer_v1" in evaluators.evaluators,
+                "Transformer CPU threads require a transformer_v1 candidate.",
+            )
         require(
             args.training_evaluator_names is None,
             "Continual rounds train every configured candidate.",
@@ -129,7 +137,7 @@ def configuration(
                 "skip_diagnostics": args.skip_evaluator_diagnostics,
                 "diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
                 **(
-                    {"continual_learning": asdict(args.continual_learning)}
+                    {"continual_learning": args.continual_learning.to_metadata()}
                     if args.continual_learning is not None
                     else {}
                 ),
@@ -560,6 +568,12 @@ def _validate_continuation(
     evidence = manifest.metadata["continuation"]
     parent = admission["parents"][name]
     policy = admission["configuration"]["continual_learning"]
+    from .candidate_threading import validate_thread_provenance
+
+    validate_thread_provenance(
+        manifest.metadata,
+        policy.get("transformer_cpu_threads") if name == "transformer_v1" else None,
+    )
     inherits = (
         parent is not None
         and policy["training_policy"] == "continue_from_previous_accepted_weights"

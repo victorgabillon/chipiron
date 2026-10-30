@@ -1231,6 +1231,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
 
     add_continual_arguments(parser)
     parser.add_argument(
+        "--training-device",
+        type=str,
+        default="auto",
+        help="Torch training device; scoped transformer CPU threads require explicit cpu.",
+    )
+    parser.add_argument(
         "--reader-cache-dir",
         type=Path,
         help="Caller-owned cache; never grants shared-cache deletion authority.",
@@ -1830,6 +1836,7 @@ def launcher_args_from_cli(
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=parsed.work_dir,
         evaluator_family_preset=parsed.evaluator_family,
+        training_device=parsed.training_device,
         max_growth_steps_per_cycle=parsed.max_growth_steps_per_cycle,
         save_after_seconds=parsed.save_after_seconds,
         save_after_tree_growth_factor=parsed.save_after_tree_growth_factor,

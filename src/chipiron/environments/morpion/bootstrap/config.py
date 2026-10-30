@@ -4,7 +4,7 @@
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -525,7 +525,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         pipeline_mode=args.pipeline_mode,
         training_export_mode=args.training_export_mode,
         metadata={
-            "continual_learning": asdict(args.continual_learning),
+            "continual_learning": args.continual_learning.to_metadata(),
             "continual_training_settings": {
                 "shuffle": args.shuffle,
                 "training_max_rows": args.training_max_rows,
