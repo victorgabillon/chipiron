@@ -7,6 +7,11 @@ from typing import TYPE_CHECKING
 from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
     MORPION_MANIFEST_FILE_NAME,
 )
+from chipiron.learning.torch_runtime import (
+    TORCH_EXECUTION_PROFILE_KEY,
+    torch_execution_profile_metadata,
+    validate_torch_execution_profile,
+)
 
 if TYPE_CHECKING:
     import os
@@ -57,6 +62,13 @@ def update_saved_manifest_metadata(
     with open(manifest_path, encoding="utf-8") as handle:
         manifest_payload = json.load(handle)
     if isinstance(manifest_payload, dict):
-        manifest_payload["metadata"] = metadata
+        previous = manifest_payload.get("metadata", {})
+        validate_torch_execution_profile(previous)
+        if TORCH_EXECUTION_PROFILE_KEY in metadata:
+            validate_torch_execution_profile(metadata)
+        manifest_payload["metadata"] = {
+            **metadata,
+            **torch_execution_profile_metadata(),
+        }
         with open(manifest_path, "w", encoding="utf-8") as handle:
             json.dump(manifest_payload, handle, indent=2, sort_keys=True)

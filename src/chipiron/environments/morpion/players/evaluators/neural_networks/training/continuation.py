@@ -22,6 +22,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.bundle imp
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     build_morpion_regressor,
 )
+from chipiron.learning.torch_runtime import validate_torch_execution_profile
 
 if TYPE_CHECKING:
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
@@ -146,6 +147,7 @@ def initialize_training(
             "Accepted parent weights are missing or changed.",
         )
         model, loaded_args, manifest = load_morpion_model_bundle(parent)
+        validate_torch_execution_profile(manifest.metadata)
         require(
             loaded_args == model_args,
             "Accepted parent architecture or features differ.",
