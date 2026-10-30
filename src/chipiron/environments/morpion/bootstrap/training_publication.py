@@ -12,6 +12,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
+from chipiron.learning.torch_runtime import (
+    torch_execution_profile_metadata,
+    validate_torch_execution_profile,
+)
+
 from . import dataset_publication as dataset
 from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
@@ -81,6 +86,14 @@ def configuration(
     from .cycle_training import morpion_training_args_from_evaluator_spec
 
     if args.continual_learning is not None:
+        if args.continual_learning.transformer_cpu_threads is not None:
+            from .candidate_resources import require_serial_cpu
+
+            require_serial_cpu(args.training_device)
+            require(
+                "transformer_v1" in evaluators.evaluators,
+                "Transformer CPU threads require a transformer_v1 candidate.",
+            )
         require(
             args.training_evaluator_names is None,
             "Continual rounds train every configured candidate.",
@@ -119,6 +132,7 @@ def configuration(
         "dict[str, Any]",
         json.loads(
             json.dumps({
+                **torch_execution_profile_metadata(),
                 "candidates": candidates,
                 "force_evaluator": control.force_evaluator,
                 "selection": "heldout_candidate_name_tie_incumbent_on_equal_v1"
@@ -129,7 +143,7 @@ def configuration(
                 "skip_diagnostics": args.skip_evaluator_diagnostics,
                 "diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
                 **(
-                    {"continual_learning": asdict(args.continual_learning)}
+                    {"continual_learning": args.continual_learning.to_metadata()}
                     if args.continual_learning is not None
                     else {}
                 ),
@@ -354,6 +368,7 @@ def _validate(
         "Incomplete Training result.",
     )
     admission = proposal["admission"]
+    validate_torch_execution_profile(admission["configuration"])
     from .learning_policy import policy_from_metadata, validate_continual_context
 
     validate_continual_context(
@@ -474,6 +489,10 @@ def _validate(
                 artifact_digest(inside(paths.work_dir, expected)) == model["sha256"],
                 "Training model missing or changed.",
             )
+            manifest = read_object(
+                inside(paths.work_dir, expected) / "morpion_manifest.json"
+            )
+            validate_torch_execution_profile(manifest.get("metadata", {}))
             if "parents" in admission:
                 _validate_continuation(paths, admission, name, model)
     if verify:
@@ -560,6 +579,12 @@ def _validate_continuation(
     evidence = manifest.metadata["continuation"]
     parent = admission["parents"][name]
     policy = admission["configuration"]["continual_learning"]
+    from .candidate_threading import validate_thread_provenance
+
+    validate_thread_provenance(
+        manifest.metadata,
+        policy.get("transformer_cpu_threads") if name == "transformer_v1" else None,
+    )
     inherits = (
         parent is not None
         and policy["training_policy"] == "continue_from_previous_accepted_weights"
@@ -699,6 +724,7 @@ def publish_training(
         ),
         "Training publication requires positive effective samples and completed epochs.",
     )
+    validate_torch_execution_profile(attempt.admission["configuration"])
     final = _directory(paths, attempt.admission["attempt_id"])
     models = {}
     results = {}
@@ -709,6 +735,7 @@ def publish_training(
         with torch.random.fork_rng(devices=[]):
             model, model_args, model_manifest = load_morpion_model_bundle(bundle)
             del model
+        validate_torch_execution_profile(model_manifest.metadata)
         candidate = next(
             c
             for c in attempt.admission["configuration"]["candidates"]

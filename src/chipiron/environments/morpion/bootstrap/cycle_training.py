@@ -466,6 +466,14 @@ def train_and_select_evaluators(
     memory: MemoryDiagnostics,
 ) -> BootstrapTrainingResult:
     """Train configured evaluators and select the active evaluator for search."""
+    if (
+        args.continual_learning is not None
+        and args.continual_learning.transformer_cpu_threads is not None
+    ):
+        message = (
+            "Transformer CPU threads require the continual streaming Training path."
+        )
+        raise ValueError(message)
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
     model_bundle_paths: dict[str, str] = {}
@@ -807,6 +815,9 @@ def train_and_select_evaluators_streaming(
                 row_chunk_size=chunk_size,
                 max_rows=max_rows,
             ),
+            cpu_threads=args.continual_learning.transformer_cpu_threads
+            if args.continual_learning is not None and name == "transformer_v1"
+            else None,
         )
         for name, spec in resolved_evaluators_config.evaluators.items()
     }

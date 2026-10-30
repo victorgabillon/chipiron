@@ -1,9 +1,177 @@
 """Small Torch runtime helpers shared by Chipiron learning workflows."""
 
-from dataclasses import dataclass
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass, replace
+from threading import RLock
+from typing import TYPE_CHECKING, Literal
 
 import torch
 from torch import nn
+from torch.nn.attention import SDPBackend, sdpa_kernel
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
+type TorchExecutionProfile = Literal["existing", "strict_math"]
+
+TORCH_EXECUTION_PROFILE_KEY = "torch_execution_profile"
+_PROFILE_LOCK = RLock()
+_PROFILE_STACK: list[TorchExecutionProfileInfo] = []
+
+
+class TorchExecutionProfileError(RuntimeError):
+    """An execution profile was invalid, changed, or used outside its scope."""
+
+
+@dataclass(frozen=True, slots=True)
+class TorchExecutionProfileInfo:
+    """Serializable requested/effective execution settings; no device selection."""
+
+    requested: TorchExecutionProfile
+    effective: TorchExecutionProfile
+    deterministic: bool
+    warn_only: bool
+    mha_fastpath: bool
+    math_sdp: bool
+    flash_sdp: bool
+    mem_efficient_sdp: bool
+    cudnn_sdp: bool
+    torch_version: str
+    torch_git_version: str | None
+    hip_version: str | None
+    cuda_version: str | None
+    intra_op_threads: int
+    inter_op_threads: int
+    default_dtype: str
+    float32_matmul_precision: str
+    schema_version: int = 1
+
+    def to_metadata(self) -> dict[str, object]:
+        """Return an independent JSON-compatible observation."""
+        return asdict(self)
+
+
+def torch_execution_profile_info() -> TorchExecutionProfileInfo:
+    """Observe the current scope and backend settings without initializing a GPU."""
+    active = _PROFILE_STACK[-1].effective if _PROFILE_STACK else "existing"
+    return TorchExecutionProfileInfo(
+        requested=active,
+        effective=active,
+        deterministic=torch.are_deterministic_algorithms_enabled(),
+        warn_only=torch.is_deterministic_algorithms_warn_only_enabled(),
+        mha_fastpath=torch.backends.mha.get_fastpath_enabled(),
+        math_sdp=torch.backends.cuda.math_sdp_enabled(),  # type: ignore[no-untyped-call]
+        flash_sdp=torch.backends.cuda.flash_sdp_enabled(),  # type: ignore[no-untyped-call]
+        mem_efficient_sdp=torch.backends.cuda.mem_efficient_sdp_enabled(),  # type: ignore[no-untyped-call]
+        cudnn_sdp=torch.backends.cuda.cudnn_sdp_enabled(),  # type: ignore[no-untyped-call]
+        torch_version=str(torch.__version__),
+        torch_git_version=torch.version.git_version,
+        hip_version=torch.version.hip,
+        cuda_version=torch.version.cuda,
+        intra_op_threads=torch.get_num_threads(),
+        inter_op_threads=torch.get_num_interop_threads(),
+        default_dtype=str(torch.get_default_dtype()),
+        float32_matmul_precision=torch.get_float32_matmul_precision(),
+    )
+
+
+def torch_execution_profile_metadata() -> dict[str, object]:
+    """Record opt-in provenance, preserving historical default metadata exactly."""
+    info = torch_execution_profile_info()
+    if info.effective == "existing":
+        return {}
+    expected = replace(_PROFILE_STACK[-1], requested=info.requested)
+    if info != expected:
+        message = "Torch execution settings changed inside the strict_math scope."
+        raise TorchExecutionProfileError(message)
+    return {TORCH_EXECUTION_PROFILE_KEY: info.to_metadata()}
+
+
+def validate_torch_execution_profile(metadata: Mapping[str, object]) -> None:
+    """Require the same profile and observed runtime for continuation/retry.
+
+    Missing provenance means the historical `existing` profile. Strict runs
+    cannot silently inherit those checkpoints or be resumed as historical runs.
+    Backend/version/thread changes require a new explicitly qualified lineage.
+    """
+    current = torch_execution_profile_metadata().get(TORCH_EXECUTION_PROFILE_KEY)
+    recorded = metadata.get(TORCH_EXECUTION_PROFILE_KEY)
+    matches = (
+        TORCH_EXECUTION_PROFILE_KEY not in metadata
+        if current is None
+        else (
+            isinstance(recorded, dict)
+            and isinstance(current, dict)
+            and recorded.keys() == current.keys()
+            and all(
+                type(recorded[key]) is type(value) and recorded[key] == value
+                for key, value in current.items()
+            )
+        )
+    )
+    if not matches:
+        message = "Torch execution profile provenance differs from the current scope."
+        raise TorchExecutionProfileError(message)
+
+
+@contextmanager
+def torch_execution_profile(
+    profile: TorchExecutionProfile = "existing",
+) -> Iterator[TorchExecutionProfileInfo]:
+    """Establish a process profile before starting concurrent model execution.
+
+    The caller owns the whole train/evaluate/resume lifecycle and must join its
+    workers before leaving. Spawned processes must enter their own scope. This
+    lock rejects competing scope owners, but cannot isolate unmanaged Torch
+    calls or other code that changes process-global flags. Same-thread nesting
+    is supported; `existing` observes/inherits an enclosing strict scope.
+
+    Strict mode never uses warn_only, changes threads/precision, or catches
+    unsupported-operation errors. Only the settings it controls are restored,
+    including when setup or the body fails. No implicit profile is installed.
+    """
+    if profile not in {"existing", "strict_math"}:
+        message = f"Unknown Torch execution profile: {profile!r}."
+        raise TorchExecutionProfileError(message)
+    if not _PROFILE_LOCK.acquire(blocking=False):
+        message = "Another thread owns the Torch execution profile scope."
+        raise TorchExecutionProfileError(message)
+    try:
+        previous = torch_execution_profile_info()
+        if profile == "existing":
+            info = replace(previous, requested=profile)
+            _PROFILE_STACK.append(info)
+            try:
+                yield info
+            finally:
+                _PROFILE_STACK.pop()
+            return
+        try:
+            torch.use_deterministic_algorithms(True, warn_only=False)
+            torch.backends.mha.set_fastpath_enabled(False)
+            with sdpa_kernel(SDPBackend.MATH):
+                info = replace(
+                    torch_execution_profile_info(),
+                    requested=profile,
+                    effective=profile,
+                )
+                _PROFILE_STACK.append(info)
+                try:
+                    yield info
+                    torch_execution_profile_metadata()
+                finally:
+                    _PROFILE_STACK.pop()
+        finally:
+            torch.backends.cuda.enable_math_sdp(previous.math_sdp)
+            torch.backends.cuda.enable_flash_sdp(previous.flash_sdp)
+            torch.backends.cuda.enable_mem_efficient_sdp(previous.mem_efficient_sdp)
+            torch.backends.cuda.enable_cudnn_sdp(previous.cudnn_sdp)
+            torch.backends.mha.set_fastpath_enabled(previous.mha_fastpath)
+            torch.use_deterministic_algorithms(
+                previous.deterministic, warn_only=previous.warn_only
+            )
+    finally:
+        _PROFILE_LOCK.release()
 
 
 class TorchDeviceUnavailableError(RuntimeError):

@@ -52,6 +52,15 @@ def add_continual_arguments(parser: ArgumentParser) -> None:
     """Expose the explicit experiment policy through the existing launcher."""
     defaults = MorpionContinualLearningPolicy()
     for name, default in asdict(defaults).items():
+        if name == "transformer_cpu_threads":
+            parser.add_argument(
+                "--transformer-cpu-threads",
+                type=int,
+                choices=(1, 2),
+                default=None,
+                help="Opt-in transformer_v1 intra-op threads; explicit CPU, serial Training only.",
+            )
+            continue
         if name == "min_available_ram_mb":
             continue  # Reuse the existing launcher option.
         option = "--learning-seed" if name == "seed" else "--" + name.replace("_", "-")
@@ -78,6 +87,14 @@ def prepare_continual_experiment(
 
     from .scientific_publication_initialization import initialize_scientific_experiment
 
+    if policy.transformer_cpu_threads is not None:
+        from .candidate_resources import require_serial_cpu
+
+        require_serial_cpu(args.training_device)
+        require(
+            "transformer_v1" in args.resolved_evaluators_config().evaluators,
+            "Transformer CPU threads require a transformer_v1 candidate.",
+        )
     root = Path(args.work_dir).resolve()
     require(
         sys.version_info[:2] == (3, 14),
@@ -449,7 +466,7 @@ def _run_monitored(
         atomic_json(
             session_path,
             {
-                "policy": asdict(policy),
+                "policy": policy.to_metadata(),
                 "reason": reason,
                 "elapsed_seconds": elapsed - consumed,
                 "budget_elapsed_seconds": elapsed,

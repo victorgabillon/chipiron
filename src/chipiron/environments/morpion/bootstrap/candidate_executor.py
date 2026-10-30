@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, Any, Never
 
 import psutil
 
+from chipiron.learning.torch_runtime import torch_execution_profile_info
+
 from .candidate_job import CandidateJob, prepare_candidate_cache, run_candidate
 from .candidate_resources import available_memory_mb
 
@@ -105,6 +107,11 @@ def execute_candidates(
     jobs: list[CandidateJob], plan: CandidateExecutionPlan, directory: Path
 ) -> dict[str, dict[str, Any]]:
     """Return ordered receipts only after every writer exits; otherwise raise and reap."""
+    if torch_execution_profile_info().effective != "existing":
+        _fail(
+            "strict_math requires serial candidate execution; spawned CPU workers "
+            "change thread settings and require separate profile qualification."
+        )
     if threading.current_thread() is not threading.main_thread():
         _fail("Candidate coordination requires the main thread.")
     if len({

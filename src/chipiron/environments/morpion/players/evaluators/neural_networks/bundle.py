@@ -5,10 +5,16 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
+from weakref import WeakKeyDictionary
 
 import torch
 
-from chipiron.learning.torch_runtime import state_dict_on_cpu
+from chipiron.learning.torch_runtime import (
+    TORCH_EXECUTION_PROFILE_KEY,
+    state_dict_on_cpu,
+    torch_execution_profile_metadata,
+    validate_torch_execution_profile,
+)
 
 from .entity_relations import (
     MORPION_ENTITY_RELATION_SCHEMA,
@@ -51,6 +57,24 @@ MORPION_MODEL_ARGS_FILE_NAME = "morpion_regressor_args.json"
 MORPION_MANIFEST_FILE_NAME = "morpion_manifest.json"
 MORPION_MODEL_WEIGHTS_FILE_NAME = "param.pt"
 MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME = "param.json"
+_MODEL_PROFILES: WeakKeyDictionary[torch.nn.Module, dict[str, object]] = (
+    WeakKeyDictionary()
+)
+
+
+def _guard_model_profile(
+    model: torch.nn.Module, metadata: Mapping[str, object]
+) -> None:
+    """Keep runtime ownership out of state dicts while rejecting escaped models."""
+    if TORCH_EXECUTION_PROFILE_KEY not in metadata or model in _MODEL_PROFILES:
+        return
+    expected = {TORCH_EXECUTION_PROFILE_KEY: metadata[TORCH_EXECUTION_PROFILE_KEY]}
+    _MODEL_PROFILES[model] = expected
+
+    def require_profile(_module: torch.nn.Module, _inputs: object) -> None:
+        validate_torch_execution_profile(expected)
+
+    model.register_forward_pre_hook(require_profile)
 
 
 def _empty_metadata() -> dict[str, Any]:
@@ -337,6 +361,10 @@ def save_morpion_model_bundle(
         assert_artifact_writable,
     )
 
+    if model in _MODEL_PROFILES:
+        validate_torch_execution_profile(_MODEL_PROFILES[model])
+    effective_metadata = _bundle_metadata(model_args, metadata)
+    _guard_model_profile(model, effective_metadata)
     bundle_dir = Path(output_dir)
     assert_artifact_writable(bundle_dir)
     bundle_dir.mkdir(parents=True, exist_ok=True)
@@ -378,7 +406,7 @@ def save_morpion_model_bundle(
             if is_relational_entity_token_model_kind(model_args.model_kind)
             else None
         ),
-        metadata=_bundle_metadata(model_args, metadata),
+        metadata=effective_metadata,
     )
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(_manifest_to_dict(manifest), handle, indent=2, sort_keys=True)
@@ -402,6 +430,8 @@ def load_morpion_model_bundle(
         ) from exc
     manifest = _load_manifest(manifest_path)
     _validate_manifest_compatibility(manifest, model_args)
+    if TORCH_EXECUTION_PROFILE_KEY in manifest.metadata:
+        validate_torch_execution_profile(manifest.metadata)
 
     model = build_morpion_regressor(model_args)
     if model_args.legacy_graph_tokens is not None:
@@ -410,6 +440,7 @@ def load_morpion_model_bundle(
         )
     else:
         model.load_weights_from_file(str(weights_path))
+    _guard_model_profile(model, manifest.metadata)
     return model, model_args, manifest
 
 
@@ -428,6 +459,9 @@ def _bundle_metadata(
 ) -> dict[str, object]:
     """Return manifest metadata augmented with entity-token schema details."""
     bundle_metadata = dict(metadata) if metadata is not None else {}
+    if TORCH_EXECUTION_PROFILE_KEY in bundle_metadata:
+        validate_torch_execution_profile(bundle_metadata)
+    bundle_metadata.update(torch_execution_profile_metadata())
     bundle_metadata.update({
         "target_transform_enabled": model_args.target_transform_enabled,
         "target_mean": model_args.target_mean,

@@ -97,3 +97,48 @@ including the transformer, with unchanged architecture, precision, optimizer,
 batch sizes and five epochs. A cold tensor cache means the attempt cache was
 absent; it does not mean the OS page cache was flushed. Tiny equivalence fixtures
 are not performance evidence.
+
+## Serial transformer CPU threads (I3, opt-in)
+
+For a **new continual experiment** using explicit `training_device: cpu`, set
+`continual_learning.transformer_cpu_threads: 2` in its configuration, or pass
+`--transformer-cpu-threads 2` to continual preparation alongside
+`--training-device cpu --evaluator-family canonical_8_linear_mlp_transformer_v1`.
+Custom evaluator configurations must also include `transformer_v1`. Keep
+`CHIPIRON_CANDIDATE_WORKERS=1`. Explicit `1` is also supported for a reproducible
+reference configuration. Omission retains the existing ambient Torch thread
+setting and preserves historical policy, configuration and admission identities.
+The historical one-thread recipe still uses `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+OPENBLAS_NUM_THREADS=1` with the new option omitted. No pinned recipe is changed.
+
+The policy is fixed at genesis. Adding, removing or changing this setting on an
+existing experiment is refused, including on an already accepted retry. Explicit
+one-thread mode is a new policy identity even though its numerical results match
+an omitted option under a one-thread environment. Changing thread count can
+change floating-point reductions, learned weights, Adam state and predictions;
+repeatability within a setting does not establish equivalence between settings.
+
+Only `transformer_v1` in the continual streaming Training path uses the setting.
+The existing candidate-job boundary scopes `torch.set_num_threads` around the
+unchanged training service, including its evaluation. A `finally` block restores
+the prior intra-op count after success, failure or catchable interruption. Other
+candidates, incumbent comparison, inter-op threads, native environment variables
+and other pipeline workers retain their prior settings. This is a process-local
+setting; concurrent candidate calls in the same process are not supported.
+
+Explicit CPU and requested serial execution are required; `auto`, accelerators,
+and a parallel request that happens to resolve to one worker are rejected. The
+same affinity/quota, `CHIPIRON_CANDIDATE_CPU_BUDGET` (default 4), and
+`CHIPIRON_CANDIDATE_RESERVED_CPUS` (default 2) checks used by I1 must leave the full
+requested count available. Insufficient capacity fails before candidate training;
+it never silently reduces two threads to one. Capacity is checked again on scope
+entry. This adds no workers or pool and retains existing pipeline memory limits.
+
+Successful transformer manifests record `metadata.cpu_threading`: requested and
+actual intra-op counts, previous/restored counts, observed inter-op count, resolved
+CPU capacity/budget/reserve, and switch/restore durations. Publication verifies
+requested/actual settings against the admitted policy. Parent loading refuses
+missing or different thread provenance for a managed lineage. Accepted retries
+reuse verified receipts without changing threads or retraining. Timing and host
+capacity observations are provenance; data, seeds, optimizer, precision, epochs
+and architecture remain the existing recipe.
