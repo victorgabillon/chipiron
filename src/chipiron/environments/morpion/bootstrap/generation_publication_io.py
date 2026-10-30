@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 from .cycle_timing import timestamp_utc_from_unix_s
 from .derived.provenance import inside, sync_checkpoint
 from .pipeline_artifacts import DISCOVERY_METADATA_KEY, MorpionPipelineActiveModel
+from .runtime_performance import observe_ownership
 from .sharded_training_v2_contract import (
     CLOSED_KIND,
     CLOSED_LAYOUT,
@@ -128,6 +129,7 @@ def growth_receipt_ownership(
     if not create:
         inside(paths.work_dir, path.relative_to(paths.work_dir).as_posix())
     with path.open("a+" if create else "rb") as lock:
+        started_unix_s = time.time()
         started = time.monotonic()
         contended = False
         while True:
@@ -140,17 +142,38 @@ def growth_receipt_ownership(
                     contended = True
                 remaining = timeout - (time.monotonic() - started)
                 if remaining <= 0:
+                    if create:
+                        observe_ownership(
+                            paths.work_dir,
+                            started_unix_s=started_unix_s,
+                            started=started,
+                            acquired=None,
+                            finished=time.monotonic(),
+                            outcome="contention_timeout",
+                        )
                     raise
                 time.sleep(min(0.05, remaining))
         acquired = time.monotonic()
         LOGGER.info("[ownership] acquired wait_seconds=%.6f", acquired - started)
+        completed = False
         try:
             yield
+            completed = True
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
-            LOGGER.info(
-                "[ownership] released held_seconds=%.6f", time.monotonic() - acquired
-            )
+            finished = time.monotonic()
+            # Rejected operations retain their existing byte-identical workspace
+            # contract; diagnostics must not introduce a mutation on that path.
+            if create and completed:
+                observe_ownership(
+                    paths.work_dir,
+                    started_unix_s=started_unix_s,
+                    started=started,
+                    acquired=acquired,
+                    finished=finished,
+                    outcome="released",
+                )
+            LOGGER.info("[ownership] released held_seconds=%.6f", finished - acquired)
 
 
 def artifact_digest(path: Path) -> str:

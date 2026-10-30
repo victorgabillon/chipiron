@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
+from chipiron.bootstrap import attempts
 from chipiron.learning.torch_runtime import (
     torch_execution_profile_metadata,
     validate_torch_execution_profile,
@@ -906,11 +907,11 @@ def run_training(
     )
     control = load_bootstrap_control(paths.control_path)
     config = configuration(args, evaluators, control)
-    with admit_training(
-        paths, manifest, config, ttl_seconds=ttl_seconds, owner=owner
-    ) as attempt:
-        if isinstance(attempt, MorpionPipelineGenerationManifest):
-            return attempt
+
+    def _compute_training_status(
+        attempt: TrainingAttempt,
+    ) -> MorpionPipelineTrainingStatusArtifact:
+        """Run the unchanged private recipe within its admitted lifetime."""
         # Existing trainers put their caches beside rows. A private byte-for-byte copy
         # keeps those existing transient caches out of the immutable accepted Dataset.
         assert manifest.rows_path is not None
@@ -972,7 +973,7 @@ def run_training(
         # The synchronous trainer has returned; only this attempt owned these
         # inputs/caches. Keep the accepted Dataset as the sole durable row source.
         shutil.rmtree(rows.parent)
-        status = MorpionPipelineTrainingStatusArtifact(
+        return MorpionPipelineTrainingStatusArtifact(
             generation=manifest.generation,
             status="done",
             updated_at_utc=datetime.now(UTC).isoformat(),
@@ -997,7 +998,27 @@ def run_training(
                 **({"continual_selection": selection} if selection is not None else {}),
             },
         )
-        return accept_training(paths, publish_training(paths, attempt, status))
+
+    @contextmanager
+    def _admission() -> Iterator[
+        attempts.Resolved[MorpionPipelineGenerationManifest]
+        | attempts.Pending[TrainingAttempt]
+    ]:
+        """Keep Morpion admission and claim release around the whole attempt."""
+        with admit_training(
+            paths, manifest, config, ttl_seconds=ttl_seconds, owner=owner
+        ) as admitted:
+            if isinstance(admitted, MorpionPipelineGenerationManifest):
+                yield attempts.Resolved(admitted)
+            else:
+                yield attempts.Pending(admitted)
+
+    return attempts.run_attempt(
+        admission=_admission(),
+        compute=_compute_training_status,
+        publish=lambda attempt, status: publish_training(paths, attempt, status),
+        accept=lambda reference: accept_training(paths, reference),
+    )
 
 
 def _compare_incumbent(

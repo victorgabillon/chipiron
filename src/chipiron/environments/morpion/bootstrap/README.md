@@ -607,3 +607,27 @@ chipiron-bootstrap dashboard --work-dir /path/to/run
 ---
 
 Enjoy exploring Morpion 🚀
+
+
+### Admitted Training coordination
+
+The scientific launcher's Training worker reaches `training_publication.run_training`,
+which remains the public Morpion facade. It delegates admission-scoped execution to
+`chipiron.bootstrap.attempts.run_attempt`: resolve an accepted/no-work result, or
+compute privately, publish and accept before leaving admission. The in-memory
+`Resolved` and `Pending` tags add no artifact schema or scheduling policy.
+
+Morpion retains its generation pin, claim release, short ownership fences, candidate
+recipes and independent accepted lineages, including losing candidates. Its round
+timer still starts before configuration/admission and finishes at Training status
+construction, before publication/acceptance; execution provenance is unchanged.
+The computation callback keeps the existing imports outside that timed interval.
+Training acceptance does not activate a model. Growth's learning barrier,
+asynchronous reevaluation and explicit/opt-in activation remain unchanged.
+
+The core owns no value semantics: Morpion supplies maximum backup, targets,
+certainty, candidate comparison and refresh validation. D1 runtime capability
+checks and dynamic delegation stay at the existing adapter boundaries. The
+canonical scientific-launcher cycle test exercises two accepted rounds, losing
+candidate continuation, accepted retries, activation and subsequent search through
+the real coordination function.

@@ -8,7 +8,8 @@ not deserialize a checkpoint for the dashboard. No background sampler is used.
 
 Small atomic JSON records live in
 `pipeline/performance/generation_NNNNNN/<stage>-<pid>-<time_ns>.json`.
-Each writer owns its own records; workers never update a shared summary file.
+Each stage writer owns its records. Passive runtime records described below use
+bounded slots; they do not update scientific state or a global summary file.
 Retries and repeated reevaluation patches remain distinct. Metrics write errors
 are logged without failing or retrying scientific work. Temporary files are
 ignored by readers. This is rename-atomic publication, with the same filesystem
@@ -67,8 +68,9 @@ selection; and a stage timeline with process, model-generation and patch IDs.
 The Evaluator page also plots all saved evaluator loss curves together.
 Overview's refresh path is unchanged.
 
-Readers bound each artifact to 256 KiB, to the latest 256 generations and 2,048
-observations per generation, with explicit warnings if truncated. Missing old
+Readers bound ordinary artifacts to 256 KiB and authority metadata to 4 MiB,
+show the latest 256 generations, and cap stage files at 2,048 per directory and
+normalized observations at 16,384, with explicit warnings if truncated. Missing old
 fields remain N/A. Existing growth/checkpoint/export/cycle metrics are read from
 manifest metadata. Raw records remain available for external analysis.
 
@@ -76,10 +78,77 @@ Stages overlap across processes. Stage totals include completed retries;
 `cycle` is **Growth's cycle**, not the sum of pipeline stages. Timeline span is
 first observed start to last observed finish, including idle gaps. The table is
 sufficient to inspect overlap and patch dependencies, but does not claim to
-compute a causal critical path. Interrupted stages have no completion record;
-existing worker logs/status remain the source for failures. Unsaved growth
+compute a causal critical path. Historical interrupted stages may have no completion record; absence is not
+proof of failure. Retained Training admissions and new passive invocation starts
+expose incomplete attempts without inventing their end times. Unsaved growth
 cycles carry their cycle_index and observed generation, so multiple observations
 can share a generation. Peak memory comparisons must account for worker restarts.
+
+## Read-only post-run summary
+
+`python -m chipiron.environments.morpion.bootstrap.performance_report --work-dir PATH`
+prints JSON to stdout using the same `load_performance_summary` as Operations.
+Redirect stdout to a separate runtime directory. The reader never repairs
+projections, acquires ownership, loads tensors, or opens scientific snapshot
+payloads. This is reporting, not a scientific artifact audit.
+
+Accepted Training references come from bounded `run_state.json` metadata. The
+reader verifies the small proposal's exact SHA-256 and joins its
+`status.metadata.round_performance`, nested evaluator `performance` fields and
+private `pipeline/performance` records. Copies of the same interval count once;
+their source paths remain visible. A round covers the recorded pre-admission to
+status-construction interval; the separately labelled Training core is not added
+to it. Unaccepted, failed (only when explicit) and incomplete attempts remain
+separate. Multiple attempts indicate retry evidence without inventing attempt
+order or failure causes. Legacy completed projections do not prove acceptance.
+
+Committed activation descriptors supply refresh measurements and training/model
+identity; the outer activation measurement remains its own stage total. Tree
+publication generation can differ from Training/model generation. Refresh and
+evaluator intervals are children, not additional parent-stage wall time.
+
+The report includes observed endpoint span, union coverage, gaps within that
+span, distinct-process interval overlap and residual time within measured
+parents. These are not a causal critical path, CPU utilization, or a complete
+run budget. Incomplete attempts can extend outside recorded bounds. Parent
+residuals and gaps are **unattributed**, not diagnosed waits. Clock inversions or
+wall/elapsed discrepancies above max(50 ms, 0.1% elapsed) are flagged and excluded
+from interval arithmetic; raw fields remain inspectable. Missing duration is N/A.
+
+## Passive runtime boundaries
+
+`pipeline/performance/runtime/` contains small best-effort slot records (at most
+16 KiB each, 256 slots per worker/event family). Collisions replace older evidence;
+reports explicitly state that runtime totals cover retained evidence only. This
+is diagnostic retention, not a claim journal. It adds no scientific locks,
+per-node/per-batch synchronization, changed polls, training settings or budgets.
+
+Growth's existing learning-boundary decision and Dataset/Training's existing
+pending/claimable diagnostics coalesce sampled waits by shell stream and reason:
+`learning_boundary`, `no_input`, or `claim_contention`. Repeated polls update a
+single open interval; a changed decision closes it. Open intervals expose
+`observed_elapsed_s` through the last observation, while completed duration stays
+unknown. These sampled spans include polling and restart overhead; they do not
+prove the predicate was continuously true between observations. Linux boot ID
+and parent creation ticks prevent joining unrelated restart streams.
+
+Ownership observations use existing acquire/timeout/release boundaries, recording
+wait and hold separately after timeout or release. They never affect the lease
+or propagated exception. A raised owned body emits no ownership record, preserving
+rejection paths that require a byte-identical workspace; absence is not a zero
+duration or proof of success. Launcher dispatch stores an incomplete invocation and
+replaces it with completion/failure on exit. Linux startup is process birth to
+dispatch, including interpreter/imports/configuration; its Unix placement is
+explicitly anchored from process start ticks and CLOCK_BOOTTIME at dispatch.
+Unavailable startup clocks remain missing. Repeated process identities make
+restart costs visible without claiming why a supervisor restarted a process.
+
+`cpu_s` measures only the current process. `children_cpu_s` is separate waited-for
+child CPU and excludes live children; it is not complete process-tree CPU.
+`process_peak_rss_mb` remains a process-lifetime peak. Device timing scope says
+whether host wall time has successful device synchronization at both existing
+boundaries; it is never relabelled GPU-kernel elapsed time. Historical host
+inference timings without synchronization evidence remain explicitly unknown.
 
 ## Historical gen38 continuation audit (2026-10-05)
 

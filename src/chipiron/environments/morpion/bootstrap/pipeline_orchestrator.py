@@ -41,6 +41,7 @@ from .pipeline_claims import (
     pipeline_stage_claim_is_expired,
 )
 from .run_state import MorpionBootstrapRunState
+from .runtime_performance import observe_wait
 from .training_logging import log_training_cycle_idle
 
 if TYPE_CHECKING:
@@ -661,6 +662,14 @@ def run_next_pipeline_dataset_stage_once(
         _render_generation_list(diagnostics.claimable_generations),
     )
     generation = diagnostics.selected_generation
+    observe_wait(
+        paths.work_dir,
+        "dataset",
+        ("claim_contention" if diagnostics.pending_generations else "no_input")
+        if generation is None
+        else None,
+        generation if generation is not None else diagnostics.latest_tree_generation,
+    )
     if generation is None:
         LOGGER.info(
             "[pipeline] dataset_worker_idle reason=no_claimable_generation latest_tree_generation=%s latest_dataset_generation=%s",
@@ -796,6 +805,14 @@ def run_next_pipeline_training_stage_once(
         manifests,
         lower_bound_generation=selection_lower_bound_generation,
         now_unix_s=now_unix_s,
+    )
+    observe_wait(
+        paths.work_dir,
+        "training",
+        ("claim_contention" if pending_generations else "no_input")
+        if selected_generation is None
+        else None,
+        selected_generation,
     )
     if selected_generation is None:
         log_training_cycle_idle(
