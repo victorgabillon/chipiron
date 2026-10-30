@@ -134,7 +134,9 @@ and parent creation ticks prevent joining unrelated restart streams.
 
 Ownership observations use existing acquire/timeout/release boundaries, recording
 wait and hold separately after timeout or release. They never affect the lease
-or propagated exception. Launcher dispatch stores an incomplete invocation and
+or propagated exception. A raised owned body emits no ownership record, preserving
+rejection paths that require a byte-identical workspace; absence is not a zero
+duration or proof of success. Launcher dispatch stores an incomplete invocation and
 replaces it with completion/failure on exit. Linux startup is process birth to
 dispatch, including interpreter/imports/configuration; its Unix placement is
 explicitly anchored from process start ticks and CLOCK_BOOTTIME at dispatch.

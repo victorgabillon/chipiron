@@ -155,12 +155,16 @@ def growth_receipt_ownership(
                 time.sleep(min(0.05, remaining))
         acquired = time.monotonic()
         LOGGER.info("[ownership] acquired wait_seconds=%.6f", acquired - started)
+        completed = False
         try:
             yield
+            completed = True
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
             finished = time.monotonic()
-            if create:
+            # Rejected operations retain their existing byte-identical workspace
+            # contract; diagnostics must not introduce a mutation on that path.
+            if create and completed:
                 observe_ownership(
                     paths.work_dir,
                     started_unix_s=started_unix_s,
