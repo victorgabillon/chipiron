@@ -181,6 +181,9 @@ def prepare_model_activation_request(
     paths: MorpionBootstrapPaths, *, training_generation: int
 ) -> dict[str, Any]:
     """Read-only capture for an explicit caller decision; Training never invokes this."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
     with growth_receipt_ownership(paths):
         return _request(
             paths, load_bootstrap_run_state(paths.run_state_path), training_generation
@@ -304,6 +307,9 @@ def activate_model(
     paths: MorpionBootstrapPaths, request: dict[str, Any]
 ) -> MorpionBootstrapRunState:
     """Explicit M1→M2 transition; old state remains authoritative until ordinary commit."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
     request = copy.deepcopy(request)
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
@@ -413,6 +419,9 @@ def activate_model(
 
 def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     """Opt-in Growth boundary: persist and retry the ordinary atomic request exactly."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
     from .derived.provenance import atomic_json
     from .learning_policy import policy_from_metadata
     from .training_publication import ACCEPTED, _proposal

@@ -186,6 +186,13 @@ def run_one_bootstrap_cycle(
     implementations should support reload/restart-style semantics from the
     latest saved artifacts.
     """
+    from .execution_profile import policy_metadata
+    from .generation_publication_io import require
+
+    require(
+        not policy_metadata(args),
+        "Explicit execution profiles require the scientific artifact lifecycle.",
+    )
     _require_legacy_workspace(paths, run_state)
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
     memory.log("cycle_start")
@@ -721,6 +728,13 @@ def run_morpion_bootstrap_loop(
     max_cycles: int | None = None,
 ) -> MorpionBootstrapRunState:
     """Run the Morpion bootstrap loop for a bounded number of cycles or forever."""
+    from .execution_profile import policy_metadata
+    from .generation_publication_io import require
+
+    require(
+        not policy_metadata(args),
+        "Explicit execution profiles require the scientific artifact lifecycle.",
+    )
     _validate_pipeline_mode(args)
     _require_single_process_mode(args)
     return _run_bootstrap_loop_impl(args, runner, max_cycles=max_cycles)

@@ -626,6 +626,9 @@ def run_next_pipeline_dataset_stage_once(
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending dataset generation once, if any."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="dataset_worker")
     invocation_started_at = time.perf_counter()
     require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
@@ -742,6 +745,9 @@ def run_next_pipeline_training_stage_once(
     now_unix_s: float | None = None,
 ) -> MorpionPipelineWorkerResult:
     """Run the latest claimable pending training generation once, if any."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="training_worker")
     require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
@@ -858,6 +864,9 @@ def run_morpion_artifact_pipeline_once(
     max_growth_cycles: int = 1,
 ) -> MorpionPipelineOrchestratorResult:
     """Run growth, dataset, and training stages sequentially via artifacts."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="orchestrator")
     require_artifact_pipeline_mode(args)
     if max_growth_cycles < 0:
         raise _negative_max_growth_cycles_error()
