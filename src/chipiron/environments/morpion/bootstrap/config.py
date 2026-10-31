@@ -463,8 +463,8 @@ RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
 
 def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
     """Build the canonical persisted bootstrap config from current args."""
-    from .execution_profile import policy_metadata
-    from .execution_profile import validate_supported as validate_execution_policy
+    from .execution_policy import policy_metadata
+    from .execution_policy import validate_supported as validate_execution_policy
 
     validate_execution_policy(args)
     if args.learning_schedule is not None:
