@@ -266,6 +266,22 @@ def run_morpion_bootstrap_experiment(
         from .generation_publication_io import require
 
         require(False, "Bounded learning requires the scientific launcher.")
+    from .execution_profile import launcher_execution
+
+    with launcher_execution(launcher_args) as configured:
+        return _run_morpion_bootstrap_experiment(configured)
+
+
+def _run_morpion_bootstrap_experiment(
+    launcher_args: MorpionBootstrapLauncherArgs,
+) -> (
+    MorpionBootstrapRunState
+    | MorpionPipelineGenerationManifest
+    | MorpionPipelineOrchestratorResult
+    | MorpionPipelineWorkerResult
+    | MorpionReevaluationWorkerResult
+):
+    """Execute while the public caller owns the complete model lifetime."""
     if launcher_args.scientific:
         os.environ["MORPION_LEADERBOARD_PATH"] = str(
             launcher_args.work_dir / "leaderboard.jsonl"
@@ -447,6 +463,9 @@ def _scientific_args(
     args: MorpionBootstrapArgs, config: MorpionBootstrapConfig
 ) -> MorpionBootstrapArgs:
     """Use the explicit persisted experiment configuration, preserving stage limits."""
+    from .execution_profile import args_with_policy
+
+    args = args_with_policy(args, config)
     from dataclasses import asdict
 
     from chipiron.environments.morpion.learning.target_confidence import (
@@ -1226,6 +1245,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--work-dir", required=True, type=Path)
     parser.add_argument(
+        "--execution-profile", choices=["existing", "strict_math"], default=None
+    )
+    parser.add_argument(
+        "--torch-intra-op-threads", type=_parse_positive_int, default=None
+    )
+    parser.add_argument(
+        "--torch-inter-op-threads", type=_parse_positive_int, default=None
+    )
+    parser.add_argument(
         "--scientific",
         action="store_true",
         help="Explicit closed scientific experiment protocol; never automatic activation.",
@@ -1866,6 +1894,9 @@ def launcher_args_from_cli(
         if parsed.growth_lookahead_cycles is None
         else BoundedGrowthWindow(parsed.growth_lookahead_cycles),
         work_dir=parsed.work_dir,
+        execution_profile=parsed.execution_profile,
+        torch_intra_op_threads=parsed.torch_intra_op_threads,
+        torch_inter_op_threads=parsed.torch_inter_op_threads,
         evaluator_family_preset=parsed.evaluator_family,
         training_device=parsed.training_device,
         max_growth_steps_per_cycle=parsed.max_growth_steps_per_cycle,
@@ -2015,10 +2046,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
     launcher_args = launcher_args_from_cli(argv)
+    from .execution_profile import launcher_execution
+
+    with launcher_execution(launcher_args, process_start=True) as configured:
+        return _run_launcher_cli(configured)
+
+
+def _run_launcher_cli(launcher_args: MorpionBootstrapLauncherArgs) -> int:
+    """Register/execute/finish under the already established process policy."""
     _configure_anemone_checkpoint_logging(
         verbose_checkpoint_logs=launcher_args.verbose_checkpoint_logs
     )
     paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    if launcher_args.scientific_operation == "inspect":
+        run_morpion_bootstrap_experiment(launcher_args)
+        return 0
     if launcher_args.scientific_operation == "prepare-continuous":
         from .generation_publication_io import require
 
@@ -2028,7 +2070,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     paths.ensure_directories()
     register_current_launcher_process(paths)
-    observation = WorkerObservation(paths.work_dir, launcher_args.pipeline_stage)
+    # Preparation must see an empty scientific workspace. Observation files are
+    # not inputs and must not cause its fresh-workspace check to reject the CLI.
+    observation = (
+        None
+        if launcher_args.scientific_operation == "prepare-continuous"
+        else WorkerObservation(paths.work_dir, launcher_args.pipeline_stage)
+    )
     exit_code = 0
     try:
         # A single CLI call owns its readers. The supervisor passes its explicit
@@ -2051,7 +2099,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         return exit_code
     finally:
-        observation.finish(exit_code)
+        if observation is not None:
+            observation.finish(exit_code)
         mark_current_launcher_process_stopped(paths, exit_code=exit_code)
 
 

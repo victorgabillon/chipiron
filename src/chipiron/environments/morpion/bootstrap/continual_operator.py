@@ -85,6 +85,11 @@ def prepare_continual_experiment(
     args: MorpionBootstrapArgs, policy: MorpionContinualLearningPolicy
 ) -> MorpionBootstrapRunState:
     """Write an explicit nine-candidate configuration and zero-valued fresh genesis."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(
+        replace(args, continual_learning=policy), stage="prepare-continuous"
+    )
     from chipiron.environments.morpion.players.evaluators.neural_networks import (
         MorpionRegressorArgs,
         build_morpion_regressor,
@@ -214,6 +219,9 @@ def run_monitored_continual_experiment(
     paths: MorpionBootstrapPaths, script: Path
 ) -> MorpionBootstrapRunState:
     """Run the existing headless supervisor with the existing resource sampler contract."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths, require_device=True)
     import anemone
     import psutil
 
