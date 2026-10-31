@@ -439,3 +439,37 @@ def test_memory_hit_still_verifies_source_after_consumption(
     monkeypatch.setattr(cache, "digest", changed_source)
     with pytest.raises(ValueError, match="source changed during consumption"):
         invoke(root, rows)
+
+
+def test_retry_repairs_namespace_parent_durability(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OWNER left by failed initialization cannot bypass parent fsync on retry."""
+    rows = rows_file(tmp_path / "input")
+    root = tmp_path / "cache"
+    synchronize = cache._sync
+    fail = True
+    synced: list[Path] = []
+
+    def interrupted_sync(path: Path) -> None:
+        nonlocal fail
+        synced.append(path)
+        if path == root and fail:
+            fail = False
+            message = "injected namespace parent fsync failure"
+            raise OSError(message)
+        synchronize(path)
+
+    monkeypatch.setattr(cache, "_sync", interrupted_sync)
+    with pytest.raises(OSError, match="namespace parent"):
+        invoke(root, rows)
+    assert (root / cache.FORMAT / "OWNER").exists()
+    synced.clear()
+
+    def build(
+        path: str, digest: str, fraction: float, seed: int, limit: int | None
+    ) -> cache.SplitValue:
+        assert root in synced and root.parent in synced
+        return split._uncached_value(path, digest, fraction, seed, limit)
+
+    cache.load_or_build(root, rows, 0.2, 0, None, split.POLICY, build)

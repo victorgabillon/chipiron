@@ -106,7 +106,9 @@ def _root(configured: Path, source: Path) -> Path:
             and not any(ancestor.glob(".generation_publication_v*.json")),
             "cache must be outside immutable publication storage",
         )
-    root.mkdir(parents=True, exist_ok=True)
+    # The operational parent must already exist: only these two new directory
+    # levels belong to this protocol, and their complete parent chain is synced.
+    root.mkdir(exist_ok=True)
     namespace = root / FORMAT
     _plain_directory(namespace)
     with _lock(namespace / ".namespace.lock"):
@@ -126,12 +128,14 @@ def _root(configured: Path, source: Path) -> Path:
                 pending.unlink()
             _write(pending, FORMAT.encode())
             os.rename(pending, marker)
-            _sync(namespace)
-            _sync(root)
         _require(
             not marker.is_symlink() and _read(marker, 64) == FORMAT.encode(),
             "invalid namespace owner",
         )
+        # Also repair a previous owner's failed fsync after the marker rename.
+        _sync(namespace)
+        _sync(root)
+        _sync(root.parent)
     return namespace
 
 

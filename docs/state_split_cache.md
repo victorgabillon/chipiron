@@ -2,7 +2,7 @@
 
 Set `CHIPIRON_STATE_SPLIT_CACHE_DIR` to an operational directory outside dataset
 and immutable publication directories before starting the normal Training worker
-or bootstrap launcher:
+or bootstrap launcher. Its parent directory must already exist:
 
 ```sh
 CHIPIRON_STATE_SPLIT_CACHE_DIR=/absolute/private-runtime/split-cache \
@@ -57,8 +57,9 @@ context-local. The helper creates no children or background cleanup workers.
 
 Builds use unique private directories. Payload and completion files are fsynced,
 validated, the private directory is fsynced, then renamed atomically and its
-parent fsynced. Publication/I/O failures propagate. Missing output is a miss;
-incomplete private builds are cleaned only by the next owner of that slot lock.
+parent fsynced. Publication/I/O failures propagate. Namespace initialization and retries also sync the namespace, configured root
+and its existing parent before proceeding, including after an interrupted owner
+marker publication. Missing output is a miss; incomplete private builds are cleaned only by the next owner of that slot lock.
 Corrupt, malformed, oversized, incompatible or unknown completed entries fail
 closed. Unknown files, foreign namespaces and symlinks are not silently adopted
 or removed. An intact in-process result does not reread an evicted/corrupted disk
