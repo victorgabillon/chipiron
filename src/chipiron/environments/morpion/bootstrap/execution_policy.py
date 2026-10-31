@@ -81,4 +81,3 @@ def validate_supported(args: MorpionBootstrapArgs) -> None:
         and torch.get_float32_matmul_precision() == "highest",
         "strict_math bootstrap requires existing FP32/highest precision.",
     )
-

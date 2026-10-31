@@ -19,10 +19,10 @@ from chipiron.learning.torch_runtime import (
 )
 
 from .execution_policy import (
-    KEY,
-    policy_from_metadata,
-    policy_metadata,
-    validate_supported,
+    KEY as KEY,
+    policy_from_metadata as policy_from_metadata,
+    policy_metadata as policy_metadata,
+    validate_supported as validate_supported,
 )
 from .generation_publication_io import require
 
