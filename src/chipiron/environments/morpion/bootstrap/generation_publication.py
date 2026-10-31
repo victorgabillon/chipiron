@@ -743,7 +743,15 @@ class DurableGenerationPublication:
             "generations": [*previous, record],
             **({"evaluator_contract": 1} if self.evaluator_contract else {}),
         }
-        return replace(state, metadata=metadata)
+        from .learning_schedule import on_publication
+
+        return on_publication(
+            self.paths,
+            self.state,
+            replace(state, metadata=metadata),
+            self.active_evaluator,
+            self.activation,
+        )
 
     def committed(self, state: MorpionBootstrapRunState) -> None:
         """Keep volatile context aligned only after the authoritative state commit."""

@@ -435,16 +435,39 @@ def run_pipeline_growth_stage(
     """
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    from chipiron.environments.morpion.bootstrap.learning_schedule import (
+        validate_supported,
+    )
+
+    validate_supported(args)
+    if args.learning_schedule is not None and max_cycles > 1:
+        state = load_bootstrap_run_state(paths.run_state_path)
+        for _ in range(max_cycles):
+            previous_cycle = state.cycle_index
+            state = run_pipeline_growth_stage(
+                args,
+                runner,
+                max_cycles=1,
+                derived_sequential=derived_sequential,
+                checkpoint_bound_receipts=checkpoint_bound_receipts,
+                durable_generation_publication=durable_generation_publication,
+                scientific_v2_producer=scientific_v2_producer,
+                closed_scientific_snapshot=closed_scientific_snapshot,
+            )
+            if state.cycle_index == previous_cycle:
+                break
+        return state
+    from chipiron.environments.morpion.bootstrap.learning_policy import (
+        validate_continual_context,
+    )
+
     paths.ensure_directories()
     if paths.run_state_path.exists():
-        from chipiron.environments.morpion.bootstrap.learning_policy import (
-            validate_continual_context,
-        )
-
         validate_continual_context(
             paths,
             load_bootstrap_run_state(paths.run_state_path),
             args.continual_learning,
+            args.learning_schedule,
         )
     if closed_scientific_snapshot and (
         scientific_v2_producer is None or not durable_generation_publication
@@ -482,13 +505,14 @@ def run_pipeline_growth_stage(
             return state
         head = publication_records(state.metadata)[-1]
         learning = args.continual_learning
-        if (
+        learning_due = (
             state.generation > 1
             and "activation_request_sha256" not in head
             and state.generation % learning.dataset_every_generations == 0
             and state.generation % learning.training_every_generations == 0
             and "accepted_training" not in head
-        ):
+        )
+        if args.learning_schedule is None and learning_due:
             observe_wait(
                 paths.work_dir, "growth", "learning_boundary", state.generation
             )
@@ -497,7 +521,15 @@ def run_pipeline_growth_stage(
                 state.generation,
             )
             return state
-        observe_wait(paths.work_dir, "growth", None, state.generation)
+        from chipiron.environments.morpion.bootstrap.learning_schedule import (
+            wait_reason,
+        )
+
+        if args.learning_schedule is None or wait_reason(state) in (
+            None,
+            "await_learning_resolution",
+        ):
+            observe_wait(paths.work_dir, "growth", None, state.generation)
         if args.continual_learning.automatic_activation:
             from chipiron.environments.morpion.bootstrap.model_activation import (
                 activate_selected_round_automatically,
@@ -511,6 +543,31 @@ def run_pipeline_growth_stage(
     # Updated legacy callers also take this lease and cannot race a receipt owner.
     # Old binaries must be quiesced before adoption; they do not know this lock.
     with growth_receipt_ownership(paths):
+        if args.learning_schedule is not None:
+            from chipiron.environments.morpion.bootstrap.learning_schedule import (
+                selected_source,
+                validate_source,
+                wait_reason,
+            )
+            from chipiron.environments.morpion.bootstrap.learning_worker import (
+                monitored_identity,
+            )
+
+            state = load_bootstrap_run_state(paths.run_state_path)
+            validate_continual_context(
+                paths, state, args.continual_learning, args.learning_schedule
+            )
+            monitored_identity()
+            reason = wait_reason(state)
+            if (
+                reason is not None
+                or state.metadata.get("experiment_termination") is not None
+            ):
+                observe_wait(paths.work_dir, "growth", reason, state.generation)
+                return state
+            source = selected_source(state)
+            if source is not None:
+                validate_source(paths, state, source)
         session = (
             GrowthPatchReceiptSession(
                 paths,
@@ -597,10 +654,22 @@ def _run_pipeline_growth_stage_owned(
     LOGGER.info("[pipeline] growth_start max_cycles=%s", max_cycles)
     cycles_run = 0
     while cycles_run < max_cycles:
+        if args.learning_schedule is not None:
+            from chipiron.environments.morpion.bootstrap.learning_schedule import (
+                wait_reason,
+            )
+
+            if wait_reason(run_state) is not None:
+                return run_state
         previous_state = run_state
         previous_generation = run_state.generation
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
+        from chipiron.environments.morpion.bootstrap.learning_schedule import (
+            validate_supported,
+        )
+
+        validate_supported(effective_args)
         if (
             receipt_session is not None
             and receipt_session.publication is not None

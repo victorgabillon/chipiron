@@ -631,3 +631,42 @@ checks and dynamic delegation stay at the existing adapter boundaries. The
 canonical scientific-launcher cycle test exercises two accepted rounds, losing
 candidate continuation, accepted retries, activation and subsequent search through
 the real coordination function.
+
+### Explicit bounded asynchronous Growth
+
+Fresh continual experiments may opt in with `--growth-lookahead-cycles L` on
+`--scientific-operation prepare-continuous` (with `--scientific` and
+`--automatic-activation`). The persisted `bounded_growth_window_v1` policy requires
+positive L, equal Dataset/Training publication cadences, and closed sharded exports
+every ordinary Growth cycle. Use the existing monitored `run-continuous` launcher.
+The absent option retains historical barrier behavior and configuration identities.
+An existing experiment cannot adopt this policy or change L on resume.
+
+One source publication is reserved atomically with its Growth commit. Dataset and
+Training use that immutable source while Growth commits at most L more ordinary
+cycles under the incumbent. The fixed gate waits outside Growth ownership for
+accepted learning. An early result still waits for the gate. Retention or full
+synchronous activation resolves this single round before another source is
+reserved. Activation/drain publications do not consume ordinary-cycle lookahead;
+intermediate eligible cuts are recorded as skipped, never queued or silently
+substituted. Training acceptance remains distinct from activation; every candidate
+retains its own accepted weights/Adam lineage, including losing candidates.
+
+The scheduling state lives in `run_state.json`'s `learning_window_v1` metadata,
+bound to the immutable config by a version-2 continual context. Existing accepted
+Dataset/Training references and activation receipts remain their authorities.
+Atomic activation closes the slot in the same publication commit. Restart does
+not reset lookahead or budgets. Input capsules remain conservative retention roots.
+Claim expiry alone never authorizes another computation: stale claim takeover
+requires evidence that the previous local worker session is empty, or that the
+same host has rebooted. Unknown evidence refuses automatic retry. In particular,
+a surviving worker shell or orphaned candidate child can require the existing
+supervisor's bounded shutdown before retry. No additional process killer is added.
+
+This policy can overlap useful search with Dataset/Training, but changes scientific
+tree/data/model trajectories. It does not promise a speedup. Full refresh still
+holds Growth ownership, and checkpoint/export costs remain. Device/thread/training
+recipes and resource budgets are unchanged. Use J1's read-only performance report
+for observed overlap, waiting and incomplete attempts; its span is not a proven
+causal critical path. Background candidate inference preparation, multi-round
+queues and persistent live runtimes are outside this policy slice.

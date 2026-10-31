@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from chipiron.environments.morpion.bootstrap.learning_schedule import (
+        BoundedGrowthWindow,
+    )
     from chipiron.environments.morpion.bootstrap.run_state import (
         MorpionBootstrapRunState,
     )
@@ -68,6 +71,8 @@ def setup_continual(
     memory_floor_mb: int = 8192,
     evaluators: MorpionEvaluatorsConfig | None = None,
     transformer_cpu_threads: int | None = None,
+    learning_schedule: BoundedGrowthWindow | None = None,
+    dataset_cadence: int = 1,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
@@ -104,6 +109,7 @@ def setup_continual(
     )
     args = replace(
         args,
+        learning_schedule=learning_schedule,
         max_growth_steps_per_cycle=2,
         max_rows=128,
         use_backed_up_value=True,
@@ -113,6 +119,7 @@ def setup_continual(
             min_available_ram_mb=memory_floor_mb,
             seed=1 if proof else 0,
             training_every_generations=training_cadence,
+            dataset_every_generations=dataset_cadence,
             transformer_cpu_threads=transformer_cpu_threads,
         ),
         search=replace(

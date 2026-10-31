@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
+    from .learning_schedule import BoundedGrowthWindow
     from .run_state import MorpionBootstrapRunState
 
 CONTINUAL_KEY = "continual_learning"
@@ -107,22 +108,32 @@ def validate_continual_context(
     paths: MorpionBootstrapPaths,
     state: MorpionBootstrapRunState,
     policy: MorpionContinualLearningPolicy | None,
+    schedule: BoundedGrowthWindow | None = None,
 ) -> None:
     """Reject policy downgrade, historical adoption and changed declared budgets."""
     from .config import bootstrap_config_sha256, load_bootstrap_config
     from .generation_publication_io import require
+    from .learning_schedule import context_marker, schedule_from_metadata, window
 
     marker = state.metadata.get(CONTINUAL_KEY)
     if marker is None:
-        require(policy is None, "Continual learning requires explicit fresh genesis.")
+        require(
+            policy is None and schedule is None,
+            "Continual learning requires explicit fresh genesis.",
+        )
         return
     require(
-        marker == {"schema_version": 1}
+        marker == context_marker(schedule)
         and isinstance(marker["schema_version"], int)
         and not isinstance(marker["schema_version"], bool),
         "Unsupported continual-learning genesis marker.",
     )
     config = load_bootstrap_config(paths.bootstrap_config_path)
+    require(
+        schedule_from_metadata(config.metadata) == schedule,
+        "Learning schedule changed or was disabled.",
+    )
+    window(state)
     expected = policy_from_metadata(config.metadata)
     require(
         expected is not None and policy == expected,

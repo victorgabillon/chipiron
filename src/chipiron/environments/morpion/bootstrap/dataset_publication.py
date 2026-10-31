@@ -246,6 +246,13 @@ def admit_dataset(
                 options["dataset_confidence_policy"] == "selected_value_v2",
                 "Activation workspaces require selected-value-v2 Dataset confidence.",
             )
+        from .learning_policy import validate_continual_context
+        from .learning_schedule import window
+
+        if window(state) is not None or args.learning_schedule is not None:
+            validate_continual_context(
+                paths, state, args.continual_learning, args.learning_schedule
+            )
         record = _record(state, generation)
         if ACCEPTED in record:
             proposal = _proposal(paths, record[ACCEPTED])
@@ -264,12 +271,16 @@ def admit_dataset(
         else:
             descriptor = validate_capsule(paths.work_dir, record)
             validate_manifest_publication(paths.work_dir, manifest)
+            from .learning_worker import claim_metadata
+
+            worker_metadata = claim_metadata(paths, state, generation, claim_path)
             claim = claim_pipeline_stage(
                 generation=generation,
                 stage="dataset",
                 claim_path=claim_path,
                 ttl_seconds=ttl_seconds,
                 owner=owner,
+                metadata=worker_metadata,
             )
             identifier = uuid.uuid4().hex
             admission = {
@@ -399,6 +410,9 @@ def accept_dataset(
             load_pipeline_manifest(manifest_path) if manifest_path.exists() else None
         )
         if previous is None:
+            from .learning_schedule import validate_source
+
+            validate_source(paths, state, generation)
             claim = load_pipeline_stage_claim(
                 paths.pipeline_dataset_claim_path_for_generation(generation)
             )
