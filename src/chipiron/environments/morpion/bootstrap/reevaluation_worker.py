@@ -693,6 +693,9 @@ def run_morpion_reevaluation_worker_once(
     allow_scientific_v2: bool = False,
 ) -> MorpionReevaluationWorkerResult:
     """Propose one bounded batch; atomic-mode continuation advances only at Growth commit."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="reevaluation")
     if max_nodes_per_patch < 0:
         raise _negative_max_nodes_per_patch_error()
 

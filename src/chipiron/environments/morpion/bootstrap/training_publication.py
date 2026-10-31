@@ -289,6 +289,10 @@ def admit_training(
     owner: str | None,
 ) -> Iterator[TrainingAttempt | MorpionPipelineGenerationManifest]:
     """Capture under Growth ownership; caller retains scientific pin during computation."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
+    validate_torch_execution_profile(config)
     generation = manifest.generation
     claim_path = paths.pipeline_training_claim_path_for_generation(generation)
     attempt = None
@@ -725,6 +729,9 @@ def publish_training(
     status: MorpionPipelineTrainingStatusArtifact,
 ) -> dict[str, Any]:
     """Seal existing model bundles, then publish through the shared no-replace primitive."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
     from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
         load_morpion_model_bundle,
     )
@@ -831,6 +838,9 @@ def accept_training(
     paths: MorpionBootstrapPaths, reference: dict[str, Any]
 ) -> MorpionPipelineGenerationManifest:
     """Attach a result at the sole commit without changing model, checkpoint or cursor."""
+    from .execution_profile import require_workspace_profile
+
+    require_workspace_profile(paths)
     from .checkpoint_patch_receipts import receipt_ledger
 
     with growth_receipt_ownership(paths, wait=True):
@@ -902,6 +912,9 @@ def run_training(
     owner: str | None,
 ) -> MorpionPipelineGenerationManifest:
     """Run unchanged bounded trainer into private outputs, then publish and accept."""
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="training")
     from datetime import UTC, datetime
 
     from chipiron.environments.morpion.learning import (

@@ -196,3 +196,30 @@ def test_invalid_profile_fails_before_mutation() -> None:
     ):  # type: ignore[arg-type]
         pytest.fail("invalid profile should fail")
     assert torch_execution_profile_info() == before
+
+
+@pytest.mark.fast
+def test_cleanup_attempts_all_flags_and_preserves_original_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failing restoration is attached as evidence, never substituted for failure."""
+    before = torch_execution_profile_info()
+    setter = torch.backends.mha.set_fastpath_enabled
+    original = RuntimeError("model failed")
+
+    def restore_error(value: bool) -> None:
+        setter(value)
+        if value == before.mha_fastpath:
+            message = "restore failed"
+            raise OSError(message)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(torch.backends.mha, "set_fastpath_enabled", restore_error)
+        with (
+            pytest.raises(RuntimeError) as caught,
+            torch_execution_profile("strict_math"),
+        ):
+            raise original
+        assert caught.value is original
+        assert any("restore failed" in note for note in original.__notes__)
+    assert torch_execution_profile_info() == before

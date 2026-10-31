@@ -433,6 +433,11 @@ def run_pipeline_growth_stage(
     v2 adapter in an already initialized v2 workspace. No CLI or production worker
     enables these options.
     """
+    from chipiron.environments.morpion.bootstrap.execution_profile import (
+        require_args_profile,
+    )
+
+    require_args_profile(args, stage="growth")
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     from chipiron.environments.morpion.bootstrap.learning_schedule import (
@@ -1681,6 +1686,11 @@ def run_pipeline_dataset_stage(
     allow_scientific_v2: bool = False,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
+    from chipiron.environments.morpion.bootstrap.execution_profile import (
+        require_args_profile,
+    )
+
+    require_args_profile(args, stage="dataset")
     validate_confidence_policy(
         args.dataset_confidence_policy, args.dataset_family_target_policy
     )
@@ -2185,6 +2195,11 @@ def run_pipeline_training_stage(
     claim_owner: str | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Train evaluators and select the active model for one pipeline generation."""
+    from chipiron.environments.morpion.bootstrap.execution_profile import (
+        require_args_profile,
+    )
+
+    require_args_profile(args, stage="training")
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     from chipiron.environments.morpion.bootstrap.training_publication import (

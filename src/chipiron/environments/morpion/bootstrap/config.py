@@ -463,6 +463,10 @@ RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
 
 def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
     """Build the canonical persisted bootstrap config from current args."""
+    from .execution_policy import policy_metadata
+    from .execution_policy import validate_supported as validate_execution_policy
+
+    validate_execution_policy(args)
     if args.learning_schedule is not None:
         args.learning_schedule.validate_supported(args)
 
@@ -527,23 +531,26 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         evaluator_update_policy=args.evaluator_update_policy,
         pipeline_mode=args.pipeline_mode,
         training_export_mode=args.training_export_mode,
-        metadata={
-            **(
-                {"learning_schedule": args.learning_schedule.to_metadata()}
-                if args.learning_schedule is not None
-                else {}
-            ),
-            "continual_learning": args.continual_learning.to_metadata(),
-            "continual_training_settings": {
-                "shuffle": args.shuffle,
-                "training_max_rows": args.training_max_rows,
-                "training_row_chunk_size": args.training_row_chunk_size,
-                "skip_evaluator_diagnostics": args.skip_evaluator_diagnostics,
-                "evaluator_diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
-            },
-        }
-        if args.continual_learning is not None
-        else {},
+        metadata=policy_metadata(args)
+        | (
+            {
+                **(
+                    {"learning_schedule": args.learning_schedule.to_metadata()}
+                    if args.learning_schedule is not None
+                    else {}
+                ),
+                "continual_learning": args.continual_learning.to_metadata(),
+                "continual_training_settings": {
+                    "shuffle": args.shuffle,
+                    "training_max_rows": args.training_max_rows,
+                    "training_row_chunk_size": args.training_row_chunk_size,
+                    "skip_evaluator_diagnostics": args.skip_evaluator_diagnostics,
+                    "evaluator_diagnostics_max_rows": args.evaluator_diagnostics_max_rows,
+                },
+            }
+            if args.continual_learning is not None
+            else {}
+        ),
     )
 
 

@@ -249,6 +249,9 @@ class MorpionBootstrapArgs:
     validation_fraction: float = 0.2
     validation_seed: int = 0
     training_device: str = "auto"
+    execution_profile: str | None = None
+    torch_intra_op_threads: int | None = None
+    torch_inter_op_threads: int | None = None
     continual_learning: MorpionContinualLearningPolicy | None = None
     learning_schedule: BoundedGrowthWindow | None = None
     model_kind: str = "linear"

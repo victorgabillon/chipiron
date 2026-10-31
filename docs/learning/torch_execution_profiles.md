@@ -71,3 +71,6 @@ The behavior follows the documented PyTorch APIs:
 [strict algorithms](https://docs.pytorch.org/docs/2.14/generated/torch.use_deterministic_algorithms.html),
 [MHA fastpath](https://docs.pytorch.org/docs/2.14/backends.html#torch.backends.mha.set_fastpath_enabled),
 [SDPA math selection and restoration](https://docs.pytorch.org/docs/2.14/generated/torch.nn.attention.sdpa_kernel.html).
+
+Scientific bootstrap's explicit config/CLI and process lifetime owner are
+covered in [Bootstrap execution profile](bootstrap_execution_profile.md).

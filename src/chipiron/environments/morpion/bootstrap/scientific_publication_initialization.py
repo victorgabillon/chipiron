@@ -10,7 +10,9 @@ from .generation_publication_io import (
     artifact_digest,
     copy_artifact,
     growth_receipt_ownership,
+    object_digest,
     publication_namespace,
+    read_object,
     require,
 )
 from .scientific_generation_publication import catalog_paths
@@ -44,6 +46,25 @@ def initialize_scientific_v2_publication(
     binds their exact identities; it does not invent a checkpoint proof.
     A failed attempt can be retried from those inputs, never from its orphan.
     """
+    from chipiron.learning.torch_runtime import validate_torch_execution_profile
+
+    from .config import load_bootstrap_config
+    from .execution_profile import policy_from_metadata, require_workspace_profile
+
+    require_workspace_profile(paths)
+    declared_policy = (
+        policy_from_metadata(
+            load_bootstrap_config(paths.bootstrap_config_path).metadata
+        )
+        if paths.bootstrap_config_path.is_file()
+        else None
+    )
+    require(
+        policy_from_metadata(state.metadata) == declared_policy,
+        "Scientific genesis execution policy mismatch.",
+    )
+    if policy_from_metadata(state.metadata) is not None:
+        validate_torch_execution_profile(state.metadata)
     from .checkpoint_patch_receipts import (
         RECEIPTS_METADATA_KEY,
         GrowthPatchReceiptSession,
@@ -216,6 +237,27 @@ def initialize_scientific_experiment(
     initial_nodes: int,
 ) -> MorpionBootstrapRunState:
     """Build a bounded fresh search, then use the existing complete genesis commit."""
+    from chipiron.learning.torch_runtime import (
+        torch_execution_profile_metadata,
+        validate_torch_execution_profile,
+    )
+
+    from .execution_profile import (
+        KEY,
+        policy_from_metadata,
+        policy_metadata,
+        require_args_profile,
+    )
+
+    require_args_profile(args, stage="initialize")
+    require(
+        policy_from_metadata(config.metadata) == policy_metadata(args).get(KEY),
+        "Genesis execution policy mismatch.",
+    )
+    if policy_metadata(args):
+        validate_torch_execution_profile(
+            read_object(seed_model / "morpion_manifest.json").get("metadata", {})
+        )
     import time
 
     import anemone
@@ -280,6 +322,10 @@ def initialize_scientific_experiment(
             "evaluator": artifact_digest(bundle),
             "config_sha256": bootstrap_config_sha256(config),
         }
+        if policy_metadata(args):
+            producer["torch_execution_profile_sha256"] = object_digest(
+                torch_execution_profile_metadata()
+            )
         if args.continual_learning is not None:
             from importlib import import_module
             from platform import python_version
@@ -338,6 +384,11 @@ def initialize_scientific_experiment(
                 latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint),
                 latest_tree_snapshot_path=paths.relative_to_work_dir(source),
                 metadata={
+                    **(
+                        policy_metadata(args) | torch_execution_profile_metadata()
+                        if policy_metadata(args)
+                        else {}
+                    ),
                     **(
                         {
                             "continual_learning": context_marker(

@@ -23,6 +23,28 @@ class TorchExecutionProfileError(RuntimeError):
     """An execution profile was invalid, changed, or used outside its scope."""
 
 
+def configure_torch_process_threads(*, intra_op: int, inter_op: int) -> None:
+    """Configure explicit process-lifetime threads before any parallel model work.
+
+    Inter-op cannot be restored/switched after work. An already matching setting
+    is left alone; Torch rejects an illegal late change without fallback. This is
+    separate from execution profiles and I3's scoped intra-op candidate policy.
+    """
+    if (
+        not isinstance(intra_op, int)
+        or isinstance(intra_op, bool)
+        or not isinstance(inter_op, int)
+        or isinstance(inter_op, bool)
+        or min(intra_op, inter_op) < 1
+    ):
+        message = "Torch process thread counts must be positive integers."
+        raise TorchExecutionProfileError(message)
+    if torch.get_num_interop_threads() != inter_op:
+        torch.set_num_interop_threads(inter_op)
+    if torch.get_num_threads() != intra_op:
+        torch.set_num_threads(intra_op)
+
+
 @dataclass(frozen=True, slots=True)
 class TorchExecutionProfileInfo:
     """Serializable requested/effective execution settings; no device selection."""
@@ -114,6 +136,39 @@ def validate_torch_execution_profile(metadata: Mapping[str, object]) -> None:
         raise TorchExecutionProfileError(message)
 
 
+def _restore_execution_profile(
+    previous: TorchExecutionProfileInfo, failure: BaseException | None
+) -> None:
+    """Attempt every restoration without replacing an operation/setup failure."""
+    errors: list[BaseException] = []
+    for restore in (
+        lambda: torch.backends.cuda.enable_math_sdp(previous.math_sdp),
+        lambda: torch.backends.cuda.enable_flash_sdp(previous.flash_sdp),
+        lambda: torch.backends.cuda.enable_mem_efficient_sdp(
+            previous.mem_efficient_sdp
+        ),
+        lambda: torch.backends.cuda.enable_cudnn_sdp(previous.cudnn_sdp),
+        lambda: torch.backends.mha.set_fastpath_enabled(previous.mha_fastpath),
+        lambda: torch.use_deterministic_algorithms(
+            previous.deterministic, warn_only=previous.warn_only
+        ),
+    ):
+        try:
+            restore()
+        except BaseException as error:  # pylint: disable=broad-exception-caught
+            # Restoration must continue even if one setter fails.
+            errors.append(error)
+    if errors:
+        if failure is not None:
+            for restore_error in errors:
+                failure.add_note(
+                    f"Torch profile restoration also failed: {restore_error!r}"
+                )
+        else:
+            message = "Torch profile restoration failed"
+            raise BaseExceptionGroup(message, errors)
+
+
 @contextmanager
 def torch_execution_profile(
     profile: TorchExecutionProfile = "existing",
@@ -146,6 +201,7 @@ def torch_execution_profile(
             finally:
                 _PROFILE_STACK.pop()
             return
+        failure: BaseException | None = None
         try:
             torch.use_deterministic_algorithms(True, warn_only=False)
             torch.backends.mha.set_fastpath_enabled(False)
@@ -159,17 +215,22 @@ def torch_execution_profile(
                 try:
                     yield info
                     torch_execution_profile_metadata()
+                except BaseException as error:
+                    failure = error
+                    raise
                 finally:
                     _PROFILE_STACK.pop()
+        except BaseException as error:
+            if failure is None:
+                failure = error
+                raise
+            if failure is error:
+                raise
+            failure.add_note(f"SDPA scope cleanup also failed: {error!r}")
+            # Preserve the model error and its original explicit cause.
+            raise failure  # noqa: B904  # pylint: disable=raise-missing-from
         finally:
-            torch.backends.cuda.enable_math_sdp(previous.math_sdp)
-            torch.backends.cuda.enable_flash_sdp(previous.flash_sdp)
-            torch.backends.cuda.enable_mem_efficient_sdp(previous.mem_efficient_sdp)
-            torch.backends.cuda.enable_cudnn_sdp(previous.cudnn_sdp)
-            torch.backends.mha.set_fastpath_enabled(previous.mha_fastpath)
-            torch.use_deterministic_algorithms(
-                previous.deterministic, warn_only=previous.warn_only
-            )
+            _restore_execution_profile(previous, failure)
     finally:
         _PROFILE_LOCK.release()
 

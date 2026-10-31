@@ -232,6 +232,9 @@ def admit_dataset(
     Caller must retain the existing scientific source pin through this context.
     A completed generation is immutable: retry returns it only for identical options.
     """
+    from .execution_profile import require_args_profile
+
+    require_args_profile(args, stage="dataset_admission")
     from .generation_publication_io import growth_receipt_ownership
 
     generation = manifest.generation
