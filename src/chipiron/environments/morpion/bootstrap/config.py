@@ -463,6 +463,9 @@ RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
 
 def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
     """Build the canonical persisted bootstrap config from current args."""
+    if args.learning_schedule is not None:
+        args.learning_schedule.validate_supported(args)
+
     return MorpionBootstrapConfig(
         experiment=MorpionBootstrapExperimentIdentityConfig(
             game=MORPION_BOOTSTRAP_GAME,
@@ -525,6 +528,11 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         pipeline_mode=args.pipeline_mode,
         training_export_mode=args.training_export_mode,
         metadata={
+            **(
+                {"learning_schedule": args.learning_schedule.to_metadata()}
+                if args.learning_schedule is not None
+                else {}
+            ),
             "continual_learning": args.continual_learning.to_metadata(),
             "continual_training_settings": {
                 "shuffle": args.shuffle,

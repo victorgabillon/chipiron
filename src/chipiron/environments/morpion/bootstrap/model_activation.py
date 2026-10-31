@@ -149,6 +149,9 @@ def _request(
         state.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract") == 1,
         "Activation requires an explicitly initialized format-3 workspace.",
     )
+    from .learning_schedule import validate_resolution
+
+    validate_resolution(paths, state, training_generation)
     transaction = transaction_state(state)
     require(
         transaction is not None and transaction["schema_version"] == 2,
@@ -158,6 +161,18 @@ def _request(
     receipt_ledger(state)
     model, _ = committed_evaluator(paths.work_dir, state)
     accepted, candidate = accepted_selected_model(paths, state, training_generation)
+    from .learning_schedule import window
+
+    if window(state) is not None:
+        from .training_publication import _proposal
+
+        decision = _proposal(paths, accepted)["status"]["metadata"][
+            "continual_selection"
+        ]
+        require(
+            decision["activation_eligible"],
+            "Learning selection is not activation eligible.",
+        )
     require(model != candidate, "Selected model is already active.")
     return {
         "schema_version": 1,
@@ -341,6 +356,12 @@ def activate_model(
             == object_digest(_request(paths, state, request["training_generation"])),
             "Stale or conflicting model activation request.",
         )
+        from .learning_schedule import window
+
+        if window(state) is not None:
+            from .learning_worker import monitored_identity
+
+            monitored_identity()
         measurement = StageMeasurement()
         runner, effective = _runner(paths, state)
         require(
@@ -426,6 +447,10 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     state = load_bootstrap_run_state(paths.run_state_path)
     if state.metadata.get("experiment_termination") is not None:
         return
+    from .learning_schedule import wait_reason, window
+
+    if window(state) is not None and wait_reason(state) != "await_learning_resolution":
+        return
     directory = paths.pipeline_dir / "automatic_activation"
     # Preserve original requests and any explicit M1-drain renewals. A committed
     # member finishes its entire chain; no old request is reactivated afterward.
@@ -473,6 +498,27 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
         "Automatic activation requires a continual selection decision.",
     )
     if not decision["activation_eligible"]:
+        if window(state) is not None:
+            from .learning_schedule import close_window, validate_resolution
+            from .run_state import save_bootstrap_run_state
+
+            with growth_receipt_ownership(paths):
+                state = load_bootstrap_run_state(paths.run_state_path)
+                # A concurrent resolver may already have closed this slot.
+                data = window(state)
+                if (
+                    data is not None
+                    and data["active"] is not None
+                    and data["active"]["source"]["generation"] == latest["generation"]
+                ):
+                    from .learning_worker import monitored_identity
+
+                    monitored_identity()
+                    validate_resolution(paths, state, latest["generation"])
+                    state = close_window(
+                        state, outcome={"outcome": "retained", "decision": decision}
+                    )
+                    save_bootstrap_run_state(state, paths.run_state_path, durable=True)
         return
     path = directory / f"generation_{latest['generation']:06d}.json"
     if path.exists():

@@ -297,6 +297,11 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
             "Duplicate publication root.",
         )
         if RETIRED_PAYLOAD_KEY in record:
+            active_window = metadata.get("learning_window_v1", {}).get("active")
+            require(
+                active_window is None or active_window["source"]["id"] != identifier,
+                "Cannot retire a reserved learning source.",
+            )
             require(
                 data["schema_version"] == 3
                 and data.get("evaluator_contract") == 1
