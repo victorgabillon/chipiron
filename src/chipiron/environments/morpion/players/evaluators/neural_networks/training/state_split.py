@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
@@ -74,19 +75,51 @@ def _split(
     return StateSplit(frozenset(indices), count, population)
 
 
+def _uncached_value(
+    path: str, digest: str, fraction: float, seed: int, max_rows: int | None
+) -> tuple[frozenset[int], int, str]:
+    """Adapt the unchanged algorithm to operational storage, without another loop."""
+    result = _split.__wrapped__(path, digest, fraction, seed, max_rows)
+    return (
+        result.validation_indices,
+        result.row_count,
+        result.validation_population_sha256,
+    )
+
+
 def prepare_state_split(
     args: MorpionTrainingArgs, max_rows: int | None = None
 ) -> tuple[MorpionTrainingArgs, dict[str, object]]:
     """Bind every training/evaluation kernel to the same stable membership."""
     if not args.stable_validation_split:
         return args, {}
-    result = _split(
-        str(args.dataset_file),
-        file_digest(Path(args.dataset_file)),
-        args.validation_fraction,
-        args.validation_seed,
-        max_rows,
-    )
+    # Operational opt-in only: never a training/config/manifest hyperparameter.
+    cache_directory = os.environ.get("CHIPIRON_STATE_SPLIT_CACHE_DIR")
+    if cache_directory is not None:
+        from .state_split_cache import load_or_build
+
+        if not cache_directory.strip():
+            message = "CHIPIRON_STATE_SPLIT_CACHE_DIR must name a directory"
+            raise ValueError(message)
+        result = StateSplit(
+            *load_or_build(
+                Path(cache_directory),
+                Path(args.dataset_file),
+                args.validation_fraction,
+                args.validation_seed,
+                max_rows,
+                POLICY,
+                _uncached_value,
+            )
+        )
+    else:
+        result = _split(
+            str(args.dataset_file),
+            file_digest(Path(args.dataset_file)),
+            args.validation_fraction,
+            args.validation_seed,
+            max_rows,
+        )
     return replace(args, validation_indices=result.validation_indices), {
         "policy": POLICY,
         "seed": args.validation_seed,
