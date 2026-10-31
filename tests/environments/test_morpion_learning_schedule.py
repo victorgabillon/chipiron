@@ -53,6 +53,9 @@ def monitored(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("MORPION_RESOURCE_MONITOR_PID", str(os.getpid()))
     monkeypatch.setenv("MORPION_RESOURCE_MONITOR_START_TICKS", ticks)
     monkeypatch.setenv("CHIPIRON_CANDIDATE_WORKERS", "1")
+    # The production scientific launcher replaces this process-wide default.
+    # Register it here so fixture teardown restores the worker's original scope.
+    monkeypatch.setenv("MORPION_LEADERBOARD_PATH", str(tmp_path / "leaderboard.jsonl"))
     local_leaderboard(monkeypatch, tmp_path)
 
 
