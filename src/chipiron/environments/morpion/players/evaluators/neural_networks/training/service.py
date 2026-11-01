@@ -71,6 +71,7 @@ from .flat_tensor_cache import (
     FlatTensorCache,
     flat_cache_batch,
     is_flat_morpion_training_model_kind,
+    load_flat_tensor_cache,
     load_or_materialize_flat_tensor_cache,
 )
 from .metadata import (
@@ -90,6 +91,7 @@ from .quality_diagnostics import (
 from .relational_entity_token_cache import (
     MorpionRelationalEntityTokenCache,
     load_or_materialize_relational_entity_token_cache,
+    load_relational_entity_token_cache,
     relational_entity_token_cache_batch,
 )
 from .scale_diagnostics import (
@@ -109,6 +111,7 @@ if TYPE_CHECKING:
     )
 
     from .args import MorpionStreamingTrainingArgs, MorpionTrainingArgs
+    from .shared_preparation import _PreparedInputs
 
 LOGGER = logging.getLogger(__name__)
 REGRESSION_QUALITY_SAMPLE_MAX_ROWS = 4096
@@ -410,12 +413,18 @@ def train_morpion_regressor(
 
 def train_morpion_regressor_streaming(
     args: MorpionStreamingTrainingArgs,
+    *,
+    _prepared: _PreparedInputs | None = None,
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor from row chunks without materializing all rows."""
     total_started_at = perf_counter()
     timings = PhaseDurations()
     train_timings = PhaseDurations()
-    training_args, state_split = prepare_state_split(args.training_args, args.max_rows)
+    training_args, state_split = (
+        prepare_state_split(args.training_args, args.max_rows)
+        if _prepared is None
+        else _prepared.prepare_split(args.training_args, args.max_rows)
+    )
     resolved_hidden_sizes = resolve_hidden_sizes(training_args)
     model_args = morpion_regressor_args_from_training_args(training_args)
     device = resolve_torch_device(training_args.device)
@@ -445,11 +454,19 @@ def train_morpion_regressor_streaming(
     entity_token_cache_metadata: dict[str, object] = {"used": False}
     relational_entity_token_cache_metadata: dict[str, object] = {"used": False}
     if is_flat_morpion_training_model_kind(training_args.model_kind):
-        flat_cache = load_or_materialize_flat_tensor_cache(
-            rows_path=training_args.dataset_file,
-            read_only=args.cache_read_only,
-            row_chunk_size=args.row_chunk_size,
-            max_rows=args.max_rows,
+        flat_cache = (
+            load_or_materialize_flat_tensor_cache(
+                rows_path=training_args.dataset_file,
+                read_only=args.cache_read_only,
+                row_chunk_size=args.row_chunk_size,
+                max_rows=args.max_rows,
+            )
+            if _prepared is None
+            else load_flat_tensor_cache(
+                rows_path=training_args.dataset_file,
+                max_rows=args.max_rows,
+                _paths=_prepared.flat_paths,
+            )
         )
         flat_tensor_cache_metadata = {
             "used": True,
@@ -478,6 +495,13 @@ def train_morpion_regressor_streaming(
                 row_chunk_size=args.row_chunk_size,
                 max_rows=args.max_rows,
                 entity_max_tokens=training_args.entity_max_tokens,
+            )
+            if _prepared is None
+            else load_relational_entity_token_cache(
+                rows_path=training_args.dataset_file,
+                max_rows=args.max_rows,
+                entity_max_tokens=training_args.entity_max_tokens,
+                _paths=_prepared.relational_paths,
             )
         )
         relational_entity_token_cache_metadata = {

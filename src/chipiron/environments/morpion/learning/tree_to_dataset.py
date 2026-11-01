@@ -13,6 +13,7 @@ from atomheart.games.morpion.checkpoints import (
     MorpionCheckpointTypeError,
     MorpionStateCheckpointCodec,
 )
+from atomheart.games.morpion.state import MorpionState as AtomMorpionState
 
 from .target_confidence import (
     DatasetConfidenceContext,
@@ -33,7 +34,6 @@ MORPION_SCIENTIFIC_METADATA_KIND = "morpion_scientific_supervised_rows_metadata"
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
-    from atomheart.games.morpion.state import MorpionState as AtomMorpionState
 
 
 class TrainingNodes(Protocol):
@@ -86,6 +86,19 @@ class MorpionSupervisedRow:
     direct_value: float | None = None
     over_event_label: str | None = None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
+
+
+@dataclass(frozen=True, slots=True)
+class _ValidatedMorpionRow:
+    """Private handoff emitted only after codec and row-confidence validation.
+
+    The decoded state belongs to this row. Consumers must use the immutable
+    Chipiron wrapper; neither a cross-row memo nor an unvalidated constructor
+    is part of the preparation API.
+    """
+
+    row: MorpionSupervisedRow
+    state: AtomMorpionState
 
 
 @dataclass(frozen=True, slots=True)
@@ -614,6 +627,16 @@ def iter_morpion_supervised_rows_from_path(
             emitted += 1
             yield row
         return
+    for validated in _iter_validated_morpion_jsonl_rows(source, max_rows=max_rows):
+        yield validated.row
+
+
+def _iter_validated_morpion_jsonl_rows(
+    source: Path, *, max_rows: int | None = None
+) -> Iterator[_ValidatedMorpionRow]:
+    """Share the certified decode without changing the native JSONL checks."""
+    _validate_optional_max_rows(max_rows)
+    emitted = 0
     saw_metadata = False
     version = 1
     with source.open("r", encoding="utf-8") as stream:
@@ -648,7 +671,7 @@ def iter_morpion_supervised_rows_from_path(
             if max_rows is not None and emitted >= max_rows:
                 break
             emitted += 1
-            yield _row_from_dict(
+            yield _validated_row_from_dict(
                 _require_row_mapping(record.get("row")), version=version
             )
     if not saw_metadata:
@@ -942,6 +965,13 @@ def _row_from_dict(
     data: dict[str, object], *, version: int = 1
 ) -> MorpionSupervisedRow:
     """Deserialize one Morpion supervised row from JSON-friendly data."""
+    return _validated_row_from_dict(data, version=version).row
+
+
+def _validated_row_from_dict(
+    data: dict[str, object], *, version: int = 1
+) -> _ValidatedMorpionRow:
+    """Validate exactly once and retain that decode for a trusted row consumer."""
     node_id = data.get("node_id")
     if not isinstance(node_id, str):
         raise MalformedMorpionSupervisedRowsError.missing_or_invalid_node_id()
@@ -949,11 +979,10 @@ def _row_from_dict(
     if "target_value" not in data:
         raise MalformedMorpionSupervisedRowsError.missing_target_value()
 
+    state = _decode_validated_payload(data.get("state_ref_payload"))
     row = MorpionSupervisedRow(
         node_id=node_id,
-        state_ref_payload=_validate_and_normalize_state_ref_payload(
-            data.get("state_ref_payload")
-        ),
+        state_ref_payload=checkpoint_payload_to_jsonable(data.get("state_ref_payload")),
         target_value=_required_float(data["target_value"]),
         is_terminal=bool(data.get("is_terminal", False)),
         is_exact=bool(data.get("is_exact", False)),
@@ -974,7 +1003,7 @@ def _row_from_dict(
             is_exact=row.is_exact,
             is_terminal=row.is_terminal,
         )
-    return row
+    return _ValidatedMorpionRow(row, state)
 
 
 def _validate_jsonl_confidence_version(
