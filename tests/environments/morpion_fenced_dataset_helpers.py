@@ -31,6 +31,8 @@ def setup_fenced(root: Path) -> Any:
 
 def local_leaderboard(monkeypatch: pytest.MonkeyPatch, root: Path) -> None:
     """Keep all optional leaderboard writes inside this new fixture."""
+    # The in-process scientific launcher replaces this default; restore it at teardown.
+    monkeypatch.setenv("MORPION_LEADERBOARD_PATH", str(root / "leaderboard.jsonl"))
     persist = stages.persist_certified_leaderboard_candidates
     monkeypatch.setattr(
         stages,
