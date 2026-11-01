@@ -197,7 +197,7 @@ def test_status_does_not_import_streamlit_or_torch(workspace: Path) -> None:
     ("payload", "expected"),
     [
         (None, "unknown"),
-        ({"exit_code": 0, "finished_at_utc": "2026-01-01T10:00:00Z"}, "finished"),
+        ({"exit_code": 0, "finished_at_utc": "2026-01-01T10:00:00Z"}, "completed"),
         ({"exit_code": 143, "finished_at_utc": "2026-01-01T10:00:00Z"}, "stopped"),
         ({"exit_code": 1, "finished_at_utc": "2026-01-01T10:00:00Z"}, "failed"),
     ],

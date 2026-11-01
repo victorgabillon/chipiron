@@ -95,7 +95,7 @@ def test_pending_edit_preview_precedes_apply(tmp_path: Path) -> None:
 
     save_bootstrap_config(
         bootstrap_config_from_args(
-            MorpionBootstrapArgs(work_dir=tmp_path, pipeline_mode="artifact_pipeline")
+            MorpionBootstrapArgs(work_dir=tmp_path, pipeline_mode="single_process")
         ),
         tmp_path / "bootstrap_config.json",
     )

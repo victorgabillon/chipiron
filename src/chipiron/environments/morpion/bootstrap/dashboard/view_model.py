@@ -3,7 +3,7 @@
 import json
 import math
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -18,13 +18,26 @@ def mapping(value: object) -> JsonObject:
     return cast("JsonObject", value) if isinstance(value, dict) else {}
 
 
-def read_artifact(path: Path, errors: list[str]) -> JsonObject:
+def _reject_constant(value: str) -> None:
+    """Reject nonfinite JSON observations rather than pass them into renderers."""
+    message = f"Nonfinite JSON constant: {value}"
+    raise ValueError(message)
+
+
+def read_artifact(
+    path: Path, errors: list[str], *, limit: int = MAX_HISTORY_BYTES
+) -> JsonObject:
     """Read a small JSON artifact, distinguishing absence from real damage."""
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        with path.open("rb") as stream:
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            errors.append(f"{path.name}: exceeds {limit} byte observation limit")
+            return {}
+        value = json.loads(raw, parse_constant=_reject_constant)
     except FileNotFoundError:
         return {}
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, RecursionError) as exc:
         errors.append(f"{path.name}: {exc}")
         return {}
     if not isinstance(value, dict):
@@ -81,7 +94,7 @@ def age_label(value: object) -> str:
     return f"{seconds // 86400}d ago"
 
 
-def _history(path: Path, errors: list[str]) -> tuple[JsonObject, ...]:
+def read_history(path: Path, errors: list[str]) -> tuple[JsonObject, ...]:
     """Bound live-monitoring history reads; original files remain accessible."""
     try:
         with path.open("rb") as stream:
@@ -93,17 +106,17 @@ def _history(path: Path, errors: list[str]) -> tuple[JsonObject, ...]:
     except FileNotFoundError:
         return ()
     except OSError as exc:
-        errors.append(f"history.jsonl: {exc}")
+        errors.append(f"{path.name}: {exc}")
         return ()
     rows: list[JsonObject] = []
     for line in lines:
         try:
             row = json.loads(line)
         except ValueError:
-            errors.append("history.jsonl contains an invalid or partially written row.")
+            errors.append(f"{path.name} contains an invalid or partially written row.")
             break
         if not isinstance(row, dict):
-            errors.append("history.jsonl row must be an object.")
+            errors.append(f"{path.name} row must be an object.")
             break
         rows.append(cast("JsonObject", row))
     return tuple(rows)
@@ -113,6 +126,14 @@ def _live_launcher(work_dir: Path, process: JsonObject) -> bool:
     """Require a local live process with the matching launcher and exact workspace."""
     pid = process.get("pid")
     if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+        return False
+    if process.get("start_ticks") is None or not process.get(
+        "boot_id", process.get("boot")
+    ):
+        return False
+    from .runtime_view import live_identity
+
+    if not live_identity(process, work_dir):
         return False
     try:
         arguments = (
@@ -150,7 +171,7 @@ def classify_run(
         code = finished.get("exit_code")
         if isinstance(code, int) and not isinstance(code, bool):
             status = (
-                "finished"
+                "completed"
                 if code == 0
                 else "stopped"
                 if code in (130, 143)
@@ -213,6 +234,8 @@ class BootstrapDashboardSnapshot:
     updated_at: str | None
     dataset_history: tuple[JsonObject, ...] = ()
     training_history: tuple[JsonObject, ...] = ()
+    runtime: JsonObject = field(default_factory=dict)
+    activation_requests: tuple[JsonObject, ...] = ()
 
     @property
     def pipeline_mode(self) -> str:
@@ -275,34 +298,92 @@ def _certified_record(candidate: JsonObject, errors: list[str]) -> JsonObject:
     return candidate
 
 
-def load_dashboard_snapshot(work_dir: Path) -> BootstrapDashboardSnapshot:
+def load_dashboard_snapshot(
+    work_dir: Path, runtime_root: Path | None = None
+) -> BootstrapDashboardSnapshot:
     """Read monitoring JSON only: no tree deserialization, disk walk or model load."""
+    from .performance_evidence import EvidenceReader
+    from .runtime_view import load_runtime, runtime_lifecycle, worker_summary
+
     work_dir = work_dir.resolve()
     errors: list[str] = []
     config = read_artifact(work_dir / "bootstrap_config.json", errors)
     manifest = read_artifact(work_dir / "manifest.json", errors)
-    state = read_artifact(work_dir / "run_state.json", errors)
+    reader = EvidenceReader(work_dir, errors)
+    state = reader.authority
     latest = read_artifact(work_dir / "latest_status.json", errors)
-    history = _history(work_dir / "history.jsonl", errors)
+    history = read_history(work_dir / "history.jsonl", errors)
     event = mapping(latest.get("latest_event")) or (history[-1] if history else {})
     active = read_artifact(work_dir / "pipeline/active_model.json", errors)
     stage_history = {}
     for stage in ("dataset", "training"):
-        files = sorted(
-            (work_dir / "pipeline").glob(f"generation_*/{stage}_status.json")
-        )[-256:]
-        stage_history[stage] = tuple(read_artifact(path, errors) for path in files)
+        if reader.publications:
+            generations = sorted(reader.publications)[-64:]
+            files = [
+                work_dir / f"pipeline/generation_{g:06d}/{stage}_status.json"
+                for g in generations
+            ]
+            if len(reader.publications) > 64:
+                errors.append(
+                    "Recent stage history limited to 64 publication generations; coverage is partial."
+                )
+        else:
+            # Historical layouts have no authority index. Only this one directory
+            # is enumerated; checkpoint/rows/model trees are never traversed.
+            from itertools import islice
+
+            files = sorted(
+                islice(
+                    (work_dir / "pipeline").glob(f"generation_*/{stage}_status.json"),
+                    257,
+                )
+            )
+            if len(files) > 256:
+                errors.append(
+                    "Legacy stage listing exceeds 256 artifacts; current stage status withheld because listing coverage is incomplete."
+                )
+                files = []
+            files = files[-64:]
+        stage_history[stage] = tuple(
+            value for path in files if (value := reader.read(path))
+        )
     dataset_history = stage_history["dataset"]
     training_history = stage_history["training"]
     dataset = dataset_history[-1] if dataset_history else {}
     training = training_history[-1] if training_history else {}
+    activation_requests: tuple[JsonObject, ...] = ()
+    training_generation = training.get("generation")
+    if isinstance(training_generation, int) and not isinstance(
+        training_generation, bool
+    ):
+        from itertools import islice
+
+        directory = work_dir / "pipeline/automatic_activation"
+        request_paths = [directory / f"generation_{training_generation:06d}.json"]
+        renewals = list(
+            islice(
+                directory.glob(f"generation_{training_generation:06d}.recovery_*.json"),
+                17,
+            )
+        )
+        if len(renewals) > 16:
+            errors.append(
+                "Activation renewals exceed 16; pending status coverage is partial."
+            )
+        activation_requests = tuple(
+            value
+            for path in request_paths + renewals[:16]
+            if (value := reader.read(path))
+        )
     model_manifest: JsonObject = {}
     model_args: JsonObject = {}
     bundle = active.get("model_bundle_path")
     if isinstance(bundle, str) and bundle:
         bundle_path = work_dir / bundle
-        model_manifest = read_artifact(bundle_path / "morpion_manifest.json", errors)
-        model_args = read_artifact(bundle_path / "morpion_regressor_args.json", errors)
+        model_manifest = reader.read(
+            bundle_path / "morpion_manifest.json", limit=1024 * 1024
+        )
+        model_args = reader.read(bundle_path / "morpion_regressor_args.json")
     process = read_artifact(work_dir / "launcher_process_state.json", errors)
     if process and "pid" not in process:
         with suppress(OSError, ValueError):
@@ -315,32 +396,25 @@ def load_dashboard_snapshot(work_dir: Path) -> BootstrapDashboardSnapshot:
         process=process,
         has_progress=bool(state or event),
     )
-    transaction = mapping(state.get("metadata")).get("atomic_reevaluation")
-    reevaluation = (
-        mapping(mapping(transaction).get("accepted_cursor"))
-        if "atomic_reevaluation" in mapping(state.get("metadata"))
-        else read_artifact(work_dir / "pipeline/reevaluation_cursor.json", errors)
-    )
-    workers = []
-    for name, artifact in [
-        ("Growth", event),
-        ("Dataset", dataset),
-        ("Training", training),
-        (
-            "Reevaluation",
-            reevaluation,
-        ),
-    ]:
-        reported = artifact.get("status")
-        state_label = "failed" if reported == "failed" else "unknown"
-        workers.append(
-            WorkerSummary(
-                name,
-                state_label,
-                f"Last reported: {reported}"
-                if reported
-                else "No live worker telemetry",
-            )
+    runtime = load_runtime(work_dir, runtime_root, errors)
+    associated = runtime_lifecycle(runtime, state)
+    if associated is not None:
+        status, detail = associated
+    workers = [
+        worker_summary(work_dir, name, stage, status, runtime, errors, reader)
+        for name, stage in [
+            ("Growth", "growth"),
+            ("Dataset", "dataset_worker"),
+            ("Training", "training_worker"),
+            ("Reevaluation", "reevaluation"),
+        ]
+    ]
+    if not runtime and any(
+        worker.state in {"working", "waiting", "idle"} for worker in workers
+    ):
+        status, detail = (
+            "running",
+            "Local worker process identity verified; worker activity and saved scheduling context are separate.",
         )
     times = [
         v
@@ -384,6 +458,8 @@ def load_dashboard_snapshot(work_dir: Path) -> BootstrapDashboardSnapshot:
         updated,
         dataset_history,
         training_history,
+        runtime,
+        activation_requests,
     )
 
 
@@ -410,14 +486,26 @@ def active_model_summary(snapshot: BootstrapDashboardSnapshot) -> JsonObject:
         "Representation": snapshot.model_manifest.get("input_representation"),
         "relation_bias_scale": snapshot.model_args.get("relation_bias_scale"),
         "Parameter count": metadata.get("parameter_count", selection.get("parameters")),
-        "Epochs": config.get("num_epochs"),
-        "Learning rate": config.get("learning_rate"),
-        "Training rows": training.get(
-            "train_count", mapping(model.get("metadata")).get("source_training_rows")
+        "Epochs": metadata.get("num_epochs", config.get("num_epochs")),
+        "Learning rate": metadata.get("learning_rate", config.get("learning_rate")),
+        "Batch size": metadata.get("batch_size", config.get("batch_size")),
+        "Training rows": metadata.get(
+            "num_train_samples",
+            training.get(
+                "train_count",
+                mapping(model.get("metadata")).get("source_training_rows"),
+            ),
         ),
-        "Validation rows": training.get("validation_count"),
-        "Validation MSE": validation.get("mse"),
-        "Validation MAE": validation.get("mae"),
+        "Validation rows": metadata.get(
+            "num_validation_samples", training.get("validation_count")
+        ),
+        "Validation loss": metadata.get("validation_loss"),
+        "Loss name": metadata.get("loss_name"),
+        "Validation MSE": metadata.get("validation_loss")
+        if metadata.get("loss_name") == "mse"
+        else validation.get("mse"),
+        "Validation MAE": metadata.get("validation_mae", validation.get("mae")),
+        "Metric provenance": "Active bundle metadata; flat current fields take precedence over legacy training_config/validation_metrics. Never latest Training result.",
     }
 
 

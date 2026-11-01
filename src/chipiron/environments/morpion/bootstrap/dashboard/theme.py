@@ -33,6 +33,7 @@ h2 { font-size:1.35rem !important; } h3 { font-size:1.1rem !important; }
 .operator-header h1 { font-size:30px; line-height:1.15; font-weight:650; margin:0 0 8px; }
 .operator-subtitle { color:#697873; font-size:13px; overflow-wrap:anywhere; }
 .operator-pill { display:inline-block; padding:5px 11px; border-radius:20px; background:#e9ede9; color:#52645c; font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; }
+.operator-pill.completed { background:#e2eee8; color:#245b52; }
 .operator-pill.running { background:#e2eee8; color:#245b52; }
 .operator-pill.prepared { background:#e7edf2; color:#4d719a; }
 .operator-pill.failed { background:#f3e5e2; color:#963f34; }
