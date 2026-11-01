@@ -216,9 +216,10 @@ def load_flat_tensor_cache(
     *,
     rows_path: str | os.PathLike[str],
     max_rows: int | None = None,
+    _paths: FlatTensorCachePaths | None = None,
 ) -> FlatTensorCache:
     """Load one existing valid Morpion flat tensor cache."""
-    paths = default_flat_tensor_cache_paths(rows_path, max_rows=max_rows)
+    paths = _paths or default_flat_tensor_cache_paths(rows_path, max_rows=max_rows)
     started_at = perf_counter()
     loaded = _try_load_valid_flat_tensor_cache(paths=paths, rows_path=rows_path)
     if loaded is None:
