@@ -21,6 +21,17 @@ CLUSTER_CACHE_ROOT=""
 MORPION_SCIENTIFIC="${MORPION_SCIENTIFIC:-0}"
 MORPION_USE_INSTALLED_PACKAGES="${MORPION_USE_INSTALLED_PACKAGES:-0}"
 CLUSTER_STOPPED=0
+MORPION_PERSISTENT_WORKERS="${MORPION_PERSISTENT_WORKERS:-0}"
+if [[ "$MORPION_PERSISTENT_WORKERS" != "0" && "$MORPION_PERSISTENT_WORKERS" != "1" ]]; then
+  echo "MORPION_PERSISTENT_WORKERS must be 0 or 1." >&2
+  exit 1
+fi
+if [[ "$MORPION_PERSISTENT_WORKERS" == "1" &&
+      ( "$MORPION_SCIENTIFIC" != "1" || "$MORPION_CLUSTER_HEADLESS" != "1" ||
+        -z "${MORPION_RESOURCE_MONITOR_PID:-}" || -z "${MORPION_RESOURCE_MONITOR_START_TICKS:-}" ) ]]; then
+  echo "Persistent workers require the monitored scientific headless launcher." >&2
+  exit 1
+fi
 # SIGKILL is asynchronous; reserve a bounded confirmation phase after TERM grace.
 CLUSTER_KILL_CONFIRM_SECONDS=5
 
@@ -427,6 +438,21 @@ if [[ \"\$source\" != \"\$last_source\" ]]; then rm -rf -- '$CLUSTER_CACHE_ROOT/
   fi
   local worker_stop_trap='echo; echo "worker stopped; terminal kept open"; exec bash'
   if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then worker_stop_trap='exit 143'; fi
+  if [[ "$MORPION_PERSISTENT_WORKERS" == "1" ]]; then
+    # One Python lifetime; failures end this group. The existing supervisor
+    # stops every group before cache cleanup or an explicit monitored restart.
+    command=$(cat <<EOF
+cd "$REPO_ROOT" &&
+export PYTHONPATH="$source_path" &&
+export MORPION_WORK_DIR="$MORPION_WORK_DIR" &&
+export MORPION_OPERATOR_RICH="$MORPION_OPERATOR_RICH" &&
+export MORPION_COLOR_RAW_LOGS="$MORPION_COLOR_RAW_LOGS" &&
+export MORPION_SUPERVISED_WORKER=1 &&
+mkdir -p "$LOG_DIR" &&
+${extra_prefix}exec "$PYTHON_BIN" -m chipiron.environments.morpion.bootstrap.launcher --work-dir "$MORPION_WORK_DIR" --persistent-worker --worker-poll-seconds "$sleep_seconds" ${launcher_args} ${cache_args} >> "$LOG_DIR/$log_name" 2>&1
+EOF
+)
+  else
   command=$(cat <<EOF
 cd "$REPO_ROOT" &&
 export PYTHONPATH="$source_path" &&
@@ -490,6 +516,7 @@ while true; do
 done
 EOF
 )
+  fi
 
   if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
     setsid bash -lc "$command" &
@@ -591,15 +618,22 @@ fi
 if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
   echo "[CLUSTER] logs=$LOG_DIR active_limit=${MORPION_CLUSTER_MAX_SECONDS}s stop_grace=${MORPION_CLUSTER_STOP_GRACE_SECONDS}s"
   next_status=$SECONDS
+  persistent_failure=0
   while (( SECONDS < CLUSTER_DEADLINE )); do
     if ! resource_monitor_running; then
       echo "[CLUSTER] resource monitor exited; stopping owned worker groups" >&2
       break
     fi
     alive=0
+    persistent_group_exited=0
     for pid in "${CLUSTER_PIDS[@]}"; do
-      if kill -0 "$pid" 2>/dev/null; then alive=1; fi
+      if kill -0 "$pid" 2>/dev/null; then alive=1; else persistent_group_exited=1; fi
     done
+    if [[ "$MORPION_PERSISTENT_WORKERS" == "1" && "$persistent_group_exited" == "1" ]]; then
+      echo "[CLUSTER] persistent worker exited; stopping all owned groups before restart" >&2
+      persistent_failure=1
+      break
+    fi
     if [[ "$alive" == "0" ]]; then break; fi
     if (( SECONDS >= next_status )); then
       echo "[CLUSTER] remaining_seconds=$((CLUSTER_DEADLINE - SECONDS)); worker logs in $LOG_DIR"
@@ -609,6 +643,7 @@ if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
   done
   stop_headless_workers
   echo "[CLUSTER] stopped; inspect run_state.json, pipeline/, and logs/ for final progress"
+  if [[ "$persistent_failure" == "1" ]]; then exit 1; fi
 elif [[ "$MORPION_CLUSTER_OPEN_STATUS" == "1" ]]; then
   launch_status_terminal
 fi
