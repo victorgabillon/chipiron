@@ -4,6 +4,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, replace
+from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.morpion.learning import (
@@ -794,6 +795,7 @@ def train_and_select_evaluators_streaming(
         )
     from .candidate_executor import execute_candidates
     from .candidate_job import CandidateJob, run_candidate
+    from .candidate_preparation import prepare_candidate_inputs
     from .candidate_resources import resolve_candidate_plan
 
     jobs = {
@@ -838,228 +840,237 @@ def train_and_select_evaluators_streaming(
             list(jobs.values()), plan, paths.work_dir / "candidate_execution"
         )
 
-    for evaluator_index, (evaluator_name, spec) in enumerate(
-        resolved_evaluators_config.evaluators.items(),
-        start=1,
-    ):
-        model_bundle_path = paths.model_bundle_path_for_generation(
-            generation, evaluator_name
-        )
-        model_bundle_relative_path = paths.relative_to_work_dir(model_bundle_path)
-        previous_model = None
-        if not args.skip_evaluator_diagnostics:
-            previous_model = load_previous_evaluator_for_diagnostics(
-                resolve_previous_model_bundle_path(
-                    paths=paths,
-                    run_state=run_state,
-                    evaluator_name=evaluator_name,
-                )
+    with prepare_candidate_inputs(list(jobs.values()), serial=plan is None) as prepared:
+        for evaluator_index, (evaluator_name, spec) in enumerate(
+            resolved_evaluators_config.evaluators.items(),
+            start=1,
+        ):
+            model_bundle_path = paths.model_bundle_path_for_generation(
+                generation, evaluator_name
             )
-        LOGGER.info("[train-stream] evaluator_start name=%s", evaluator_name)
-        log_training_evaluator_start(
-            generation=generation,
-            evaluator_name=evaluator_name,
-            evaluator_index=evaluator_index,
-            evaluator_count=evaluator_count,
-            row_count=row_count,
-            chunk_count=chunk_count,
-        )
-        log_pipeline_memory(
-            stage="training",
-            generation=generation,
-            event="before_evaluator_streaming",
-            evaluator=evaluator_name,
-        )
-        evaluator_measurement = StageMeasurement(cuda_device=args.training_device)
-        evaluator_started_at = time.perf_counter()
-
-        def _log_progress(
-            chunk_index: int,
-            rows_seen: int,
-            epoch_index: int,
-            epoch_count: int,
-            evaluator_name: str = evaluator_name,
-            evaluator_started_at: float = evaluator_started_at,
-        ) -> None:
-            if not should_log_training_progress(
-                chunk_index=chunk_index,
-                chunk_count=chunk_count,
-            ):
-                return
-            log_training_progress(
-                generation=generation,
-                evaluator_name=evaluator_name,
-                chunk_index=chunk_index,
-                chunk_count=chunk_count,
-                rows_seen=rows_seen,
-                row_count=row_count,
-                elapsed_s=time.perf_counter() - evaluator_started_at,
-                epoch_index=epoch_index,
-                epoch_count=epoch_count,
-            )
-
-        try:
-            if parallel_results is None:
-                job = jobs[evaluator_name]
-                trained_model, metrics = run_candidate(
-                    replace(
-                        job,
-                        training=replace(job.training, progress_callback=_log_progress),
-                    ),
-                    trainer=train_morpion_regressor_streaming,
+            model_bundle_relative_path = paths.relative_to_work_dir(model_bundle_path)
+            previous_model = None
+            if not args.skip_evaluator_diagnostics:
+                previous_model = load_previous_evaluator_for_diagnostics(
+                    resolve_previous_model_bundle_path(
+                        paths=paths,
+                        run_state=run_state,
+                        evaluator_name=evaluator_name,
+                    )
                 )
-            else:
-                from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
-                    load_morpion_model_bundle,
-                )
-
-                trained_model, _, _ = load_morpion_model_bundle(model_bundle_path)
-                metrics = parallel_results[evaluator_name]["metrics"]
-
-        except Exception as exc:
-            log_training_evaluator_failed(
+            LOGGER.info("[train-stream] evaluator_start name=%s", evaluator_name)
+            log_training_evaluator_start(
                 generation=generation,
                 evaluator_name=evaluator_name,
                 evaluator_index=evaluator_index,
                 evaluator_count=evaluator_count,
-                elapsed_s=time.perf_counter() - evaluator_started_at,
-                error=exc,
+                row_count=row_count,
+                chunk_count=chunk_count,
             )
-            raise
-        evaluator_observation = (
-            evaluator_measurement.finish()
-            if parallel_results is None
-            else parallel_results[evaluator_name]["performance"]
-        )
-        memory.log("after_model_save")
-        evaluator_elapsed_s = (
-            time.perf_counter() - evaluator_started_at
-            if parallel_results is None
-            else float(cast("float", evaluator_observation["elapsed_s"]))
-        )
-        learning_rate = _metric_optional_float(metrics, "learning_rate")
-        evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
-            final_loss=_metric_float(metrics, "final_loss"),
-            train_loss=_metric_optional_float(metrics, "train_loss"),
-            validation_loss=_metric_optional_float(metrics, "validation_loss"),
-            train_mae=_metric_optional_float(metrics, "train_mae"),
-            validation_mae=_metric_optional_float(metrics, "validation_mae"),
-            num_epochs=_metric_int(metrics, "num_epochs"),
-            num_samples=_metric_int(metrics, "num_samples"),
-            num_train_samples=_metric_int(
-                metrics,
-                "num_train_samples",
-                default=_metric_int(metrics, "num_samples"),
-            ),
-            num_validation_samples=_metric_int(
-                metrics,
-                "num_validation_samples",
-                default=0,
-            ),
-            batch_size=_metric_int(metrics, "batch_size", default=spec.batch_size),
-            learning_rate=(
-                learning_rate if learning_rate is not None else spec.learning_rate
-            ),
-            loss_name=_metric_optional_str(metrics, "loss_name") or "mse",
-        )
-        model_bundle_paths[evaluator_name] = model_bundle_relative_path
-        evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
-            final_loss=_required_metric_float(
-                evaluator_metrics[evaluator_name].final_loss,
-                key="final_loss",
-            ),
-            train_loss=evaluator_metrics[evaluator_name].train_loss,
-            validation_loss=evaluator_metrics[evaluator_name].validation_loss,
-            train_mae=evaluator_metrics[evaluator_name].train_mae,
-            validation_mae=evaluator_metrics[evaluator_name].validation_mae,
-            num_train_samples=evaluator_metrics[evaluator_name].num_train_samples,
-            num_validation_samples=(
-                evaluator_metrics[evaluator_name].num_validation_samples
-            ),
-            num_epochs=evaluator_metrics[evaluator_name].num_epochs,
-            batch_size=evaluator_metrics[evaluator_name].batch_size,
-            learning_rate=evaluator_metrics[evaluator_name].learning_rate,
-            loss_name=evaluator_metrics[evaluator_name].loss_name,
-            elapsed_s=evaluator_elapsed_s,
-            model_bundle_path=model_bundle_paths[evaluator_name],
-            performance=evaluator_observation,
-        )
-        LOGGER.info(
-            "[train-stream] evaluator_done name=%s train_loss=%s "
-            "validation_loss=%s final_loss=%s elapsed=%.3fs",
-            evaluator_name,
-            evaluator_metrics[evaluator_name].train_loss,
-            evaluator_metrics[evaluator_name].validation_loss,
-            evaluator_metrics[evaluator_name].final_loss,
-            evaluator_elapsed_s,
-        )
-        persist_stage_measurement(
-            paths.work_dir,
-            generation,
-            "evaluator",
-            {
-                **evaluator_observation,
-                "evaluator_name": evaluator_name,
-                "metrics": {
-                    key: metrics.get(key)
-                    for key in (
-                        "train_loss",
-                        "validation_loss",
-                        "train_mae",
-                        "validation_mae",
-                        "num_epochs",
-                        "num_train_samples",
-                        "num_validation_samples",
-                        "final_loss",
+            log_pipeline_memory(
+                stage="training",
+                generation=generation,
+                event="before_evaluator_streaming",
+                evaluator=evaluator_name,
+            )
+            evaluator_measurement = StageMeasurement(cuda_device=args.training_device)
+            evaluator_started_at = time.perf_counter()
+
+            def _log_progress(
+                chunk_index: int,
+                rows_seen: int,
+                epoch_index: int,
+                epoch_count: int,
+                evaluator_name: str = evaluator_name,
+                evaluator_started_at: float = evaluator_started_at,
+            ) -> None:
+                if not should_log_training_progress(
+                    chunk_index=chunk_index,
+                    chunk_count=chunk_count,
+                ):
+                    return
+                log_training_progress(
+                    generation=generation,
+                    evaluator_name=evaluator_name,
+                    chunk_index=chunk_index,
+                    chunk_count=chunk_count,
+                    rows_seen=rows_seen,
+                    row_count=row_count,
+                    elapsed_s=time.perf_counter() - evaluator_started_at,
+                    epoch_index=epoch_index,
+                    epoch_count=epoch_count,
+                )
+
+            try:
+                if parallel_results is None:
+                    job = jobs[evaluator_name]
+                    trained_model, metrics = run_candidate(
+                        replace(
+                            job,
+                            training=replace(
+                                job.training, progress_callback=_log_progress
+                            ),
+                        ),
+                        trainer=(
+                            train_morpion_regressor_streaming
+                            if prepared is None
+                            else partial(
+                                train_morpion_regressor_streaming, _prepared=prepared
+                            )
+                        ),
                     )
-                },
-            },
-        )
-        log_training_evaluator_done(
-            generation=generation,
-            evaluator_name=evaluator_name,
-            evaluator_index=evaluator_index,
-            evaluator_count=evaluator_count,
-            elapsed_s=evaluator_elapsed_s,
-            row_count=row_count,
-            output=model_bundle_relative_path,
-            metrics=metrics,
-        )
-        log_pipeline_memory(
-            stage="training",
-            generation=generation,
-            event="after_evaluator_streaming",
-            evaluator=evaluator_name,
-            final_loss=evaluator_metrics[evaluator_name].final_loss,
-            validation_loss=evaluator_metrics[evaluator_name].validation_loss,
-        )
-        if args.skip_evaluator_diagnostics:
+                else:
+                    from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+                        load_morpion_model_bundle,
+                    )
+
+                    trained_model, _, _ = load_morpion_model_bundle(model_bundle_path)
+                    metrics = parallel_results[evaluator_name]["metrics"]
+
+            except Exception as exc:
+                log_training_evaluator_failed(
+                    generation=generation,
+                    evaluator_name=evaluator_name,
+                    evaluator_index=evaluator_index,
+                    evaluator_count=evaluator_count,
+                    elapsed_s=time.perf_counter() - evaluator_started_at,
+                    error=exc,
+                )
+                raise
+            evaluator_observation = (
+                evaluator_measurement.finish()
+                if parallel_results is None
+                else parallel_results[evaluator_name]["performance"]
+            )
+            memory.log("after_model_save")
+            evaluator_elapsed_s = (
+                time.perf_counter() - evaluator_started_at
+                if parallel_results is None
+                else float(cast("float", evaluator_observation["elapsed_s"]))
+            )
+            learning_rate = _metric_optional_float(metrics, "learning_rate")
+            evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
+                final_loss=_metric_float(metrics, "final_loss"),
+                train_loss=_metric_optional_float(metrics, "train_loss"),
+                validation_loss=_metric_optional_float(metrics, "validation_loss"),
+                train_mae=_metric_optional_float(metrics, "train_mae"),
+                validation_mae=_metric_optional_float(metrics, "validation_mae"),
+                num_epochs=_metric_int(metrics, "num_epochs"),
+                num_samples=_metric_int(metrics, "num_samples"),
+                num_train_samples=_metric_int(
+                    metrics,
+                    "num_train_samples",
+                    default=_metric_int(metrics, "num_samples"),
+                ),
+                num_validation_samples=_metric_int(
+                    metrics,
+                    "num_validation_samples",
+                    default=0,
+                ),
+                batch_size=_metric_int(metrics, "batch_size", default=spec.batch_size),
+                learning_rate=(
+                    learning_rate if learning_rate is not None else spec.learning_rate
+                ),
+                loss_name=_metric_optional_str(metrics, "loss_name") or "mse",
+            )
+            model_bundle_paths[evaluator_name] = model_bundle_relative_path
+            evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
+                final_loss=_required_metric_float(
+                    evaluator_metrics[evaluator_name].final_loss,
+                    key="final_loss",
+                ),
+                train_loss=evaluator_metrics[evaluator_name].train_loss,
+                validation_loss=evaluator_metrics[evaluator_name].validation_loss,
+                train_mae=evaluator_metrics[evaluator_name].train_mae,
+                validation_mae=evaluator_metrics[evaluator_name].validation_mae,
+                num_train_samples=evaluator_metrics[evaluator_name].num_train_samples,
+                num_validation_samples=(
+                    evaluator_metrics[evaluator_name].num_validation_samples
+                ),
+                num_epochs=evaluator_metrics[evaluator_name].num_epochs,
+                batch_size=evaluator_metrics[evaluator_name].batch_size,
+                learning_rate=evaluator_metrics[evaluator_name].learning_rate,
+                loss_name=evaluator_metrics[evaluator_name].loss_name,
+                elapsed_s=evaluator_elapsed_s,
+                model_bundle_path=model_bundle_paths[evaluator_name],
+                performance=evaluator_observation,
+            )
             LOGGER.info(
-                "[diagnostics] skipped generation=%s evaluator=%s reason=skip_evaluator_diagnostics",
-                generation,
+                "[train-stream] evaluator_done name=%s train_loss=%s "
+                "validation_loss=%s final_loss=%s elapsed=%.3fs",
                 evaluator_name,
+                evaluator_metrics[evaluator_name].train_loss,
+                evaluator_metrics[evaluator_name].validation_loss,
+                evaluator_metrics[evaluator_name].final_loss,
+                evaluator_elapsed_s,
             )
-        elif diagnostic_rows is not None:
-            _log_diagnostic_sample(
+            persist_stage_measurement(
+                paths.work_dir,
+                generation,
+                "evaluator",
+                {
+                    **evaluator_observation,
+                    "evaluator_name": evaluator_name,
+                    "metrics": {
+                        key: metrics.get(key)
+                        for key in (
+                            "train_loss",
+                            "validation_loss",
+                            "train_mae",
+                            "validation_mae",
+                            "num_epochs",
+                            "num_train_samples",
+                            "num_validation_samples",
+                            "final_loss",
+                        )
+                    },
+                },
+            )
+            log_training_evaluator_done(
                 generation=generation,
                 evaluator_name=evaluator_name,
-                rows=diagnostic_rows,
+                evaluator_index=evaluator_index,
+                evaluator_count=evaluator_count,
+                elapsed_s=evaluator_elapsed_s,
+                row_count=row_count,
+                output=model_bundle_relative_path,
+                metrics=metrics,
             )
-            persist_evaluator_training_diagnostics(
-                paths=paths,
+            log_pipeline_memory(
+                stage="training",
                 generation=generation,
-                evaluator_name=evaluator_name,
-                rows=diagnostic_rows,
-                created_at=timestamp_utc,
-                spec=spec,
-                model_before=previous_model,
-                model_after=trained_model,
-                training_metrics=metrics,
+                event="after_evaluator_streaming",
+                evaluator=evaluator_name,
+                final_loss=evaluator_metrics[evaluator_name].final_loss,
+                validation_loss=evaluator_metrics[evaluator_name].validation_loss,
             )
-            memory.log("after_diagnostics")
-        del previous_model
-        del trained_model
-        log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")
+            if args.skip_evaluator_diagnostics:
+                LOGGER.info(
+                    "[diagnostics] skipped generation=%s evaluator=%s reason=skip_evaluator_diagnostics",
+                    generation,
+                    evaluator_name,
+                )
+            elif diagnostic_rows is not None:
+                _log_diagnostic_sample(
+                    generation=generation,
+                    evaluator_name=evaluator_name,
+                    rows=diagnostic_rows,
+                )
+                persist_evaluator_training_diagnostics(
+                    paths=paths,
+                    generation=generation,
+                    evaluator_name=evaluator_name,
+                    rows=diagnostic_rows,
+                    created_at=timestamp_utc,
+                    spec=spec,
+                    model_before=previous_model,
+                    model_after=trained_model,
+                    training_metrics=metrics,
+                )
+                memory.log("after_diagnostics")
+            del previous_model
+            del trained_model
+            log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")
 
     LOGGER.info("[train-stream] selection_start evaluators=%s", len(evaluator_metrics))
     selection_started_at = time.perf_counter()

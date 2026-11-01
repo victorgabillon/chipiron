@@ -282,9 +282,10 @@ def load_relational_entity_token_cache(
     rows_path: str | os.PathLike[str],
     entity_max_tokens: int,
     max_rows: int | None = None,
+    _paths: MorpionRelationalEntityTokenCachePaths | None = None,
 ) -> MorpionRelationalEntityTokenCache:
     """Load one existing valid relational entity-token cache."""
-    paths = default_relational_entity_token_cache_paths(
+    paths = _paths or default_relational_entity_token_cache_paths(
         rows_path,
         entity_max_tokens=entity_max_tokens,
         max_rows=max_rows,
