@@ -12,11 +12,14 @@ inventory are checked by the existing publication machinery. The selected path
 must equal that admitted capsule's scientific descriptor. A retained, older
 RESERVED source is valid even after Growth has advanced the run-state head.
 Neither an unmanaged copy nor a file elsewhere in a capsule gains authority.
+Older, nonselected v2 catalog members keep their full-validation path without
+borrowing that capsule's selected-head evidence.
 
 Only matching canonical evidence may avoid replay/re-encoding of immutable state
 references. It must bind the exact scientific identity, producer, record-shard
 descriptors and current validator implementation/dependencies. Missing or stale
-evidence follows full canonical validation. Malformed evidence or identity
+evidence follows full canonical validation on an index build; existing completed
+cache hits retain their original integrity/digest checks. Malformed evidence or identity
 substitution fails; a nonmatching shard descriptor grants no reuse. Source bytes
 are still freshly hashed against both the publication and shard descriptors,
 including after building. The constructor scope resets on success and failure;

@@ -307,10 +307,11 @@ def verified_reader_validation(path: Path) -> Iterator[None]:
         matching = [record for record in records if record["id"] == identifier]
         require(len(matching) == 1, "Reader source is no longer admitted.")
         record = matching[0]
-        require(
-            path.resolve() == inside(work_dir, record["tree_snapshot_path"]),
-            "Reader proof requires its exact committed scientific dependency.",
-        )
+        if path.resolve() != inside(work_dir, record["tree_snapshot_path"]):
+            # A v2 capsule also contains older catalog members. Preserve their
+            # complete-validation path without lending the selected head proof.
+            yield
+            return
         # Authenticate this exact in-memory seal after the admission read. Do
         # not re-read it unverified when selecting its canonical evidence.
         descriptor = read_committed_descriptor(work_dir, record)

@@ -166,11 +166,43 @@ def test_retained_source_and_multiple_open_readers_do_not_leak_scope(
 
 
 def test_proof_cannot_authorize_another_capsule_dependency(tmp_path: Path) -> None:
-    """A managed path must select its capsule's exact scientific descriptor."""
+    """A non-manifest dependency still fails strict source validation."""
     _, paths, state = setup_closed_baseline(tmp_path)
     root = (paths.work_dir / state.latest_tree_snapshot_path).parent
-    with pytest.raises(ValueError, match="exact committed scientific dependency"):
+    with pytest.raises(ValueError):
         view(root / "records.jsonl", tmp_path / "cache")
+    assert proof._SCOPE.get() is None
+
+
+def test_nonselected_catalog_member_keeps_complete_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An older v2 catalog member is readable but cannot borrow the head's proof."""
+    from tests.environments.morpion_durable_v2_helpers import (
+        ScientificPublicationRunner,
+        publish_scientific_patch,
+        run_scientific_publication,
+        setup_scientific_baseline,
+    )
+
+    args, paths, _ = setup_scientific_baseline(tmp_path)
+    publish_scientific_patch(paths)
+    runner = ScientificPublicationRunner()
+    runner.grow_delta = 1
+    state = run_scientific_publication(args, runner)
+    source = (paths.work_dir / state.latest_tree_snapshot_path).parent.parent
+    source = source / "generation_000001/generation.json"
+    calls = []
+    original = MorpionStateCheckpointCodec.load_state_ref
+
+    def load(self: Any, payload: Any) -> Any:
+        calls.append(payload)
+        return original(self, payload)
+
+    monkeypatch.setattr(MorpionStateCheckpointCodec, "load_state_ref", load)
+    with view(source, tmp_path / "cache") as actual:
+        assert actual.generation == 1
+        assert actual.node_count() == len(calls) == 2
     assert proof._SCOPE.get() is None
 
 
