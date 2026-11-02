@@ -1,8 +1,8 @@
 """Committed evidence for reusing immutable canonical checks, never cache authority.
 
-Only the publisher's private validation scope can consume this evidence. Every
-shard is still parsed and freshly hashed by the existing bounded reader. Mutable
-updates, creation keys and topology are always validated in a fresh SQLite index.
+Publishers and pinned readers of an admitted capsule can consume this evidence.
+Every shard is still parsed and freshly hashed by the existing bounded reader.
+Mutable updates, creation keys and topology are validated in a fresh SQLite index.
 """
 
 import hashlib
@@ -16,12 +16,15 @@ from typing import TYPE_CHECKING, Any
 
 import ijson
 
+from .derived.provenance import inside
 from .generation_publication_io import (
     capsule_path,
     capsule_seal,
     generation_read_pin,
     locate_capsule,
     object_digest,
+    publication_records,
+    read_committed_descriptor,
     read_object,
     require,
     validate_capsule,
@@ -181,7 +184,7 @@ def committed_canonical_validation(
 def canonical_record_is_validated(
     manifest: Path, producer: dict[str, Any], descriptor: dict[str, Any]
 ) -> bool:
-    """Permit one descriptor only inside the publisher's verified private scope.
+    """Permit one descriptor only inside a source-bound verified scope.
 
     The reader has already freshly hashed the source against this descriptor,
     and rehashes it after indexing. All immutable row structure is still checked.
@@ -239,7 +242,7 @@ def committed_source_validation(path: Path) -> Iterator[None]:
     """Reuse only a pinned current validator's committed canonical assertion.
 
     The caller already holds generation_read_pin and has verified that path is
-    the committed scientific head dependency. Missing/stale evidence forces
+    its capsule's committed scientific dependency. Missing/stale evidence forces
     the existing full canonical validation. File hashes are never skipped.
     """
     location = locate_capsule(path)
@@ -252,6 +255,13 @@ def committed_source_validation(path: Path) -> Iterator[None]:
     descriptor = read_object(
         capsule_path(work_dir, identifier, version) / capsule_seal(version)
     )
+    with _source_validation(path, descriptor):
+        yield
+
+
+@contextmanager
+def _source_validation(path: Path, descriptor: dict[str, Any]) -> Iterator[None]:
+    """Consume the caller's authenticated seal without rereading mutable metadata."""
     evidence = descriptor.get("canonical_validation")
     if evidence is None:
         yield
@@ -268,3 +278,58 @@ def committed_source_validation(path: Path) -> Iterator[None]:
         path, evidence["scientific_identity"]["producer"], evidence["record_shards"]
     ):
         yield
+
+
+@contextmanager
+def verified_reader_validation(path: Path) -> Iterator[None]:
+    """Hold admission, byte validation and the exact source's canonical proof.
+
+    Consumer contract: generation_read_pin authenticates run-state membership,
+    the seal and every dependency, and retains its lease for the reader lifetime.
+    This includes older RESERVED generations while Growth advances; it does not
+    require the selected capsule to be the current run-state head. Only that
+    capsule's exact scientific pointer may consume its proof. Private publisher
+    inputs and legacy/unmanaged sources retain their existing validation scope.
+
+    Evidence authorizes only immutable state canonicality, with the current
+    validator/producer and exact shard descriptors. It never authorizes mutable
+    rows, topology, ordering or a SQLite cache. The reader still hashes before
+    and after building, and validates current data through the complete path.
+    """
+    location = locate_capsule(path)
+    if location is None or location[2] not in (2, 3):
+        scope = _SCOPE.get()
+        if scope is None or scope.manifest == path.resolve():
+            # Preserve exact private publisher checks, not a foreign reader's
+            # authority over a different unmanaged scientific input.
+            yield
+            return
+        token = _SCOPE.set(None)
+        try:
+            yield
+        finally:
+            _SCOPE.reset(token)
+        return
+    work_dir, identifier, _version = location
+    # A managed reader must establish its own authority even when nested in
+    # another validation scope. Fallback must not inherit the caller's proof.
+    token = _SCOPE.set(None)
+    try:
+        with generation_read_pin(path):
+            state = read_object(work_dir / "run_state.json")
+            records = publication_records(state["metadata"])
+            matching = [record for record in records if record["id"] == identifier]
+            require(len(matching) == 1, "Reader source is no longer admitted.")
+            record = matching[0]
+            if path.resolve() != inside(work_dir, record["tree_snapshot_path"]):
+                # A v2 capsule also contains older catalog members. Preserve their
+                # complete-validation path without lending the selected head proof.
+                yield
+                return
+            # Authenticate this exact in-memory seal after the admission read. Do
+            # not re-read it unverified when selecting its canonical evidence.
+            descriptor = read_committed_descriptor(work_dir, record)
+            with _source_validation(path, descriptor):
+                yield
+    finally:
+        _SCOPE.reset(token)
