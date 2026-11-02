@@ -74,6 +74,25 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     if not names:
         st.info("No configured or trained evaluator metadata is available yet.")
         return
+    from chipiron.environments.morpion.bootstrap.dashboard.pipeline_view import (
+        candidate_lineages,
+        resource_summary,
+    )
+
+    st.subheader("Candidate continuation lineages")
+    st.dataframe(candidate_lineages(snapshot), hide_index=True, width="stretch")
+    with st.expander("Configured versus reported execution"):
+        st.dataframe(
+            [
+                {"Field": key, "Value": display(value)}
+                for key, value in resource_summary(snapshot).items()
+            ],
+            hide_index=True,
+            width="stretch",
+        )
+    st.caption(
+        "Each candidate continues its own saved lineage. Selection does not establish activation. Loss curves span changing validation populations and are diagnostics, not a shared test-set ranking."
+    )
     st.subheader("All evaluator loss curves")
     render_all_evaluator_losses(st, snapshot)
     selected = st.selectbox(
@@ -120,9 +139,10 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     st.caption(
         "Loss and MAE describe the recorded dataset; lower supervised loss does not establish stronger gameplay."
     )
-    render_evaluator_training_diagnostics_section(
-        st=st, work_dir=snapshot.work_dir, selected_evaluator_name=selected
-    )
+    if st.checkbox("Load detailed evaluator diagnostics"):
+        render_evaluator_training_diagnostics_section(
+            st=st, work_dir=snapshot.work_dir, selected_evaluator_name=selected
+        )
     with st.expander("Training artifact details"):
         st.write("Configured next training (not active-bundle provenance)")
         st.json(mapping(configured.get(selected)))

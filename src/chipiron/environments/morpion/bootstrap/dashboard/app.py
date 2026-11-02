@@ -29,7 +29,7 @@ def _get_streamlit() -> Any:
         raise MissingStreamlitDashboardDependencyError from exc
 
 
-def run_dashboard_app(work_dir: Path) -> None:
+def run_dashboard_app(work_dir: Path, runtime_root: Path | None = None) -> None:
     """Route only the active page; auto-refresh never evaluates hidden pages."""
     st = _get_streamlit()
     st.set_page_config(
@@ -52,6 +52,9 @@ def run_dashboard_app(work_dir: Path) -> None:
         st.write(work_dir.name)
         with st.expander("Full path"):
             st.code(str(work_dir))
+        if runtime_root is not None:
+            st.caption("Associated runtime")
+            st.code(str(runtime_root))
         if st.button("Refresh", width="stretch"):
             st.rerun()
         choice = st.selectbox(
@@ -71,7 +74,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     renderer = import_module(f"{__package__}.pages.{page.lower()}").render
 
     def render_page() -> None:
-        snapshot = load_dashboard_snapshot(work_dir)
+        snapshot = load_dashboard_snapshot(work_dir, runtime_root)
         renderer(st, snapshot)
 
     st.fragment(render_page, run_every=refresh_seconds(page, choice))()
