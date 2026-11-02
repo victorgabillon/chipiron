@@ -68,15 +68,18 @@ def test_reuses_only_committed_immutable_records(
     assert proof["reused_from"]["capsule_id"] == records[-2]["id"]
     assert proof["reused_from"]["descriptor_sha256"] == records[-2]["descriptor_sha256"]
     assert proof["record_shards"][-1]["count"] == new_nodes
-    # Public readers never inherit the publisher's reuse scope or its temporary cache.
+    # Managed readers establish independent committed proof, never inherit a
+    # publisher scope or trust its temporary cache.
     source = tmp_path / state.latest_tree_snapshot_path
     calls.clear()
     with ShardedTrainingGenerationView(
         source, allow_scientific_v2=True, cache_dir=tmp_path / "cache"
     ) as view:
-        assert len(calls) == 2 + new_nodes
+        assert len(calls) == 0
         indexed = tuple(view.iter_nodes_in_export_order())
     assert indexed == load_scientific_training_generation(source).snapshot.nodes
+    # The full scientific oracle still reconstructs every canonical state.
+    assert len(calls) == 2 + new_nodes
 
 
 @pytest.mark.parametrize(
@@ -168,17 +171,27 @@ def test_corrupt_historical_shard_cannot_use_evidence(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("field", ["identity", "payload"])
+@pytest.mark.parametrize("has_proof", [False, True])
 def test_invalid_cache_never_becomes_canonical_evidence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, field: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, field: str, has_proof: bool
 ) -> None:
-    """Corrupt cache identity/payload forces full validation outside the private scope."""
-    _args, _paths, state = setup_scientific_baseline(tmp_path)
+    """Cache corruption cannot grant authority; only a committed proof skips replay."""
+    _args, paths, state = setup_scientific_baseline(tmp_path)
     source = tmp_path / state.latest_tree_snapshot_path
     cache = tmp_path / "cache"
     with ShardedTrainingGenerationView(
         source, allow_scientific_v2=True, cache_dir=cache
     ) as view:
         index = view.index_path
+        expected = tuple(view.iter_nodes_in_export_order())
+    if not has_proof:
+        record = publication_records(state.metadata)[-1]
+        seal = tmp_path / record["descriptor_path"]
+        payload = json.loads(seal.read_bytes())
+        del payload["canonical_validation"]
+        seal.write_text(json.dumps(payload))
+        record["descriptor_sha256"] = file_digest(seal)
+        save_bootstrap_run_state(state, paths.run_state_path, durable=True)
     with sqlite3.connect(index) as conn:
         if field == "identity":
             conn.execute("UPDATE completed SET identity='unrelated'")
@@ -189,7 +202,8 @@ def test_invalid_cache_never_becomes_canonical_evidence(
         source, allow_scientific_v2=True, cache_dir=cache
     ) as view:
         assert not view.index_reused
-        assert len(calls) == 2
+        assert len(calls) == (0 if has_proof else 2)
+        assert tuple(view.iter_nodes_in_export_order()) == expected
 
 
 @pytest.mark.parametrize(
