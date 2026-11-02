@@ -36,7 +36,10 @@ from .generation_publication_io import (
 from .performance import StageMeasurement
 from .pipeline_memory import log_pipeline_memory
 from .scientific_stream import ENCODING, open_scientific_stream
-from .scientific_validation_evidence import canonical_record_is_validated
+from .scientific_validation_evidence import (
+    canonical_record_is_validated,
+    verified_reader_validation,
+)
 from .sharded_training_export import (
     MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND,
     MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION,
@@ -536,12 +539,13 @@ class ShardedTrainingGenerationView:
             self._publication_hashes = pinned_file_hashes(
                 Path(generation_manifest_path)
             )
-            self._initialize(
-                generation_manifest_path,
-                cache_dir=cache_dir,
-                allow_scientific_v2=allow_scientific_v2,
-                allow_closed_snapshot=allow_closed_snapshot,
-            )
+            with verified_reader_validation(Path(generation_manifest_path)):
+                self._initialize(
+                    generation_manifest_path,
+                    cache_dir=cache_dir,
+                    allow_scientific_v2=allow_scientific_v2,
+                    allow_closed_snapshot=allow_closed_snapshot,
+                )
         except BaseException:
             self._publication_pin.__exit__(None, None, None)
             raise
