@@ -150,7 +150,7 @@ def test_persistent_supervisor_reaps_orphans_before_cache_cleanup(
     stub = tmp_path / "persistent_python_stub"
     stub.write_text(
         f"#!{sys.executable}\n"
-         """
+        """
 import json,os,signal,subprocess,sys,time
 from pathlib import Path
 assert '--persistent-worker' in sys.argv
