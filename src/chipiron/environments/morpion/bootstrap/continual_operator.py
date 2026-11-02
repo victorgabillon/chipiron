@@ -353,7 +353,12 @@ def _run_monitored(
                     and "python" in Path(command[0]).name
                     and "--pipeline-stage" in command
                 ):
-                    longest = max(longest, time.time() - child.create_time())
+                    elapsed = time.time() - child.create_time()
+                    if "--persistent-worker" in command:
+                        from .persistent_worker_state import active_job_age
+
+                        elapsed = active_job_age(paths.work_dir, child.pid, elapsed)
+                    longest = max(longest, elapsed)
             except psutil.NoSuchProcess, ProcessLookupError:
                 continue
         ram = available_ram_mb()
@@ -513,6 +518,14 @@ def _run_monitored(
         require(
             shutdown_confirmed,
             "Worker group shutdown is unconfirmed; scratch retained.",
+        )
+    if (
+        os.environ.get("MORPION_PERSISTENT_WORKERS") == "1"
+        and reason == "supervisor_exit"
+    ):
+        require(
+            process is not None and process.returncode == 0,
+            "Persistent worker group failed; all owned groups stopped before restart.",
         )
     result = load_bootstrap_run_state(paths.run_state_path)
     print(
