@@ -24,6 +24,7 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
 from .generation_publication_io import (
+    GrowthOwnershipBlockingIOError,
     growth_receipt_ownership,
     locate_capsule,
     require,
@@ -1387,9 +1388,43 @@ def _run_morpion_reevaluation_worker_once(
             if captured is not None:
                 # Inference stays outside ownership. Recheck the captured proposal
                 # and publish under the same lease used by Growth commits.
-                publication_stack.enter_context(
-                    growth_receipt_ownership(paths, wait=True)
-                )
+                try:
+                    publication_stack.enter_context(
+                        growth_receipt_ownership(paths, wait=True)
+                    )
+                except GrowthOwnershipBlockingIOError:
+                    # Only pre-ownership contention can discard this job. No
+                    # proposal/cursor is visible; ExitStacks release source pins
+                    # before the next ordinary job rereads model/source authority.
+                    LOGGER.info(
+                        "[reevaluation-cycle] status=DISCARDED reason=ownership_contended"
+                    )
+                    persist_stage_measurement(
+                        paths.work_dir,
+                        tree_generation,
+                        "reevaluation.discarded",
+                        stage_measurement.finish(
+                            reason="ownership_contended",
+                            evaluator_name=active_model.evaluator_name,
+                            model_generation=active_model.generation,
+                            rows_computed=len(patch.rows),
+                            patch_written=False,
+                            inference_window=inference_observation,
+                        ),
+                    )
+                    return MorpionReevaluationWorkerResult(
+                        patch_written=False,
+                        reason="ownership_contended",
+                        patch_id=None,
+                        num_rows=0,
+                        evaluator_generation=active_model.generation,
+                        evaluator_name=active_model.evaluator_name,
+                        start_cursor=None,
+                        end_cursor=None,
+                        completed_full_pass_count=None,
+                        tree_generation=tree_generation,
+                        model_bundle_path=active_model.model_bundle_path,
+                    )
                 publication_state = load_bootstrap_run_state(paths.run_state_path)
                 validate_proposal(publication_state, patch)
                 publication_model = current_model_identity(paths)
