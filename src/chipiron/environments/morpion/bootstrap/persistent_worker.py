@@ -14,7 +14,11 @@ from typing import TYPE_CHECKING
 
 from .bootstrap_paths import MorpionBootstrapPaths
 from .execution_profile import launcher_execution
-from .generation_publication_io import file_digest, require
+from .generation_publication_io import (
+    GrowthOwnershipBlockingIOError,
+    file_digest,
+    require,
+)
 from .learning_worker import monitored_identity
 from .performance import StageMeasurement
 from .persistent_worker_state import STAGES, WorkerJobState
@@ -177,7 +181,14 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
                         dispatch_identity_scope="observed at dispatch; existing admission records select permitted source/model",
                     )
                     configured = replace(configured, reader_cache_dir=reader.next())
-                    _run_launcher_cli(configured, _job_id=job_id)
+                    try:
+                        _run_launcher_cli(configured, _job_id=job_id)
+                    except GrowthOwnershipBlockingIOError:
+                        if launcher.pipeline_stage != "growth":
+                            raise
+                        # Nonblocking admission contention owns no lease. Discard
+                        # this cold job and poll normally; computation errors fail.
+                        LOGGER.info("[persistent-worker] Growth ownership contended")
                 state.update("cleanup")
                 cleanup = StageMeasurement()
                 _cleanup()
@@ -222,6 +233,12 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
                             else "incomplete"
                         ),
                     )
+        except SystemExit as exc:
+            # Preserve orderly signal exits in operational status as well as the
+            # actual process code; consumers must not label normal cleanup failed.
+            exit_code = exc.code if isinstance(exc.code, int) else 1
+            raise
+        else:
             exit_code = 0
             return 0
         finally:

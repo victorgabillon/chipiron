@@ -394,3 +394,105 @@ else:raise AssertionError('orphan hidden by reparenting')
         time.sleep(0.02)
     else:
         pytest.fail("orphan still executing after owned group kill")
+
+
+@pytest.mark.parametrize("number", [2, 15])
+def test_orderly_signal_status_preserves_actual_exit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, number: int
+) -> None:
+    """A normal interrupted worker is stopped in K1, never a recorded exit1 failure."""
+    from chipiron.environments.morpion.bootstrap import launcher
+
+    monkeypatch.setattr(
+        worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
+    )
+    monkeypatch.setattr(status, "monitored_identity", _identity)
+    (tmp_path / "bootstrap_config.json").write_text("{}")
+    (tmp_path / "run_state.json").write_text("{}")
+
+    @contextmanager
+    def execution(
+        args: MorpionBootstrapLauncherArgs,
+    ) -> Iterator[MorpionBootstrapLauncherArgs]:
+        yield args
+
+    monkeypatch.setattr(worker, "launcher_execution", execution)
+
+    def interrupt(*_args: Any, **_kwargs: Any) -> int:
+        worker._interrupt(number, None)
+        message = "Signal must exit"
+        raise AssertionError(message)
+
+    monkeypatch.setattr(launcher, "_run_launcher_cli", interrupt)
+    with pytest.raises(SystemExit) as caught:
+        worker.run_persistent_worker(_launcher(tmp_path))
+    assert caught.value.code == 128 + number
+    record = json.loads(
+        (tmp_path / "pipeline/worker_processes/training_worker.json").read_text()
+    )
+    assert record["phase"] == "stopped" and record["exit_code"] == caught.value.code
+    assert record.get("completed_jobs", 0) == 0
+
+
+@pytest.mark.parametrize("contention", [True, False])
+def test_growth_lease_contention_polls_but_computation_errors_stop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, contention: bool
+) -> None:
+    """Retry only an actual unavailable lease; never hide arbitrary BlockingIOError."""
+    import fcntl
+
+    from chipiron.environments.morpion.bootstrap import launcher
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        growth_receipt_ownership,
+    )
+
+    monkeypatch.setattr(
+        worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
+    )
+    monkeypatch.setattr(status, "monitored_identity", _identity)
+    (tmp_path / "bootstrap_config.json").write_text("{}")
+    (tmp_path / "run_state.json").write_text("{}")
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_dir.mkdir()
+    lease = (paths.pipeline_dir / ".growth_patch_consumer.lock").open("a+")
+    fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    calls: list[int | None] = []
+
+    @contextmanager
+    def execution(
+        args: MorpionBootstrapLauncherArgs,
+    ) -> Iterator[MorpionBootstrapLauncherArgs]:
+        yield args
+
+    def job(_args: MorpionBootstrapLauncherArgs, *, _job_id: int | None = None) -> int:
+        calls.append(_job_id)
+        if not contention:
+            message = "unrelated computation failed"
+            raise BlockingIOError(message)
+        with growth_receipt_ownership(paths):
+            assert _job_id == 2
+        return 0
+
+    monkeypatch.setattr(worker, "launcher_execution", execution)
+    monkeypatch.setattr(launcher, "_run_launcher_cli", job)
+    monkeypatch.setattr(worker, "_cleanup", lambda: fcntl.flock(lease, fcntl.LOCK_UN))
+    try:
+        if contention:
+            assert (
+                worker.run_persistent_worker(
+                    _launcher(tmp_path, pipeline_stage="growth")
+                )
+                == 0
+            )
+            assert calls == [1, 2]
+        else:
+            with pytest.raises(BlockingIOError, match="unrelated computation failed"):
+                worker.run_persistent_worker(
+                    _launcher(tmp_path, pipeline_stage="growth")
+                )
+            assert calls == [1]
+    finally:
+        lease.close()

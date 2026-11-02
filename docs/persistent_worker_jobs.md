@@ -24,7 +24,10 @@ higher than with fresh workers. Existing aggregate memory/disk guards still appl
 
 Python is the session/process-group leader, with output appended directly to its
 worker log. Unexpected worker exit stops every owned group, including orphans,
-before supervisor cache cleanup. Any job or cleanup failure exits the process;
+before supervisor cache cleanup. An unavailable nonblocking Growth lease discards the cold attempt, cleans up and
+polls again without owning or replacing a claim. Only this typed pre-ownership
+contention is retried; unrelated I/O errors remain fatal. Orderly SIGINT/TERM exit
+codes are retained in the saved stopped record. Any job or cleanup failure exits the process;
 there is no same-session retry. Existing conservative claim quiescence checks
 remain unchanged: idle status does not authorize replacing a claim from a live
 worker or surviving old session. Explicit restart is allowed only through the
