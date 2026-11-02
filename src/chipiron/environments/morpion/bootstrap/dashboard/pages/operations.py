@@ -35,12 +35,32 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         st,
         snapshot,
         "Operations",
-        "Persistence, pipeline evidence and deliberate experiment controls.",
+        "Persistence, scheduling and saved resource evidence.",
     )
     st.subheader("Pipeline")
     worker_strip(st, snapshot)
     st.caption(
         "Worker liveness remains unknown unless process evidence establishes it. A saved stage status is historical evidence."
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.pipeline_view import (
+        resource_summary,
+        schedule_summary,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.view_model import display
+
+    st.caption(snapshot.status_detail)
+    for title, values in [
+        ("Learning window & model/data age", schedule_summary(snapshot)),
+        ("Device, profile & resources", resource_summary(snapshot)),
+    ]:
+        with st.expander(title, expanded=True):
+            st.dataframe(
+                [{"Field": k, "Value": display(v)} for k, v in values.items()],
+                hide_index=True,
+                width="stretch",
+            )
+    st.caption(
+        "Publication generations are not ordinary Growth cycles. Acceptance, candidate selection and activation are separate events. cuda:0 can be AMD/HIP. RSS sums can double-count shared pages; Torch peaks are allocator measurements, not total GPU use. Missing telemetry is unknown."
     )
     with st.expander("Lifecycle & launcher"):
         render_run_control_section(st=st, paths=paths)
@@ -85,16 +105,16 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
         )
         if st.checkbox("Load full historical analysis"):
             render_full_history(st, paths)
-    with st.expander("Modify running experiment"):
-        st.caption(
-            "Changes are persistent requests. The existing runtime applies them at cycle boundaries."
+    if snapshot.pipeline_mode == "single_process":
+        with st.expander("Modify running experiment"):
+            try:
+                render_controls(st, snapshot.work_dir, snapshot)
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                st.error(f"Controls unavailable: {exc}")
+    else:
+        st.info(
+            "Artifact-pipeline monitoring is read-only. Scheduling and settings belong to the canonical launcher."
         )
-        try:
-            render_controls(st, snapshot.work_dir, snapshot)
-        except (OSError, ValueError, TypeError, KeyError) as exc:
-            st.error(
-                f"Controls unavailable until the artifact error is resolved: {exc}"
-            )
     with st.expander("Debug · effective configuration and raw artifact paths"):
         st.code(str(snapshot.work_dir))
         st.write("Configured baseline")

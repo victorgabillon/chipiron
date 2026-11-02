@@ -210,6 +210,9 @@ class MorpionBootstrapLauncherArgs:
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
     quiet_worker_startup: bool = False
+    persistent_worker: bool = False
+    worker_poll_seconds: int = 5
+    worker_max_jobs: int | None = None
 
     @property
     def work_dir(self) -> Path:
@@ -1244,6 +1247,9 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--work-dir", required=True, type=Path)
+    parser.add_argument("--persistent-worker", action="store_true")
+    parser.add_argument("--worker-poll-seconds", type=_parse_positive_int, default=5)
+    parser.add_argument("--worker-max-jobs", type=_parse_positive_int, default=None)
     parser.add_argument(
         "--execution-profile", choices=["existing", "strict_math"], default=None
     )
@@ -2036,6 +2042,9 @@ def launcher_args_from_cli(
         if quiet_worker_startup
         else parsed.print_dashboard_hint,
         quiet_worker_startup=quiet_worker_startup,
+        persistent_worker=parsed.persistent_worker,
+        worker_poll_seconds=parsed.worker_poll_seconds,
+        worker_max_jobs=parsed.worker_max_jobs,
     )
 
 
@@ -2049,10 +2058,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     from .execution_profile import launcher_execution
 
     with launcher_execution(launcher_args, process_start=True) as configured:
+        if configured.persistent_worker:
+            from .persistent_worker import run_persistent_worker
+
+            return run_persistent_worker(configured)
         return _run_launcher_cli(configured)
 
 
-def _run_launcher_cli(launcher_args: MorpionBootstrapLauncherArgs) -> int:
+def _run_launcher_cli(
+    launcher_args: MorpionBootstrapLauncherArgs, *, _job_id: int | None = None
+) -> int:
     """Register/execute/finish under the already established process policy."""
     _configure_anemone_checkpoint_logging(
         verbose_checkpoint_logs=launcher_args.verbose_checkpoint_logs
@@ -2069,13 +2084,16 @@ def _run_launcher_cli(launcher_args: MorpionBootstrapLauncherArgs) -> int:
             "Prepare into a new workspace; existing runs are read-only inputs.",
         )
     paths.ensure_directories()
-    register_current_launcher_process(paths)
+    if _job_id is None:
+        register_current_launcher_process(paths)
     # Preparation must see an empty scientific workspace. Observation files are
     # not inputs and must not cause its fresh-workspace check to reject the CLI.
     observation = (
         None
         if launcher_args.scientific_operation == "prepare-continuous"
-        else WorkerObservation(paths.work_dir, launcher_args.pipeline_stage)
+        else WorkerObservation(
+            paths.work_dir, launcher_args.pipeline_stage, job_id=_job_id
+        )
     )
     exit_code = 0
     try:
@@ -2101,7 +2119,8 @@ def _run_launcher_cli(launcher_args: MorpionBootstrapLauncherArgs) -> int:
     finally:
         if observation is not None:
             observation.finish(exit_code)
-        mark_current_launcher_process_stopped(paths, exit_code=exit_code)
+        if _job_id is None:
+            mark_current_launcher_process_stopped(paths, exit_code=exit_code)
 
 
 def _resolve_run_mode(

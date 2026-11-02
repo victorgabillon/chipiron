@@ -42,7 +42,15 @@ def trend(
                         "width": 2,
                     },
                     marker={"size": 4},
-                    hovertemplate="%{x}<br>%{y:,.4g}<extra>%{fullData.name}</extra>",
+                    customdata=[
+                        [
+                            p.get("origin", "Saved observation"),
+                            p.get("observed_at", p["time"]),
+                            p.get("elapsed_origin", "Artifact timestamp"),
+                        ]
+                        for p in points
+                    ],
+                    hovertemplate="%{x}<br>%{y:,.4g}<br>%{customdata[0]}<br>%{customdata[1]}<br>%{customdata[2]}<extra>%{fullData.name}</extra>",
                 )
             )
         figure.update_layout(
@@ -83,6 +91,11 @@ def history_rows(
         {"time": row.get("timestamp_utc"), "value": value}
         for row in snapshot.history
         if (value := number(mapping(row.get(section)).get(field))) is not None
+        and (
+            section != "record"
+            or mapping(row.get(section)).get("current_best_is_exact") is True
+            or mapping(row.get(section)).get("current_best_is_terminal") is True
+        )
     ]
 
 
@@ -136,6 +149,56 @@ def render(st: Any, snapshot: BootstrapDashboardSnapshot) -> None:
     )
     st.caption(snapshot.status_detail)
     worker_strip(st, snapshot)
+    from chipiron.environments.morpion.bootstrap.dashboard.pipeline_view import (
+        resource_summary,
+        schedule_summary,
+        score_rows,
+    )
+    from chipiron.environments.morpion.bootstrap.dashboard.view_model import display
+
+    schedule = schedule_summary(snapshot)
+    resources = resource_summary(snapshot)
+    metric_row(
+        st,
+        [
+            ("Lookahead · cycles", schedule["Lookahead L · ordinary cycles"]),
+            (
+                "Window cycles completed",
+                schedule["Completed ordinary cycles in window"],
+            ),
+            (
+                "Window cycles remaining",
+                schedule["Remaining ordinary cycles in window"],
+            ),
+            (
+                "Owner elapsed · seconds",
+                resources["Owner elapsed seconds · startup/cleanup included"],
+            ),
+        ],
+    )
+    quality = score_rows(snapshot)
+    if quality:
+        trend(
+            st,
+            title="Best certified game score · total points versus elapsed seconds",
+            rows=quality,
+            color=PALETTE["amber"],
+            key="overview-quality-elapsed",
+        )
+    else:
+        st.caption(
+            "Score versus elapsed time unavailable: associate a runtime with a recorded start and certified observations."
+        )
+    st.caption(
+        "Greek cross starts with 36 points; total points = initial points + moves since start. These exact/terminal scores cover inspected saved observations, not an exhaustive final-tree record. Times are Dataset publication or Growth observation times, not proven discovery times. Elapsed seconds use the declared owner start (or saved owner process creation for a live run), including startup."
+    )
+    st.caption(
+        f"Coverage: {len(snapshot.dataset_history)} recent Dataset artifacts and {len(snapshot.history)} Growth history observations; missing observations are not interpolated."
+    )
+    st.caption(
+        "Certified moves since start: "
+        + display(snapshot.record.get("current_best_moves_since_start"))
+    )
     left, middle, right = st.columns(3)
     with left:
         trend(

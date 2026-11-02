@@ -18,6 +18,7 @@ __all__ = [
     "latest_optional_value",
     "mapping_value",
     "numeric_value",
+    "object_mapping",
     "percentage",
     "ratio",
 ]
@@ -150,3 +151,8 @@ def control_number_value(value: int | None, *, default: int = 0) -> int:
 def control_float_value(value: float | None, *, default: float = 0.0) -> float:
     """Return one Streamlit-safe float input default."""
     return default if value is None else value
+
+
+def object_mapping(value: object) -> dict[str, Any]:
+    """Keep malformed JSON objects unavailable without importing a view model."""
+    return cast("dict[str, Any]", value) if isinstance(value, dict) else {}

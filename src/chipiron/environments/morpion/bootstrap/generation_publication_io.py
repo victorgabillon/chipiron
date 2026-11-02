@@ -104,6 +104,10 @@ def file_digest(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+class GrowthOwnershipBlockingIOError(BlockingIOError):
+    """The stable Growth lease was unavailable before entering its owned body."""
+
+
 @contextmanager
 def growth_receipt_ownership(
     paths: MorpionBootstrapPaths, *, create: bool = True, wait: bool = False
@@ -136,7 +140,7 @@ def growth_receipt_ownership(
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
-            except BlockingIOError:
+            except BlockingIOError as exc:
                 if not contended:
                     LOGGER.info("[ownership] contention timeout_seconds=%.3f", timeout)
                     contended = True
@@ -151,7 +155,7 @@ def growth_receipt_ownership(
                             finished=time.monotonic(),
                             outcome="contention_timeout",
                         )
-                    raise
+                    raise GrowthOwnershipBlockingIOError(*exc.args) from exc
                 time.sleep(min(0.05, remaining))
         acquired = time.monotonic()
         LOGGER.info("[ownership] acquired wait_seconds=%.6f", acquired - started)

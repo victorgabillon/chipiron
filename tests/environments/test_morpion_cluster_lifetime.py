@@ -138,3 +138,119 @@ def test_scientific_cache_cleanup_follows_group_quiescence(
         '{"latest_tree_snapshot_path": "fixed-source"}'
     )
     test_headless_cluster_stops_all_four_worker_groups(tmp_path, interrupt=True)
+
+
+@pytest.mark.parametrize("stop", ["worker_death", "term", "int", "monitor_death"])
+def test_persistent_supervisor_reaps_orphans_before_cache_cleanup(
+    tmp_path: Path, stop: str
+) -> None:
+    """Python is its group leader; even an orphan holding stdout cannot hide death."""
+    import sys
+
+    stub = tmp_path / "persistent_python_stub"
+    stub.write_text(
+        f"#!{sys.executable}\n"
+        """
+import json,os,signal,subprocess,sys,time
+from pathlib import Path
+assert '--persistent-worker' in sys.argv
+stage=sys.argv[sys.argv.index('--pipeline-stage')+1]
+assert '--worker-poll-seconds' in sys.argv
+if '--reader-cache-dir' in sys.argv:
+    cache=Path(sys.argv[sys.argv.index('--reader-cache-dir')+1]);cache.mkdir(parents=True,exist_ok=True)
+    (cache/'owned.sqlite3').write_bytes(b'private')
+child=subprocess.Popen([sys.executable,'-c','import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)'])
+Path(os.environ['MORPION_WORK_DIR'],stage+'.json').write_text(json.dumps({'pid':os.getpid(),'child':child.pid}))
+time.sleep(60)
+""",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    (tmp_path / "run_state.json").write_text(
+        '{"latest_tree_snapshot_path":"source"}', encoding="utf-8"
+    )
+    owner = subprocess.Popen(["sleep", "60"])
+    env = dict(
+        os.environ,
+        MORPION_PERSISTENT_WORKERS="1",
+        MORPION_SCIENTIFIC="1",
+        MORPION_WORK_DIR=str(tmp_path),
+        PYTHON_BIN=str(stub),
+        MORPION_CLUSTER_HEADLESS="1",
+        MORPION_CLUSTER_MAX_SECONDS="20",
+        MORPION_CLUSTER_STOP_GRACE_SECONDS="1",
+        MORPION_CLUSTER_WORKERS="all",
+        MORPION_CLUSTER_OPEN_STATUS="0",
+        MORPION_CLUSTER_SHOW_RECAP="0",
+        MORPION_GROWTH_SHOW_RECAP="0",
+        MORPION_SEED_MODELS_FROM_WORK_DIR="",
+        MORPION_RESOURCE_MONITOR_PID=str(owner.pid),
+        MORPION_RESOURCE_MONITOR_START_TICKS=Path(f"/proc/{owner.pid}/stat")
+        .read_text(encoding="utf-8")
+        .rsplit(") ", 1)[1]
+        .split()[19],
+    )
+    process = subprocess.Popen(
+        ["bash", str(_SCRIPT)],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stages = ("growth", "dataset_worker", "training_worker", "reevaluation")
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline and not all(
+            (tmp_path / f"{s}.json").exists() for s in stages
+        ):
+            time.sleep(0.05)
+        assert all((tmp_path / f"{s}.json").exists() for s in stages)
+        pids = {s: json.loads((tmp_path / f"{s}.json").read_text()) for s in stages}
+        if stop == "worker_death":
+            os.kill(pids["training_worker"]["pid"], signal.SIGKILL)
+        elif stop == "monitor_death":
+            owner.kill()
+            owner.wait(timeout=3)
+        else:
+            process.send_signal(signal.SIGTERM if stop == "term" else signal.SIGINT)
+        output, _ = process.communicate(timeout=13)
+        assert (
+            process.returncode
+            == {"worker_death": 1, "monitor_death": 0, "term": 143, "int": 130}[stop]
+        ), output
+        assert "all worker groups stopped" in output
+        if stop == "worker_death":
+            assert "persistent worker exited" in output
+        for info in pids.values():
+            assert all(_process_has_exited(pid) for pid in info.values()), output
+        for line in output.splitlines():
+            if "private_reader_cache=" in line:
+                assert not Path(line.split("private_reader_cache=")[1]).exists()
+    finally:
+        if process.poll() is None:
+            process.send_signal(signal.SIGTERM)
+            process.communicate(timeout=13)
+        if owner.poll() is None:
+            owner.kill()
+            owner.wait(timeout=3)
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("value", ["1", "invalid"])
+def test_persistent_cluster_refuses_unsupported_unmonitored_mode(
+    tmp_path: Path, value: str
+) -> None:
+    """Opt-in validation precedes creation of logs, caches or scientific directories."""
+    destination = tmp_path / "absent"
+    env = dict(
+        os.environ,
+        MORPION_WORK_DIR=str(destination),
+        MORPION_PERSISTENT_WORKERS=value,
+        MORPION_SCIENTIFIC="0",
+        MORPION_CLUSTER_HEADLESS="1",
+    )
+    result = subprocess.run(
+        ["bash", str(_SCRIPT)], env=env, capture_output=True, text=True, timeout=5
+    )
+    assert result.returncode != 0 and not destination.exists()

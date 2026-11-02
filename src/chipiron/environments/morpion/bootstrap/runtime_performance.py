@@ -193,19 +193,28 @@ def observe_ownership(
 class WorkerObservation:
     """Retain an incomplete invocation and replace it on exit, without changing exit behavior."""
 
-    def __init__(self, work_dir: Path, worker: str) -> None:
+    def __init__(
+        self, work_dir: Path, worker: str, *, job_id: int | None = None
+    ) -> None:
         """Start one best-effort dispatch interval without acquiring scientific ownership."""
         self.work_dir, self.worker = work_dir, worker
         self.measurement: StageMeasurement | None = None
-        self.name = f"worker-{worker}-{_slot(process_identity())}"
+        self.job_id = job_id
+        self.stage = "worker_lifetime" if job_id is None else "worker_job"
+        identity = (
+            process_identity() if job_id is None else f"{process_identity()}:{job_id}"
+        )
+        self.name = f"worker-{worker}-{_slot(identity)}"
         try:
             self.measurement = StageMeasurement()
-            self._startup()
+            if job_id is None:
+                self._startup()
             _write(
                 work_dir,
                 self.name,
                 {
-                    "stage": "worker_lifetime",
+                    "stage": self.stage,
+                    **({"job_id": self.job_id} if self.job_id is not None else {}),
                     "generation": None,
                     "worker": worker,
                     "pid": os.getpid(),
@@ -267,7 +276,8 @@ class WorkerObservation:
                     self.name,
                     {
                         **self.measurement.finish(),
-                        "stage": "worker_lifetime",
+                        "stage": self.stage,
+                        **({"job_id": self.job_id} if self.job_id is not None else {}),
                         "generation": None,
                         "worker": self.worker,
                         "outcome": "completed" if exit_code == 0 else "failed",
@@ -278,3 +288,21 @@ class WorkerObservation:
         # Preserve the worker's original exit code or scientific exception.
         except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.debug("Worker metrics unavailable", exc_info=True)
+
+
+def observe_worker_boundary(
+    work_dir: Path, worker: str, job_id: int, stage: str, record: dict[str, object]
+) -> None:
+    """Retain disjoint cleanup/poll costs separately from startup and job dispatch."""
+    identity = f"{process_identity()}:{job_id}"
+    _write(
+        work_dir,
+        f"persistent-{worker}-{stage}-{_slot(identity)}",
+        {
+            **record,
+            "stage": stage,
+            "worker": worker,
+            "job_id": job_id,
+            "generation": None,
+        },
+    )
