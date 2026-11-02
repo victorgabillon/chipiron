@@ -8,14 +8,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
+from .formatting import object_mapping as mapping
+
 JsonObject = dict[str, Any]
 MAX_HISTORY_BYTES = 4 * 1024 * 1024
 MAX_HISTORY_ROWS = 2000
-
-
-def mapping(value: object) -> JsonObject:
-    """Return an object mapping without manufacturing missing metadata."""
-    return cast("JsonObject", value) if isinstance(value, dict) else {}
 
 
 def _reject_constant(value: str) -> None:

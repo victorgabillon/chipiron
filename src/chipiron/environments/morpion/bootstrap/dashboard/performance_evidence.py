@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from .performance_timeline import number
-from .view_model import mapping
+from .formatting import object_mapping as mapping
 
 MAX_ARTIFACT_BYTES = 256 * 1024
 MAX_AUTHORITY_BYTES = 4 * 1024 * 1024
