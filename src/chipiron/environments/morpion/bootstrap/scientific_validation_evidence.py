@@ -301,19 +301,25 @@ def verified_reader_validation(path: Path) -> Iterator[None]:
         yield
         return
     work_dir, identifier, _version = location
-    with generation_read_pin(path):
-        state = read_object(work_dir / "run_state.json")
-        records = publication_records(state["metadata"])
-        matching = [record for record in records if record["id"] == identifier]
-        require(len(matching) == 1, "Reader source is no longer admitted.")
-        record = matching[0]
-        if path.resolve() != inside(work_dir, record["tree_snapshot_path"]):
-            # A v2 capsule also contains older catalog members. Preserve their
-            # complete-validation path without lending the selected head proof.
-            yield
-            return
-        # Authenticate this exact in-memory seal after the admission read. Do
-        # not re-read it unverified when selecting its canonical evidence.
-        descriptor = read_committed_descriptor(work_dir, record)
-        with _source_validation(path, descriptor):
-            yield
+    # A managed reader must establish its own authority even when nested in
+    # another validation scope. Fallback must not inherit the caller's proof.
+    token = _SCOPE.set(None)
+    try:
+        with generation_read_pin(path):
+            state = read_object(work_dir / "run_state.json")
+            records = publication_records(state["metadata"])
+            matching = [record for record in records if record["id"] == identifier]
+            require(len(matching) == 1, "Reader source is no longer admitted.")
+            record = matching[0]
+            if path.resolve() != inside(work_dir, record["tree_snapshot_path"]):
+                # A v2 capsule also contains older catalog members. Preserve their
+                # complete-validation path without lending the selected head proof.
+                yield
+                return
+            # Authenticate this exact in-memory seal after the admission read. Do
+            # not re-read it unverified when selecting its canonical evidence.
+            descriptor = read_committed_descriptor(work_dir, record)
+            with _source_validation(path, descriptor):
+                yield
+    finally:
+        _SCOPE.reset(token)

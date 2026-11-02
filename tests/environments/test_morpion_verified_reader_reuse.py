@@ -278,3 +278,74 @@ r.ShardedTrainingGenerationView(Path(sys.argv[1]),cache_dir=Path(sys.argv[2]),al
         assert not recovered.index_reused
         assert recovered.node_count() == 2
     assert proof._SCOPE.get() is None
+
+
+@pytest.mark.parametrize("kind", ["absent", "stale", "matching"])
+def test_nested_reader_fallback_does_not_inherit_outer_proof(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    """A valid outer proof must not prevent a different reader's full fallback."""
+    _, outer_paths, outer_state = setup_closed_baseline(tmp_path / "outer")
+    _, inner_paths, inner_state = setup_closed_baseline(tmp_path / "inner")
+    outer_path = outer_paths.work_dir / outer_state.latest_tree_snapshot_path
+    inner_path = inner_paths.work_dir / inner_state.latest_tree_snapshot_path
+
+    def change(data: Any) -> None:
+        if kind == "absent":
+            del data["canonical_validation"]
+        else:
+            data["canonical_validation"]["validator"] = {"stale": True}
+
+    if kind != "matching":
+        rewrite_proof(inner_paths, change)
+    calls = []
+    original = MorpionStateCheckpointCodec.load_state_ref
+
+    def load(self: Any, payload: Any) -> Any:
+        calls.append(payload)
+        return original(self, payload)
+
+    monkeypatch.setattr(MorpionStateCheckpointCodec, "load_state_ref", load)
+    with proof.verified_reader_validation(outer_path):
+        outer_scope = proof._SCOPE.get()
+        assert outer_scope is not None
+        with view(inner_path, tmp_path / "nested-cache") as actual:
+            assert len(calls) == (0 if kind == "matching" else actual.node_count())
+        assert proof._SCOPE.get() is outer_scope
+    assert proof._SCOPE.get() is None
+
+
+def test_nested_constructor_failure_restores_outer_scope_and_releases_pin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed inner constructor cannot retain its authority or publication lease."""
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        capsule_lease,
+    )
+
+    _, outer_paths, outer_state = setup_closed_baseline(tmp_path / "outer")
+    _, inner_paths, inner_state = setup_closed_baseline(tmp_path / "inner")
+    outer_path = outer_paths.work_dir / outer_state.latest_tree_snapshot_path
+    inner_path = inner_paths.work_dir / inner_state.latest_tree_snapshot_path
+
+    def fail(*_args: Any, **_kwargs: Any) -> None:
+        assert proof._SCOPE.get() is not None
+        message = "injected constructor failure"
+        raise ValueError(message)
+
+    monkeypatch.setattr(reader.ShardedTrainingGenerationView, "_initialize", fail)
+    with proof.verified_reader_validation(outer_path):
+        scope = proof._SCOPE.get()
+        with pytest.raises(ValueError, match="injected constructor failure"):
+            view(inner_path, tmp_path / "cache")
+        assert proof._SCOPE.get() is scope
+        record = publication_records(inner_state.metadata)[-1]
+        with capsule_lease(
+            inner_paths.work_dir,
+            record["id"],
+            exclusive=True,
+            nonblocking=True,
+            version=3,
+        ):
+            pass
+    assert proof._SCOPE.get() is None
