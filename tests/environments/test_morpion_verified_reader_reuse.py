@@ -280,7 +280,7 @@ r.ShardedTrainingGenerationView(Path(sys.argv[1]),cache_dir=Path(sys.argv[2]),al
     assert proof._SCOPE.get() is None
 
 
-@pytest.mark.parametrize("kind", ["absent", "stale", "matching"])
+@pytest.mark.parametrize("kind", ["absent", "stale", "matching", "unmanaged"])
 def test_nested_reader_fallback_does_not_inherit_outer_proof(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
 ) -> None:
@@ -296,7 +296,14 @@ def test_nested_reader_fallback_does_not_inherit_outer_proof(
         else:
             data["canonical_validation"]["validator"] = {"stale": True}
 
-    if kind != "matching":
+    if kind == "unmanaged":
+        import shutil
+
+        capsule = inner_path.parent.parent
+        copied = tmp_path / "unmanaged"
+        shutil.copytree(capsule, copied)
+        inner_path = copied / inner_path.relative_to(capsule)
+    elif kind != "matching":
         rewrite_proof(inner_paths, change)
     calls = []
     original = MorpionStateCheckpointCodec.load_state_ref
@@ -348,4 +355,40 @@ def test_nested_constructor_failure_restores_outer_scope_and_releases_pin(
             version=3,
         ):
             pass
+    assert proof._SCOPE.get() is None
+
+
+def test_matching_private_unmanaged_scope_keeps_publisher_reuse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Constructor isolation preserves a publisher's exact private completed checks."""
+    import shutil
+
+    _, paths, state = setup_closed_baseline(tmp_path / "published")
+    source = paths.work_dir / state.latest_tree_snapshot_path
+    capsule = source.parent.parent
+    copied = tmp_path / "private"
+    shutil.copytree(capsule, copied)
+    manifest = copied / source.relative_to(capsule)
+    header = json.loads(manifest.read_text())
+    calls = []
+    original = MorpionStateCheckpointCodec.load_state_ref
+
+    def load(self: Any, payload: Any) -> Any:
+        calls.append(payload)
+        return original(self, payload)
+
+    monkeypatch.setattr(MorpionStateCheckpointCodec, "load_state_ref", load)
+    with view(manifest, tmp_path / "full-cache") as full:
+        expected = tuple(full.iter_nodes_in_export_order())
+        assert len(calls) == full.node_count()
+    calls.clear()
+    with proof._validated_record_scope(
+        manifest, header["producer"], [header["record_shard"]]
+    ):
+        scope = proof._SCOPE.get()
+        with view(manifest, tmp_path / "private-cache") as private:
+            assert tuple(private.iter_nodes_in_export_order()) == expected
+        assert calls == []
+        assert proof._SCOPE.get() is scope
     assert proof._SCOPE.get() is None

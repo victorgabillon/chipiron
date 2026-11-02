@@ -298,7 +298,17 @@ def verified_reader_validation(path: Path) -> Iterator[None]:
     """
     location = locate_capsule(path)
     if location is None or location[2] not in (2, 3):
-        yield
+        scope = _SCOPE.get()
+        if scope is None or scope.manifest == path.resolve():
+            # Preserve exact private publisher checks, not a foreign reader's
+            # authority over a different unmanaged scientific input.
+            yield
+            return
+        token = _SCOPE.set(None)
+        try:
+            yield
+        finally:
+            _SCOPE.reset(token)
         return
     work_dir, identifier, _version = location
     # A managed reader must establish its own authority even when nested in
