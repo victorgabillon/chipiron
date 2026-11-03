@@ -1,13 +1,13 @@
 """Real scientific Dataset/Training receipts preserve independent candidate chains."""
 
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from chipiron.environments.morpion.bootstrap.learning_schedule import (
-        BoundedGrowthWindow,
+        LearningSchedule,
     )
     from chipiron.environments.morpion.bootstrap.run_state import (
         MorpionBootstrapRunState,
@@ -58,6 +58,7 @@ from tests.environments.morpion_fenced_dataset_helpers import (
     local_leaderboard,
     run_dataset,
 )
+from tests.environments.test_morpion_value_certainty import endgame as endgame
 
 
 def setup_continual(
@@ -71,12 +72,16 @@ def setup_continual(
     memory_floor_mb: int = 8192,
     evaluators: MorpionEvaluatorsConfig | None = None,
     transformer_cpu_threads: int | None = None,
-    learning_schedule: BoundedGrowthWindow | None = None,
+    learning_schedule: LearningSchedule | None = None,
     dataset_cadence: int = 1,
+    strict_execution: bool = False,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
         work_dir=root,
+        execution_profile="strict_math" if strict_execution else None,
+        torch_intra_op_threads=1 if strict_execution else None,
+        torch_inter_op_threads=1 if strict_execution else None,
         pipeline_mode="artifact_pipeline",
         runtime_checkpoint_format="sharded",
         training_export_mode="sharded",
@@ -234,7 +239,7 @@ def test_three_accepted_rounds_and_idempotent_retry(
 
 @pytest.mark.fast
 def test_automatic_activation_preserves_proofs_and_recovers_exact_request(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, endgame: tuple[Any, Any]
 ) -> None:
     """Honest held-out proof targets justify two real transitions; no forced winner."""
     from valanga.evaluations import Certainty
@@ -244,12 +249,11 @@ def test_automatic_activation_preserves_proofs_and_recovers_exact_request(
         committed_evaluator,
     )
     from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
-    from tests.environments.test_morpion_value_certainty import endgame
 
     local_leaderboard(monkeypatch, tmp_path)
     # This explicit semantic fixture is a reachable endgame. The fresh Greek-cross
     # experiments are tested separately; it is not presented as their initial tree.
-    position, _ = endgame.__wrapped__()
+    position, _ = endgame
     with monkeypatch.context() as context:
         context.setattr(runner_module, "initial_state", lambda: position)
         args, paths = setup_continual(
@@ -272,6 +276,8 @@ def test_automatic_activation_preserves_proofs_and_recovers_exact_request(
         assert completion["refresh"]
     active, bundle = committed_evaluator(paths.work_dir, state)
     restored, effective = activation._runner(paths, state)
+    assert isinstance(restored, AnemoneMorpionSearchRunner)
+    assert state.latest_runtime_checkpoint_path is not None
     try:
         restored.load_or_create(
             paths.work_dir / state.latest_runtime_checkpoint_path, bundle, effective
@@ -314,7 +320,9 @@ def test_cross_generation_attempt_cannot_skip_a_newly_accepted_parent(
     accept = training.accept_training
     winning_authority = None
 
-    def overtake(original_paths: MorpionBootstrapPaths, reference: dict) -> object:
+    def overtake(
+        original_paths: MorpionBootstrapPaths, reference: dict[str, Any]
+    ) -> object:
         nonlocal winning_authority
         with monkeypatch.context() as context:
             context.setattr(training, "accept_training", accept)

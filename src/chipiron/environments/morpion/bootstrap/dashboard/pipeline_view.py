@@ -15,10 +15,12 @@ if TYPE_CHECKING:
 def schedule_summary(snapshot: BootstrapDashboardSnapshot) -> dict[str, Any]:
     """Ordinary cycles, publication generations and activation are different units."""
     metadata = mapping(snapshot.run_state.get("metadata"))
-    window = mapping(metadata.get("learning_window_v1"))
+    window = mapping(
+        metadata.get("learning_window_v2", metadata.get("learning_window_v1"))
+    )
     active = mapping(window.get("active"))
     source_cycle = number(active.get("source_cycle"))
-    target_cycle = number(active.get("target_cycle"))
+    target_cycle = number(active.get("limit_cycle", active.get("target_cycle")))
     cycle = number(snapshot.run_state.get("cycle_index"))
     completed = remaining = None
     if (
@@ -87,9 +89,16 @@ def schedule_summary(snapshot: BootstrapDashboardSnapshot) -> dict[str, Any]:
         "Lookahead L · ordinary cycles": mapping(
             mapping(snapshot.config.get("metadata")).get("learning_schedule")
         ).get("growth_lookahead_cycles"),
+        "Ready policy maximum · ordinary cycles": mapping(
+            mapping(snapshot.config.get("metadata")).get("learning_schedule")
+        ).get("max_growth_cycles"),
         "Ordinary Growth cycle index": cycle,
         "Active window source cycle": source_cycle,
-        "Active window target cycle": target_cycle,
+        (
+            "Active window cap cycle"
+            if "learning_window_v2" in metadata
+            else "Active window target cycle"
+        ): target_cycle,
         "Completed ordinary cycles in window": completed,
         "Remaining ordinary cycles in window": remaining,
         "Reserved source publication": mapping(active.get("source")).get("id"),

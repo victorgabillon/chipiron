@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
-    from .learning_schedule import BoundedGrowthWindow
+    from .learning_schedule import LearningSchedule
     from .run_state import MorpionBootstrapRunState
 
 CONTINUAL_KEY = "continual_learning"
@@ -108,7 +108,7 @@ def validate_continual_context(
     paths: MorpionBootstrapPaths,
     state: MorpionBootstrapRunState,
     policy: MorpionContinualLearningPolicy | None,
-    schedule: BoundedGrowthWindow | None = None,
+    schedule: LearningSchedule | None = None,
 ) -> None:
     """Reject policy downgrade, historical adoption and changed declared budgets."""
     from .config import bootstrap_config_sha256, load_bootstrap_config

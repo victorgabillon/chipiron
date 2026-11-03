@@ -11,10 +11,6 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     growth_receipt_ownership,
     publication_records,
 )
-from chipiron.environments.morpion.bootstrap.learning_schedule import (
-    BoundedGrowthWindow,
-    window,
-)
 from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
@@ -23,6 +19,10 @@ from chipiron.environments.morpion.bootstrap.run_state import (
 from tests.environments.morpion_fenced_dataset_helpers import run_dataset
 from tests.environments.test_morpion_continual_publication import grow, setup_continual
 from tests.environments.test_morpion_learning_schedule import monitored as monitored
+from tests.environments.test_morpion_learning_schedule import (
+    schedule_type as schedule_type,
+)
+from tests.environments.test_morpion_learning_schedule import window
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,14 +36,14 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("stage", ["dataset", "training"])
 @pytest.mark.usefixtures("monitored")
 def test_private_work_cannot_be_accepted_after_termination(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stage: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stage: str, schedule_type: Any
 ) -> None:
     """Real published output cannot advance authority after its owner has stopped."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(2),
+        learning_schedule=schedule_type(2),
     )
     source = grow(args)
     incumbent = committed_evaluator(paths.work_dir, source)[0]

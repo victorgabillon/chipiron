@@ -25,8 +25,8 @@ from chipiron.environments.morpion.bootstrap.learning_policy import (
 from chipiron.environments.morpion.bootstrap.learning_schedule import (
     WINDOW_KEY,
     BoundedGrowthWindow,
+    ReadyBoundedGrowthWindow,
     validate_supported,
-    window,
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
     load_pipeline_stage_claim,
@@ -41,6 +41,10 @@ from tests.environments.test_morpion_learning_schedule import (
 from tests.environments.test_morpion_learning_schedule import (
     run_growth_cli,
     start_blocked,
+    window,
+)
+from tests.environments.test_morpion_learning_schedule import (
+    schedule_type as schedule_type,
 )
 from tests.environments.test_morpion_value_certainty import endgame as endgame
 
@@ -54,7 +58,7 @@ def crash_growth_worker(root: str, phase: str) -> None:
     save = receipts.save_bootstrap_run_state
 
     def die(state: Any, *args: Any, **kwargs: Any) -> None:
-        if state.generation == 2 and state.metadata[WINDOW_KEY]["active"] is not None:
+        if state.generation == 2 and window(state)["active"] is not None:
             if phase == "after":
                 save(state, *args, **kwargs)
             os._exit(73)
@@ -68,14 +72,14 @@ def crash_growth_worker(root: str, phase: str) -> None:
 @pytest.mark.parametrize("phase", ["before", "after"])
 @pytest.mark.usefixtures("monitored")
 def test_reservation_is_atomic_across_real_process_death(
-    tmp_path: Path, phase: str
+    tmp_path: Path, phase: str, schedule_type: Any
 ) -> None:
     """Recover either the old head or a complete source reservation after death."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(1),
+        learning_schedule=schedule_type(1),
     )
     log = tmp_path / "crash.log"
     code = "from tests.environments.test_morpion_learning_schedule_recovery import crash_growth_worker; import sys; crash_growth_worker(*sys.argv[1:])"
@@ -99,7 +103,7 @@ def test_reservation_is_atomic_across_real_process_death(
     slot = window(state)["active"]
     assert slot["source"]["generation"] == 2
     resumed = run_growth_cli(paths, 20)
-    assert resumed.cycle_index == slot["target_cycle"]
+    assert resumed.cycle_index == slot.get("limit_cycle", slot.get("target_cycle"))
     assert window(resumed)["active"] == slot
     authority = paths.run_state_path.read_bytes()
     grow(args)
@@ -109,15 +113,14 @@ def test_reservation_is_atomic_across_real_process_death(
 @pytest.mark.parametrize("stage", ["dataset", "training"])
 @pytest.mark.usefixtures("monitored")
 def test_dead_learning_retry_requires_empty_session_and_keeps_reserved_source(
-    tmp_path: Path,
-    stage: str,
+    tmp_path: Path, stage: str, schedule_type: Any
 ) -> None:
     """Fence an expired live claim and retry the same source after real death."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(1),
+        learning_schedule=schedule_type(1),
     )
     source = grow(args)
     from chipiron.environments.morpion.bootstrap.pipeline.stages import (
@@ -190,14 +193,14 @@ def test_dead_coordinator_does_not_prove_child_quiescence(tmp_path: Path) -> Non
 
 @pytest.mark.usefixtures("monitored")
 def test_policy_change_downgrade_and_unknown_worker_evidence_fail_closed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schedule_type: Any
 ) -> None:
     """Reject changed context and missing supervisor evidence before mutation."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(1),
+        learning_schedule=schedule_type(1),
     )
     state = grow(args)
     authority = paths.run_state_path.read_bytes()
@@ -213,13 +216,15 @@ def test_policy_change_downgrade_and_unknown_worker_evidence_fail_closed(
 
 
 @pytest.mark.usefixtures("monitored")
-def test_reserved_source_cannot_retire_after_reader_death(tmp_path: Path) -> None:
+def test_reserved_source_cannot_retire_after_reader_death(
+    tmp_path: Path, schedule_type: Any
+) -> None:
     """Retain the durable source even when no process holds a read pin."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(4),
+        learning_schedule=schedule_type(4),
     )
     grow(args)
     state = run_growth_cli(paths, 20)
@@ -231,14 +236,16 @@ def test_reserved_source_cannot_retire_after_reader_death(tmp_path: Path) -> Non
 
 
 @pytest.mark.usefixtures("monitored")
-def test_budget_termination_never_extends_window(tmp_path: Path) -> None:
+def test_budget_termination_never_extends_window(
+    tmp_path: Path, schedule_type: Any
+) -> None:
     """Keep a node-budget termination authoritative before the fixed gate."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
         maximum=2,
-        learning_schedule=BoundedGrowthWindow(2),
+        learning_schedule=schedule_type(2),
     )
     state = grow(args)
     assert state.metadata.get("experiment_termination") is not None
@@ -253,6 +260,7 @@ def test_legacy_default_keeps_v1_context_and_barrier(tmp_path: Path) -> None:
     args, paths = setup_continual(tmp_path / "run", automatic=True, memory_floor_mb=1)
     state = grow(args)
     assert state.metadata["continual_learning"] == {"schema_version": 1}
+    assert args.continual_learning is not None
     assert WINDOW_KEY not in state.metadata
     authority = paths.run_state_path.read_bytes()
     grow(args)
@@ -301,6 +309,7 @@ def test_activation_recovery_preserves_gate_and_single_closure(
     monkeypatch: pytest.MonkeyPatch,
     endgame: tuple[Any, Any],
     phase: str,
+    schedule_type: Any,
 ) -> None:
     """Recover an old-model drain or exact committed activation without extra Growth."""
     from chipiron.environments.morpion.bootstrap import model_activation
@@ -319,11 +328,11 @@ def test_activation_recovery_preserves_gate_and_single_closure(
             automatic=True,
             proof=True,
             memory_floor_mb=1,
-            learning_schedule=BoundedGrowthWindow(1),
+            learning_schedule=schedule_type(1),
         )
     source = grow(args)
     learn(args, source.generation)
-    gate = grow(args)
+    gate = source if schedule_type is ReadyBoundedGrowthWindow else grow(args)
     run_morpion_bootstrap_experiment(
         launcher_args_from_cli([
             "--work-dir",

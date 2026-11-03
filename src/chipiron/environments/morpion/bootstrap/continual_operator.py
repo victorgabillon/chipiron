@@ -50,11 +50,18 @@ if TYPE_CHECKING:
 
 def add_continual_arguments(parser: ArgumentParser) -> None:
     """Expose the explicit experiment policy through the existing launcher."""
-    parser.add_argument(
+    schedules = parser.add_mutually_exclusive_group()
+    schedules.add_argument(
         "--growth-lookahead-cycles",
         type=int,
         default=None,
         help="Fresh opt-in bounded Growth window; full refresh remains owned.",
+    )
+    schedules.add_argument(
+        "--ready-growth-max-cycles",
+        type=int,
+        default=None,
+        help="Fresh ready-result policy; maximum ordinary cycles before waiting, with owned full refresh.",
     )
     defaults = MorpionContinualLearningPolicy()
     for name, default in asdict(defaults).items():

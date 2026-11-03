@@ -535,6 +535,8 @@ def run_pipeline_growth_stage(
             "await_learning_resolution",
         ):
             observe_wait(paths.work_dir, "growth", None, state.generation)
+        if _ready_resolution_memory_refused(args, state):
+            return state
         if args.continual_learning.automatic_activation:
             from chipiron.environments.morpion.bootstrap.model_activation import (
                 activate_selected_round_automatically,
@@ -547,9 +549,11 @@ def run_pipeline_growth_stage(
             ]["producer"]["identity"]
     # Updated legacy callers also take this lease and cannot race a receipt owner.
     # Old binaries must be quiesced before adoption; they do not know this lock.
+    resolve_ready = False
     with growth_receipt_ownership(paths):
         if args.learning_schedule is not None:
             from chipiron.environments.morpion.bootstrap.learning_schedule import (
+                ReadyBoundedGrowthWindow,
                 selected_source,
                 validate_source,
                 wait_reason,
@@ -563,43 +567,84 @@ def run_pipeline_growth_stage(
                 paths, state, args.continual_learning, args.learning_schedule
             )
             monitored_identity()
+            if state.metadata.get("experiment_termination") is not None:
+                return state
             reason = wait_reason(state)
-            if (
-                reason is not None
-                or state.metadata.get("experiment_termination") is not None
-            ):
+            resolve_ready = (
+                isinstance(args.learning_schedule, ReadyBoundedGrowthWindow)
+                and reason == "await_learning_resolution"
+            )
+            if resolve_ready and _ready_resolution_memory_refused(args, state):
+                return state
+            if reason is not None and not resolve_ready:
                 observe_wait(paths.work_dir, "growth", reason, state.generation)
                 return state
             source = selected_source(state)
             if source is not None:
                 validate_source(paths, state, source)
-        session = (
-            GrowthPatchReceiptSession(
-                paths,
-                runner,
-                durable_generation_publication=durable_generation_publication,
-                scientific_v2_producer=scientific_v2_producer,
-                closed_scientific_snapshot=closed_scientific_snapshot,
+        if not resolve_ready:
+            session = (
+                GrowthPatchReceiptSession(
+                    paths,
+                    runner,
+                    durable_generation_publication=durable_generation_publication,
+                    scientific_v2_producer=scientific_v2_producer,
+                    closed_scientific_snapshot=closed_scientific_snapshot,
+                )
+                if checkpoint_bound_receipts
+                else None
             )
-            if checkpoint_bound_receipts
-            else None
-        )
-        try:
-            return _run_pipeline_growth_stage_owned(
-                args,
-                runner,
-                paths=paths,
-                max_cycles=max_cycles,
-                derived_sequential=derived_sequential,
-                receipt_session=session,
-            )
-        finally:
-            if session is not None:
-                try:
-                    session.discard_runtime()
-                finally:
-                    if session.publication is not None:
-                        session.publication.close()
+            try:
+                return _run_pipeline_growth_stage_owned(
+                    args,
+                    runner,
+                    paths=paths,
+                    max_cycles=max_cycles,
+                    derived_sequential=derived_sequential,
+                    receipt_session=session,
+                )
+            finally:
+                if session is not None:
+                    try:
+                        session.discard_runtime()
+                    finally:
+                        if session.publication is not None:
+                            session.publication.close()
+
+    # Acceptance may have won the lease after the unowned activation preflight.
+    # Release it before the existing resolver acquires ownership; never grow on
+    # this boundary or recursively acquire the tree lease.
+    from chipiron.environments.morpion.bootstrap.model_activation import (
+        activate_selected_round_automatically,
+    )
+
+    activate_selected_round_automatically(paths)
+    return load_bootstrap_run_state(paths.run_state_path)
+
+
+def _ready_resolution_memory_refused(
+    args: MorpionBootstrapArgs,
+    state: MorpionBootstrapRunState,
+) -> bool:
+    """Honor the existing RAM floor before admitting an early owned refresh."""
+    from chipiron.environments.morpion.bootstrap.learning_schedule import (
+        ReadyBoundedGrowthWindow,
+        wait_reason,
+    )
+
+    if not isinstance(args.learning_schedule, ReadyBoundedGrowthWindow):
+        return False
+    if wait_reason(state) != "await_learning_resolution":
+        return False
+    assert args.continual_learning is not None
+    return not log_available_ram_guard(
+        stage="growth",
+        generation=state.generation,
+        action="learning_resolution",
+        required_mb=max(
+            args.min_available_ram_mb or 0, args.continual_learning.min_available_ram_mb
+        ),
+    )
 
 
 def _run_pipeline_growth_stage_owned(
