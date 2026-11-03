@@ -111,6 +111,8 @@ class _Budget:
     scratch_bytes: int = 6 * 2**30
     chunk_bytes: int = 64 * 2**20
     headroom_bytes: int = 512 * 2**20
+    retained_bytes: int = 0
+    resident_bytes: int = 0
 
     @classmethod
     def configured(cls) -> _Budget:
@@ -123,7 +125,8 @@ class _Budget:
     def check_memory(self, allocation: int) -> None:
         """Reserve host/container capacity before a bounded allocation."""
         require(
-            available_memory_mb() * 2**20 >= allocation + self.headroom_bytes,
+            available_memory_mb() * 2**20
+            >= allocation + self.resident_bytes + self.headroom_bytes,
             "Insufficient memory headroom for shared preparation",
         )
 
@@ -133,7 +136,8 @@ class _Budget:
         """Bound staged bytes and live chunk allocations before writing."""
         require(packed <= self.packed_bytes, "Shared packing byte budget exceeded")
         require(
-            staged + 2 * incoming + 2 * packed <= self.scratch_bytes,
+            staged + 2 * incoming + 2 * packed + self.retained_bytes
+            <= self.scratch_bytes,
             "Shared staging/export disk budget exceeded",
         )
         require(
@@ -147,7 +151,7 @@ class _Budget:
         staged = sum(p.stat().st_size for p in directory.rglob("*") if p.is_file())
         require(
             packed <= self.packed_bytes
-            and staged + 2 * packed + 2**25 <= self.scratch_bytes,
+            and staged + 2 * packed + 2**25 + self.retained_bytes <= self.scratch_bytes,
             "Shared packed export exceeds declared budget",
         )
         require(
@@ -255,7 +259,7 @@ def _write(path: Path, value: object) -> None:
 
 
 @contextmanager
-def _ownership(root: Path) -> Iterator[None]:
+def _ownership(root: Path, *, format_kind: str = FORMAT) -> Iterator[None]:
     assert_artifact_writable(root)
     require(not root.is_symlink(), "Preparation root cannot be a symlink")
     root.mkdir(exist_ok=True)
@@ -285,9 +289,9 @@ def _ownership(root: Path) -> Iterator[None]:
                     "Invalid preparation owner staging",
                 )
                 pending.unlink()
-            _write(pending, {"format": FORMAT})
+            _write(pending, {"format": format_kind})
             os.rename(pending, owner)
-        require(_json(owner) == {"format": FORMAT}, "Invalid preparation owner")
+        require(_json(owner) == {"format": format_kind}, "Invalid preparation owner")
         sync_directory(root)
         sync_directory(root.parent)
         for path in root.iterdir():
@@ -452,7 +456,9 @@ def prepare_shared_inputs(
     must be intact; corrupt completions never silently rebuild.
     """
     from .shared_preparation_builder import build_shared_bundle
+    from .shared_preparation_reuse import prior_inputs, requested
 
+    requested()  # Reject malformed execution configuration even on a warm hit.
     require(rows_path.suffix == ".jsonl", "Shared preparation supports JSONL only")
     require(
         isinstance(row_chunk_size, int)
@@ -560,42 +566,55 @@ def prepare_shared_inputs(
                 sync_directory(root)
             attempt = root / f"attempt-{uuid.uuid4().hex}"
             attempt.mkdir()
-            split, statistics = build_shared_bundle(
-                rows, attempt, recipe, limits, row_chunk_size
-            )
-            require(
-                file_digest(rows) == source_sha256,
-                "Preparation source changed during build",
-            )
-            inventory = {
-                name: {
-                    "bytes": (attempt / name).stat().st_size,
-                    "sha256": file_digest(attempt / name),
+            with prior_inputs(rows, recipe, limits, semantics) as reuse:
+                active_limits = limits if reuse is None else reuse.budget
+                split, statistics = build_shared_bundle(
+                    rows, attempt, recipe, active_limits, row_chunk_size, reuse=reuse
+                )
+                require(
+                    file_digest(rows) == source_sha256,
+                    "Preparation source changed during build",
+                )
+                inventory = {
+                    name: {
+                        "bytes": (attempt / name).stat().st_size,
+                        "sha256": file_digest(attempt / name),
+                    }
+                    for name in sorted(_FILES)
                 }
-                for name in sorted(_FILES)
-            }
-            _write(
-                attempt / "complete.json",
-                {
-                    "format": FORMAT,
-                    "identity": identity,
-                    "key": key,
-                    "files": inventory,
-                    "statistics": statistics,
-                },
-            )
-            tick = time.perf_counter()
-            _verify(attempt, limits)
-            integrity_verify_s += time.perf_counter() - tick
-            temporary = _PreparedInputs(
-                rows, source_sha256, recipe, attempt, split, _Lease(os.getpid())
-            )
-            tick = time.perf_counter()
-            _validate_native(temporary, limits)
-            native_verify_s = time.perf_counter() - tick
-            temporary.lease.active = False
-            sync_directory(attempt)
-            publish_directory_if_absent(attempt, entry, root)
+                _write(
+                    attempt / "complete.json",
+                    {
+                        "format": FORMAT,
+                        "identity": identity,
+                        "key": key,
+                        "files": inventory,
+                        "statistics": statistics,
+                    },
+                )
+                tick = time.perf_counter()
+                _verify(attempt, active_limits)
+                integrity_verify_s += time.perf_counter() - tick
+                temporary = _PreparedInputs(
+                    rows, source_sha256, recipe, attempt, split, _Lease(os.getpid())
+                )
+                tick = time.perf_counter()
+                _validate_native(temporary, active_limits)
+                native_verify_s = time.perf_counter() - tick
+                temporary.lease.active = False
+                if reuse is not None:
+                    reuse.publish(attempt)
+                    statistics.update(
+                        reuse_hits=reuse.hits,
+                        reuse_reencoded_rows=reuse.misses,
+                        reuse_lookup_s=reuse.lookup_s,
+                        reuse_index_binding_s=reuse.index_s,
+                        reuse_publish_verify_s=reuse.publish_s,
+                        reuse_prior_verify_s=reuse.prior_verify_s,
+                        reuse_previous_bytes=reuse.budget.retained_bytes,
+                    )
+                sync_directory(attempt)
+                publish_directory_if_absent(attempt, entry, root)
             outcome = "miss"
         split = _split(entry, recipe)
         lease = _Lease(os.getpid())
