@@ -93,8 +93,7 @@ class MorpionOverEventDetector:
     ) -> tuple[OverEvent[Any] | None, float | None]:
         """Return a terminal over-event and value when no legal move remains."""
         morpion_state = cast("MorpionState", state)
-        legal_action_count = self.dynamics.legal_action_count(morpion_state)
-        if legal_action_count != 0:
+        if not self.dynamics.is_terminal_state(morpion_state):
             return None, None
         return _terminal_over_event(), float(morpion_state.moves)
 

@@ -111,7 +111,7 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
         state: MorpionState | AtomMorpionState,
     ) -> bool:
         """Return whether the provided Morpion state has no legal action."""
-        return self.legal_action_count(state) == 0
+        return self.inner.is_terminal_state(self._as_atomheart_state(state))
 
     def wrap_atomheart_state(
         self,
