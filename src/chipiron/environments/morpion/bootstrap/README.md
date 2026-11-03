@@ -722,3 +722,11 @@ checks, backup/selection rebuilding and checkpoint/export. Latest-ready Dataset
 queues, background candidate prediction, retained live trees and preparation-cache
 changes are separate work. Compare valid certified score versus elapsed time;
 CPU/GPU utilization and host overlap alone do not establish useful throughput.
+
+## Terminal checks during evaluator updates
+
+Terminal checks delegate to Atomheart's short-circuit legality predicate. They
+still inspect the actual board and rules, including when a cached terminal flag
+is incorrect. Symmetry-reduced legal-action counts and heuristic scores are
+unchanged. Evaluator installation still performs the full canonical refresh,
+backup, certificate checks and selector rebuild under Growth ownership.
