@@ -500,6 +500,10 @@ def prior_inputs(
             require(
                 entry.is_dir() and not entry.is_symlink(), "Unsafe prior input entry"
             )
+            require(
+                all(not path.is_symlink() for path in entry.iterdir()),
+                "Symlink in prior input entry",
+            )
             failures = (
                 ValueError,
                 OSError,

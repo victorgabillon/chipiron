@@ -178,6 +178,26 @@ def test_attempt_deletion_and_relocation(tmp_path: Path) -> None:
     assert result["hits"] == 16 and result["reencoded_rows"] == 0
 
 
+@pytest.mark.parametrize("name", ["complete.json", "inputs.pt"])
+def test_symlinked_prior_entry_is_refused_without_pruning(
+    tmp_path: Path, name: str
+) -> None:
+    """A foreign link inside owned storage is unsafe, not disposable cache damage."""
+    with prepare(rows_file(tmp_path / "old")):
+        pass
+    entry = tmp_path / "operational/entry"
+    target = tmp_path / f"foreign-{name}"
+    source = entry / name
+    source.replace(target)
+    source.symlink_to(target)
+    with (
+        pytest.raises(ValueError, match="Symlink"),
+        prepare(rows_file(tmp_path / "current", reverse=True)),
+    ):
+        pytest.fail("symlinked prior entry was consumed or pruned")
+    assert source.is_symlink() and target.is_file()
+
+
 @pytest.mark.parametrize("setting", ["code", "dtype", "budget", "flag", "directory"])
 def test_incompatible_and_invalid_settings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, setting: str
@@ -306,6 +326,9 @@ def test_lock_lifetime_and_pruning(
         second.result(timeout=30)
     with prepare(a) as active:
         before = contents(active)
+        with (tmp_path / "operational/.lock").open("r") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(lock, fcntl.LOCK_UN)
         with prepare(rows_file(tmp_path / "c", extra=1)):
             pass
         equal(contents(active), before)
