@@ -552,3 +552,21 @@ def test_live_runtime_owner_must_belong_to_selected_root(
         command=["python", str(root / "scripts/controller.py"), "run"],
     )
     assert vm.load_dashboard_snapshot(work, root).status == "running"
+
+
+def test_ready_window_summary_is_read_only(run: tuple[Path, Path]) -> None:
+    """Read the v2 cap without conflating it with fixed lookahead or loading models."""
+    work, root = run
+    snapshot = vm.load_dashboard_snapshot(work, root)
+    metadata = snapshot.run_state["metadata"]
+    window = metadata.pop("learning_window_v1")
+    window["active"]["limit_cycle"] = window["active"].pop("target_cycle")
+    metadata["learning_window_v2"] = window
+    snapshot.config["metadata"]["learning_schedule"] = {"max_growth_cycles": 4}
+    before = repr(snapshot)
+    summary = schedule_summary(snapshot)
+    assert summary["Ready policy maximum · ordinary cycles"] == 4
+    assert summary["Lookahead L · ordinary cycles"] is None
+    assert summary["Completed ordinary cycles in window"] == 2
+    assert summary["Remaining ordinary cycles in window"] == 2
+    assert repr(snapshot) == before

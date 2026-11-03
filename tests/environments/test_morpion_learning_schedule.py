@@ -29,10 +29,12 @@ from chipiron.environments.morpion.bootstrap.launcher import (
     run_morpion_bootstrap_experiment,
 )
 from chipiron.environments.morpion.bootstrap.learning_schedule import (
-    WINDOW_KEY,
     BoundedGrowthWindow,
+    ReadyBoundedGrowthWindow,
     schedule_from_metadata,
-    window,
+)
+from chipiron.environments.morpion.bootstrap.learning_schedule import (
+    window as optional_window,
 )
 from chipiron.environments.morpion.bootstrap.pipeline.stages import (
     run_pipeline_training_stage,
@@ -46,6 +48,13 @@ from tests.environments.test_morpion_continual_publication import grow, setup_co
 from tests.environments.test_morpion_value_certainty import endgame as endgame
 
 
+def window(state: Any) -> dict[str, Any]:
+    """Require the explicit scheduling envelope used by these scientific fixtures."""
+    result = optional_window(state)
+    assert result is not None
+    return result
+
+
 @pytest.fixture
 def monitored(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Use this actual fixture process as the small test's resource supervisor."""
@@ -57,6 +66,12 @@ def monitored(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # Register it here so fixture teardown restores the worker's original scope.
     monkeypatch.setenv("MORPION_LEADERBOARD_PATH", str(tmp_path / "leaderboard.jsonl"))
     local_leaderboard(monkeypatch, tmp_path)
+
+
+@pytest.fixture(params=[BoundedGrowthWindow, ReadyBoundedGrowthWindow])
+def schedule_type(request: pytest.FixtureRequest) -> Any:
+    """Exercise the same admitted-attempt and owned-refresh paths for both policies."""
+    return request.param
 
 
 def run_growth_cli(paths: MorpionBootstrapPaths, cycles: int) -> Any:
@@ -93,7 +108,13 @@ def blocked_worker(root: str, stage: str, markers: str) -> None:
 
     path = Path(markers)
     module = stages if stage == "dataset" else training
-    name = "publish_dataset" if stage == "dataset" else "_compare_incumbent"
+    name = (
+        "publish_dataset"
+        if stage == "dataset"
+        else "accept_training"
+        if stage == "training_accept"
+        else "_compare_incumbent"
+    )
     original = getattr(module, name)
 
     def blocked(*args: Any, **kwargs: Any) -> Any:
@@ -104,6 +125,7 @@ def blocked_worker(root: str, stage: str, markers: str) -> None:
                 message = "Test controller did not release the worker"
                 raise TimeoutError(message)
             time.sleep(0.02)
+        (path / "attempting").touch()
         return original(*args, **kwargs)
 
     setattr(module, name, blocked)
@@ -113,7 +135,7 @@ def blocked_worker(root: str, stage: str, markers: str) -> None:
             root,
             "--scientific",
             "--pipeline-stage",
-            stage + "_worker",
+            stage.removesuffix("_accept") + "_worker",
             "--no-print-startup-summary",
             "--skip-evaluator-diagnostics",
         ])
@@ -161,16 +183,18 @@ def finish_blocked(
 
 @pytest.mark.fast
 @pytest.mark.usefixtures("monitored")
-def test_real_dataset_and_training_overlap_growth_at_exact_gate(tmp_path: Path) -> None:
+def test_real_dataset_and_training_overlap_growth_at_exact_gate(
+    tmp_path: Path, schedule_type: Any
+) -> None:
     """Commit useful Growth during both real stages, then yield exactly at L."""
     args, paths = setup_continual(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(2),
+        learning_schedule=schedule_type(2),
     )
     source = grow(args)
-    slot = source.metadata[WINDOW_KEY]["active"]
+    slot = window(source)["active"]
     assert slot["source"]["generation"] == source.generation == 2
     incumbent = committed_evaluator(paths.work_dir, source)[0]
     process, markers, output = start_blocked(paths, "dataset", tmp_path)
@@ -186,7 +210,7 @@ def test_real_dataset_and_training_overlap_growth_at_exact_gate(tmp_path: Path) 
     process, markers, output = start_blocked(paths, "training", tmp_path)
     try:
         gate = run_growth_cli(paths, 20)
-        assert gate.cycle_index == slot["target_cycle"]
+        assert gate.cycle_index == slot.get("limit_cycle", slot.get("target_cycle"))
         assert committed_evaluator(paths.work_dir, gate)[0] == incumbent
         authority = paths.run_state_path.read_bytes()
         assert grow(args).cycle_index == gate.cycle_index
@@ -269,7 +293,9 @@ def test_early_acceptance_waits_for_fixed_gate_and_preserves_loser_parents(
 
 
 @pytest.mark.usefixtures("monitored")
-def test_cadence_skips_and_retention_resolution(tmp_path: Path) -> None:
+def test_cadence_skips_and_retention_resolution(
+    tmp_path: Path, schedule_type: Any
+) -> None:
     """Record skipped cuts without admitting a newer source or losing the slot."""
     args, paths = setup_continual(
         tmp_path / "run",
@@ -277,7 +303,7 @@ def test_cadence_skips_and_retention_resolution(tmp_path: Path) -> None:
         memory_floor_mb=1,
         training_cadence=2,
         dataset_cadence=2,
-        learning_schedule=BoundedGrowthWindow(3),
+        learning_schedule=schedule_type(3),
     )
     source = grow(args)
     run_growth_cli(paths, 20)
@@ -323,7 +349,10 @@ def test_policy_serialization_is_explicit_and_strict(tmp_path: Path) -> None:
 @pytest.mark.fast
 @pytest.mark.usefixtures("monitored")
 def test_winning_activation_drains_old_patch_and_commits_closure_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, endgame: tuple[Any, Any]
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    endgame: tuple[Any, Any],
+    schedule_type: Any,
 ) -> None:
     """Real proof-bearing tree and winning learner exercise full owned activation."""
     from chipiron.environments.morpion.bootstrap.runtime import runner as runners
@@ -336,13 +365,14 @@ def test_winning_activation_drains_old_patch_and_commits_closure_once(
             automatic=True,
             proof=True,
             memory_floor_mb=1,
-            learning_schedule=BoundedGrowthWindow(1),
+            learning_schedule=schedule_type(1),
         )
     source = grow(args)
     reference = learn(args, source.generation)
     proposal = training._proposal(paths, reference)
     assert proposal["status"]["metadata"]["continual_selection"]["activation_eligible"]
-    run_growth_cli(paths, 1)
+    if schedule_type is BoundedGrowthWindow:
+        run_growth_cli(paths, 1)
     run_morpion_bootstrap_experiment(
         launcher_args_from_cli([
             "--work-dir",
@@ -385,7 +415,7 @@ def test_winning_activation_drains_old_patch_and_commits_closure_once(
 
 @pytest.mark.usefixtures("monitored")
 def test_noop_does_not_consume_lookahead(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schedule_type: Any
 ) -> None:
     """A resource refusal cannot be counted as committed lookahead."""
     from chipiron.environments.morpion.bootstrap.pipeline import stages
@@ -394,7 +424,7 @@ def test_noop_does_not_consume_lookahead(
         tmp_path / "run",
         automatic=True,
         memory_floor_mb=1,
-        learning_schedule=BoundedGrowthWindow(1),
+        learning_schedule=schedule_type(1),
     )
     source = grow(args)
     with monkeypatch.context() as refused:
@@ -402,4 +432,6 @@ def test_noop_does_not_consume_lookahead(
         state = grow(args)
     assert state.cycle_index == source.cycle_index
     assert window(state)["active"] == window(source)["active"]
-    assert grow(args).cycle_index == window(source)["active"]["target_cycle"]
+    assert grow(args).cycle_index == window(source)["active"].get(
+        "limit_cycle", window(source)["active"].get("target_cycle")
+    )

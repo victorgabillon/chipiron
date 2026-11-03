@@ -23,7 +23,7 @@ from .evaluator_family import morpion_evaluators_config_from_preset
 from .learning_policy import (
     MorpionContinualLearningPolicy,
 )
-from .learning_schedule import BoundedGrowthWindow
+from .learning_schedule import LearningSchedule
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
@@ -253,7 +253,7 @@ class MorpionBootstrapArgs:
     torch_intra_op_threads: int | None = None
     torch_inter_op_threads: int | None = None
     continual_learning: MorpionContinualLearningPolicy | None = None
-    learning_schedule: BoundedGrowthWindow | None = None
+    learning_schedule: LearningSchedule | None = None
     model_kind: str = "linear"
     hidden_dim: int | None = None
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (

@@ -1893,12 +1893,14 @@ def launcher_args_from_cli(
             diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
             tree_branch_limit_explicit=tree_branch_limit_explicit,
         )
-    from .learning_schedule import BoundedGrowthWindow
+    from .learning_schedule import BoundedGrowthWindow, ReadyBoundedGrowthWindow
 
     bootstrap_args = MorpionBootstrapArgs(
-        learning_schedule=None
-        if parsed.growth_lookahead_cycles is None
-        else BoundedGrowthWindow(parsed.growth_lookahead_cycles),
+        learning_schedule=ReadyBoundedGrowthWindow(parsed.ready_growth_max_cycles)
+        if parsed.ready_growth_max_cycles is not None
+        else BoundedGrowthWindow(parsed.growth_lookahead_cycles)
+        if parsed.growth_lookahead_cycles is not None
+        else None,
         work_dir=parsed.work_dir,
         execution_profile=parsed.execution_profile,
         torch_intra_op_threads=parsed.torch_intra_op_threads,

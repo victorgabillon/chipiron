@@ -670,3 +670,55 @@ recipes and resource budgets are unchanged. Use J1's read-only performance repor
 for observed overlap, waiting and incomplete attempts; its span is not a proven
 causal critical path. Background candidate inference preparation, multi-round
 queues and persistent live runtimes are outside this policy slice.
+
+### Ready-result bounded Growth (fresh opt-in)
+
+Use `--ready-growth-max-cycles H` instead of `--growth-lookahead-cycles L` when
+preparing a **new** monitored continual experiment. The options are mutually
+exclusive; H must be a positive integer. The same automatic-activation, equal
+Dataset/Training cadence and closed sharded publication requirements apply.
+Neither historical default behavior nor the existing fixed-window format changes.
+The new policy cannot be adopted by an existing workspace or changed on resume.
+
+The `ready_bounded_growth_window_v1` policy reserves one source and permits at
+most H ordinary committed cycles after it. Accepted Training is resolved at the
+next owned boundary, even before the cap. A private or merely published proposal
+is not ready. If Dataset/Training is late, Growth waits outside ownership at the
+cap. An already owned cycle finishes before Training can commit acceptance;
+Growth rechecks acceptance under ownership after its preliminary activation check.
+Resolution releases/reacquires the existing ownership seam without nested locking.
+Retained candidates close the slot too; acceptance does not force promotion.
+
+For example, source cycle 10 with H=4 and acceptance visible at boundary 11
+resolves at 11. Fixed L=4 waits to 14. If learning is still unaccepted at 14, both
+policies stop admitting Growth there. H measures ordinary cycles, not publication
+generations, nodes or seconds. Increasing steps per cycle changes the effective
+work and age bound. Repeated legitimate incumbent wins may leave weights old;
+the policy never promotes a worse candidate merely to reset weight age.
+
+The new state is `learning_window_v2`, with a version-3 continual context and a
+schedule hash. Its active slot binds source publication/descriptor, source cycle,
+`limit_cycle`, incumbent and window sequence. Compact `decisions` live in this
+same committed metadata: one per ordinary publication or resolution, bounded by
+publication history plus completed windows and persisted no-save Growth cycles,
+never one per poll. A no-save Growth attempt keeps the existing cycle counter and
+head publication; its decision records that persisted boundary without inventing
+a new scientific publication. They record
+pre/post cycle, parent/current publication, reserved source (null before one is
+reserved), accepted Training reference observed and action. Completed windows
+retain the accepted result and retain/activation reference. Timing logs are not
+authority. This history reconstructs committed admission order; it does not promise
+bitwise replay across different worker completion times or hardware.
+
+The existing RAM floor and monitored stop/resource budgets still take precedence.
+Restart does not reset H, claims, counters or accepted effects. Active sources
+remain retention roots; independent candidate weights/Adam parents, claim/session
+quiescence, exact accepted retries and old-model patch-drain recovery are unchanged.
+
+This scheduling choice changes tree/data/model trajectories and may increase
+refresh frequency. No speed or score benefit has been demonstrated. Activation
+still holds Growth ownership for the complete synchronous refresh, certificate
+checks, backup/selection rebuilding and checkpoint/export. Latest-ready Dataset
+queues, background candidate prediction, retained live trees and preparation-cache
+changes are separate work. Compare valid certified score versus elapsed time;
+CPU/GPU utilization and host overlap alone do not establish useful throughput.
