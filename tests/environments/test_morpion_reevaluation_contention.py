@@ -3,15 +3,16 @@
 import json
 import os
 from contextlib import contextmanager
+from importlib import import_module
 from threading import Event, Thread
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from chipiron.environments.morpion.bootstrap import launcher, run_pipeline_growth_stage
 from chipiron.environments.morpion.bootstrap import persistent_worker as persistent
 from chipiron.environments.morpion.bootstrap import persistent_worker_state as status
 from chipiron.environments.morpion.bootstrap import reevaluation_worker as worker
+from chipiron.environments.morpion.bootstrap import run_pipeline_growth_stage
 from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
     receipt_ledger,
 )
@@ -112,7 +113,11 @@ def test_activation_outlasts_wait_then_persistent_job_reloads_model_and_grows(
     )
     monkeypatch.setattr(status, "monitored_identity", _identity)
     monkeypatch.setattr(persistent, "launcher_execution", execution)
-    monkeypatch.setattr(launcher, "_run_launcher_cli", job)
+    # Full-suite package import checks can replace the launcher module in
+    # sys.modules after this test file was collected. Persistent dispatch imports
+    # the current module at job time, so patch that same module object.
+    current_launcher = import_module("chipiron.environments.morpion.bootstrap.launcher")
+    monkeypatch.setattr(current_launcher, "_run_launcher_cli", job)
     monkeypatch.setattr(persistent, "_cleanup", cleanup)
     try:
         assert (
