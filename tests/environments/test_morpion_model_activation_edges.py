@@ -303,7 +303,9 @@ def test_late_m1_producer_cannot_publish(
         release.set()
         thread.join(30)
     assert not thread.is_alive()
-    assert "Model changed" in str(result.get("error")), result
+    assert "error" not in result, result
+    assert not result["value"].patch_written
+    assert result["value"].reason == "model_activated"
     assert load_bootstrap_run_state(paths.run_state_path) == after
     assert not paths.pipeline_reevaluation_patch_path.exists()
 
