@@ -454,6 +454,13 @@ def load_available_pipeline_manifests(
             if "retired_payload_v1" in record:
                 manifests.pop(generation, None)
                 continue
+            if generation not in manifests and "accepted_dataset" not in record:
+                # Growth commits run_state before publishing its advisory manifest.
+                # An overlapping poll must defer undiscoverable pending work; the
+                # writer (or its recovery) publishes the projection. Accepted work
+                # still projects from its immutable evidence below, and selected
+                # consumers retain their ordinary pin/closure validation.
+                continue
             manifest = project_dataset(
                 paths, state, generation, manifests.get(generation), record=record
             )

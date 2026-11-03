@@ -137,14 +137,17 @@ def test_publication_excludes_concurrent_growth(
 def test_busy_growth_refuses_without_cursor_or_patch_and_retry_succeeds(
     paused_producer: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep existing nonblocking flock semantics; busy publication advances nothing."""
+    """A busy publication yields without changing authority; an ordinary retry works."""
     _args, paths, initial, results, release, thread = paused_producer
     with growth_receipt_ownership(paths):
         release.set()
         thread.join(30)
         assert not thread.is_alive()
-        assert isinstance(results.get("error"), BlockingIOError), results
+        assert "error" not in results, results
+        assert not results["result"].patch_written
+        assert results["result"].reason == "ownership_contended"
         assert not paths.pipeline_reevaluation_patch_path.exists()
+        assert not paths.pipeline_reevaluation_cursor_path.exists()
         assert load_bootstrap_run_state(paths.run_state_path) == initial
     assert atomic_worker(paths.work_dir, monkeypatch).patch_written
 

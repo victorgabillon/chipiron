@@ -24,6 +24,7 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from .bootstrap_paths import MorpionBootstrapPaths
 from .cycle_timing import timestamp_utc_from_unix_s
 from .generation_publication_io import (
+    GrowthOwnershipBlockingIOError,
     growth_receipt_ownership,
     locate_capsule,
     require,
@@ -43,6 +44,10 @@ from .pipeline_artifacts import (
 )
 from .pipeline_memory import log_available_ram_guard, log_pipeline_memory
 from .pipeline_orchestrator import load_available_pipeline_manifests
+from .reevaluation_activation import (
+    ReevaluationModelActivatedError,
+    raise_for_committed_activation,
+)
 from .reevaluation_publication import publish_reevaluation_patch_if_absent
 from .reevaluation_transaction import (
     GROWTH_NUMERIC_POLICY,
@@ -68,6 +73,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from .bootstrap_args import MorpionBootstrapArgs
+    from .run_state import MorpionBootstrapRunState
 
 
 LOGGER = logging.getLogger(__name__)
@@ -507,6 +513,7 @@ def build_active_model_reevaluation_evaluator(
     *,
     paths: MorpionBootstrapPaths,
     active_model: MorpionPipelineActiveModel,
+    captured_state: MorpionBootstrapRunState | None = None,
 ) -> MorpionActiveModelNodeReevaluationEvaluator:
     """Resolve one active-model bundle path into the default reevaluation adapter."""
     model_bundle_path = paths.resolve_work_dir_path(active_model.model_bundle_path)
@@ -520,6 +527,18 @@ def build_active_model_reevaluation_evaluator(
         state = load_bootstrap_run_state(paths.run_state_path)
         if "evaluator_contract" in state.metadata.get(PUBLICATION_KEY, {}):
             model, sealed_path = committed_evaluator(paths.work_dir, state)
+            if model is not None and (
+                model["generation"],
+                model["name"],
+                model["path"],
+            ) != (
+                active_model.generation,
+                active_model.evaluator_name,
+                active_model.model_bundle_path,
+            ):
+                raise_for_committed_activation(
+                    paths, captured_state, state, boundary="model_load"
+                )
             require(
                 model is not None
                 and (model["generation"], model["name"], model["path"])
@@ -679,6 +698,69 @@ def node_values_to_patch_rows(
 
 
 def run_morpion_reevaluation_worker_once(
+    args: MorpionBootstrapArgs,
+    *,
+    evaluator: MorpionNodeReevaluationEvaluator
+    | MorpionWindowNodeReevaluationEvaluator
+    | None = None,
+    max_nodes_per_patch: int = 10_000,
+    now_unix_s: float | None = None,
+    patch_id: str | None = None,
+    use_snapshot_value_fallback: bool = False,
+    use_streaming_sharded_reader: bool = False,
+    reader_cache_dir: str | Path | None = None,
+    allow_scientific_v2: bool = False,
+) -> MorpionReevaluationWorkerResult:
+    """Run one job; a verified concurrent activation discards only unpublished work."""
+    measurement = StageMeasurement()
+    try:
+        return _run_morpion_reevaluation_worker_once(
+            args,
+            evaluator=evaluator,
+            max_nodes_per_patch=max_nodes_per_patch,
+            now_unix_s=now_unix_s,
+            patch_id=patch_id,
+            use_snapshot_value_fallback=use_snapshot_value_fallback,
+            use_streaming_sharded_reader=use_streaming_sharded_reader,
+            reader_cache_dir=reader_cache_dir,
+            allow_scientific_v2=allow_scientific_v2,
+        )
+    except ReevaluationModelActivatedError as changed:
+        # The implementation's ExitStacks released source pins and Growth ownership.
+        # No proposal/cursor was published; the next ordinary job rereads authority.
+        paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+        LOGGER.info(
+            "[reevaluation-cycle] status=DISCARDED reason=model_activated boundary=%s old_model=%s",
+            changed.boundary,
+            changed.model["name"],
+        )
+        persist_stage_measurement(
+            paths.work_dir,
+            changed.generation,
+            "reevaluation.discarded",
+            measurement.finish(
+                reason="model_activated",
+                boundary=changed.boundary,
+                evaluator_name=changed.model["name"],
+                patch_written=False,
+            ),
+        )
+        return MorpionReevaluationWorkerResult(
+            patch_written=False,
+            reason="model_activated",
+            patch_id=None,
+            num_rows=0,
+            evaluator_generation=changed.model["generation"],
+            evaluator_name=changed.model["name"],
+            start_cursor=None,
+            end_cursor=None,
+            completed_full_pass_count=None,
+            tree_generation=changed.generation,
+            model_bundle_path=changed.model["path"],
+        )
+
+
+def _run_morpion_reevaluation_worker_once(
     args: MorpionBootstrapArgs,
     *,
     evaluator: MorpionNodeReevaluationEvaluator
@@ -936,7 +1018,25 @@ def run_morpion_reevaluation_worker_once(
         if captured is not None:
             assert captured_state is not None
             captured_source = source_identity(captured_state, tree_generation)
-            captured_model = current_model_identity(paths)
+            if "evaluator_contract" in captured_state.metadata.get(PUBLICATION_KEY, {}):
+                from .generation_publication_io import committed_evaluator
+
+                captured_model, _ = committed_evaluator(paths.work_dir, captured_state)
+                assert captured_model is not None
+            else:
+                captured_model = current_model_identity(paths)
+            if (
+                captured_model["generation"],
+                captured_model["name"],
+                captured_model["path"],
+            ) != (
+                active_model.generation,
+                active_model.evaluator_name,
+                active_model.model_bundle_path,
+            ):
+                raise_for_committed_activation(
+                    paths, authority, captured_state, boundary="admission"
+                )
             require(
                 (
                     captured_model["generation"],
@@ -1162,6 +1262,7 @@ def run_morpion_reevaluation_worker_once(
             active_model_evaluator = build_active_model_reevaluation_evaluator(
                 paths=paths,
                 active_model=active_model,
+                captured_state=captured_state,
             )
             active_model_evaluator.numeric_policy = numeric_policy
             if view is not None:
@@ -1287,13 +1388,52 @@ def run_morpion_reevaluation_worker_once(
             if captured is not None:
                 # Inference stays outside ownership. Recheck the captured proposal
                 # and publish under the same lease used by Growth commits.
-                publication_stack.enter_context(
-                    growth_receipt_ownership(paths, wait=True)
-                )
+                try:
+                    publication_stack.enter_context(
+                        growth_receipt_ownership(paths, wait=True)
+                    )
+                except GrowthOwnershipBlockingIOError:
+                    # Only pre-ownership contention can discard this job. No
+                    # proposal/cursor is visible; ExitStacks release source pins
+                    # before the next ordinary job rereads model/source authority.
+                    LOGGER.info(
+                        "[reevaluation-cycle] status=DISCARDED reason=ownership_contended"
+                    )
+                    persist_stage_measurement(
+                        paths.work_dir,
+                        tree_generation,
+                        "reevaluation.discarded",
+                        stage_measurement.finish(
+                            reason="ownership_contended",
+                            evaluator_name=active_model.evaluator_name,
+                            model_generation=active_model.generation,
+                            rows_computed=len(patch.rows),
+                            patch_written=False,
+                            inference_window=inference_observation,
+                        ),
+                    )
+                    return MorpionReevaluationWorkerResult(
+                        patch_written=False,
+                        reason="ownership_contended",
+                        patch_id=None,
+                        num_rows=0,
+                        evaluator_generation=active_model.generation,
+                        evaluator_name=active_model.evaluator_name,
+                        start_cursor=None,
+                        end_cursor=None,
+                        completed_full_pass_count=None,
+                        tree_generation=tree_generation,
+                        model_bundle_path=active_model.model_bundle_path,
+                    )
                 publication_state = load_bootstrap_run_state(paths.run_state_path)
                 validate_proposal(publication_state, patch)
+                publication_model = current_model_identity(paths)
+                if publication_model != captured_model:
+                    raise_for_committed_activation(
+                        paths, captured_state, publication_state, boundary="publication"
+                    )
                 require(
-                    current_model_identity(paths) == captured_model,
+                    publication_model == captured_model,
                     "Model changed during proposal computation.",
                 )
                 if "evaluator_contract" in publication_state.metadata.get(
