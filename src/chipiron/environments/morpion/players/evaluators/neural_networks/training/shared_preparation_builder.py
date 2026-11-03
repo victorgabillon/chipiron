@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.learning import MorpionSupervisedRow
 
     from .shared_preparation import _Budget, _Recipe
+    from .shared_preparation_reuse import _Reuse
     from .state_split import StateSplit
 
 
@@ -173,6 +174,7 @@ def build_shared_bundle(
     recipe: _Recipe,
     budget: _Budget,
     row_chunk_size: int,
+    reuse: _Reuse | None = None,
 ) -> tuple[StateSplit, dict[str, float | int]]:
     """Use one certified state per row, existing converters and the native split fold."""
     budget.check_memory(3 * budget.chunk_bytes)
@@ -217,7 +219,8 @@ def build_shared_bundle(
                 [len(t) for t in buffers["relations"]], dtype=torch.long
             ),
         }
-        budget.check_stage(directory, packed_bytes, staged_bytes, buffered_bytes)
+        active_budget = budget if reuse is None else reuse.build_budget
+        active_budget.check_stage(directory, packed_bytes, staged_bytes, buffered_bytes)
         path = chunk_directory / f"{len(chunks):08d}.pt"
         _save(path, tensors)
         staged_bytes += path.stat().st_size
@@ -255,19 +258,27 @@ def build_shared_bundle(
             timings["identity_s"] += perf_counter() - tick
             # Frozen wrapper: sets/tuples are immutable and dir_usage is copied.
             # Both converters are unchanged and see this one consistent state.
-            state = dynamics.wrap_atomheart_state(validated.state)
-            tick = perf_counter()
-            flat_tensor = flat_converter.state_to_tensor(state)
-            timings["flat_encode_s"] += perf_counter() - tick
-            tick = perf_counter()
-            converted = relational_converter.state_to_tensors(state)
-            timings["relational_encode_s"] += perf_counter() - tick
+            cached = (
+                None if reuse is None else reuse.lookup(validated.row.state_ref_payload)
+            )
+            if cached is None:
+                state = dynamics.wrap_atomheart_state(validated.state)
+                tick = perf_counter()
+                flat_tensor = flat_converter.state_to_tensor(state)
+                timings["flat_encode_s"] += perf_counter() - tick
+                tick = perf_counter()
+                converted = relational_converter.state_to_tensors(state)
+                relations = converted.relation_triples.to(
+                    dtype=torch.int32, device="cpu"
+                )
+                tokens = converted.token_tensor
+                timings["relational_encode_s"] += perf_counter() - tick
+            else:
+                flat_tensor, tokens, relations = cached
             values = {
                 "flat": flat_tensor,
-                "tokens": converted.token_tensor,
-                "relations": converted.relation_triples.to(
-                    dtype=torch.int32, device="cpu"
-                ),
+                "tokens": tokens,
+                "relations": relations,
                 "targets": torch.tensor(
                     [validated.row.target_value], dtype=torch.float32
                 ),
@@ -284,6 +295,10 @@ def build_shared_bundle(
                 packed_bytes <= budget.packed_bytes,
                 "Prepared tensors exceed packing memory budget",
             )
+            if reuse is not None:
+                reuse.append(
+                    validated.row.state_ref_payload, (flat_tensor, tokens, relations)
+                )
             for name, tensor in values.items():
                 buffers[name].append(tensor)
             buffered_bytes += size
@@ -298,7 +313,16 @@ def build_shared_bundle(
         identified_rows(), fraction=recipe.fraction, seed=recipe.seed
     )
     timings["conversion_and_split_s"] = perf_counter() - started
-    timings.update(_pack(chunks, rows, directory, recipe, budget, packed_bytes))
+    timings.update(
+        _pack(
+            chunks,
+            rows,
+            directory,
+            recipe,
+            budget if reuse is None else reuse.build_budget,
+            packed_bytes,
+        )
+    )
     for chunk in chunks:
         chunk.path.unlink()
     chunk_directory.rmdir()
