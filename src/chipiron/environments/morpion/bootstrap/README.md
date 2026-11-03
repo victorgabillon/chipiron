@@ -700,7 +700,10 @@ The new state is `learning_window_v2`, with a version-3 continual context and a
 schedule hash. Its active slot binds source publication/descriptor, source cycle,
 `limit_cycle`, incumbent and window sequence. Compact `decisions` live in this
 same committed metadata: one per ordinary publication or resolution, bounded by
-publication history plus completed windows, never one per poll. They record
+publication history plus completed windows and persisted no-save Growth cycles,
+never one per poll. A no-save Growth attempt keeps the existing cycle counter and
+head publication; its decision records that persisted boundary without inventing
+a new scientific publication. They record
 pre/post cycle, parent/current publication, reserved source (null before one is
 reserved), accepted Training reference observed and action. Completed windows
 retain the accepted result and retain/activation reference. Timing logs are not

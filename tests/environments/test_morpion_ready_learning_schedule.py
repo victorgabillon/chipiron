@@ -379,6 +379,46 @@ def test_memory_refusal_precedes_ready_resolution(
     assert paths.run_state_path.read_bytes() == before
 
 
+@pytest.mark.usefixtures("monitored")
+def test_no_save_growth_after_ready_promotion_keeps_decision_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real no-save Growth attempt still advances the durable cycle bound."""
+    from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
+    from tests.environments.test_morpion_value_certainty import endgame
+
+    position, _ = endgame.__wrapped__()
+    monkeypatch.setattr(runner_module, "initial_state", lambda: position)
+    args, paths = setup_continual(
+        tmp_path / "run",
+        automatic=True,
+        proof=True,
+        memory_floor_mb=1,
+        learning_schedule=ReadyBoundedGrowthWindow(2),
+    )
+    source = grow(args)
+    learn(args, source.generation)
+    activation.activate_selected_round_automatically(paths)
+    closed = load_bootstrap_run_state(paths.run_state_path)
+    assert window(closed)["completed"][-1]["outcome"] == "activated"
+    attempted = grow(args)
+    assert attempted.generation == closed.generation
+    assert attempted.cycle_index == closed.cycle_index + 1
+    data = window(attempted)
+    assert data["active"] is None
+    assert data["decisions"][-1]["action"] == "no_save"
+    assert (
+        data["decisions"][-1]["publication"]
+        == data["decisions"][-1]["parent_publication"]
+    )
+    assert window(load_bootstrap_run_state(paths.run_state_path)) == data
+    before = paths.run_state_path.read_bytes()
+    monkeypatch.setattr(stages, "log_available_ram_guard", lambda **_: False)
+    refused = grow(args)
+    assert refused.cycle_index == attempted.cycle_index
+    assert paths.run_state_path.read_bytes() == before
+
+
 def persistent_ready_worker(root: str) -> None:
     """Run two bounded real worker jobs in a supervised CPU fixture session."""
     import json

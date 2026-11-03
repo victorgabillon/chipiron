@@ -737,6 +737,16 @@ def _run_pipeline_growth_stage_owned(
             force_save=derived_sequential,
             receipt_session=receipt_session,
         )
+        if (
+            args.learning_schedule is not None
+            and run_state.generation == previous_generation
+            and run_state.cycle_index > previous_state.cycle_index
+        ):
+            from chipiron.environments.morpion.bootstrap.learning_schedule import (
+                on_no_publication,
+            )
+
+            run_state = on_no_publication(previous_state, run_state)
         if receipt_session is not None:
             run_state = receipt_session.commit(previous_state, run_state)
         elif derived_sequential:

@@ -550,6 +550,37 @@ def on_publication(
     return replace(state, metadata={**state.metadata, key: {**data, "active": slot}})
 
 
+def on_no_publication(
+    previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
+) -> MorpionBootstrapRunState:
+    """Count a persisted no-save Growth attempt without inventing a publication."""
+    data = window(previous)
+    if data is None:
+        return state
+    schedule = schedule_from_metadata({CONFIG_KEY: data["policy"]})
+    if not isinstance(schedule, ReadyBoundedGrowthWindow):
+        return state
+    before = publication_records(previous.metadata)
+    after = publication_records(state.metadata)
+    require(
+        state.generation == previous.generation
+        and state.cycle_index == previous.cycle_index + 1
+        and before == after
+        and wait_reason(previous) is None,
+        "Invalid no-save Growth boundary.",
+    )
+    head = after[-1]["id"]
+    data = _record_decision(
+        data,
+        state,
+        parent=head,
+        before=previous.cycle_index,
+        action="no_save",
+        accepted=None,
+    )
+    return replace(state, metadata={**state.metadata, READY_WINDOW_KEY: data})
+
+
 def _record_decision(
     data: dict[str, Any],
     state: MorpionBootstrapRunState,
@@ -589,7 +620,7 @@ def _validate_decisions(data: dict[str, Any], state: MorpionBootstrapRunState) -
     records = {r["id"]: r for r in publication_records(state.metadata)}
     decisions = data["decisions"]
     require(
-        len(decisions) <= len(records) + len(data["completed"]),
+        len(decisions) <= len(records) + len(data["completed"]) + state.cycle_index + 1,
         "Boundary decisions exceed committed work.",
     )
     previous_cycle = -1
@@ -638,7 +669,14 @@ def _validate_decisions(data: dict[str, Any], state: MorpionBootstrapRunState) -
                 },
                 "Invalid boundary source.",
             )
-        if decision["action"] == "grow":
+        if decision["action"] == "no_save":
+            require(
+                decision["accepted_training"] is None
+                and decision["after_cycle"] == decision["before_cycle"] + 1
+                and decision["publication"] == decision["parent_publication"],
+                "Invalid no-save boundary decision.",
+            )
+        elif decision["action"] == "grow":
             require(
                 decision["accepted_training"] is None
                 and decision["after_cycle"] == decision["before_cycle"] + 1
