@@ -417,7 +417,7 @@ def _run_monitored(
                     max(
                         1,
                         min(
-                            int(policy.max_elapsed_seconds - elapsed),
+                            int(policy.max_elapsed_seconds - consumed),
                             43200 - policy.shutdown_grace_seconds - 5,
                         ),
                     )

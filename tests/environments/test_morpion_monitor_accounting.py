@@ -89,6 +89,7 @@ def run_sample(
         pid = os.getpid()
         returncode: int | None = None
         started = False
+        limit_seconds: int | None = None
 
         def __enter__(self) -> Supervisor:
             self.started = True
@@ -111,7 +112,12 @@ def run_sample(
             return 0
 
     supervisor = Supervisor()
-    monkeypatch.setattr(operator.subprocess, "Popen", lambda *_a, **_k: supervisor)
+
+    def launch(*_args: Any, **kwargs: Any) -> Supervisor:
+        supervisor.limit_seconds = int(kwargs["env"]["MORPION_CLUSTER_MAX_SECONDS"])
+        return supervisor
+
+    monkeypatch.setattr(operator.subprocess, "Popen", launch)
     monkeypatch.setattr(Path, "read_text", proc_read)
     monkeypatch.setattr(operator, "available_ram_mb", lambda: 20000.0)
     monkeypatch.setattr(
@@ -183,6 +189,7 @@ def run_sample(
     receipt["decision"] = usages[0]
     receipt["forced_signals"] = signals
     receipt["supervisor_started"] = supervisor.started
+    receipt["supervisor_limit_seconds"] = supervisor.limit_seconds
     assert receipt["shutdown_confirmed"]
     assert not Path(receipt["scratch"]).exists()
     return receipt
@@ -329,6 +336,15 @@ def test_initial_sample_spends_remaining_budget_without_launch(
     result = run_sample(tmp_path, monkeypatch, consumed=1199.0, initial_delay=2.0)
     assert result["reason"] == "maximum_elapsed_time"
     assert not result["supervisor_started"]
+
+
+@pytest.mark.fast
+def test_supervisor_budget_is_not_rounded_down_by_sample_time(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Subsecond sampling must not shorten the existing integer supervisor cap."""
+    result = run_sample(tmp_path, monkeypatch, initial_delay=0.01)
+    assert result["supervisor_limit_seconds"] == 1200
 
 
 @pytest.mark.fast
