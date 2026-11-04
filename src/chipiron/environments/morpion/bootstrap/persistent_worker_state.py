@@ -76,7 +76,6 @@ def active_job_age(work_dir: Path, pid: int, process_age: float) -> float:
     """Use matching active-job age or fresh idle evidence; otherwise fail conservatively."""
     import json
 
-    now = time.monotonic()
     try:
         fields = (
             Path(f"/proc/{pid}/stat")
@@ -112,6 +111,9 @@ def active_job_age(work_dir: Path, pid: int, process_age: float) -> float:
             )
             heartbeat = data["heartbeat_monotonic_s"]
             started = data["job_started_monotonic_s"]
+            # A concurrently published record can be newer than a timestamp
+            # captured before its read. Truly future clocks still fail closed.
+            now = time.monotonic()
             require(
                 all(
                     isinstance(x, (float, int))

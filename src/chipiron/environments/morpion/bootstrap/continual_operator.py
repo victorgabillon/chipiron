@@ -360,13 +360,23 @@ def _run_monitored(
                     and "python" in Path(command[0]).name
                     and "--pipeline-stage" in command
                 ):
-                    elapsed = time.time() - child.create_time()
+                    # Linux start ticks and BOOTTIME share a clock; Unix clock
+                    # adjustments must not create or conceal a worker overrun.
+                    fields = (
+                        Path(f"/proc/{child.pid}/stat")
+                        .read_text(encoding="utf-8")
+                        .rsplit(") ", 1)[1]
+                        .split()
+                    )
+                    elapsed = time.clock_gettime(time.CLOCK_BOOTTIME) - int(
+                        fields[19]
+                    ) / os.sysconf("SC_CLK_TCK")
                     if "--persistent-worker" in command:
                         from .persistent_worker_state import active_job_age
 
                         elapsed = active_job_age(paths.work_dir, child.pid, elapsed)
                     longest = max(longest, elapsed)
-            except psutil.NoSuchProcess, ProcessLookupError:
+            except psutil.NoSuchProcess, ProcessLookupError, FileNotFoundError:
                 continue
         ram = available_ram_mb()
         require(ram is not None, "Available RAM monitoring is unavailable.")
@@ -387,7 +397,9 @@ def _run_monitored(
         return current
 
     try:
-        reason = resource_limit_reason(policy, sample(), consumed) or ""
+        current = sample()
+        elapsed = consumed + time.monotonic() - started
+        reason = resource_limit_reason(policy, current, elapsed) or ""
         if not reason:
             environment = dict(
                 os.environ,
@@ -442,10 +454,12 @@ def _run_monitored(
                     )
                 )
                 while process.poll() is None:
-                    elapsed = consumed + time.monotonic() - started
                     current = sample()
                     state = load_bootstrap_run_state(paths.run_state_path)
                     termination = state.metadata.get("experiment_termination")
+                    # Sampling/status reads can cross the deadline. Decide from
+                    # their completion time, before shutdown can alter the label.
+                    elapsed = consumed + time.monotonic() - started
                     reason = (
                         "operator_" + interrupted[-1]
                         if interrupted

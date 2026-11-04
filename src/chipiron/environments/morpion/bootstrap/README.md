@@ -730,3 +730,14 @@ still inspect the actual board and rules, including when a cached terminal flag
 is incorrect. Symmetry-reduced legal-action counts and heuristic scores are
 unchanged. Evaluator installation still performs the full canonical refresh,
 backup, certificate checks and selector rebuild under Growth ownership.
+
+### Monitor accounting at shutdown
+
+The continual monitor checks elapsed limits after process/resource sampling and
+the committed-state read. A deadline crossed during these reads keeps the existing
+global-time precedence; later cleanup does not relabel an earlier stop decision.
+Persistent job timestamps are checked against a clock read after their status
+record, so a concurrent update is not mistaken for a future clock. Missing,
+invalid, stale idle and stopped records still use conservative process lifetime,
+measured from Linux start ticks and BOOTTIME rather than adjustable Unix time.
+These operational checks do not change job/run budgets or scientific authority.
