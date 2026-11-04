@@ -11,7 +11,7 @@ import os
 import resource
 import sys
 import time
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 from .pipeline_memory import available_ram_mb, current_rss_mb
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
 LOGGER = logging.getLogger(__name__)
 _IMPORT_TIME_NS = time.time_ns()
@@ -176,3 +176,155 @@ def persist_stage_measurement(
         )
         with suppress(OSError):
             temporary.unlink(missing_ok=True)
+
+
+def optional_measurement() -> StageMeasurement | None:
+    """Keep ordinary observer failures separate from scientific computation."""
+    try:
+        return StageMeasurement()  # Host only: never initialize/synchronize a device.
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+def optional_finish(measurement: StageMeasurement | None) -> dict[str, object]:
+    """Finish an existing observation once; missing evidence is not zero time."""
+    try:
+        return {} if measurement is None else measurement.finish()
+    except Exception:  # pylint: disable=broad-exception-caught
+        return {}
+
+
+class ActivationPhaseTiming:
+    """One bounded operational buffer, never a scientific authority or failure log.
+
+    Failed/uncommitted attempts are dropped to preserve rejection byte contracts.
+    A completed commit may publish even if the final runtime cleanup raises.
+    """
+
+    MAX_ROWS = 64
+    MAX_BYTES = 64 * 1024
+
+    def __init__(self, identity: dict[str, object]) -> None:
+        """Use already-known scalar identity only; no source/configuration reads."""
+        self.identity = identity
+        self.source = {
+            key: identity.get(key)
+            for key in ("source_tree_generation", "source_publication_id")
+        }
+        self.rows: list[dict[str, object]] = []
+        self.dropped = 0
+        self.errors = 0
+        self.ordinal = 0
+        self.invocation: str | None = None
+        try:
+            self.invocation = f"{process_identity()}:{time.time_ns()}"
+        except Exception:  # pylint: disable=broad-exception-caught
+            self.errors += 1
+
+    def set_source(self, generation: int, publication_id: str) -> None:
+        """Update already-known committed source after a successful drain/save."""
+        try:
+            self.source = {
+                "source_tree_generation": generation,
+                "source_publication_id": publication_id,
+            }
+        except Exception:  # pylint: disable=broad-exception-caught
+            self.errors += 1
+
+    @contextmanager
+    def phase(
+        self,
+        name: str,
+        *,
+        parent: str | None = None,
+        outside: bool = False,
+        output_generation: int | None = None,
+        output_publication_id: str | None = None,
+    ) -> Iterator[None]:
+        """Bracket a macro call; computation and cancellation are never caught."""
+        measurement = None
+        row: dict[str, object] = {}
+        try:
+            measurement = optional_measurement()
+            self.ordinal += 1
+            row = {
+                **self.source,
+                "output_generation": output_generation,
+                "output_publication_id": output_publication_id,
+                "phase": name,
+                "ordinal": self.ordinal,
+                "parent_phase": parent,
+                "outside_activation_total": outside,
+            }
+        except Exception:  # pylint: disable=broad-exception-caught
+            self.errors += 1
+        try:
+            yield
+        finally:
+            # Catch only observer work, not the operation inside the context.
+            if row:
+                try:
+                    observation = optional_finish(measurement)
+                    if not observation:
+                        self.errors += 1
+                    row.update(observation)
+                    row.update(
+                        monotonic_start_s=None
+                        if measurement is None
+                        else measurement.started,
+                        monotonic_end_s=(
+                            None
+                            if not observation or measurement is None
+                            else measurement.started + float(observation["elapsed_s"])  # type: ignore[arg-type]
+                        ),
+                        outcome="failed"
+                        if sys.exc_info()[0] is not None
+                        else "completed",
+                    )
+                    if len(self.rows) < self.MAX_ROWS:
+                        self.rows.append(row)
+                    else:
+                        self.dropped += 1
+                except Exception:  # pylint: disable=broad-exception-caught
+                    self.errors += 1
+
+    def publish(
+        self,
+        work_dir: Path,
+        generation: int,
+        publication_id: str,
+        total: dict[str, object],
+        *,
+        function_failed: bool,
+    ) -> None:
+        """Emit at most one bounded sidecar; even a failing sink/logger is harmless."""
+        try:
+            payload: dict[str, object] = {
+                **self.identity,
+                "schema_version": 1,
+                "generation": generation,
+                "stage": "activation.phases",
+                "phase_schema_version": 1,
+                "invocation_id": self.invocation,
+                "publication_id": publication_id,
+                "scientific_outcome": "committed",
+                "function_outcome": "failed" if function_failed else "completed",
+                "total": total,
+                "phases": list(self.rows),
+                "dropped_rows": self.dropped,
+                "observer_errors": self.errors,
+                "phase_calls": self.ordinal,
+            }
+            rows = payload["phases"]
+            assert isinstance(rows, list)
+            while len(json.dumps(payload, allow_nan=False).encode()) > self.MAX_BYTES:
+                if not rows:
+                    return
+                rows.pop()
+                payload["dropped_rows"] = int(payload["dropped_rows"]) + 1  # type: ignore[call-overload]
+            persist_stage_measurement(
+                work_dir, generation, "activation.phases", payload
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            # In particular, the existing sink's warning logger can itself fail.
+            return

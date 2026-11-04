@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from .formatting import object_mapping as mapping
-from .performance_timeline import number
+from .performance_timeline import interval, number
 
 MAX_ARTIFACT_BYTES = 256 * 1024
 MAX_AUTHORITY_BYTES = 4 * 1024 * 1024
@@ -41,6 +41,7 @@ class EvidenceReader:
         self.attempts: list[dict[str, Any]] = []
         self.publications: dict[int, dict[str, Any]] = {}
         self._seen: dict[tuple[object, ...], dict[str, Any]] = {}
+        self._activation_phases: list[tuple[int, str, dict[str, Any]]] = []
         self.authority = self.read(
             self.root / "run_state.json", limit=MAX_AUTHORITY_BYTES
         )
@@ -216,7 +217,17 @@ class EvidenceReader:
                     "Observation limit reached; remaining stage files not read"
                 )
                 break
-            record = self.read(path)
+            phase_file = path.name.startswith("activation.phases-")
+            record = self.read(
+                path, limit=64 * 1024 if phase_file else MAX_ARTIFACT_BYTES
+            )
+            if record.get("stage") == "activation.phases":
+                self._activation_phases.append((
+                    generation,
+                    str(path.relative_to(self.root)),
+                    record,
+                ))
+                continue
             if (
                 record.get("schema_version") == 1
                 and record.get("generation") == generation
@@ -467,6 +478,178 @@ class EvidenceReader:
                     identity=identity,
                     parent=parents[0]["measurement_id"] if len(parents) == 1 else None,
                 )
+        self.load_activation_phases()
+
+    def load_activation_phases(self) -> None:
+        """Attach optional operational children only to the matching accepted request."""
+        for generation, source, payload in self._activation_phases:
+            publication = self.publications.get(generation, {})
+            refreshes = [
+                r
+                for r in self.records[generation]
+                if r["stage"] == "activation.refresh"
+                and r.get("evidence_status") == "accepted"
+            ]
+            unjoined = (
+                payload.get("phase_schema_version") != 1
+                or payload.get("generation") != generation
+                or not publication.get("activation_request_sha256")
+                or payload.get("activation_request_sha256")
+                != publication.get("activation_request_sha256")
+                or payload.get("publication_id") != publication.get("id")
+                or len(refreshes) != 1
+                or any(
+                    payload.get(key) != refreshes[0].get(key)
+                    for key in ("attempt_id", "training_generation", "model_generation")
+                )
+            )
+            if unjoined:
+                self.warnings.append(f"{source}: unjoined activation phase evidence")
+                continue
+            identity = {
+                key: payload.get(key)
+                for key in (
+                    "attempt_id",
+                    "training_generation",
+                    "model_generation",
+                    "publication_id",
+                    "activation_request_sha256",
+                    "invocation_id",
+                    "source_tree_generation",
+                    "source_dataset_generation",
+                    "source_publication_id",
+                    "scientific_outcome",
+                    "function_outcome",
+                    "dropped_rows",
+                    "observer_errors",
+                    "phase_calls",
+                    "model_sha256",
+                    "previous_model_generation",
+                    "previous_model_sha256",
+                    "training_descriptor_sha256",
+                )
+            }
+            identity["evidence_status"] = "accepted"
+            total = mapping(payload.get("total"))
+            existing = [
+                r for r in self.records[generation] if r["stage"] == "activation"
+            ]
+            if (
+                total
+                and total.get("process_identity")
+                != refreshes[0].get("process_identity")
+            ) or (
+                existing
+                and not any(
+                    all(
+                        r.get(key) == total.get(key)
+                        for key in (
+                            "pid",
+                            "process_identity",
+                            "started_unix_s",
+                            "finished_unix_s",
+                            "elapsed_s",
+                        )
+                    )
+                    for r in existing
+                )
+            ):
+                self.warnings.append(
+                    f"{source}: inconsistent activation total identity; children unjoined"
+                )
+                continue
+            parent = self.add(
+                generation, "activation", total, source + "#total", identity=identity
+            )
+            if not total:
+                self.warnings.append(
+                    f"{source}: activation total unavailable after committed failure"
+                )
+            rows = payload.get("phases")
+            if not isinstance(rows, list):
+                self.warnings.append(f"{source}: missing activation phase rows")
+                continue
+            if (
+                len(rows) > 64
+                or payload.get("dropped_rows") != 0
+                or payload.get("observer_errors") != 0
+            ):
+                self.warnings.append(
+                    f"{source}: partial activation phase evidence (dropped/missing/observer errors)"
+                )
+            parents: dict[str, tuple[str, dict[str, Any]]] = {}
+            # Start ordinals restore hierarchy; buffers append on completion.
+            selected = sorted(
+                (r for r in rows[:64] if isinstance(r, dict)),
+                key=lambda r: number(r.get("ordinal")) or 0,
+            )
+            if len(selected) != min(len(rows), 64):
+                self.warnings.append(f"{source}: malformed activation phase rows")
+            for row in selected:
+                name = row.get("phase")
+                if not isinstance(name, str) or len(name) > 80 or name in parents:
+                    self.warnings.append(
+                        f"{source}: malformed/duplicate activation phase"
+                    )
+                    continue
+                outside = row.get("outside_activation_total") is True
+                enclosing_id, enclosing = parents.get(
+                    str(row.get("parent_phase")), (parent, total)
+                )
+                observed, bounds = interval(row), interval(enclosing)
+                mono_start, mono_end = (
+                    number(row.get("monotonic_start_s")),
+                    number(row.get("monotonic_end_s")),
+                )
+                elapsed = number(row.get("elapsed_s"))
+                valid = (
+                    row.get("process_identity") == refreshes[0].get("process_identity")
+                    and isinstance(row.get("process_identity"), str)
+                    and observed is not None
+                    and elapsed is not None
+                    and mono_start is not None
+                    and mono_end is not None
+                    and mono_end >= mono_start
+                    and abs(mono_end - mono_start - elapsed) <= 0.05
+                    and (
+                        row.get("parent_phase") is None
+                        or str(row["parent_phase"]) in parents
+                    )
+                    and (
+                        (
+                            outside
+                            and name.startswith("cleanup.")
+                            and interval(total) is not None
+                            and observed[0]
+                            >= (number(total.get("finished_unix_s")) or 0) - 0.05
+                        )
+                        or not enclosing
+                        or (
+                            bounds is not None
+                            and bounds[0] - 0.05
+                            <= observed[0]
+                            <= observed[1]
+                            <= bounds[1] + 0.05
+                        )
+                    )
+                )
+                observation = {
+                    **row,
+                    "phase_clock_valid": valid,
+                    "timing_scope": "outside original activation total"
+                    if outside
+                    else "within original activation total",
+                    "clock_source": "process perf_counter; Unix placement",
+                }
+                identifier = self.add(
+                    generation,
+                    "activation.phase." + name,
+                    observation,
+                    source + "#" + name,
+                    identity=identity,
+                    parent=None if outside else enclosing_id,
+                )
+                parents[name] = (identifier, observation)
 
     def load_runtime(self) -> None:
         """Read bounded passive records; never use them as claim or liveness authority."""

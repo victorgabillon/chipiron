@@ -20,6 +20,8 @@ def interval(row: dict[str, Any]) -> tuple[float, float] | None:
     """Only consistent, complete wall-clock evidence participates in interval arithmetic."""
     start, end = number(row.get("started_unix_s")), number(row.get("finished_unix_s"))
     elapsed = number(row.get("elapsed_s"))
+    if row.get("phase_clock_valid") is False:
+        return None
     if (
         start is None
         or end is None
@@ -189,5 +191,28 @@ def timeline_rows(
             "Clock source": record.get("clock_source"),
             "Retry evidence": record.get("retry_evidence"),
             "Outcome": record.get("outcome"),
+            **(
+                {
+                    "Activation invocation": record.get("invocation_id"),
+                    "Activation request": record.get("activation_request_sha256"),
+                    "Phase ordinal": record.get("ordinal"),
+                    "Scientific outcome": record.get("scientific_outcome"),
+                    "Function outcome": record.get("function_outcome"),
+                    "Dropped phase rows": record.get("dropped_rows"),
+                    "Observer errors": record.get("observer_errors"),
+                    "Output generation": record.get("output_generation"),
+                    "Output publication": record.get("output_publication_id"),
+                    "Candidate model SHA256": record.get("model_sha256"),
+                    "Previous model generation": record.get(
+                        "previous_model_generation"
+                    ),
+                    "Previous model SHA256": record.get("previous_model_sha256"),
+                    "Training descriptor SHA256": record.get(
+                        "training_descriptor_sha256"
+                    ),
+                }
+                if "invocation_id" in record
+                else {}
+            ),
         })
     return rows

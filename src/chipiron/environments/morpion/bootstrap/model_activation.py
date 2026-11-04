@@ -8,7 +8,9 @@ session. Failure discards RAM. Recovery reads the existing authoritative head.
 
 import copy
 import logging
+import sys
 import time
+from contextlib import suppress
 from dataclasses import asdict, replace
 from itertools import zip_longest
 from pathlib import Path
@@ -44,7 +46,12 @@ from .generation_publication_io import (
     read_object,
     require,
 )
-from .performance import StageMeasurement, persist_stage_measurement
+from .performance import (
+    ActivationPhaseTiming,
+    optional_finish,
+    optional_measurement,
+    persist_stage_measurement,
+)
 from .reevaluation_transaction import (
     GROWTH_NUMERIC_POLICY,
     cursor_digest,
@@ -209,8 +216,12 @@ def _save(
     session: GrowthPatchReceiptSession,
     runner: ModelActivationRuntime,
     state: MorpionBootstrapRunState,
+    timing: ActivationPhaseTiming,
+    role: str,
 ) -> MorpionBootstrapRunState:
     generation = state.generation + 1
+    assert session.publication is not None
+    output_id = session.publication.identifier
     assert state.latest_runtime_checkpoint_path is not None
     checkpoint = session.checkpoint_path(
         generation,
@@ -218,25 +229,43 @@ def _save(
         if inside(session.paths.work_dir, state.latest_runtime_checkpoint_path).is_dir()
         else "json-zst",
     )
-    runner.save_checkpoint(checkpoint)
-    science = session.export_scientific(generation)
+    with timing.phase(
+        f"{role}.checkpoint",
+        parent=role,
+        output_generation=generation,
+        output_publication_id=output_id,
+    ):
+        runner.save_checkpoint(checkpoint)
+    with timing.phase(
+        f"{role}.export",
+        parent=role,
+        output_generation=generation,
+        output_publication_id=output_id,
+    ):
+        science = session.export_scientific(generation)
     assert session.publication is not None
     model = session.publication.active_evaluator
     assert model is not None
-    return session.commit(
-        state,
-        replace(
+    with timing.phase(
+        f"{role}.commit",
+        parent=role,
+        output_generation=generation,
+        output_publication_id=output_id,
+    ):
+        return session.commit(
             state,
-            generation=generation,
-            last_save_unix_s=time.time(),
-            tree_size_at_last_save=runner.current_tree_size(),
-            latest_runtime_checkpoint_path=session.paths.relative_to_work_dir(
-                checkpoint
+            replace(
+                state,
+                generation=generation,
+                last_save_unix_s=time.time(),
+                tree_size_at_last_save=runner.current_tree_size(),
+                latest_runtime_checkpoint_path=session.paths.relative_to_work_dir(
+                    checkpoint
+                ),
+                latest_tree_snapshot_path=session.paths.relative_to_work_dir(science),
+                active_evaluator_name=model["name"],
             ),
-            latest_tree_snapshot_path=session.paths.relative_to_work_dir(science),
-            active_evaluator_name=model["name"],
-        ),
-    )
+        )
 
 
 def activation_completion(
@@ -368,55 +397,88 @@ def activate_model(
             from .learning_worker import monitored_identity
 
             monitored_identity()
-        measurement = StageMeasurement()
-        runner, effective = _runner(paths, state)
-        require(
-            supports_runtime_capability(runner, ModelActivationRuntime),
-            "Activation requires a complete model activation runtime.",
-        )
-        head = publication_records(state.metadata)[-1]
-        producer = dict(head["scientific_identity"]["producer"]["identity"])
-        session = GrowthPatchReceiptSession(
-            paths,
-            runner,
-            durable_generation_publication=True,
-            scientific_v2_producer=producer,
-            closed_scientific_snapshot=True,
-        )
-        publication = session.publication
-        assert publication is not None
+        measurement = optional_measurement()
+        timing = ActivationPhaseTiming({
+            "activation_request_sha256": digest,
+            "attempt_id": request["accepted_training"]["attempt_id"],
+            "training_descriptor_sha256": request["accepted_training"][
+                "descriptor_sha256"
+            ],
+            "training_generation": request["training_generation"],
+            "model_generation": request["candidate"]["generation"],
+            "model_sha256": request["candidate"]["sha256"],
+            "previous_model_generation": request["previous_model"]["generation"],
+            "previous_model_sha256": request["previous_model"]["sha256"],
+            "source_tree_generation": state.generation,
+            "source_publication_id": request["expected_head"],
+            "source_dataset_generation": None,
+        })
+        committed = False
+        total: dict[str, object] = {}
+        with timing.phase("setup"):
+            runner, effective = _runner(paths, state)
+            require(
+                supports_runtime_capability(runner, ModelActivationRuntime),
+                "Activation requires a complete model activation runtime.",
+            )
+            head = publication_records(state.metadata)[-1]
+            producer = dict(head["scientific_identity"]["producer"]["identity"])
+            session = GrowthPatchReceiptSession(
+                paths,
+                runner,
+                durable_generation_publication=True,
+                scientific_v2_producer=producer,
+                closed_scientific_snapshot=True,
+            )
+            publication = session.publication
+            assert publication is not None
         try:
-            publication.prepare(state)
-            session.validate_state(state)
-            session.begin_cycle(None)
+            with timing.phase("prepare"):
+                publication.prepare(state)
+            with timing.phase("validate_state"):
+                session.validate_state(state)
+            with timing.phase("initial.begin"):
+                session.begin_cycle(None)
             assert state.latest_runtime_checkpoint_path is not None
-            with torch.random.fork_rng(devices=[]):
+            with timing.phase("initial.restore"), torch.random.fork_rng(devices=[]):
                 runner.load_or_create(
                     inside(paths.work_dir, state.latest_runtime_checkpoint_path),
                     session.runtime_model_path(None),
                     effective,
                 )
-            runner.validate_model_refresh_certificates()
+            with timing.phase("initial.preflight"):
+                runner.validate_model_refresh_certificates()
             # No nested lease: the existing session methods require caller ownership.
-            result = session.apply(state, effective)
+            with timing.phase("patch.apply"):
+                result = session.apply(state, effective)
             if result.patch_applied:
-                state = _save(session, runner, state)
-                session.begin_cycle(None)
+                with timing.phase("drain.save"):
+                    state = _save(session, runner, state, timing, "drain.save")
+                timing.set_source(
+                    state.generation, state.metadata[PUBLICATION_KEY]["head_id"]
+                )
+                with timing.phase("post_drain.begin"):
+                    session.begin_cycle(None)
                 assert state.latest_runtime_checkpoint_path is not None
-                with torch.random.fork_rng(devices=[]):
+                with (
+                    timing.phase("post_drain.restore"),
+                    torch.random.fork_rng(devices=[]),
+                ):
                     runner.load_or_create(
                         inside(paths.work_dir, state.latest_runtime_checkpoint_path),
                         session.runtime_model_path(None),
                         effective,
                     )
-                runner.validate_model_refresh_certificates()
+                with timing.phase("post_drain.preflight"):
+                    runner.validate_model_refresh_certificates()
             require(
                 not paths.pipeline_reevaluation_patch_path.exists(),
                 "Pending proposal was not durably acknowledged.",
             )
             model = request["candidate"]
-            model_path = publication.freeze_model(model)
-            refresh_measurement = StageMeasurement()
+            with timing.phase("candidate.freeze"):
+                model_path = publication.freeze_model(model)
+            refresh_measurement = optional_measurement()
             refresh = runner.refresh_model_estimates(model_path)
             publication.activation = {
                 "request_sha256": digest,
@@ -424,18 +486,46 @@ def activate_model(
                 "previous_head": state.metadata[PUBLICATION_KEY]["head_id"],
                 "previous_producer": producer,
                 "refresh": asdict(refresh),
-                "refresh_performance": refresh_measurement.finish(),
+                "refresh_performance": optional_finish(refresh_measurement),
             }
             publication.active_evaluator = model
             publication.producer = {**producer, "evaluator": model["sha256"]}
-            state = _save(session, runner, state)
-            persist_stage_measurement(
-                paths.work_dir, state.generation, "activation", measurement.finish()
+            with timing.phase("activation.save"):
+                state = _save(session, runner, state, timing, "activation.save")
+            committed = True
+            timing.set_source(
+                state.generation, state.metadata[PUBLICATION_KEY]["head_id"]
             )
+            total = optional_finish(measurement)
+            with suppress(Exception):  # Only the sink/logger, never computation.
+                persist_stage_measurement(
+                    paths.work_dir, state.generation, "activation", total
+                )
             return state
         finally:
-            session.discard_runtime()
-            publication.close()
+            try:
+                with timing.phase("cleanup.discard", outside=True):
+                    session.discard_runtime()
+                with timing.phase("cleanup.close", outside=True):
+                    publication.close()
+            finally:
+                # Publication.committed updates this volatile state only AFTER the
+                # durable run-state replace, even if its own cleanup then fails.
+                # Read no authority again; unknown/precommit outcomes emit nothing.
+                with suppress(Exception):
+                    observed_state = state if committed else publication.state
+                    if observed_state is not None:
+                        observed_head = observed_state.metadata[PUBLICATION_KEY][
+                            "generations"
+                        ][-1]
+                        if observed_head.get("activation_request_sha256") == digest:
+                            timing.publish(
+                                paths.work_dir,
+                                observed_state.generation,
+                                observed_head["id"],
+                                total,
+                                function_failed=sys.exc_info()[0] is not None,
+                            )
 
 
 def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:

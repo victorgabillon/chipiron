@@ -750,3 +750,19 @@ legal-action counts, feature tensors and scalar inference remain unchanged. The
 per-direction temporary count table has at most five starts per occupied point;
 no state or prediction cache persists. Direct inputs outside the codec's plain
 integer-pair frozenset retain the original bounding-box scan and its errors.
+
+
+Activation phase observations use the existing post-run report and optional
+`activation.phases` sidecars (at most 64 rows / 64 KiB per admitted invocation).
+They separate initial/post-drain restore and preflight, patch application, each
+checkpoint/export/commit, and cleanup outside the original activation total.
+The original total and descriptor refresh observations retain their scopes;
+children are not added to parents. Request/process/source/model/publication IDs
+join the evidence. Missing clocks and observer errors remain explicit.
+
+These host-only observations do not synchronize devices or change activation
+policy. Uncommitted failures, rejected requests and exact retries emit no new
+sidecar. After a known durable commit, cleanup failure can emit a committed
+scientific outcome with a failed function outcome and a missing total interval.
+Metrics/sink/logger errors cannot mask computational errors. No sidecar confers
+scientific authority; exact low-level ownership correlation remains unavailable.
