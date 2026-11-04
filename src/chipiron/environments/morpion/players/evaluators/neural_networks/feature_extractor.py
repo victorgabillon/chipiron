@@ -298,7 +298,7 @@ def _connectivity_features(points: frozenset[Point]) -> dict[str, float]:
 
 
 def _candidate_segments(state: MorpionState) -> tuple[CandidateSegment, ...]:
-    """Scan the same lattice box, retaining only segments consumed by features."""
+    """Enumerate occupied lattice lines in the original direction/x/y order."""
     bbox = _bbox(state.points)
     if bbox is None:
         return ()
@@ -310,45 +310,77 @@ def _candidate_segments(state: MorpionState) -> tuple[CandidateSegment, ...]:
     max_y = bbox.max_y + margin
     candidate_segments: list[CandidateSegment] = []
 
+    # Codecs produce frozensets of plain integer pairs. Direct callers can
+    # supply other objects: retain the old range scan, including its errors,
+    # instead of interpreting fractional coordinates as a different lattice.
+    # Exact types also exclude subclasses with different arithmetic/iteration.
+    # pylint: disable=unidiomatic-typecheck
+    integer_points = type(state.points) is frozenset and all(
+        type(point) is tuple
+        and len(point) == 2
+        and all(type(coordinate) is int for coordinate in point)
+        for point in state.points
+    )
+    # pylint: enable=unidiomatic-typecheck
     for dir_index, direction in enumerate(DIRECTIONS):
-        for x0 in range(min_x, max_x + 1):
-            for y0 in range(min_y, max_y + 1):
-                points5 = _line_points(x0=x0, y0=y0, direction=direction)
-                missing_points = tuple(
-                    point for point in points5 if point not in state.points
+        if integer_points:
+            dx, dy = direction
+            occupancy: dict[Point, int] = {}
+            for x, y in state.points:
+                for offset in range(5):
+                    start = (x - offset * dx, y - offset * dy)
+                    occupancy[start] = occupancy.get(start, 0) + 1
+            # Each point contributes once to every containing five-point line.
+            # Only 3/4-occupied lines enter the unchanged feature aggregates.
+            starts = (
+                start
+                for start in sorted(
+                    start for start, count in occupancy.items() if count in (3, 4)
                 )
-                # Aggregates consume only 3/4-present segments. Fully occupied
-                # segments contribute no missing cells to the frontier features.
-                if len(missing_points) not in (1, 2):
-                    continue
-                unit_segments4 = _unit_segments_on_line(points5)
-                overlap_blocked = any(
-                    segment in state.used_unit_segments for segment in unit_segments4
-                )
-                parallel_compatible = _is_parallel_compatible(
-                    state=state,
+            )
+        else:
+            starts = (
+                (x0, y0)
+                for x0 in range(min_x, max_x + 1)
+                for y0 in range(min_y, max_y + 1)
+            )
+        for x0, y0 in starts:
+            points5 = _line_points(x0=x0, y0=y0, direction=direction)
+            missing_points = tuple(
+                point for point in points5 if point not in state.points
+            )
+            # Aggregates consume only 3/4-present segments. Fully occupied
+            # segments contribute no missing cells to the frontier features.
+            if len(missing_points) not in (1, 2):
+                continue
+            unit_segments4 = _unit_segments_on_line(points5)
+            overlap_blocked = any(
+                segment in state.used_unit_segments for segment in unit_segments4
+            )
+            parallel_compatible = _is_parallel_compatible(
+                state=state,
+                dir_index=dir_index,
+                points5=points5,
+            )
+            candidate_segments.append(
+                CandidateSegment(
                     dir_index=dir_index,
+                    start_x=x0,
+                    start_y=y0,
                     points5=points5,
+                    unit_segments4=unit_segments4,
+                    num_present=5 - len(missing_points),
+                    num_missing=len(missing_points),
+                    missing_points=missing_points,
+                    overlap_blocked=overlap_blocked,
+                    parallel_compatible=parallel_compatible,
+                    legal=(
+                        len(missing_points) == 1
+                        and not overlap_blocked
+                        and parallel_compatible
+                    ),
                 )
-                candidate_segments.append(
-                    CandidateSegment(
-                        dir_index=dir_index,
-                        start_x=x0,
-                        start_y=y0,
-                        points5=points5,
-                        unit_segments4=unit_segments4,
-                        num_present=5 - len(missing_points),
-                        num_missing=len(missing_points),
-                        missing_points=missing_points,
-                        overlap_blocked=overlap_blocked,
-                        parallel_compatible=parallel_compatible,
-                        legal=(
-                            len(missing_points) == 1
-                            and not overlap_blocked
-                            and parallel_compatible
-                        ),
-                    )
-                )
+            )
 
     return tuple(candidate_segments)
 

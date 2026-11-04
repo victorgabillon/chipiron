@@ -741,3 +741,12 @@ record, so a concurrent update is not mistaken for a future clock. Missing,
 invalid, stale idle and stopped records still use conservative process lifetime,
 measured from Linux start ticks and BOOTTIME rather than adjustable Unix time.
 These operational checks do not change job/run budgets or scientific authority.
+
+### Exact feature candidate enumeration
+
+Handcrafted feature candidate lines are enumerated from occupied integer points,
+then sorted into the original direction/x/y order. All candidate fields, numeric
+legal-action counts, feature tensors and scalar inference remain unchanged. The
+per-direction temporary count table has at most five starts per occupied point;
+no state or prediction cache persists. Direct inputs outside the codec's plain
+integer-pair frozenset retain the original bounding-box scan and its errors.
