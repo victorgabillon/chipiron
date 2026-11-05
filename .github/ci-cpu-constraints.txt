@@ -15,7 +15,7 @@ annotated-types==0.8.0
 anyio==4.15.1
 ast-serialize==0.13.1
 astroid==4.3.4
-atomheart==0.3.0
+atomheart==0.3.1
 attrs==26.1.0
 babel==2.18.0
 beautifulsoup4==4.15.0
