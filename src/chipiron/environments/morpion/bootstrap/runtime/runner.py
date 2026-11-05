@@ -2151,11 +2151,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
         with torch.random.fork_rng(devices=[]):
             evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
-        report = self._require_runtime().refresh_with_evaluator(
-            evaluator,
-            scope="all",
-            batch_size=64,
+        from chipiron.environments.morpion.players.evaluators.evaluator_input_cache import (
+            evaluator_inputs,
+            requested,
         )
+
+        try:
+            with evaluator_inputs(
+                evaluator, self.current_tree_size()
+            ) as refresh_evaluator:
+                report = self._require_runtime().refresh_with_evaluator(
+                    refresh_evaluator,
+                    scope="all",
+                    batch_size=64,
+                )
+        except BaseException:
+            # A cache integrity/resource failure can follow modified private
+            # values. Never save or continue that partially refreshed runtime.
+            if requested():
+                self.discard_uncommitted_runtime()
+            raise
         self._current_evaluator_bundle_path = model_bundle_path
         return cast("ReevaluationReport", report)
 

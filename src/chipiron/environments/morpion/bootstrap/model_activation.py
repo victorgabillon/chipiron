@@ -479,7 +479,16 @@ def activate_model(
             with timing.phase("candidate.freeze"):
                 model_path = publication.freeze_model(model)
             refresh_measurement = optional_measurement()
-            refresh = runner.refresh_model_estimates(model_path)
+            from chipiron.environments.morpion.players.evaluators.evaluator_input_cache import (
+                activation_inputs,
+            )
+
+            cache_source = (
+                state.generation,
+                state.metadata[PUBLICATION_KEY]["head_id"],
+            )
+            with activation_inputs(paths.work_dir) as cache_observation:
+                refresh = runner.refresh_model_estimates(model_path)
             publication.activation = {
                 "request_sha256": digest,
                 "request": request,
@@ -498,8 +507,24 @@ def activate_model(
             )
             total = optional_finish(measurement)
             with suppress(Exception):  # Only the sink/logger, never computation.
+                observation = total
+                if cache_observation is not None:
+                    observation = {
+                        **total,
+                        "evaluator_inputs": {
+                            **cache_observation,
+                            "activation_request_sha256": digest,
+                            "source_tree_generation": cache_source[0],
+                            "source_publication_id": cache_source[1],
+                            "requested_source_publication_id": request["expected_head"],
+                            "attempt_id": request["accepted_training"]["attempt_id"],
+                            "training_generation": request["training_generation"],
+                            "model_generation": model["generation"],
+                            "model_sha256": model["sha256"],
+                        },
+                    }
                 persist_stage_measurement(
-                    paths.work_dir, state.generation, "activation", total
+                    paths.work_dir, state.generation, "activation", observation
                 )
             return state
         finally:
