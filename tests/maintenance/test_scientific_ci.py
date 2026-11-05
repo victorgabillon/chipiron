@@ -420,13 +420,30 @@ def test_replay_contract_preserves_pre_e3_dependency_identities() -> None:
     assert contract["chipiron_reference"] == frozen["chipiron_reference"]
     assert contract["chipiron_reference"] == "a6987792796e21210315a2d76358aa48d71bce71"
     assert contract["packages"]["parsley-coco"]["version"] == "0.2.0"
-    assert contract["candidate_package_overrides"] == {
-        "parsley-coco": forward["packages"]["parsley-coco"]
-    }
+    assert (
+        contract["candidate_package_overrides"]["parsley-coco"]
+        == forward["packages"]["parsley-coco"]
+    )
     assert contract["candidate_package_overrides"]["parsley-coco"]["version"] == "0.3.0"
+    atomheart = contract["candidate_package_overrides"]["atomheart"]
+    assert atomheart["version"] == "0.3.1"
+    assert atomheart["module"] == "atomheart"
+    assert set(atomheart["files"]) == set(contract["packages"]["atomheart"]["files"])
+    assert {
+        name
+        for name in atomheart["files"]
+        if atomheart["files"][name] != contract["packages"]["atomheart"]["files"][name]
+    } == {"atomheart/games/morpion/dynamics.py"}
 
 
 @pytest.mark.fast
+@pytest.mark.parametrize(
+    "dependency_name,module_name,frozen_version,candidate_version",
+    [
+        ("parsley-coco", "parsley", "0.2.0", "0.3.0"),
+        ("atomheart", "atomheart", "0.3.0", "0.3.1"),
+    ],
+)
 @pytest.mark.parametrize(
     "command",
     ["verify", "verify-static", "verify-candidate", "verify-static-candidate"],
@@ -440,23 +457,27 @@ def test_cli_selects_dependency_identity_and_retains_all_guards(
     monkeypatch: pytest.MonkeyPatch,
     command: str,
     fault: str,
+    dependency_name: str,
+    module_name: str,
+    frozen_version: str,
+    candidate_version: str,
 ) -> None:
     """All CLI modes accept only their own exact installed dependency identity."""
     module, root, site, reference = identity
-    dependency = site / "parsley"
+    dependency = site / module_name
     dependency.mkdir()
     identities = {}
     payloads = {
-        "0.2.0": {"parsley/__init__.py": "RELEASE = 'frozen'\n"},
-        "0.3.0": {
-            "parsley/__init__.py": "RELEASE = 'candidate'\n",
-            "parsley/construction.py": "CONSTRUCTION = True\n",
+        frozen_version: {f"{module_name}/__init__.py": "RELEASE = 'frozen'\n"},
+        candidate_version: {
+            f"{module_name}/__init__.py": "RELEASE = 'candidate'\n",
+            f"{module_name}/construction.py": "CONSTRUCTION = True\n",
         },
     }
     for version, files in payloads.items():
         identities[version] = {
             "version": version,
-            "module": "parsley",
+            "module": module_name,
             "files": {
                 name: module.hashlib.sha256(content.encode()).hexdigest()
                 for name, content in files.items()
@@ -465,16 +486,16 @@ def test_cli_selects_dependency_identity_and_retains_all_guards(
     contract = {
         "chipiron_reference": reference,
         "python": module.platform.python_version(),
-        "packages": {"parsley-coco": identities["0.2.0"]},
-        "candidate_package_overrides": {"parsley-coco": identities["0.3.0"]},
+        "packages": {dependency_name: identities[frozen_version]},
+        "candidate_package_overrides": {dependency_name: identities[candidate_version]},
     }
     contract_path = root / ".github/ci-source-contracts.json"
     contract_path.write_text(json.dumps(contract))
     git(root, "add", ".github/ci-source-contracts.json")
     git(root, "commit", "-qm", "Separate candidate dependency identity")
     candidate_mode = command.endswith("candidate")
-    selected_version = "0.3.0" if candidate_mode else "0.2.0"
-    other_version = "0.2.0" if candidate_mode else "0.3.0"
+    selected_version = candidate_version if candidate_mode else frozen_version
+    other_version = frozen_version if candidate_mode else candidate_version
     for name, content in payloads[selected_version].items():
         (site / name).write_text(content)
     monkeypatch.setattr(
@@ -500,7 +521,7 @@ def test_cli_selects_dependency_identity_and_retains_all_guards(
     report = json.loads(
         (root / ".ci-reports/scientific-installed-identity.json").read_text()
     )
-    assert report["parsley-coco"]["members"] == len(payloads[selected_version])
+    assert report[dependency_name]["members"] == len(payloads[selected_version])
     assert report["chipiron"]["mode"] == (
         "build-candidate" if candidate_mode else "frozen-replay"
     )
@@ -518,7 +539,7 @@ def test_cli_selects_dependency_identity_and_retains_all_guards(
         message = "Wrong scientific dependency version"
     elif fault == "changed":
         (dependency / "__init__.py").write_text(
-            payloads[other_version]["parsley/__init__.py"]
+            payloads[other_version][f"{module_name}/__init__.py"]
         )
         message = "Scientific source mismatch"
     elif fault == "missing":
@@ -536,7 +557,7 @@ def test_cli_selects_dependency_identity_and_retains_all_guards(
                     (
                         site / "chipiron"
                         if fault == "installed-origin"
-                        else root / "parsley"
+                        else root / module_name
                     )
                     / "__init__.py"
                 )

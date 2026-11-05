@@ -765,7 +765,7 @@ class ShardedTrainingGenerationView:
     def _set_scientific_header(self, manifest: dict[str, Any]) -> None:
         """Share value semantics across the historical and closed layouts."""
         if (
-            importlib.metadata.version("atomheart") != "0.3.0"
+            importlib.metadata.version("atomheart") != "0.3.1"
             or not isinstance(manifest["producer"], dict)
             or manifest["producer"].get("state_ref_contract") != REFERENCE_CONTRACT
         ):

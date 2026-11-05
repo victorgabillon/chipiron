@@ -276,7 +276,7 @@ def _producer(identity: Mapping[str, str]) -> dict[str, Any]:
     )
     versions = {name: importlib.metadata.version(name) for name in _PACKAGES}
     _require(
-        versions["atomheart"] == "0.3.0"
+        versions["atomheart"] == "0.3.1"
         and versions["algorhino-anemone"] == "0.3.1"
         and versions["valanga"] == "0.3.0",
         "unsupported scientific dependency contract",
@@ -684,7 +684,7 @@ def _load_scientific_training_generation(manifest_path: Path) -> ScientificGener
     generation = manifest["generation"]
     _require(_integer(generation) and generation >= 1, "invalid generation")
     _require(
-        importlib.metadata.version("atomheart") == "0.3.0",
+        importlib.metadata.version("atomheart") == "0.3.1",
         "unsupported canonical decoder",
     )
     _require(
