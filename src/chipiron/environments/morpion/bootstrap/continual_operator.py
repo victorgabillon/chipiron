@@ -358,6 +358,7 @@ def _run_monitored(
     minimum = {"available_ram_mb": float("inf"), "free_disk_mb": float("inf")}
     owned_groups: set[int] = set()
     environment_owned_groups: set[int] = set()
+    owned_process_starts: dict[int, str] = {}
     control: socket.socket | None = None
     control_buffer = bytearray()
     shutdown: SupervisorShutdown | None = None
@@ -664,6 +665,7 @@ def _run_monitored(
                 if before[19] == after[19] and before[2] == after[2]:
                     owned_groups.add(int(after[2]))
                     environment_owned_groups.add(int(after[2]))
+                    owned_process_starts[int(entry.name)] = after[19]
             except FileNotFoundError, ProcessLookupError, PermissionError:
                 continue
 
@@ -672,12 +674,26 @@ def _run_monitored(
         live = []
         for child in psutil.process_iter(["pid", "status"]):
             try:
-                if os.getpgid(child.pid) in owned_groups and child.status() not in {
+                group = os.getpgid(child.pid)
+                if child.pid in owned_process_starts:
+                    fields = (
+                        Path(f"/proc/{child.pid}/stat")
+                        .read_text(encoding="utf-8")
+                        .rsplit(") ", 1)[1]
+                        .split()
+                    )
+                    # A dispatched child can exec/setsid after discovery. Only
+                    # its exact kernel PID/start identity grants the new group.
+                    if fields[19] == owned_process_starts[child.pid]:
+                        group = int(fields[2])
+                        owned_groups.add(group)
+                        environment_owned_groups.add(group)
+                if group in owned_groups and child.status() not in {
                     psutil.STATUS_ZOMBIE,
                     psutil.STATUS_DEAD,
                 }:
                     live.append(child.pid)
-            except psutil.NoSuchProcess, ProcessLookupError:
+            except psutil.NoSuchProcess, ProcessLookupError, FileNotFoundError:
                 continue
         return live
 
@@ -830,6 +846,9 @@ def _run_monitored(
                                 with suppress(ProcessLookupError):
                                     os.killpg(group, signal.SIGKILL)
                             process.wait(timeout=5)
+                    # Dispatch can race the pre-TERM scan and Bash's PID registration.
+                    # Once the supervisor is reaped, recover any final detached group.
+                    remember_owned_groups()
                     # The existing supervisor confirms all groups. Independently retain
                     # scratch if any sampled owned group still has a living member.
                     live = live_owned_processes()
@@ -837,10 +856,10 @@ def _run_monitored(
                         forced_group_cleanup = True
                         if kill_confirmation_deadline is None:
                             kill_confirmation_deadline = time.monotonic() + 5
+                        while live and time.monotonic() < kill_confirmation_deadline:
                             for group in owned_groups:
                                 with suppress(ProcessLookupError):
                                     os.killpg(group, signal.SIGKILL)
-                        while live and time.monotonic() < kill_confirmation_deadline:
                             time.sleep(0.01)
                             live = live_owned_processes()
                     shutdown_confirmed = not live
@@ -897,6 +916,7 @@ def _run_monitored(
                     "cleanup_confirmed_monotonic_s": cleanup_confirmed_at,
                     "forced_group_cleanup": forced_group_cleanup,
                     "environment_owned_groups": sorted(environment_owned_groups),
+                    "environment_owned_processes": owned_process_starts,
                 },
             )
             if shutdown_confirmed:

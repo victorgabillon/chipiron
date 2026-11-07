@@ -192,3 +192,150 @@ while True:
             if child.poll() is None:
                 child.kill()
             child.wait(timeout=3)
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("before_setsid", [False, True])
+def test_actual_shell_dispatch_during_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, before_setsid: bool
+) -> None:
+    """Discover a real dispatch between the final scan and Bash PID registration."""
+    stub = tmp_path / "python_stub"
+    stub.write_text(
+        f"#!{sys.executable}\n"
+        """
+import os,signal,sys,time
+from pathlib import Path
+if '-c' in sys.argv:
+ if 'latest_tree_snapshot_path' in sys.argv[-1]:print('fixture-source');sys.exit(0)
+ sys.exit(1)
+from chipiron.environments.morpion.bootstrap.persistent_worker_state import WorkerJobState
+stage=sys.argv[sys.argv.index('--pipeline-stage')+1]
+work=Path(os.environ['MORPION_WORK_DIR'])
+if os.environ['TEST_DELAY_SETSID']=='0':
+ state=WorkerJobState(work,stage);state.update('running',job_id=1)
+signal.signal(signal.SIGTERM,lambda *_args:sys.exit(143))
+(work/(stage+'.ready')).write_text(str(os.getpid()))
+while True:
+ (work/(stage+'.writer')).write_text(str(time.monotonic()));time.sleep(.01)
+"""
+    )
+    stub.chmod(0o755)
+    bash_env = tmp_path / "bash_env"
+    bash_env.write_text("""set -T
+trap '
+if [[ "$BASH_COMMAND" == "exec setsid bash -lc "* && "$TEST_DELAY_SETSID" == "1" ]]; then
+ echo "$BASHPID" > "$MORPION_WORK_DIR/child.waiting"
+ while [[ ! -f "$MORPION_WORK_DIR/release.setsid" ]]; do sleep .01; done
+fi
+if [[ "$BASH_COMMAND" == "CLUSTER_PIDS=()" ]]; then
+ echo "$BASHPID" > "$MORPION_WORK_DIR/shell.waiting"
+ while [[ ! -f "$MORPION_WORK_DIR/release.dispatch" ]]; do sleep .01; done
+fi
+if [[ "$BASH_COMMAND" == "CLUSTER_PIDS+="* ]]; then
+ echo "$!" > "$MORPION_WORK_DIR/unregistered"
+ while [[ ! -f "$MORPION_WORK_DIR/release.register" ]]; do sleep .01; done
+fi
+' DEBUG
+""")
+    (tmp_path / "run_state.json").write_text(
+        '{"latest_tree_snapshot_path":"fixture-source"}'
+    )
+    monkeypatch.setenv("MORPION_PERSISTENT_WORKERS", "1")
+    original_popen = subprocess.Popen
+    original_kill = os.kill
+    original_process_iter = psutil.process_iter
+    owned: list[int] = []
+    released: list[int] = []
+
+    def launch(*args: Any, **kw: Any) -> subprocess.Popen[Any]:
+        kw["env"] = dict(
+            kw["env"],
+            PYTHON_BIN=str(stub),
+            BASH_ENV=str(bash_env),
+            TEST_DELAY_SETSID="1" if before_setsid else "0",
+        )
+        return original_popen(*args, **kw)
+
+    def kill(pid: int, sig: int) -> None:
+        waiting = tmp_path / "shell.waiting"
+        if (
+            sig == signal.SIGTERM
+            and waiting.exists()
+            and int(waiting.read_text()) == pid
+            and not released
+        ):
+            released.append(pid)
+            (tmp_path / "release.dispatch").touch()
+            deadline = time.monotonic() + 5
+            ready = tmp_path / ("child.waiting" if before_setsid else "growth.ready")
+            while not ready.exists() or not (tmp_path / "unregistered").exists():
+                assert time.monotonic() < deadline, "actual shell did not dispatch"
+                time.sleep(0.01)
+            owned.append(int(ready.read_text()))
+            assert int((tmp_path / "unregistered").read_text()) == owned[-1]
+        return original_kill(pid, sig)
+
+    def processes(*args: Any, **kwargs: Any) -> Any:
+        if before_setsid and owned and not (tmp_path / "release.setsid").exists():
+            # The post-supervisor scan has retained the child's old PGID.
+            (tmp_path / "release.setsid").touch()
+            deadline = time.monotonic() + 5
+            while not (tmp_path / "growth.ready").exists():
+                assert time.monotonic() < deadline, "setsid child did not exec"
+                time.sleep(0.01)
+        return original_process_iter(*args, **kwargs)
+
+    monkeypatch.setattr(operator.subprocess, "Popen", launch)
+    monkeypatch.setattr(operator.os, "kill", kill)
+    monkeypatch.setattr(psutil, "process_iter", processes)
+    monkeypatch.setattr(operator, "available_ram_mb", lambda: 20000.0)
+    monkeypatch.setattr(operator, "publication_records", lambda _m: [])
+    monkeypatch.setattr(
+        operator,
+        "load_bootstrap_run_state",
+        lambda p: SimpleNamespace(metadata={}, tree_size_at_last_save=1),
+    )
+    monitor = tmp_path / "resource_monitor"
+    monitor.mkdir()
+    group_failed = False
+    try:
+        with ExitStack() as stack:
+            try:
+                operator._run_monitored(
+                    MorpionBootstrapPaths.from_work_dir(tmp_path),
+                    Path(__file__).resolve().parents[2]
+                    / "scripts/launch_morpion_gnome_cluster.sh",
+                    MorpionContinualLearningPolicy(
+                        max_elapsed_seconds=1, shutdown_grace_seconds=1
+                    ),
+                    monitor,
+                    psutil,
+                    stack,
+                )
+            except ValueError as error:
+                assert "Persistent worker group failed" in str(error)
+                group_failed = True
+        assert released and owned
+        receipt = next(
+            json.loads(p.read_text())
+            for p in monitor.glob("session_*.json")
+            if not p.name.endswith(".native.json")
+        )
+        alive = [
+            p
+            for p in owned
+            if psutil.pid_exists(p)
+            and psutil.Process(p).status() != psutil.STATUS_ZOMBIE
+        ]
+        assert not alive, f"Late-dispatched owned writer survived: {alive}"
+        assert receipt["shutdown_confirmed"] and receipt["forced_group_cleanup"]
+        assert not receipt["shutdown_grace_expired"]
+        assert receipt["decision"]["reason"] == "maximum_elapsed_time"
+        assert group_failed
+    finally:
+        for p in owned:
+            with suppress(ProcessLookupError):
+                original_kill(p, signal.SIGKILL)
+            with suppress(ProcessLookupError):
+                os.killpg(p, signal.SIGKILL)
