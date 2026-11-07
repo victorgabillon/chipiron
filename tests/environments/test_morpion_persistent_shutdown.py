@@ -192,6 +192,7 @@ wait "$worker" || true
     receipt = next(
         value
         for path in monitor.glob("session_*.json")
+        if not path.name.endswith(".native.json")
         if "policy" in (value := json.loads(path.read_text()))
     )
     pid = int((tmp_path / "ready").read_text())
@@ -778,6 +779,7 @@ while True:state.update("idle");time.sleep(.05)
     receipt = next(
         value
         for path in monitor.glob("session_*.json")
+        if not path.name.endswith(".native.json")
         if "policy" in (value := json.loads(path.read_text()))
     )
     decision = receipt["decision"]
