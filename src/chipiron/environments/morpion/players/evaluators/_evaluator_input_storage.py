@@ -31,6 +31,10 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     require,
     sync_directory,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    HANDCRAFTED_20_CORE_FEATURE_NAMES,
+    MORPION_CANONICAL_FEATURE_NAMES,
+)
 
 FORMAT = "morpion_evaluator_inputs_v1"
 MAX_PAYLOAD = 128 * 1024
@@ -196,17 +200,42 @@ def binding(recipe: bytes, payload: bytes, raw: bytes) -> str:
     return hashlib.sha256(recipe + payload + raw).hexdigest()
 
 
-def valid_row(row: tuple[Any, ...], recipe: bytes) -> None:
+def _input_width(identity: dict[str, object]) -> int:
+    """Bind raw shape to one canonical ordered representation, never infer it."""
+    name, shape = identity.get("representation"), identity.get("shape")
+    width = 20 if name == "handcrafted_20_core" else 41
+    features = (
+        HANDCRAFTED_20_CORE_FEATURE_NAMES
+        if width == 20
+        else MORPION_CANONICAL_FEATURE_NAMES
+    )
+    require(
+        identity.get("format") == FORMAT
+        and name in ("handcrafted_20_core", "handcrafted_41")
+        and type(shape) is list
+        and len(shape) == 1
+        and type(shape[0]) is int
+        and shape == [width]
+        and identity.get("features") == list(features)
+        and identity.get("dtype") == "float32"
+        and identity.get("device") == "cpu"
+        and identity.get("layout") == "contiguous",
+        "Unsupported evaluator input representation",
+    )
+    return width
+
+
+def valid_row(row: tuple[Any, ...], recipe: bytes, width: int) -> None:
     """Validate every exact opaque-state/raw-FP32 binding before use."""
     key, payload, raw, digest = row
     require(
         type(payload) is bytes
         and len(payload) <= MAX_PAYLOAD
         and type(raw) is bytes
-        and len(raw) == 41 * 4
+        and len(raw) == width * 4
         and hashlib.sha256(payload).hexdigest() == key
         and binding(recipe, payload, raw) == digest
-        and all(math.isfinite(x) for x in struct.unpack("=41f", raw)),
+        and all(math.isfinite(x) for x in struct.unpack(f"={width}f", raw)),
         "Invalid evaluator input binding",
     )
 
@@ -215,6 +244,7 @@ def verify(
     entry: Path, identity: dict[str, object], limit: int, max_rows: int
 ) -> dict[str, Any]:
     """Bounded complete-file, schema and every-row verification before reuse."""
+    width = _input_width(identity)
     require(
         {p.name for p in entry.iterdir()} == {"inputs.sqlite", "complete.json"},
         "Incomplete evaluator inputs",
@@ -248,7 +278,7 @@ def verify(
         )
         recipe = encoded(identity)
         for row in connection.execute("SELECT key,payload,raw,binding FROM inputs"):
-            valid_row(row, recipe)
+            valid_row(row, recipe, width)
     finally:
         connection.close()
     return cast("dict[str, Any]", manifest)
@@ -272,6 +302,7 @@ class InputStore:
             max_rows,
         )
         self.recipe = encoded(identity)
+        self.input_width = _input_width(identity)
         self.observation = observation
         self.prior: sqlite3.Connection | None = None
         self.connection: sqlite3.Connection | None = None
@@ -326,7 +357,7 @@ class InputStore:
         ).fetchone()
         if row is None:
             return None
-        valid_row(row, self.recipe)
+        valid_row(row, self.recipe, self.input_width)
         require(row[1] == payload, "Evaluator cache exact payload mismatch")
         return cast("bytes", row[2])
 
