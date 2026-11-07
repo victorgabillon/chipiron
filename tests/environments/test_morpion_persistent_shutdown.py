@@ -36,9 +36,14 @@ def _owned_deadline(
     job_age: float = 183.0,
     elapsed: float = 7199.8,
     interrupt: bool = False,
+    cross_decision_clock: bool = False,
+    control_mode: str = "normal",
+    cleanup_elapsed: float = 7201.5,
+    exit_before_cleanup: bool = False,
 ) -> dict[str, Any]:
     """Only the native age clocks are advanced; every process identity is real."""
     original_popen = subprocess.Popen
+    launched: list[Any] = []
     real_sleep = time.sleep
     real_monotonic = time.monotonic
     base = real_monotonic()
@@ -84,6 +89,7 @@ wait "$worker" || true
             TEST_JOB_AGE=str(job_age),
         )
         handle = original_popen(*args, **kwargs)
+        launched.append(handle)
         deadline = real_monotonic() + 5
         while not (tmp_path / "ready").exists() and handle.poll() is None:
             assert real_monotonic() < deadline
@@ -98,7 +104,7 @@ wait "$worker" || true
 
         def wait(*args: Any, **kwargs: Any) -> int:
             result = original_wait(*args, **kwargs)
-            clock[0] = base + 7201.5  # Cleanup time cannot supply the decision clock.
+            clock[0] = base + cleanup_elapsed  # Separate from the decision clock.
             return result
 
         monkeypatch.setattr(handle, "wait", wait)
@@ -110,11 +116,60 @@ wait "$worker" || true
         return int(ticks) / os.sysconf("SC_CLK_TCK") + 7199.5
 
     monkeypatch.setattr(operator.subprocess, "Popen", launch)
+    if exit_before_cleanup:
+        original_atomic = operator.atomic_json
+
+        def persist_after_exit(path: Path, value: dict[str, Any]) -> None:
+            """Make the real owned supervisor exit before final cleanup polling."""
+            original_atomic(path, value)
+            if path.name.startswith("decision_"):
+                handle = launched[0]
+                for child in psutil.Process(handle.pid).children():
+                    os.kill(child.pid, signal.SIGTERM)
+                handle.wait(timeout=3)
+
+        monkeypatch.setattr(operator, "atomic_json", persist_after_exit)
+    original_pair = operator.socket.socketpair
+
+    class FragmentedSocket:
+        """Keep the real channel but control its stream framing at the reader."""
+
+        def __init__(self, wrapped: Any) -> None:
+            self.wrapped = wrapped
+            self.seen = False
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.wrapped, name)
+
+        def recv(self, _size: int) -> bytes:
+            if control_mode == "partial_eof" and self.seen:
+                return b""
+            value = self.wrapped.recv(13 if control_mode != "duplicate" else _size)
+            self.seen = bool(value)
+            return value + b"{}\n" if value and control_mode == "duplicate" else value
+
+    def socketpair() -> tuple[Any, Any]:
+        parent, child = original_pair()
+        return FragmentedSocket(parent), child
+
+    if control_mode != "normal":
+        monkeypatch.setattr(operator.socket, "socketpair", socketpair)
     monkeypatch.setattr(operator.time, "monotonic", lambda: clock[0])
     monkeypatch.setattr(operator.time, "clock_gettime", boottime)
     monkeypatch.setattr(operator, "available_ram_mb", lambda: 20000.0)
     authority = SimpleNamespace(metadata={}, tree_size_at_last_save=1)
-    monkeypatch.setattr(operator, "load_bootstrap_run_state", lambda _path: authority)
+
+    def load_state(_path: Path) -> SimpleNamespace:
+        if cross_decision_clock:
+            clocks = iter([base + elapsed])
+            monkeypatch.setattr(
+                operator.time,
+                "monotonic",
+                lambda: next(clocks, base + 7200.1),
+            )
+        return authority
+
+    monkeypatch.setattr(operator, "load_bootstrap_run_state", load_state)
     monkeypatch.setattr(operator, "publication_records", lambda _meta: [])
     group_failure = False
     with ExitStack() as resources:
@@ -125,7 +180,7 @@ wait "$worker" || true
                 MorpionContinualLearningPolicy(
                     max_elapsed_seconds=7200,
                     worker_max_seconds=1800,
-                    shutdown_grace_seconds=1,
+                    shutdown_grace_seconds=5,
                 ),
                 monitor,
                 psutil,
@@ -161,6 +216,26 @@ def test_expected_cluster_deadline_shutdown_does_not_charge_persistent_lifetime(
 
 
 @pytest.mark.fast
+def test_decision_uses_one_clock_for_elapsed_and_job_age(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second clock read cannot invent a worker overrun across native7200."""
+    result = _owned_deadline(
+        tmp_path,
+        monkeypatch,
+        0,
+        phase="cleanup",
+        job_age=1799.9,
+        cross_decision_clock=True,
+    )
+    decision = result["decision"]
+    assert decision["reason"] == "supervisor_deadline"
+    assert decision["budget_elapsed_seconds"] == pytest.approx(7199.8)
+    assert decision["workers"][0]["accounted_job_age_s"] == pytest.approx(1799.9)
+    assert decision["sample"]["longest_worker_seconds"] == pytest.approx(1799.9)
+
+
+@pytest.mark.fast
 @pytest.mark.parametrize(
     "phase,age,elapsed,interrupt,exit_code,expected",
     [
@@ -173,6 +248,7 @@ def test_expected_cluster_deadline_shutdown_does_not_charge_persistent_lifetime(
         ("stopped", 183.0, 7200.0, False, 1, "maximum_elapsed_time"),
         ("cleanup", 1801.0, 7200.0, False, 0, "maximum_elapsed_time"),
         ("cleanup", 1801.0, 7200.0, True, 0, "operator_SIGINT"),
+        ("stopped", 183.0, 7200.0, True, 1, "operator_SIGINT"),
     ],
 )
 def test_owned_monitor_preserves_deadline_failure_and_cancellation_priority(
@@ -199,6 +275,49 @@ def test_owned_monitor_preserves_deadline_failure_and_cancellation_priority(
     assert receipt["decision"]["reason"] == expected
     assert receipt["decision"]["budget_elapsed_seconds"] == pytest.approx(elapsed)
     assert receipt["test_group_failure"] == (exit_code == 1)
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("mode", ["fragmented", "partial_eof", "duplicate"])
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_owned_control_stream_framing_and_failure_precedence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    interrupt: bool,
+) -> None:
+    """Fragmented records work; closed partial/duplicate records fail even on cancel."""
+    receipt = _owned_deadline(
+        tmp_path, monkeypatch, 143, control_mode=mode, interrupt=interrupt
+    )
+    invalid = mode != "fragmented"
+    assert receipt["reason"] == (
+        "operator_SIGINT"
+        if interrupt
+        else "invalid_supervisor_shutdown"
+        if invalid
+        else "supervisor_deadline"
+    )
+    assert receipt["test_group_failure"] == invalid
+    assert (receipt["decision"]["control_failure"] is not None) == invalid
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("already_exited", [False, True])
+def test_ack_wait_counts_towards_absolute_shutdown_grace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, already_exited: bool
+) -> None:
+    """Even an exit0 cannot turn completion after declared grace into healthy shutdown."""
+    receipt = _owned_deadline(
+        tmp_path,
+        monkeypatch,
+        0,
+        cleanup_elapsed=7205,
+        exit_before_cleanup=already_exited,
+    )
+    assert receipt["reason"] == "supervisor_shutdown_grace_expired"
+    assert receipt["decision"]["reason"] == "supervisor_deadline"
+    assert receipt["shutdown_grace_expired"] and receipt["test_group_failure"]
 
 
 @pytest.fixture
@@ -444,7 +563,9 @@ def test_bad_worker_clocks_remain_conservative_during_shutdown(
 
 
 @pytest.mark.fast
-@pytest.mark.parametrize("damage", ["missing", "oversized", "stale_stop", "reversed"])
+@pytest.mark.parametrize(
+    "damage", ["missing", "oversized", "padded", "stale_stop", "reversed"]
+)
 def test_shutdown_intent_never_repairs_bad_or_stale_status(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -468,6 +589,10 @@ def test_shutdown_intent_never_repairs_bad_or_stale_status(
         if damage == "missing"
         else _reading(tmp_path, pid, record)
     )
+    if damage == "padded":
+        path = tmp_path / "pipeline/worker_processes/training_worker.json"
+        path.write_text(path.read_text() + " " * status.MAX_STATUS_BYTES)
+        reading = status.read_job_status(tmp_path, pid, 7199.5)
     assert reading.active_age(intent, now) == 7199.5
     assert reading.shutdown_failure(intent, now) == (
         "stale_persistent_worker_stop"
@@ -493,11 +618,23 @@ def test_invalid_monitor_clocks_are_not_deadline_evidence(value: float) -> None:
 
 
 @pytest.mark.fast
-@pytest.mark.parametrize("ignore_term", [False, True])
+@pytest.mark.parametrize(
+    "ignore_term,early,killed_worker,late_request",
+    [
+        (False, False, False, False),
+        (True, False, False, False),
+        (False, True, False, False),
+        (False, True, True, False),
+        (False, True, False, True),
+    ],
+)
 def test_actual_supervisor_handoff_and_worker_descriptor_cleanup(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     ignore_term: bool,
+    early: bool,
+    killed_worker: bool,
+    late_request: bool,
 ) -> None:
     """Run the real shell/monitor with inert workers, never scientific stages."""
     stub = tmp_path / "python_stub"
@@ -508,7 +645,12 @@ import json,os,signal,sys,time
 from pathlib import Path
 if "-c" in sys.argv:
     code=sys.argv[sys.argv.index("-c")+1]
-    if "control.recv" in code:os.execv(sys.executable,[sys.executable,*sys.argv[1:]])
+    if "control.recv" in code:
+        if os.environ["TEST_LATE"]=="1":
+            work=Path(os.environ["MORPION_WORK_DIR"])
+            (work/"helper_waiting").write_text("ready")
+            while not (work/"native_decision").exists():time.sleep(.01)
+        os.execv(sys.executable,[sys.executable,*sys.argv[1:]])
     if "latest_tree_snapshot_path" in code:print("fixture-source");sys.exit(0)
     sys.exit(1)
 assert "--persistent-worker" in sys.argv
@@ -521,6 +663,10 @@ from chipiron.environments.morpion.bootstrap.persistent_worker_state import Work
 stage=sys.argv[sys.argv.index("--pipeline-stage")+1]
 state=WorkerJobState(Path(os.environ["MORPION_WORK_DIR"]),stage)
 def stop(*_args):
+    if os.environ["TEST_EARLY"]=="1":
+        decisions=list((Path(os.environ["MORPION_WORK_DIR"])/"resource_monitor").glob("decision_*.json"))
+        assert len(decisions)==1
+        assert json.loads(decisions[0].read_text())["reason"]=="supervisor_deadline"
     state.update("stopped",exit_code=143);state.close();sys.exit(143)
 signal.signal(signal.SIGTERM,signal.SIG_IGN if os.environ["TEST_IGNORE_TERM"]=="1" else stop)
 state.update("idle")
@@ -542,6 +688,8 @@ while True:state.update("idle");time.sleep(.05)
             PYTHON_BIN=str(stub),
             TEST_CONTROL_INODE=str(os.fstat(fd).st_ino),
             TEST_IGNORE_TERM="1" if ignore_term else "0",
+            TEST_EARLY="1" if early and not late_request else "0",
+            TEST_LATE="1" if late_request else "0",
         )
         return original_popen(*args, **kwargs)
 
@@ -555,6 +703,53 @@ while True:state.update("idle");time.sleep(.05)
     monkeypatch.setattr(operator, "publication_records", lambda _meta: [])
     monitor = tmp_path / "resource_monitor"
     monitor.mkdir()
+    real_sleep = time.sleep
+    if early:
+        (monitor / "usage.json").write_text('{"elapsed_seconds":7196.1}')
+        monkeypatch.setattr(operator.time, "sleep", lambda _s: real_sleep(0.01))
+        original_send = operator.socket.socket.sendall
+
+        def send_ack(sock: Any, payload: bytes) -> None:
+            """Exercise a real stream ACK fragmented across all three bytes."""
+            for byte in payload:
+                original_send(sock, bytes([byte]))
+                real_sleep(0.02)
+
+        monkeypatch.setattr(operator.socket.socket, "sendall", send_ack)
+    if late_request:
+        original_atomic = operator.atomic_json
+        original_children = psutil.Process.children
+
+        def publish_native_decision(path: Path, value: dict[str, Any]) -> None:
+            """Release the actual helper only after native sampling has ended."""
+            original_atomic(path, value)
+            if path.name.startswith("decision_"):
+                assert (tmp_path / "helper_waiting").exists()
+                (tmp_path / "native_decision").touch()
+
+        def slow_cleanup_children(process: Any, recursive: bool = False) -> Any:
+            """Expose close-before-TERM races without slowing the sampler."""
+            if not recursive:
+                real_sleep(0.2)
+            return original_children(process, recursive=recursive)
+
+        monkeypatch.setattr(operator, "atomic_json", publish_native_decision)
+        monkeypatch.setattr(psutil.Process, "children", slow_cleanup_children)
+    if killed_worker:
+        original_atomic = operator.atomic_json
+
+        def persist_then_kill(path: Path, value: dict[str, Any]) -> None:
+            """Reproduce death after intent liveness checks but before ACK."""
+            original_atomic(path, value)
+            if path.name.startswith("decision_"):
+                record = json.loads(
+                    (
+                        tmp_path / "pipeline/worker_processes/training_worker.json"
+                    ).read_text()
+                )
+                os.kill(record["identity"]["pid"], signal.SIGKILL)
+
+        monkeypatch.setattr(operator, "atomic_json", persist_then_kill)
     script = (
         Path(__file__).resolve().parents[2] / "scripts/launch_morpion_gnome_cluster.sh"
     )
@@ -566,16 +761,16 @@ while True:state.update("idle");time.sleep(.05)
                 MorpionBootstrapPaths.from_work_dir(tmp_path),
                 script,
                 MorpionContinualLearningPolicy(
-                    max_elapsed_seconds=4,
+                    max_elapsed_seconds=7200 if early else 4,
                     worker_max_seconds=1800,
-                    shutdown_grace_seconds=2,
+                    shutdown_grace_seconds=3 if early else 2,
                 ),
                 monitor,
                 psutil,
                 resources,
             )
 
-        if ignore_term:
+        if ignore_term or killed_worker:
             with pytest.raises(ValueError, match="Persistent worker group failed"):
                 run()
         else:
@@ -592,17 +787,28 @@ while True:state.update("idle");time.sleep(.05)
     assert receipt["reason"] == (
         "supervisor_shutdown_grace_expired"
         if ignore_term and decision["reason"] == "supervisor_deadline"
+        else "supervisor_failed_during_shutdown"
+        if killed_worker
         else decision["reason"]
     )
     if ignore_term:
-        assert receipt["supervisor_exit_code"] == 124
-    assert (decision["budget_elapsed_seconds"] >= 4) == (
+        assert receipt["supervisor_exit_code"] in {124, -signal.SIGKILL}
+    if killed_worker:
+        assert receipt["supervisor_exit_code"] == 1
+    if early and not late_request:
+        assert decision["reason"] == "supervisor_deadline"
+        assert decision["supervisor_shutdown"] is not None
+        assert decision["budget_elapsed_seconds"] < 7200
+    if late_request:
+        assert decision["reason"] == "maximum_elapsed_time"
+        assert decision["supervisor_shutdown"] is None
+    assert (decision["budget_elapsed_seconds"] >= (7200 if early else 4)) == (
         decision["reason"] == "maximum_elapsed_time"
     )
     for stage in ("growth", "dataset_worker", "training_worker", "reevaluation"):
         record = json.loads(
             (tmp_path / "pipeline/worker_processes" / f"{stage}.json").read_text()
         )
-        if not ignore_term:
+        if not ignore_term and not (killed_worker and stage == "training_worker"):
             assert record["phase"] == "stopped" and record["exit_code"] == 143
         assert not psutil.pid_exists(record["identity"]["pid"])

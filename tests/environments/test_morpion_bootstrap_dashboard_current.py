@@ -147,6 +147,29 @@ def test_outcomes(
     assert vm.load_dashboard_snapshot(work, root).status == expected
 
 
+@pytest.mark.fast
+def test_supervisor_deadline_preserves_native_decision_without_completion(
+    run: tuple[Path, Path],
+) -> None:
+    """The raw monitor decision survives; an early supervisor stop is not completion."""
+    work, root = run
+    reason = "supervisor_deadline"
+    decision = {"reason": reason, "budget_elapsed_seconds": 7199.8}
+    change(root / "reports/run-receipt.json", reason=reason)
+    change(root / "status.json", reason=reason, phase="stopped")
+    change(
+        work / "resource_monitor/session_123.json",
+        reason=reason,
+        decision=decision,
+        budget_elapsed_seconds=7201.5,
+    )
+    runtime = rv.load_runtime(work, root, [])
+    assert runtime["monitor"]["decision"] == decision
+    snapshot = vm.load_dashboard_snapshot(work, root)
+    assert snapshot.status == "stopped"
+    assert reason in snapshot.status_detail
+
+
 @pytest.mark.parametrize(
     "damage", ["cleanup", "release", "head", "version", "partial", "time", "errors"]
 )

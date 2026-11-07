@@ -216,7 +216,9 @@ def read_job_status(work_dir: Path, pid: int, process_age: float) -> WorkerJobSt
             if not path.is_file():
                 continue
             with path.open("rb") as stream:
-                data = json.loads(stream.read(MAX_STATUS_BYTES + 1))
+                payload = stream.read(MAX_STATUS_BYTES + 1)
+            require(len(payload) <= MAX_STATUS_BYTES, "Oversized worker status")
+            data = json.loads(payload)
             identity = data["identity"]
             if identity["pid"] != pid or identity["start_ticks"] != fields[19]:
                 continue

@@ -247,7 +247,7 @@ stop_headless_workers() {
   for pid in "${CLUSTER_PIDS[@]}"; do
     status=0
     wait "$pid" 2>/dev/null || status=$?
-    if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" && "$status" != "0" && "$status" != "143" && "$status" != "137" ]]; then
+    if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" && "$status" != "0" && "$status" != "143" ]]; then
       CLUSTER_WORKER_FAILED=1
     fi
   done
@@ -277,7 +277,12 @@ record={"schema_version":1,"reason":"supervisor_deadline",
 with socket.socket(fileno=int(os.environ["MORPION_SUPERVISOR_SHUTDOWN_FD"])) as control:
  control.settimeout(grace+5)
  control.sendall(json.dumps(record).encode()+b"\n")
- if control.recv(3)!=b"ok\n":raise RuntimeError("Shutdown intent was not acknowledged")
+ acknowledgement=bytearray()
+ while len(acknowledgement)<3:
+  fragment=control.recv(3-len(acknowledgement))
+  if not fragment:raise RuntimeError("Shutdown acknowledgement closed")
+  acknowledgement.extend(fragment)
+ if acknowledgement!=b"ok\n":raise RuntimeError("Shutdown intent was not acknowledged")
 '
 }
 

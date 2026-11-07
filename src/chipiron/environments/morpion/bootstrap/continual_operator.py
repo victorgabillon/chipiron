@@ -374,6 +374,7 @@ def _run_monitored(
     launched = started
     ordinary_overrun = False
     ordinary_age = 0.0
+    ordinary_pid: int | None = None
     current: dict[str, Any] = {}
 
     def read_shutdown() -> None:
@@ -381,41 +382,43 @@ def _run_monitored(
         if control is None or process is None or control_failure is not None:
             return
         try:
-            try:
-                message = control.recv(MAX_STATUS_BYTES + 1)
-            except BlockingIOError:
-                return
-            if not message:
-                require(not control_buffer, "Incomplete supervisor shutdown message")
-                return
-            require(shutdown is None, "Repeated supervisor shutdown intent")
-            control_buffer.extend(message)
-            require(
-                len(control_buffer) <= MAX_STATUS_BYTES, "Oversized shutdown intent"
-            )
-            if b"\n" not in control_buffer:
-                return
-            line, remainder = control_buffer.split(b"\n", 1)
-            require(not remainder, "Multiple supervisor shutdown messages")
-            record = json.loads(line)
-            shutdown = validate_shutdown_intent(
-                record,
-                monitor_session=identifier,
-                parent_pid=process.pid,
-                limit_seconds=supervisor_limit,
-                grace_seconds=policy.shutdown_grace_seconds,
-                not_before=launched + supervisor_limit - 1,
-                now=time.monotonic(),
-            )
-            control_buffer.clear()
+            while True:
+                try:
+                    message = control.recv(MAX_STATUS_BYTES + 1)
+                except BlockingIOError:
+                    return
+                if not message:
+                    require(
+                        not control_buffer, "Incomplete supervisor shutdown message"
+                    )
+                    return
+                require(shutdown is None, "Repeated supervisor shutdown intent")
+                control_buffer.extend(message)
+                require(
+                    len(control_buffer) <= MAX_STATUS_BYTES, "Oversized shutdown intent"
+                )
+                if b"\n" not in control_buffer:
+                    continue
+                line, remainder = control_buffer.split(b"\n", 1)
+                require(not remainder, "Multiple supervisor shutdown messages")
+                record = json.loads(line)
+                shutdown = validate_shutdown_intent(
+                    record,
+                    monitor_session=identifier,
+                    parent_pid=process.pid,
+                    limit_seconds=supervisor_limit,
+                    grace_seconds=policy.shutdown_grace_seconds,
+                    not_before=launched + supervisor_limit - 1,
+                    now=time.monotonic(),
+                )
+                control_buffer.clear()
         except OSError, ValueError, KeyError, TypeError, IndexError, RecursionError:
             shutdown = None
             control_failure = "invalid_supervisor_shutdown"
 
-    def limit_reason(current: dict[str, Any], elapsed: float) -> str | None:
+    def limit_reason(current: dict[str, Any], now: float) -> str | None:
         """Keep native elapsed/resource priority and distinguish real job failures."""
         nonlocal worker_failures
-        now = time.monotonic()
         worker_failures = [
             (pid, failure)
             for pid, reading in readings
@@ -428,7 +431,9 @@ def _run_monitored(
                 default=0.0,
             ),
         )
-        resource_reason = resource_limit_reason(policy, current, elapsed)
+        resource_reason = resource_limit_reason(
+            policy, current, consumed + now - started
+        )
         if resource_reason not in {None, "maximum_worker_runtime"}:
             return resource_reason
         genuine_overrun = ordinary_overrun or any(
@@ -458,21 +463,27 @@ def _run_monitored(
             )
         return None
 
-    def record_decision(current: dict[str, Any], elapsed: float) -> None:
-        nonlocal decision
+    def record_decision(current: dict[str, Any], now: float) -> None:
+        nonlocal decision, control_failure
+        if control_buffer:
+            control_failure = "invalid_supervisor_shutdown"
         trigger = next(
             (pid for pid, failure in worker_failures if failure == reason),
-            max(
-                readings,
-                key=lambda item: item[1].active_age(shutdown, time.monotonic()),
-            )[0]
-            if readings and reason == "maximum_worker_runtime"
-            else None,
+            None,
         )
+        if reason == "maximum_worker_runtime":
+            trigger = max(
+                [(ordinary_pid, ordinary_age)]
+                + [
+                    (pid, reading.active_age(shutdown, now))
+                    for pid, reading in readings
+                ],
+                key=lambda item: item[1],
+            )[0]
         decision = {
             "reason": reason,
-            "monotonic_s": started + elapsed - consumed,
-            "budget_elapsed_seconds": elapsed,
+            "monotonic_s": now,
+            "budget_elapsed_seconds": consumed + now - started,
             "sample": current,
             "triggering_worker_pid": trigger,
             "workers": [
@@ -480,15 +491,14 @@ def _run_monitored(
                     "pid": pid,
                     "status": reading.record,
                     "fallback_process_or_job_age_s": reading.age,
-                    "accounted_job_age_s": reading.active_age(
-                        shutdown, time.monotonic()
-                    ),
+                    "accounted_job_age_s": reading.active_age(shutdown, now),
                 }
                 for pid, reading in readings
             ],
             "supervisor_shutdown": None if shutdown is None else shutdown.record,
             "control_failure": control_failure,
             "worker_failures": worker_failures,
+            "ordinary_worker": {"pid": ordinary_pid, "age_s": ordinary_age},
         }
         atomic_json(monitor / f"decision_{identifier}.json", decision)
         if control is not None and (
@@ -500,8 +510,9 @@ def _run_monitored(
                 control.sendall(b"ok\n" if shutdown is not None else b"no\n")
 
     def sample() -> dict[str, Any]:
-        nonlocal readings, worker_failures, ordinary_overrun, ordinary_age
+        nonlocal readings, worker_failures, ordinary_overrun, ordinary_age, ordinary_pid
         readings = []
+        ordinary_pid = None
         ordinary_longest = 0.0
         processes: list[Any] = []
         if process is not None:
@@ -538,6 +549,8 @@ def _run_monitored(
                         readings.append((child.pid, reading))
                         elapsed = reading.age
                     else:
+                        if elapsed > ordinary_longest:
+                            ordinary_pid = child.pid
                         ordinary_longest = max(ordinary_longest, elapsed)
                     longest = max(longest, elapsed)
             except psutil.NoSuchProcess, ProcessLookupError, FileNotFoundError:
@@ -576,10 +589,47 @@ def _run_monitored(
             minimum[key] = min(minimum[key], current[key])
         return current
 
+    def remember_owned_groups() -> None:
+        """Retain Linux ancestry independently of a possibly failing sampler."""
+        if process is None:
+            return
+        pending = [process.pid]
+        seen: set[int] = set()
+        while pending:
+            pid = pending.pop()
+            if pid in seen:
+                continue
+            seen.add(pid)
+            try:
+                owned_groups.add(os.getpgid(pid))
+                pending.extend(
+                    int(value)
+                    for value in Path(f"/proc/{pid}/task/{pid}/children")
+                    .read_text(encoding="utf-8")
+                    .split()
+                )
+            except FileNotFoundError, ProcessLookupError:
+                continue
+
+    def live_owned_processes() -> list[int]:
+        """Confirm KILL completion before retiring any attempt inputs."""
+        live = []
+        for child in psutil.process_iter(["pid", "status"]):
+            try:
+                if os.getpgid(child.pid) in owned_groups and child.status() not in {
+                    psutil.STATUS_ZOMBIE,
+                    psutil.STATUS_DEAD,
+                }:
+                    live.append(child.pid)
+            except psutil.NoSuchProcess, ProcessLookupError:
+                continue
+        return live
+
     try:
         current = sample()
-        elapsed = consumed + time.monotonic() - started
-        reason = limit_reason(current, elapsed) or ""
+        decisive_now = time.monotonic()
+        elapsed = consumed + decisive_now - started
+        reason = limit_reason(current, decisive_now) or ""
         if not reason:
             control, supervisor_control = socket.socketpair()
             resources.callback(control.close)
@@ -633,6 +683,8 @@ def _run_monitored(
                         pass_fds=(supervisor_control.fileno(),),
                     )
                 )
+                with suppress(ProcessLookupError):
+                    owned_groups.add(os.getpgid(process.pid))
                 supervisor_control.close()
                 while process.poll() is None:
                     current = sample()
@@ -640,13 +692,15 @@ def _run_monitored(
                     termination = state.metadata.get("experiment_termination")
                     # Sampling/status reads can cross the deadline. Decide from
                     # their completion time, before shutdown can alter the label.
-                    elapsed = consumed + time.monotonic() - started
+                    decisive_now = time.monotonic()
+                    elapsed = consumed + decisive_now - started
+                    resource_reason = limit_reason(current, decisive_now)
                     reason = (
                         "operator_" + interrupted[-1]
                         if interrupted
                         else termination["reason"]
                         if termination is not None
-                        else limit_reason(current, elapsed)
+                        else resource_reason
                     ) or ""
                     atomic_json(
                         usage_path,
@@ -657,94 +711,143 @@ def _run_monitored(
                         },
                     )
                     if reason:
-                        record_decision(current, elapsed)
+                        record_decision(current, decisive_now)
                         break
                     time.sleep(1)
                 if not reason:
                     read_shutdown()
-                    elapsed = consumed + time.monotonic() - started
+                    decisive_now = time.monotonic()
+                    elapsed = consumed + decisive_now - started
+                    resource_reason = limit_reason(current, decisive_now)
                     reason = (
                         "operator_" + interrupted[-1]
                         if interrupted
-                        else limit_reason(current, elapsed)
+                        else resource_reason
                     ) or "supervisor_exit"
         if decision is None:
-            record_decision(current, elapsed)
+            record_decision(current, decisive_now)
     except BaseException:
         if decision is None:
             reason = "operator_" + interrupted[-1] if interrupted else "monitor_error"
-            record_decision(current, consumed + time.monotonic() - started)
+            record_decision(current, time.monotonic())
         raise
     finally:
-        shutdown_confirmed = True
-        shutdown_grace_expired = False
-        if process is not None:
-            if process.poll() is None:
-                # Signal the actual headless shell; GNU time remains its parent
-                # and records complete child CPU usage after the shell reaps workers.
+        try:
+            shutdown_confirmed = True
+            shutdown_grace_expired = False
+            cleanup_confirmed_at: float | None = None
+            kill_confirmation_deadline: float | None = None
+            if process is not None:
                 try:
-                    leaders = psutil.Process(process.pid).children()
-                except psutil.NoSuchProcess:
-                    leaders = []
-                for leader in leaders:
+                    remember_owned_groups()
+                    if process.poll() is None:
+                        # Signal the actual headless shell; GNU time remains its parent
+                        # and records complete child CPU usage after the shell reaps workers.
+                        try:
+                            root = psutil.Process(process.pid)
+                            leaders = root.children()
+                            for child in root.children(recursive=True):
+                                with suppress(ProcessLookupError):
+                                    owned_groups.add(os.getpgid(child.pid))
+                        except psutil.NoSuchProcess:
+                            leaders = []
+                        for leader in leaders:
+                            with suppress(ProcessLookupError):
+                                os.kill(leader.pid, signal.SIGTERM)
+                        # Queue TERM first: otherwise a helper racing the final sample
+                        # could turn native cancellation into a failed ACK/exit1.
+                        if control is not None:
+                            control.close()
+                        try:
+                            process.wait(
+                                timeout=policy.shutdown_grace_seconds + 10
+                                if shutdown is None
+                                else max(0.0, shutdown.deadline - time.monotonic())
+                            )
+                        except subprocess.TimeoutExpired:
+                            shutdown_grace_expired = True
+                            kill_confirmation_deadline = time.monotonic() + 5
+                            for group in owned_groups:
+                                with suppress(ProcessLookupError):
+                                    os.killpg(group, signal.SIGKILL)
+                            process.wait(timeout=5)
+                    # The existing supervisor confirms all groups. Independently retain
+                    # scratch if any sampled owned group still has a living member.
+                    live = live_owned_processes()
+                    if live:
+                        shutdown_grace_expired = True
+                        if kill_confirmation_deadline is None:
+                            kill_confirmation_deadline = time.monotonic() + 5
+                            for group in owned_groups:
+                                with suppress(ProcessLookupError):
+                                    os.killpg(group, signal.SIGKILL)
+                        while live and time.monotonic() < kill_confirmation_deadline:
+                            time.sleep(0.01)
+                            live = live_owned_processes()
+                    shutdown_confirmed = not live
+                    cleanup_confirmed_at = time.monotonic()
+                    if (
+                        shutdown is not None
+                        and cleanup_confirmed_at > shutdown.deadline
+                    ):
+                        shutdown_grace_expired = True
+                    shutdown_grace_expired = (
+                        shutdown_grace_expired or process.returncode == 124
+                    )
+                    if reason == "supervisor_deadline":
+                        if shutdown_grace_expired or process.returncode == 124:
+                            reason = "supervisor_shutdown_grace_expired"
+                        elif process.returncode not in {0, 143}:
+                            reason = "supervisor_failed_during_shutdown"
+                except BaseException:
+                    shutdown_confirmed = False
                     with suppress(ProcessLookupError):
-                        os.kill(leader.pid, signal.SIGTERM)
-                try:
-                    process.wait(timeout=policy.shutdown_grace_seconds + 10)
-                except subprocess.TimeoutExpired:
-                    shutdown_grace_expired = True
-                    for group in owned_groups:
-                        with suppress(ProcessLookupError):
-                            os.killpg(group, signal.SIGKILL)
-                    process.wait(timeout=5)
-            # The existing supervisor confirms all groups. Independently retain
-            # scratch if any sampled owned group still has a living member.
-            live = []
-            for child in psutil.process_iter(["pid", "status"]):
-                try:
-                    if os.getpgid(child.pid) in owned_groups and child.status() not in {
-                        psutil.STATUS_ZOMBIE,
-                        psutil.STATUS_DEAD,
-                    }:
-                        live.append(child.pid)
-                except psutil.NoSuchProcess, ProcessLookupError:
-                    continue
-            shutdown_confirmed = not live
-            shutdown_grace_expired = shutdown_grace_expired or process.returncode == 124
-            if reason == "supervisor_deadline":
-                if shutdown_grace_expired or process.returncode == 124:
-                    reason = "supervisor_shutdown_grace_expired"
-                elif process.returncode not in {0, 143}:
-                    reason = "supervisor_failed_during_shutdown"
-        elapsed = consumed + time.monotonic() - started
-        atomic_json(
-            usage_path,
-            {"elapsed_seconds": elapsed, "session": identifier, "reason": reason},
-        )
-        atomic_json(
-            session_path,
-            {
-                "policy": policy.to_metadata(),
-                "reason": reason,
-                "elapsed_seconds": elapsed - consumed,
-                "budget_elapsed_seconds": elapsed,
-                "peaks": peaks,
-                "minimum": minimum,
-                "scratch": str(scratch),
-                "supervisor_exit_code": None if process is None else process.returncode,
-                "shutdown_confirmed": shutdown_confirmed,
-                "decision": decision,
-                "shutdown_grace_expired": shutdown_grace_expired,
-            },
-        )
-        if shutdown_confirmed:
-            shutil.rmtree(scratch)
-        for number, handler in old_handlers.items():
-            signal.signal(number, handler)
-        require(
-            shutdown_confirmed,
-            "Worker group shutdown is unconfirmed; scratch retained.",
-        )
+                        os.killpg(process.pid, signal.SIGTERM)
+                    if control is not None:
+                        control.close()
+                    try:
+                        remember_owned_groups()
+                    finally:
+                        for group in owned_groups:
+                            with suppress(ProcessLookupError):
+                                os.killpg(group, signal.SIGKILL)
+                        process.wait(timeout=5)
+                    raise
+            elapsed = consumed + time.monotonic() - started
+            atomic_json(
+                usage_path,
+                {"elapsed_seconds": elapsed, "session": identifier, "reason": reason},
+            )
+            atomic_json(
+                session_path,
+                {
+                    "policy": policy.to_metadata(),
+                    "reason": reason,
+                    "elapsed_seconds": elapsed - consumed,
+                    "budget_elapsed_seconds": elapsed,
+                    "peaks": peaks,
+                    "minimum": minimum,
+                    "scratch": str(scratch),
+                    "supervisor_exit_code": None
+                    if process is None
+                    else process.returncode,
+                    "shutdown_confirmed": shutdown_confirmed,
+                    "decision": decision,
+                    "shutdown_grace_expired": shutdown_grace_expired,
+                    "cleanup_confirmed_monotonic_s": cleanup_confirmed_at,
+                },
+            )
+            if shutdown_confirmed:
+                shutil.rmtree(scratch)
+            require(
+                shutdown_confirmed,
+                "Worker group shutdown is unconfirmed; scratch retained.",
+            )
+        finally:
+            if control is not None:
+                control.close()
+            for number, handler in old_handlers.items():
+                signal.signal(number, handler)
     require(
         not shutdown_grace_expired
         and not worker_failures
