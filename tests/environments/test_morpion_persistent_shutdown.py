@@ -46,7 +46,8 @@ def _owned_deadline(
     launched: list[Any] = []
     real_sleep = time.sleep
     real_monotonic = time.monotonic
-    base = real_monotonic()
+    # Whole-second origin keeps exact 7200.0 boundary additions representable.
+    base = float(int(real_monotonic()))
     clock = [base]
     monitor = tmp_path / "resource_monitor"
     monitor.mkdir()
