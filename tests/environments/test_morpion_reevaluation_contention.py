@@ -59,6 +59,7 @@ def test_activation_outlasts_wait_then_persistent_job_reloads_model_and_grows(
     activation: dict[str, Any] = {}
     results = []
     cleanups = []
+    contention_observed: list[bool] = []
     refresh = AnemoneMorpionSearchRunner.refresh_model_estimates
     proposal = worker.proposal_patch
 
@@ -94,6 +95,16 @@ def test_activation_outlasts_wait_then_persistent_job_reloads_model_and_grows(
     def cleanup() -> None:
         cleanups.append(len(results))
         if len(results) == 1:
+            # Inspect the bounded runtime slot before later ownership writes can
+            # replace it; the timeout must already be persisted at this boundary.
+            first_records = [
+                json.loads(p.read_text())
+                for p in (paths.pipeline_dir / "performance").rglob("*.json")
+            ]
+            contention_observed.append(
+                any(r.get("outcome") == "contention_timeout" for r in first_records)
+            )
+            assert contention_observed == [True]
             assert not paths.pipeline_reevaluation_patch_path.exists()
             assert not paths.pipeline_reevaluation_cursor_path.exists()
             assert paths.run_state_path.read_bytes() == authority_before
@@ -142,7 +153,7 @@ def test_activation_outlasts_wait_then_persistent_job_reloads_model_and_grows(
         json.loads(p.read_text())
         for p in (paths.pipeline_dir / "performance").rglob("*.json")
     ]
-    assert any(r.get("outcome") == "contention_timeout" for r in records)
+    assert contention_observed == [True]
     assert any(
         r.get("reason") == "ownership_contended" and r.get("patch_written") is False
         for r in records
