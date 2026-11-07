@@ -357,6 +357,7 @@ def _run_monitored(
     peaks = {"group_rss_mb": 0.0, "workspace_mb": 0.0, "scratch_mb": 0.0}
     minimum = {"available_ram_mb": float("inf"), "free_disk_mb": float("inf")}
     owned_groups: set[int] = set()
+    environment_owned_groups: set[int] = set()
     control: socket.socket | None = None
     control_buffer = bytearray()
     shutdown: SupervisorShutdown | None = None
@@ -376,6 +377,7 @@ def _run_monitored(
     ordinary_age = 0.0
     ordinary_pid: int | None = None
     current: dict[str, Any] = {}
+    environment: dict[str, str] = {}
 
     def read_shutdown() -> None:
         nonlocal shutdown, control_failure
@@ -499,6 +501,8 @@ def _run_monitored(
             "control_failure": control_failure,
             "worker_failures": worker_failures,
             "ordinary_worker": {"pid": ordinary_pid, "age_s": ordinary_age},
+            "supervisor_pid": None if process is None else process.pid,
+            "supervisor_exit_code": None if process is None else process.returncode,
         }
         atomic_json(monitor / f"decision_{identifier}.json", decision)
         if control is not None and (
@@ -593,7 +597,7 @@ def _run_monitored(
         """Retain Linux ancestry independently of a possibly failing sampler."""
         if process is None:
             return
-        pending = [process.pid]
+        pending = [process.pid] if process.poll() is None else []
         seen: set[int] = set()
         while pending:
             pid = pending.pop()
@@ -609,6 +613,58 @@ def _run_monitored(
                     .split()
                 )
             except FileNotFoundError, ProcessLookupError:
+                continue
+        # A killed shell can reparent setsid workers before our first sample.
+        # Recover only this invocation's inherited kernel environment, never PID
+        # claims from status files. This grants cleanup ownership, not acceptance.
+        needles = {
+            b"\0" + os.fsencode(f"{key}={environment[key]}") + b"\0"
+            for key in (
+                "MORPION_RESOURCE_MONITOR_PID",
+                "MORPION_RESOURCE_MONITOR_START_TICKS",
+                "MORPION_RESOURCE_MONITOR_SESSION",
+                "MORPION_WORK_DIR",
+            )
+        }
+        overlap = max(map(len, needles)) - 1
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdecimal():
+                continue
+            try:
+                if entry.stat().st_uid != os.getuid():
+                    continue
+                before = (
+                    (entry / "stat")
+                    .read_text(encoding="utf-8")
+                    .rsplit(") ", 1)[1]
+                    .split()
+                )
+                found: set[bytes] = set()
+                tail = b"\0"
+                # exec bounds the complete argument/environment area. Stream it
+                # with fixed memory; unrelated large variables cannot grow a buffer.
+                remaining = max(MAX_STATUS_BYTES, os.sysconf("SC_ARG_MAX"))
+                with (entry / "environ").open("rb") as stream:
+                    while remaining > 0 and found != needles:
+                        block = stream.read(min(MAX_STATUS_BYTES, remaining))
+                        if not block:
+                            break
+                        remaining -= len(block)
+                        data = tail + block
+                        found.update(needle for needle in needles if needle in data)
+                        tail = data[-overlap:]
+                if found != needles:
+                    continue
+                after = (
+                    (entry / "stat")
+                    .read_text(encoding="utf-8")
+                    .rsplit(") ", 1)[1]
+                    .split()
+                )
+                if before[19] == after[19] and before[2] == after[2]:
+                    owned_groups.add(int(after[2]))
+                    environment_owned_groups.add(int(after[2]))
+            except FileNotFoundError, ProcessLookupError, PermissionError:
                 continue
 
     def live_owned_processes() -> list[int]:
@@ -683,8 +739,9 @@ def _run_monitored(
                         pass_fds=(supervisor_control.fileno(),),
                     )
                 )
-                with suppress(ProcessLookupError):
-                    owned_groups.add(os.getpgid(process.pid))
+                if process.poll() is None:
+                    with suppress(ProcessLookupError):
+                        owned_groups.add(os.getpgid(process.pid))
                 supervisor_control.close()
                 while process.poll() is None:
                     current = sample()
@@ -735,6 +792,7 @@ def _run_monitored(
         try:
             shutdown_confirmed = True
             shutdown_grace_expired = False
+            forced_group_cleanup = False
             cleanup_confirmed_at: float | None = None
             kill_confirmation_deadline: float | None = None
             if process is not None:
@@ -766,6 +824,7 @@ def _run_monitored(
                             )
                         except subprocess.TimeoutExpired:
                             shutdown_grace_expired = True
+                            forced_group_cleanup = True
                             kill_confirmation_deadline = time.monotonic() + 5
                             for group in owned_groups:
                                 with suppress(ProcessLookupError):
@@ -775,7 +834,7 @@ def _run_monitored(
                     # scratch if any sampled owned group still has a living member.
                     live = live_owned_processes()
                     if live:
-                        shutdown_grace_expired = True
+                        forced_group_cleanup = True
                         if kill_confirmation_deadline is None:
                             kill_confirmation_deadline = time.monotonic() + 5
                             for group in owned_groups:
@@ -797,12 +856,13 @@ def _run_monitored(
                     if reason == "supervisor_deadline":
                         if shutdown_grace_expired or process.returncode == 124:
                             reason = "supervisor_shutdown_grace_expired"
-                        elif process.returncode not in {0, 143}:
+                        elif forced_group_cleanup or process.returncode not in {0, 143}:
                             reason = "supervisor_failed_during_shutdown"
                 except BaseException:
                     shutdown_confirmed = False
-                    with suppress(ProcessLookupError):
-                        os.killpg(process.pid, signal.SIGTERM)
+                    if process.poll() is None:
+                        with suppress(ProcessLookupError):
+                            os.killpg(process.pid, signal.SIGTERM)
                     if control is not None:
                         control.close()
                     try:
@@ -835,6 +895,8 @@ def _run_monitored(
                     "decision": decision,
                     "shutdown_grace_expired": shutdown_grace_expired,
                     "cleanup_confirmed_monotonic_s": cleanup_confirmed_at,
+                    "forced_group_cleanup": forced_group_cleanup,
+                    "environment_owned_groups": sorted(environment_owned_groups),
                 },
             )
             if shutdown_confirmed:
@@ -850,6 +912,7 @@ def _run_monitored(
                 signal.signal(number, handler)
     require(
         not shutdown_grace_expired
+        and not forced_group_cleanup
         and not worker_failures
         and control_failure is None
         and reason
