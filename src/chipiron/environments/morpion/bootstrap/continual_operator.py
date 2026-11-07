@@ -10,6 +10,7 @@ import math
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,13 @@ from .generation_publication_io import (
     require,
 )
 from .learning_policy import MorpionContinualLearningPolicy, policy_from_metadata
+from .persistent_worker_state import (
+    MAX_STATUS_BYTES,
+    SupervisorShutdown,
+    WorkerJobStatus,
+    read_job_status,
+    validate_shutdown_intent,
+)
 from .pipeline_memory import available_ram_mb, directory_disk_usage
 from .run_state import load_bootstrap_run_state
 
@@ -196,10 +204,15 @@ def resource_limit_reason(
 ) -> str | None:
     """Evaluate the declared research monitor limits without changing any budget."""
     require(
-        math.isfinite(elapsed)
+        isinstance(elapsed, (int, float))
+        and not isinstance(elapsed, bool)
+        and math.isfinite(elapsed)
         and elapsed >= 0
         and all(
-            isinstance(v, (int, float)) and math.isfinite(v) and v >= 0
+            isinstance(v, (int, float))
+            and not isinstance(v, bool)
+            and math.isfinite(v)
+            and v >= 0
             for v in sample.values()
         ),
         "Invalid or nonfinite resource measurement.",
@@ -321,6 +334,11 @@ def _run_monitored(
     previous = (
         read_object(usage_path) if usage_path.exists() else {"elapsed_seconds": 0.0}
     )
+    require(
+        isinstance(previous["elapsed_seconds"], (int, float))
+        and not isinstance(previous["elapsed_seconds"], bool),
+        "Invalid resource budget clock.",
+    )
     consumed = float(previous["elapsed_seconds"])
     require(math.isfinite(consumed) and consumed >= 0, "Invalid resource budget usage.")
     identifier = str(time.time_ns())
@@ -339,8 +357,152 @@ def _run_monitored(
     peaks = {"group_rss_mb": 0.0, "workspace_mb": 0.0, "scratch_mb": 0.0}
     minimum = {"available_ram_mb": float("inf"), "free_disk_mb": float("inf")}
     owned_groups: set[int] = set()
+    control: socket.socket | None = None
+    control_buffer = bytearray()
+    shutdown: SupervisorShutdown | None = None
+    control_failure: str | None = None
+    readings: list[tuple[int, WorkerJobStatus]] = []
+    worker_failures: list[tuple[int, str]] = []
+    decision: dict[str, Any] | None = None
+    supervisor_limit = max(
+        1,
+        min(
+            int(policy.max_elapsed_seconds - consumed),
+            43200 - policy.shutdown_grace_seconds - 5,
+        ),
+    )
+    launched = started
+    ordinary_overrun = False
+    ordinary_age = 0.0
+    current: dict[str, Any] = {}
+
+    def read_shutdown() -> None:
+        nonlocal shutdown, control_failure
+        if control is None or process is None or control_failure is not None:
+            return
+        try:
+            try:
+                message = control.recv(MAX_STATUS_BYTES + 1)
+            except BlockingIOError:
+                return
+            if not message:
+                require(not control_buffer, "Incomplete supervisor shutdown message")
+                return
+            require(shutdown is None, "Repeated supervisor shutdown intent")
+            control_buffer.extend(message)
+            require(
+                len(control_buffer) <= MAX_STATUS_BYTES, "Oversized shutdown intent"
+            )
+            if b"\n" not in control_buffer:
+                return
+            line, remainder = control_buffer.split(b"\n", 1)
+            require(not remainder, "Multiple supervisor shutdown messages")
+            record = json.loads(line)
+            shutdown = validate_shutdown_intent(
+                record,
+                monitor_session=identifier,
+                parent_pid=process.pid,
+                limit_seconds=supervisor_limit,
+                grace_seconds=policy.shutdown_grace_seconds,
+                not_before=launched + supervisor_limit - 1,
+                now=time.monotonic(),
+            )
+            control_buffer.clear()
+        except OSError, ValueError, KeyError, TypeError, IndexError, RecursionError:
+            shutdown = None
+            control_failure = "invalid_supervisor_shutdown"
+
+    def limit_reason(current: dict[str, Any], elapsed: float) -> str | None:
+        """Keep native elapsed/resource priority and distinguish real job failures."""
+        nonlocal worker_failures
+        now = time.monotonic()
+        worker_failures = [
+            (pid, failure)
+            for pid, reading in readings
+            if (failure := reading.shutdown_failure(shutdown, now)) is not None
+        ]
+        current["longest_worker_seconds"] = max(
+            ordinary_age,
+            max(
+                (reading.active_age(shutdown, now) for _pid, reading in readings),
+                default=0.0,
+            ),
+        )
+        resource_reason = resource_limit_reason(policy, current, elapsed)
+        if resource_reason not in {None, "maximum_worker_runtime"}:
+            return resource_reason
+        genuine_overrun = ordinary_overrun or any(
+            reading.record is not None
+            and (
+                reading.record["phase"] in {"starting", "running", "cleanup"}
+                or (
+                    shutdown is not None
+                    and reading.shutdown_failure(shutdown, now) is None
+                )
+            )
+            and reading.active_age(shutdown, now) > policy.worker_max_seconds
+            for _pid, reading in readings
+        )
+        failure = control_failure or next(
+            (value for _pid, value in worker_failures), None
+        )
+        if failure is not None and not genuine_overrun:
+            return failure
+        if resource_reason:
+            return resource_reason
+        if shutdown is not None:
+            return (
+                "supervisor_shutdown_grace_expired"
+                if now > shutdown.deadline
+                else "supervisor_deadline"
+            )
+        return None
+
+    def record_decision(current: dict[str, Any], elapsed: float) -> None:
+        nonlocal decision
+        trigger = next(
+            (pid for pid, failure in worker_failures if failure == reason),
+            max(
+                readings,
+                key=lambda item: item[1].active_age(shutdown, time.monotonic()),
+            )[0]
+            if readings and reason == "maximum_worker_runtime"
+            else None,
+        )
+        decision = {
+            "reason": reason,
+            "monotonic_s": started + elapsed - consumed,
+            "budget_elapsed_seconds": elapsed,
+            "sample": current,
+            "triggering_worker_pid": trigger,
+            "workers": [
+                {
+                    "pid": pid,
+                    "status": reading.record,
+                    "fallback_process_or_job_age_s": reading.age,
+                    "accounted_job_age_s": reading.active_age(
+                        shutdown, time.monotonic()
+                    ),
+                }
+                for pid, reading in readings
+            ],
+            "supervisor_shutdown": None if shutdown is None else shutdown.record,
+            "control_failure": control_failure,
+            "worker_failures": worker_failures,
+        }
+        atomic_json(monitor / f"decision_{identifier}.json", decision)
+        if control is not None and (
+            shutdown is not None or control_failure is not None
+        ):
+            # Persist the decisive native clock/status BEFORE the supervisor can
+            # signal workers. No cleanup-inclusive elapsed supplies this reason.
+            with suppress(OSError):
+                control.sendall(b"ok\n" if shutdown is not None else b"no\n")
 
     def sample() -> dict[str, Any]:
+        nonlocal readings, worker_failures, ordinary_overrun, ordinary_age
+        readings = []
+        ordinary_longest = 0.0
         processes: list[Any] = []
         if process is not None:
             with suppress(psutil.NoSuchProcess):
@@ -372,9 +534,11 @@ def _run_monitored(
                         fields[19]
                     ) / os.sysconf("SC_CLK_TCK")
                     if "--persistent-worker" in command:
-                        from .persistent_worker_state import active_job_age
-
-                        elapsed = active_job_age(paths.work_dir, child.pid, elapsed)
+                        reading = read_job_status(paths.work_dir, child.pid, elapsed)
+                        readings.append((child.pid, reading))
+                        elapsed = reading.age
+                    else:
+                        ordinary_longest = max(ordinary_longest, elapsed)
                     longest = max(longest, elapsed)
             except psutil.NoSuchProcess, ProcessLookupError, FileNotFoundError:
                 continue
@@ -390,6 +554,22 @@ def _run_monitored(
             "scratch_mb": directory_disk_usage(scratch)["allocated_bytes"] / 2**20,
             "longest_worker_seconds": longest,
         }
+        # Read intent after status/disk reads: the supervisor may have published
+        # its pre-signal record while sampling. A stopped record alone is inert.
+        read_shutdown()
+        now = time.monotonic()
+        worker_failures = [
+            (pid, failure)
+            for pid, reading in readings
+            if (failure := reading.shutdown_failure(shutdown, now)) is not None
+        ]
+        if readings:
+            current["longest_worker_seconds"] = max(
+                ordinary_longest,
+                *(reading.active_age(shutdown, now) for _pid, reading in readings),
+            )
+        ordinary_overrun = ordinary_longest > policy.worker_max_seconds
+        ordinary_age = ordinary_longest
         for key in peaks:
             peaks[key] = max(peaks[key], current[key])
         for key in minimum:
@@ -399,8 +579,12 @@ def _run_monitored(
     try:
         current = sample()
         elapsed = consumed + time.monotonic() - started
-        reason = resource_limit_reason(policy, current, elapsed) or ""
+        reason = limit_reason(current, elapsed) or ""
         if not reason:
+            control, supervisor_control = socket.socketpair()
+            resources.callback(control.close)
+            resources.callback(supervisor_control.close)
+            control.setblocking(False)
             environment = dict(
                 os.environ,
                 PYTHON_BIN=sys.executable,
@@ -413,15 +597,9 @@ def _run_monitored(
                 .read_text(encoding="utf-8")
                 .rsplit(") ", 1)[1]
                 .split()[19],
-                MORPION_CLUSTER_MAX_SECONDS=str(
-                    max(
-                        1,
-                        min(
-                            int(policy.max_elapsed_seconds - consumed),
-                            43200 - policy.shutdown_grace_seconds - 5,
-                        ),
-                    )
-                ),
+                MORPION_RESOURCE_MONITOR_SESSION=identifier,
+                MORPION_SUPERVISOR_SHUTDOWN_FD=str(supervisor_control.fileno()),
+                MORPION_CLUSTER_MAX_SECONDS=str(supervisor_limit),
                 MORPION_CLUSTER_STOP_GRACE_SECONDS=str(policy.shutdown_grace_seconds),
                 MORPION_WORK_DIR=str(paths.work_dir),
                 MORPION_SEED_MODELS_FROM_WORK_DIR="",
@@ -434,6 +612,7 @@ def _run_monitored(
                 SQLITE_TMPDIR=str(scratch),
             )
             with (monitor / f"session_{identifier}.log").open("w") as output:
+                launched = time.monotonic()
                 process = resources.enter_context(
                     # ExitStack owns this process until monitored shutdown completes.
                     subprocess.Popen(  # pylint: disable=consider-using-with
@@ -451,8 +630,10 @@ def _run_monitored(
                         stdout=output,
                         stderr=subprocess.STDOUT,
                         start_new_session=True,
+                        pass_fds=(supervisor_control.fileno(),),
                     )
                 )
+                supervisor_control.close()
                 while process.poll() is None:
                     current = sample()
                     state = load_bootstrap_run_state(paths.run_state_path)
@@ -465,7 +646,7 @@ def _run_monitored(
                         if interrupted
                         else termination["reason"]
                         if termination is not None
-                        else resource_limit_reason(policy, current, elapsed)
+                        else limit_reason(current, elapsed)
                     ) or ""
                     atomic_json(
                         usage_path,
@@ -476,12 +657,27 @@ def _run_monitored(
                         },
                     )
                     if reason:
+                        record_decision(current, elapsed)
                         break
                     time.sleep(1)
                 if not reason:
-                    reason = "supervisor_exit"
+                    read_shutdown()
+                    elapsed = consumed + time.monotonic() - started
+                    reason = (
+                        "operator_" + interrupted[-1]
+                        if interrupted
+                        else limit_reason(current, elapsed)
+                    ) or "supervisor_exit"
+        if decision is None:
+            record_decision(current, elapsed)
+    except BaseException:
+        if decision is None:
+            reason = "operator_" + interrupted[-1] if interrupted else "monitor_error"
+            record_decision(current, consumed + time.monotonic() - started)
+        raise
     finally:
         shutdown_confirmed = True
+        shutdown_grace_expired = False
         if process is not None:
             if process.poll() is None:
                 # Signal the actual headless shell; GNU time remains its parent
@@ -496,6 +692,7 @@ def _run_monitored(
                 try:
                     process.wait(timeout=policy.shutdown_grace_seconds + 10)
                 except subprocess.TimeoutExpired:
+                    shutdown_grace_expired = True
                     for group in owned_groups:
                         with suppress(ProcessLookupError):
                             os.killpg(group, signal.SIGKILL)
@@ -513,6 +710,12 @@ def _run_monitored(
                 except psutil.NoSuchProcess, ProcessLookupError:
                     continue
             shutdown_confirmed = not live
+            shutdown_grace_expired = shutdown_grace_expired or process.returncode == 124
+            if reason == "supervisor_deadline":
+                if shutdown_grace_expired or process.returncode == 124:
+                    reason = "supervisor_shutdown_grace_expired"
+                elif process.returncode not in {0, 143}:
+                    reason = "supervisor_failed_during_shutdown"
         elapsed = consumed + time.monotonic() - started
         atomic_json(
             usage_path,
@@ -530,6 +733,8 @@ def _run_monitored(
                 "scratch": str(scratch),
                 "supervisor_exit_code": None if process is None else process.returncode,
                 "shutdown_confirmed": shutdown_confirmed,
+                "decision": decision,
+                "shutdown_grace_expired": shutdown_grace_expired,
             },
         )
         if shutdown_confirmed:
@@ -540,10 +745,33 @@ def _run_monitored(
             shutdown_confirmed,
             "Worker group shutdown is unconfirmed; scratch retained.",
         )
-    if (
-        os.environ.get("MORPION_PERSISTENT_WORKERS") == "1"
-        and reason == "supervisor_exit"
-    ):
+    require(
+        not shutdown_grace_expired
+        and not worker_failures
+        and control_failure is None
+        and reason
+        not in {
+            "persistent_worker_failed",
+            "unexpected_persistent_worker_stop",
+            "invalid_persistent_worker_status",
+            "stale_persistent_worker_stop",
+            "invalid_supervisor_shutdown",
+            "supervisor_failed_during_shutdown",
+            "supervisor_shutdown_grace_expired",
+        },
+        "Persistent worker group failed; all owned groups stopped before restart.",
+    )
+    require(
+        process is None
+        or process.returncode in {0, 143}
+        or (reason == "operator_SIGINT" and process.returncode == 130),
+        "Persistent worker group failed; all owned groups stopped before restart.",
+    )
+    if os.environ.get("MORPION_PERSISTENT_WORKERS") == "1" and reason in {
+        "supervisor_exit",
+        "supervisor_failed_during_shutdown",
+        "supervisor_shutdown_grace_expired",
+    }:
         require(
             process is not None and process.returncode == 0,
             "Persistent worker group failed; all owned groups stopped before restart.",

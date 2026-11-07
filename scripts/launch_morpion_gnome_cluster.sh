@@ -21,6 +21,8 @@ CLUSTER_CACHE_ROOT=""
 MORPION_SCIENTIFIC="${MORPION_SCIENTIFIC:-0}"
 MORPION_USE_INSTALLED_PACKAGES="${MORPION_USE_INSTALLED_PACKAGES:-0}"
 CLUSTER_STOPPED=0
+CLUSTER_STOP_FAILED=0
+CLUSTER_WORKER_FAILED=0
 MORPION_PERSISTENT_WORKERS="${MORPION_PERSISTENT_WORKERS:-0}"
 if [[ "$MORPION_PERSISTENT_WORKERS" != "0" && "$MORPION_PERSISTENT_WORKERS" != "1" ]]; then
   echo "MORPION_PERSISTENT_WORKERS must be 0 or 1." >&2
@@ -215,7 +217,7 @@ resource_monitor_running() {
 }
 
 stop_headless_workers() {
-  local pid deadline alive
+  local pid deadline alive status
   if [[ "$CLUSTER_STOPPED" == "1" ]]; then return; fi
   CLUSTER_STOPPED=1
   trap '' INT TERM
@@ -230,6 +232,9 @@ stop_headless_workers() {
     if [[ "$alive" == "0" ]]; then break; fi
     sleep 1
   done
+  if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" ]] && worker_groups_running; then
+    CLUSTER_STOP_FAILED=1
+  fi
   for pid in "${CLUSTER_PIDS[@]}"; do kill -KILL -- "-$pid" 2>/dev/null || true; done
   deadline=$((SECONDS + CLUSTER_KILL_CONFIRM_SECONDS))
   while worker_groups_running; do
@@ -239,10 +244,41 @@ stop_headless_workers() {
     fi
     sleep 0.05
   done
-  for pid in "${CLUSTER_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
+  for pid in "${CLUSTER_PIDS[@]}"; do
+    status=0
+    wait "$pid" 2>/dev/null || status=$?
+    if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" && "$status" != "0" && "$status" != "143" && "$status" != "137" ]]; then
+      CLUSTER_WORKER_FAILED=1
+    fi
+  done
   echo "[CLUSTER] all worker groups stopped"
   # Created by this supervisor only; never touch default/shared reader caches.
   if [[ -n "$CLUSTER_CACHE_ROOT" ]]; then rm -rf -- "$CLUSTER_CACHE_ROOT"; fi
+}
+
+# Only the monitor/supervisor share this endpoint. Workers close it before exec.
+# The monitor checks the live shell identity and acknowledges BEFORE any TERM.
+supervisor_shutdown_intent() {
+  if [[ -z "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" ]]; then return 0; fi
+  "$PYTHON_BIN" -I -B -c '
+import json, os, socket, time
+from pathlib import Path
+pid=os.getppid()
+fields=Path(f"/proc/{pid}/stat").read_text().rsplit(") ",1)[1].split()
+grace=int(os.environ["MORPION_CLUSTER_STOP_GRACE_SECONDS"])
+record={"schema_version":1,"reason":"supervisor_deadline",
+ "monitor_session":os.environ["MORPION_RESOURCE_MONITOR_SESSION"],
+ "monitor_pid":int(os.environ["MORPION_RESOURCE_MONITOR_PID"]),
+ "monitor_start_ticks":os.environ["MORPION_RESOURCE_MONITOR_START_TICKS"],
+ "supervisor_pid":pid,"supervisor_start_ticks":fields[19],"supervisor_session":int(fields[3]),
+ "boot":Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+ "pid_namespace":os.readlink("/proc/self/ns/pid"),"requested_monotonic_s":time.monotonic(),
+ "limit_seconds":int(os.environ["MORPION_CLUSTER_MAX_SECONDS"]),"grace_seconds":grace}
+with socket.socket(fileno=int(os.environ["MORPION_SUPERVISOR_SHUTDOWN_FD"])) as control:
+ control.settimeout(grace+5)
+ control.sendall(json.dumps(record).encode()+b"\n")
+ if control.recv(3)!=b"ok\n":raise RuntimeError("Shutdown intent was not acknowledged")
+'
 }
 
 if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
@@ -262,8 +298,9 @@ if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
     echo "[CLUSTER] private_reader_cache=$CLUSTER_CACHE_ROOT"
   fi
   CLUSTER_DEADLINE=$((SECONDS + MORPION_CLUSTER_MAX_SECONDS))
-  trap 'stop_headless_workers; exit 130' INT
-  trap 'stop_headless_workers; exit 143' TERM
+  export MORPION_CLUSTER_MAX_SECONDS MORPION_CLUSTER_STOP_GRACE_SECONDS
+  trap 'stop_headless_workers; if [[ "$CLUSTER_STOP_FAILED" == "1" ]]; then exit 124; fi; if [[ "$CLUSTER_WORKER_FAILED" == "1" ]]; then exit 1; fi; exit 130' INT
+  trap 'stop_headless_workers; if [[ "$CLUSTER_STOP_FAILED" == "1" ]]; then exit 124; fi; if [[ "$CLUSTER_WORKER_FAILED" == "1" ]]; then exit 1; fi; exit 143' TERM
   trap stop_headless_workers EXIT
 fi
 
@@ -519,7 +556,13 @@ EOF
   fi
 
   if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
-    setsid bash -lc "$command" &
+    (
+      if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" ]]; then
+        exec {MORPION_SUPERVISOR_SHUTDOWN_FD}>&-
+        unset MORPION_SUPERVISOR_SHUTDOWN_FD
+      fi
+      exec setsid bash -lc "$command"
+    ) &
     CLUSTER_PIDS+=("$!")
     echo "[CLUSTER] $worker_name process_group=$!"
   else
@@ -641,9 +684,21 @@ if [[ "$MORPION_CLUSTER_HEADLESS" == "1" ]]; then
     fi
     sleep 1
   done
+  if (( SECONDS >= CLUSTER_DEADLINE )) && [[ "$persistent_failure" == "0" ]]; then
+    # Do not authenticate a worker that exited before the shutdown request.
+    if [[ "$MORPION_PERSISTENT_WORKERS" == "1" ]]; then
+      for pid in "${CLUSTER_PIDS[@]}"; do
+        if ! kill -0 "$pid" 2>/dev/null; then persistent_failure=1; fi
+      done
+    fi
+    if [[ "$persistent_failure" == "0" ]]; then
+      supervisor_shutdown_intent || persistent_failure=1
+    fi
+  fi
   stop_headless_workers
   echo "[CLUSTER] stopped; inspect run_state.json, pipeline/, and logs/ for final progress"
-  if [[ "$persistent_failure" == "1" ]]; then exit 1; fi
+  if [[ "$CLUSTER_STOP_FAILED" == "1" ]]; then exit 124; fi
+  if [[ "$persistent_failure" == "1" || "$CLUSTER_WORKER_FAILED" == "1" ]]; then exit 1; fi
 elif [[ "$MORPION_CLUSTER_OPEN_STATUS" == "1" ]]; then
   launch_status_terminal
 fi
