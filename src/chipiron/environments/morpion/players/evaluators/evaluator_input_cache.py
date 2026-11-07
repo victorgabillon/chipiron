@@ -1,4 +1,4 @@
-"""Default-off exact raw MLP41 inputs for the owned candidate refresh only.
+"""Default-off canonical MLP20/41 inputs for the owned candidate refresh only.
 
 Operational derived data, never admission or prediction authority. Every model
 forward remains scalar. The transparent adapter detaches before storage closes.
@@ -37,7 +37,10 @@ from chipiron.learning.torch_runtime import torch_execution_profile_metadata
 from . import _evaluator_input_storage as storage
 from ._evaluator_input_key import state_payload
 from .neural_evaluator import MorpionRegressorMasterEvaluator
-from .neural_networks.feature_schema import full_morpion_feature_subset
+from .neural_networks.feature_schema import (
+    full_morpion_feature_subset,
+    morpion_feature_subset_from_name,
+)
 from .neural_networks.model import MorpionRegressor
 from .neural_networks.state_to_tensor import MorpionFeatureTensorConverter
 
@@ -108,11 +111,16 @@ def _qualified(evaluator: object) -> bool:
         and type(converter.dynamics) is MorpionDynamics
         and type(converter.dynamics.inner) is AtomDynamics
         and type(converter.feature_subset) is type(full_morpion_feature_subset())
-        and converter.feature_subset == full_morpion_feature_subset()
+        and converter.feature_subset
+        in (
+            full_morpion_feature_subset(),
+            morpion_feature_subset_from_name("handcrafted_20_core"),
+        )
+        and regressor.args.feature_subset == converter.feature_subset
         and type(model) is torch.nn.Sequential
         and len(model) >= 3
         and type(model[0]) is torch.nn.Linear
-        and model[0].in_features == 41
+        and model[0].in_features == converter.input_dim
         and all(type(layer) in {torch.nn.Linear, torch.nn.ReLU} for layer in model)
         and not regressor.training
         and not regressor.target_transform.enabled
@@ -146,8 +154,9 @@ def _identity(converter: MorpionFeatureTensorConverter) -> dict[str, object]:
         "byteorder": sys.byteorder,
         "torch": str(torch.__version__),
         "profile": torch_execution_profile_metadata(),
+        "representation": converter.feature_subset.name,
         "features": list(converter.feature_names()),
-        "shape": [41],
+        "shape": [converter.input_dim],
         "dtype": "float32",
         "device": "cpu",
         "layout": "contiguous",
@@ -190,7 +199,7 @@ class _Converter:
             require(
                 len(result) == 1
                 and result[0].dtype == torch.float32
-                and tuple(result[0].shape) == (41,)
+                and tuple(result[0].shape) == (self.original.input_dim,)
                 and result[0].device.type == "cpu"
                 and not result[0].requires_grad
                 and result[0].is_contiguous()

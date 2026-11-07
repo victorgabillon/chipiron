@@ -1,4 +1,4 @@
-# Optional MLP41 activation inputs
+# Optional canonical MLP20/41 activation inputs
 
 `CHIPIRON_EVALUATOR_INPUT_CACHE=1` enables derived raw-input reuse during owned
 candidate activation's full refresh. It defaults to `0`. This is execution-only
@@ -7,12 +7,16 @@ learning cadence, accepted weights, claims, source pins, either preflight/restor
 full refresh, canonical backups, scalar forwards or atomic activation publication.
 Exact accepted retries never open or require this cache.
 
-The initial supported recipe is Linux, the exact standard full 41-feature converter
-and dynamics, a CPU FP32 MLP in evaluation mode, CPU FP32 tensor defaults and the
+The supported recipes are Linux, the exact standard `handcrafted_41` or
+`handcrafted_20_core` converter and dynamics, a matching CPU FP32 MLP in evaluation
+mode, CPU FP32 tensor defaults and the
 explicit `strict_math` profile. Other models, feature subsets and unqualified
 recipes use the original converter. Runtime/profile/thread/code identities are
 fenced separately; cache contents are never a way to adopt another scientific run.
 No GPU context is needed for this scalar CPU conversion, including in a ROCm build.
+Custom names, reordered features, converter/model subclasses and other widths
+remain unsupported. Both recipes retain the same 20k-node/request and 256 MiB
+entry caps; larger trees still bypass, including B5's final 34,426-node tree.
 
 Optional execution settings:
 
@@ -52,6 +56,14 @@ and discards the private runtime before scientific publication. There is no
 mid-refresh fallback with partly updated values. Digests are integrity checks on
 trusted owned storage, not authentication against an actor rewriting data and
 all its bindings coherently.
+
+The recipe explicitly binds the canonical representation name, ordered features
+and tensor width. Storage validates 20 or 41 finite FP32 values against that
+recipe; a correctly checksummed row of the other width is still invalid. The
+owned directory/SQLite layout is unchanged. Earlier recipes without the explicit
+representation field, or entries for another representation/runtime/code identity,
+are incompatible priors and are rebuilt through the existing path. They are never
+reinterpreted or used to cache predictions. No capacity increase is implied.
 
 SQLite uses a hard page ceiling, bounded 2 MiB page caches per connection, no mmap
 and no staging journal/WAL. Disposable staging is fsynced together with its small
