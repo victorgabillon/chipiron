@@ -54,7 +54,11 @@ def run_sample(
         operator.time, "clock_gettime", lambda _kind: ticks + clock[0] - 1005.0
     )
     state = status.WorkerJobState(tmp_path, "growth")
-    state.update(phase, job_started_monotonic_s=job_start)
+    state.update(
+        phase,
+        job_started_monotonic_s=job_start,
+        exit_code=143 if phase == "stopped" else None,
+    )
     record = state.record | {"heartbeat_monotonic_s": before}
     state.path.write_text(json.dumps(record))
     state.close()
@@ -177,14 +181,19 @@ def run_sample(
         max_elapsed_seconds=1200, worker_max_seconds=900, shutdown_grace_seconds=1
     )
     with ExitStack() as resources:
-        operator._run_monitored(  # pylint: disable=protected-access
-            paths,
-            tmp_path / "unused-supervisor",
-            policy,
-            monitor,
-            process_module,
-            resources,
-        )
+        try:
+            operator._run_monitored(  # pylint: disable=protected-access
+                paths,
+                tmp_path / "unused-supervisor",
+                policy,
+                monitor,
+                process_module,
+                resources,
+            )
+        except ValueError as exc:
+            # Explicit unexpected-stop/grace failure is stronger than the old
+            # fallback. Inspect its already-persisted decision after cleanup.
+            assert "Persistent worker group failed" in str(exc)
     receipt = json.loads(next(monitor.glob("session_*.json")).read_text())
     receipt["decision"] = usages[0]
     receipt["forced_signals"] = signals
@@ -258,7 +267,7 @@ def test_wall_clock_change_does_not_invent_unknown_status_process_age(
         job_start=1090.0,
         wall_jump=wall_jump,
     )
-    assert result["reason"] == "supervisor_exit"
+    assert result["reason"] == "unexpected_persistent_worker_stop"
 
 
 @pytest.mark.fast
@@ -268,7 +277,7 @@ def test_wall_clock_change_does_not_invent_unknown_status_process_age(
         ("running", 2140.0, "supervisor_exit"),
         ("running", 1000.0, "maximum_worker_runtime"),
         ("cleanup", 1000.0, "maximum_worker_runtime"),
-        ("stopped", 2140.0, "maximum_worker_runtime"),
+        ("stopped", 2140.0, "unexpected_persistent_worker_stop"),
     ],
 )
 def test_early_overrun_is_not_relabelled_after_cleanup_crosses_deadline(
@@ -361,7 +370,7 @@ def test_wall_clock_cannot_hide_true_fallback_overrun(
         job_start=2140.0,
         wall_jump=wall_jump,
     )
-    assert result["reason"] == "maximum_worker_runtime"
+    assert result["reason"] == "unexpected_persistent_worker_stop"
 
 
 @pytest.mark.fast
