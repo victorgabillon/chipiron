@@ -139,6 +139,8 @@ def test_default_off_does_not_inspect_storage(
     """Default off does not inspect storage."""
     monkeypatch.delenv(cache.ENVIRONMENT, raising=False)
     monkeypatch.setenv(cache.ENVIRONMENT + "_DIR", "/unusable")
+    monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_ROWS", "invalid-off-must-not-consume")
+    monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_MB", "invalid-off-must-not-consume")
     with patch.object(storage, "ownership", side_effect=AssertionError):
         with (
             cache.activation_inputs(tmp_path) as observed,
@@ -711,7 +713,7 @@ def test_public_caps_and_coexistence_unchanged(
     evaluator: MorpionRegressorMasterEvaluator,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The real recipe bypasses above20k and cannot raise public storage limits."""
+    """Absent row settings still bypass above20k; byte/reserve bounds are unchanged."""
     with (
         patch.object(storage, "ownership", side_effect=AssertionError),
         cache.activation_inputs(enabled.parent) as observed,
@@ -724,7 +726,7 @@ def test_public_caps_and_coexistence_unchanged(
     assert observed["max_entry_bytes"] == 256 * 2**20
     assert observed["max_coexistence_bytes"] == 2 * 256 * 2**20 + 3 * 65536
     assert not enabled.exists()
-    for suffix, setting in [("_MAX_ROWS", "20001"), ("_MAX_MB", "257")]:
+    for suffix, setting in [("_MAX_ROWS", "35001"), ("_MAX_MB", "257")]:
         with monkeypatch.context() as changed:
             changed.setenv(cache.ENVIRONMENT + suffix, setting)
             with (
@@ -733,6 +735,101 @@ def test_public_caps_and_coexistence_unchanged(
                 cache.evaluator_inputs(evaluator, 1),
             ):
                 pass
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("setting", "node_count", "mlp20_limit", "mlp41_limit"),
+    [
+        (None, 20000, 20000, 20000),
+        (None, 20001, 20000, 20000),
+        ("20000", 20000, 20000, 20000),
+        ("20000", 20001, 20000, 20000),
+        ("20001", 20001, 20001, 20000),
+        ("35000", 20000, 35000, 20000),
+        ("35000", 20001, 35000, 20000),
+        ("35000", 35000, 35000, 20000),
+        ("35000", 35001, 35000, 20000),
+        ("3", 3, 3, 3),
+        ("3", 4, 3, 3),
+    ],
+)
+def test_per_recipe_row_admission(
+    enabled: Path,
+    evaluator: MorpionRegressorMasterEvaluator,
+    monkeypatch: pytest.MonkeyPatch,
+    setting: str | None,
+    node_count: int,
+    mlp20_limit: int,
+    mlp41_limit: int,
+) -> None:
+    """Declared-count boundaries with one real input, not a 35k-tree qualification."""
+    if setting is None:
+        monkeypatch.delenv(cache.ENVIRONMENT + "_MAX_ROWS", raising=False)
+    else:
+        monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_ROWS", setting)
+    rows = mlp20_limit if feature_converter(evaluator).input_dim == 20 else mlp41_limit
+    admitted = node_count <= rows
+    with (
+        cache.activation_inputs(enabled.parent) as observed,
+        cache.evaluator_inputs(evaluator, node_count) as wrapped,
+    ):
+        assert (wrapped is not evaluator) == admitted
+        if admitted:
+            raw = wrapped.input_converter.state_to_model_input_tensors(states()[0])
+            expected = evaluator.input_converter.state_to_model_input_tensors(
+                states()[0]
+            )
+            assert len(raw) == len(expected) == 1
+            assert torch.equal(raw[0], expected[0])
+    assert observed is not None
+    assert observed["max_rows"] == rows
+    assert observed["requested_max_rows"] == int(setting or "20000")
+    assert observed["max_entry_bytes"] == 256 * 2**20
+    assert observed["max_coexistence_bytes"] == 537067520
+    assert observed["outcome"] == (
+        "completed" if admitted else "bypass-unsupported-recipe-or-node-budget"
+    )
+    assert enabled.exists() == admitted
+
+
+@pytest.mark.parametrize(
+    "setting", ["", "0", "-1", "35001", "35_000", "35000.0", "nan", "True"]
+)
+def test_invalid_row_setting_refuses_before_storage(
+    enabled: Path,
+    evaluator: MorpionRegressorMasterEvaluator,
+    monkeypatch: pytest.MonkeyPatch,
+    setting: str,
+) -> None:
+    """Reject invalid global requests instead of silently clamping either recipe."""
+    monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_ROWS", setting)
+    with (
+        patch.object(storage, "ownership", side_effect=AssertionError),
+        pytest.raises(ValueError, match="resource limit"),
+        cache.activation_inputs(enabled.parent),
+        cache.evaluator_inputs(evaluator, 1),
+    ):
+        pass
+    assert not enabled.exists()
+
+
+def test_reduced_limit_counts_requests_not_unique_inputs(
+    enabled: Path,
+    evaluator: MorpionRegressorMasterEvaluator,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated inputs exhaust the same effective request limit before publication."""
+    monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_ROWS", "2")
+    with (
+        pytest.raises(ValueError, match="request budget"),
+        cache.activation_inputs(enabled.parent),
+        cache.evaluator_inputs(evaluator, 1) as wrapped,
+    ):
+        for _ in range(3):
+            wrapped.input_converter.state_to_model_input_tensors(states()[0])
+    assert wrapped.input_converter.store is None
+    assert not (enabled / "entry").exists()
 
 
 @pytest.mark.parametrize("damage", ["dtype", "device", "training"])
