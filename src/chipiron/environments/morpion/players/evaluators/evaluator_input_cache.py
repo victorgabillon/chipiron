@@ -87,10 +87,10 @@ def requested() -> bool:
     return _REQUEST.get() is not None
 
 
-def _limit(name: str, default: int) -> int:
+def _limit(name: str, default: int, maximum: int | None = None) -> int:
     raw = os.environ.get(ENVIRONMENT + name, str(default))
     require(
-        raw.isdecimal() and 0 < int(raw) <= default,
+        raw.isdecimal() and 0 < int(raw) <= (default if maximum is None else maximum),
         "Invalid evaluator cache resource limit",
     )
     return int(raw)
@@ -225,16 +225,26 @@ def evaluator_inputs(evaluator: Any, node_count: int) -> Iterator[Any]:
         yield evaluator
         return
     root, observation = request
-    rows = _limit("_MAX_ROWS", 20000)
+    requested_rows = _limit("_MAX_ROWS", 20000, maximum=35000)
     limit = _limit("_MAX_MB", 256) * 2**20
+    qualified = _qualified(evaluator)
+    ceiling = (
+        35000
+        if qualified
+        and evaluator.input_converter.feature_subset
+        == morpion_feature_subset_from_name("handcrafted_20_core")
+        else 20000
+    )
+    rows = min(requested_rows, ceiling)
     observation.update(
+        requested_max_rows=requested_rows,
         max_rows=rows,
         max_entry_bytes=limit,
         max_coexistence_bytes=2 * limit + 3 * storage.METADATA_BYTES,
         sqlite_page_cache_bytes=2 * 2**20,
         max_payload_bytes=storage.MAX_PAYLOAD,
     )
-    if not _qualified(evaluator) or node_count > rows:
+    if not qualified or node_count > rows:
         observation["outcome"] = "bypass-unsupported-recipe-or-node-budget"
         yield evaluator
         return
