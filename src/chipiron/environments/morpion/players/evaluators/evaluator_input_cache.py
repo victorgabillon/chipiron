@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -109,14 +109,14 @@ def _network_matches(regressor: MorpionRegressor) -> bool:
             and type(model) is torch.nn.Linear
             and model.in_features == args.input_dim
             and model.out_features == 1
-            and model.bias is not None
+            # Torch annotates bias as Parameter even when bias=False stores None.
+            and cast("torch.nn.Parameter | None", model.bias) is not None
         )
     hidden = args.hidden_sizes
+    if args.model_kind != "mlp" or type(hidden) is not tuple or not hidden:
+        return False
     if (
-        args.model_kind != "mlp"
-        or type(hidden) is not tuple
-        or not hidden
-        or any(type(n) is not int or n <= 0 for n in hidden)
+        any(type(n) is not int or n <= 0 for n in hidden)
         or type(model) is not torch.nn.Sequential
         or len(model) != 2 * len(hidden) + 1
     ):
@@ -128,7 +128,7 @@ def _network_matches(regressor: MorpionRegressor) -> bool:
             type(layer) is torch.nn.Linear
             and layer.in_features == before
             and layer.out_features == after
-            and layer.bias is not None
+            and cast("torch.nn.Parameter | None", layer.bias) is not None
         ):
             return False
         if index < len(hidden) and type(model[2 * index + 1]) is not torch.nn.ReLU:

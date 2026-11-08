@@ -535,9 +535,7 @@ def test_hard_sqlite_page_limit_does_not_publish(
                 for i in range(100):
                     payload = str(i).encode() + b"a" * 8000
                     store.lookup(payload)
-                    store.append(
-                        payload, bytes(41 * 4)
-                    )
+                    store.append(payload, bytes(41 * 4))
             assert (root / "building/inputs.sqlite").stat().st_size <= 16384
             assert not (root / "entry").exists()
         finally:
@@ -985,6 +983,33 @@ def test_exact_network_and_args_gate(enabled: Path, damage: str) -> None:
         model.args = dataclasses.replace(
             model.args, model_kind="linear", hidden_sizes=None
         )
+    with (
+        cache.activation_inputs(enabled.parent) as observed,
+        cache.evaluator_inputs(evaluator, 1) as wrapped,
+    ):
+        assert wrapped is evaluator
+    assert observed is not None and observed["outcome"].startswith("bypass")
+    assert not enabled.exists()
+
+
+@pytest.mark.parametrize("kind,position", [("linear", -1), ("mlp", 0), ("mlp", 2)])
+def test_bias_free_network_is_not_qualified(
+    enabled: Path, kind: str, position: int
+) -> None:
+    """A bias-free linear, hidden or output layer must bypass derived storage."""
+    evaluator = make_evaluator("handcrafted_20_core", kind)
+    assert cache._qualified(evaluator)
+    model = evaluator.regressor
+    assert isinstance(model, MorpionRegressor)
+    if kind == "linear":
+        model.net = torch.nn.Linear(20, 1, bias=False).eval()
+    else:
+        assert isinstance(model.net, torch.nn.Sequential)
+        layer = model.net[position]
+        assert isinstance(layer, torch.nn.Linear)
+        model.net[position] = torch.nn.Linear(
+            layer.in_features, layer.out_features, bias=False
+        ).eval()
     with (
         cache.activation_inputs(enabled.parent) as observed,
         cache.evaluator_inputs(evaluator, 1) as wrapped,
