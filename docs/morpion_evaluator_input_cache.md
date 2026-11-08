@@ -15,16 +15,33 @@ recipes use the original converter. Runtime/profile/thread/code identities are
 fenced separately; cache contents are never a way to adopt another scientific run.
 No GPU context is needed for this scalar CPU conversion, including in a ROCm build.
 Custom names, reordered features, converter/model subclasses and other widths
-remain unsupported. Both recipes retain the same 20k-node/request and 256 MiB
-entry caps; larger trees still bypass, including B5's final 34,426-node tree.
+remain unsupported. The absent row setting remains 20,000 for both recipes.
+An explicit valid row request up to 35,000 can increase admission only for the
+qualified canonical MLP20. MLP41's effective ceiling remains 20,000, even when
+35,000 is requested. Reductions apply to either recipe. Larger trees use the
+ordinary uncached path; the 256 MiB SQLite ceiling is unchanged.
 
 Optional execution settings:
 
 | Environment variable suffix after `CHIPIRON_EVALUATOR_INPUT_CACHE` | Default | Meaning |
 |---|---|---|
 | `_DIR` | `<work>/pipeline/evaluator_inputs` | Absolute dedicated owned root outside immutable artifacts |
-| `_MAX_ROWS` | `20000` | Maximum refresh requests/tree nodes, reducible only |
+| `_MAX_ROWS` | `20000` | Positive decimal request up to `35000`; effective maximum `35000` for qualified MLP20, `20000` for MLP41; reductions win |
 | `_MAX_MB` | `256` | SQLite entry MiB ceiling, reducible only |
+
+Invalid or above-35,000 row requests are refused, not silently clamped. Default-off,
+unsupported-recipe and exact accepted-retry behavior stays unchanged. Admission
+uses the total current tree size, including terminal nodes, and an independent
+per-refresh request counter. Unique keys or nonterminal counts cannot replace
+either bound. The effective and requested limits appear in bounded observations.
+
+35,000 is an upper admission bound, **not a fit guarantee**. The saved B5
+32,884→34,426-node adjacency fit with a 240.201 MiB complete entry and 15.801 MiB
+SQLite margin in J3.20's private investigation. A separate large-payload fixture
+exhausted the same byte guard after only 2,039 requests. Late byte/request/resource
+failure still aborts and discards before publication; it cannot continue uncached
+in place. This is no universal 35k/50k/200k, whole-bootstrap speed or playing-strength
+qualification. Existing frozen launchers, including J3.21's 20k recipe, are unchanged.
 
 A private root is marked once. Existing unmarked/foreign directories, any symlink
 component or child, hardlinked payloads, foreign ownership and unknown children
@@ -63,7 +80,8 @@ recipe; a correctly checksummed row of the other width is still invalid. The
 owned directory/SQLite layout is unchanged. Earlier recipes without the explicit
 representation field, or entries for another representation/runtime/code identity,
 are incompatible priors and are rebuilt through the existing path. They are never
-reinterpreted or used to cache predictions. No capacity increase is implied.
+reinterpreted or used to cache predictions. Row-limit opt-in does not change the
+storage schema or representation identity.
 
 SQLite uses a hard page ceiling, bounded 2 MiB page caches per connection, no mmap
 and no staging journal/WAL. Disposable staging is fsynced together with its small
