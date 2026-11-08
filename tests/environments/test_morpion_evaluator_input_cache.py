@@ -777,7 +777,9 @@ def test_per_recipe_row_admission(
         assert (wrapped is not evaluator) == admitted
         if admitted:
             raw = wrapped.input_converter.state_to_model_input_tensors(states()[0])
-            expected = evaluator.input_converter.state_to_model_input_tensors(states()[0])
+            expected = evaluator.input_converter.state_to_model_input_tensors(
+                states()[0]
+            )
             assert len(raw) == len(expected) == 1
             assert torch.equal(raw[0], expected[0])
     assert observed is not None
