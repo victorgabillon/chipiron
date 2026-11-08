@@ -56,13 +56,17 @@ from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.learning.torch_runtime import torch_execution_profile
 
 
-def make_evaluator(subset_name: str) -> MorpionRegressorMasterEvaluator:
+def make_evaluator(
+    subset_name: str, kind: str = "mlp"
+) -> MorpionRegressorMasterEvaluator:
     """Build a real canonical scalar MLP without changing the calling RNG."""
     over = MorpionOverEventDetector()
     with torch.random.fork_rng(devices=[]):
         model = build_morpion_regressor(
             MorpionRegressorArgs(
-                model_kind="mlp", hidden_sizes=(4,), feature_subset_name=subset_name
+                model_kind=kind,
+                hidden_sizes=(4,) if kind == "mlp" else None,
+                feature_subset_name=subset_name,
             )
         ).eval()
     return MorpionRegressorMasterEvaluator(
@@ -96,10 +100,13 @@ def enabled(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
     """Opt in under the real strict profile without changing threads."""
     monkeypatch.setenv(cache.ENVIRONMENT, "1")
     monkeypatch.setenv(cache.ENVIRONMENT + "_DIR", str(tmp_path / "cache"))
-    # Raw-storage unit tests do not change execution threads. Actual installed
-    # consumer qualification separately runs strict_math with real 1/1 threads.
-    with torch_execution_profile("strict_math"):
-        yield tmp_path / "cache"
+    previous_threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    try:
+        with torch_execution_profile("strict_math"):
+            yield tmp_path / "cache"
+    finally:
+        torch.set_num_threads(previous_threads)
 
 
 def states() -> list[MorpionState]:
@@ -522,16 +529,14 @@ def test_hard_sqlite_page_limit_does_not_publish(
     """Full staging aborts without row truncation or a completed entry."""
     root = tmp_path / "cache"
     with storage.ownership(root):
-        store = storage.InputStore(
-            root, cache._identity(feature_converter(evaluator)), 16384, 100, {}
-        )
+        store = storage.InputStore(root, cache._identity(), 16384, 100, {})
         try:
             with pytest.raises(sqlite3.DatabaseError):
                 for i in range(100):
                     payload = str(i).encode() + b"a" * 8000
                     store.lookup(payload)
                     store.append(
-                        payload, bytes(feature_converter(evaluator).input_dim * 4)
+                        payload, bytes(41 * 4)
                     )
             assert (root / "building/inputs.sqlite").stat().st_size <= 16384
             assert not (root / "entry").exists()
@@ -575,29 +580,73 @@ def test_subset_and_unsupported_state_use_original(
     ]
 
 
-def test_cross_representation_rebuilds_without_reinterpreting(enabled: Path) -> None:
-    """A shared owned namespace never serves MLP41 rows to MLP20 or vice versa."""
+def test_all_flat_consumers_share_canonical_rows(enabled: Path) -> None:
+    """Eight consumers switch weights/subsets through ONE exact canonical entry."""
     previous = None
-    for name in ["handcrafted_41", "handcrafted_20_core", "handcrafted_41"]:
-        evaluator = make_evaluator(name)
-        expected = [evaluator.evaluate(s) for s in states()]
-        _, observed, raw, scores = consume(enabled, evaluator, states())
-        assert observed["hits"] == 0 and scores == expected
-        assert all(
-            len(row) == feature_converter(evaluator).input_dim * 4 for row in raw
-        )
-        if previous is not None:
-            assert observed["prior"] == "incompatible-or-corrupt"
-        manifest = json.loads((enabled / "entry/complete.json").read_text())
-        identity = manifest["identity"]
-        assert identity["representation"] == name
-        assert identity["shape"] == [feature_converter(evaluator).input_dim]
-        assert identity["features"] == list(
-            feature_converter(evaluator).feature_names()
-        )
-        previous = identity
-    _, observed, _, _ = consume(enabled, evaluator, states())
-    assert observed["hits"] == 8
+    values = states()
+    calls: list[torch.Size] = []
+    original_forward = MorpionRegressor.forward
+
+    def forward(model: MorpionRegressor, *inputs: Any) -> Any:
+        calls.append(inputs[0].shape)
+        return original_forward(model, *inputs)
+
+    for name in (
+        "handcrafted_41",
+        "handcrafted_5_core",
+        "handcrafted_20_core",
+        "handcrafted_10_core",
+    ):
+        for kind in ("mlp", "linear"):
+            evaluator = make_evaluator(name, kind)
+            expected = [evaluator.evaluate(s) for s in values]
+            expected_raw = [
+                feature_converter(evaluator).state_to_tensor(s).numpy().tobytes()
+                for s in values
+            ]
+            assert isinstance(evaluator.regressor, MorpionRegressor)
+            calls.clear()
+
+            with patch.object(MorpionRegressor, "forward", forward):
+                wrapped, observed, raw, scores = consume(enabled, evaluator, values)
+            assert len(calls) == len(values)
+            assert raw == expected_raw and scores == expected
+            assert observed["stored_representation"] == "handcrafted_41"
+            assert observed["consumer_representation"] == name
+            assert observed["consumer_model_kind"] == kind
+            assert observed["consumer_feature_indices"] == list(
+                cache.feature_indices_for_subset(
+                    feature_converter(evaluator).feature_names()
+                )
+            )
+            assert observed["hits"] == (8 if previous else 0)
+            manifest = json.loads((enabled / "entry/complete.json").read_text())
+            identity = manifest["identity"]
+            assert (
+                identity["shape"] == [41]
+                and identity["recipe"] == "canonical-flat-41-v1"
+            )
+            if previous is not None:
+                assert identity == previous and observed["prior"] == "verified"
+            previous = identity
+            assert wrapped.input_converter.store is None
+            net = evaluator.regressor.net
+            output = net[-1] if isinstance(net, torch.nn.Sequential) else net
+            assert isinstance(output, torch.nn.Linear) and output.bias is not None
+            with torch.no_grad():
+                output.bias.add_(7)
+            changed = [evaluator.evaluate(s) for s in values]
+            _, observed, _, actual = consume(enabled, evaluator, values)
+            assert observed["hits"] == 8 and changed == actual and changed != scores
+            with sqlite3.connect(enabled / "entry/inputs.sqlite") as connection:
+                assert connection.execute(
+                    "SELECT DISTINCT length(raw) FROM inputs"
+                ).fetchall() == [(164,)]
+            assert {child.name for child in enabled.iterdir()} == {
+                "OWNER",
+                ".lock",
+                "entry",
+            }
 
 
 @pytest.mark.parametrize("damage", ["shape", "order", "name", "dtype", "legacy"])
@@ -605,9 +654,9 @@ def test_storage_recipe_refuses_wrong_shape_or_order(
     evaluator: MorpionRegressorMasterEvaluator, damage: str
 ) -> None:
     """Storage validates canonical representation metadata before opening rows."""
-    identity = cache._identity(feature_converter(evaluator))
+    identity = cache._identity()
     if damage == "shape":
-        identity["shape"] = [41 if feature_converter(evaluator).input_dim == 20 else 20]
+        identity["shape"] = [20]
     elif damage == "order":
         identity["features"] = list(
             reversed(feature_converter(evaluator).feature_names())
@@ -626,8 +675,8 @@ def test_wrong_width_row_with_valid_digest_is_refused(
     evaluator: MorpionRegressorMasterEvaluator,
 ) -> None:
     """A valid checksum cannot authorize another representation's raw width."""
-    width = feature_converter(evaluator).input_dim
-    recipe = storage.encoded(cache._identity(feature_converter(evaluator)))
+    width = 41
+    recipe = storage.encoded(cache._identity())
     payload = state_payload(states()[0])
     raw = bytes((41 if width == 20 else 20) * 4)
     row = (
@@ -656,15 +705,6 @@ def test_old_recipe_is_rebuilt_before_consumption(
     _, observed, actual, actual_scores = consume(enabled, evaluator, states())
     assert observed["prior"] == "incompatible-or-corrupt"
     assert observed["hits"] == 0 and actual == expected and actual_scores == scores
-
-
-@pytest.mark.parametrize("name", ["handcrafted_5_core", "handcrafted_10_core"])
-def test_other_canonical_widths_still_bypass(enabled: Path, name: str) -> None:
-    """Canonical20 support does not widen the gate to other feature subsets."""
-    evaluator = make_evaluator(name)
-    wrapped, observed, _, _ = consume(enabled, evaluator, states())
-    assert wrapped is evaluator and observed["outcome"].startswith("bypass")
-    assert not enabled.exists()
 
 
 def test_custom_subset_subclass_and_wrong_network_width_bypass(
@@ -869,3 +909,102 @@ def test_missing_strict_profile_bypasses(
         assert wrapped is evaluator
     assert observed is not None and observed["outcome"].startswith("bypass")
     assert not (tmp_path / "cache").exists()
+
+
+@pytest.mark.parametrize("kind", ["linear", "mlp"])
+@pytest.mark.parametrize("width", [5, 10, 20, 41])
+def test_shared_storage_keeps_consumer_node_ceiling(
+    enabled: Path, monkeypatch: pytest.MonkeyPatch, kind: str, width: int
+) -> None:
+    """Canonical storage width does not authorize another consumer's capacity."""
+    name = "handcrafted_41" if width == 41 else f"handcrafted_{width}_core"
+    evaluator = make_evaluator(name, kind)
+    monkeypatch.setenv(cache.ENVIRONMENT + "_MAX_ROWS", "35000")
+    with (
+        cache.activation_inputs(enabled.parent) as observed,
+        cache.evaluator_inputs(evaluator, 20001) as wrapped,
+    ):
+        assert (wrapped is not evaluator) == (kind == "mlp" and width == 20)
+    assert observed is not None
+    assert observed["max_rows"] == (35000 if kind == "mlp" and width == 20 else 20000)
+
+
+@pytest.mark.parametrize("old_width", [20, 41])
+def test_legacy_flat_entries_are_rebuilt(enabled: Path, old_width: int) -> None:
+    """Even checksummed old20/41 rows must not become canonical entries by size."""
+    evaluator = make_evaluator("handcrafted_20_core")
+    _, _, expected, scores = consume(enabled, evaluator, states())
+    path = enabled / "entry/complete.json"
+    manifest = json.loads(path.read_text())
+    identity = manifest["identity"]
+    del identity["recipe"]
+    old_name = "handcrafted_41" if old_width == 41 else "handcrafted_20_core"
+    identity.update(
+        representation=old_name,
+        shape=[old_width],
+        features=list(morpion_feature_subset_from_name(old_name).feature_names),
+    )
+    recipe = storage.encoded(identity)
+    database = enabled / "entry/inputs.sqlite"
+    with sqlite3.connect(database) as connection:
+        for key, payload, raw in connection.execute(
+            "SELECT key,payload,raw FROM inputs"
+        ).fetchall():
+            raw = raw[: old_width * 4]
+            connection.execute(
+                "UPDATE inputs SET raw=?,binding=? WHERE key=?",
+                (raw, storage.binding(recipe, payload, raw), key),
+            )
+    manifest["sha256"] = hashlib.sha256(database.read_bytes()).hexdigest()
+    path.write_text(json.dumps(manifest))
+    _, observed, actual, actual_scores = consume(enabled, evaluator, states())
+    assert observed["prior"] == "incompatible-or-corrupt" and observed["hits"] == 0
+    assert actual == expected and actual_scores == scores
+
+
+@pytest.mark.parametrize(
+    "damage",
+    ["extra_relu", "wrong_hidden", "wrong_output", "normalized", "linear_args"],
+)
+def test_exact_network_and_args_gate(enabled: Path, damage: str) -> None:
+    """Canonical names do not admit altered structures or normalized models."""
+    evaluator = make_evaluator("handcrafted_20_core")
+    model = evaluator.regressor
+    assert isinstance(model, MorpionRegressor) and isinstance(
+        model.net, torch.nn.Sequential
+    )
+    if damage == "extra_relu":
+        model.net.append(torch.nn.ReLU())
+    elif damage == "wrong_hidden":
+        model.args = dataclasses.replace(model.args, hidden_sizes=(8,))
+    elif damage == "wrong_output":
+        model.net[-1] = torch.nn.Linear(4, 2).eval()
+    elif damage == "normalized":
+        model.args = dataclasses.replace(model.args, target_transform_enabled=True)
+    else:
+        model.args = dataclasses.replace(
+            model.args, model_kind="linear", hidden_sizes=None
+        )
+    with (
+        cache.activation_inputs(enabled.parent) as observed,
+        cache.evaluator_inputs(evaluator, 1) as wrapped,
+    ):
+        assert wrapped is evaluator
+    assert observed is not None and observed["outcome"].startswith("bypass")
+    assert not enabled.exists()
+
+
+def test_projected_tensors_do_not_alias_cached_bytes(enabled: Path) -> None:
+    """Mutating a consumer tensor cannot poison a subsequent cache hit."""
+    evaluator = make_evaluator("handcrafted_5_core", "linear")
+    consume(enabled, evaluator, states())
+    with (
+        cache.activation_inputs(enabled.parent),
+        cache.evaluator_inputs(evaluator, 4) as wrapped,
+    ):
+        value = states()[0]
+        first = wrapped.input_converter.state_to_model_input_tensors(value)[0]
+        first.add_(123)
+        second = wrapped.input_converter.state_to_model_input_tensors(value)[0]
+        assert torch.equal(second, feature_converter(evaluator).state_to_tensor(value))
+        assert not second.requires_grad and first.data_ptr() != second.data_ptr()
