@@ -1,4 +1,4 @@
-"""Default-off canonical MLP20/41 inputs for the owned candidate refresh only.
+"""Default-off canonical flat inputs for the owned candidate refresh only.
 
 Operational derived data, never admission or prediction authority. Every model
 forward remains scalar. The transparent adapter detaches before storage closes.
@@ -8,6 +8,7 @@ forward remains scalar. The transparent adapter detaches before storage closes.
 # pylint: disable=unidiomatic-typecheck
 
 import hashlib
+import itertools
 import os
 import sys
 import time
@@ -15,7 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -37,11 +38,13 @@ from chipiron.learning.torch_runtime import torch_execution_profile_metadata
 from . import _evaluator_input_storage as storage
 from ._evaluator_input_key import state_payload
 from .neural_evaluator import MorpionRegressorMasterEvaluator
+from .neural_networks.feature_projection import feature_indices_for_subset
 from .neural_networks.feature_schema import (
+    MORPION_CANONICAL_FEATURE_NAMES,
     full_morpion_feature_subset,
     morpion_feature_subset_from_name,
 )
-from .neural_networks.model import MorpionRegressor
+from .neural_networks.model import MorpionRegressor, MorpionRegressorArgs
 from .neural_networks.state_to_tensor import MorpionFeatureTensorConverter
 
 ENVIRONMENT = "CHIPIRON_EVALUATOR_INPUT_CACHE"
@@ -73,6 +76,7 @@ def activation_inputs(work_dir: Path) -> Iterator[dict[str, Any] | None]:
             "lookup_s": 0.0,
             "encoding_s": 0.0,
             "write_s": 0.0,
+            "projection_s": 0.0,
         }
         request = (root, observation)
     token = _REQUEST.set(request)
@@ -96,6 +100,42 @@ def _limit(name: str, default: int, maximum: int | None = None) -> int:
     return int(raw)
 
 
+def _network_matches(regressor: MorpionRegressor) -> bool:
+    """Admit the exact scalar linear/Linear-ReLU structure described by args."""
+    args, model = regressor.args, regressor.net
+    if args.model_kind == "linear":
+        return (
+            args.hidden_sizes is None
+            and type(model) is torch.nn.Linear
+            and model.in_features == args.input_dim
+            and model.out_features == 1
+            # Torch annotates bias as Parameter even when bias=False stores None.
+            and cast("torch.nn.Parameter | None", model.bias) is not None
+        )
+    hidden = args.hidden_sizes
+    if args.model_kind != "mlp" or type(hidden) is not tuple or not hidden:
+        return False
+    if (
+        any(type(n) is not int or n <= 0 for n in hidden)
+        or type(model) is not torch.nn.Sequential
+        or len(model) != 2 * len(hidden) + 1
+    ):
+        return False
+    widths = (args.input_dim, *hidden, 1)
+    for index, (before, after) in enumerate(itertools.pairwise(widths)):
+        layer = model[2 * index]
+        if not (
+            type(layer) is torch.nn.Linear
+            and layer.in_features == before
+            and layer.out_features == after
+            and cast("torch.nn.Parameter | None", layer.bias) is not None
+        ):
+            return False
+        if index < len(hidden) and type(model[2 * index + 1]) is not torch.nn.ReLU:
+            return False
+    return True
+
+
 def _qualified(evaluator: object) -> bool:
     if (
         sys.platform != "linux"
@@ -103,39 +143,45 @@ def _qualified(evaluator: object) -> bool:
     ):
         return False
     converter, regressor = evaluator.input_converter, evaluator.regressor
-    if type(regressor) is not MorpionRegressor or regressor.args.model_kind != "mlp":
+    if (
+        type(regressor) is not MorpionRegressor
+        or type(regressor.args) is not MorpionRegressorArgs
+    ):
         return False
-    model = regressor.net
     return (
         type(converter) is MorpionFeatureTensorConverter
         and type(converter.dynamics) is MorpionDynamics
         and type(converter.dynamics.inner) is AtomDynamics
         and type(converter.feature_subset) is type(full_morpion_feature_subset())
         and converter.feature_subset
-        in (
-            full_morpion_feature_subset(),
-            morpion_feature_subset_from_name("handcrafted_20_core"),
+        in tuple(
+            morpion_feature_subset_from_name(name)
+            for name in (
+                "handcrafted_5_core",
+                "handcrafted_10_core",
+                "handcrafted_20_core",
+                "handcrafted_41",
+            )
         )
         and regressor.args.feature_subset == converter.feature_subset
-        and type(model) is torch.nn.Sequential
-        and len(model) >= 3
-        and type(model[0]) is torch.nn.Linear
-        and model[0].in_features == converter.input_dim
-        and all(type(layer) in {torch.nn.Linear, torch.nn.ReLU} for layer in model)
+        and regressor.args.legacy_graph_tokens is None
+        and not regressor.args.target_transform_enabled
+        and _network_matches(regressor)
         and not regressor.training
         and not regressor.target_transform.enabled
-        and not model.training
+        and all(not layer.training for layer in regressor.net.modules())
         and all(
             p.device.type == "cpu" and p.dtype == torch.float32
-            for p in model.parameters()
+            for p in regressor.net.parameters()
         )
         and torch.get_default_dtype() == torch.float32
         and str(torch.get_default_device()) == "cpu"
+        and torch.get_num_threads() == 1
         and bool(torch_execution_profile_metadata())
     )
 
 
-def _identity(converter: MorpionFeatureTensorConverter) -> dict[str, object]:
+def _identity() -> dict[str, object]:
     # Conservative code fence, independent of model weights, node/generation IDs,
     # Dataset admission, source paths or cached predictions. Read source only.
     digest = hashlib.sha256()
@@ -154,9 +200,10 @@ def _identity(converter: MorpionFeatureTensorConverter) -> dict[str, object]:
         "byteorder": sys.byteorder,
         "torch": str(torch.__version__),
         "profile": torch_execution_profile_metadata(),
-        "representation": converter.feature_subset.name,
-        "features": list(converter.feature_names()),
-        "shape": [converter.input_dim],
+        "recipe": "canonical-flat-41-v1",
+        "representation": "handcrafted_41",
+        "features": list(MORPION_CANONICAL_FEATURE_NAMES),
+        "shape": [41],
         "dtype": "float32",
         "device": "cpu",
         "layout": "contiguous",
@@ -173,6 +220,12 @@ class _Converter:
         observation: dict[str, Any],
     ) -> None:
         self.original = converter
+        self.canonical = replace(
+            converter, feature_subset=full_morpion_feature_subset()
+        )
+        self.indices = torch.tensor(
+            feature_indices_for_subset(converter.feature_names()), dtype=torch.long
+        )
         self.store: storage.InputStore | None = store
         self.observation = observation
 
@@ -194,12 +247,12 @@ class _Converter:
         self.observation["lookup_s"] += time.perf_counter() - started
         if raw is None:
             started = time.perf_counter()
-            result = self.original.state_to_model_input_tensors(state)
+            result = self.canonical.state_to_model_input_tensors(state)
             self.observation["encoding_s"] += time.perf_counter() - started
             require(
                 len(result) == 1
                 and result[0].dtype == torch.float32
-                and tuple(result[0].shape) == (self.original.input_dim,)
+                and tuple(result[0].shape) == (41,)
                 and result[0].device.type == "cpu"
                 and not result[0].requires_grad
                 and result[0].is_contiguous()
@@ -214,7 +267,14 @@ class _Converter:
         started = time.perf_counter()
         self.store.append(payload, raw)
         self.observation["write_s"] += time.perf_counter() - started
-        return result
+        started = time.perf_counter()
+        projected = (
+            result[0]
+            if self.original.input_dim == 41
+            else result[0].index_select(0, self.indices)
+        )
+        self.observation["projection_s"] += time.perf_counter() - started
+        return (projected,)
 
 
 @contextmanager
@@ -231,6 +291,7 @@ def evaluator_inputs(evaluator: Any, node_count: int) -> Iterator[Any]:
     ceiling = (
         35000
         if qualified
+        and evaluator.regressor.args.model_kind == "mlp"
         and evaluator.input_converter.feature_subset
         == morpion_feature_subset_from_name("handcrafted_20_core")
         else 20000
@@ -248,6 +309,14 @@ def evaluator_inputs(evaluator: Any, node_count: int) -> Iterator[Any]:
         observation["outcome"] = "bypass-unsupported-recipe-or-node-budget"
         yield evaluator
         return
+    observation.update(
+        stored_representation="handcrafted_41",
+        consumer_representation=evaluator.input_converter.feature_subset.name,
+        consumer_model_kind=evaluator.regressor.args.model_kind,
+        consumer_feature_indices=list(
+            feature_indices_for_subset(evaluator.input_converter.feature_names())
+        ),
+    )
     require(
         root.is_absolute() and not any(p.is_symlink() for p in (root, *root.parents)),
         "Symlinked evaluator cache path",
@@ -266,9 +335,7 @@ def evaluator_inputs(evaluator: Any, node_count: int) -> Iterator[Any]:
             yield evaluator
             return
         started = time.perf_counter()
-        store = storage.InputStore(
-            root, _identity(evaluator.input_converter), limit, rows, observation
-        )
+        store = storage.InputStore(root, _identity(), limit, rows, observation)
         observation["open_verify_s"] = time.perf_counter() - started
         adapter = _Converter(evaluator.input_converter, store, observation)
         try:

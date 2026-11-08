@@ -32,7 +32,6 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     sync_directory,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
-    HANDCRAFTED_20_CORE_FEATURE_NAMES,
     MORPION_CANONICAL_FEATURE_NAMES,
 )
 
@@ -202,21 +201,17 @@ def binding(recipe: bytes, payload: bytes, raw: bytes) -> str:
 
 def _input_width(identity: dict[str, object]) -> int:
     """Bind raw shape to one canonical ordered representation, never infer it."""
-    name, shape = identity.get("representation"), identity.get("shape")
-    width = 20 if name == "handcrafted_20_core" else 41
-    features = (
-        HANDCRAFTED_20_CORE_FEATURE_NAMES
-        if width == 20
-        else MORPION_CANONICAL_FEATURE_NAMES
-    )
+    shape = identity.get("shape")
+    width = 41
     require(
         identity.get("format") == FORMAT
-        and name in ("handcrafted_20_core", "handcrafted_41")
+        and identity.get("recipe") == "canonical-flat-41-v1"
+        and identity.get("representation") == "handcrafted_41"
         and type(shape) is list
         and len(shape) == 1
         and type(shape[0]) is int
         and shape == [width]
-        and identity.get("features") == list(features)
+        and identity.get("features") == list(MORPION_CANONICAL_FEATURE_NAMES)
         and identity.get("dtype") == "float32"
         and identity.get("device") == "cpu"
         and identity.get("layout") == "contiguous",

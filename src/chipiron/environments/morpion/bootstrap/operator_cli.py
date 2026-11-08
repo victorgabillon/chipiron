@@ -118,7 +118,7 @@ def prepared_launcher_command(work_dir: Path) -> tuple[str, ...]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Expose only the six common operator actions."""
+    """Expose the common operator actions."""
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument("--work-dir", type=Path, default=argparse.SUPPRESS)
     parser = argparse.ArgumentParser(
@@ -146,6 +146,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="Print command without launching"
     )
     run.add_argument("--yes", action="store_true", help="Confirm a deliberate launch")
+    start = commands.add_parser(
+        "start",
+        parents=[shared],
+        help="Resume compatible continual work, or prepare a fresh run",
+    )
+    start.add_argument("--mode", choices=["auto", "resume", "fresh"], default="auto")
+    start.add_argument(
+        "--dry-run", action="store_true", help="Read-only bounded metadata preview"
+    )
+    start.add_argument("--cluster-script", type=Path)
+    start.add_argument(
+        "recipe",
+        nargs=argparse.REMAINDER,
+        help="Canonical fresh recipe options after --",
+    )
     return parser
 
 
@@ -157,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "use":
             print(save_current_run(args.path))
             return 0
+        if args.command == "start":
+            return _start(args)
         work_dir = resolve_work_dir(args.work_dir)
         if args.command == "current":
             print(work_dir)
@@ -185,6 +202,38 @@ def main(argv: list[str] | None = None) -> int:
     except (BootstrapOperatorError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
+
+
+def _start(args: argparse.Namespace) -> int:
+    """Preview without writes; execution gets a fresh process and native ownership."""
+    from .lifecycle import MODULE, plan_start
+
+    root = Path(args.work_dir) if args.work_dir is not None else resolve_work_dir()
+    recipe = args.recipe[1:] if args.recipe[:1] == ["--"] else args.recipe
+    try:
+        plan = plan_start(root, args.mode, recipe, args.cluster_script)
+    except (ValueError, TypeError, OSError, KeyError) as exc:
+        print(f"Start refused: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(plan, indent=2), flush=True)
+    if args.dry_run or plan["action"] == "no-work":
+        return 0
+    command = [
+        sys.executable,
+        "-I",
+        "-B",
+        "-m",
+        MODULE,
+        "--work-dir",
+        str(root),
+        "--mode",
+        args.mode,
+        "--cluster-script",
+        plan["supervisor"]["path"],
+        "--",
+        *recipe,
+    ]
+    return os.execv(sys.executable, command)
 
 
 def _run_prepared(work_dir: Path, *, dry_run: bool, confirmed: bool) -> int:
