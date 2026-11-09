@@ -380,3 +380,105 @@ def test_direct_native_grant_refuses_fresh_before_monitor_writes(
         str(p): p.read_bytes() for p in fresh.work_dir.rglob("*") if p.is_file()
     }
     assert not (fresh.work_dir / "resource_monitor").exists()
+
+
+@pytest.mark.exhaustive
+def test_ready_growth_pending_claim_survives_managed_time_grant(tmp_path: Any) -> None:
+    """A real ready source and pending claim retain authority across a time grant."""
+    from chipiron.environments.morpion.bootstrap.bootstrap_args import (
+        MorpionBootstrapArgs,
+    )
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
+    from chipiron.environments.morpion.bootstrap.continual_operator import (
+        prepare_continual_experiment,
+    )
+    from chipiron.environments.morpion.bootstrap.learning_policy import (
+        MorpionContinualLearningPolicy,
+    )
+    from chipiron.environments.morpion.bootstrap.learning_schedule import (
+        ReadyBoundedGrowthWindow,
+        window,
+    )
+    from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
+        load_pipeline_stage_claim,
+    )
+
+    root = tmp_path / "ready-managed"
+    args = MorpionBootstrapArgs(
+        work_dir=root,
+        training_device="cpu",
+        pipeline_mode="artifact_pipeline",
+        learning_schedule=ReadyBoundedGrowthWindow(1),
+        max_growth_steps_per_cycle=2,
+        max_rows=128,
+    )
+    policy = MorpionContinualLearningPolicy(
+        max_elapsed_seconds=2, min_available_ram_mb=1, automatic_activation=True
+    )
+    prepare_continual_experiment(args, policy, managed_sessions=True)
+    paths = MorpionBootstrapPaths.from_work_dir(root)
+    code = """import fcntl,os,sys,time
+from pathlib import Path
+from chipiron.environments.morpion.bootstrap import managed_sessions as m
+from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import MorpionBootstrapPaths
+from chipiron.environments.morpion.bootstrap.config import load_bootstrap_config
+from chipiron.environments.morpion.bootstrap.derived.provenance import atomic_json
+from chipiron.environments.morpion.bootstrap.execution_profile import bootstrap_execution
+from chipiron.environments.morpion.bootstrap.generation_publication_io import growth_receipt_ownership
+from chipiron.environments.morpion.bootstrap.launcher import _scientific_args
+from chipiron.environments.morpion.bootstrap.learning_worker import claim_metadata
+from chipiron.environments.morpion.bootstrap.pipeline_claims import claim_pipeline_stage
+from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
+from tests.environments.test_morpion_continual_publication import grow
+p=MorpionBootstrapPaths.from_work_dir(Path(sys.argv[1]));c=load_bootstrap_config(p.bootstrap_config_path)
+a=_scientific_args(MorpionBootstrapArgs(work_dir=p.work_dir),c)
+ticks=Path('/proc/self/stat').read_text().rsplit(') ',1)[1].split()[19]
+os.environ['MORPION_RESOURCE_MONITOR_PID']=str(os.getpid());os.environ['MORPION_RESOURCE_MONITOR_START_TICKS']=ticks;os.environ['MORPION_RESOURCE_MONITOR_SESSION']='123'
+monitor=p.work_dir/'resource_monitor';monitor.mkdir(exist_ok=True)
+with (monitor/'owner.lock').open('a') as owner:
+ fcntl.flock(owner,fcntl.LOCK_EX|fcntl.LOCK_NB);started=time.monotonic();link=m.begin_owned(p,c,'123',started,2)
+ with bootstrap_execution(a,process_start=True):
+  source=grow(a)
+  with growth_receipt_ownership(p,create=False):
+   state=load_bootstrap_run_state(p.run_state_path);path=p.pipeline_dataset_claim_path_for_generation(source.generation)
+   claim_pipeline_stage(generation=source.generation,stage='dataset',claim_path=path,ttl_seconds=60,metadata=claim_metadata(p,state,source.generation,path))
+ time.sleep(max(0,started+2-time.monotonic()));decisive=time.monotonic();elapsed=decisive-started
+ decision={'reason':'maximum_elapsed_time','monotonic_s':decisive,'budget_elapsed_seconds':elapsed,'worker_failures':[],'control_failure':None,'managed_session':link}
+ usage={'session':'123','elapsed_seconds':time.monotonic()-started,'reason':'maximum_elapsed_time','managed_session':link}
+ receipt={'reason':'maximum_elapsed_time','decision':decision,'budget_elapsed_seconds':usage['elapsed_seconds'],'shutdown_confirmed':True,'forced_group_cleanup':False,'shutdown_grace_expired':False,'supervisor_exit_code':0,'managed_owned_groups':[],'managed_session':link}
+ for name,value in [('decision_123.json',decision),('session_123.json',receipt),('usage.json',usage)]:atomic_json(monitor/name,value)
+ m.finalize_managed_session_owned(p,c,'123')
+"""
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", code, str(root)],
+        capture_output=True,
+        text=True,
+        timeout=45,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    config, state = snapshot(paths)
+    slot = window(state)
+    assert slot is not None and slot["active"]["source"]["generation"] == 2
+    claim_path = paths.pipeline_dataset_claim_path_for_generation(2)
+    claim = load_pipeline_stage_claim(claim_path)
+    before_claim = claim_path.read_bytes()
+    before_science = {k: v for k, v in state.metadata.items() if k != managed.KEY}
+    request, duplicate = managed.plan_additional_time(
+        paths, managed.inspect(paths, config, state), 4, "ready-pending"
+    )
+    assert not duplicate
+    with growth_receipt_ownership(paths, create=False):
+        updated, work = managed.admit_additional_time_owned(
+            paths, config, state, request
+        )
+    assert work and updated.metadata[managed.KEY]["authorized_seconds"] == 6
+    assert {
+        k: v for k, v in updated.metadata.items() if k != managed.KEY
+    } == before_science
+    assert load_pipeline_stage_claim(claim_path).claim_id == claim.claim_id
+    assert claim_path.read_bytes() == before_claim
+    with pytest.raises(ValueError, match="Managed scientific work"):
+        managed.require_managed_execution(paths)

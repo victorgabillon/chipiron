@@ -54,7 +54,11 @@ def snapshot(paths: MorpionBootstrapPaths) -> tuple[Any, Any]:
 
 
 def controlled_close(
-    paths: MorpionBootstrapPaths, *, crash: str | None = None, identifier: str = "123"
+    paths: MorpionBootstrapPaths,
+    *,
+    crash: str | None = None,
+    identifier: str = "123",
+    early: bool = False,
 ) -> None:
     """Use a real owned/reaped child identity, with explicitly controlled clocks.
 
@@ -74,10 +78,12 @@ data=load_bootstrap_run_state(p.run_state_path).metadata[m.KEY]
 identifier=sys.argv[3];ceiling=data['authorized_seconds'];base=data['consumed_seconds']
 link=m.begin_owned(p,config,identifier,started,2)
 if sys.argv[2]=='launch':sys.exit(0)
-reason='maximum_elapsed_time'
-decision={'reason':reason,'monotonic_s':started+ceiling-base,'budget_elapsed_seconds':float(ceiling),'worker_failures':[],'control_failure':None,'managed_session':link}
-usage={'session':identifier,'elapsed_seconds':ceiling+.75,'reason':reason,'managed_session':link}
-receipt={'reason':reason,'decision':decision,'budget_elapsed_seconds':ceiling+.75,'shutdown_confirmed':True,'forced_group_cleanup':False,'shutdown_grace_expired':False,'supervisor_exit_code':0,'managed_owned_groups':[],'managed_session':link}
+early=sys.argv[4]=='early';reason='supervisor_deadline' if early else 'maximum_elapsed_time'
+decisive=base+1 if early else ceiling;cleanup=decisive+(.25 if early else .75)
+decision={'reason':reason,'monotonic_s':started+decisive-base,'budget_elapsed_seconds':float(decisive),'worker_failures':[],'control_failure':None,'managed_session':link}
+if early:decision['supervisor_shutdown']={'authenticated':True}
+usage={'session':identifier,'elapsed_seconds':cleanup,'reason':reason,'managed_session':link}
+receipt={'reason':reason,'decision':decision,'budget_elapsed_seconds':cleanup,'shutdown_confirmed':True,'forced_group_cleanup':False,'shutdown_grace_expired':False,'supervisor_exit_code':0,'managed_owned_groups':[],'managed_session':link}
 monitor=p.work_dir/'resource_monitor'
 for name,value in [(f'decision_{identifier}.json',decision),(f'session_{identifier}.json',receipt),('usage.json',usage)]:atomic_json(monitor/name,value)
 if sys.argv[2]=='native':sys.exit(0)
@@ -98,6 +104,7 @@ else:m.finalize_managed_session_owned(p,config,identifier)
             str(paths.work_dir),
             crash or "none",
             identifier,
+            "early" if early else "spent",
         ],
         capture_output=True,
         text=True,
@@ -182,6 +189,46 @@ def test_grant_debits_cleanup_and_is_idempotent(fresh: MorpionBootstrapPaths) ->
         managed.plan_additional_time(
             fresh, managed.inspect(fresh, config, again), 4, "client-1"
         )
+
+
+@pytest.mark.fast
+def test_completed_latest_request_does_not_restart_with_credit(
+    fresh: MorpionBootstrapPaths,
+) -> None:
+    """A completed request is idempotent even when an early stop leaves credit."""
+    from tests.environments.test_morpion_lifecycle_continuation import inert_supervisor
+
+    controlled_close(fresh)
+    config, state = snapshot(fresh)
+    request, _ = managed.plan_additional_time(
+        fresh, managed.inspect(fresh, config, state), 10, "client-early"
+    )
+    with growth_receipt_ownership(fresh, create=False):
+        managed.admit_additional_time_owned(fresh, config, state, request)
+    controlled_close(fresh, identifier="124", early=True)
+    config, state = snapshot(fresh)
+    summary = managed.inspect(fresh, config, state)
+    assert summary["authorized_seconds"] - summary["consumed_seconds"] > 1
+    before = fresh.run_state_path.read_bytes()
+    with growth_receipt_ownership(fresh, create=False):
+        unchanged, work = managed.admit_additional_time_owned(
+            fresh, config, state, request
+        )
+    assert not work and unchanged == state
+    assert fresh.run_state_path.read_bytes() == before
+    script = inert_supervisor(fresh.work_dir.parent / "supervisor.sh")
+    from chipiron.environments.morpion.bootstrap.lifecycle import plan_start
+
+    duplicate = plan_start(
+        fresh.work_dir,
+        cluster_script=script,
+        additional_seconds=10,
+        request_id="client-early",
+    )
+    assert duplicate["action"] == "no-work"
+    assert "already completed" in duplicate["no_work_reason"]
+    assert plan_start(fresh.work_dir, cluster_script=script)["action"] == "resume"
+    assert fresh.run_state_path.read_bytes() == before
 
 
 @pytest.mark.fast

@@ -624,6 +624,16 @@ def latest_request(
     return _read(paths, summary["grants"][-1], reader or _reader())
 
 
+def request_has_closed_successor(
+    summary: dict[str, Any], grant: dict[str, Any]
+) -> bool:
+    """Report whether a request already produced a closed native session."""
+    predecessor = grant["previous_close"]
+    sessions = summary["sessions"]
+    require(predecessor in sessions, "Managed request predecessor is missing.")
+    return len(sessions) > sessions.index(predecessor) + 1
+
+
 def plan_additional_time(
     paths: MorpionBootstrapPaths,
     summary: dict[str, Any] | None,
@@ -720,9 +730,11 @@ def admit_additional_time_owned(
     if duplicate:
         # Old requests never launch work belonging to a later grant.
         latest = _read(paths, summary["grants"][-1], _reader())
-        return state, latest["request_id"] == request.request_id and summary[
-            "authorized_seconds"
-        ] - summary["consumed_seconds"] >= 1
+        return state, (
+            latest["request_id"] == request.request_id
+            and not request_has_closed_successor(summary, latest)
+            and summary["authorized_seconds"] - summary["consumed_seconds"] >= 1
+        )
     data = {k: summary[k] for k in state.metadata[KEY]}
     value = {
         "enrollment_id": data["enrollment_id"],

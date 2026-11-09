@@ -647,7 +647,11 @@ def plan_start(
                 )
             if duplicate and renewal is not None and managed_summary is not None:
                 latest = managed.latest_request(paths, managed_summary, metadata)
-                if latest["request_id"] != renewal.request_id:
+                if latest[
+                    "request_id"
+                ] != renewal.request_id or managed.request_has_closed_successor(
+                    managed_summary, latest
+                ):
                     stop = "Additional-time request already completed; no work is launched for a later grant."
             status = {
                 "action": select_action(
