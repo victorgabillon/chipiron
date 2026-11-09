@@ -45,6 +45,8 @@ from tests.environments.test_morpion_checkpoint_parity import _selection_signatu
 from tests.environments.test_morpion_committed_evaluator_restore import fingerprint
 from tests.environments.test_morpion_lifecycle_continuation import equal_state
 
+SESSION_SECONDS = 45
+
 
 def initialize(root: Path) -> MorpionBootstrapArgs:
     """Fresh two-candidate strict CPU genesis; each arm has the identical recipe."""
@@ -78,7 +80,7 @@ def initialize(root: Path) -> MorpionBootstrapArgs:
         ),
     )
     policy = MorpionContinualLearningPolicy(
-        max_elapsed_seconds=12,
+        max_elapsed_seconds=SESSION_SECONDS,
         max_tree_nodes=5000,
         min_available_ram_mb=1,
         shutdown_grace_seconds=5,
@@ -114,7 +116,7 @@ def invoke(
         ),
         capture_output=True,
         text=True,
-        timeout=40,
+        timeout=120,
     )
     (root.parent / (root.name + "-last-cli.log")).write_text(
         result.stdout + result.stderr
@@ -220,7 +222,7 @@ def test_real_two_session_grant_keeps_loser_adam_and_scientific_suffix(
         ],
         capture_output=True,
         text=True,
-        timeout=180,
+        timeout=420,
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -247,18 +249,26 @@ def _run_real_two_session_parity(tmp_path: Path) -> None:
         args = initialize(root)
         first = invoke(root, script, 3 if label == "control" else 1)
         assert first.returncode == 0, first.stdout + first.stderr
-        assert (root.parent / (root.name + "-work-done.json")).exists()
+        assert (root.parent / (root.name + "-work-done.json")).exists(), (
+            root.parent / (root.name + "-last-cli.log")
+        ).read_text()
         state = load_bootstrap_run_state(root / "run_state.json")
         data = state.metadata[managed.KEY]
         assert (
             data["active"] is None
             and len(data["sessions"]) == 1
-            and data["consumed_seconds"] >= 12
+            and data["consumed_seconds"] >= SESSION_SECONDS
         )
         before_science = {k: v for k, v in state.metadata.items() if k != managed.KEY}
         if label == "resumed":
             second = invoke(
-                root, script, 2, "--add-time", "12", "--request-id", "second-period"
+                root,
+                script,
+                2,
+                "--add-time",
+                str(SESSION_SECONDS),
+                "--request-id",
+                "second-period",
             )
             assert second.returncode == 0, second.stdout + second.stderr
             state = load_bootstrap_run_state(root / "run_state.json")
@@ -266,12 +276,18 @@ def _run_real_two_session_parity(tmp_path: Path) -> None:
             assert (
                 len(data["grants"]) == 1
                 and len(data["sessions"]) == 2
-                and data["authorized_seconds"] == 24
-                and data["consumed_seconds"] >= 24
+                and data["authorized_seconds"] == 2 * SESSION_SECONDS
+                and data["consumed_seconds"] >= 2 * SESSION_SECONDS
             )
             before = (root / "run_state.json").read_bytes()
             duplicate = invoke(
-                root, script, 2, "--add-time", "12", "--request-id", "second-period"
+                root,
+                script,
+                2,
+                "--add-time",
+                str(SESSION_SECONDS),
+                "--request-id",
+                "second-period",
             )
             assert (
                 duplicate.returncode == 0
@@ -291,7 +307,13 @@ def _run_real_two_session_parity(tmp_path: Path) -> None:
             (parent / "optimizer.pt").unlink()
             before = (root / "run_state.json").read_bytes()
             missing = invoke(
-                root, script, 1, "--add-time", "12", "--request-id", "missing-adam"
+                root,
+                script,
+                1,
+                "--add-time",
+                str(SESSION_SECONDS),
+                "--request-id",
+                "missing-adam",
             )
             assert (
                 missing.returncode == 2
