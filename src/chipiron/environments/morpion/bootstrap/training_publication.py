@@ -845,6 +845,9 @@ def accept_training(
 
     with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
+        from .managed_sessions import require_managed_execution
+
+        require_managed_execution(paths, state)
         receipt_ledger(state)
         proposal = _proposal(paths, reference)
         admission = proposal["admission"]

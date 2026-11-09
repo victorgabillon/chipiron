@@ -146,8 +146,11 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
     """Run bounded existing jobs; any failure exits, preserving conservative claims."""
     from .launcher import _run_launcher_cli
 
-    _validate(launcher)
     paths = MorpionBootstrapPaths.from_work_dir(launcher.work_dir)
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(paths)
+    _validate(launcher)
     paths.ensure_directories()
     process_device = launcher.bootstrap_args.training_device
     state = WorkerJobState(paths.work_dir, launcher.pipeline_stage)

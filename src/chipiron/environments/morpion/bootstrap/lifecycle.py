@@ -408,6 +408,10 @@ def plan_start(
     mode: RunMode = "auto",
     recipe: Sequence[str] = (),
     cluster_script: Path | None = None,
+    *,
+    additional_seconds: int | None = None,
+    request_id: str | None = None,
+    expected_predecessor: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Classify without mutation; native validators still verify payloads at use."""
     root = work_dir.expanduser().absolute()
@@ -428,8 +432,19 @@ def plan_start(
         root / "bootstrap_config.json"
     ).is_file()
     action = select_action(mode, empty=empty, committed=committed)
+    require(
+        additional_seconds is not None or request_id is None,
+        "--request-id requires --add-time.",
+    )
     metadata = Metadata()
+    renewal = None
+    duplicate = False
+    managed_summary = None
     if action == "create":
+        require(
+            additional_seconds is None,
+            "Additional time requires an existing managed run.",
+        )
         require(
             not root.with_name(root.name + "-inputs").exists(),
             "Partial preparation inputs already exist; recover explicitly.",
@@ -463,13 +478,13 @@ def plan_start(
             "Live/stale launcher registration requires explicit recovery.",
         )
         with ExitStack() as stack:
-            stack.enter_context(
-                _existing_lock(paths.pipeline_dir / ".growth_patch_consumer.lock")
-            )
             if (root / "resource_monitor/owner.lock").exists():
                 stack.enter_context(
                     _existing_lock(root / "resource_monitor/owner.lock")
                 )
+            stack.enter_context(
+                _existing_lock(paths.pipeline_dir / ".growth_patch_consumer.lock")
+            )
             config = bootstrap_config_from_dict(
                 metadata.read(paths.bootstrap_config_path)
             )
@@ -562,25 +577,78 @@ def plan_start(
                 len(names) <= 128 and set(parents) <= set(names),
                 "Accepted candidate catalog differs or exceeds preview bound.",
             )
-            consumed, endpoint = _usage(root, metadata, state.generation)
+            from . import managed_sessions as managed
+
+            managed_summary = managed.inspect(paths, config, state, metadata)
+            if managed_summary is None:
+                consumed, endpoint = _usage(root, metadata, state.generation)
+                ceiling = policy.max_elapsed_seconds
+            else:
+                consumed, endpoint = (
+                    managed_summary["consumed_seconds"],
+                    managed_summary["last_endpoint"],
+                )
+                ceiling = managed_summary["authorized_seconds"]
+            if additional_seconds is not None:
+                require(
+                    not recipe, "Renewal uses the persisted recipe; omit recipe flags."
+                )
+                renewal, duplicate = managed.plan_additional_time(
+                    paths, managed_summary, additional_seconds, request_id
+                )
+                require(
+                    expected_predecessor is None
+                    or renewal.predecessor == expected_predecessor,
+                    "Additional-time predecessor changed; preview again.",
+                )
+                if not duplicate:
+                    ceiling += additional_seconds
             termination = state.metadata.get("experiment_termination")
             stop = termination or (
                 "maximum_tree_nodes"
                 if state.tree_size_at_last_save >= policy.max_tree_nodes
                 else None
             )
-            if endpoint and endpoint["reason"] in {
-                "operator_SIGINT",
-                "operator_SIGTERM",
-                "maximum_elapsed_time",
-                "maximum_tree_nodes",
-            }:
+            if (
+                endpoint
+                and (
+                    managed_summary is None
+                    or endpoint["reason"] not in managed.TIME_ENDS
+                )
+                and endpoint["reason"]
+                in {
+                    "operator_SIGINT",
+                    "operator_SIGTERM",
+                    "maximum_elapsed_time",
+                    "maximum_tree_nodes",
+                }
+            ):
                 stop = stop or endpoint["reason"]
-            if policy.max_elapsed_seconds - consumed < 1:
+            if (
+                managed_summary is not None
+                and managed_summary["status"] == "blocked/uncertain"
+            ):
+                stop = (
+                    stop
+                    or "Managed launch has uncertain completion; explicit recovery required."
+                )
+            if (
+                managed_summary is not None
+                and managed_summary["status"] == "accounting-finalization-required"
+            ):
+                stop = None
+            if ceiling - consumed < 1 and not (
+                managed_summary is not None
+                and managed_summary["status"] == "accounting-finalization-required"
+            ):
                 stop = (
                     stop
                     or "native budget exhausted (less than one complete second remains)"
                 )
+            if duplicate and renewal is not None and managed_summary is not None:
+                latest = managed.latest_request(paths, managed_summary, metadata)
+                if latest["request_id"] != renewal.request_id:
+                    stop = "Additional-time request already completed; no work is launched for a later grant."
             status = {
                 "action": select_action(
                     mode, empty=False, committed=True, terminal=stop is not None
@@ -598,12 +666,20 @@ def plan_start(
                 "candidate_parents": {name: parents.get(name) for name in names},
                 "accepted_datasets": datasets,
                 "consumed_seconds": consumed,
-                "remaining_seconds": max(0.0, policy.max_elapsed_seconds - consumed),
+                "remaining_seconds": max(0.0, ceiling - consumed),
+                "managed_session": managed_summary,
                 "last_endpoint": endpoint,
                 "termination": termination,
                 "no_work_reason": stop,
                 "payload_validation": "metadata/presence preview only; native restore/admission verifies payload bytes",
             }
+    if renewal is not None:
+        status["additional_time"] = {
+            "seconds": renewal.seconds,
+            "request_id": renewal.request_id,
+            "predecessor": renewal.predecessor,
+            "already_admitted": duplicate,
+        }
     monitor_script = root / "resource_monitor/supervisor.json"
     recorded = metadata.read(monitor_script) if monitor_script.exists() else None
     script = cluster_script or (Path(recorded["path"]) if recorded else None)
@@ -624,26 +700,46 @@ def plan_start(
 
 
 def execute_start(
-    work_dir: Path, mode: RunMode, recipe: Sequence[str], cluster_script: Path | None
+    work_dir: Path,
+    mode: RunMode,
+    recipe: Sequence[str],
+    cluster_script: Path | None,
+    *,
+    additional_seconds: int | None = None,
+    request_id: str | None = None,
+    expected_predecessor: dict[str, Any] | None = None,
 ) -> int:
     """Fresh process only; reuse preparation then exec before configuring threads again."""
-    plan = plan_start(work_dir, mode, recipe, cluster_script)
+    plan = plan_start(
+        work_dir,
+        mode,
+        recipe,
+        cluster_script,
+        additional_seconds=additional_seconds,
+        request_id=request_id,
+        expected_predecessor=expected_predecessor,
+    )
     print(json.dumps(plan, indent=2), flush=True)
     if plan["action"] == "no-work":
         return 0
     root = Path(plan["work_dir"])
     script = Path(plan["supervisor"]["path"])
     if plan["action"] == "create":
-        from .launcher import main as launcher_main
+        from .continual_operator import prepare_continual_experiment
+        from .execution_profile import launcher_execution
 
-        launcher_main([
-            "--scientific",
-            "--scientific-operation",
-            "prepare-continuous",
-            "--work-dir",
-            str(root),
-            *recipe,
-        ])
+        parsed = _recipe(root, recipe, None)
+        from .learning_policy import MorpionContinualLearningPolicy
+
+        with launcher_execution(parsed, process_start=True) as configured:
+            assert isinstance(
+                configured.continual_policy, MorpionContinualLearningPolicy
+            )
+            prepare_continual_experiment(
+                configured.bootstrap_args,
+                configured.continual_policy,
+                managed_sessions=True,
+            )
         command = [
             sys.executable,
             "-I",
@@ -674,11 +770,29 @@ def execute_start(
     # plan_start re-observes under the existing owners; native monitor/admission
     # reacquire and validate their own authority. No preview lease crosses launch.
     with launcher_execution(args, process_start=True):
-        checked = plan_start(root, "resume", recipe, script)
+        checked = plan_start(
+            root,
+            "resume",
+            recipe,
+            script,
+            additional_seconds=additional_seconds,
+            request_id=request_id,
+            expected_predecessor=expected_predecessor,
+        )
         if checked["action"] == "no-work":
             return 0
+        from .managed_sessions import AdditionalTimeRequest
+
+        grant = checked.get("additional_time")
+        request = (
+            None
+            if grant is None
+            else AdditionalTimeRequest(
+                grant["seconds"], grant["request_id"], grant["predecessor"]
+            )
+        )
         run_monitored_continual_experiment(
-            MorpionBootstrapPaths.from_work_dir(root), script
+            MorpionBootstrapPaths.from_work_dir(root), script, additional_time=request
         )
     return 0
 
@@ -689,11 +803,26 @@ def main() -> int:
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--mode", choices=["auto", "resume", "fresh"], default="auto")
     parser.add_argument("--cluster-script", type=Path)
+    from .managed_sessions import positive_seconds
+
+    parser.add_argument("--add-time", type=positive_seconds)
+    parser.add_argument("--request-id")
+    parser.add_argument("--managed-predecessor-json")
     parser.add_argument("recipe", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     recipe = args.recipe[1:] if args.recipe[:1] == ["--"] else args.recipe
     try:
-        return execute_start(args.work_dir, args.mode, recipe, args.cluster_script)
+        return execute_start(
+            args.work_dir,
+            args.mode,
+            recipe,
+            args.cluster_script,
+            additional_seconds=args.add_time,
+            request_id=args.request_id,
+            expected_predecessor=json.loads(args.managed_predecessor_json)
+            if args.managed_predecessor_json
+            else None,
+        )
     except (ValueError, TypeError, OSError, KeyError) as exc:
         print(f"Start refused: {exc}", file=sys.stderr)
         return 2

@@ -633,6 +633,8 @@ def _scientific_operation(
         assert args.activation_request is not None
         activate_model(paths, json.loads(args.activation_request.read_text()))
     state = load_bootstrap_run_state(paths.run_state_path)
+    from .managed_sessions import status_summary
+
     model, _ = committed_evaluator(paths.work_dir, state)
     print(
         json.dumps(
@@ -641,6 +643,7 @@ def _scientific_operation(
                 "generation": state.generation,
                 "unique_nodes": state.tree_size_at_last_save,
                 "experiment_termination": state.metadata.get("experiment_termination"),
+                "managed_session": status_summary(paths),
                 "completed_learning_rounds": sum(
                     "accepted_training" in r
                     for r in publication_records(state.metadata)

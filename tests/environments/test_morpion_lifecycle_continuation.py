@@ -90,14 +90,17 @@ def test_installed_normal_fresh_resume_and_zero_write_refusal(
         timeout=40,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    state = (root / "run_state.json").read_bytes()
+    state = json.loads((root / "run_state.json").read_text())
+    state["metadata"].pop("managed_sessions_v1", None)
     usage = json.loads((root / "resource_monitor/usage.json").read_text())
     assert usage["elapsed_seconds"] > 0
     result = subprocess.run(prefix, capture_output=True, text=True, timeout=40)
     assert result.returncode == 0, result.stdout + result.stderr
     after = json.loads((root / "resource_monitor/usage.json").read_text())
     assert after["elapsed_seconds"] > usage["elapsed_seconds"]
-    assert (root / "run_state.json").read_bytes() == state
+    after_state = json.loads((root / "run_state.json").read_text())
+    after_state["metadata"].pop("managed_sessions_v1", None)
+    assert after_state == state
     before = {str(p): p.read_bytes() for p in root.rglob("*") if p.is_file()}
     result = subprocess.run(
         [*prefix, "--mode", "fresh"], capture_output=True, text=True, timeout=15

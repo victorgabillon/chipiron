@@ -238,6 +238,7 @@ class BootstrapDashboardSnapshot:
     training_history: tuple[JsonObject, ...] = ()
     runtime: JsonObject = field(default_factory=dict)
     activation_requests: tuple[JsonObject, ...] = ()
+    managed_session: JsonObject = field(default_factory=dict)
 
     @property
     def pipeline_mode(self) -> str:
@@ -277,6 +278,8 @@ class BootstrapDashboardSnapshot:
     @property
     def active_runtime_label(self) -> str:
         """Read the prepared ceiling rather than any package default."""
+        if self.managed_session:
+            return f"authorized {display(self.managed_session.get('authorized_seconds'))}s / finalized consumed {display(self.managed_session.get('consumed_seconds'))}s / remaining upper bound {display(self.managed_session.get('remaining_seconds'))}s"
         scientific = mapping(self.manifest.get("scientific_configuration"))
         seconds = number(
             mapping(scientific.get("runtime_limits")).get("active_seconds")
@@ -439,6 +442,24 @@ def load_dashboard_snapshot(
         or mapping(event.get("frontier"))
         or mapping(state.get("latest_frontier_status"))
     )
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
+    from chipiron.environments.morpion.bootstrap.managed_sessions import status_summary
+
+    managed = (
+        (status_summary(MorpionBootstrapPaths.from_work_dir(work_dir)) or {})
+        if "managed_sessions_v1" in mapping(config.get("metadata"))
+        or "managed_sessions_v1" in mapping(state.get("metadata"))
+        else {}
+    )
+    if managed:
+        status, detail = (
+            str(managed["status"]),
+            "Managed native-session accounting; historical endpoint retained.",
+        )
+        if managed.get("error"):
+            errors.append(str(managed["error"]))
     return BootstrapDashboardSnapshot(
         work_dir,
         status,
@@ -462,6 +483,7 @@ def load_dashboard_snapshot(
         training_history,
         runtime,
         activation_requests,
+        managed,
     )
 
 
@@ -518,6 +540,16 @@ def render_status(snapshot: BootstrapDashboardSnapshot) -> str:
         f"Run: {snapshot.work_dir.name}",
         f"Status: {snapshot.status}",
         snapshot.status_detail,
+        *(
+            [
+                f"Native time: {snapshot.active_runtime_label}",
+                f"Last finalized endpoint: {mapping(snapshot.managed_session.get('last_endpoint')).get('reason', 'none')}",
+                f"Pending native decision (not finalized): {mapping(snapshot.managed_session.get('pending_native_decision')).get('reason', 'none')}",
+                f"Pending worker/control failures: {mapping(snapshot.managed_session.get('pending_native_decision')).get('worker_failures', 'unknown')} / {mapping(snapshot.managed_session.get('pending_native_decision')).get('control_failure', 'unknown')}",
+            ]
+            if snapshot.managed_session
+            else []
+        ),
         f"Generation: {display(snapshot.generation)}",
         f"Tree: {display(snapshot.tree_nodes)} nodes",
         f"Certified: {display(snapshot.record.get('current_best_total_points'))} points",

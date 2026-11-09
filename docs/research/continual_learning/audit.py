@@ -320,7 +320,18 @@ def audit(paths: MorpionBootstrapPaths, *, science: bool) -> dict[str, Any]:
         read(p) for p in paths.work_dir.glob("pipeline/performance/*/*.json")
     ]
     assert paths.run_state_path.read_bytes() == authority
+    from chipiron.environments.morpion.bootstrap.managed_sessions import status_summary
+
+    managed = status_summary(paths)
+    if managed is not None:
+        assert managed["status"] not in {
+            "blocked/uncertain",
+            "running",
+            "stopping",
+            "accounting-finalization-required",
+        }, managed
     return dict(
+        managed_session=managed,
         workspace=str(paths.work_dir),
         generation=state.generation,
         nodes=state.tree_size_at_last_save,
