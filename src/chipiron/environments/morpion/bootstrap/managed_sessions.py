@@ -629,7 +629,7 @@ def request_has_closed_successor(
 ) -> bool:
     """Report whether a request already produced a closed native session."""
     predecessor = grant["previous_close"]
-    sessions = summary["sessions"]
+    sessions: list[dict[str, Any]] = summary["sessions"]
     require(predecessor in sessions, "Managed request predecessor is missing.")
     return len(sessions) > sessions.index(predecessor) + 1
 
