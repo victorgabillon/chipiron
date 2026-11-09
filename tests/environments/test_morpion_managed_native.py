@@ -198,6 +198,34 @@ def scientific_result(args: MorpionBootstrapArgs) -> Any:
 def test_real_two_session_grant_keeps_loser_adam_and_scientific_suffix(
     tmp_path: Path,
 ) -> None:
+    """Run strict numerical parity in a fresh process with declared threads."""
+    code = (
+        "import sys, torch; "
+        "torch.set_num_threads(1); torch.set_num_interop_threads(1); "
+        "sys.path.insert(0, sys.argv[1]); "
+        "from pathlib import Path; "
+        "from tests.environments.test_morpion_managed_native import "
+        "_run_real_two_session_parity; "
+        "_run_real_two_session_parity(Path(sys.argv[2]))"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            code,
+            str(Path(__file__).resolve().parents[2]),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _run_real_two_session_parity(tmp_path: Path) -> None:
     """Fixed-work parity, not a time-defined trajectory or performance experiment."""
     import chipiron
 
