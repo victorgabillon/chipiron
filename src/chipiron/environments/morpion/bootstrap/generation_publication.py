@@ -779,6 +779,11 @@ class DurableGenerationPublication:
             self.paths.pipeline_reevaluation_patch_path,
             self.paths.pipeline_reevaluation_cursor_path,
         })
+        if "fork_origin_v1" in state.metadata:
+            from .fork_origin import seeds
+
+            seeds(self.paths, state, verify=True)
+            roots.add(self.paths.work_dir / "genesis/fork")
         for receipt in state.metadata["checkpoint_bound_reevaluation_v1"]["receipts"]:
             roots.add(self.paths.work_dir / receipt["checkpoint_path"])
             roots.add(self.paths.work_dir / receipt["model_bundle_path"])

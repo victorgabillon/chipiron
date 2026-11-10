@@ -17,9 +17,8 @@ import sys
 import time
 from contextlib import ExitStack, contextmanager
 from dataclasses import fields
-from itertools import islice
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from chipiron.bootstrap.lifecycle import RunMode, select_action
 
@@ -30,6 +29,8 @@ from .derived.provenance import inside
 from .generation_publication_io import publication_records, require
 from .learning_policy import policy_from_metadata, validate_continual_context
 from .learning_schedule import schedule_from_metadata
+from .lifecycle_metadata import Metadata
+from .lifecycle_metadata import entries as _entries
 from .run_state import _run_state_from_dict
 
 if TYPE_CHECKING:
@@ -37,41 +38,6 @@ if TYPE_CHECKING:
 
 MODULE = "chipiron.environments.morpion.bootstrap.lifecycle"
 LAUNCHER = "chipiron.environments.morpion.bootstrap.launcher"
-
-
-class Metadata:
-    """Limit the whole preview, including source fingerprints and metadata joins."""
-
-    def __init__(self) -> None:
-        """Initialize the per-preview byte allowance."""
-        self.remaining = 64 * 2**20
-
-    def data(self, path: Path, maximum: int = 4 * 2**20) -> bytes:
-        """Refuse symlinks/oversize inputs before reading bounded bytes."""
-        require(path.is_file() and not path.is_symlink(), f"Missing metadata: {path}")
-        size = path.stat().st_size
-        require(
-            size <= min(maximum, self.remaining), "Preview metadata budget exceeded."
-        )
-        with path.open("rb") as stream:
-            data = stream.read(min(maximum, self.remaining) + 1)
-        require(len(data) == size, "Metadata changed during preview.")
-        self.remaining -= len(data)
-        return data
-
-    def read(self, path: Path) -> dict[str, Any]:
-        """Read finite object metadata only."""
-        value = json.loads(self.data(path), parse_constant=_invalid_constant)
-        require(isinstance(value, dict), f"Expected metadata object: {path}")
-        return cast("dict[str, Any]", value)
-
-    def digest(self, path: Path) -> str:
-        """Hash small metadata, never scientific payloads."""
-        return hashlib.sha256(self.data(path)).hexdigest()
-
-
-def _invalid_constant(value: str) -> None:
-    require(False, f"Nonfinite JSON metadata: {value}")
 
 
 def _clock(value: object) -> float:
@@ -87,12 +53,6 @@ def _clock(value: object) -> float:
         "Invalid or uncertain cumulative budget clock.",
     )
     return result
-
-
-def _entries(path: Path, maximum: int = 2048) -> list[Path]:
-    values = list(islice(path.iterdir(), maximum + 1))
-    require(len(values) <= maximum, "Preview directory bound exceeded.")
-    return values
 
 
 @contextmanager
@@ -388,8 +348,17 @@ def _references(
                         "accepted_training": ref,
                         "model": model,
                     }
+    from .fork_origin import seeds
+
+    for name, seed in seeds(
+        MorpionBootstrapPaths.from_work_dir(root), state, verify=False
+    ).items():
+        if name not in parents:
+            parents[name] = seed
     require(len(parents) <= 128, "Candidate preview bound exceeded.")
     for parent in parents.values():
+        if parent is None:
+            continue
         for filename in [
             "param.pt",
             "optimizer.pt",

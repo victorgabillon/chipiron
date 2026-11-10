@@ -172,6 +172,15 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=argparse.REMAINDER,
         help="Canonical fresh recipe options after --",
     )
+    fork = commands.add_parser(
+        "fork", help="Prepare an independent full-state copy of a settled managed run"
+    )
+    fork.add_argument("--from", dest="parent", type=Path, required=True)
+    fork.add_argument("--to", dest="target", type=Path, required=True)
+    fork.add_argument("--max-elapsed-seconds", type=positive_seconds, required=True)
+    fork.add_argument("--max-tree-nodes", type=int, required=True)
+    fork.add_argument("--expect-plan")
+    fork.add_argument("--dry-run", action="store_true")
     return parser
 
 
@@ -180,6 +189,57 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "fork":
+            from .fork import execute_fork, plan_fork
+
+            try:
+                if args.dry_run:
+                    result = plan_fork(
+                        args.parent,
+                        args.target,
+                        args.max_elapsed_seconds,
+                        args.max_tree_nodes,
+                    )
+                else:
+                    from .bootstrap_args import MorpionBootstrapArgs
+                    from .config import load_bootstrap_config
+                    from .execution_profile import bootstrap_execution
+                    from .launcher import _scientific_args
+
+                    # Fresh normal operator owns the saved numerical policy; no
+                    # training or payload restore is performed during preview.
+                    configured = (
+                        _scientific_args(
+                            MorpionBootstrapArgs(args.parent),
+                            load_bootstrap_config(
+                                args.parent / "bootstrap_config.json"
+                            ),
+                        )
+                        if args.parent.exists()
+                        else None
+                    )
+                    if configured is None:
+                        result = execute_fork(
+                            args.parent,
+                            args.target,
+                            args.max_elapsed_seconds,
+                            args.max_tree_nodes,
+                            expected=args.expect_plan,
+                        )
+                    else:
+                        with bootstrap_execution(configured, process_start=True):
+                            result = execute_fork(
+                                args.parent,
+                                args.target,
+                                args.max_elapsed_seconds,
+                                args.max_tree_nodes,
+                                expected=args.expect_plan,
+                            )
+            except (ValueError, KeyError, TypeError) as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
+            print(json.dumps(result, indent=2), flush=True)
+            return 0
         if args.command == "use":
             print(save_current_run(args.path))
             return 0

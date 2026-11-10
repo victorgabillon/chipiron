@@ -22,14 +22,13 @@ def validate(
     verify: bool = False,
 ) -> dict[str, Any] | None:
     """Adopt only a bounded genesis reference, with optional scientific byte checks."""
-    ref = config.metadata.get(KEY)
+    ref: Any = config.metadata.get(KEY)
     require(
         ref == state.metadata.get(KEY), "Fork origin binding is missing or changed."
     )
     if ref is None:
         return None
-    from .lifecycle import Metadata
-    from .managed_sessions import KEY as MANAGED
+    from .lifecycle_metadata import Metadata
 
     require(
         isinstance(ref, dict)
@@ -41,11 +40,13 @@ def validate(
     path = inside(paths.work_dir, ref["path"])
     require(reader.digest(path) == ref["sha256"], "Fork origin descriptor changed.")
     origin = reader.read(path)
+    enrollment: Any = config.metadata["managed_sessions_v1"]
     require(
         origin.get("schema_version") == 1
-        and type(origin["schema_version"]) is int
+        and isinstance(origin["schema_version"], int)
+        and not isinstance(origin["schema_version"], bool)
         and origin.get("work_dir") == str(paths.work_dir.resolve())
-        and origin.get("enrollment_id") == config.metadata[MANAGED]["enrollment_id"]
+        and origin.get("enrollment_id") == enrollment["enrollment_id"]
         and isinstance(origin.get("candidate_seeds"), dict)
         and set(origin["candidate_seeds"]) == set(config.evaluators.evaluators)
         and origin.get("dataset_policy") == "regenerate_local",
@@ -77,6 +78,18 @@ def validate(
                 artifact_digest(bundle) == seed["model"]["sha256"]
                 and file_digest(bundle / "param.pt") == seed["weights_sha256"],
                 "Imported candidate bytes changed.",
+            )
+    if verify:
+        evidence = origin.get("origin_evidence", {})
+        require(
+            isinstance(evidence, dict) and len(evidence) <= 4096,
+            "Fork evidence bound exceeded.",
+        )
+        for name, digest in evidence.items():
+            require(
+                file_digest(inside(paths.work_dir / "genesis/fork/evidence", name))
+                == digest,
+                "Fork origin evidence changed.",
             )
     return origin
 

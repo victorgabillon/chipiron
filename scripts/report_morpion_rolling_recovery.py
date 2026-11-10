@@ -411,6 +411,32 @@ def _inspect(
     # Publication still reads the genesis descriptor; it need not keep its tree
     # merely for that metadata. This analysis never retires either artifact.
     retained_commitments = {ordered[0]["descriptor_path"]}
+    fork_summary = None
+    if "fork_origin_v1" in state.metadata:
+        from chipiron.environments.morpion.bootstrap.config import load_bootstrap_config
+        from chipiron.environments.morpion.bootstrap.fork_origin import (
+            validate as validate_fork,
+        )
+
+        origin = validate_fork(
+            paths,
+            load_bootstrap_config(paths.bootstrap_config_path),
+            state,
+            verify=True,
+        )
+        assert origin is not None
+        retained_commitments.add(state.metadata["fork_origin_v1"]["path"])
+        retained_commitments.update(
+            seed["model"]["path"]
+            for seed in origin["candidate_seeds"].values()
+            if seed is not None
+        )
+        fork_summary = {
+            "plan_sha256": origin["plan_sha256"],
+            "parent": origin["parent"]["head"],
+            "dataset_policy": origin["dataset_policy"],
+            "retention": "origin and all imported seed bundles remain permanent local roots",
+        }
     for record in ordered:
         generation, identifier = record["generation"], record["id"]
         pin = namespace / "pins" / f"{identifier}.lock"
@@ -603,6 +629,7 @@ def _inspect(
         item["rolling_required"] = bool(item["rolling_reasons"])
     return {
         "validated": not blockers,
+        "fork_origin": fork_summary,
         "retirement_plan": retirement_plan,
         "authorized_retired_generations": [
             r["generation"] for r in ordered if RETIRED_PAYLOAD_KEY in r
