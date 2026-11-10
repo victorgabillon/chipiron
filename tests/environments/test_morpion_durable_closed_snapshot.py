@@ -43,6 +43,7 @@ def test_stable_pin_is_durable_before_new_closed_capsule(
 ) -> None:
     """Publish an unread head with its existing read-only lifetime lease ready."""
     args, paths, _ = setup_closed_baseline(tmp_path)
+    publish_scientific_patch(paths)
     before = paths.run_state_path.read_bytes()
     actual_sync, actual_publish = (
         publication.sync_artifact,
@@ -56,10 +57,11 @@ def test_stable_pin_is_durable_before_new_closed_capsule(
         synced.add(path)
 
     def publish(staging: Path, final: Path, root: Path) -> None:
-        pin = tmp_path / "generation_publications_v3/pins" / f"{final.name}.lock"
-        assert pin.is_file() and pin in synced
-        assert paths.run_state_path.read_bytes() == before
-        identities[final.name] = pin.stat().st_ino
+        if final.parent == tmp_path / "generation_publications_v3/objects":
+            pin = tmp_path / "generation_publications_v3/pins" / f"{final.name}.lock"
+            assert pin.is_file() and pin in synced
+            assert paths.run_state_path.read_bytes() == before
+            identities[final.name] = pin.stat().st_ino
         actual_publish(staging, final, root)
 
     monkeypatch.setattr(publication, "sync_artifact", sync)
@@ -68,6 +70,7 @@ def test_stable_pin_is_durable_before_new_closed_capsule(
     runner.grow_delta = 1
     state = run_closed_publication(args, runner)
     record = publication_records(state.metadata)[-1]
+    assert state.generation == 2 and set(identities) == {record["id"]}
     pin = tmp_path / "generation_publications_v3/pins" / f"{record['id']}.lock"
     assert pin.stat().st_ino == identities[record["id"]]
     with capsule_lease(tmp_path, record["id"], version=3, create=False):
@@ -79,6 +82,7 @@ def test_pin_durability_failure_never_commits_closed_head(
 ) -> None:
     """Preserve old authority if preparing the new operational input fails."""
     args, paths, _ = setup_closed_baseline(tmp_path)
+    publish_scientific_patch(paths)
     before = paths.run_state_path.read_bytes()
     actual_sync = publication.sync_artifact
 
