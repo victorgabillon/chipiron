@@ -126,10 +126,11 @@ def script(root: Path, mode: str) -> Path:
     mode_path = root.parent / f"{root.name}-mode.txt"
     mode_path.write_text(mode)
     source = (
-        "#!/bin/bash\nexec "
+        "#!/bin/bash\ncd "
+        + shlex.quote(str(Path(__file__).resolve().parents[2]))
+        + " || exit 1\nexec "
         + shlex.quote(sys.executable)
-        + " -B "
-        + shlex.quote(str(Path(__file__).with_name("fork_workload.py")))
+        + " -B -m tests.environments.fork_workload"
         + ' "$MORPION_WORK_DIR" --mode-file '
         + shlex.quote(str(mode_path))
         + "\n"
