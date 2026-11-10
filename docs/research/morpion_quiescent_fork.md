@@ -60,7 +60,8 @@ Unsupported oversized closures refuse. A hard failure preserves bounded labeled
 stage evidence and never repairs the parent or replaces a foreign target. One exact
 retry may quarantine an owned incomplete attempt; its original monotonic deadline
 and conservative previous read reservation carry forward. A second incomplete retry
-refuses. A validated stage can be reverified and published without repeating genesis.
+refuses. A validated stage can be reverified and published without repeating genesis, within
+the original deadline and remaining one-retry read reservation.
 An exact expected plan can acknowledge a published fork and finish directory durability
 even after child progress or parent removal. Directory existence alone is insufficient.
 

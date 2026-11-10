@@ -370,6 +370,8 @@ def _capture(
         "evidence_files": sorted(evidence),
         "copy_bytes": total,
         "estimated_source_read_bytes": 8 * total + 64 * 2**20,
+        "maximum_attempts": 2,
+        "maximum_cumulative_source_read_bytes": 2 * (8 * total + 64 * 2**20),
         "reserved_output_bytes": output_ceiling,
         "dataset_policy": "regenerate_local",
         "preparation_limits": {
@@ -890,18 +892,39 @@ def _execute_fork(
                 and 0 <= prior_started <= time.monotonic(),
                 "Invalid prior preparation clock.",
             )
+            assert isinstance(prior_started, (int, float))
+            require(
+                time.monotonic() - prior_started
+                < plan["preparation_limits"]["seconds"],
+                "Original fork preparation deadline has expired.",
+            )
             with _stage_owner(stage):
                 if (stage / "run_state.json").exists() and marker.get(
                     "status"
                 ) == "validated":
+                    require(
+                        marker.get("prior_read_reservation", 0) == 0,
+                        "Fork recovery has exhausted its original-read retry reservation.",
+                    )
+                    marker = {
+                        **marker,
+                        "prior_read_reservation": plan["estimated_source_read_bytes"],
+                        "owner": _local_identity(),
+                    }
+                    atomic_json(stage / "fork-preparation.json", marker)
+                    recovery_budget = PreparationBudget(plan, stage, marker)
+                    recovery_budget.check()
                     _validate_stage(stage, target, plan, completed=True)
+                    recovery_budget.check()
                     require(
                         _inventory_identity(root)[0] == plan["source_inventory_sha256"],
                         "Source changed before staged recovery publication.",
                     )
                     validate_capsule(root, publication_records(state.metadata)[-1])
                     for path in inventory(stage):
+                        recovery_budget.check()
                         sync_artifact(path, stage)
+                    recovery_budget.check()
                     publish_directory_if_absent(stage, target, target.parent)
                     return {
                         "action": "published",
@@ -1062,7 +1085,9 @@ def _execute_fork(
                     },
                 )
                 for path in inventory(stage):
+                    budget.check()
                     sync_artifact(path, stage)
+                budget.check()
                 publish_directory_if_absent(stage, target, target.parent)
                 return {
                     "action": "published",

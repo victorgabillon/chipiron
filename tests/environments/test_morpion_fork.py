@@ -21,6 +21,7 @@ from chipiron.environments.morpion.bootstrap.config import load_bootstrap_config
 from chipiron.environments.morpion.bootstrap.fork_origin import validate
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     artifact_digest,
+    committed_evaluator,
     file_digest,
     growth_receipt_ownership,
     publication_records,
@@ -145,7 +146,21 @@ def vertical(raw: str) -> None:
     )
     assert origin is not None
     assert origin["budget"] == {"seconds": 300, "nodes": 10000}
-    assert origin["incumbent"] != plan["parent"]["parents"]["linear_a"]["model"]
+    incumbent_name = origin["incumbent"]["name"]
+    assert (
+        plan["parent"]["parents"][incumbent_name]["generation"]
+        > origin["incumbent"]["generation"]
+    )
+    _, incumbent_bundle = committed_evaluator(child, state)
+    assert incumbent_bundle is not None
+    assert artifact_digest(incumbent_bundle) == plan["incumbent"]["identity"]["sha256"]
+    restricted = training.latest_candidate_parents(
+        MorpionBootstrapPaths.from_work_dir(child), state, ["linear_a"]
+    )
+    assert restricted == {"linear_a": origin["candidate_seeds"]["linear_a"]}
+    assert training.latest_candidate_parents(
+        MorpionBootstrapPaths.from_work_dir(child), state, ["linear_b"]
+    ) == {"linear_b": origin["candidate_seeds"]["linear_b"]}
     for name, seed in origin["candidate_seeds"].items():
         original = parent / plan["parent"]["parents"][name]["model"]["path"]
         assert artifact_digest(original) == artifact_digest(
@@ -340,14 +355,15 @@ def test_owners_target_and_expected_plan_races(tmp_path: Path) -> None:
 
     with (
         fork.source_cut(parent, target, 300, 10000) as (plan, _, _),
-        pytest.raises(BlockingIOError),capsule_lease(
-        parent,
-        plan["parent"]["head"]["id"],
-        version=3,
-        create=False,
-        exclusive=True,
-        nonblocking=True,
-    )
+        pytest.raises(BlockingIOError),
+        capsule_lease(
+            parent,
+            plan["parent"]["head"]["id"],
+            version=3,
+            create=False,
+            exclusive=True,
+            nonblocking=True,
+        ),
     ):
         pytest.fail("Fork did not hold its committed-cut lifetime pin")
     with pytest.raises(ValueError, match="plan changed"):
