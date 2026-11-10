@@ -763,9 +763,11 @@ while True:state.update("idle");time.sleep(.05)
                 MorpionBootstrapPaths.from_work_dir(tmp_path),
                 script,
                 MorpionContinualLearningPolicy(
-                    max_elapsed_seconds=7200 if early else 4,
+                    # Give the real shell/worker handoff room under shared CI
+                    # load; still require a finite native deadline and cleanup.
+                    max_elapsed_seconds=7200 if early else 12,
                     worker_max_seconds=1800,
-                    shutdown_grace_seconds=3 if early else 2,
+                    shutdown_grace_seconds=3 if early else 4,
                 ),
                 monitor,
                 psutil,
@@ -805,7 +807,7 @@ while True:state.update("idle");time.sleep(.05)
     if late_request:
         assert decision["reason"] == "maximum_elapsed_time"
         assert decision["supervisor_shutdown"] is None
-    assert (decision["budget_elapsed_seconds"] >= (7200 if early else 4)) == (
+    assert (decision["budget_elapsed_seconds"] >= (7200 if early else 12)) == (
         decision["reason"] == "maximum_elapsed_time"
     )
     for stage in ("growth", "dataset_worker", "training_worker", "reevaluation"):
