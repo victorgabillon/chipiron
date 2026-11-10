@@ -7,6 +7,9 @@ from typing import Any, get_args
 
 import pytest
 
+from chipiron.environments.morpion.bootstrap import (
+    generation_publication as publication,
+)
 from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
     receipt_ledger,
 )
@@ -33,6 +36,65 @@ from tests.environments.morpion_durable_closed_helpers import (
     setup_closed_baseline,
 )
 from tests.environments.morpion_durable_v2_helpers import publish_scientific_patch
+
+
+def test_stable_pin_is_durable_before_new_closed_capsule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish an unread head with its existing read-only lifetime lease ready."""
+    args, paths, _ = setup_closed_baseline(tmp_path)
+    before = paths.run_state_path.read_bytes()
+    actual_sync, actual_publish = (
+        publication.sync_artifact,
+        publication.publish_directory_if_absent,
+    )
+    synced: set[Path] = set()
+    identities: dict[str, int] = {}
+
+    def sync(path: Path, root: Path) -> None:
+        actual_sync(path, root)
+        synced.add(path)
+
+    def publish(staging: Path, final: Path, root: Path) -> None:
+        pin = tmp_path / "generation_publications_v3/pins" / f"{final.name}.lock"
+        assert pin.is_file() and pin in synced
+        assert paths.run_state_path.read_bytes() == before
+        identities[final.name] = pin.stat().st_ino
+        actual_publish(staging, final, root)
+
+    monkeypatch.setattr(publication, "sync_artifact", sync)
+    monkeypatch.setattr(publication, "publish_directory_if_absent", publish)
+    runner = ClosedPublicationRunner()
+    runner.grow_delta = 1
+    state = run_closed_publication(args, runner)
+    record = publication_records(state.metadata)[-1]
+    pin = tmp_path / "generation_publications_v3/pins" / f"{record['id']}.lock"
+    assert pin.stat().st_ino == identities[record["id"]]
+    with capsule_lease(tmp_path, record["id"], version=3, create=False):
+        assert pin.stat().st_ino == identities[record["id"]]
+
+
+def test_pin_durability_failure_never_commits_closed_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Preserve old authority if preparing the new operational input fails."""
+    args, paths, _ = setup_closed_baseline(tmp_path)
+    before = paths.run_state_path.read_bytes()
+    actual_sync = publication.sync_artifact
+
+    def sync(path: Path, root: Path) -> None:
+        if path.suffix == ".lock":
+            message = "injected pin fsync failure"
+            raise OSError(message)
+        actual_sync(path, root)
+
+    monkeypatch.setattr(publication, "sync_artifact", sync)
+    runner = ClosedPublicationRunner()
+    runner.grow_delta = 1
+    with pytest.raises(OSError, match="injected pin fsync failure"):
+        run_closed_publication(args, runner)
+    assert paths.run_state_path.read_bytes() == before
+    assert len(list((tmp_path / "generation_publications_v3/objects").iterdir())) == 1
 
 
 @pytest.mark.fast

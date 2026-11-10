@@ -17,7 +17,9 @@ use this same fork-capable build, dependency identities and saved execution prof
 publication-v3/evaluator-contract, atomic Reevaluation, fenced Dataset and durable
 Training, with continue-weights/continue-Adam. There is no historical migration or
 cross-boot recovery. Active, failed, uncertain, unlaunched and unsettled parents
-refuse. Even an expired claim, unresolved publication stage, reserved learning
+refuse. New v3 publications durably prepare their stable lifetime pins before
+visibility, including terminal heads without a first reader. Fork still requires
+existing pins and never repairs missing ones in a stopped source. Even an expired claim, unresolved publication stage, reserved learning
 window, pending patch or activation request requires ordinary recovery first.
 
 The child retains the entire committed search state, search/rollout RNG and

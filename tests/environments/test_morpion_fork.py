@@ -298,6 +298,10 @@ def node_completed(raw: str) -> None:
     assert termination["reason"] == "next_complete_expansion_exceeds_unique_node_budget"
     assert termination["maximum_unique_nodes"] == 2
     assert termination["committed_unique_nodes"] == state.tree_size_at_last_save < 2
+    assert all(
+        (parent / "generation_publications_v3/pins" / f"{record['id']}.lock").is_file()
+        for record in publication_records(state.metadata)
+    )
     before = hashes(parent)
     with pytest.raises(ValueError, match="larger new goal"):
         fork.plan_fork(parent, root / "same-cap-refused", 300, 2)
@@ -334,6 +338,7 @@ def test_node_completed_parent_new_absolute_goal(tmp_path: Path) -> None:
         "hardlink",
         "profile",
         "retired",
+        "pin",
     ],
 )
 @pytest.mark.exhaustive
@@ -372,6 +377,9 @@ def refusal(raw: str, mutation: str) -> None:
         (
             parent / publication_records(state.metadata)[-1]["descriptor_path"]
         ).write_text("{}")
+    elif mutation == "pin":
+        identifier = publication_records(state.metadata)[-1]["id"]
+        (parent / "generation_publications_v3/pins" / f"{identifier}.lock").unlink()
     elif mutation == "profile":
         config = json.loads(paths.bootstrap_config_path.read_text())
         config["metadata"]["unknown_fork_change"] = True

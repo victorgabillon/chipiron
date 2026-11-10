@@ -697,6 +697,18 @@ class DurableGenerationPublication:
         sync_artifact(self.staging, self.paths.work_dir)
         final = capsule_path(self.paths.work_dir, self.identifier, self.version)
         old_staging = self.staging
+        if self.version == 3:
+            # A terminal head may never get its first ordinary reader. Prepare
+            # its stable lifetime pin under publication ownership, so later
+            # read-only consumers need not create/repair source files.
+            with capsule_lease(self.paths.work_dir, self.identifier, version=3):
+                pin = (
+                    self.paths.work_dir
+                    / publication_namespace(3)
+                    / "pins"
+                    / f"{self.identifier}.lock"
+                )
+                sync_artifact(pin, self.paths.work_dir)
         publish_directory_if_absent(old_staging, final, self.paths.work_dir)
 
         def relocated(path: str | None) -> str | None:
