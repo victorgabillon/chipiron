@@ -39,7 +39,7 @@ from tests.environments.test_morpion_committed_evaluator_restore import fingerpr
 from tests.environments.test_morpion_lifecycle_continuation import equal_state
 
 
-def initialize(root: Path) -> None:
+def initialize(root: Path, *, nodes: int = 5000) -> None:
     """Fresh managed parent with a generous native cap; work ends at a barrier."""
     from chipiron.environments.morpion.bootstrap.config import (
         MorpionBootstrapRolloutConfig,
@@ -58,7 +58,7 @@ def initialize(root: Path) -> None:
 
     policy = MorpionContinualLearningPolicy(
         max_elapsed_seconds=300,
-        max_tree_nodes=5000,
+        max_tree_nodes=nodes,
         min_available_ram_mb=1,
         shutdown_grace_seconds=5,
     )

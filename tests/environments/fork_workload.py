@@ -37,6 +37,8 @@ def main() -> None:
     with bootstrap_execution(args, process_start=True):
         for number in range(2):
             state = grow(args)
+            if sys.argv[2] == "node":
+                return
             run_dataset(args, generation=state.generation)
             accepted = run_pipeline_training_stage(args, generation=state.generation)
             assert (
