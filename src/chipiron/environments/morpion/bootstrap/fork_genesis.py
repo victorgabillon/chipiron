@@ -114,7 +114,13 @@ def initialize_fork_genesis(
         )
     )
     try:
-        runner.load_or_create(checkpoint, model, effective, reevaluate_tree=False)
+        runner.load_fork_genesis(
+            checkpoint,
+            model,
+            effective,
+            checkpoint_sha256=artifact_digest(checkpoint),
+            model_sha256=artifact_digest(model),
+        )
         runner.validate_model_refresh_certificates()
         output = genesis / "checkpoint"
         runner.save_checkpoint(output)

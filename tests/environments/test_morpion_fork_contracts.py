@@ -35,7 +35,6 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
 from chipiron.environments.morpion.bootstrap.launcher import _scientific_args
 from chipiron.environments.morpion.bootstrap.model_activation import _runner
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
-from tests.environments.test_morpion_checkpoint_parity import _selection_signature
 from tests.environments.test_morpion_committed_evaluator_restore import fingerprint
 from tests.environments.test_morpion_lifecycle_continuation import equal_state
 
@@ -99,6 +98,10 @@ def initialize(root: Path) -> None:
 
 def semantic(root: Path) -> Any:
     """Cold exact search/RNG/certificate oracle; no scientific publication."""
+    from anemone.checkpoints import (
+        build_search_checkpoint_payload,
+        checkpoint_payload_to_jsonable,
+    )
     from anemone.checkpoints.rng_state import rollout_random_generator
 
     paths = MorpionBootstrapPaths.from_work_dir(root)
@@ -116,7 +119,11 @@ def semantic(root: Path) -> Any:
             rng = rollout_random_generator(runner._runtime)
             return (
                 fingerprint(runner),
-                _selection_signature(runner),
+                checkpoint_payload_to_jsonable(
+                    build_search_checkpoint_payload(
+                        runner._runtime, state_codec=runner._state_codec
+                    )
+                ),
                 runner._random_generator.getstate(),
                 None if rng is None else rng.getstate(),
             )
@@ -124,7 +131,7 @@ def semantic(root: Path) -> Any:
             runner.discard_uncommitted_runtime()
 
 
-def invoke(root: Path, script: Path) -> None:
+def _invoke_native(root: Path, script: Path) -> None:
     """Real monitor in this fresh numerical process; deterministic supervisor return."""
     from chipiron.environments.morpion.bootstrap.continual_operator import (
         run_monitored_continual_experiment,
@@ -136,6 +143,18 @@ def invoke(root: Path, script: Path) -> None:
     )
     with bootstrap_execution(args):
         run_monitored_continual_experiment(paths, script)
+
+
+def invoke(root: Path, script: Path) -> None:
+    """Exit the actual monitor before another coordinator inspects its close."""
+    code = "import sys,torch; from pathlib import Path; torch.set_num_threads(1); torch.set_num_interop_threads(1); from tests.environments.test_morpion_fork_contracts import _invoke_native; _invoke_native(Path(sys.argv[1]),Path(sys.argv[2]))"
+    completed = subprocess.run(
+        [sys.executable, "-B", "-c", code, str(root), str(script)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def prototype(parent: Path, stage: Path, final: Path) -> None:

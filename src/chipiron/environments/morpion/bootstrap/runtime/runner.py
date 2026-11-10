@@ -458,6 +458,43 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
 
+    def load_fork_genesis(
+        self,
+        checkpoint: Path,
+        model: Path,
+        effective: MorpionBootstrapEffectiveRuntimeConfig,
+        *,
+        checkpoint_sha256: str,
+        model_sha256: str,
+    ) -> None:
+        """Cold-bind verified private genesis inputs without a model epoch transition.
+
+        The fork adapter owns source closure/admission and copies these inputs into
+        a new private root. Ordinary raw restore attaches a replacement evaluator
+        and advances its version; a retained incumbent needs the same attachment
+        during reconstruction as committed restore, preserving that exact counter.
+        No existing workspace/capsule may use this fresh-genesis-only boundary.
+        """
+        root = model.parent.parent
+        require(
+            model == root / "genesis/incumbent"
+            and not (root / "run_state.json").exists()
+            and checkpoint.is_relative_to(root)
+            and locate_capsule(checkpoint) is None
+            and artifact_digest(checkpoint) == checkpoint_sha256
+            and artifact_digest(model) == model_sha256,
+            "Fork restore requires exact private fresh-genesis inputs.",
+        )
+        self._reset_growth_state_eviction_runtime()
+        runtime = self._load_runtime_from_checkpoint(
+            checkpoint, search_args=self._args.search_args, model_bundle_path=model
+        )
+        self._runtime = runtime
+        self._last_applied_runtime_config = effective
+        apply_runtime_config_to_runtime(runtime, effective)
+        self._install_state_rematerialization_phase_hooks(runtime)
+        self._current_evaluator_bundle_path = model
+
     def set_unique_node_budget(self, maximum: int) -> None:
         """Bind a configured cap without changing Anemone's all-children executor."""
         require(
