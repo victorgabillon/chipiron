@@ -30,7 +30,7 @@ from .worker_result_io import workspace_epoch
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
     from .config import MorpionBootstrapConfig
-    from .lifecycle import Metadata
+    from .lifecycle_metadata import Metadata
     from .run_state import MorpionBootstrapRunState
 
 KEY = "managed_sessions_v1"
@@ -134,7 +134,7 @@ def enroll(
 
 
 def _reader() -> Metadata:
-    from .lifecycle import Metadata
+    from .lifecycle_metadata import Metadata
 
     return Metadata()
 
@@ -179,7 +179,7 @@ def _put(
     if path.exists():
         require(_read(paths, ref, _reader()) == value, "Conflicting managed object.")
         return ref
-    from .lifecycle import _entries
+    from .lifecycle_metadata import entries as _entries
 
     maximum_objects = MAX_GRANTS + 2 * MAX_SESSIONS
     if path.parent.parent.exists():
@@ -382,7 +382,9 @@ def preserve_capability(
 ) -> MorpionBootstrapConfig:
     """Keep fresh enrollment when existing Growth reconstructs canonical args/config."""
     from .config import bootstrap_config_sha256
+    from .fork_origin import preserve
 
+    requested = preserve(paths, state, persisted, requested)
     data = validate(paths, persisted, state)
     if data is None:
         return requested
@@ -566,7 +568,7 @@ def inspect(
     # Every attempt must join a positively validated committed close. Sidecars share IDs.
     expected = {_read(paths, ref, reader)["native_session"] for ref in data["sessions"]}
     if monitor.exists():
-        from .lifecycle import _entries
+        from .lifecycle_metadata import entries as _entries
 
         observed = {
             p.name.removeprefix("session_").split(".", 1)[0]

@@ -223,6 +223,12 @@ def latest_candidate_parents(
             unresolved.remove(name)
         if not unresolved:
             break
+    from .fork_origin import seeds
+
+    imported = seeds(paths, state, verify=True)
+    for name in unresolved:
+        if name in imported:
+            parents[name] = imported[name]
     return parents
 
 
@@ -242,13 +248,19 @@ def _continuation_admission(
         paths, state, [c["name"] for c in config["candidates"]]
     )
     require(
-        all(p is None or p["generation"] < generation for p in parents.values()),
+        all(
+            p is None or p.get("kind") == "fork_seed" or p["generation"] < generation
+            for p in parents.values()
+        ),
         "A newer accepted candidate cannot be trained on an older generation.",
     )
     accepted = [r for r in records if ACCEPTED in r]
     previous_generation = max((r["generation"] for r in accepted), default=0)
     incumbent, _ = committed_evaluator(paths.work_dir, state)
+    from .fork_origin import KEY as FORK
+
     return {
+        **({FORK: state.metadata[FORK]} if FORK in state.metadata else {}),
         "parents": parents,
         "round_number": len(accepted) + 1,
         "incumbent": incumbent,
@@ -348,7 +360,11 @@ def admit_training(
                 staging = _directory(paths, identifier, private=True)
                 staging.mkdir(parents=True, exist_ok=False)
                 admission = {
-                    "schema_version": 2 if "continual_learning" in config else 1,
+                    "schema_version": 3
+                    if "fork_origin_v1" in state.metadata
+                    else 2
+                    if "continual_learning" in config
+                    else 1,
                     "attempt_id": identifier,
                     "generation": generation,
                     "identity": workspace_epoch(state),
@@ -398,6 +414,20 @@ def _validate(
         policy_from_metadata(admission["configuration"]),
         schedule_from_metadata(admission["configuration"]),
     )
+    from .fork_origin import KEY as FORK
+    from .fork_origin import seeds
+
+    imported = seeds(paths, state, verify=verify)
+    if FORK in state.metadata:
+        require(
+            admission.get(FORK) == state.metadata[FORK], "Fork Training origin changed."
+        )
+        for name, parent in admission.get("parents", {}).items():
+            if parent is not None and parent.get("kind") == "fork_seed":
+                require(
+                    parent == imported.get(name),
+                    "Training imported seed differs from genesis.",
+                )
     require(
         set(admission)
         == {
@@ -410,6 +440,7 @@ def _validate(
             "configuration",
             "reproducibility",
         }
+        | ({FORK} if FORK in state.metadata else set())
         | (
             {
                 "parents",
@@ -424,7 +455,13 @@ def _validate(
         and isinstance(admission["schema_version"], int)
         and not isinstance(admission["schema_version"], bool)
         and admission["schema_version"]
-        == (2 if "continual_learning" in admission["configuration"] else 1),
+        == (
+            3
+            if FORK in state.metadata
+            else 2
+            if "continual_learning" in admission["configuration"]
+            else 1
+        ),
         "Incomplete Training admission.",
     )
     require(

@@ -179,7 +179,27 @@ def audit(paths: MorpionBootstrapPaths, *, science: bool) -> dict[str, Any]:
     authority = paths.run_state_path.read_bytes()
     state = load_bootstrap_run_state(paths.run_state_path)
     records = publication_records(state.metadata)
+    from chipiron.environments.morpion.bootstrap.config import load_bootstrap_config
+    from chipiron.environments.morpion.bootstrap.fork_origin import (
+        validate as fork_origin,
+    )
+
+    origin = fork_origin(
+        paths, load_bootstrap_config(paths.bootstrap_config_path), state, verify=True
+    )
     previous: dict[str, Any] = {}
+    if origin is not None:
+        for name, seed in origin["candidate_seeds"].items():
+            if seed is None:
+                continue
+            bundle = paths.work_dir / seed["model"]["path"]
+            model, _, manifest = load_morpion_model_bundle(bundle)
+            previous[name] = dict(
+                tensor=weights_digest(model),
+                bundle=seed["model"]["sha256"],
+                param=file_digest(bundle / "param.pt"),
+                steps=manifest.metadata["continuation"]["final_optimizer_step_count"],
+            )
     rounds = []
     for record in records:
         if "accepted_training" not in record:
@@ -332,6 +352,7 @@ def audit(paths: MorpionBootstrapPaths, *, science: bool) -> dict[str, Any]:
         }, managed
     return dict(
         managed_session=managed,
+        fork_origin=origin,
         workspace=str(paths.work_dir),
         generation=state.generation,
         nodes=state.tree_size_at_last_save,
