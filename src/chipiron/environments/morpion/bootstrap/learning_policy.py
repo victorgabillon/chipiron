@@ -137,6 +137,9 @@ def validate_continual_context(
     from .managed_sessions import validate as validate_managed
 
     validate_managed(paths, config, state)
+    from .fork_origin import validate as validate_fork
+
+    validate_fork(paths, config, state)
     expected = policy_from_metadata(config.metadata)
     require(
         expected is not None and policy == expected,

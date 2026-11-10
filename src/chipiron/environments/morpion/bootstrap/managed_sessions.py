@@ -382,7 +382,9 @@ def preserve_capability(
 ) -> MorpionBootstrapConfig:
     """Keep fresh enrollment when existing Growth reconstructs canonical args/config."""
     from .config import bootstrap_config_sha256
+    from .fork_origin import preserve
 
+    requested = preserve(paths, state, persisted, requested)
     data = validate(paths, persisted, state)
     if data is None:
         return requested
