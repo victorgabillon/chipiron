@@ -231,15 +231,15 @@ def run_contract(root: Path) -> None:
     """Real managed closed parent -> new genesis -> real native Adam supersession."""
     parent = root / "parent"
     initialize(parent)
-    helper = Path(__file__).with_name("fork_workload.py")
-    script = root / "supervisor.sh"
-    script.write_text(
-        "#!/bin/bash\nexec "
+    launcher = (
+        "#!/bin/bash\ncd "
+        + shlex.quote(str(Path(__file__).resolve().parents[2]))
+        + " || exit 1\nexec "
         + shlex.quote(sys.executable)
-        + " -B "
-        + shlex.quote(str(helper))
-        + ' "$MORPION_WORK_DIR" parent\n'
+        + " -B -m tests.environments.fork_workload"
     )
+    script = root / "supervisor.sh"
+    script.write_text(launcher + ' "$MORPION_WORK_DIR" parent\n')
     invoke(parent, script)
     expected = semantic(parent)
     before = {
@@ -256,13 +256,7 @@ def run_contract(root: Path) -> None:
         if p.is_file()
     }
     script2 = root / "child.sh"
-    script2.write_text(
-        "#!/bin/bash\nexec "
-        + shlex.quote(sys.executable)
-        + " -B "
-        + shlex.quote(str(helper))
-        + ' "$MORPION_WORK_DIR" child\n'
-    )
+    script2.write_text(launcher + ' "$MORPION_WORK_DIR" child\n')
     invoke(final, script2)
     state = load_bootstrap_run_state(final / "run_state.json")
     records = [r for r in publication_records(state.metadata) if training.ACCEPTED in r]
@@ -302,6 +296,7 @@ def test_three_missing_contracts(tmp_path: Path) -> None:
         env=dict(os.environ),
         capture_output=True,
         text=True,
-        timeout=180,
+        # Parent and child each have their own bounded native invocation.
+        timeout=420,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
