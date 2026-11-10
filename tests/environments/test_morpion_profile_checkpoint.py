@@ -178,6 +178,8 @@ def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
         str(tmp_path),
         "--output",
         str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
+        "--profile-output",
+        str(tmp_path / "morpion_checkpoint_profile.prof"),
         "--dump-json",
         "--profile-build-only",
     ])

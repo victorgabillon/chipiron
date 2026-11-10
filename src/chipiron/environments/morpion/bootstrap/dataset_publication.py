@@ -380,6 +380,9 @@ def accept_dataset(
 
     with growth_receipt_ownership(paths, wait=True), ExitStack() as pins:
         state = load_bootstrap_run_state(paths.run_state_path)
+        from .managed_sessions import require_managed_execution
+
+        require_managed_execution(paths, state)
         receipt_ledger(state)
         proposal = _proposal(paths, reference)
         admission = proposal["admission"]

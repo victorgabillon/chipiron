@@ -15,6 +15,10 @@ import pytest
 from chipiron.environments.morpion.bootstrap import persistent_worker as worker
 from chipiron.environments.morpion.bootstrap import persistent_worker_state as status
 from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
+from chipiron.environments.morpion.bootstrap.config import (
+    bootstrap_config_from_args,
+    save_bootstrap_config,
+)
 from chipiron.environments.morpion.bootstrap.launcher import (
     MorpionBootstrapLauncherArgs,
     launcher_args_from_cli,
@@ -63,6 +67,14 @@ def _launcher(tmp_path: Path, **changes: Any) -> MorpionBootstrapLauncherArgs:
             worker_poll_seconds=1,
         ),
         **changes,
+    )
+
+
+def _unmanaged_configuration(tmp_path: Path) -> None:
+    """Keep dispatcher stubs valid at the real managed-enrollment guard."""
+    save_bootstrap_config(
+        bootstrap_config_from_args(_launcher(tmp_path).bootstrap_args),
+        tmp_path / "bootstrap_config.json",
     )
 
 
@@ -234,7 +246,7 @@ def test_success_waits_only_after_cleanup_and_failure_never_retries(
         worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
     )
     monkeypatch.setattr(status, "monitored_identity", _identity)
-    (tmp_path / "bootstrap_config.json").write_text("{}")
+    _unmanaged_configuration(tmp_path)
     (tmp_path / "run_state.json").write_text("{}")
 
     @contextmanager
@@ -407,7 +419,7 @@ def test_orderly_signal_status_preserves_actual_exit(
         worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
     )
     monkeypatch.setattr(status, "monitored_identity", _identity)
-    (tmp_path / "bootstrap_config.json").write_text("{}")
+    _unmanaged_configuration(tmp_path)
     (tmp_path / "run_state.json").write_text("{}")
 
     @contextmanager
@@ -453,7 +465,7 @@ def test_growth_lease_contention_polls_but_computation_errors_stop(
         worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
     )
     monkeypatch.setattr(status, "monitored_identity", _identity)
-    (tmp_path / "bootstrap_config.json").write_text("{}")
+    _unmanaged_configuration(tmp_path)
     (tmp_path / "run_state.json").write_text("{}")
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.pipeline_dir.mkdir()

@@ -114,6 +114,16 @@ def require_args_profile(args: MorpionBootstrapArgs, *, stage: str) -> None:
 
     validate_supported(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    if stage not in {
+        "process",
+        "initialize",
+        "prepare-continuous",
+        "run-continuous",
+        "inspect",
+    }:
+        from .managed_sessions import require_managed_execution
+
+        require_managed_execution(paths)
     requested = policy_metadata(args).get(KEY)
     if paths.bootstrap_config_path.is_file():
         require(

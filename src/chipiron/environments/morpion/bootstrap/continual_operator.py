@@ -53,6 +53,7 @@ if TYPE_CHECKING:
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
+    from .managed_sessions import AdditionalTimeRequest
     from .run_state import MorpionBootstrapRunState
 
 
@@ -97,7 +98,10 @@ def add_continual_arguments(parser: ArgumentParser) -> None:
 
 
 def prepare_continual_experiment(
-    args: MorpionBootstrapArgs, policy: MorpionContinualLearningPolicy
+    args: MorpionBootstrapArgs,
+    policy: MorpionContinualLearningPolicy,
+    *,
+    managed_sessions: bool = False,
 ) -> MorpionBootstrapRunState:
     """Write an explicit nine-candidate configuration and zero-valued fresh genesis."""
     from .execution_profile import require_args_profile
@@ -175,6 +179,14 @@ def prepare_continual_experiment(
     if args.learning_schedule is not None:
         inputs.mkdir(parents=True, exist_ok=False)
     config = bootstrap_config_from_args(args)
+    if managed_sessions:
+        from .managed_sessions import KEY, capability
+
+        require(
+            1 <= policy.max_elapsed_seconds <= 43200,
+            "Managed initial allowance must be in 1..43200 seconds.",
+        )
+        config = replace(config, metadata={**config.metadata, KEY: capability(root)})
     save_bootstrap_config(config, inputs / "bootstrap_config.json")
     model_args = MorpionRegressorArgs(
         model_kind="linear", feature_subset_name="zero_moves", feature_names=("moves",)
@@ -200,7 +212,11 @@ def prepare_continual_experiment(
 
 
 def resource_limit_reason(
-    policy: MorpionContinualLearningPolicy, sample: dict[str, Any], elapsed: float
+    policy: MorpionContinualLearningPolicy,
+    sample: dict[str, Any],
+    elapsed: float,
+    *,
+    elapsed_ceiling_seconds: float | None = None,
 ) -> str | None:
     """Evaluate the declared research monitor limits without changing any budget."""
     require(
@@ -217,8 +233,26 @@ def resource_limit_reason(
         ),
         "Invalid or nonfinite resource measurement.",
     )
+    require(
+        elapsed_ceiling_seconds is None
+        or (
+            isinstance(elapsed_ceiling_seconds, (int, float))
+            and not isinstance(elapsed_ceiling_seconds, bool)
+            and math.isfinite(elapsed_ceiling_seconds)
+            and elapsed_ceiling_seconds > 0
+        ),
+        "Invalid resolved elapsed ceiling.",
+    )
     checks = (
-        (elapsed >= policy.max_elapsed_seconds, "maximum_elapsed_time"),
+        (
+            elapsed
+            >= (
+                policy.max_elapsed_seconds
+                if elapsed_ceiling_seconds is None
+                else elapsed_ceiling_seconds
+            ),
+            "maximum_elapsed_time",
+        ),
         (
             sample["available_ram_mb"] < policy.min_available_ram_mb,
             "minimum_available_ram",
@@ -236,7 +270,10 @@ def resource_limit_reason(
 
 
 def run_monitored_continual_experiment(
-    paths: MorpionBootstrapPaths, script: Path
+    paths: MorpionBootstrapPaths,
+    script: Path,
+    *,
+    additional_time: AdditionalTimeRequest | None = None,
 ) -> MorpionBootstrapRunState:
     """Run the existing headless supervisor with the existing resource sampler contract."""
     from .execution_profile import require_workspace_profile
@@ -270,6 +307,10 @@ def run_monitored_continual_experiment(
     ):
         validate_continual_context(paths, state, policy, schedule)
     if state.metadata.get("experiment_termination") is not None:
+        require(
+            additional_time is None,
+            "Additional time cannot override scientific termination.",
+        )
         return state
     producer = publication_records(state.metadata)[-1]["scientific_identity"][
         "producer"
@@ -302,6 +343,31 @@ def run_monitored_continual_experiment(
         )
     script = script.resolve()
     require(script.is_file(), "The validated headless supervisor script is required.")
+    from . import managed_sessions as managed
+
+    managed_data = managed.validate(paths, config, state)
+    require(
+        additional_time is None or managed_data is not None,
+        "Additional time requires managed fresh enrollment.",
+    )
+    managed_summary = (
+        managed.inspect(paths, config, state) if managed_data is not None else None
+    )
+    require(
+        managed_summary is None or managed_summary["status"] != "blocked/uncertain",
+        "Managed completion is uncertain or blocked; no monitor metadata was changed.",
+    )
+    if additional_time is not None:
+        planned, _ = managed.plan_additional_time(
+            paths,
+            managed_summary,
+            additional_time.seconds,
+            additional_time.request_id,
+        )
+        require(
+            planned == additional_time,
+            "Additional-time predecessor changed; preview again.",
+        )
     monitor = paths.work_dir / "resource_monitor"
     monitor.mkdir(exist_ok=True)
     lock = (monitor / "owner.lock").open("a")
@@ -314,10 +380,36 @@ def run_monitored_continual_experiment(
                 read_object(recorded_script) == identity,
                 "Supervisor source changed; resume refused.",
             )
+        from .generation_publication_io import growth_receipt_ownership
+
+        if managed_data is not None:
+            managed.recover_close_owned(paths, config)
+            with growth_receipt_ownership(paths, create=False):
+                state = load_bootstrap_run_state(paths.run_state_path)
+                state, work = managed.admit_additional_time_owned(
+                    paths, config, state, additional_time
+                )
+            if not work:
+                return state
+            ceiling = state.metadata[managed.KEY]["authorized_seconds"]
         else:
+            require(
+                additional_time is None,
+                "Additional time requires managed fresh enrollment.",
+            )
+            ceiling = None
+        if not recorded_script.exists():
             atomic_json(recorded_script, identity)
         with ExitStack() as resources:
-            return _run_monitored(paths, script, policy, monitor, psutil, resources)
+            return _run_monitored(
+                paths,
+                script,
+                policy,
+                monitor,
+                psutil,
+                resources,
+                managed_ceiling=ceiling,
+            )
     finally:
         lock.close()
 
@@ -329,6 +421,8 @@ def _run_monitored(
     monitor: Path,
     psutil: Any,
     resources: ExitStack,
+    *,
+    managed_ceiling: float | None = None,
 ) -> MorpionBootstrapRunState:
     usage_path = monitor / "usage.json"
     previous = (
@@ -369,10 +463,18 @@ def _run_monitored(
     supervisor_limit = max(
         1,
         min(
-            int(policy.max_elapsed_seconds - consumed),
+            int(
+                (
+                    policy.max_elapsed_seconds
+                    if managed_ceiling is None
+                    else managed_ceiling
+                )
+                - consumed
+            ),
             43200 - policy.shutdown_grace_seconds - 5,
         ),
     )
+    managed_link = None
     launched = started
     ordinary_overrun = False
     ordinary_age = 0.0
@@ -435,7 +537,10 @@ def _run_monitored(
             ),
         )
         resource_reason = resource_limit_reason(
-            policy, current, consumed + now - started
+            policy,
+            current,
+            consumed + now - started,
+            elapsed_ceiling_seconds=managed_ceiling,
         )
         if resource_reason not in {None, "maximum_worker_runtime"}:
             return resource_reason
@@ -485,6 +590,7 @@ def _run_monitored(
             )[0]
         decision = {
             "reason": reason,
+            **({"managed_session": managed_link} if managed_link is not None else {}),
             "monotonic_s": now,
             "budget_elapsed_seconds": consumed + now - started,
             "sample": current,
@@ -698,6 +804,16 @@ def _run_monitored(
         return live
 
     try:
+        if managed_ceiling is not None:
+            from .managed_sessions import begin_owned
+
+            managed_link = begin_owned(
+                paths,
+                load_bootstrap_config(paths.bootstrap_config_path),
+                identifier,
+                started,
+                supervisor_limit,
+            )
         current = sample()
         decisive_now = time.monotonic()
         elapsed = consumed + decisive_now - started
@@ -779,6 +895,11 @@ def _run_monitored(
                         usage_path,
                         {
                             "elapsed_seconds": elapsed,
+                            **(
+                                {"managed_session": managed_link}
+                                if managed_link is not None
+                                else {}
+                            ),
                             "session": identifier,
                             "reason": reason or "running",
                         },
@@ -895,12 +1016,29 @@ def _run_monitored(
             elapsed = consumed + time.monotonic() - started
             atomic_json(
                 usage_path,
-                {"elapsed_seconds": elapsed, "session": identifier, "reason": reason},
+                {
+                    "elapsed_seconds": elapsed,
+                    "session": identifier,
+                    "reason": reason,
+                    **(
+                        {"managed_session": managed_link}
+                        if managed_link is not None
+                        else {}
+                    ),
+                },
             )
             atomic_json(
                 session_path,
                 {
                     "policy": policy.to_metadata(),
+                    **(
+                        {
+                            "managed_session": managed_link,
+                            "managed_owned_groups": sorted(owned_groups),
+                        }
+                        if managed_link is not None
+                        else {}
+                    ),
                     "reason": reason,
                     "elapsed_seconds": elapsed - consumed,
                     "budget_elapsed_seconds": elapsed,
@@ -961,6 +1099,12 @@ def _run_monitored(
         require(
             process is not None and process.returncode == 0,
             "Persistent worker group failed; all owned groups stopped before restart.",
+        )
+    if managed_link is not None:
+        from .managed_sessions import finalize_managed_session_owned
+
+        finalize_managed_session_owned(
+            paths, load_bootstrap_config(paths.bootstrap_config_path), identifier
         )
     result = load_bootstrap_run_state(paths.run_state_path)
     print(

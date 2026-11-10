@@ -149,6 +149,9 @@ def initialize_scientific_v2_publication(
             "receipts": [],
         }
         state = replace(state, metadata=metadata)
+        from .managed_sessions import enroll
+
+        state = enroll(load_bootstrap_config(paths.bootstrap_config_path), state)
         publication = DurableGenerationPublication(
             paths,
             scientific_v2_producer=producer,

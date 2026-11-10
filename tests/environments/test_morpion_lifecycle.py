@@ -259,17 +259,19 @@ def test_operator_preview_and_exec_are_distinct(prepared: tuple[Path, Path]) -> 
 @pytest.mark.fast
 def test_fresh_delegates_preparation_then_replaces_process(tmp_path: Path) -> None:
     """Configure native preparation once and exec before runtime thread setup."""
-    from chipiron.environments.morpion.bootstrap import launcher
+    from chipiron.environments.morpion.bootstrap import continual_operator
 
     root = tmp_path / "new"
     script = tmp_path / "supervisor.sh"
     script.write_text("#!/bin/bash\nexit 0\n")
     with (
-        patch.object(launcher, "main", return_value=None) as prepare,
+        patch.object(
+            continual_operator, "prepare_continual_experiment", return_value=None
+        ) as prepare,
         patch.object(life.os, "execv", return_value=0) as execute,
     ):
         assert life.execute_start(root, "auto", (), script) == 0
-    assert "prepare-continuous" in prepare.call_args.args[0]
+    assert prepare.call_args.kwargs["managed_sessions"] is True
     command = execute.call_args.args[1]
     assert life.MODULE in command and command[command.index("--mode") + 1] == "resume"
     assert not root.exists()

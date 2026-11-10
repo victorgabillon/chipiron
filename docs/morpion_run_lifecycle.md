@@ -28,11 +28,56 @@ presence; native restore/admission still validate payload bytes at use. It does
 not load trees or tensors or initialize a GPU context. Ownership is checked again
 before native execution; preview is not a reservation.
 
-Terminal, node-limited, cancelled or spent work returns `no-work`; failed or
-uncertain shutdown/accounting requires explicit recovery. Usage and termination
-receipts remain intact. New time grants, reopening, model/tree/data resets,
-independent forks, external imports and code migration are future work and have
-no supported flags here. This interface adds no scheduler or training loop.
+New normal fresh runs enroll in managed time sessions at genesis. Existing
+unmanaged/old-build/sealed runs are never enrolled automatically. On a clean,
+confirmed time end, authorize another bounded period explicitly:
 
-No-argument dashboard, `run` prepared-script delegation and scientific worker
-entrypoints keep their existing behavior.
+```bash
+chipiron-bootstrap start --work-dir /path/run --add-time 1800 --dry-run
+chipiron-bootstrap start --work-dir /path/run --add-time 1800
+# Automated retries should keep their original client identity:
+chipiron-bootstrap start --work-dir /path/run --add-time 1800 --request-id renewal-01
+```
+
+Seconds must be decimal integers in 1..43200. Grants add to the original allowance;
+actual monitored time, including launch overhead, cleanup and overshoot, stays
+charged. An increment must cover existing overshoot plus one second. For example,
+1202.75 consumed against1200 plus1800 leaves1797.25 seconds. Recipe, optimizer,
+architecture, seeds, precision, node/goal and resource caps remain unchanged.
+
+The default request ID binds the preceding closed native session. Repeating a
+pending request recovers its admission; conflicting ID content refuses. Once its
+successor has ended, a new no-ID --add-time means another intentional grant. Stable
+explicit IDs are required for delayed automated retries across endpoints. Reusing
+an already spent request adds nothing and launches no duplicate work. Plain start
+can launch an admitted-but-unstarted request or use remaining credit.
+
+Status/dry-run distinguish original allowance, total authorization, finalized
+consumption, remaining credit, last native decision and cleanup, and managed state.
+While running, remaining credit based on finalized consumption is an upper bound;
+ongoing work and cleanup are charged at close, never refunded.
+Native maximum_elapsed_time and an earlier supervisor_deadline remain distinct.
+An early clean supervisor stop with credit left needs ordinary start, not a grant.
+The native invocation ceiling remains unchanged. Successful preparation alone does
+not establish a running or completed managed session.
+
+Node/goal termination remains terminal. Cancelled, failed, forced, resource-limited
+or uncertain stops cannot be reopened by --add-time. A launch committed without a
+positively validated final close requires explicit recovery; dead processes or old
+usage samples alone cannot supply free credit. An exact validated close can finish
+an interrupted accounting commit without repeating scientific work. All native
+receipts and scientific terminal evidence remain intact.
+
+This first managed slice supports the same local host, boot and PID namespace with
+fresh coordinator processes (the normal CLI uses exec). Cross-boot/remote recovery,
+per-invocation --session-seconds, cap extensions, resets, forks, imports and migration
+remain unsupported. Native restore/admission still verifies scientific dependencies;
+renewal itself does not regenerate data, train, activate or refresh a tree. The
+existing claim/source/quiescence protocol owns pending work and every candidate
+continues its own accepted weights/Adam, including losers. Accepted weights are
+separate from the active incumbent.
+
+No-argument dashboard and run prepared-script delegation keep their behavior.
+Existing advanced unmanaged APIs retain their policy/receipt contracts. Frozen
+experiment wrappers/reporters are not managed-run completion authorities; use the
+new normal status/accounting view. This interface adds no scheduler or training loop.

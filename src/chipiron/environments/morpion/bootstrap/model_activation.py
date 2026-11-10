@@ -206,6 +206,9 @@ def prepare_model_activation_request(
     from .execution_profile import require_workspace_profile
 
     require_workspace_profile(paths)
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(paths)
     with growth_receipt_ownership(paths):
         return _request(
             paths, load_bootstrap_run_state(paths.run_state_path), training_generation
@@ -354,6 +357,9 @@ def activate_model(
     from .execution_profile import require_workspace_profile
 
     require_workspace_profile(paths)
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(paths)
     request = copy.deepcopy(request)
     with growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
@@ -558,6 +564,9 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     from .execution_profile import require_workspace_profile
 
     require_workspace_profile(paths)
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(paths)
     from .derived.provenance import atomic_json
     from .learning_policy import policy_from_metadata
     from .training_publication import ACCEPTED, _proposal

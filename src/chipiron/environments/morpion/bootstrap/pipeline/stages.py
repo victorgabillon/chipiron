@@ -684,6 +684,13 @@ def _run_pipeline_growth_stage_owned(
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
+        from chipiron.environments.morpion.bootstrap.managed_sessions import (
+            preserve_capability,
+        )
+
+        current_config = preserve_capability(
+            paths, run_state, persisted_config, current_config
+        )
         validate_bootstrap_config_change(persisted_config, current_config)
     if receipt_session is not None and receipt_session.publication is not None:
         from chipiron.environments.morpion.bootstrap.derived.provenance import (

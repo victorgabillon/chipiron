@@ -156,6 +156,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="Read-only bounded metadata preview"
     )
     start.add_argument("--cluster-script", type=Path)
+    from .managed_sessions import positive_seconds
+
+    start.add_argument(
+        "--add-time",
+        type=positive_seconds,
+        help="Explicit additional authorization in seconds (1..43200)",
+    )
+    start.add_argument(
+        "--request-id",
+        help="Stable client ID for retrying the same additional-time request",
+    )
     start.add_argument(
         "recipe",
         nargs=argparse.REMAINDER,
@@ -211,7 +222,14 @@ def _start(args: argparse.Namespace) -> int:
     root = Path(args.work_dir) if args.work_dir is not None else resolve_work_dir()
     recipe = args.recipe[1:] if args.recipe[:1] == ["--"] else args.recipe
     try:
-        plan = plan_start(root, args.mode, recipe, args.cluster_script)
+        plan = plan_start(
+            root,
+            args.mode,
+            recipe,
+            args.cluster_script,
+            additional_seconds=args.add_time,
+            request_id=args.request_id,
+        )
     except (ValueError, TypeError, OSError, KeyError) as exc:
         print(f"Start refused: {exc}", file=sys.stderr)
         return 2
@@ -233,6 +251,18 @@ def _start(args: argparse.Namespace) -> int:
         "--",
         *recipe,
     ]
+    grant = plan.get("additional_time")
+    if grant is not None:
+        command[-(len(recipe) + 1) :] = [
+            "--add-time",
+            str(grant["seconds"]),
+            "--request-id",
+            grant["request_id"],
+            "--managed-predecessor-json",
+            json.dumps(grant["predecessor"]),
+            "--",
+            *recipe,
+        ]
     return os.execv(sys.executable, command)
 
 

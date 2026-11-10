@@ -712,6 +712,9 @@ def run_morpion_reevaluation_worker_once(
     allow_scientific_v2: bool = False,
 ) -> MorpionReevaluationWorkerResult:
     """Run one job; a verified concurrent activation discards only unpublished work."""
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(MorpionBootstrapPaths.from_work_dir(args.work_dir))
     measurement = StageMeasurement()
     try:
         return _run_morpion_reevaluation_worker_once(

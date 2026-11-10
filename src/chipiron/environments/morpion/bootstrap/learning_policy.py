@@ -134,6 +134,9 @@ def validate_continual_context(
         "Learning schedule changed or was disabled.",
     )
     window(state)
+    from .managed_sessions import validate as validate_managed
+
+    validate_managed(paths, config, state)
     expected = policy_from_metadata(config.metadata)
     require(
         expected is not None and policy == expected,

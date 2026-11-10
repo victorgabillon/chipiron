@@ -4,78 +4,21 @@ TTL expiry fences a result, not a running computation. Worker sessions are made
 by the existing monitored cluster launcher; this module neither signals nor locks.
 """
 
-import os
-import socket
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from .generation_publication_io import object_digest, require
+from .generation_publication_io import require
 from .learning_schedule import validate_source, window
+from .persistent_worker_state import monitored_identity
+from .persistent_worker_state import read_process_identity as _process
 from .pipeline_artifacts import load_pipeline_stage_claim
+
+__all__ = ["claim_metadata", "monitored_identity", "require_quiescent"]
 
 if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
     from .run_state import MorpionBootstrapRunState
-
-
-def _process(pid: int) -> tuple[int, int, str] | None:
-    """Return parent, session and start ticks; only absent processes are dead."""
-    try:
-        fields = (
-            Path(f"/proc/{pid}/stat")
-            .read_text(encoding="utf-8")
-            .rsplit(") ", 1)[1]
-            .split()
-        )
-    except FileNotFoundError:
-        return None
-    return int(fields[1]), int(fields[3]), fields[19]
-
-
-def monitored_identity() -> dict[str, Any]:
-    """Require the still-live monitor in this process's actual ancestry."""
-    monitor = os.environ.get("MORPION_RESOURCE_MONITOR_PID", "")
-    ticks = os.environ.get("MORPION_RESOURCE_MONITOR_START_TICKS", "")
-    require(
-        monitor.isdecimal() and bool(ticks),
-        "Bounded learning requires the resource monitor.",
-    )
-    monitor_pid = int(monitor)
-    observed = _process(monitor_pid)
-    require(
-        observed is not None and observed[2] == ticks,
-        "Resource monitor identity changed.",
-    )
-    pid = os.getpid()
-    current = _process(pid)
-    assert current is not None
-    ancestor = pid
-    for _ in range(64):
-        if ancestor == monitor_pid:
-            break
-        parent = _process(ancestor)
-        require(
-            parent is not None and parent[0] > 0, "Resource monitor is not an ancestor."
-        )
-        assert parent is not None
-        ancestor = parent[0]
-    require(ancestor == monitor_pid, "Resource monitor ancestry is unknown.")
-    return {
-        "host": object_digest({
-            "name": socket.gethostname(),
-            "machine": Path("/etc/machine-id").read_text(encoding="utf-8").strip(),
-        }),
-        "boot": Path("/proc/sys/kernel/random/boot_id")
-        .read_text(encoding="utf-8")
-        .strip(),
-        "pid_namespace": os.readlink("/proc/self/ns/pid"),
-        "pid": pid,
-        "start_ticks": current[2],
-        "session": current[1],
-        "monitor_pid": monitor_pid,
-        "monitor_start_ticks": ticks,
-    }
 
 
 def require_quiescent(previous: object, current: dict[str, Any]) -> None:
@@ -148,6 +91,9 @@ def claim_metadata(
     claim_path: Path,
 ) -> dict[str, Any] | None:
     """Capture worker identity under ownership before creating/replacing a claim."""
+    from .managed_sessions import require_managed_execution
+
+    require_managed_execution(paths, state)
     if window(state) is None:
         return None
     validate_source(paths, state, generation)
