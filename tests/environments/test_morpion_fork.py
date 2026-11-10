@@ -59,18 +59,85 @@ def hashes(root: Path) -> dict[str, str]:
     return {str(p.relative_to(root)): file_digest(p) for p in fork.inventory(root)}
 
 
+@pytest.mark.parametrize("boundary", ["before_lstat", "before_listing"])
+def test_live_size_tolerates_owned_directory_rename(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boundary: str
+) -> None:
+    """Sample a real atomic export rename without relaxing the frozen inventory."""
+    pending = tmp_path / ".pending"
+    pending.mkdir()
+    (pending / "generation.json").write_bytes(b"retained bytes")
+    original_stat, original_entries = Path.lstat, fork._entries
+
+    def lstat(path: Path, **kwargs: Any) -> os.stat_result:
+        if boundary == "before_lstat" and path == pending:
+            pending.rename(tmp_path / "published")
+        return original_stat(path, **kwargs)
+
+    def entries(path: Path, maximum: int = 2048) -> list[Path]:
+        if boundary == "before_listing" and path == pending:
+            pending.rename(tmp_path / "published")
+        return original_entries(path, maximum)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "lstat", lstat)
+        patch.setattr(fork, "_entries", entries)
+        assert fork._live_size(tmp_path) == 0
+    assert fork._live_size(tmp_path) == len(b"retained bytes")
+    assert fork.inventory(tmp_path) == [tmp_path / "published/generation.json"]
+    # A stale name remains an error at the immutable publication boundary.
+    monkeypatch.setattr(fork, "_entries", lambda _path, _maximum=2048: [pending])
+    with pytest.raises(ValueError, match="Nonregular fork input"):
+        fork.inventory(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "kind", ["missing_root", "symlink", "fifo", "permission", "overflow"]
+)
+def test_live_size_keeps_nontransient_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    """Keep resource and file-type refusal distinct from disappearing temp names."""
+    if kind == "missing_root":
+        with pytest.raises(ValueError, match="Missing owned"):
+            fork._live_size(tmp_path / "missing")
+        return
+    if kind == "symlink":
+        (tmp_path / "link").symlink_to(tmp_path)
+    elif kind == "fifo":
+        os.mkfifo(tmp_path / "fifo")
+    elif kind == "permission":
+
+        def denied(_path: Path, _maximum: int = 2048) -> list[Path]:
+            raise PermissionError
+
+        monkeypatch.setattr(fork, "_entries", denied)
+    else:
+        monkeypatch.setattr(fork, "MAX_FILES", 2)
+        for name in ("a", "b"):
+            (tmp_path / name).touch()
+    with pytest.raises(PermissionError if kind == "permission" else ValueError):
+        fork._live_size(tmp_path)
+
+
 def script(root: Path, mode: str) -> Path:
-    """Deterministic normal supervisor work, with a generous separate native cap."""
-    path = root.parent / f"{root.name}-{mode}.sh"
-    path.write_text(
+    """Keep one pinned supervisor; select finite work through external fixture input."""
+    path = root.parent / f"{root.name}-supervisor.sh"
+    mode_path = root.parent / f"{root.name}-mode.txt"
+    mode_path.write_text(mode)
+    source = (
         "#!/bin/bash\nexec "
         + shlex.quote(sys.executable)
         + " -B "
         + shlex.quote(str(Path(__file__).with_name("fork_workload.py")))
-        + ' "$MORPION_WORK_DIR" '
-        + shlex.quote(mode)
+        + ' "$MORPION_WORK_DIR" --mode-file '
+        + shlex.quote(str(mode_path))
         + "\n"
     )
+    if path.exists():
+        assert path.read_text() == source
+    else:
+        path.write_text(source)
     return path
 
 
@@ -227,8 +294,14 @@ def node_completed(raw: str) -> None:
     parent, child = root / "parent", root / "child"
     make_parent(str(parent), nodes=2, mode="node")
     state = load_bootstrap_run_state(parent / "run_state.json")
-    assert state.tree_size_at_last_save >= 2
+    termination = state.metadata["experiment_termination"]
+    assert termination["reason"] == "next_complete_expansion_exceeds_unique_node_budget"
+    assert termination["maximum_unique_nodes"] == 2
+    assert termination["committed_unique_nodes"] == state.tree_size_at_last_save < 2
     before = hashes(parent)
+    with pytest.raises(ValueError, match="larger new goal"):
+        fork.plan_fork(parent, root / "same-cap-refused", 300, 2)
+    assert not (root / "same-cap-refused").exists() and before == hashes(parent)
     cli(parent, child, nodes=10000)
     imported = json.loads((child / "genesis/fork/origin.json").read_text())[
         "candidate_seeds"
@@ -237,7 +310,7 @@ def node_completed(raw: str) -> None:
     invoke(child, script(child, "child"))
     assert (
         load_bootstrap_run_state(child / "run_state.json").tree_size_at_last_save
-        > state.tree_size_at_last_save
+        > termination["maximum_unique_nodes"]
     )
     assert before == hashes(parent)
 

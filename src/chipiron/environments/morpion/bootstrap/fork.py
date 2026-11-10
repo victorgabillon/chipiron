@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -51,6 +52,10 @@ if TYPE_CHECKING:
 
 
 MAX_FILES = 16384
+NODE_STOPS = {
+    "maximum_unique_nodes",
+    "next_complete_expansion_exceeds_unique_node_budget",
+}
 
 
 def inventory(root: Path) -> list[Path]:
@@ -69,6 +74,32 @@ def inventory(root: Path) -> list[Path]:
             require(path.is_file(), "Nonregular fork input.")
             files.append(path)
     return sorted(files)
+
+
+def _live_size(root: Path) -> int:
+    """Sample owned mutable outputs, tolerating only disappearing child entries.
+
+    The genesis writer atomically renames temporary directories while monitored.
+    Such names may disappear between listing and lstat; that is not a malformed
+    immutable closure. Missing roots, links, special files, overflow and other IO
+    errors still fail. Publication uses the separate strict inventory after reap.
+    """
+    pending = [root]
+    total, visited = 0, 0
+    while pending:
+        path = pending.pop()
+        visited += 1
+        require(visited <= MAX_FILES, "Fork live file-count ceiling exceeded.")
+        try:
+            entry = path.lstat()
+            if stat.S_ISDIR(entry.st_mode):
+                pending.extend(_entries(path, MAX_FILES - visited))
+            else:
+                require(stat.S_ISREG(entry.st_mode), "Nonregular fork live output.")
+                total += entry.st_size
+        except FileNotFoundError:
+            require(path != root, "Missing owned fork output root.")
+    return total
 
 
 def _inventory_identity(root: Path) -> tuple[str, set[tuple[int, int]]]:
@@ -249,15 +280,33 @@ def _capture(
             "maximum_elapsed_time",
             "supervisor_deadline",
             "supervisor_exit",
-            "maximum_tree_nodes",
-        },
+        }
+        | NODE_STOPS,
         "Unsupported failed/resource/goal fork endpoint.",
     )
     terminal = state.metadata.get("experiment_termination")
     require(
-        terminal is None or terminal.get("reason") == "maximum_tree_nodes",
+        terminal is None
+        or (isinstance(terminal, dict) and terminal.get("reason") in NODE_STOPS),
         "Unknown scientific goal completion cannot fork.",
     )
+    if terminal is not None:
+        assert isinstance(terminal, dict)
+        require(
+            all(
+                isinstance(terminal[key], int) and not isinstance(terminal[key], bool)
+                for key in ("maximum_unique_nodes", "committed_unique_nodes")
+            )
+            and terminal["maximum_unique_nodes"] == policy.max_tree_nodes
+            and terminal["committed_unique_nodes"] == state.tree_size_at_last_save
+            and (
+                state.tree_size_at_last_save == policy.max_tree_nodes
+                if terminal["reason"] == "maximum_unique_nodes"
+                else state.tree_size_at_last_save < policy.max_tree_nodes
+            )
+            and nodes > policy.max_tree_nodes,
+            "Completed node budget requires a bound terminal record and larger new goal.",
+        )
     require(
         nodes > state.tree_size_at_last_save,
         "New absolute node budget must exceed the retained tree.",
@@ -509,16 +558,14 @@ class PreparationBudget:
             "Insufficient fork RAM/disk reserve.",
         )
         if self.stage.exists():
-            total = sum(p.stat().st_size for p in inventory(self.stage))
+            total = _live_size(self.stage)
             retained = [
                 p
                 for p in _entries(self.stage.parent)
                 if p != self.stage
                 and p.name.startswith(f".{Path(self.plan['target']).name}.fork-")
             ]
-            combined = total + sum(
-                p.stat().st_size for directory in retained for p in inventory(directory)
-            )
+            combined = total + sum(_live_size(directory) for directory in retained)
             require(
                 combined <= limits["workspace_mb"] * 2**20,
                 "Fork attempts exceed aggregate inherited workspace ceiling.",
@@ -531,8 +578,7 @@ class PreparationBudget:
             scratch = self.stage / "input"
             require(
                 not scratch.exists()
-                or sum(p.stat().st_size for p in inventory(scratch))
-                <= limits["scratch_mb"] * 2**20,
+                or _live_size(scratch) <= limits["scratch_mb"] * 2**20,
                 "Fork scratch ceiling reached.",
             )
 

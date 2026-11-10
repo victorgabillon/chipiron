@@ -27,6 +27,9 @@ from tests.environments.test_morpion_continual_publication import grow
 def main() -> None:
     """Return a clean supervisor exit only after fixed accepted work completes."""
     root = Path(sys.argv[1])
+    mode = (
+        Path(sys.argv[3]).read_text() if sys.argv[2] == "--mode-file" else sys.argv[2]
+    )
     args = replace(
         _scientific_args(
             MorpionBootstrapArgs(root),
@@ -37,7 +40,7 @@ def main() -> None:
     with bootstrap_execution(args, process_start=True):
         for number in range(2):
             state = grow(args)
-            if sys.argv[2] == "node":
+            if mode == "node":
                 return
             run_dataset(args, generation=state.generation)
             accepted = run_pipeline_training_stage(args, generation=state.generation)
@@ -45,7 +48,7 @@ def main() -> None:
                 run_pipeline_training_stage(args, generation=state.generation)
                 == accepted
             )
-            if number == 0 and sys.argv[2] == "parent":
+            if number == 0 and mode == "parent":
                 paths = MorpionBootstrapPaths.from_work_dir(root)
                 activate_model(
                     paths,

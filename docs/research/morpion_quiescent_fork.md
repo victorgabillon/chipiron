@@ -32,7 +32,10 @@ Generation numbering, workspace/producer/epoch, learning windows, patch receipts
 and native authority start afresh. The explicit finite time budget starts with zero
 consumption; the absolute node goal must exceed the retained node count. Other
 scientific settings and resource caps inherit. The parent stays unchanged, including
-its terminal node cap. New local generation seeds use the existing rule; an identical
+its terminal node cap. A native node stop can mean either `maximum_unique_nodes`
+(the cap is reached) or `next_complete_expansion_exceeds_unique_node_budget`
+(the next whole expansion would cross it). Both require bound committed counts and
+an explicitly larger destination goal; their original reasons remain distinct. New local generation seeds use the existing rule; an identical
 future suffix to parent resume is not promised.
 
 Training admissions use schema3 to bind `fork_origin_v1`; schemas1/2 remain unchanged
@@ -55,7 +58,10 @@ operator action after publication.
 
 Preparation has file/metadata limits and finite read/output estimates, with inherited
 wall/RSS/scratch/workspace/free-space/RAM limits checked during copying and helper
-execution. Estimates are admission reservations, not a proof every size will fit.
+execution. Live owned-output size sampling tolerates disappearing temporary names
+during atomic export renames. Links, special files, missing roots, IO errors and
+file-count overflow still fail; final closure verification stays strict after the
+helper is reaped. Estimates are admission reservations, not a proof every size will fit.
 Unsupported oversized closures refuse. A hard failure preserves bounded labeled
 stage evidence and never repairs the parent or replaces a foreign target. One exact
 retry may quarantine an owned incomplete attempt; its original monotonic deadline
