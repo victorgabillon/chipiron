@@ -127,13 +127,16 @@ def test_multiple_updates_match_legacy_parameters_state_metrics_and_rng(
             )
             assert actual.training and reference.training
             assert list(timings.as_dict()) == [
-                "batch_transfer",
-                "zero_grad",
-                "forward",
-                "loss",
-                "backward",
-                "optimizer_step",
-                "metric_accumulation",
+                f"host_enqueue_{phase}"
+                for phase in [
+                    "batch_transfer",
+                    "zero_grad",
+                    "forward",
+                    "loss",
+                    "backward",
+                    "optimizer_step",
+                    "metric_accumulation",
+                ]
             ]
 
 

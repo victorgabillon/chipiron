@@ -37,12 +37,20 @@ from chipiron.learning.supervised import (
     regression_quality_stats_to_metadata,
     train_regression_batch,
 )
+from chipiron.learning.supervised.regression import timed_torch_phase
 from chipiron.learning.timing import PhaseDurations, format_phase_durations
 from chipiron.learning.torch_runtime import (
     module_device,
     parameter_count,
     resolve_torch_device,
+    synchronize_torch_device_if_needed,
     torch_device_info,
+)
+from chipiron.learning.training_timing import (
+    TrainingTimingMode,
+    device_complete_scope,
+    synchronize_training_phases,
+    validate_training_timing_mode,
 )
 
 from .cached_index_schedule import (
@@ -119,6 +127,22 @@ REGRESSION_QUALITY_SAMPLE_MAX_ROWS = 4096
 
 def train_morpion_regressor(
     args: MorpionTrainingArgs,
+    *,
+    timing_mode: TrainingTimingMode = "synchronized",
+) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
+    """Train with explicit operational timing and device-complete service bounds."""
+    validate_training_timing_mode(timing_mode)
+    device = resolve_torch_device(args.device)
+    synchronize_cuda = synchronize_training_phases(timing_mode, device)
+    with device_complete_scope(device):
+        return _train_morpion_regressor(args, device, synchronize_cuda, timing_mode)
+
+
+def _train_morpion_regressor(
+    args: MorpionTrainingArgs,
+    device: torch.device,
+    synchronize_cuda: bool,
+    timing_mode: TrainingTimingMode,
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
     """Train a Morpion regressor on persisted supervised rows."""
     total_started_at = perf_counter()
@@ -179,7 +203,6 @@ def train_morpion_regressor(
 
     resolved_hidden_sizes = resolve_hidden_sizes(args)
     model_args = morpion_regressor_args_from_training_args(args)
-    device = resolve_torch_device(args.device)
     model, optimizer, continuation = initialize_training(
         model_args,
         args.continuation,
@@ -201,7 +224,7 @@ def train_morpion_regressor(
     for epoch_index in range(args.num_epochs):
         epoch_timings = PhaseDurations()
         batch_count = 0
-        with epoch_timings.time_phase("epoch_total"):
+        with timed_torch_phase(epoch_timings, "epoch_total", device):
             for sample_batch in train_loader:
                 batch_count += 1
                 optimizer_steps += 1
@@ -212,6 +235,7 @@ def train_morpion_regressor(
                     criterion=criterion,
                     batch=sample_batch,
                     device=device,
+                    synchronize_cuda=synchronize_cuda,
                     timings=epoch_timings,
                 )
         add_phase_durations(train_timings, epoch_timings.as_dict())
@@ -236,6 +260,7 @@ def train_morpion_regressor(
             batch_size=args.batch_size,
             collate_fn=collate_fn,
             device=device,
+            synchronize_cuda=synchronize_cuda,
         )
     LOGGER.info(
         "[train-timing] mode=in_memory-eval model_kind=%s split=train samples=%s "
@@ -257,6 +282,7 @@ def train_morpion_regressor(
                 batch_size=args.batch_size,
                 collate_fn=collate_fn,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         LOGGER.info(
             "[train-timing] mode=in_memory-eval model_kind=%s split=validation "
@@ -315,7 +341,13 @@ def train_morpion_regressor(
         requested_device=args.device,
         resolved_device=device,
     )
+    metrics["timing_mode"] = timing_mode
     timing_metadata: dict[str, object] = {
+        "mode": timing_mode,
+        "coarse_scope": "device_complete_host_elapsed",
+        "fine_scope": "synchronized_host_spans"
+        if synchronize_cuda
+        else "host_enqueue_spans_not_gpu_durations",
         "total_s": timings.get("total"),
         "dataset_load_s": timings.get("dataset_load"),
         "train_epochs_total_s": timings.get("train_epochs_total"),
@@ -387,6 +419,7 @@ def train_morpion_regressor(
             model_args=model_args,
             metadata=bundle_metadata,
         )
+    synchronize_torch_device_if_needed(device)
     timings.add_duration("total", perf_counter() - total_started_at)
     timing_metadata["bundle_save_s"] = timings.get("bundle_save")
     timing_metadata["total_s"] = timings.get("total")
@@ -416,7 +449,24 @@ def train_morpion_regressor_streaming(
     *,
     _prepared: _PreparedInputs | None = None,
 ) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
-    """Train a Morpion regressor from row chunks without materializing all rows."""
+    """Train row chunks with captured operational timing and complete service bounds."""
+    device = resolve_torch_device(args.training_args.device)
+    synchronize_cuda = synchronize_training_phases(args.timing_mode, device)
+    with device_complete_scope(device):
+        return _train_morpion_regressor_streaming(
+            args, device, synchronize_cuda, _prepared=_prepared
+        )
+
+
+def _train_morpion_regressor_streaming(
+    args: MorpionStreamingTrainingArgs,
+    device: torch.device,
+    synchronize_cuda: bool,
+    *,
+    _prepared: _PreparedInputs | None = None,
+) -> tuple[MorpionRegressor, dict[str, float | str | None]]:
+    """Execute the existing streaming training loop with explicit timing policy."""
+    timing_mode = args.timing_mode
     total_started_at = perf_counter()
     timings = PhaseDurations()
     train_timings = PhaseDurations()
@@ -427,7 +477,6 @@ def train_morpion_regressor_streaming(
     )
     resolved_hidden_sizes = resolve_hidden_sizes(training_args)
     model_args = morpion_regressor_args_from_training_args(training_args)
-    device = resolve_torch_device(training_args.device)
     model, optimizer, continuation = initialize_training(
         model_args,
         training_args.continuation,
@@ -638,6 +687,7 @@ def train_morpion_regressor_streaming(
                 epoch_index=epoch_index,
                 progress_callback=args.progress_callback,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif entity_token_cache is not None:
             epoch_stats = train_entity_token_cache_streaming_epoch(
@@ -651,6 +701,7 @@ def train_morpion_regressor_streaming(
                 epoch_index=epoch_index,
                 progress_callback=args.progress_callback,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif relational_entity_token_cache is not None:
             epoch_stats = train_relational_entity_token_cache_streaming_epoch(
@@ -664,6 +715,7 @@ def train_morpion_regressor_streaming(
                 epoch_index=epoch_index,
                 progress_callback=args.progress_callback,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         else:
             epoch_stats = train_streaming_epoch(
@@ -676,6 +728,7 @@ def train_morpion_regressor_streaming(
                 epoch_index=epoch_index,
                 progress_callback=args.progress_callback,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         optimizer_steps += epoch_stats.batch_count
         training_examples_seen += epoch_stats.train_count
@@ -715,6 +768,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif entity_token_cache is not None:
             train_stats = evaluate_entity_token_cache_streaming_metrics(
@@ -724,6 +778,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif relational_entity_token_cache is not None:
             train_stats = evaluate_relational_entity_token_cache_streaming_metrics(
@@ -733,6 +788,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         else:
             train_stats = evaluate_streaming_metrics(
@@ -742,6 +798,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="train",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
     LOGGER.info(
         "[train-timing] mode=streaming-eval model_kind=%s split=train samples=%s "
@@ -763,6 +820,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif entity_token_cache is not None:
             validation_stats = evaluate_entity_token_cache_streaming_metrics(
@@ -772,6 +830,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         elif relational_entity_token_cache is not None:
             validation_stats = evaluate_relational_entity_token_cache_streaming_metrics(
@@ -781,6 +840,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
         else:
             validation_stats = evaluate_streaming_metrics(
@@ -790,6 +850,7 @@ def train_morpion_regressor_streaming(
                 max_rows=args.max_rows,
                 split="validation",
                 device=device,
+                synchronize_cuda=synchronize_cuda,
             )
     LOGGER.info(
         "[train-timing] mode=streaming-eval model_kind=%s split=validation "
@@ -942,7 +1003,13 @@ def train_morpion_regressor_streaming(
         requested_device=training_args.device,
         resolved_device=device,
     )
+    metrics["timing_mode"] = timing_mode
     timing_metadata: dict[str, object] = {
+        "mode": timing_mode,
+        "coarse_scope": "device_complete_host_elapsed",
+        "fine_scope": "synchronized_host_spans"
+        if synchronize_cuda
+        else "host_enqueue_spans_not_gpu_durations",
         "total_s": 0.0,
         "train_epochs_total_s": timings.get("train_epochs_total"),
         "train_metrics_total_s": timings.get("train_metrics_total"),
@@ -1023,6 +1090,7 @@ def train_morpion_regressor_streaming(
             model_args=model_args,
             metadata=bundle_metadata,
         )
+    synchronize_torch_device_if_needed(device)
     timings.add_duration("total", perf_counter() - total_started_at)
     timing_metadata["bundle_save_s"] = timings.get("bundle_save")
     timing_metadata["total_s"] = timings.get("total")

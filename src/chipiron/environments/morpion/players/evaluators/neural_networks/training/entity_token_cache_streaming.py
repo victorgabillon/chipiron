@@ -15,6 +15,7 @@ from chipiron.learning.supervised import (
     train_regression_batch,
 )
 from chipiron.learning.timing import PhaseDurations
+from chipiron.learning.torch_runtime import synchronize_torch_device_if_needed
 
 from .cached_index_schedule import (
     cached_index_schedule,
@@ -53,6 +54,7 @@ def train_entity_token_cache_streaming_epoch(
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> StreamingEpochStats:
     """Train one streaming epoch over a cached entity-token artifact."""
     return _train_packed_cache_streaming_epoch(
@@ -71,6 +73,7 @@ def train_entity_token_cache_streaming_epoch(
         epoch_index=epoch_index,
         progress_callback=progress_callback,
         device=device,
+        synchronize_cuda=synchronize_cuda,
     )
 
 
@@ -86,6 +89,7 @@ def train_relational_entity_token_cache_streaming_epoch(
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> StreamingEpochStats:
     """Train one streaming epoch over a cached relational artifact."""
     return _train_packed_cache_streaming_epoch(
@@ -104,6 +108,7 @@ def train_relational_entity_token_cache_streaming_epoch(
         epoch_index=epoch_index,
         progress_callback=progress_callback,
         device=device,
+        synchronize_cuda=synchronize_cuda,
     )
 
 
@@ -121,8 +126,10 @@ def _train_packed_cache_streaming_epoch(
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> StreamingEpochStats:
     """Train one epoch using a packed cache batch builder."""
+    synchronize_torch_device_if_needed(device)
     epoch_started_at = perf_counter()
     epoch_timings = PhaseDurations()
     model.train()
@@ -175,6 +182,7 @@ def _train_packed_cache_streaming_epoch(
             criterion=criterion,
             batch=sample_batch,
             device=device,
+            synchronize_cuda=synchronize_cuda,
             timings=epoch_timings,
         )
         squared_error_sum += batch_stats.squared_error_sum
@@ -192,6 +200,7 @@ def _train_packed_cache_streaming_epoch(
                     epoch_number=epoch_index + 1,
                     num_epochs=args.num_epochs,
                 )
+    synchronize_torch_device_if_needed(device)
     elapsed_seconds = perf_counter() - epoch_started_at
     epoch_timings.add_duration("epoch_total", elapsed_seconds)
     loss_value = 0.0 if value_count == 0 else squared_error_sum / value_count
@@ -214,6 +223,7 @@ def evaluate_entity_token_cache_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> RegressionEvaluationStats:
     """Compute streaming metrics for one split from cached entity tokens."""
     return _evaluate_packed_cache_streaming_metrics(
@@ -227,6 +237,7 @@ def evaluate_entity_token_cache_streaming_metrics(
         max_rows=max_rows,
         split=split,
         device=device,
+        synchronize_cuda=synchronize_cuda,
     )
 
 
@@ -238,6 +249,7 @@ def evaluate_relational_entity_token_cache_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> RegressionEvaluationStats:
     """Compute streaming metrics from cached relational entity tokens."""
     return _evaluate_packed_cache_streaming_metrics(
@@ -251,6 +263,7 @@ def evaluate_relational_entity_token_cache_streaming_metrics(
         max_rows=max_rows,
         split=split,
         device=device,
+        synchronize_cuda=synchronize_cuda,
     )
 
 
@@ -263,8 +276,10 @@ def _evaluate_packed_cache_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> RegressionEvaluationStats:
     """Compute streaming metrics using a packed cache batch builder."""
+    synchronize_torch_device_if_needed(device)
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     squared_error_sum = 0.0
@@ -297,11 +312,13 @@ def _evaluate_packed_cache_streaming_metrics(
                 model=model,
                 batch=sample_batch,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
                 timings=timings,
             )
             squared_error_sum += batch_metrics.squared_error_sum
             absolute_error_sum += batch_metrics.absolute_error_sum
             target_count += batch_metrics.target_count
+    synchronize_torch_device_if_needed(device)
     elapsed_seconds = perf_counter() - evaluation_started_at
     if target_count == 0:
         return RegressionEvaluationStats(

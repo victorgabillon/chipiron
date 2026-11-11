@@ -23,6 +23,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.training.c
     MorpionTrainingContinuation,
     candidate_training_seed,
 )
+from chipiron.learning.training_timing import bootstrap_training_timing_options
 
 from .bootstrap_errors import (
     MissingBootstrapSelectedEvaluatorError,
@@ -549,7 +550,8 @@ def train_and_select_evaluators(
                     continuation=_candidate_continuation(
                         args, run_state, generation, evaluator_name
                     ),
-                )
+                ),
+                **bootstrap_training_timing_options(),
             )
         except Exception as exc:
             log_training_evaluator_failed(
@@ -562,6 +564,9 @@ def train_and_select_evaluators(
             )
             raise
         evaluator_observation = evaluator_measurement.finish()
+        evaluator_observation["training_timing_mode"] = metrics.get(
+            "timing_mode", "legacy/unrecorded"
+        )
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         learning_rate = _metric_optional_float(metrics, "learning_rate")
@@ -816,6 +821,7 @@ def train_and_select_evaluators_streaming(
                 ),
                 row_chunk_size=chunk_size,
                 max_rows=max_rows,
+                **bootstrap_training_timing_options(),
             ),
             cpu_threads=args.continual_learning.transformer_cpu_threads
             if args.continual_learning is not None and name == "transformer_v1"
@@ -941,6 +947,9 @@ def train_and_select_evaluators_streaming(
                 evaluator_measurement.finish()
                 if parallel_results is None
                 else parallel_results[evaluator_name]["performance"]
+            )
+            evaluator_observation["training_timing_mode"] = metrics.get(
+                "timing_mode", "legacy/unrecorded"
             )
             memory.log("after_model_save")
             evaluator_elapsed_s = (
