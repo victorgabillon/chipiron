@@ -29,6 +29,7 @@ from .config import (
     preserve_legacy_generated_epochs,
     preserve_saved_generated_epochs,
     save_bootstrap_config,
+    validate_explicit_epoch_requests,
     validate_stage_bootstrap_config_compatibility,
 )
 from .control import (
@@ -470,6 +471,7 @@ def _scientific_args(
     """Use the explicit persisted experiment configuration, preserving stage limits."""
     from .execution_profile import args_with_policy
 
+    validate_explicit_epoch_requests(args, config)
     args = args_with_policy(args, config)
     from dataclasses import asdict
 
@@ -729,6 +731,9 @@ def _collect_launcher_startup_status(
     if config_exists:
         bootstrap_config = load_bootstrap_config(paths.bootstrap_config_path)
         if launcher_args.scientific:
+            validate_explicit_epoch_requests(
+                launcher_args.bootstrap_args, bootstrap_config
+            )
             resolved_bootstrap_args = _scientific_args(
                 requested_bootstrap_args, bootstrap_config
             )
@@ -764,7 +769,7 @@ def _collect_launcher_startup_status(
                 ),
             )
         requested_config = bootstrap_config_from_args(requested_bootstrap_args)
-        if requested_bootstrap_args.evaluators_config is None:
+        if requested_bootstrap_args.uses_generated_epoch_defaults:
             requested_config = preserve_saved_generated_epochs(
                 requested_config, bootstrap_config
             )
@@ -792,7 +797,7 @@ def _collect_launcher_startup_status(
         )
     else:
         bootstrap_config = bootstrap_config_from_args(requested_bootstrap_args)
-        if requested_bootstrap_args.evaluators_config is None and (
+        if requested_bootstrap_args.uses_generated_epoch_defaults and (
             run_state_exists or history_exists or latest_status_exists
         ):
             bootstrap_config = preserve_legacy_generated_epochs(bootstrap_config)

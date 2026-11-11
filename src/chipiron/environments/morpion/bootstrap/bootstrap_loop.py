@@ -757,7 +757,7 @@ def _run_bootstrap_loop_impl(
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
-        if args.evaluators_config is None:
+        if args.uses_generated_epoch_defaults:
             current_config = preserve_saved_generated_epochs(
                 current_config, persisted_config
             )
@@ -767,7 +767,7 @@ def _run_bootstrap_loop_impl(
                 evaluator_family_preset=None,
             )
         validate_bootstrap_config_change(persisted_config, current_config)
-    elif args.evaluators_config is None and paths.run_state_path.is_file():
+    elif args.uses_generated_epoch_defaults and paths.run_state_path.is_file():
         current_config = preserve_legacy_generated_epochs(current_config)
         args = replace(
             args,

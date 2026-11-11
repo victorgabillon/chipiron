@@ -885,6 +885,30 @@ def bootstrap_config_sha256(config: MorpionBootstrapConfig) -> str:
     ).hexdigest()
 
 
+def validate_explicit_epoch_requests(
+    args: MorpionBootstrapArgs,
+    saved: MorpionBootstrapConfig,
+) -> None:
+    """Refuse conflicting explicit epochs before adopting a frozen recipe.
+
+    Named presets keep their own precedence over the single-model option. Only
+    matching saved evaluators have a frozen epoch value to compare here; other
+    configuration compatibility checks retain their existing responsibilities.
+    """
+    if args.uses_generated_epoch_defaults:
+        return
+    previous = saved.evaluators.evaluators
+    for name, spec in args.resolved_evaluators_config().evaluators.items():
+        if name in previous and spec.num_epochs != previous[name].num_epochs:
+            raise IncompatibleStageBootstrapConfigError.for_field(
+                stage="scientific",
+                field_name=f"evaluators.{name}.num_epochs",
+                persisted_value=previous[name].num_epochs,
+                requested_value=spec.num_epochs,
+                stage_uses_field=True,
+            )
+
+
 def preserve_saved_generated_epochs(
     requested: MorpionBootstrapConfig,
     saved: MorpionBootstrapConfig,
