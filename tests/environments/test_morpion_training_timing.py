@@ -226,50 +226,112 @@ def test_raw_streaming_and_coarse_boundaries(
     assert waits == [torch.device("cpu")]
 
 
-def test_actual_persistent_dispatch_uses_each_job_mode(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Two real dispatcher jobs execute the candidate service without a global mode."""
+def test_actual_persistent_dispatch_uses_each_job_mode(tmp_path: Path) -> None:
+    """Real dispatcher jobs own a dedicated session, including production cleanup."""
+    import os
+    import signal
+    import subprocess
+    import sys
+    from contextlib import suppress
+    from pathlib import Path
+
+    assert not torch.cuda.is_initialized()
+    environment = dict(os.environ)
+    environment["MORPION_RESOURCE_MONITOR_PID"] = str(os.getpid())
+    environment["MORPION_RESOURCE_MONITOR_START_TICKS"] = (
+        Path("/proc/self/stat").read_text().rsplit(") ", 1)[1].split()[19]
+    )
+    code = (
+        "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); "
+        "from tests.environments.test_morpion_training_timing import "
+        "_persistent_dispatch_child; _persistent_dispatch_child(Path(sys.argv[2]))"
+    )
+    log = tmp_path / "dispatcher.log"
+    with log.open("w") as output:
+        child = subprocess.Popen(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-c",
+                code,
+                str(Path(__file__).resolve().parents[2]),
+                str(tmp_path),
+            ],
+            env=environment,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        try:
+            returncode = child.wait(timeout=20)
+        finally:
+            if child.poll() is None:
+                with suppress(ProcessLookupError):
+                    os.killpg(child.pid, signal.SIGTERM)
+                try:
+                    child.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    with suppress(ProcessLookupError):
+                        os.killpg(child.pid, signal.SIGKILL)
+                    child.wait(timeout=3)
+            assert child.poll() is not None
+    assert returncode == 0, log.read_text()
+    receipt = json.loads((tmp_path / "dispatcher.json").read_text())
+    assert receipt["pid"] == receipt["session"] == child.pid
+    assert receipt["modes"] == ["host_enqueue", "synchronized"]
+    assert receipt["gpu_initialized"] is False
+    assert not torch.cuda.is_initialized()
+
+
+def _persistent_dispatch_child(tmp_path: Path) -> None:
+    """Keep real identity/descendant guards inside the session created by Popen."""
     import os
     from contextlib import nullcontext
 
-    from chipiron.environments.morpion.bootstrap import (
-        launcher,
-        persistent_worker,
-        persistent_worker_state,
-    )
+    from chipiron.environments.morpion.bootstrap import launcher, persistent_worker
     from chipiron.learning.training_timing import bootstrap_training_timing_options
     from tests.environments.test_morpion_persistent_workers import (
-        _identity,
         _launcher,
         _unmanaged_configuration,
     )
 
-    monkeypatch.setattr(
-        persistent_worker,
-        "monitored_identity",
-        lambda: {**_identity(), "session": os.getpid()},
-    )
-    monkeypatch.setattr(persistent_worker_state, "monitored_identity", _identity)
+    assert os.getsid(0) == os.getpid()
+    assert not torch.cuda.is_initialized()
+    identity = persistent_worker.monitored_identity()
+    assert identity["session"] == identity["pid"] == os.getpid()
     _unmanaged_configuration(tmp_path)
     (tmp_path / "run_state.json").write_text("{}")
-    monkeypatch.setattr(persistent_worker, "launcher_execution", nullcontext)
     rows = rows_file(tmp_path)
     jobs = jobs_for(rows, tmp_path / "candidates", 1)
     observed = []
 
-    def job(_args: Any, *, _job_id: int | None = None) -> int:
-        assert _job_id is not None
-        mode = "host_enqueue" if _job_id == 1 else "synchronized"
-        monkeypatch.setenv("CHIPIRON_TRAINING_TIMING_MODE", mode)
-        original = jobs[_job_id - 1]
-        captured = replace(
-            original,
-            training=replace(original.training, **bootstrap_training_timing_options()),
-        )
-        observed.append(run_candidate(captured)[1]["timing_mode"])
-        return 0
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(persistent_worker, "launcher_execution", nullcontext)
 
-    monkeypatch.setattr(launcher, "_run_launcher_cli", job)
-    assert persistent_worker.run_persistent_worker(_launcher(tmp_path)) == 0
+        def job(_args: Any, *, _job_id: int | None = None) -> int:
+            assert _job_id is not None
+            mode = "host_enqueue" if _job_id == 1 else "synchronized"
+            monkeypatch.setenv("CHIPIRON_TRAINING_TIMING_MODE", mode)
+            original = jobs[_job_id - 1]
+            captured = replace(
+                original,
+                training=replace(
+                    original.training, **bootstrap_training_timing_options()
+                ),
+            )
+            observed.append(run_candidate(captured)[1]["timing_mode"])
+            return 0
+
+        monkeypatch.setattr(launcher, "_run_launcher_cli", job)
+        assert persistent_worker.run_persistent_worker(_launcher(tmp_path)) == 0
     assert observed == ["host_enqueue", "synchronized"]
+    assert not torch.cuda.is_initialized()
+    (tmp_path / "dispatcher.json").write_text(
+        json.dumps({
+            "pid": os.getpid(),
+            "session": os.getsid(0),
+            "modes": observed,
+            "gpu_initialized": torch.cuda.is_initialized(),
+        })
+    )

@@ -1,5 +1,6 @@
 """Operational timing changes observation, never regression arithmetic or RNG."""
 
+import annotationlib
 import inspect
 from typing import Any
 
@@ -29,7 +30,8 @@ def test_explicit_mode_defaults_and_rejection(monkeypatch: pytest.MonkeyPatch) -
         "synchronized", torch.device("mps")
     )
     for fn in (regression.train_regression_batch, regression.evaluate_regression_batch):
-        assert inspect.signature(fn).parameters["synchronize_cuda"].default is True
+        signature = inspect.signature(fn, annotation_format=annotationlib.Format.STRING)
+        assert signature.parameters["synchronize_cuda"].default is True
 
 
 @pytest.mark.fast
