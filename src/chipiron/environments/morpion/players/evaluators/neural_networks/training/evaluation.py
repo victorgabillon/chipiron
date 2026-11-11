@@ -18,6 +18,7 @@ from chipiron.learning.supervised import (
     infer_batch_sample_count,
 )
 from chipiron.learning.timing import PhaseDurations
+from chipiron.learning.torch_runtime import synchronize_torch_device_if_needed
 
 from .row_batches import indexed_row_chunks, row_batches, rows_to_sample_batch
 from .streaming import streaming_row_is_in_split
@@ -47,8 +48,10 @@ def evaluate_streaming_metrics(
     max_rows: int | None,
     split: Literal["train", "validation"],
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> RegressionEvaluationStats:
     """Compute streaming mean MSE and MAE for one regression split."""
+    synchronize_torch_device_if_needed(device)
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     squared_error_sum = 0.0
@@ -97,11 +100,13 @@ def evaluate_streaming_metrics(
                     model=model,
                     batch=sample_batch,
                     device=device,
+                    synchronize_cuda=synchronize_cuda,
                     timings=timings,
                 )
                 squared_error_sum += batch_metrics.squared_error_sum
                 absolute_error_sum += batch_metrics.absolute_error_sum
                 target_count += batch_metrics.target_count
+    synchronize_torch_device_if_needed(device)
     elapsed_seconds = perf_counter() - evaluation_started_at
     if target_count == 0:
         return RegressionEvaluationStats(
@@ -128,9 +133,11 @@ def evaluate_regression_metrics(
     *,
     batch_size: int,
     device: torch.device,
+    synchronize_cuda: bool = True,
     collate_fn: Callable[[Any], Any] | None = None,
 ) -> RegressionEvaluationStats:
     """Compute full-dataset mean MSE and MAE for one regression split."""
+    synchronize_torch_device_if_needed(device)
     evaluation_started_at = perf_counter()
     timings = PhaseDurations()
     if len(dataset) == 0:
@@ -161,11 +168,13 @@ def evaluate_regression_metrics(
                 model=model,
                 batch=sample_batch,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
                 timings=timings,
             )
             squared_error_sum += batch_metrics.squared_error_sum
             absolute_error_sum += batch_metrics.absolute_error_sum
             target_count += batch_metrics.target_count
+    synchronize_torch_device_if_needed(device)
     elapsed_seconds = perf_counter() - evaluation_started_at
     if target_count == 0:
         return RegressionEvaluationStats(

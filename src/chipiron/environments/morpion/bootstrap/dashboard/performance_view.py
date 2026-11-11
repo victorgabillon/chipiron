@@ -244,6 +244,9 @@ def load_performance_summary(work_dir: Path) -> PerformanceSummary:
                 "Evaluator": evaluator,
                 "Attempt": observation.get("attempt_id"),
                 "Evidence status": observation.get("evidence_status"),
+                "Training timing mode": observation.get(
+                    "training_timing_mode", "legacy/unrecorded"
+                ),
                 "Training (s)": observation.get("elapsed_s", result.get("elapsed_s")),
                 "RSS process peak (MiB)": observation.get("process_peak_rss_mb"),
                 "GPU allocated peak (MiB)": allocated / 1024**2

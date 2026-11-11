@@ -16,6 +16,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 from chipiron.environments.morpion.players.evaluators.neural_networks.legacy_graph.config import (
     LegacyGraphConfig,
 )
+from chipiron.learning.training_timing import (
+    TrainingTimingMode,
+    validate_training_timing_mode,
+)
 
 from .continuation import (
     MorpionTrainingContinuation,
@@ -106,9 +110,11 @@ class MorpionStreamingTrainingArgs:
     max_rows: int | None = None
     progress_callback: MorpionTrainingProgressCallback | None = None
     cache_read_only: bool = False
+    timing_mode: TrainingTimingMode = "synchronized"
 
     def __post_init__(self) -> None:
         """Validate streaming controls."""
+        validate_training_timing_mode(self.timing_mode)
         if isinstance(self.row_chunk_size, bool) or self.row_chunk_size <= 0:
             raise ValueError("row_chunk_size must be a positive integer.")  # noqa: TRY003
         if self.max_rows is not None and (

@@ -191,7 +191,7 @@ def _phase_timer(
             return nullcontext()
         return timed_torch_phase(
             timings,
-            name,
+            name if synchronize_cuda else f"host_enqueue_{name}",
             device,
             synchronize_cuda=synchronize_cuda,
         )

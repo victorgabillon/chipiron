@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Literal
 
 from chipiron.learning.supervised import train_regression_batch
 from chipiron.learning.timing import PhaseDurations
+from chipiron.learning.torch_runtime import synchronize_torch_device_if_needed
 
 from .row_batches import indexed_row_chunks, row_batches, rows_to_sample_batch
 
@@ -47,8 +48,10 @@ def train_streaming_epoch(
     epoch_index: int,
     progress_callback: Callable[[int, int, int, int], None] | None,
     device: torch.device,
+    synchronize_cuda: bool = True,
 ) -> StreamingEpochStats:
     """Train one streaming epoch over persisted Morpion row chunks."""
+    synchronize_torch_device_if_needed(device)
     epoch_started_at = perf_counter()
     epoch_timings = PhaseDurations()
     model.train()
@@ -104,6 +107,7 @@ def train_streaming_epoch(
                 criterion=criterion,
                 batch=sample_batch,
                 device=device,
+                synchronize_cuda=synchronize_cuda,
                 timings=epoch_timings,
             )
             squared_error_sum += batch_stats.squared_error_sum
@@ -116,6 +120,7 @@ def train_streaming_epoch(
                     epoch_index + 1,
                     args.num_epochs,
                 )
+    synchronize_torch_device_if_needed(device)
     elapsed_seconds = perf_counter() - epoch_started_at
     epoch_timings.add_duration("epoch_total", elapsed_seconds)
     loss_value = 0.0 if value_count == 0 else squared_error_sum / value_count

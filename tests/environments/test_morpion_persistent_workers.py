@@ -221,15 +221,27 @@ def test_job_observations_do_not_count_process_startup_repeatedly(
 ) -> None:
     """Distinct jobs retain separate bounded records and one actual process startup."""
     process = WorkerObservation(tmp_path, "training_worker")
-    for number in (1, 2):
-        WorkerObservation(tmp_path, "training_worker", job_id=number).finish(0)
+    first = WorkerObservation(tmp_path, "training_worker", job_id=1)
+    # The bounded store deliberately replaces records that hash to one slot.
+    # Choose a second job with a distinct observed slot for this retention check.
+    for second_id in range(2, 258):
+        second = WorkerObservation(tmp_path, "training_worker", job_id=second_id)
+        if second.name != first.name:
+            break
+    else:
+        pytest.fail("No distinct runtime observation slot found")
+    first.finish(0)
+    second.finish(0)
     process.finish(0)
     values = [
         json.loads(p.read_text())
         for p in (tmp_path / "pipeline/performance/runtime").glob("*.json")
     ]
     assert len([v for v in values if v["stage"] == "startup"]) == 1
-    assert {v["job_id"] for v in values if v["stage"] == "worker_job"} == {1, 2}
+    assert {v["job_id"] for v in values if v["stage"] == "worker_job"} == {
+        1,
+        second_id,
+    }
 
 
 @pytest.mark.parametrize("fail_at", [None, "job", "cleanup"])
