@@ -4,7 +4,7 @@
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -883,6 +883,32 @@ def bootstrap_config_sha256(config: MorpionBootstrapConfig) -> str:
     return hashlib.sha256(
         bootstrap_config_to_canonical_json(config).encode("utf-8")
     ).hexdigest()
+
+
+def preserve_saved_generated_epochs(
+    requested: MorpionBootstrapConfig,
+    saved: MorpionBootstrapConfig,
+) -> MorpionBootstrapConfig:
+    """Preserve resolved epochs when a historical preset is expanded again."""
+    previous = saved.evaluators.evaluators
+    evaluators = {
+        name: replace(spec, num_epochs=previous[name].num_epochs)
+        if name in previous
+        else spec
+        for name, spec in requested.evaluators.evaluators.items()
+    }
+    return replace(requested, evaluators=MorpionEvaluatorsConfig(evaluators=evaluators))
+
+
+def preserve_legacy_generated_epochs(
+    requested: MorpionBootstrapConfig,
+) -> MorpionBootstrapConfig:
+    """Interpret a pre-config-file run's generated preset with its old default."""
+    evaluators = {
+        name: replace(spec, num_epochs=5)
+        for name, spec in requested.evaluators.evaluators.items()
+    }
+    return replace(requested, evaluators=MorpionEvaluatorsConfig(evaluators=evaluators))
 
 
 def diff_bootstrap_configs(

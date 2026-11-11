@@ -240,7 +240,7 @@ done
 
 ### Important config rule
 
-Pass your intended experiment hyperparameters on the very first launch, for example:
+Pass your intended runtime and dataset options on the very first launch, for example:
 
 ```bash
 python -m chipiron.environments.morpion.bootstrap.launcher \
@@ -256,13 +256,15 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
   --max-rows 100000 \
   --use-backed-up-value \
   --dataset-family-target-policy none \
-  --dataset-family-prediction-blend 0.25 \
-  --num-epochs 5 \
-  --batch-size 64 \
-  --learning-rate 0.001
+  --dataset-family-prediction-blend 0.25
 ```
 
-After `bootstrap_config.json` exists, later workers must match it. Any later CLI hyperparameter drift against the persisted bootstrap config is rejected.
+Fresh bootstrap-generated evaluator specs use one training epoch. The launcher's
+default family and named family presets carry their own per-evaluator epoch counts;
+the `MorpionBootstrapArgs.num_epochs` option applies only to the direct single-model
+fallback. Explicit evaluator specs override either default. Once
+`bootstrap_config.json` exists, its resolved evaluator epochs remain authoritative
+for later workers and resumes.
 
 `tree_branch_limit` is a growth budget and may be increased or decreased when
 resuming an existing tree. Increasing it allows a run that reached the previous

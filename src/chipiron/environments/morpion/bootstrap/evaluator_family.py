@@ -24,6 +24,7 @@ CANONICAL_8_LINEAR_MLP_TRANSFORMER_V1_PRESET: Final[str] = (
     "canonical_8_linear_mlp_transformer_v1"
 )
 CANONICAL_MORPION_NEURAL_EVALUATOR: Final[str] = "transformer_v1"
+DEFAULT_MORPION_BOOTSTRAP_EPOCHS: Final[int] = 1
 
 CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_subsets"
 CANONICAL_LINEAR_MLP_ENTITY_AND_RELATIONAL_TRANSFORMERS_SMALL_MORPION_EVALUATOR_FAMILY_PRESET: Final[
@@ -77,7 +78,7 @@ def canonical_morpion_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
             name=spec.name,
             model_type=spec.model_type,
             hidden_sizes=spec.hidden_sizes,
-            num_epochs=5,
+            num_epochs=DEFAULT_MORPION_BOOTSTRAP_EPOCHS,
             batch_size=64,
             learning_rate=1e-3,
             feature_subset_name=spec.feature_subset.name,
@@ -103,7 +104,7 @@ def entity_token_transformer_small_morpion_evaluator_spec() -> MorpionEvaluatorS
         name="entity_token_transformer_small",
         model_type=MORPION_ENTITY_TOKEN_MODEL_KIND,
         hidden_sizes=None,
-        num_epochs=5,
+        num_epochs=DEFAULT_MORPION_BOOTSTRAP_EPOCHS,
         batch_size=8,
         learning_rate=1e-3,
         entity_max_tokens=1536,
@@ -126,7 +127,7 @@ def entity_token_relational_transformer_small_morpion_evaluator_spec() -> (
         name="entity_token_relational_transformer_small",
         model_type=MORPION_RELATION_BIASED_ENTITY_TOKEN_MODEL_KIND,
         hidden_sizes=None,
-        num_epochs=5,
+        num_epochs=DEFAULT_MORPION_BOOTSTRAP_EPOCHS,
         batch_size=8,
         learning_rate=1e-3,
         entity_max_tokens=1536,
@@ -147,7 +148,7 @@ def entity_token_relational_transformer_small_morpion_evaluator_spec() -> (
 def transformer_v1_morpion_evaluator_spec() -> MorpionEvaluatorSpec:
     """Use the frozen v1 architecture with the established online training cadence.
 
-    The bootstrap keeps five-epoch Adam training. The selected external seed
+    Fresh bootstrap rounds use the shared one-epoch Adam default. The selected external seed
     bundle was trained separately with the documented 20-epoch AdamW recipe.
     """
     return replace(

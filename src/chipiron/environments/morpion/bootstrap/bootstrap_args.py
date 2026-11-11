@@ -19,7 +19,10 @@ from .config import (
     MorpionRuntimeCheckpointFormat,
 )
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
-from .evaluator_family import morpion_evaluators_config_from_preset
+from .evaluator_family import (
+    DEFAULT_MORPION_BOOTSTRAP_EPOCHS,
+    morpion_evaluators_config_from_preset,
+)
 from .learning_policy import (
     MorpionContinualLearningPolicy,
 )
@@ -243,7 +246,7 @@ class MorpionBootstrapArgs:
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     reevaluation_blend_alpha: float = 1.0
     batch_size: int = 64
-    num_epochs: int = 5
+    num_epochs: int = DEFAULT_MORPION_BOOTSTRAP_EPOCHS
     learning_rate: float = 1e-3
     shuffle: bool = True
     validation_fraction: float = 0.2

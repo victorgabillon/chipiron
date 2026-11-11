@@ -4,6 +4,7 @@
 import logging
 import time
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import cast
 
 from .bootstrap_args import MorpionBootstrapArgs
@@ -26,6 +27,8 @@ from .config import (
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     load_bootstrap_config,
+    preserve_legacy_generated_epochs,
+    preserve_saved_generated_epochs,
     save_bootstrap_config,
     validate_bootstrap_config_change,
 )
@@ -754,7 +757,23 @@ def _run_bootstrap_loop_impl(
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
         persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
+        if args.evaluators_config is None:
+            current_config = preserve_saved_generated_epochs(
+                current_config, persisted_config
+            )
+            args = replace(
+                args,
+                evaluators_config=current_config.evaluators,
+                evaluator_family_preset=None,
+            )
         validate_bootstrap_config_change(persisted_config, current_config)
+    elif args.evaluators_config is None and paths.run_state_path.is_file():
+        current_config = preserve_legacy_generated_epochs(current_config)
+        args = replace(
+            args,
+            evaluators_config=current_config.evaluators,
+            evaluator_family_preset=None,
+        )
     save_bootstrap_config(current_config, paths.bootstrap_config_path)
     config_hash = bootstrap_config_sha256(current_config)
 
