@@ -560,7 +560,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     temporary = self._node_budget_resources.enter_context(
                         TemporaryDirectory(prefix="morpion-node-budget-")
                     )
-                    budget_checkpoint = Path(temporary) / "checkpoint"
+                    budget_checkpoint = Path(temporary) / (
+                        "checkpoint"
+                        if self._args.runtime_checkpoint_format == "sharded"
+                        else "checkpoint.json.zst"
+                    )
                     self.save_checkpoint(budget_checkpoint)
                     budget_start_step = steps_executed
             if runtime.tree.root_node.tree_evaluation.has_exact_value():

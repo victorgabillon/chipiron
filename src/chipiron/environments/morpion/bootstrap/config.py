@@ -4,7 +4,7 @@
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -883,6 +883,56 @@ def bootstrap_config_sha256(config: MorpionBootstrapConfig) -> str:
     return hashlib.sha256(
         bootstrap_config_to_canonical_json(config).encode("utf-8")
     ).hexdigest()
+
+
+def validate_explicit_epoch_requests(
+    args: MorpionBootstrapArgs,
+    saved: MorpionBootstrapConfig,
+) -> None:
+    """Refuse conflicting explicit epochs before adopting a frozen recipe.
+
+    Named presets keep their own precedence over the single-model option. Only
+    matching saved evaluators have a frozen epoch value to compare here; other
+    configuration compatibility checks retain their existing responsibilities.
+    """
+    if args.uses_generated_epoch_defaults:
+        return
+    previous = saved.evaluators.evaluators
+    for name, spec in args.resolved_evaluators_config().evaluators.items():
+        if name in previous and spec.num_epochs != previous[name].num_epochs:
+            raise IncompatibleStageBootstrapConfigError.for_field(
+                stage="scientific",
+                field_name=f"evaluators.{name}.num_epochs",
+                persisted_value=previous[name].num_epochs,
+                requested_value=spec.num_epochs,
+                stage_uses_field=True,
+            )
+
+
+def preserve_saved_generated_epochs(
+    requested: MorpionBootstrapConfig,
+    saved: MorpionBootstrapConfig,
+) -> MorpionBootstrapConfig:
+    """Preserve resolved epochs when a historical preset is expanded again."""
+    previous = saved.evaluators.evaluators
+    evaluators = {
+        name: replace(spec, num_epochs=previous[name].num_epochs)
+        if name in previous
+        else spec
+        for name, spec in requested.evaluators.evaluators.items()
+    }
+    return replace(requested, evaluators=MorpionEvaluatorsConfig(evaluators=evaluators))
+
+
+def preserve_legacy_generated_epochs(
+    requested: MorpionBootstrapConfig,
+) -> MorpionBootstrapConfig:
+    """Interpret a pre-config-file run's generated preset with its old default."""
+    evaluators = {
+        name: replace(spec, num_epochs=5)
+        for name, spec in requested.evaluators.evaluators.items()
+    }
+    return replace(requested, evaluators=MorpionEvaluatorsConfig(evaluators=evaluators))
 
 
 def diff_bootstrap_configs(

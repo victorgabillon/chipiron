@@ -269,3 +269,20 @@ code /home/pompote/oldata/victor/morpion-scratch/operational-bootstrap-20261025/
 ```
 
 Use Source Control's graph to compare `7326a6f5` with `39c7abe8`, or select each independent commit. For a concrete graphical file comparison, export the baseline into new task scratch with `git show 7326a6f5:src/chipiron/environments/morpion/bootstrap/closed_scientific_snapshot.py > /SECONDARY/closed-before.py`, then run `code --diff /SECONDARY/closed-before.py src/chipiron/environments/morpion/bootstrap/closed_scientific_snapshot.py`. Do not check out or reset a protected worktree to inspect the diff.
+
+
+### Explicit epochs and omitted defaults
+
+`MorpionBootstrapArgs.num_epochs=None` records an omitted single-model option;
+its effective fresh value is one. Explicit `num_epochs=1`, `3` or `5` remains an
+explicit request, including across `dataclasses.replace`. Named evaluator families
+keep their own recipes, and explicit per-evaluator configurations take precedence;
+the top-level option is not a global family override.
+
+On resume, omitted/generated defaults retain saved per-evaluator epochs and the
+configuration hash. Without a saved configuration, an omitted legacy recipe is
+interpreted as five epochs. The legacy direct loop still accepts explicit epoch
+changes where its existing identity guard permits them, including explicit one;
+it does not silently replace them with five. Strict stage compatibility remains
+unchanged. Scientific launchers reject conflicting explicit epochs before adopting
+a frozen configuration, preserving its bytes and identity.

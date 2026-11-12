@@ -63,7 +63,7 @@ def test_canonical_config_survives_bootstrap_training_path(
             sum(p.numel() for p in build_morpion_regressor(args).parameters())
             == expected_count
         )
-        assert training.num_epochs == 5 and training.learning_rate == 0.001
+        assert training.num_epochs == 1 and training.learning_rate == 0.001
         if name == "transformer_v1":
             assert args == morpion_evaluator_v1_model_args()
             assert training.batch_size == 8

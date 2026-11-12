@@ -19,7 +19,10 @@ from .config import (
     MorpionRuntimeCheckpointFormat,
 )
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
-from .evaluator_family import morpion_evaluators_config_from_preset
+from .evaluator_family import (
+    DEFAULT_MORPION_BOOTSTRAP_EPOCHS,
+    morpion_evaluators_config_from_preset,
+)
 from .learning_policy import (
     MorpionContinualLearningPolicy,
 )
@@ -243,7 +246,8 @@ class MorpionBootstrapArgs:
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     reevaluation_blend_alpha: float = 1.0
     batch_size: int = 64
-    num_epochs: int = 5
+    # None means omitted; explicit one must remain distinguishable on resume.
+    num_epochs: int | None = None
     learning_rate: float = 1e-3
     shuffle: bool = True
     validation_fraction: float = 0.2
@@ -429,6 +433,13 @@ class MorpionBootstrapArgs:
         ):
             raise _invalid_min_available_ram_mb_error()
 
+    @property
+    def uses_generated_epoch_defaults(self) -> bool:
+        """Whether saved or legacy epochs may replace regenerated defaults."""
+        return self.evaluators_config is None and (
+            self.evaluator_family_preset is not None or self.num_epochs is None
+        )
+
     def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
         """Resolve the explicit or legacy single-evaluator config."""
         if (
@@ -446,7 +457,11 @@ class MorpionBootstrapArgs:
             name="default",
             model_type=self.model_kind,
             hidden_sizes=hidden_sizes,
-            num_epochs=self.num_epochs,
+            num_epochs=(
+                DEFAULT_MORPION_BOOTSTRAP_EPOCHS
+                if self.num_epochs is None
+                else self.num_epochs
+            ),
             batch_size=self.batch_size,
             learning_rate=self.learning_rate,
         )
