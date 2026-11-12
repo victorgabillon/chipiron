@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from typing import TYPE_CHECKING, cast
 
@@ -45,6 +46,16 @@ if TYPE_CHECKING:
 
     from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
         MorpionSearchRunner,
+    )
+
+
+@pytest.fixture(autouse=True)
+def restore_scientific_leaderboard_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep launcher environment changes inside each configuration test."""
+    monkeypatch.setenv(
+        "MORPION_LEADERBOARD_PATH", os.environ["MORPION_LEADERBOARD_PATH"]
     )
 
 
