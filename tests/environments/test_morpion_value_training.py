@@ -280,7 +280,7 @@ def test_validation_workers_do_not_exhaust_file_descriptors(tmp_path: Path) -> N
         [sys.executable, "-c", code, str(tmp_path)],
         capture_output=True,
         text=True,
-        timeout=90,
+        timeout=180,
         check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr

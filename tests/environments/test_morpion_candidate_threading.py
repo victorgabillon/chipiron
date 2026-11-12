@@ -84,15 +84,15 @@ def cpu_scope(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 
 @pytest.mark.fast
-def test_historical_identities_and_explicit_policy() -> None:
-    """Omission keeps both pre-I3 genesis hashes and the old policy shape."""
+def test_fresh_identities_and_explicit_policy() -> None:
+    """Fresh family identities reflect one epoch while the policy shape stays fixed."""
     policy = MorpionContinualLearningPolicy()
     old = asdict(policy)
     del old["transformer_cpu_threads"]
     assert policy.to_metadata() == old
     for configured, expected in (
-        (None, "92495cfd87ae654770948bbd2d036acb1c55fea332fb628e965747fc94721169"),
-        (policy, "b878ebf83b6de50656372f0a7bcf1d15fe71546f9e19faeb5ad40fccbd05827d"),
+        (None, "5970c32bb04d3cd7676db4775e28082b530a56bf9c49185f5ecdcd88498a85dd"),
+        (policy, "016b0751c408f5ff8335250595b3d7d3989ecfd348c76ee181b7efe741ebc357"),
     ):
         args = MorpionBootstrapArgs(
             work_dir="/tmp/fixed-i3-identity",
@@ -100,7 +100,11 @@ def test_historical_identities_and_explicit_policy() -> None:
             continual_learning=configured,
             evaluator_family_preset=CANONICAL_8_LINEAR_MLP_TRANSFORMER_V1_PRESET,
         )
-        assert bootstrap_config_sha256(bootstrap_config_from_args(args)) == expected
+        config = bootstrap_config_from_args(args)
+        assert bootstrap_config_sha256(config) == expected
+        assert {spec.num_epochs for spec in config.evaluators.evaluators.values()} == {
+            1
+        }
     parser = argparse.ArgumentParser()
     add_continual_arguments(parser)
     assert parser.parse_args([]).transformer_cpu_threads is None
