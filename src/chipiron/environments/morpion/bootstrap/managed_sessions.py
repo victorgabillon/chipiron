@@ -838,6 +838,9 @@ def finalize_managed_session_owned(
             "Managed native completion is not clean.",
         )
         _quiescent(launch, receipt, closing=True)
+        from .prepared_dataset_storage import settle_owned
+
+        state = settle_owned(paths, state)
         consumed = _number(usage["elapsed_seconds"])
         require(
             data["consumed_seconds"]

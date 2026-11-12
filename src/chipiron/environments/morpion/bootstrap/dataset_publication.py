@@ -372,7 +372,10 @@ def _repair(
 
 
 def accept_dataset(
-    paths: MorpionBootstrapPaths, reference: dict[str, Any]
+    paths: MorpionBootstrapPaths,
+    reference: dict[str, Any],
+    *,
+    preparation_args: MorpionBootstrapArgs | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Recheck exact evidence then accept once in the sole authoritative run state."""
     from .checkpoint_patch_receipts import receipt_ledger
@@ -437,7 +440,13 @@ def accept_dataset(
                 "Dataset stage is not eligible.",
             )
             state = with_accepted_result(state, generation, ACCEPTED, reference)
-            # Only Dataset references change; the existing run-state serializer still rewrites its cumulative metadata.
+            if preparation_args is not None:
+                from .prepared_dataset_intent import intent_owned
+
+                state = intent_owned(
+                    paths, state, preparation_args, proposal, reference, claim
+                )
+            # Accepted result and advisory preparation intent share this durable save.
             save_bootstrap_run_state(state, paths.run_state_path, durable=True)
         else:
             sync_artifact(paths.run_state_path, paths.work_dir)

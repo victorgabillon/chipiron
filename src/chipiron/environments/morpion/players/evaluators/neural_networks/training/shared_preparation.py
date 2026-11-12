@@ -259,14 +259,20 @@ def _write(path: Path, value: object) -> None:
 
 
 @contextmanager
-def _ownership(root: Path, *, format_kind: str = FORMAT) -> Iterator[None]:
+def _ownership(
+    root: Path, *, format_kind: str = FORMAT, deadline: float | None = None
+) -> Iterator[None]:
     assert_artifact_writable(root)
     require(not root.is_symlink(), "Preparation root cannot be a symlink")
     root.mkdir(exist_ok=True)
     descriptor = os.open(root / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     try:
         require(stat.S_ISREG(os.fstat(descriptor).st_mode), "Invalid preparation lock")
-        deadline = time.monotonic() + LOCK_TIMEOUT_S
+        deadline = (
+            min(time.monotonic() + LOCK_TIMEOUT_S, deadline)
+            if deadline is not None
+            else time.monotonic() + LOCK_TIMEOUT_S
+        )
         while True:
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -447,6 +453,8 @@ def prepare_shared_inputs(
     max_rows: int | None,
     row_chunk_size: int,
     budget: _Budget | None = None,
+    deadline: float | None = None,
+    existing_only: bool = False,
 ) -> Iterator[_PreparedInputs | None]:
     """Prepare one compatible flat+relational bundle, preserving native warm hits.
 
@@ -484,7 +492,7 @@ def prepare_shared_inputs(
     recipe = _Recipe(float(fraction), seed, max_rows)
     limits = _Budget.configured() if budget is None else budget
     started = time.perf_counter()
-    with _ownership(root):
+    with _ownership(root, deadline=deadline):
         wait_s = time.perf_counter() - started
         tick = time.perf_counter()
         source_sha256 = file_digest(rows)
@@ -513,6 +521,11 @@ def prepare_shared_inputs(
         }
         statistics: dict[str, Any] = {}
         outcome = "hit"
+        require(
+            not existing_only
+            or (complete is not None and complete["identity"] == identity),
+            "Prepared consumer requires the exact completed input",
+        )
         if complete is None or complete["identity"] != identity:
             # Validate/load at most one original cache at a time; don't adopt a
             # legacy path/stat cache as an exact-content certified feature store.
@@ -566,7 +579,9 @@ def prepare_shared_inputs(
                 sync_directory(root)
             attempt = root / f"attempt-{uuid.uuid4().hex}"
             attempt.mkdir()
-            with prior_inputs(rows, recipe, limits, semantics) as reuse:
+            with prior_inputs(
+                rows, recipe, limits, semantics, deadline=deadline
+            ) as reuse:
                 active_limits = limits if reuse is None else reuse.budget
                 split, statistics = build_shared_bundle(
                     rows, attempt, recipe, active_limits, row_chunk_size, reuse=reuse

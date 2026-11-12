@@ -59,6 +59,9 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation import (
+        _PreparedInputs,
+    )
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
@@ -759,6 +762,7 @@ def train_and_select_evaluators_streaming(
     memory: MemoryDiagnostics,
     max_rows: int | None,
     chunk_size: int,
+    prepared_inputs: _PreparedInputs | None = None,
 ) -> BootstrapTrainingResult:
     """Train configured evaluators from JSONL chunks and select the active one."""
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
@@ -846,7 +850,9 @@ def train_and_select_evaluators_streaming(
             list(jobs.values()), plan, paths.work_dir / "candidate_execution"
         )
 
-    with prepare_candidate_inputs(list(jobs.values()), serial=plan is None) as prepared:
+    with prepare_candidate_inputs(
+        list(jobs.values()), serial=plan is None, borrowed=prepared_inputs
+    ) as prepared:
         for evaluator_index, (evaluator_name, spec) in enumerate(
             resolved_evaluators_config.evaluators.items(),
             start=1,
