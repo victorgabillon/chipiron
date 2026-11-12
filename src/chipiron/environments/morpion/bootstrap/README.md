@@ -768,3 +768,24 @@ sidecar. After a known durable commit, cleanup failure can emit a committed
 scientific outcome with a failed function outcome and a missing total interval.
 Metrics/sink/logger errors cannot mask computational errors. No sidecar confers
 scientific authority; exact low-level ownership correlation remains unavailable.
+
+### Continuous contract foundation (not a runnable policy)
+
+`continuous_contract` holds strict frozen v1 wire records; `continuous_transitions`
+proposes the Dataset EXTRACT → accepted PREPARE → complete READY → admitted Training
+path. `initialize` returns a context-bound `Frame`; each operation requires an
+explicit expected `Boundary` and returns `Change` or finite `NoWork`. Coalescing
+returns a mandatory `Displacement` receipt obligation and never slides oldest
+learning debt. `encode_record`/`record_ref` describe canonical proposed bytes;
+they do not write files or authenticate a reference. Empty held-out validation,
+stale data, occupied slots and unsupported frozen-head disposal cannot silently
+admit Training. Candidate parents bind in the Training Job, not preparation.
+
+A future single owner must authenticate source/accepted publications, actual bytes,
+claim fencing, parent freshness, budgets, common validation population, leases and
+session status; publish records then join returned state and receipt changes in
+ONE durable save. Both model-dependent comparison and activation payload validation
+remain deferred. Retirement, claim takeover, Training acceptance, promotion,
+stop/resume/fork wiring and all J4.1 prepared-input IO are also still required.
+The current launcher/configuration dispatch continues to reject this policy; no
+CLI, global guard change, new tree owner or continuous execution is provided.
