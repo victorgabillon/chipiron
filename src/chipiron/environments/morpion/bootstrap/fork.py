@@ -124,6 +124,9 @@ def _inventory_identity(root: Path) -> tuple[str, set[tuple[int, int]]]:
 
 
 def _settled(paths: MorpionBootstrapPaths, state: Any, reader: Metadata) -> None:
+    from .prepared_dataset_storage import require_settled
+
+    require_settled(paths, state)
     require(
         not paths.launcher_pid_path.exists(),
         "Launcher registration requires recovery before fork.",

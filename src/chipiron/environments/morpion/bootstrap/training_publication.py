@@ -987,67 +987,78 @@ def run_training(
         attempt: TrainingAttempt,
     ) -> MorpionPipelineTrainingStatusArtifact:
         """Run the unchanged private recipe within its admitted lifetime."""
-        # Existing trainers put their caches beside rows. A private byte-for-byte copy
-        # keeps those existing transient caches out of the immutable accepted Dataset.
-        assert manifest.rows_path is not None
-        rows = attempt.directory / "input" / "rows.jsonl"
-        copy_artifact(inside(paths.work_dir, manifest.rows_path), rows)
-        require(
-            file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
-            "Training input copy changed.",
-        )
-        private_paths = MorpionBootstrapPaths.from_work_dir(attempt.directory)
-        state = load_bootstrap_run_state(paths.run_state_path)
-        state = replace(
-            state,
-            latest_model_bundle_paths={
-                name: str(paths.resolve_work_dir_path(parent["model"]["path"]))
-                for name, parent in attempt.admission["parents"].items()
-                if parent is not None
-            }
-            if "parents" in attempt.admission
-            else {
-                name: str(paths.resolve_work_dir_path(path))
-                for name, path in (state.latest_model_bundle_paths or {}).items()
-            },
-            metadata={
-                **state.metadata,
-                "candidate_training_parents": attempt.admission["parents"],
-            }
-            if "parents" in attempt.admission
-            else state.metadata,
-        )
-        memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
-        try:
-            result = train_and_select_evaluators_streaming(
-                args=args,
-                paths=private_paths,
-                run_state=state,
-                rows_path=rows,
-                rows_source=morpion_supervised_rows_source_from_path(rows),
-                generation=manifest.generation,
-                timestamp_utc=datetime.now(UTC).isoformat(),
-                resolved_evaluators_config=evaluators,
-                resolved_control=control,
-                memory=memory,
-                max_rows=args.training_max_rows,
-                chunk_size=args.training_row_chunk_size,
+        from .prepared_dataset import borrow
+
+        # The borrowed-input generator releases native/artifact ownership in finally.
+        with borrow(paths, args, attempt.admission) as borrowed:  # pylint: disable=contextmanager-generator-missing-cleanup
+            # Existing trainers put their caches beside rows. A private byte-for-byte copy
+            # keeps those existing transient caches out of the immutable accepted Dataset.
+            assert manifest.rows_path is not None
+            rows = (
+                attempt.directory / "input" / "rows.jsonl"
+                if borrowed is None
+                else borrowed[0]
             )
-        finally:
-            log_after_cycle_gc(memory)
-            memory.close()
-        require(
-            file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
-            "Training input changed during computation.",
-        )
-        selection = (
-            _compare_incumbent(paths, private_paths, args, attempt, result, rows)
-            if "parents" in attempt.admission
-            else None
-        )
-        # The synchronous trainer has returned; only this attempt owned these
-        # inputs/caches. Keep the accepted Dataset as the sole durable row source.
-        shutil.rmtree(rows.parent)
+            if borrowed is None:
+                copy_artifact(inside(paths.work_dir, manifest.rows_path), rows)
+            require(
+                file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
+                "Training input copy changed.",
+            )
+            private_paths = MorpionBootstrapPaths.from_work_dir(attempt.directory)
+            state = load_bootstrap_run_state(paths.run_state_path)
+            state = replace(
+                state,
+                latest_model_bundle_paths={
+                    name: str(paths.resolve_work_dir_path(parent["model"]["path"]))
+                    for name, parent in attempt.admission["parents"].items()
+                    if parent is not None
+                }
+                if "parents" in attempt.admission
+                else {
+                    name: str(paths.resolve_work_dir_path(path))
+                    for name, path in (state.latest_model_bundle_paths or {}).items()
+                },
+                metadata={
+                    **state.metadata,
+                    "candidate_training_parents": attempt.admission["parents"],
+                }
+                if "parents" in attempt.admission
+                else state.metadata,
+            )
+            memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
+            try:
+                result = train_and_select_evaluators_streaming(
+                    args=args,
+                    paths=private_paths,
+                    run_state=state,
+                    rows_path=rows,
+                    rows_source=morpion_supervised_rows_source_from_path(rows),
+                    generation=manifest.generation,
+                    timestamp_utc=datetime.now(UTC).isoformat(),
+                    resolved_evaluators_config=evaluators,
+                    resolved_control=control,
+                    memory=memory,
+                    max_rows=args.training_max_rows,
+                    chunk_size=args.training_row_chunk_size,
+                    prepared_inputs=None if borrowed is None else borrowed[1],
+                )
+            finally:
+                log_after_cycle_gc(memory)
+                memory.close()
+            require(
+                file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
+                "Training input changed during computation.",
+            )
+            selection = (
+                _compare_incumbent(paths, private_paths, args, attempt, result, rows)
+                if "parents" in attempt.admission
+                else None
+            )
+            # The synchronous trainer has returned; only this attempt owned these
+            # inputs/caches. Keep the accepted Dataset as the sole durable row source.
+            if borrowed is None:
+                shutil.rmtree(rows.parent)
         return MorpionPipelineTrainingStatusArtifact(
             generation=manifest.generation,
             status="done",

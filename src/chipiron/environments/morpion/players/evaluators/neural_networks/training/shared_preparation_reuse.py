@@ -464,7 +464,12 @@ class _Reuse:
 
 @contextmanager
 def prior_inputs(
-    rows: Path, recipe: _Recipe, budget: _Budget, semantics: str
+    rows: Path,
+    recipe: _Recipe,
+    budget: _Budget,
+    semantics: str,
+    *,
+    deadline: float | None = None,
 ) -> Iterator[_Reuse | None]:
     """No caller authority changes; one global derived entry, one synchronous writer."""
     if not requested():
@@ -491,7 +496,7 @@ def prior_inputs(
     root.parent.mkdir(parents=True, exist_ok=True)
     limit = _limit()
     identity = _identity(recipe, semantics)
-    with _ownership(root, format_kind=FORMAT):
+    with _ownership(root, format_kind=FORMAT, deadline=deadline):
         started = time.perf_counter()
         prior = None
         outcome = "absent"
@@ -526,7 +531,8 @@ def prior_inputs(
                 else:
                     bounded = replace(
                         budget,
-                        retained_bytes=sum(p.stat().st_size for p in entry.iterdir()),
+                        retained_bytes=budget.retained_bytes
+                        + sum(p.stat().st_size for p in entry.iterdir()),
                         resident_bytes=manifest["files"]["inputs.pt"]["bytes"],
                     )
                     bounded.check_memory(2 * budget.chunk_bytes)
@@ -553,7 +559,8 @@ def prior_inputs(
             if prior is None
             else replace(
                 budget,
-                retained_bytes=sum(p.stat().st_size for p in prior.entry.iterdir()),
+                retained_bytes=budget.retained_bytes
+                + sum(p.stat().st_size for p in prior.entry.iterdir()),
                 resident_bytes=prior.manifest["files"]["inputs.pt"]["bytes"],
             )
         )

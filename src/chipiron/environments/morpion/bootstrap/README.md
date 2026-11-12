@@ -789,3 +789,50 @@ remain deferred. Retirement, claim takeover, Training acceptance, promotion,
 stop/resume/fork wiring and all J4.1 prepared-input IO are also still required.
 The current launcher/configuration dispatch continues to reject this policy; no
 CLI, global guard change, new tree owner or continuous execution is provided.
+
+
+### Accepted Dataset preparation (operational, opt-in)
+
+`CHIPIRON_SHARED_PREPARATION=1` now permits a monitored Dataset worker to prepare
+its accepted rows for the existing supported serial flat+relational cohort. The
+same eligibility/recipe helper is used at Training. Unmonitored/default-OFF or
+unsupported invocations retain private attempt inputs. No continuous scheduling
+option is enabled and no parent is captured during CPU preparation.
+
+A separate `prepared_dataset_v1` run-state entry reserves at most two operational
+roots. Scientific Dataset acceptance and initial intent share the existing owned
+save. Bulk row copying, I5 construction, hashing and artifact waits run outside
+Growth ownership. Rows are finalized at
+`pipeline/prepared_inputs_v1/<accepted-descriptor-sha256>/rows.jsonl` BEFORE I5
+binds its native path; producer native ownership closes before COMPLETE commits.
+Training admits normally, then borrows only that Dataset's compatible COMPLETE
+record under a newly acquired process-local native lease. The lease covers all
+candidate readers, diagnostics and incumbent comparison. No prediction is cached.
+
+The operational descriptor binds existing accepted/source, workspace/configuration,
+recipe and all five native files. It reuses J4.0a Accepted/Ref/Context validation;
+Context policy hashes the existing schedule (or null). It supplies no invented
+continuous cycle/epoch and does not instantiate the future continuous Ready/Source
+contract. Future dispatch must obtain genuine publication annotations separately.
+
+Original monitored job/claim deadlines survive recovery. TTL alone never proves
+process death; takeover uses existing local session quiescence evidence and an
+artifact lease. Replaced Dataset/Training claims fence late work. Native-consumer
+mode refuses any rebuild. Missing/incompatible pre-consumption inputs may retire
+and use the private reference path only after resource release; corruption during
+consumption fails the attempt. No silent substitution follows a consumed input.
+
+Reservations include stable rows, native staging/export and the currently retained
+other root, under the smaller existing native/run scratch caps. Enabled prior-input
+reuse reserves its configured upper bound once, with its existing native coexistence
+checks retained. A small metadata rewrite allowance stays reserved. Capacity and
+free-space refusal never truncates scientific rows. Live readers/builders provide
+backpressure rather than unaccounted private fallback.
+
+Retirement takes nonblocking artifact and native ownership, durably records a
+RETIRED disposition before unlinking only operational rows/tensors, and retains
+lock inodes plus descriptor/manifest/split evidence. Accepted scientific rows,
+models and history remain roots. Accepted Training replay does not need retired
+operational tensors. Managed close suspends unfinished preparation and releases completed input
+consumption after existing native quiescence checks; original allowances remain. Fork checks reject unsettled
+operations, and fresh fork genesis does not import this operational authority.
