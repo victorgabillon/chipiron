@@ -9,22 +9,30 @@ claim takeover, Training acceptance or promotion transition is implemented here.
 """
 
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, assert_never
 
 from .continuous_contract import (
     Accepted,
+    Comparison,
     Context,
+    ControlRecord,
     Debt,
     JobRecord,
+    Opportunity,
     Policy,
     ReadyRecord,
+    Record,
     Ref,
+    Reservation,
     Source,
     State,
     integer,
     record_ref,
     require,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +85,8 @@ class NoWork:
         "promotion_debt",
         "freshness_disposition_required",
         "empty_validation_population",
+        "learner_executor",
+        "resource_backpressure",
     ]
 
 
@@ -84,7 +94,11 @@ class NoWork:
 class Displacement:
     """Required receipt inputs; these are not best-effort telemetry."""
 
-    reason: Literal["coalesced_before_admission", "ready_superseded_unconsumed"]
+    reason: Literal[
+        "coalesced_before_admission",
+        "ready_superseded_unconsumed",
+        "promotion_coalesced",
+    ]
     subject: Source | Ref
     successor: Source | Ref
     debt: Debt
@@ -95,7 +109,7 @@ class Change:
     """Proposed state plus immutable records/receipt obligation; not a commit."""
 
     frame: Frame
-    records: tuple[JobRecord | ReadyRecord, ...] = ()
+    records: tuple[Record, ...] = ()
     displacement: Displacement | None = None
 
 
@@ -136,9 +150,7 @@ def _check(frame: Frame, boundary: Boundary) -> None:
         )
 
 
-def _record(
-    frame: Frame, ref: Ref | None, record: JobRecord | ReadyRecord | None
-) -> None:
+def _record(frame: Frame, ref: Ref | None, record: Record | None) -> None:
     if ref is None:
         require(record is None, "Unexpected resolved slot record.")
     else:
@@ -171,7 +183,7 @@ def _eligible(frame: Frame, boundary: Boundary, source: Source) -> NoWork | None
 def _changed(
     frame: Frame,
     state: State,
-    *records: JobRecord | ReadyRecord,
+    *records: Record,
     displacement: Displacement | None = None,
 ) -> Change:
     return Change(
@@ -424,3 +436,381 @@ def admit_cohort(
         ),
         job,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class Offer:
+    """Offer a freshly authenticated source, optionally repairing a frozen head."""
+
+    source: Source
+    sealed_head: Source | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AdmitDataset:
+    """Reserve extraction using an authenticated job and resource allowance."""
+
+    job: JobRecord
+
+
+@dataclass(frozen=True, slots=True)
+class BindDataset:
+    """Join accepted Dataset and PREPARE in the caller's single save."""
+
+    job: JobRecord
+    accepted: Accepted
+
+
+@dataclass(frozen=True, slots=True)
+class PublishReady:
+    """Install a verified native completion after producer ownership closes."""
+
+    job: JobRecord
+    ready: ReadyRecord
+
+
+@dataclass(frozen=True, slots=True)
+class AdmitCohort:
+    """Freeze current own parents and transfer an unconsumed ready input."""
+
+    job: JobRecord
+    ready: ReadyRecord
+    validation_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptCohort:
+    """Join complete accepted lineage with the next outstanding debt/opportunity."""
+
+    job: JobRecord
+    accepted: Accepted
+    opportunity: ControlRecord | None
+    remaining_debt: Debt | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReservePromotion:
+    """Pin the oldest pending opportunity; no newer acceptance can replace it."""
+
+    reservation: ControlRecord
+
+
+@dataclass(frozen=True, slots=True)
+class StartComparison:
+    """Bind a serial learner job to an existing reservation."""
+
+    reservation: ControlRecord
+    job: JobRecord
+
+
+@dataclass(frozen=True, slots=True)
+class VerifyComparison:
+    """Attach a fenced common-population result."""
+
+    reservation: ControlRecord
+    comparison: ControlRecord
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvePromotion:
+    """Clear a verified retain or join the canonical activation commit."""
+
+    reservation: ControlRecord
+    comparison: ControlRecord
+    promoted: bool
+
+
+type Transition = (
+    Offer
+    | AdmitDataset
+    | BindDataset
+    | PublishReady
+    | AdmitCohort
+    | AcceptCohort
+    | ReservePromotion
+    | StartComparison
+    | VerifyComparison
+    | ResolvePromotion
+)
+
+
+def _slot[T: Record](
+    frame: Frame, ref: Ref | None, records: Mapping[Ref, Record], kind: type[T]
+) -> T | None:
+    if ref is None:
+        return None
+    value = records.get(ref)
+    _record(frame, ref, value)
+    require(isinstance(value, kind), "Incorrect slot envelope type.")
+    assert isinstance(value, kind)
+    return value
+
+
+def _reservation(record: ControlRecord) -> Reservation:
+    require(isinstance(record.payload, Reservation), "Expected reservation envelope.")
+    assert isinstance(record.payload, Reservation)
+    return record.payload
+
+
+def comparison_owed(frame: Frame, records: Mapping[Ref, Record]) -> bool:
+    """Give a reserved or unfinished comparison priority over new Training."""
+    record = _slot(frame, frame.state.reserved_promotion, records, ControlRecord)
+    return record is not None and _reservation(record).phase in {
+        "RESERVED",
+        "COMPARING",
+    }
+
+
+def transition(
+    frame: Frame, boundary: Boundary, action: Transition, records: Mapping[Ref, Record]
+) -> Change | NoWork:
+    """Apply only a closed command; all IO/authentication belongs to the publisher."""
+    _check(frame, boundary)
+    dataset = _slot(frame, frame.state.dataset_job, records, JobRecord)
+    ready = _slot(frame, frame.state.ready, records, ReadyRecord)
+    if isinstance(action, Offer):
+        return offer_source(
+            frame,
+            boundary,
+            action.source,
+            dataset=dataset,
+            ready=ready,
+            sealed_head=action.sealed_head,
+        )
+    if isinstance(action, AdmitDataset):
+        return admit_dataset(frame, boundary, action.job)
+    if isinstance(action, BindDataset):
+        return bind_dataset(frame, boundary, action.job, action.accepted)
+    if isinstance(action, PublishReady):
+        return publish_ready(
+            frame, boundary, action.job, action.ready, previous_ready=ready
+        )
+    if isinstance(action, AdmitCohort):
+        if comparison_owed(frame, records) or (
+            frame.state.reserved_promotion is None
+            and frame.state.pending_promotion is not None
+        ):
+            return NoWork("learner_executor")
+        return admit_cohort(
+            frame,
+            boundary,
+            action.ready,
+            action.job,
+            validation_count=action.validation_count,
+        )
+    if not frame.state.admission_open:
+        return NoWork("suspended")
+    if isinstance(action, AcceptCohort):
+        return _accept_cohort(frame, boundary, action, records, dataset, ready)
+    if isinstance(action, ReservePromotion):
+        require(
+            frame.state.reserved_promotion is None,
+            "Cannot replace a reserved promotion.",
+        )
+        value = _reservation(action.reservation)
+        require(
+            action.reservation.context == frame.context
+            and value.phase == "RESERVED"
+            and value.opportunity == frame.state.pending_promotion
+            and value.previous is None,
+            "Reservation does not bind oldest pending opportunity.",
+        )
+        require(frame.state.pending_promotion is not None, "No pending opportunity.")
+        return _changed(
+            frame,
+            replace(
+                frame.state,
+                reserved_promotion=record_ref(action.reservation),
+                pending_promotion=None,
+            ),
+            action.reservation,
+        )
+    if isinstance(action, (StartComparison, VerifyComparison, ResolvePromotion)):
+        _record(frame, frame.state.reserved_promotion, action.reservation)
+        value = _reservation(action.reservation)
+        if isinstance(action, StartComparison):
+            require(frame.state.cohort is None, "Training owns the serial learner.")
+            require(value.phase == "RESERVED", "Comparison already admitted.")
+            job = action.job.payload
+            require(
+                action.job.context == frame.context
+                and job.stage == "COMPARE"
+                and job.status == "ADMITTED"
+                and job.reserved_id == value.opportunity.sha256,
+                "Comparison job reservation differs.",
+            )
+            updated = ControlRecord(
+                frame.context,
+                replace(
+                    value, phase="COMPARING", comparison_job=record_ref(action.job)
+                ),
+            )
+            return _changed(
+                frame,
+                replace(frame.state, reserved_promotion=record_ref(updated)),
+                action.job,
+                updated,
+            )
+        require(
+            isinstance(action.comparison.payload, Comparison),
+            "Expected comparison result.",
+        )
+        comparison = action.comparison.payload
+        assert isinstance(comparison, Comparison)
+        require(
+            action.comparison.context == frame.context
+            and comparison.reservation_id == value.opportunity.sha256
+            and comparison.incumbent == value.incumbent
+            and comparison.population == value.population,
+            "Comparison reservation/population differs.",
+        )
+        opportunity = _slot(frame, value.opportunity, records, ControlRecord)
+        require(
+            opportunity is not None and isinstance(opportunity.payload, Opportunity),
+            "Missing reserved opportunity.",
+        )
+        assert opportunity is not None and isinstance(opportunity.payload, Opportunity)
+        require(
+            comparison.candidate == opportunity.payload.candidate,
+            "Comparison candidate differs.",
+        )
+        if isinstance(action, VerifyComparison):
+            require(value.phase == "COMPARING", "Comparison was not admitted.")
+            job_record = _slot(frame, value.comparison_job, records, JobRecord)
+            require(
+                job_record is not None and comparison.claim == job_record.payload.claim,
+                "Comparison claim differs.",
+            )
+            updated = ControlRecord(
+                frame.context,
+                replace(
+                    value, phase="VERIFIED", comparison=record_ref(action.comparison)
+                ),
+            )
+            return _changed(
+                frame,
+                replace(frame.state, reserved_promotion=record_ref(updated)),
+                action.comparison,
+                updated,
+            )
+        require(
+            value.phase in {"VERIFIED", "CUTOVER"}
+            and value.comparison == record_ref(action.comparison),
+            "Unverified promotion resolution.",
+        )
+        require(
+            isinstance(action.promoted, bool)
+            and action.promoted == (comparison.decision == "promote"),
+            "Resolution disagrees with comparison.",
+        )
+        pending = _slot(frame, frame.state.pending_promotion, records, ControlRecord)
+        require(
+            pending is None or isinstance(pending.payload, Opportunity),
+            "Invalid pending opportunity.",
+        )
+        assert pending is None or isinstance(pending.payload, Opportunity)
+        return _changed(
+            frame,
+            replace(
+                frame.state,
+                reserved_promotion=None,
+                promotion_debt=None if pending is None else _opportunity(pending).debt,
+                incumbent_epoch=frame.state.incumbent_epoch + int(action.promoted),
+            ),
+        )
+
+    assert_never(action)
+
+
+def _accept_cohort(
+    frame: Frame,
+    boundary: Boundary,
+    action: AcceptCohort,
+    records: Mapping[Ref, Record],
+    dataset: JobRecord | None,
+    ready: ReadyRecord | None,
+) -> Change:
+    _record(frame, frame.state.cohort, action.job)
+    job = action.job.payload
+    require(
+        job.stage == "TRAIN"
+        and job.status == "ADMITTED"
+        and job.round_number == frame.state.last_accepted_round + 1,
+        "Wrong accepted cohort.",
+    )
+    remaining = [
+        s
+        for s in (
+            frame.state.pending_source,
+            None if dataset is None else dataset.payload.source,
+            None if ready is None else ready.payload.source,
+        )
+        if s is not None
+    ]
+    require(
+        bool(remaining) == (action.remaining_debt is not None),
+        "Outstanding learning debt missing or fabricated.",
+    )
+    if action.remaining_debt is not None:
+        require(
+            action.remaining_debt.anchor_cycle
+            <= min(s.cycle for s in remaining)
+            <= boundary.cycle,
+            "Outstanding debt moved past its source.",
+        )
+    assert job.round_number is not None
+    state = replace(
+        frame.state,
+        cohort=None,
+        last_accepted_round=job.round_number,
+        learning_debt=action.remaining_debt,
+    )
+    if action.opportunity is None:
+        return _changed(frame, state)
+    opportunity = action.opportunity.payload
+    require(
+        action.opportunity.context == frame.context
+        and isinstance(opportunity, Opportunity),
+        "Invalid accepted opportunity.",
+    )
+    assert isinstance(opportunity, Opportunity)
+    require(
+        opportunity.accepted_training == action.accepted
+        and opportunity.accepted_dataset == job.accepted_dataset
+        and opportunity.generation == job.source.generation
+        and opportunity.round_number == job.round_number,
+        "Opportunity retargeted accepted cohort.",
+    )
+    old = _slot(frame, state.pending_promotion, records, ControlRecord)
+    require(
+        old is None or isinstance(old.payload, Opportunity),
+        "Invalid pending opportunity.",
+    )
+    assert old is None or isinstance(old.payload, Opportunity)
+    expected_debt = (
+        Debt(opportunity.id, boundary.cycle) if old is None else _opportunity(old).debt
+    )
+    require(opportunity.debt == expected_debt, "Promotion replacement moved debt.")
+    if old is not None:
+        require(
+            opportunity.round_number > _opportunity(old).round_number,
+            "Promotion round regressed.",
+        )
+    return _changed(
+        frame,
+        replace(
+            state,
+            pending_promotion=record_ref(action.opportunity),
+            promotion_debt=state.promotion_debt or expected_debt,
+        ),
+        action.opportunity,
+        displacement=None if old is None else Displacement(
+            "promotion_coalesced", record_ref(old), record_ref(action.opportunity), expected_debt
+        ),
+    )
+
+
+def _opportunity(record: ControlRecord) -> Opportunity:
+    require(isinstance(record.payload, Opportunity), "Expected opportunity envelope.")
+    assert isinstance(record.payload, Opportunity)
+    return record.payload

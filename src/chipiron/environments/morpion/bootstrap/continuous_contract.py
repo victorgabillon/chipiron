@@ -7,6 +7,7 @@ bodies, lifecycle recovery and runtime policy dispatch are intentionally absent.
 """
 
 import json
+import math
 import re
 from dataclasses import asdict, dataclass, fields
 from pathlib import PurePosixPath
@@ -319,7 +320,7 @@ class Job(_Wire):
         _text(self.id)
         require(
             isinstance(self.stage, str)
-            and self.stage in {"EXTRACT", "PREPARE", "TRAIN"},
+            and self.stage in {"EXTRACT", "PREPARE", "TRAIN", "COMPARE"},
             "Unsupported job stage.",
         )
         require(
@@ -329,7 +330,10 @@ class Job(_Wire):
         require(isinstance(self.source, Source), "Invalid job source.")
         for ref in (self.claim, self.managed_launch, self.budget):
             require(isinstance(ref, Ref), "Invalid job reference.")
-        require(self.reserved_id is None, "Comparison jobs are deferred.")
+        if self.stage == "COMPARE":
+            _text(self.reserved_id)
+        else:
+            require(self.reserved_id is None, "Unexpected comparison reservation.")
         require(
             self.accepted_dataset is None
             or isinstance(self.accepted_dataset, Accepted),
@@ -341,7 +345,7 @@ class Job(_Wire):
             )
         else:
             require(self.accepted_dataset is not None, "Missing accepted Dataset.")
-        if self.stage == "TRAIN":
+        if self.stage in {"TRAIN", "COMPARE"}:
             require(
                 isinstance(self.ready, Ref) and isinstance(self.parents, Ref),
                 "Missing ready/parent binding.",
@@ -542,14 +546,14 @@ def _envelope(value: object, schema: str) -> dict[str, Any]:
     return dict(value)
 
 
-def encode_record(record: JobRecord | ReadyRecord) -> bytes:
+def encode_record(record: Record) -> bytes:
     """Canonical proposed bytes; the caller must fsync/publish before state commit."""
     return json.dumps(
         record.to_metadata(), sort_keys=True, separators=(",", ":"), allow_nan=False
     ).encode()
 
 
-def record_ref(record: JobRecord | ReadyRecord) -> Ref:
+def record_ref(record: Record) -> Ref:
     """Describe proposed bytes, without asserting an artifact exists."""
     digest = object_digest(record.to_metadata())
     return Ref(
@@ -557,3 +561,394 @@ def record_ref(record: JobRecord | ReadyRecord) -> Ref:
         digest,
         len(encode_record(record)),
     )
+
+
+def _finite(value: object, minimum: float | None = None) -> None:
+    require(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and (minimum is None or value >= minimum),
+        "Invalid finite contract number.",
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Budget(_Wire):
+    """Original monitored allowance and reserved concurrent bytes."""
+
+    launch: Ref
+    max_job_seconds: int
+    consumed_job_seconds: float
+    clock_evidence: Ref
+    reserved_output_bytes: int
+    reserved_scratch_bytes: int
+    limits_sha256: str
+
+    def __post_init__(self) -> None:
+        """Reject invalid allowance without interpreting wall clocks."""
+        require(
+            isinstance(self.launch, Ref) and isinstance(self.clock_evidence, Ref),
+            "Invalid budget proof.",
+        )
+        integer(self.max_job_seconds, 1)
+        _finite(self.consumed_job_seconds, 0)
+        require(
+            self.consumed_job_seconds <= self.max_job_seconds,
+            "Consumed allowance exceeds budget.",
+        )
+        integer(self.reserved_output_bytes)
+        integer(self.reserved_scratch_bytes)
+        _digest(self.limits_sha256)
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode exact nested proof refs."""
+        data = _fields(value, cls)
+        for key in ("launch", "clock_evidence"):
+            data[key] = Ref.from_metadata(data[key])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Opportunity(_Wire):
+    """A cadence-eligible accepted candidate, independent of comparison outcome."""
+
+    id: str
+    accepted_training: Accepted
+    generation: int
+    round_number: int
+    candidate_name: str
+    candidate: Ref
+    accepted_dataset: Accepted
+    debt: Debt
+
+    def __post_init__(self) -> None:
+        """Validate direct construction and immutable parent identities."""
+        _text(self.id)
+        _text(self.candidate_name)
+        integer(self.generation, 1)
+        integer(self.round_number, 1)
+        require(
+            isinstance(self.accepted_training, Accepted)
+            and isinstance(self.accepted_dataset, Accepted),
+            "Invalid accepted promotion roots.",
+        )
+        require(
+            isinstance(self.candidate, Ref) and isinstance(self.debt, Debt),
+            "Invalid promotion evidence.",
+        )
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode exact opportunity evidence."""
+        data = _fields(value, cls)
+        for key in ("accepted_training", "accepted_dataset"):
+            data[key] = Accepted.from_metadata(data[key])
+        data["candidate"] = Ref.from_metadata(data["candidate"])
+        data["debt"] = Debt.from_metadata(data["debt"])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Population(_Wire):
+    """Exact accepted ordered rows/targets, split and evaluation recipe."""
+
+    accepted_dataset: Accepted
+    rows_sha256: str
+    split_sha256: str
+    validation_count: int
+    evaluation_recipe: Ref
+
+    def __post_init__(self) -> None:
+        """Require nonempty common validation data."""
+        require(
+            isinstance(self.accepted_dataset, Accepted)
+            and isinstance(self.evaluation_recipe, Ref),
+            "Invalid population proof.",
+        )
+        _digest(self.rows_sha256)
+        _digest(self.split_sha256)
+        integer(self.validation_count, 1)
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode the immutable population."""
+        data = _fields(value, cls)
+        data["accepted_dataset"] = Accepted.from_metadata(data["accepted_dataset"])
+        data["evaluation_recipe"] = Ref.from_metadata(data["evaluation_recipe"])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Reservation(_Wire):
+    """Pinned opportunity, current comparison and optional cutover request."""
+
+    opportunity: Ref
+    incumbent: Ref
+    population: Ref
+    comparison_job: Ref | None
+    comparison: Ref | None
+    previous: Ref | None
+    activation_request: Ref | None
+    phase: str
+
+    def __post_init__(self) -> None:
+        """Reject impossible phase/evidence combinations."""
+        for ref in (self.opportunity, self.incumbent, self.population):
+            require(isinstance(ref, Ref), "Missing reservation root.")
+        for optional_ref in (
+            self.comparison_job,
+            self.comparison,
+            self.previous,
+            self.activation_request,
+        ):
+            require(
+                optional_ref is None or isinstance(optional_ref, Ref),
+                "Invalid reservation ref.",
+            )
+        require(
+            self.phase in {"RESERVED", "COMPARING", "VERIFIED", "CUTOVER"},
+            "Invalid reservation phase.",
+        )
+        require(
+            (self.comparison_job is not None) == (self.phase != "RESERVED"),
+            "Reservation job/phase mismatch.",
+        )
+        require(
+            (self.comparison is not None) == (self.phase in {"VERIFIED", "CUTOVER"}),
+            "Reservation comparison/phase mismatch.",
+        )
+        require(
+            (self.activation_request is not None) == (self.phase == "CUTOVER"),
+            "Reservation cutover/phase mismatch.",
+        )
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode all references strictly."""
+        data = _fields(value, cls)
+        for key in ("opportunity", "incumbent", "population"):
+            data[key] = Ref.from_metadata(data[key])
+        for key in ("comparison_job", "comparison", "previous", "activation_request"):
+            data[key] = _optional(Ref, data[key])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Comparison(_Wire):
+    """A common-population decision, not learned-cohort acceptance."""
+
+    reservation_id: str
+    claim: Ref
+    candidate: Ref
+    incumbent: Ref
+    population: Ref
+    candidate_loss: float
+    incumbent_loss: float
+    decision: str
+    tie_break: str
+
+    def __post_init__(self) -> None:
+        """Keep equality incumbent-relative and losses finite."""
+        _text(self.reservation_id)
+        for ref in (self.claim, self.candidate, self.incumbent, self.population):
+            require(isinstance(ref, Ref), "Invalid comparison proof.")
+        _finite(self.candidate_loss)
+        _finite(self.incumbent_loss)
+        require(
+            self.decision
+            == ("promote" if self.candidate_loss < self.incumbent_loss else "retain"),
+            "Comparison decision disagrees with losses.",
+        )
+        require(
+            self.tie_break == "incumbent_on_equal_else_candidate_name",
+            "Invalid comparison tie rule.",
+        )
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode the exact comparison evidence."""
+        data = _fields(value, cls)
+        for key in ("claim", "candidate", "incumbent", "population"):
+            data[key] = Ref.from_metadata(data[key])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Disposition(_Wire):
+    """Mandatory selection/disposal evidence, separate from passive telemetry."""
+
+    subject: Source | Ref
+    reason: str
+    successor: Source | Ref | None
+    debt: Debt | None
+
+    def __post_init__(self) -> None:
+        """Validate closed reasons and immutable roots."""
+        require(isinstance(self.subject, (Source, Ref)), "Invalid disposition subject.")
+        require(
+            self.successor is None or isinstance(self.successor, (Source, Ref)),
+            "Invalid disposition successor.",
+        )
+        require(
+            self.debt is None or isinstance(self.debt, Debt),
+            "Invalid disposition debt.",
+        )
+        require(
+            self.reason
+            in {
+                "coalesced_before_admission",
+                "ready_superseded_unconsumed",
+                "ineligible_for_training",
+                "promotion_coalesced",
+                "retained",
+                "failed_incomplete",
+                "settled_discard",
+            },
+            "Unknown disposition reason.",
+        )
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode the discriminated source/ref shapes without defaults."""
+        data = _fields(value, cls)
+        for key in ("subject", "successor"):
+            raw = data[key]
+            if raw is not None:
+                require(isinstance(raw, dict), "Invalid disposition reference.")
+                data[key] = (
+                    Source.from_metadata(raw)
+                    if "publication_id" in raw
+                    else Ref.from_metadata(raw)
+                )
+        data["debt"] = _optional(Debt, data["debt"])
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
+class Retirement(_Wire):
+    """Compact owned proof authorizing disposal of reconstructible files."""
+
+    ready: Ref
+    files: tuple[str, ...]
+    reason: str
+
+    def __post_init__(self) -> None:
+        """Accept only explicit unique file names; caller checks live roots."""
+        require(isinstance(self.ready, Ref), "Invalid retirement ready ref.")
+        require(
+            isinstance(self.files, tuple)
+            and bool(self.files)
+            and len(set(self.files)) == len(self.files),
+            "Invalid retirement files.",
+        )
+        for path in self.files:
+            _path(path)
+        require(
+            self.reason == "unreferenced_operational_cache",
+            "Invalid retirement reason.",
+        )
+
+    def to_metadata(self) -> dict[str, Any]:
+        """Serialize a detached file list."""
+        return {**asdict(self), "files": list(self.files)}
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Decode exact disposal evidence."""
+        data = _fields(value, cls)
+        data["ready"] = Ref.from_metadata(data["ready"])
+        require(isinstance(data["files"], list), "Invalid retirement file array.")
+        data["files"] = tuple(data["files"])
+        return cls(**data)
+
+
+type ControlPayload = (
+    Budget
+    | Opportunity
+    | Population
+    | Reservation
+    | Comparison
+    | Disposition
+    | Retirement
+)
+
+_CONTROL_SCHEMAS: dict[
+    str,
+    type[Budget]
+    | type[Opportunity]
+    | type[Population]
+    | type[Reservation]
+    | type[Comparison]
+    | type[Disposition]
+    | type[Retirement],
+] = {
+    "continuous_budget_v1": Budget,
+    "continuous_opportunity_v1": Opportunity,
+    "continuous_population_v1": Population,
+    "continuous_reservation_v1": Reservation,
+    "continuous_comparison_v1": Comparison,
+    "continuous_disposition_v1": Disposition,
+    "continuous_retirement_v1": Retirement,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class ControlRecord:
+    """Closed control envelope; schemas are derived from the typed payload."""
+
+    context: Context
+    payload: ControlPayload
+
+    def __post_init__(self) -> None:
+        """Reject unknown or mutable payloads."""
+        require(
+            isinstance(self.context, Context)
+            and type(self.payload) in _CONTROL_SCHEMAS.values(),
+            "Invalid control envelope.",
+        )
+
+    def to_metadata(self) -> dict[str, Any]:
+        """Serialize an exact reviewed control envelope."""
+        schema = next(
+            name
+            for name, kind in _CONTROL_SCHEMAS.items()
+            if type(self.payload) is kind
+        )
+        return {
+            "schema": schema,
+            "context": self.context.to_metadata(),
+            "payload": self.payload.to_metadata(),
+        }
+
+    @classmethod
+    def from_metadata(cls, value: object) -> Self:
+        """Reject arbitrary schemas before decoding a control payload."""
+        require(isinstance(value, dict), "Expected control envelope.")
+        assert isinstance(value, dict)
+        schema = value.get("schema")
+        require(
+            isinstance(schema, str) and schema in _CONTROL_SCHEMAS,
+            "Unknown control schema.",
+        )
+        assert isinstance(schema, str)
+        data = _envelope(value, schema)
+        return cls(
+            Context.from_metadata(data["context"]),
+            _CONTROL_SCHEMAS[schema].from_metadata(data["payload"]),
+        )
+
+
+type Record = JobRecord | ReadyRecord | ControlRecord
+
+
+def decode_record(value: object) -> Record:
+    """Read one of the exact permitted envelopes."""
+    require(isinstance(value, dict), "Expected continuous envelope.")
+    assert isinstance(value, dict)
+    if value.get("schema") == JobRecord.schema:
+        return JobRecord.from_metadata(value)
+    if value.get("schema") == ReadyRecord.schema:
+        return ReadyRecord.from_metadata(value)
+    return ControlRecord.from_metadata(value)
