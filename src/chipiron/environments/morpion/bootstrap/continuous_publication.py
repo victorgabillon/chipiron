@@ -414,6 +414,45 @@ def prepared_roots(
     return frozenset(roots)
 
 
+def dispatch_generation(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, *, training: bool
+) -> int | None:
+    """Project only eligible authoritative work into existing worker discovery."""
+    from .continuous_contract import ReadyRecord
+    from .prepared_dataset_storage import entries
+
+    frame = load_frame(paths, state)
+    if not frame.state.admission_open:
+        return None
+    records = slot_records(paths, frame)
+    candidate: Source | None
+    if training:
+        if (
+            frame.state.cohort is not None
+            or transitions.comparison_owed(frame, records)
+            or frame.state.ready is None
+        ):
+            return None
+        ready = records[frame.state.ready]
+        assert isinstance(ready, ReadyRecord)
+        candidate = ready.payload.source
+    else:
+        if frame.state.dataset_job is not None or len(entries(state)) == 2:
+            return None
+        candidate = frame.state.pending_source
+    if candidate is None:
+        return None
+    policy = Policy()
+    if (
+        state.cycle_index - candidate.cycle > policy.max_source_age_cycles
+        or frame.state.incumbent_epoch - candidate.incumbent_epoch
+        > policy.max_teacher_epoch_lag
+    ):
+        return None
+    authenticate_source(paths, state, candidate)
+    return candidate.generation
+
+
 def authenticate_job(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, job: JobRecord
 ) -> None:
@@ -432,9 +471,14 @@ def authenticate_job(
     expected_claim = (
         paths.pipeline_dataset_claim_path_for_generation(job.payload.source.generation)
         if job.payload.stage in {"EXTRACT", "PREPARE"}
-        else paths.pipeline_training_claim_path_for_generation(job.payload.source.generation)
+        else paths.pipeline_training_claim_path_for_generation(
+            job.payload.source.generation
+        )
     )
-    require(job.payload.claim.path == paths.relative_to_work_dir(expected_claim), "Job claim path differs.")
+    require(
+        job.payload.claim.path == paths.relative_to_work_dir(expected_claim),
+        "Job claim path differs.",
+    )
     claim = read_ref(paths, job.payload.claim)
     owner = monitored_identity()
     require(
@@ -460,7 +504,9 @@ def authenticate_job(
     from .config import load_bootstrap_config
     from .learning_policy import policy_from_metadata
 
-    policy = policy_from_metadata(load_bootstrap_config(paths.bootstrap_config_path).metadata)
+    policy = policy_from_metadata(
+        load_bootstrap_config(paths.bootstrap_config_path).metadata
+    )
     require(policy is not None, "Missing continuous limits.")
     assert policy is not None
     require(
@@ -482,8 +528,16 @@ def authenticate_job(
     from .pipeline_artifacts import load_pipeline_stage_claim
     from .prepared_dataset_intent import original_deadline
 
-    original, _ = original_deadline(paths, policy.worker_max_seconds, load_pipeline_stage_claim(expected_claim), owner)
-    require(clock["deadline"] <= original + 0.1, "Job clock exceeds original dispatch or claim.")
+    original, _ = original_deadline(
+        paths,
+        policy.worker_max_seconds,
+        load_pipeline_stage_claim(expected_claim),
+        owner,
+    )
+    require(
+        clock["deadline"] <= original + 0.1,
+        "Job clock exceeds original dispatch or claim.",
+    )
 
 
 def apply_owned(

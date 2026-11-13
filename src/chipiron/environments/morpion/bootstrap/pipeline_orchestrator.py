@@ -662,7 +662,13 @@ def run_next_pipeline_dataset_stage_once(
 
     if paths.run_state_path.exists():
         scheduling_state = load_bootstrap_run_state(paths.run_state_path)
-        if window(scheduling_state) is not None:
+        from .continuous_publication import dispatch_generation
+        from .continuous_publication import enabled as continuous_enabled
+
+        if continuous_enabled(scheduling_state):
+            source = dispatch_generation(paths, scheduling_state, training=False)
+            manifests = {g: m for g, m in manifests.items() if g == source}
+        elif window(scheduling_state) is not None:
             source = selected_source(scheduling_state)
             manifests = {g: m for g, m in manifests.items() if g == source}
     LOGGER.info(
@@ -792,7 +798,13 @@ def run_next_pipeline_training_stage_once(
 
     if paths.run_state_path.exists():
         scheduling_state = load_bootstrap_run_state(paths.run_state_path)
-        if window(scheduling_state) is not None:
+        from .continuous_publication import dispatch_generation
+        from .continuous_publication import enabled as continuous_enabled
+
+        if continuous_enabled(scheduling_state):
+            source = dispatch_generation(paths, scheduling_state, training=True)
+            manifests = {g: m for g, m in manifests.items() if g == source}
+        elif window(scheduling_state) is not None:
             source = selected_source(scheduling_state)
             manifests = {g: m for g, m in manifests.items() if g == source}
     lower_bound = _training_lower_bound(paths)
