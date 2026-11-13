@@ -645,6 +645,10 @@ def run_next_pipeline_dataset_stage_once(
         paths.work_dir,
         _timestamp_now_utc(),
     )
+    from .prepared_dataset import reconcile
+
+    if paths.run_state_path.exists():
+        reconcile(paths, args)
     manifests = load_available_pipeline_manifests(paths)
     latest_dataset = _latest_dataset_summary(paths, manifests)
     if args.continual_learning is not None:

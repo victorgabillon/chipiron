@@ -1777,9 +1777,14 @@ def run_pipeline_dataset_stage(
             with admit_dataset(
                 paths, args, manifest, ttl_seconds=claim_ttl_seconds, owner=claim_owner
             ) as attempt:
+                from chipiron.environments.morpion.bootstrap.prepared_dataset import (
+                    prepare_accepted,
+                )
+
                 if isinstance(attempt, MorpionPipelineGenerationManifest):
+                    prepare_accepted(paths, args, generation)
                     return attempt
-                return _run_pipeline_dataset_stage(
+                completed = _run_pipeline_dataset_stage(
                     args,
                     generation=generation,
                     manifest=manifest,
@@ -1788,6 +1793,8 @@ def run_pipeline_dataset_stage(
                     allow_scientific_v2=True,
                     dataset_attempt=attempt,
                 )
+                prepare_accepted(paths, args, generation)
+                return completed
         return _run_pipeline_dataset_stage(
             args,
             generation=generation,
@@ -2151,7 +2158,14 @@ def _run_pipeline_dataset_stage(
                     frontier_status=frontier_status,
                 ),
             )
-            manifest = accept_dataset(paths, reference)
+            from chipiron.environments.morpion.bootstrap.prepared_dataset_recipe import (
+                dataset_recipe,
+            )
+
+            if dataset_recipe(args, rows_path) is None:
+                manifest = accept_dataset(paths, reference)
+            else:
+                manifest = accept_dataset(paths, reference, preparation_args=args)
         LOGGER.info(
             "[leaderboard] persist_start generation=%s cycle=%s",
             generation,

@@ -124,6 +124,8 @@ def _inventory_identity(root: Path) -> tuple[str, set[tuple[int, int]]]:
 
 
 def _settled(paths: MorpionBootstrapPaths, state: Any, reader: Metadata) -> None:
+    from .prepared_dataset_storage import require_settled
+
     require(
         not paths.launcher_pid_path.exists(),
         "Launcher registration requires recovery before fork.",
@@ -137,6 +139,7 @@ def _settled(paths: MorpionBootstrapPaths, state: Any, reader: Metadata) -> None
         data is None or data["active"] is None,
         "Reserved learning window prevents fork.",
     )
+    require_settled(paths, state)
     records = publication_records(state.metadata)
     for entry in _entries(paths.pipeline_dir):
         if entry.is_dir() and entry.name.startswith("generation_"):

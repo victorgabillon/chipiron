@@ -329,7 +329,8 @@ def owned_identity(tmp_path: Path) -> Iterator[tuple[int, int]]:
     code = (
         "import subprocess,time,json; from pathlib import Path; "
         "p=subprocess.Popen(['sleep','30']); "
-        f"Path({str(info)!r}).write_text(json.dumps(p.pid)); p.wait()"
+        f"f=Path({str(info)!r}); t=f.with_name(f.name+'.tmp'); "
+        "t.write_text(json.dumps(p.pid)); t.replace(f); p.wait()"
     )
     owner = subprocess.Popen(
         [sys.executable, "-I", "-B", "-c", code], start_new_session=True
