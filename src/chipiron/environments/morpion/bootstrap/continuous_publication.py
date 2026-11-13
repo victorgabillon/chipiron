@@ -5,10 +5,12 @@ published before the caller saves the returned run state. An orphan descriptor
 or claim file never grants admission. Public policy dispatch is wired separately.
 """
 
+import json
 import os
 import stat
 import time
 import uuid
+from contextlib import suppress
 from dataclasses import replace
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -119,7 +121,11 @@ def put_record(paths: MorpionBootstrapPaths, record: Record) -> Ref:
     ref = record_ref(record)
     body = encode_record(record)
     require(len(body) <= MAX_RECORD_BYTES, "Continuous descriptor exceeds bound.")
-    final = inside(paths.work_dir, ref.path)
+    final = paths.work_dir / ref.path
+    require(
+        not any(p.is_symlink() for p in (final, *final.parents)),
+        "Symlinked continuous publication path.",
+    )
     final.parent.mkdir(parents=True, exist_ok=True)
     if final.exists():
         require(reference(paths, final) == ref, "Conflicting continuous object.")
@@ -138,6 +144,160 @@ def put_record(paths: MorpionBootstrapPaths, record: Record) -> Ref:
     finally:
         temporary.unlink(missing_ok=True)
     return ref
+
+
+def put_proof(paths: MorpionBootstrapPaths, value: dict[str, Any]) -> Ref:
+    """Freeze existing native proof shapes without giving them selection authority."""
+    body = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode()
+    require(len(body) <= MAX_RECORD_BYTES, "Continuous proof exceeds bound.")
+    digest = object_digest(value)
+    ref = Ref(f"pipeline/continuous_v1/proofs/{digest}.json", digest, len(body))
+    path = paths.work_dir / ref.path
+    require(
+        not any(p.is_symlink() for p in (path, *path.parents)), "Symlinked proof path."
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        temporary = path.parent / (".pending-" + uuid.uuid4().hex)
+        try:
+            with temporary.open("xb") as stream:
+                stream.write(body)
+                stream.flush()
+                os.fsync(stream.fileno())
+            with suppress(FileExistsError):
+                os.link(temporary, path)
+            sync_directory(path.parent)
+        finally:
+            temporary.unlink(missing_ok=True)
+    require(reference(paths, path) == ref, "Conflicting continuous proof.")
+    return ref
+
+
+def prepare_publication_owned(
+    paths: MorpionBootstrapPaths,
+    previous: MorpionBootstrapRunState | None,
+    proposed: MorpionBootstrapRunState,
+    activation: dict[str, Any] | None,
+) -> tuple[MorpionBootstrapRunState, dict[str, int] | None]:
+    """Bind new source clocks before the scientific descriptor is sealed."""
+    marker = proposed.metadata.get("continual_learning", {})
+    if marker.get("schema_version") != 4:
+        require(KEY not in proposed.metadata, "Continuous state lacks fresh context4.")
+        return proposed, None
+    if previous is None:
+        require(
+            KEY not in proposed.metadata,
+            "Cannot adopt previous continuous authority at genesis.",
+        )
+        expected = context(paths, proposed)
+        frame = transitions.initialize(
+            expected.workspace_epoch_sha256, expected.config_sha256
+        )
+        proposed = replace(
+            proposed, metadata={**proposed.metadata, KEY: frame.state.to_metadata()}
+        )
+    else:
+        frame = load_frame(paths, previous)
+        require(
+            proposed.metadata.get(KEY) == previous.metadata.get(KEY),
+            "Publication changed continuous authority before fencing.",
+        )
+        require(
+            proposed.cycle_index in (previous.cycle_index, previous.cycle_index + 1),
+            "Nonsequential continuous cycle.",
+        )
+        if proposed.cycle_index > previous.cycle_index:
+            records = slot_records(paths, frame)
+            dataset = (
+                records.get(frame.state.dataset_job)
+                if frame.state.dataset_job
+                else None
+            )
+            ready = records.get(frame.state.ready) if frame.state.ready else None
+            from .continuous_contract import ReadyRecord
+
+            require(
+                dataset is None or isinstance(dataset, JobRecord),
+                "Invalid Dataset slot.",
+            )
+            require(
+                ready is None or isinstance(ready, ReadyRecord), "Invalid Ready slot."
+            )
+            assert dataset is None or isinstance(dataset, JobRecord)
+            assert ready is None or isinstance(ready, ReadyRecord)
+            gate = transitions.growth_wait(
+                frame,
+                transitions.Boundary(
+                    frame.context, frame.state.revision, previous.cycle_index
+                ),
+                dataset=dataset,
+                ready=ready,
+            )
+            require(
+                gate is None, "Growth would cross a continuous debt/freshness gate."
+            )
+        if activation is not None:
+            # Cold activation owns resolution; enabling must wire the verified
+            # reservation into the same proposed state before this hook.
+            require(False, "Continuous activation resolution is not wired.")
+    return proposed, {
+        "cycle": proposed.cycle_index,
+        "incumbent_epoch": frame.state.incumbent_epoch,
+    }
+
+
+def on_publication_owned(
+    paths: MorpionBootstrapPaths,
+    previous: MorpionBootstrapRunState | None,
+    proposed: MorpionBootstrapRunState,
+) -> MorpionBootstrapRunState:
+    """Join an eligible ordinary offer to the caller's generation publication save."""
+    if (
+        not enabled(proposed)
+        or previous is None
+        or proposed.cycle_index == previous.cycle_index
+    ):
+        return proposed
+    from .config import load_bootstrap_config
+    from .continuous_contract import ReadyRecord
+    from .learning_policy import policy_from_metadata
+
+    policy = policy_from_metadata(
+        load_bootstrap_config(paths.bootstrap_config_path).metadata
+    )
+    require(policy is not None, "Missing continuous learning policy.")
+    assert policy is not None
+    if (
+        proposed.generation <= 1
+        or proposed.generation % policy.dataset_every_generations
+    ):
+        return proposed
+    frame = load_frame(paths, proposed)
+    records = slot_records(paths, frame)
+    dataset = records.get(frame.state.dataset_job) if frame.state.dataset_job else None
+    ready = records.get(frame.state.ready) if frame.state.ready else None
+    assert dataset is None or isinstance(dataset, JobRecord)
+    assert ready is None or isinstance(ready, ReadyRecord)
+    change = transitions.offer_source(
+        frame,
+        transitions.Boundary(frame.context, frame.state.revision, proposed.cycle_index),
+        source(paths, proposed, proposed.generation),
+        dataset=dataset,
+        ready=ready,
+    )
+    if isinstance(change, transitions.NoWork):
+        return proposed
+    result = replace(
+        proposed, metadata={**proposed.metadata, KEY: change.frame.state.to_metadata()}
+    )
+    if change.displacement is not None:
+        d = change.displacement
+        result = attach_disposition(
+            paths, result, Disposition(d.subject, d.reason, d.successor, d.debt)
+        )
+    return result
 
 
 def source(
@@ -235,6 +395,25 @@ def slot_records(
     return result
 
 
+def prepared_roots(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> frozenset[str]:
+    """Keep every admitted reader and pending/reserved comparison population live."""
+    from .continuous_contract import Opportunity, Population, ReadyRecord
+
+    frame = load_frame(paths, state)
+    roots: set[str] = set()
+    for record in slot_records(paths, frame).values():
+        payload = record.payload
+        if isinstance(record, (JobRecord, ReadyRecord)):
+            accepted = record.payload.accepted_dataset
+            if accepted is not None:
+                roots.add(accepted.descriptor_sha256)
+        elif isinstance(payload, (Opportunity, Population)):
+            roots.add(payload.accepted_dataset.descriptor_sha256)
+    return frozenset(roots)
+
+
 def authenticate_job(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, job: JobRecord
 ) -> None:
@@ -250,6 +429,12 @@ def authenticate_job(
     )
     authenticate_source(paths, state, job.payload.source)
     require_managed_execution(paths, state)
+    expected_claim = (
+        paths.pipeline_dataset_claim_path_for_generation(job.payload.source.generation)
+        if job.payload.stage in {"EXTRACT", "PREPARE"}
+        else paths.pipeline_training_claim_path_for_generation(job.payload.source.generation)
+    )
+    require(job.payload.claim.path == paths.relative_to_work_dir(expected_claim), "Job claim path differs.")
     claim = read_ref(paths, job.payload.claim)
     owner = monitored_identity()
     require(
@@ -272,9 +457,19 @@ def authenticate_job(
     )
     assert isinstance(record, ControlRecord) and isinstance(record.payload, Budget)
     budget = record.payload
+    from .config import load_bootstrap_config
+    from .learning_policy import policy_from_metadata
+
+    policy = policy_from_metadata(load_bootstrap_config(paths.bootstrap_config_path).metadata)
+    require(policy is not None, "Missing continuous limits.")
+    assert policy is not None
     require(
         budget.launch == job.payload.managed_launch
-        and budget.consumed_job_seconds < budget.max_job_seconds,
+        and budget.consumed_job_seconds < budget.max_job_seconds
+        and budget.max_job_seconds == policy.worker_max_seconds
+        and budget.limits_sha256 == object_digest(policy.to_metadata())
+        and budget.reserved_output_bytes <= policy.max_workspace_mb * 2**20
+        and budget.reserved_scratch_bytes <= policy.max_scratch_mb * 2**20,
         "Job allowance exhausted or retargeted.",
     )
     clock = read_ref(paths, budget.clock_evidence)
@@ -284,6 +479,11 @@ def authenticate_job(
     require(
         clock["owner"]["boot"] == owner["boot"], "Original job clock predates boot."
     )
+    from .pipeline_artifacts import load_pipeline_stage_claim
+    from .prepared_dataset_intent import original_deadline
+
+    original, _ = original_deadline(paths, policy.worker_max_seconds, load_pipeline_stage_claim(expected_claim), owner)
+    require(clock["deadline"] <= original + 0.1, "Job clock exceeds original dispatch or claim.")
 
 
 def apply_owned(

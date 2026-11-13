@@ -543,6 +543,11 @@ class DurableGenerationPublication:
     ) -> MorpionBootstrapRunState:
         """Publish complete dependencies; only a later durable run-state write commits."""
         assert self.staging is not None and self.identifier is not None
+        from .continuous_publication import prepare_publication_owned
+
+        state, continuous_source = prepare_publication_owned(
+            self.paths, self.state, state, self.activation
+        )
         if (
             self.version == 1
             and not baseline
@@ -683,6 +688,8 @@ class DurableGenerationPublication:
                 scientific_identity=scientific_identity,
                 canonical_validation=canonical_validation,
             )
+        if continuous_source is not None:
+            descriptor["continuous_source"] = continuous_source
         if self.evaluator_contract:
             require(
                 self.active_evaluator is not None, "Missing explicit active evaluator."
@@ -746,6 +753,8 @@ class DurableGenerationPublication:
             )
         if self.activation is not None:
             record["activation_request_sha256"] = self.activation["request_sha256"]
+        if continuous_source is not None:
+            record["continuous_source"] = continuous_source
         if self.version == 3:
             validate_capsule(self.paths.work_dir, record)
         metadata = dict(state.metadata)
@@ -756,6 +765,13 @@ class DurableGenerationPublication:
             **({"evaluator_contract": 1} if self.evaluator_contract else {}),
         }
         from .learning_schedule import on_publication
+
+        if continuous_source is not None:
+            from .continuous_publication import on_publication_owned
+
+            return on_publication_owned(
+                self.paths, self.state, replace(state, metadata=metadata)
+            )
 
         return on_publication(
             self.paths,

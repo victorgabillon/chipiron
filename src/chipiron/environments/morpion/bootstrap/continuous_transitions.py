@@ -804,8 +804,13 @@ def _accept_cohort(
             promotion_debt=state.promotion_debt or expected_debt,
         ),
         action.opportunity,
-        displacement=None if old is None else Displacement(
-            "promotion_coalesced", record_ref(old), record_ref(action.opportunity), expected_debt
+        displacement=None
+        if old is None
+        else Displacement(
+            "promotion_coalesced",
+            record_ref(old),
+            record_ref(action.opportunity),
+            expected_debt,
         ),
     )
 

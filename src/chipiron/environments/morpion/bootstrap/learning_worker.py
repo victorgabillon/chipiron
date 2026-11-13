@@ -94,9 +94,15 @@ def claim_metadata(
     from .managed_sessions import require_managed_execution
 
     require_managed_execution(paths, state)
-    if window(state) is None:
+    from .continuous_publication import enabled, source
+
+    continuous = enabled(state)
+    if not continuous and window(state) is None:
         return None
-    validate_source(paths, state, generation)
+    if continuous:
+        source(paths, state, generation)
+    else:
+        validate_source(paths, state, generation)
     current = monitored_identity()
     if claim_path.exists():
         previous = load_pipeline_stage_claim(claim_path)

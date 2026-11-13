@@ -27,9 +27,20 @@ def _deadline(
 ) -> tuple[float, float]:
     """Capture original claim/job bounds, never a renewed preparation timeout."""
     assert args.continual_learning is not None
+    return original_deadline(paths, args.continual_learning.worker_max_seconds, claim, owner)
+
+
+def original_deadline(
+    paths: MorpionBootstrapPaths,
+    max_seconds: int,
+    claim: MorpionPipelineStageClaim,
+    owner: dict[str, Any],
+) -> tuple[float, float]:
+    """Read the original dispatch clock for the existing Dataset or Training worker."""
+    require(claim.stage in {"dataset", "training"}, "Unsupported job clock stage.")
     now = time.monotonic()
     # A persistent worker resets this clock at original dispatch, not at acceptance.
-    status = paths.pipeline_dir / "worker_processes" / "dataset_worker.json"
+    status = paths.pipeline_dir / "worker_processes" / f"{claim.stage}_worker.json"
     # /proc start ticks use boot time (including suspend), not CLOCK_MONOTONIC.
     age = time.clock_gettime(time.CLOCK_BOOTTIME) - int(
         owner["start_ticks"]
@@ -53,7 +64,7 @@ def _deadline(
     wall = time.time()
     claim_end = datetime.fromisoformat(claim.expires_at_utc).timestamp()
     end = min(
-        now + claim_end - wall, started + args.continual_learning.worker_max_seconds
+        now + claim_end - wall, started + max_seconds
     )
     require(end > now, "Original Dataset job allowance exhausted")
     return end, wall + end - now

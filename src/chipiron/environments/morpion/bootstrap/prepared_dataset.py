@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
+    from .continuous_contract import JobRecord, ReadyRecord
     from .run_state import MorpionBootstrapRunState
 
 
@@ -108,9 +109,18 @@ def _save(
 ) -> None:
     data = storage.entries(state)
     data[key] = record
-    save_bootstrap_run_state(
-        storage.updated(state, data), paths.run_state_path, durable=True
-    )
+    proposed = storage.updated(state, data)
+    from .continuous_publication import enabled as continuous_enabled
+
+    if (
+        continuous_enabled(state)
+        and record["phase"] == "COMPLETE"
+        and storage.entries(state)[key]["phase"] == "PREPARING"
+    ):
+        from .continuous_dataset import ready_owned
+
+        proposed = ready_owned(paths, proposed, record)
+    save_bootstrap_run_state(proposed, paths.run_state_path, durable=True)
 
 
 def prepare_accepted(
@@ -276,6 +286,26 @@ def borrow(
     paths: MorpionBootstrapPaths, args: MorpionBootstrapArgs, admission: dict[str, Any]
 ) -> Iterator[tuple[Path, _PreparedInputs] | None]:
     """Borrow only the admission's complete input; keep lease through every reader."""
+    if "continuous_admission" in admission:
+        from .continuous_contract import JobRecord, ReadyRecord, Ref
+        from .continuous_publication import load_frame, read_record
+
+        current_state = load_bootstrap_run_state(paths.run_state_path)
+        frame = load_frame(paths, current_state)
+        job = read_record(
+            paths, Ref.from_metadata(admission["continuous_admission"]), frame.context
+        )
+        require(
+            isinstance(job, JobRecord) and job.payload.ready is not None,
+            "Missing continuous reader job.",
+        )
+        assert isinstance(job, JobRecord) and job.payload.ready is not None
+        ready = read_record(paths, job.payload.ready, frame.context)
+        require(isinstance(ready, ReadyRecord), "Missing authoritative Ready.")
+        assert isinstance(ready, ReadyRecord)
+        with borrow_continuous(paths, args, job, ready) as borrowed:
+            yield borrowed
+        return
     key = admission["dataset"]["reference"]["descriptor_sha256"]
     recipe = dataset_recipe(args, storage.directory(paths, key) / "rows.jsonl")
     if recipe is None:
@@ -420,6 +450,106 @@ def borrow(
                 )
 
 
+def prepare_continuous(
+    paths: MorpionBootstrapPaths, args: MorpionBootstrapArgs, job: JobRecord
+) -> ReadyRecord:
+    """Complete only the authoritative admitted PREPARE, retaining its stable path."""
+    from .continuous_contract import ReadyRecord, record_ref
+    from .continuous_publication import authenticate_job, load_frame, read_record
+
+    state = load_bootstrap_run_state(paths.run_state_path)
+    frame = load_frame(paths, state)
+    require(frame.state.dataset_job == record_ref(job), "Preparation job was replaced.")
+    authenticate_job(paths, state, job)
+    prepare_accepted(paths, args, job.payload.source.generation)
+    state = load_bootstrap_run_state(paths.run_state_path)
+    frame = load_frame(paths, state)
+    require(frame.state.ready is not None, "Preparation did not commit Ready.")
+    assert frame.state.ready is not None
+    ready = read_record(paths, frame.state.ready, frame.context)
+    require(
+        isinstance(ready, ReadyRecord)
+        and ready.payload.producer_job_id == job.payload.id,
+        "Unexpected Ready producer.",
+    )
+    assert isinstance(ready, ReadyRecord)
+    return ready
+
+
+@contextmanager
+def borrow_continuous(
+    paths: MorpionBootstrapPaths,
+    args: MorpionBootstrapArgs,
+    job: JobRecord,
+    ready: ReadyRecord,
+) -> Iterator[tuple[Path, _PreparedInputs]]:
+    """Retain stable and native leases for the admitted reader; never fall back."""
+    from .continuous_contract import record_ref
+    from .continuous_publication import authenticate_job, load_frame
+
+    require(job.payload.ready == record_ref(ready), "Reader Ready binding changed.")
+    state = load_bootstrap_run_state(paths.run_state_path)
+    frame = load_frame(paths, state)
+    require(frame.state.cohort == record_ref(job), "Reader is not the admitted cohort.")
+    authenticate_job(paths, state, job)
+    key = ready.payload.accepted_dataset.descriptor_sha256
+    recipe = dataset_recipe(args, storage.directory(paths, key) / "rows.jsonl")
+    require(recipe is not None, "Continuous preparation recipe unavailable.")
+    assert recipe is not None
+    with storage.lease(paths, key) as root:
+        state = load_bootstrap_run_state(paths.run_state_path)
+        record = storage.entries(state).get(key)
+        require(
+            record is not None and record["phase"] == "COMPLETE",
+            "Continuous inputs unavailable.",
+        )
+        assert record is not None
+        from .continuous_contract import Accepted, JobRecord
+        from .continuous_dataset import admitted, ready_record
+
+        # Reconstruct the producer envelope from the immutable Dataset admission.
+        from .dataset_publication import _proposal
+
+        proposal = _proposal(paths, ready.payload.accepted_dataset.to_metadata())
+        extract = admitted(paths, state, proposal["admission"])
+        producer = JobRecord(
+            extract.context,
+            replace(
+                extract.payload,
+                stage="PREPARE",
+                accepted_dataset=Accepted.from_metadata(record["accepted"]),
+            ),
+        )
+        require(
+            ready_record(paths, state, record, producer) == ready,
+            "Consumed Ready bytes changed.",
+        )
+        require(
+            record["recipe"] == recipe.identity(), "Continuous native recipe changed."
+        )
+        from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation import (
+            prepare_shared_inputs,
+        )
+
+        rows = root / "rows.jsonl"
+        with prepare_shared_inputs(
+            rows,
+            fraction=recipe.fraction,
+            seed=recipe.seed,
+            max_rows=recipe.max_rows,
+            row_chunk_size=recipe.row_chunk_size,
+            deadline=time.monotonic(),
+            existing_only=True,
+        ) as prepared:
+            require(prepared is not None, "Missing authoritative native inputs.")
+            assert prepared is not None
+            yield rows, prepared
+            require(
+                ready_record(paths, state, record, producer) == ready,
+                "Inputs changed after consumption.",
+            )
+
+
 def _retire_leased(paths: MorpionBootstrapPaths, key: str, root: Path) -> bool:
     """Retire after acquiring the stable artifact lease, without recursive locks."""
     from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation import (
@@ -434,6 +564,11 @@ def _retire_leased(paths: MorpionBootstrapPaths, key: str, root: Path) -> bool:
             data = storage.entries(state)
             record = data.get(key)
             if record is None:
+                return False
+            from .continuous_publication import enabled as continuous_enabled
+            from .continuous_publication import prepared_roots
+
+            if continuous_enabled(state) and key in prepared_roots(paths, state):
                 return False
             require(
                 record["phase"] in {"COMPLETE", "RETIRED", "SUSPENDED"},
