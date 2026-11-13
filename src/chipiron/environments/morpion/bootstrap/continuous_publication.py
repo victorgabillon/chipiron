@@ -239,9 +239,12 @@ def prepare_publication_owned(
                 gate is None, "Growth would cross a continuous debt/freshness gate."
             )
         if activation is not None:
-            # Cold activation owns resolution; enabling must wire the verified
-            # reservation into the same proposed state before this hook.
-            require(False, "Continuous activation resolution is not wired.")
+            from .promotion import resolve_owned
+
+            proposed = resolve_owned(
+                paths, proposed, promoted=True, request=activation["request"]
+            )
+            frame = load_frame(paths, proposed)
     return proposed, {
         "cycle": proposed.cycle_index,
         "incumbent_epoch": frame.state.incumbent_epoch,
@@ -475,11 +478,8 @@ def authenticate_job(
             job.payload.source.generation
         )
     )
-    require(
-        job.payload.claim.path == paths.relative_to_work_dir(expected_claim),
-        "Job claim path differs.",
-    )
     claim = read_ref(paths, job.payload.claim)
+    require(read_object(expected_claim) == claim, "Job claim was replaced or removed.")
     owner = monitored_identity()
     require(
         claim.get("generation") == job.payload.source.generation

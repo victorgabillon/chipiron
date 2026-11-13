@@ -188,6 +188,24 @@ def test_reserved_comparison_precedes_new_cohort_and_retains_tie() -> None:
     frame, ready = ready_frame()
     pending = opportunity(frame)
     assert isinstance(pending.payload, Opportunity)
+    pending = replace(
+        pending,
+        payload=replace(
+            pending.payload,
+            accepted_dataset=ready.payload.accepted_dataset,
+            generation=ready.payload.source.generation,
+        ),
+    )
+    population = ControlRecord(
+        frame.context,
+        Population(
+            ready.payload.accepted_dataset,
+            ready.payload.rows.sha256,
+            ready.payload.split.sha256,
+            2,
+            ref("recipe"),
+        ),
+    )
     frame = Frame(
         frame.context,
         replace(
@@ -201,7 +219,7 @@ def test_reserved_comparison_precedes_new_cohort_and_retains_tie() -> None:
         Reservation(
             record_ref(pending),
             ref("incumbent"),
-            ref("population"),
+            record_ref(population),
             None,
             None,
             None,
@@ -210,6 +228,7 @@ def test_reserved_comparison_precedes_new_cohort_and_retains_tie() -> None:
         ),
     )
     records = {record_ref(ready): ready, record_ref(pending): pending}
+    records[record_ref(population)] = population
     frame = changed(
         transition(frame, boundary(frame), ReservePromotion(reserved), records)
     ).frame
@@ -240,7 +259,7 @@ def test_reserved_comparison_precedes_new_cohort_and_retains_tie() -> None:
             comparison_job.payload.claim,
             pending.payload.candidate,
             ref("incumbent"),
-            ref("population"),
+            record_ref(population),
             1.0,
             1.0,
             "retain",

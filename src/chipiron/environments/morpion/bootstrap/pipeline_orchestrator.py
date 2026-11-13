@@ -776,6 +776,21 @@ def run_next_pipeline_training_stage_once(
     require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    from .continuous_publication import enabled as continuous_enabled
+    from .run_state import load_bootstrap_run_state
+
+    if paths.run_state_path.exists() and continuous_enabled(
+        load_bootstrap_run_state(paths.run_state_path)
+    ):
+        from .promotion import service
+
+        compared = service(
+            paths, args, ttl_seconds=claim_ttl_seconds, owner=claim_owner
+        )
+        if compared is not None:
+            return MorpionPipelineWorkerResult(
+                stage="training", generation=compared, ran_stage=True, reason=None
+            )
     manifests = load_available_pipeline_manifests(paths)
     stale_states = _recover_stale_training_states(
         paths,

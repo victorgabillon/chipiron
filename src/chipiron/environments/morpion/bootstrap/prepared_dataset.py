@@ -490,7 +490,21 @@ def borrow_continuous(
     require(job.payload.ready == record_ref(ready), "Reader Ready binding changed.")
     state = load_bootstrap_run_state(paths.run_state_path)
     frame = load_frame(paths, state)
-    require(frame.state.cohort == record_ref(job), "Reader is not the admitted cohort.")
+    if job.payload.stage == "COMPARE":
+        from .continuous_contract import Reservation
+        from .promotion import reservation
+
+        reserved = reservation(paths, state)
+        require(
+            reserved is not None
+            and isinstance(reserved.payload, Reservation)
+            and reserved.payload.comparison_job == record_ref(job),
+            "Reader is not the reserved comparison.",
+        )
+    else:
+        require(
+            frame.state.cohort == record_ref(job), "Reader is not the admitted cohort."
+        )
     authenticate_job(paths, state, job)
     key = ready.payload.accepted_dataset.descriptor_sha256
     recipe = dataset_recipe(args, storage.directory(paths, key) / "rows.jsonl")

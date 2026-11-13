@@ -1,11 +1,11 @@
-"""Pure first-path proposals for the unwired continuous contract.
+"""Pure closed transition proposals for bounded continuous coordination.
 
 No function grants admission authority. Callers must authenticate every supplied
 record/ref, current committed cycle, source, claim, validation population, parent
 map and resource reservation under the existing owner. Persist records first,
 then save the returned State once with related accepted/publication references.
 Displacements require durable receipts in that same save. No IO, clock, lease,
-claim takeover, Training acceptance or promotion transition is implemented here.
+or claim takeover is performed here.
 """
 
 from dataclasses import dataclass, replace
@@ -20,6 +20,7 @@ from .continuous_contract import (
     JobRecord,
     Opportunity,
     Policy,
+    Population,
     ReadyRecord,
     Record,
     Ref,
@@ -520,6 +521,14 @@ class ResolvePromotion:
     promoted: bool
 
 
+@dataclass(frozen=True, slots=True)
+class Recompare:
+    """Retain the original opportunity/debt while replacing a stale incumbent proof."""
+
+    reservation: ControlRecord
+    incumbent: Ref
+
+
 type Transition = (
     Offer
     | AdmitDataset
@@ -531,6 +540,7 @@ type Transition = (
     | StartComparison
     | VerifyComparison
     | ResolvePromotion
+    | Recompare
 )
 
 
@@ -625,6 +635,27 @@ def transition(
             ),
             action.reservation,
         )
+    if isinstance(action, Recompare):
+        _record(frame, frame.state.reserved_promotion, action.reservation)
+        value = _reservation(action.reservation)
+        require(
+            value.phase == "VERIFIED" and action.incumbent != value.incumbent,
+            "Only stale verified comparisons may recompare.",
+        )
+        updated = ControlRecord(
+            frame.context,
+            replace(
+                value,
+                phase="RESERVED",
+                incumbent=action.incumbent,
+                comparison_job=None,
+                comparison=None,
+                previous=record_ref(action.reservation),
+            ),
+        )
+        return _changed(
+            frame, replace(frame.state, reserved_promotion=record_ref(updated)), updated
+        )
     if isinstance(action, (StartComparison, VerifyComparison, ResolvePromotion)):
         _record(frame, frame.state.reserved_promotion, action.reservation)
         value = _reservation(action.reservation)
@@ -639,10 +670,34 @@ def transition(
                 and job.reserved_id == value.opportunity.sha256,
                 "Comparison job reservation differs.",
             )
+            opportunity = _slot(frame, value.opportunity, records, ControlRecord)
+            population = _slot(frame, value.population, records, ControlRecord)
+            require(
+                opportunity is not None
+                and isinstance(opportunity.payload, Opportunity)
+                and population is not None
+                and isinstance(population.payload, Population),
+                "Missing comparison population roots.",
+            )
+            assert opportunity is not None and isinstance(
+                opportunity.payload, Opportunity
+            )
+            assert population is not None and isinstance(population.payload, Population)
+            require(
+                job.accepted_dataset
+                == opportunity.payload.accepted_dataset
+                == population.payload.accepted_dataset
+                and job.round_number == opportunity.payload.round_number
+                and job.source.generation == opportunity.payload.generation,
+                "Comparison job retargeted reserved inputs.",
+            )
             updated = ControlRecord(
                 frame.context,
                 replace(
-                    value, phase="COMPARING", comparison_job=record_ref(action.job)
+                    value,
+                    phase="COMPARING",
+                    comparison_job=record_ref(action.job),
+                    previous=record_ref(action.reservation),
                 ),
             )
             return _changed(
@@ -684,7 +739,10 @@ def transition(
             updated = ControlRecord(
                 frame.context,
                 replace(
-                    value, phase="VERIFIED", comparison=record_ref(action.comparison)
+                    value,
+                    phase="VERIFIED",
+                    comparison=record_ref(action.comparison),
+                    previous=record_ref(action.reservation),
                 ),
             )
             return _changed(

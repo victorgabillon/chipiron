@@ -188,9 +188,11 @@ def reader_job(
             admission["attempt_id"],
             "TRAIN" if reserved_id is None else "COMPARE",
             ready.payload.source,
-            publication.reference(
+            publication.put_proof(
                 paths,
-                paths.pipeline_training_claim_path_for_generation(claim.generation),
+                read_object(
+                    paths.pipeline_training_claim_path_for_generation(claim.generation)
+                ),
             ),
             launch,
             budget,
@@ -229,7 +231,9 @@ def admit_owned(
         paths,
         state,
         boundary(paths, state),
-        transitions.AdmitCohort(job=job, ready=ready, validation_count=pop.payload.validation_count),
+        transitions.AdmitCohort(
+            job=job, ready=ready, validation_count=pop.payload.validation_count
+        ),
     )
     require(
         not isinstance(updated, transitions.NoWork),
@@ -388,6 +392,9 @@ def accept_owned(
                 **proposal["models"][name],
                 "generation": admission["generation"],
                 "name": name,
+                "source": "local_training",
+                "source_generation": admission["generation"],
+                "local_trained_generation": admission["generation"],
             },
         )
         debt = Debt(admission["attempt_id"], state.cycle_index)

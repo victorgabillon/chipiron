@@ -27,7 +27,9 @@ def _deadline(
 ) -> tuple[float, float]:
     """Capture original claim/job bounds, never a renewed preparation timeout."""
     assert args.continual_learning is not None
-    return original_deadline(paths, args.continual_learning.worker_max_seconds, claim, owner)
+    return original_deadline(
+        paths, args.continual_learning.worker_max_seconds, claim, owner
+    )
 
 
 def original_deadline(
@@ -63,9 +65,7 @@ def original_deadline(
     )
     wall = time.time()
     claim_end = datetime.fromisoformat(claim.expires_at_utc).timestamp()
-    end = min(
-        now + claim_end - wall, started + max_seconds
-    )
+    end = min(now + claim_end - wall, started + max_seconds)
     require(end > now, "Original Dataset job allowance exhausted")
     return end, wall + end - now
 

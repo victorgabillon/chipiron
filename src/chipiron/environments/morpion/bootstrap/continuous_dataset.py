@@ -20,7 +20,7 @@ from .continuous_contract import (
     Ref,
     record_ref,
 )
-from .generation_publication_io import object_digest, require
+from .generation_publication_io import object_digest, read_object, require
 
 if TYPE_CHECKING:
     from .bootstrap_args import MorpionBootstrapArgs
@@ -80,9 +80,11 @@ def job_owned(
             identifier,
             "EXTRACT",
             publication.source(paths, state, claim.generation),
-            publication.reference(
+            publication.put_proof(
                 paths,
-                paths.pipeline_dataset_claim_path_for_generation(claim.generation),
+                read_object(
+                    paths.pipeline_dataset_claim_path_for_generation(claim.generation)
+                ),
             ),
             launch,
             budget,

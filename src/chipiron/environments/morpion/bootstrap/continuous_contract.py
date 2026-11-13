@@ -1,9 +1,8 @@
-"""Immutable v1 wire records for the *unwired* continuous Dataset handoff.
+"""Immutable v1 wire records for bounded continuous coordination.
 
-These records validate structure, not authority. The future owned publisher must
+These records validate structure, not authority. The owned publisher must
 verify bytes, source publications, claims, budgets, parents, leases and managed
-sessions before committing a proposed state in its single durable save. Promotion
-bodies, lifecycle recovery and runtime policy dispatch are intentionally absent.
+sessions before committing a proposed state in its single durable save.
 """
 
 import json
@@ -299,7 +298,7 @@ class State(_Wire):
 
 @dataclass(frozen=True, slots=True)
 class Job(_Wire):
-    """Only Dataset EXTRACT/PREPARE and Training admission are supported here."""
+    """An immutable Dataset, Training or reserved-comparison admission."""
 
     id: str
     stage: str
@@ -363,7 +362,7 @@ class Job(_Wire):
 
     @classmethod
     def from_metadata(cls, value: object) -> Self:
-        """Decode the reviewed Job wire shape; COMPARE is explicitly unsupported."""
+        """Decode the closed Job wire shape and its stage-specific bindings."""
         data = _fields(value, cls)
         data["source"] = Source.from_metadata(data["source"])
         for key in ("claim", "managed_launch", "budget"):
