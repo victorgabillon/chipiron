@@ -64,7 +64,9 @@ def candidate_family() -> MorpionEvaluatorsConfig:
     )
 
 
-def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
+def fixture(
+    root: Path, *, proof: bool = False, extra_steps: int = 2
+) -> tuple[Any, Any]:
     """Create fresh managed context4 with two supported tiny independent models."""
     args, paths = setup_continual(
         root,
@@ -75,6 +77,7 @@ def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
         strict_execution=True,
         managed=True,
         proof=proof,
+        extra_steps=extra_steps,
     )
     begin_owned(
         paths,

@@ -260,7 +260,11 @@ def run_child(root: Path, phase: str) -> subprocess.CompletedProcess[str]:
         ],
         env={
             **os.environ,
-            "PYTHONPATH": f"{Path(chipiron.__file__).parent.parent}:{Path.cwd()}",
+            "PYTHONPATH": os.pathsep.join((
+                str(Path(chipiron.__file__).parent.parent),
+                str(Path.cwd()),
+                os.environ.get("PYTHONPATH", ""),
+            )),
         },
         text=True,
         capture_output=True,
@@ -387,7 +391,11 @@ w.run_morpion_reevaluation_worker_once(scientific_args(Path(sys.argv[1])),
         [sys.executable, "-c", code, str(paths.work_dir)],
         env={
             **os.environ,
-            "PYTHONPATH": f"{Path(chipiron.__file__).parent.parent}:{Path.cwd()}",
+            "PYTHONPATH": os.pathsep.join((
+                str(Path(chipiron.__file__).parent.parent),
+                str(Path.cwd()),
+                os.environ.get("PYTHONPATH", ""),
+            )),
         },
         capture_output=True,
         text=True,

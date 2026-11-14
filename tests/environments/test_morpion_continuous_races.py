@@ -164,8 +164,9 @@ def test_published_dead_claim_survives_slot_removal(tmp_path: Path, stage: str) 
 
 
 @pytest.mark.usefixtures("continuous")
+@pytest.mark.parametrize("damage", ["tensor", "rows-and-metadata"])
 def test_same_dataset_preconsume_repair_and_postconsume_refusal(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, damage: str
 ) -> None:
     """Repair only before first reading; later corruption never switches or rebuilds inputs."""
     from chipiron.environments.morpion.bootstrap import continuous_inputs
@@ -186,6 +187,14 @@ def test_same_dataset_preconsume_repair_and_postconsume_refusal(
         nonlocal repaired
         if not repaired:
             tensor.unlink()
+            if damage == "rows-and-metadata":
+                (root / "rows.jsonl").write_bytes(b"damaged disposable rows")
+                for name in (
+                    "flat.manifest.json",
+                    "relational.manifest.json",
+                    "complete.json",
+                ):
+                    (tensor.parent / name).write_bytes(b"damaged disposable metadata")
             repaired = True
         original(*a, **k)
 
@@ -193,12 +202,19 @@ def test_same_dataset_preconsume_repair_and_postconsume_refusal(
         patch.setattr(continuous_inputs, "recover_before_consumption", damage_once)
         stages.run_pipeline_training_stage(args, generation=generation)
     assert repaired and tensor.read_bytes() == original_bytes
-    assert (
-        storage.entries(load_bootstrap_run_state(paths.run_state_path))[key][
-            "reserved_bytes"
-        ]
-        == compact_reservation
+    from chipiron.environments.morpion.bootstrap.continuous_resources import (
+        COMMIT_HEADROOM,
+        logical_bytes,
     )
+
+    # The operational report describes the repair and later borrow, so its byte
+    # length may change. The staging reservation must still shrink to a compact
+    # bound; every immutable Ready reference remains unchanged and verified.
+    current = storage.entries(load_bootstrap_run_state(paths.run_state_path))[key]
+    assert logical_bytes(root) <= current["reserved_bytes"]
+    assert current["reserved_bytes"] <= compact_reservation + COMMIT_HEADROOM
+    assert current["ready"] == storage.entries(state)[key]["ready"]
+    storage.ready_descriptor(paths, current)
     assert not prepared.retire(paths, key)  # Pending comparison still pins this root.
     tensor.write_bytes(b"corrupt-after-consumption")
     with pytest.raises(ValueError, match="after consumption"):
@@ -381,6 +397,8 @@ def test_reserved_cold_cutover_faults(
                 tmp_path / f"canonical-export-{len(references)}",
                 generation=head_state.generation + 1,
                 producer={**producer, "evaluator": artifact_digest(model_path)},
+                committed_source=paths.work_dir / head_state.latest_tree_snapshot_path,
+                previous_producer=producer,
             )
             with ShardedTrainingGenerationView(
                 exported,
@@ -472,21 +490,19 @@ def test_reserved_cold_cutover_faults(
 def test_admitted_work_crosses_real_activation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    endgame: tuple[Any, Any],
     boundary: str,
 ) -> None:
     """An admitted old teacher or cohort survives one real current-head cold activation."""
-    from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
-
-    with monkeypatch.context() as initial:
-        initial.setattr(runner_module, "initial_state", lambda: endgame[0])
-        args, paths = fixture(tmp_path / "run", proof=True)
+    # Long bounded rollouts reach real terminal targets without solving the root.
+    # The one-action endgame cannot publish a second Growth source.
+    args, paths = fixture(tmp_path / "run", proof=True, extra_steps=64)
     first = learn(args, paths)
     promotion.service(paths, args, ttl_seconds=60, owner=None)
     activate = promotion.activate_at_boundary
     with monkeypatch.context() as hold:
         hold.setattr(promotion, "activate_at_boundary", lambda paths: None)
         second = grow(args).generation
+    assert second > first
     before = load_bootstrap_run_state(paths.run_state_path)
     teacher = publication.source(paths, before, second)
     changed = False
@@ -546,7 +562,7 @@ def test_fresh_cold_activation_then_nonzero_growth(tmp_path: Path) -> None:
 
     from tests.environments.test_morpion_committed_evaluator_restore import fingerprint
 
-    args, paths = fixture(tmp_path / "run", proof=True)
+    args, paths = fixture(tmp_path / "run", proof=True, extra_steps=64)
     activated = False
     for _ in range(2):
         learn(args, paths)

@@ -293,6 +293,9 @@ def prepare_accepted(
             producer = read_record(paths, frame.state.dataset_job, frame.context)
             assert isinstance(producer, JobRecord)
             ready_evidence = ready_record(paths, snapshot, finished, producer)
+            from .continuous_inputs import preserve_recovery_metadata
+
+            preserve_recovery_metadata(paths, ready_evidence)
         with growth_receipt_ownership(paths, wait=True):
             state = load_bootstrap_run_state(paths.run_state_path)
             _checked(paths, state, key, record)

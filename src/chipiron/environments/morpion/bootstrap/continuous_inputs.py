@@ -1,5 +1,6 @@
 """Same-Dataset disposable recovery and durable first-consumption evidence."""
 
+import os
 import shutil
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
@@ -21,6 +22,34 @@ if TYPE_CHECKING:
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
     from .run_state import MorpionBootstrapRunState
+
+
+def _metadata_refs(ready: ReadyRecord) -> tuple[Ref, ...]:
+    """Small original native descriptors, including nondeterministic build metadata."""
+    files = dict(ready.payload.files)
+    return (
+        files["flat.manifest.json"],
+        files["relational.manifest.json"],
+        ready.payload.native_complete,
+    )
+
+
+def _metadata_backup(ref: Ref) -> Ref:
+    return Ref(
+        f"pipeline/continuous_v1/proofs/{ref.sha256}.json", ref.sha256, ref.bytes
+    )
+
+
+def preserve_recovery_metadata(
+    paths: MorpionBootstrapPaths, ready: ReadyRecord
+) -> None:
+    """Freeze exact small descriptors before Ready; its existing hashes authenticate them."""
+    for ref in _metadata_refs(ready):
+        value = publication.read_ref(paths, ref)
+        require(
+            publication.put_proof(paths, value) == _metadata_backup(ref),
+            "Native metadata must use canonical JSON for exact recovery.",
+        )
 
 
 def has_consumed(
@@ -143,6 +172,17 @@ def recover_before_consumption(
         )
         save_bootstrap_run_state(current, paths.run_state_path, durable=True)
     require(not consumed, "Corrupt input after consumption is not recoverable.")
+    # Never reconstruct timestamps/timings or replace the immutable Ready record.
+    # Missing or altered backups fail closed before deleting any disposable input.
+    metadata = {
+        ref: publication.read_ref(paths, _metadata_backup(ref))
+        for ref in _metadata_refs(ready)
+    }
+    relational = metadata[dict(ready.payload.files)["relational.manifest.json"]]
+    rows_mtime_ns = relational["source_rows_mtime_ns"]
+    require(
+        type(rows_mtime_ns) is int and rows_mtime_ns > 0, "Invalid original row mtime."
+    )
     budget = remaining(paths, job)
     clock = publication.read_ref(paths, budget.clock_evidence)
     deadline = clock["deadline"]
@@ -208,8 +248,27 @@ def recover_before_consumption(
             ),
             recipe.max_rows,
         )
-    for ref in expected:
-        storage.verify_reference(paths, ref.to_metadata())
+    with _ownership(native, deadline=deadline):
+        # Restore descriptive metadata only after every rebuilt scientific payload
+        # (accepted rows, both tensors and split) matches the original Ready bytes.
+        for ref in expected:
+            if ref not in metadata:
+                storage.verify_reference(paths, ref.to_metadata())
+        os.utime(rows, ns=(rows.stat().st_atime_ns, rows_mtime_ns))
+        sync_artifact(rows, paths.work_dir)
+        for ref in metadata:
+            backup = storage.verify_reference(
+                paths, _metadata_backup(ref).to_metadata()
+            )
+            destination = paths.work_dir / ref.path
+            temporary = destination.with_name(".restore-" + destination.name)
+            require(not temporary.is_symlink(), "Symlinked metadata recovery path.")
+            shutil.copyfile(backup, temporary)
+            sync_artifact(temporary, paths.work_dir)
+            os.replace(temporary, destination)
+            sync_artifact(destination, paths.work_dir)
+        for ref in expected:
+            storage.verify_reference(paths, ref.to_metadata())
     remaining(paths, job)
     materialized = logical_bytes(root) + COMMIT_HEADROOM
     require(materialized <= record["reserved_bytes"], "Recovery exceeded reservation.")
