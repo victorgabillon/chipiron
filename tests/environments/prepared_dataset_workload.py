@@ -54,6 +54,12 @@ def main() -> None:
                 assert os.read(int(os.environ["J41_RELEASE_FD"]), 1) == b"G"
         return
     if action == "consume":
+        if point == "accepted":
+
+            def after_accept(*args: Any, **kwargs: Any) -> Any:
+                os._exit(73)
+
+            training._repair = after_accept
 
         def unexpected(*args: Any, **kwargs: Any) -> Any:
             message = "Warm consumer copied rows or rebuilt native tensors"

@@ -131,6 +131,39 @@ def test_real_continuous_producer_death(tmp_path: Path, point: str) -> None:
 
 
 @pytest.mark.usefixtures("continuous")
+@pytest.mark.parametrize("stage", ["ready", "retried-ready", "accepted-training"])
+def test_published_dead_claim_survives_slot_removal(tmp_path: Path, stage: str) -> None:
+    """Retained admission proofs settle dead claims after Ready/cohort publication."""
+    from chipiron.environments.morpion.bootstrap import continuous_lifecycle
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        growth_receipt_ownership,
+    )
+
+    args, paths = fixture(tmp_path / "run")
+    generation = grow(args).generation
+    if stage == "retried-ready":
+        assert child(args, generation, "produce", point="native").returncode == 73
+    if stage == "accepted-training":
+        run_dataset(args, generation=generation)
+        failed = child(args, generation, "consume", point="accepted")
+        claim = paths.pipeline_training_claim_path_for_generation(generation)
+    else:
+        failed = child(args, generation, "produce", point="ready")
+        claim = paths.pipeline_dataset_claim_path_for_generation(generation)
+    assert failed.returncode == 73, failed.stdout
+    assert claim.exists()
+    state = load_bootstrap_run_state(paths.run_state_path)
+    frame = publication.load_frame(paths, state)
+    assert frame.state.dataset_job is None and frame.state.cohort is None
+    before = paths.run_state_path.read_bytes()
+    with growth_receipt_ownership(paths, wait=True):
+        continuous_lifecycle._release_published_claims(paths, state)
+        continuous_lifecycle._release_published_claims(paths, state)
+    assert not claim.exists()
+    assert paths.run_state_path.read_bytes() == before
+
+
+@pytest.mark.usefixtures("continuous")
 def test_same_dataset_preconsume_repair_and_postconsume_refusal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

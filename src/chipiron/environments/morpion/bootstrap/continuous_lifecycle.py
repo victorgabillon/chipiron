@@ -271,6 +271,7 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
             assert isinstance(reservation.payload, Reservation)
             subjects.append(reservation.payload.opportunity)
         state = apply(paths, state, transitions.Discard())
+        _release_published_claims(paths, state)
         for subject in subjects:
             state = publication.attach_disposition(
                 paths,
@@ -349,6 +350,42 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
         require(
             prepared_dataset.retire(paths, key), "Discarded Dataset is still leased."
         )
+
+
+def _release_published_claims(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> None:
+    """Settle publication-before-release deaths even after their slots were cleared.
+
+    Only an exact immutable admission can authorize releasing its surviving
+    claim. The worker must positively be dead; publication and TTL are not proof.
+    Repeating discard after its durable save uses these same retained receipts.
+    """
+    from .continuous_contract import Ref
+    from .generation_publication_io import publication_records
+
+    for source in publication_records(state.metadata):
+        for raw in source.get("continuous_admissions", []):
+            admission = publication.read_ref(paths, Ref.from_metadata(raw))
+            job = publication.read_record(
+                paths,
+                Ref.from_metadata(admission["continuous_admission"]),
+                publication.context(paths, state),
+            )
+            assert isinstance(job, JobRecord)
+            path = (
+                paths.pipeline_dataset_claim_path_for_generation(
+                    job.payload.source.generation
+                )
+                if job.payload.stage in {"EXTRACT", "PREPARE"}
+                else paths.pipeline_training_claim_path_for_generation(
+                    job.payload.source.generation
+                )
+            )
+            if path.exists() and read_object(path) == publication.read_ref(
+                paths, job.payload.claim
+            ):
+                release_dead_claim(paths, job)
 
 
 def remember_admission(
@@ -454,7 +491,21 @@ def recover_preparation(paths: MorpionBootstrapPaths) -> None:
             metadata={"learning_worker": monitored_identity()},
         )
         state, retried = retry_owned(paths, state, job, claim)
+        from .dataset_publication import _proposal
+
         assert retried.payload.accepted_dataset is not None
+        original = _proposal(paths, retried.payload.accepted_dataset.to_metadata())[
+            "admission"
+        ]
+        state = remember_admission(
+            paths,
+            state,
+            {
+                **original,
+                "claim_id": claim.claim_id,
+                "continuous_admission": record_ref(retried).to_metadata(),
+            },
+        )
         data = storage.entries(state)
         key = retried.payload.accepted_dataset.descriptor_sha256
         record = data[key]
