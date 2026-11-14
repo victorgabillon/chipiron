@@ -422,7 +422,7 @@ def accept_owned(
                 "local_trained_generation": admission["generation"],
             },
         )
-        debt = Debt(admission["attempt_id"], state.cycle_index)
+        debt = Debt(admission["attempt_id"], publication.cycle(state))
         if frame.state.pending_promotion is not None:
             old = publication.read_record(
                 paths, frame.state.pending_promotion, frame.context

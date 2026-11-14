@@ -54,6 +54,15 @@ KEY = "continuous_pipeline_v1"
 MAX_RECORD_BYTES = 2**20
 
 
+def cycle(state: MorpionBootstrapRunState) -> int:
+    """Translate the native zero-based cycle index; fresh genesis is index -1."""
+    require(
+        type(state.cycle_index) is int and state.cycle_index >= -1,
+        "Invalid native ordinary-cycle index.",
+    )
+    return state.cycle_index + 1
+
+
 def enabled(state: MorpionBootstrapRunState) -> bool:
     """Recognize only explicit context4; absent state is corruption, not genesis."""
     marker = state.metadata.get("continual_learning")
@@ -206,10 +215,10 @@ def prepare_publication_owned(
             "Publication changed continuous authority before fencing.",
         )
         require(
-            proposed.cycle_index in (previous.cycle_index, previous.cycle_index + 1),
+            cycle(proposed) in (cycle(previous), cycle(previous) + 1),
             "Nonsequential continuous cycle.",
         )
-        if proposed.cycle_index > previous.cycle_index:
+        if cycle(proposed) > cycle(previous):
             records = slot_records(paths, frame)
             dataset = (
                 records.get(frame.state.dataset_job)
@@ -231,7 +240,7 @@ def prepare_publication_owned(
             gate = transitions.growth_wait(
                 frame,
                 transitions.Boundary(
-                    frame.context, frame.state.revision, previous.cycle_index
+                    frame.context, frame.state.revision, cycle(previous)
                 ),
                 dataset=dataset,
                 ready=ready,
@@ -247,7 +256,7 @@ def prepare_publication_owned(
             )
             frame = load_frame(paths, proposed)
     return proposed, {
-        "cycle": proposed.cycle_index,
+        "cycle": cycle(proposed),
         "incumbent_epoch": frame.state.incumbent_epoch,
     }
 
@@ -258,11 +267,7 @@ def on_publication_owned(
     proposed: MorpionBootstrapRunState,
 ) -> MorpionBootstrapRunState:
     """Join an eligible ordinary offer to the caller's generation publication save."""
-    if (
-        not enabled(proposed)
-        or previous is None
-        or proposed.cycle_index == previous.cycle_index
-    ):
+    if not enabled(proposed) or previous is None or cycle(proposed) == cycle(previous):
         return proposed
     from .config import load_bootstrap_config
     from .continuous_contract import ReadyRecord
@@ -286,7 +291,7 @@ def on_publication_owned(
     assert ready is None or isinstance(ready, ReadyRecord)
     change = transitions.offer_source(
         frame,
-        transitions.Boundary(frame.context, frame.state.revision, proposed.cycle_index),
+        transitions.Boundary(frame.context, frame.state.revision, cycle(proposed)),
         source(paths, proposed, proposed.generation),
         dataset=dataset,
         ready=ready,
@@ -348,7 +353,7 @@ def authenticate_source(
     )
     frame = load_frame(paths, state)
     require(
-        value.cycle <= state.cycle_index
+        value.cycle <= cycle(state)
         and value.incumbent_epoch <= frame.state.incumbent_epoch,
         "Continuous source is from the future.",
     )
@@ -453,7 +458,7 @@ def dispatch_generation(
         return None
     policy = Policy()
     if (
-        state.cycle_index - candidate.cycle > policy.max_source_age_cycles
+        cycle(state) - candidate.cycle > policy.max_source_age_cycles
         or frame.state.incumbent_epoch - candidate.incumbent_epoch
         > policy.max_teacher_epoch_lag
     ):
@@ -564,7 +569,7 @@ def apply_owned(
         "Continuous state changed before owned apply.",
     )
     require(
-        boundary.cycle == persisted.cycle_index == state.cycle_index,
+        boundary.cycle == cycle(persisted) == cycle(state),
         "Unauthenticated current cycle.",
     )
     if isinstance(action, transitions.Offer):
@@ -761,7 +766,7 @@ def growth_reason(
     assert ready is None or isinstance(ready, ReadyRecord)
     refusal = transitions.growth_wait(
         frame,
-        transitions.Boundary(frame.context, frame.state.revision, state.cycle_index),
+        transitions.Boundary(frame.context, frame.state.revision, cycle(state)),
         dataset=dataset,
         ready=ready,
     )
@@ -788,7 +793,7 @@ def reconcile_freshness(paths: MorpionBootstrapPaths) -> None:
             value = ready.payload.source
             if (
                 value.generation <= frame.state.last_consumed_generation
-                or state.cycle_index - value.cycle > 8
+                or cycle(state) - value.cycle > 8
                 or frame.state.incumbent_epoch - value.incumbent_epoch > 1
             ):
                 updated = apply_owned(

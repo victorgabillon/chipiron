@@ -34,7 +34,9 @@ def boundary(
 ) -> transitions.Boundary:
     """Use the current owned revision and committed ordinary-cycle clock."""
     frame = publication.load_frame(paths, state)
-    return transitions.Boundary(frame.context, frame.state.revision, state.cycle_index)
+    return transitions.Boundary(
+        frame.context, frame.state.revision, publication.cycle(state)
+    )
 
 
 def job_owned(
