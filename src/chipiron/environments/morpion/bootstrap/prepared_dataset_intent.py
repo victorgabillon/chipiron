@@ -115,6 +115,17 @@ def intent_owned(
         - prior_reservation
         - sum(r["reserved_bytes"] for r in data.values())
     )
+    from .continuous_contract import Budget, ControlRecord, JobRecord
+    from .continuous_publication import enabled, load_frame, read_record
+
+    if enabled(state):
+        frame = load_frame(paths, state)
+        assert frame.state.dataset_job is not None
+        job = read_record(paths, frame.state.dataset_job, frame.context)
+        assert isinstance(job, JobRecord)
+        budget = read_record(paths, job.payload.budget, frame.context)
+        assert isinstance(budget, ControlRecord) and isinstance(budget.payload, Budget)
+        remaining = min(remaining, budget.payload.reserved_scratch_bytes)
     # No eligible reservation means ordinary private fallback, not partial reuse.
     if len(data) == 2 or remaining <= proposal["rows_bytes"] + 2 * limits.chunk_bytes:
         return state

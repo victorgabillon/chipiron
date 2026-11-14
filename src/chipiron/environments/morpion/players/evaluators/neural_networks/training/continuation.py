@@ -249,7 +249,13 @@ def finish_training(
         return {}
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
-    torch.save(optimizer.state_dict(), directory / "optimizer.pt")
+    from chipiron.utils.bounded_output import active, output_file
+
+    if active(directory / "optimizer.pt"):
+        with output_file(directory / "optimizer.pt", "wb") as stream:
+            torch.save(optimizer.state_dict(), stream)
+    else:
+        torch.save(optimizer.state_dict(), directory / "optimizer.pt")
     final_steps = optimizer_step_count(optimizer)
     require(
         final_steps - provenance["starting_optimizer_step_count"] == optimizer_steps,

@@ -75,6 +75,7 @@ def setup_continual(
     learning_schedule: LearningSchedule | None = None,
     dataset_cadence: int = 1,
     strict_execution: bool = False,
+    managed: bool = False,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
@@ -164,9 +165,15 @@ def setup_continual(
         model_args=model_args,
         metadata={"purpose": "initial_zero_search_evaluator", "certainty": "ESTIMATE"},
     )
-    initialize_scientific_experiment(
-        args, bootstrap_config_from_args(args), seed_model=seed, initial_nodes=1
-    )
+    config = bootstrap_config_from_args(args)
+    if managed:
+        from chipiron.environments.morpion.bootstrap.managed_sessions import (
+            KEY,
+            capability,
+        )
+
+        config = replace(config, metadata={**config.metadata, KEY: capability(root)})
+    initialize_scientific_experiment(args, config, seed_model=seed, initial_nodes=1)
     return args, MorpionBootstrapPaths.from_work_dir(root)
 
 

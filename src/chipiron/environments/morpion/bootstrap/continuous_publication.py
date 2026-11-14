@@ -20,6 +20,7 @@ from .continuous_contract import (
     Budget,
     Context,
     ControlRecord,
+    Debt,
     Disposition,
     JobRecord,
     Policy,
@@ -429,6 +430,11 @@ def dispatch_generation(
         return None
     records = slot_records(paths, frame)
     candidate: Source | None
+    active = frame.state.cohort if training else frame.state.dataset_job
+    if active is not None:
+        job = records[active]
+        assert isinstance(job, JobRecord)
+        return job.payload.source.generation
     if training:
         if (
             frame.state.cohort is not None
@@ -591,7 +597,39 @@ def apply_owned(
             record.get(key) == action.accepted.to_metadata(),
             "Transition lacks joined scientific acceptance.",
         )
+    from .continuous_lifecycle import authenticate
+
+    authenticate(paths, state, action)
+    if isinstance(action, transitions.AcceptCohort):
+        require(
+            action.remaining_debt == next_learning_debt(paths, state),
+            "Cohort acceptance moved outstanding learning debt.",
+        )
     records = slot_records(paths, frame)
+    if isinstance(action, transitions.VerifyComparison):
+        verified_reservation = action.reservation.payload
+        from .continuous_contract import Reservation
+
+        assert (
+            isinstance(verified_reservation, Reservation)
+            and verified_reservation.comparison_job is not None
+        )
+        job = records[verified_reservation.comparison_job]
+        assert isinstance(job, JobRecord)
+        authenticate_job(paths, state, job)
+    if isinstance(action, transitions.BeginCutover):
+        from .promotion import request_bindings
+
+        request = read_ref(paths, action.request)
+        require(
+            all(
+                request.get(k) == v
+                for k, v in request_bindings(
+                    paths, state, request["training_generation"]
+                ).items()
+            ),
+            "Cutover request lost reservation proof.",
+        )
     result = transitions.transition(frame, boundary, action, records)
     if isinstance(result, transitions.NoWork):
         return result
@@ -600,6 +638,23 @@ def apply_owned(
     updated = replace(
         state, metadata={**state.metadata, KEY: result.frame.state.to_metadata()}
     )
+    if isinstance(action, transitions.PublishReady):
+        from .generation_publication_io import PUBLICATION_KEY
+
+        data = updated.metadata[PUBLICATION_KEY]
+        generations = [
+            {**r, "continuous_ready": record_ref(action.ready).to_metadata()}
+            if r["generation"] == action.job.payload.source.generation
+            else r
+            for r in data["generations"]
+        ]
+        updated = replace(
+            updated,
+            metadata={
+                **updated.metadata,
+                PUBLICATION_KEY: {**data, "generations": generations},
+            },
+        )
     if result.displacement is not None:
         value = result.displacement
         updated = attach_disposition(
@@ -652,3 +707,114 @@ def attach_disposition(
             PUBLICATION_KEY: {**publication, "generations": records},
         },
     )
+
+
+def next_learning_debt(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> Debt | None:
+    """Roll acceptance to the oldest outstanding offer, including coalesced ancestors."""
+    from .continuous_contract import Debt, ReadyRecord
+    from .generation_publication_io import publication_records
+
+    frame = load_frame(paths, state)
+    sources = [frame.state.pending_source] if frame.state.pending_source else []
+    records = slot_records(paths, frame)
+    for ref in (frame.state.dataset_job, frame.state.ready):
+        if ref is not None:
+            record = records[ref]
+            assert isinstance(record, (JobRecord, ReadyRecord))
+            sources.append(record.payload.source)
+    if not sources:
+        return None
+    ancestors = set(sources)
+    # Receipts are ordered by source generation; reverse order follows a chain
+    # from its newest still-outstanding successor back to the original offer.
+    for record in reversed(publication_records(state.metadata)):
+        for raw in reversed(record.get("continuous_dispositions", [])):
+            envelope = read_record(paths, Ref.from_metadata(raw), frame.context)
+            assert isinstance(envelope, ControlRecord) and isinstance(
+                envelope.payload, Disposition
+            )
+            value = envelope.payload
+            if (
+                isinstance(value.subject, Source)
+                and isinstance(value.successor, Source)
+                and value.successor in ancestors
+                and value.subject.generation > frame.state.last_consumed_generation
+            ):
+                ancestors.add(value.subject)
+    oldest = min(ancestors, key=lambda s: (s.cycle, s.generation))
+    return Debt(oldest.publication_id, oldest.cycle)
+
+
+def growth_reason(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> str | None:
+    """Resolve actual admitted input age as well as both durable debt clocks."""
+    from .continuous_contract import ReadyRecord
+
+    frame = load_frame(paths, state)
+    records = slot_records(paths, frame)
+    dataset = records.get(frame.state.dataset_job) if frame.state.dataset_job else None
+    ready = records.get(frame.state.ready) if frame.state.ready else None
+    assert dataset is None or isinstance(dataset, JobRecord)
+    assert ready is None or isinstance(ready, ReadyRecord)
+    refusal = transitions.growth_wait(
+        frame,
+        transitions.Boundary(frame.context, frame.state.revision, state.cycle_index),
+        dataset=dataset,
+        ready=ready,
+    )
+    return None if refusal is None else refusal.reason
+
+
+def reconcile_freshness(paths: MorpionBootstrapPaths) -> None:
+    """Dispose only ineligible unclaimed inputs; repair from the sealed frozen head."""
+    from .continuous_contract import ReadyRecord
+    from .continuous_dataset import boundary
+    from .generation_publication_io import growth_receipt_ownership
+    from .run_state import save_bootstrap_run_state
+
+    with growth_receipt_ownership(paths, wait=True):
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if not enabled(state):
+            return
+        frame = load_frame(paths, state)
+        if not frame.state.admission_open:
+            return
+        if frame.state.ready is not None:
+            ready = read_record(paths, frame.state.ready, frame.context)
+            assert isinstance(ready, ReadyRecord)
+            value = ready.payload.source
+            if (
+                value.generation <= frame.state.last_consumed_generation
+                or state.cycle_index - value.cycle > 8
+                or frame.state.incumbent_epoch - value.incumbent_epoch > 1
+            ):
+                updated = apply_owned(
+                    paths, state, boundary(paths, state), transitions.DropReady(ready)
+                )
+                assert not isinstance(updated, transitions.NoWork)
+                state = attach_disposition(
+                    paths,
+                    updated,
+                    Disposition(
+                        record_ref(ready),
+                        "ineligible_for_training",
+                        None,
+                        frame.state.learning_debt,
+                    ),
+                )
+                save_bootstrap_run_state(state, paths.run_state_path, durable=True)
+        frame = load_frame(paths, state)
+        if (
+            growth_reason(paths, state) is not None
+            and frame.state.dataset_job is None
+            and frame.state.ready is None
+        ):
+            head = source(paths, state, state.generation)
+            updated = apply_owned(
+                paths, state, boundary(paths, state), transitions.Offer(head, head)
+            )
+            if not isinstance(updated, transitions.NoWork):
+                save_bootstrap_run_state(updated, paths.run_state_path, durable=True)

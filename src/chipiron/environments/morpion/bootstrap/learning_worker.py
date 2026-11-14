@@ -103,6 +103,21 @@ def claim_metadata(
         source(paths, state, generation)
     else:
         validate_source(paths, state, generation)
+    if continuous:
+        from .continuous_contract import JobRecord
+        from .continuous_lifecycle import release_dead_claim
+        from .continuous_publication import load_frame, read_record
+
+        frame = load_frame(paths, state)
+        ref = (
+            frame.state.dataset_job
+            if claim_path.name == "dataset_claim.json"
+            else frame.state.cohort
+        )
+        if ref is not None:
+            job = read_record(paths, ref, frame.context)
+            assert isinstance(job, JobRecord)
+            release_dead_claim(paths, job)
     current = monitored_identity()
     if claim_path.exists():
         previous = load_pipeline_stage_claim(claim_path)

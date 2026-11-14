@@ -72,6 +72,12 @@ def add_continual_arguments(parser: ArgumentParser) -> None:
         default=None,
         help="Fresh ready-result policy; maximum ordinary cycles before waiting, with owned full refresh.",
     )
+    schedules.add_argument(
+        "--continuous-pipeline-policy",
+        type=Path,
+        default=None,
+        help="Fresh-only bounded_continuous_v1 policy JSON; exact contents are persisted.",
+    )
     defaults = MorpionContinualLearningPolicy()
     for name, default in asdict(defaults).items():
         if name == "transformer_cpu_threads":
@@ -179,6 +185,9 @@ def prepare_continual_experiment(
     if args.learning_schedule is not None:
         inputs.mkdir(parents=True, exist_ok=False)
     config = bootstrap_config_from_args(args)
+    from .continuous_contract import Policy
+
+    managed_sessions = managed_sessions or isinstance(args.learning_schedule, Policy)
     if managed_sessions:
         from .managed_sessions import KEY, capability
 
@@ -611,6 +620,9 @@ def _run_monitored(
             "supervisor_pid": None if process is None else process.pid,
             "supervisor_exit_code": None if process is None else process.returncode,
         }
+        from .continuous_lifecycle import close_admission
+
+        close_admission(paths)
         atomic_json(monitor / f"decision_{identifier}.json", decision)
         if control is not None and (
             shutdown is not None or control_failure is not None

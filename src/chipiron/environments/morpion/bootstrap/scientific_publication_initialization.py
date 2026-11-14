@@ -290,6 +290,14 @@ def initialize_scientific_experiment(
     from .scientific_stream import ENCODING
 
     validate_supported(args)
+    from .continuous_contract import Policy
+    from .managed_sessions import KEY as MANAGED_KEY
+
+    require(
+        not isinstance(args.learning_schedule, Policy)
+        or MANAGED_KEY in config.metadata,
+        "Continuous genesis requires managed-session enrollment.",
+    )
     require(
         schedule_from_metadata(config.metadata) == args.learning_schedule,
         "Genesis learning schedule mismatch.",

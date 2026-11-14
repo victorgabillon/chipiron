@@ -10,7 +10,10 @@ import math
 import re
 from dataclasses import asdict, dataclass, fields
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
+
+if TYPE_CHECKING:
+    from .bootstrap_args import MorpionBootstrapArgs
 
 from .generation_publication_io import object_digest
 
@@ -115,6 +118,12 @@ class Policy(_Wire):
         for slot in self.slots:
             integer(slot, 1)
             require(slot == 1, "Only one item per slot is supported.")
+
+    def validate_supported(self, args: MorpionBootstrapArgs) -> None:
+        """Use the public schedule validator without changing numerical settings."""
+        from .learning_schedule import validate_supported
+
+        validate_supported(args)
 
     def to_metadata(self) -> dict[str, Any]:
         """Keep the wire's JSON array separate from the immutable tuple."""

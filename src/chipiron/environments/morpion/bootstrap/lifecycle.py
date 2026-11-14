@@ -120,7 +120,12 @@ def _recipe(
     from .learning_policy import MorpionContinualLearningPolicy
 
     policy_fields = {f.name for f in fields(MorpionContinualLearningPolicy)}
-    special = {"evaluator_family", "growth_lookahead_cycles", "ready_growth_max_cycles"}
+    special = {
+        "evaluator_family",
+        "growth_lookahead_cycles",
+        "ready_growth_max_cycles",
+        "continuous_pipeline_policy",
+    }
     search = {
         "rollout_after_opening": "enabled",
         "rollout_max_extra_steps": "max_extra_steps",
@@ -177,7 +182,11 @@ def _recipe(
                     getattr(saved.search.rollout, search[name]),
                     getattr(parsed.bootstrap_args.search.rollout, search[name]),
                 )
-            elif name in {"growth_lookahead_cycles", "ready_growth_max_cycles"}:
+            elif name in {
+                "growth_lookahead_cycles",
+                "ready_growth_max_cycles",
+                "continuous_pipeline_policy",
+            }:
                 expected, actual = (
                     saved.learning_schedule,
                     parsed.bootstrap_args.learning_schedule,

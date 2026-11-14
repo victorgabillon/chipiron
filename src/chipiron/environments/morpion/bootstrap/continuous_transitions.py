@@ -529,6 +529,46 @@ class Recompare:
     incumbent: Ref
 
 
+@dataclass(frozen=True, slots=True)
+class Admission:
+    """Close before reap, or reopen after authenticated managed reconciliation."""
+
+    opened: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Suspend:
+    """Preserve every pin while marking positively quiescent jobs suspended."""
+
+
+@dataclass(frozen=True, slots=True)
+class Retry:
+    """Replace only a dead job's fencing claim/session, retaining its work."""
+
+    previous: JobRecord
+    job: JobRecord
+
+
+@dataclass(frozen=True, slots=True)
+class Discard:
+    """Explicitly settle unclaimed and proven-dead incomplete work."""
+
+
+@dataclass(frozen=True, slots=True)
+class DropReady:
+    """Remove only an unconsumed ineligible input, preserving scientific history."""
+
+    ready: ReadyRecord
+
+
+@dataclass(frozen=True, slots=True)
+class BeginCutover:
+    """Bind the current-head activation request to the verified reservation."""
+
+    reservation: ControlRecord
+    request: Ref
+
+
 type Transition = (
     Offer
     | AdmitDataset
@@ -541,6 +581,12 @@ type Transition = (
     | VerifyComparison
     | ResolvePromotion
     | Recompare
+    | Admission
+    | Suspend
+    | Retry
+    | Discard
+    | DropReady
+    | BeginCutover
 )
 
 
@@ -578,6 +624,134 @@ def transition(
     _check(frame, boundary)
     dataset = _slot(frame, frame.state.dataset_job, records, JobRecord)
     ready = _slot(frame, frame.state.ready, records, ReadyRecord)
+    if isinstance(action, Admission):
+        require(type(action.opened) is bool, "Invalid admission gate.")
+        return _changed(frame, replace(frame.state, admission_open=action.opened))
+    if isinstance(action, Suspend):
+        require(not frame.state.admission_open, "Close admission before suspension.")
+        state = frame.state
+        changes: list[Record] = []
+        for name in ("dataset_job", "cohort"):
+            suspending_job = _slot(frame, getattr(state, name), records, JobRecord)
+            if suspending_job is not None:
+                suspended = JobRecord(
+                    frame.context, replace(suspending_job.payload, status="SUSPENDED")
+                )
+                state = (
+                    replace(state, dataset_job=record_ref(suspended))
+                    if name == "dataset_job"
+                    else replace(state, cohort=record_ref(suspended))
+                )
+                changes.append(suspended)
+        reserved = _slot(frame, state.reserved_promotion, records, ControlRecord)
+        if reserved is not None:
+            value = _reservation(reserved)
+            suspending_job = _slot(frame, value.comparison_job, records, JobRecord)
+            if suspending_job is not None and value.phase == "COMPARING":
+                suspended = JobRecord(
+                    frame.context, replace(suspending_job.payload, status="SUSPENDED")
+                )
+                updated = ControlRecord(
+                    frame.context, replace(value, comparison_job=record_ref(suspended))
+                )
+                state = replace(state, reserved_promotion=record_ref(updated))
+                changes.extend((suspended, updated))
+        return _changed(frame, state, *changes)
+    if isinstance(action, Discard):
+        require(
+            not frame.state.admission_open, "Settled discard requires closed admission."
+        )
+        reserved = _slot(frame, frame.state.reserved_promotion, records, ControlRecord)
+        require(
+            reserved is None or _reservation(reserved).phase != "CUTOVER",
+            "Unresolved cold cutover cannot be discarded.",
+        )
+        return _changed(
+            frame,
+            replace(
+                frame.state,
+                pending_source=None,
+                dataset_job=None,
+                ready=None,
+                cohort=None,
+                reserved_promotion=None,
+                pending_promotion=None,
+                learning_debt=None,
+                promotion_debt=None,
+            ),
+        )
+    if isinstance(action, Retry):
+        old, new = action.previous.payload, action.job.payload
+        require(
+            frame.state.admission_open
+            and action.job.context == action.previous.context == frame.context,
+            "Retry requires open matching authority.",
+        )
+        require(
+            replace(
+                new,
+                claim=old.claim,
+                managed_launch=old.managed_launch,
+                budget=old.budget,
+                status=old.status,
+            )
+            == old
+            and new.status == "ADMITTED"
+            and new.claim != old.claim,
+            "Retry retargeted immutable admitted work.",
+        )
+        state = frame.state
+        if old.stage in {"EXTRACT", "PREPARE"}:
+            _record(frame, state.dataset_job, action.previous)
+            state = replace(state, dataset_job=record_ref(action.job))
+        elif old.stage == "TRAIN":
+            _record(frame, state.cohort, action.previous)
+            state = replace(state, cohort=record_ref(action.job))
+        else:
+            reserved = _slot(frame, state.reserved_promotion, records, ControlRecord)
+            require(reserved is not None, "Missing comparison reservation.")
+            assert reserved is not None
+            value = _reservation(reserved)
+            require(value.phase == "COMPARING", "Comparison retry is not pending.")
+            _record(frame, value.comparison_job, action.previous)
+            updated = ControlRecord(
+                frame.context, replace(value, comparison_job=record_ref(action.job))
+            )
+            return _changed(
+                frame,
+                replace(state, reserved_promotion=record_ref(updated)),
+                action.job,
+                updated,
+            )
+        return _changed(frame, state, action.job)
+    if isinstance(action, DropReady):
+        _record(frame, frame.state.ready, action.ready)
+        require(
+            _eligible(frame, boundary, action.ready.payload.source) is not None,
+            "Eligible Ready cannot be discarded for freshness.",
+        )
+        return _changed(frame, replace(frame.state, ready=None))
+    if isinstance(action, BeginCutover):
+        _record(frame, frame.state.reserved_promotion, action.reservation)
+        value = _reservation(action.reservation)
+        require(
+            value.phase in {"VERIFIED", "CUTOVER"} and value.comparison is not None,
+            "Unverified cutover.",
+        )
+        updated = ControlRecord(
+            frame.context,
+            replace(
+                value,
+                phase="CUTOVER",
+                activation_request=action.request,
+                previous=record_ref(action.reservation)
+                if value.phase == "VERIFIED"
+                else value.previous,
+            ),
+        )
+        return _changed(
+            frame, replace(frame.state, reserved_promotion=record_ref(updated)), updated
+        )
     if isinstance(action, Offer):
         return offer_source(
             frame,

@@ -53,6 +53,9 @@ def job_owned(
     require(args.continual_learning is not None, "Missing finite continuous budgets.")
     assert args.continual_learning is not None
     policy = args.continual_learning
+    from .continuous_resources import reserve
+
+    output_bytes, scratch_bytes = reserve(paths, state, policy, dataset=True)
     owner = monitored_identity()
     end, wall_end = _deadline(paths, args, claim, owner)
     clock = publication.put_proof(
@@ -68,8 +71,8 @@ def job_owned(
                 policy.worker_max_seconds,
                 0.0,
                 clock,
-                policy.max_workspace_mb * 2**20,
-                policy.max_scratch_mb * 2**20,
+                output_bytes,
+                scratch_bytes,
                 object_digest(policy.to_metadata()),
             ),
         ),
@@ -110,6 +113,20 @@ def admit_owned(
     require(
         len(storage.entries(state)) < 2, "Continuous Dataset resource_backpressure."
     )
+    frame = publication.load_frame(paths, state)
+    if frame.state.dataset_job is not None:
+        from .continuous_lifecycle import previous_admission, retry_owned
+
+        old = publication.read_record(paths, frame.state.dataset_job, frame.context)
+        assert isinstance(old, JobRecord) and old.payload.stage == "EXTRACT"
+        original = previous_admission(paths, state, old)
+        state, job = retry_owned(paths, state, old, claim)
+        return state, {
+            **original,
+            "attempt_id": admission["attempt_id"],
+            "claim_id": claim.claim_id,
+            "continuous_admission": record_ref(job).to_metadata(),
+        }
     job = job_owned(paths, state, args, claim, admission["attempt_id"])
     proposed = publication.apply_owned(
         paths, state, boundary(paths, state), transitions.AdmitDataset(job)
@@ -140,7 +157,8 @@ def admitted(
     assert isinstance(job, JobRecord)
     require(
         job.payload.stage == "EXTRACT"
-        and job.payload.id == admission["attempt_id"]
+        and publication.read_ref(paths, job.payload.claim)["claim_id"]
+        == admission["claim_id"]
         and job.payload.source.generation == admission["generation"],
         "Dataset admission binding changed.",
     )
@@ -230,6 +248,7 @@ def ready_owned(
     paths: MorpionBootstrapPaths,
     state: MorpionBootstrapRunState,
     operational: dict[str, Any],
+    ready: ReadyRecord,
 ) -> MorpionBootstrapRunState:
     """Clear the producer and publish Ready only after native ownership has closed."""
     frame = publication.load_frame(paths, state)
@@ -243,7 +262,17 @@ def ready_owned(
         "Invalid preparation slot.",
     )
     assert isinstance(job, JobRecord)
-    ready = ready_record(paths, state, operational, job)
+    require(
+        ready.context == frame.context
+        and ready.payload.producer_job_id == job.payload.id
+        and ready.payload.accepted_dataset == job.payload.accepted_dataset,
+        "Ready producer binding changed.",
+    )
+    require(
+        operational["phase"] == "COMPLETE" and operational["ready"] is not None,
+        "Producer completion missing.",
+    )
+    publication.read_ref(paths, Ref.from_metadata(operational["ready"]))
     result = publication.apply_owned(
         paths, state, boundary(paths, state), transitions.PublishReady(job, ready)
     )

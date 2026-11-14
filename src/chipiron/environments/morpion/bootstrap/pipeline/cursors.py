@@ -168,6 +168,25 @@ def training_lower_bound_details(
             ),
             default=0,
         )
+        from chipiron.environments.morpion.bootstrap.continuous_contract import (
+            JobRecord,
+        )
+        from chipiron.environments.morpion.bootstrap.continuous_publication import (
+            enabled as continuous_enabled,
+        )
+        from chipiron.environments.morpion.bootstrap.continuous_publication import (
+            load_frame,
+            read_record,
+        )
+
+        if continuous_enabled(state):
+            frame = load_frame(paths, state)
+            if frame.state.cohort is not None:
+                job = read_record(paths, frame.state.cohort, frame.context)
+                assert isinstance(job, JobRecord)
+                started = job.payload.source.generation
+            else:
+                started = 0
         active = (
             load_pipeline_active_model(paths.pipeline_active_model_path)
             if paths.pipeline_active_model_path.exists()

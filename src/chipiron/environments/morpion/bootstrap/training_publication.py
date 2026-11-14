@@ -388,6 +388,9 @@ def admit_training(
                     from .continuous_training import admit_owned
 
                     state, admission = admit_owned(paths, state, admission, claim)
+                    from .continuous_lifecycle import remember_admission
+
+                    state = remember_admission(paths, state, admission)
                     save_bootstrap_run_state(state, paths.run_state_path, durable=True)
                 atomic_json(staging / "admission.json", admission)
                 attempt = TrainingAttempt(admission, staging)
@@ -1029,10 +1032,18 @@ def run_training(
         attempt: TrainingAttempt,
     ) -> MorpionPipelineTrainingStatusArtifact:
         """Run the unchanged private recipe within its admitted lifetime."""
+        # The borrowed-input generator releases native/artifact ownership in finally.
+        from chipiron.utils.bounded_output import output_allowance
+
+        from .continuous_resources import output_remaining
         from .prepared_dataset import borrow
 
-        # The borrowed-input generator releases native/artifact ownership in finally.
-        with borrow(paths, args, attempt.admission) as borrowed:  # pylint: disable=contextmanager-generator-missing-cleanup
+        with (
+            output_allowance(
+                attempt.directory, output_remaining(paths, attempt.admission)
+            ),
+            borrow(paths, args, attempt.admission) as borrowed,
+        ):  # pylint: disable=contextmanager-generator-missing-cleanup
             # Existing trainers put their caches beside rows. A private byte-for-byte copy
             # keeps those existing transient caches out of the immutable accepted Dataset.
             assert manifest.rows_path is not None

@@ -530,7 +530,7 @@ def run_pipeline_growth_stage(
             wait_reason,
         )
 
-        if args.learning_schedule is None or wait_reason(state) in (
+        if args.learning_schedule is None or wait_reason(state, paths) in (
             None,
             "await_learning_resolution",
         ):
@@ -569,7 +569,7 @@ def run_pipeline_growth_stage(
             monitored_identity()
             if state.metadata.get("experiment_termination") is not None:
                 return state
-            reason = wait_reason(state)
+            reason = wait_reason(state, paths)
             resolve_ready = (
                 isinstance(args.learning_schedule, ReadyBoundedGrowthWindow)
                 and reason == "await_learning_resolution"
@@ -716,7 +716,7 @@ def _run_pipeline_growth_stage_owned(
                 wait_reason,
             )
 
-            if wait_reason(run_state) is not None:
+            if wait_reason(run_state, paths) is not None:
                 return run_state
         previous_state = run_state
         previous_generation = run_state.generation
@@ -1784,15 +1784,23 @@ def run_pipeline_dataset_stage(
                 if isinstance(attempt, MorpionPipelineGenerationManifest):
                     prepare_accepted(paths, args, generation)
                     return attempt
-                completed = _run_pipeline_dataset_stage(
-                    args,
-                    generation=generation,
-                    manifest=manifest,
-                    use_streaming_sharded_reader=True,
-                    reader_cache_dir=reader_cache_dir,
-                    allow_scientific_v2=True,
-                    dataset_attempt=attempt,
+                from chipiron.environments.morpion.bootstrap.continuous_resources import (
+                    output_remaining,
                 )
+                from chipiron.utils.bounded_output import output_allowance
+
+                with output_allowance(
+                    attempt.rows_path.parent, output_remaining(paths, attempt.admission)
+                ):
+                    completed = _run_pipeline_dataset_stage(
+                        args,
+                        generation=generation,
+                        manifest=manifest,
+                        use_streaming_sharded_reader=True,
+                        reader_cache_dir=reader_cache_dir,
+                        allow_scientific_v2=True,
+                        dataset_attempt=attempt,
+                    )
                 prepare_accepted(paths, args, generation)
                 return completed
         return _run_pipeline_dataset_stage(

@@ -70,5 +70,7 @@ def update_saved_manifest_metadata(
             **metadata,
             **torch_execution_profile_metadata(),
         }
-        with open(manifest_path, "w", encoding="utf-8") as handle:
+        from chipiron.utils.bounded_output import output_file
+
+        with output_file(manifest_path, "w", encoding="utf-8") as handle:
             json.dump(manifest_payload, handle, indent=2, sort_keys=True)

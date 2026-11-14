@@ -511,8 +511,14 @@ def test_unsupported_jobs_policies_and_existing_dispatch() -> None:
         schedule_from_metadata,
     )
 
-    with pytest.raises(ValueError):
+    assert (
         schedule_from_metadata({"learning_schedule": Policy().to_metadata()})
+        == Policy()
+    )
+    assert context_marker(Policy()) == {
+        "schema_version": 4,
+        "learning_schedule_sha256": Policy().digest(),
+    }
     assert context_marker(None) == {"schema_version": 1}
     assert context_marker(BoundedGrowthWindow(4))["schema_version"] == 2
     assert context_marker(ReadyBoundedGrowthWindow(8))["schema_version"] == 3

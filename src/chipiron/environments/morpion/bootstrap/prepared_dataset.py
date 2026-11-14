@@ -106,6 +106,7 @@ def _save(
     state: MorpionBootstrapRunState,
     key: str,
     record: dict[str, Any],
+    ready: ReadyRecord | None = None,
 ) -> None:
     data = storage.entries(state)
     data[key] = record
@@ -119,7 +120,9 @@ def _save(
     ):
         from .continuous_dataset import ready_owned
 
-        proposed = ready_owned(paths, proposed, record)
+        require(ready is not None, "Missing verified Ready publication.")
+        assert ready is not None
+        proposed = ready_owned(paths, proposed, record, ready)
     save_bootstrap_run_state(proposed, paths.run_state_path, durable=True)
 
 
@@ -129,6 +132,9 @@ def prepare_accepted(
     """Complete or recover only the already accepted Dataset's recorded intent."""
     if os.environ.get("CHIPIRON_SHARED_PREPARATION", "0") == "0":
         return
+    from .continuous_lifecycle import recover_preparation
+
+    recover_preparation(paths)
     state = load_bootstrap_run_state(paths.run_state_path)
     selected = [
         r for r in storage.entries(state).values() if r["generation"] == generation
@@ -275,10 +281,28 @@ def prepare_accepted(
             actual_bytes <= record["reserved_bytes"],
             "Prepared Dataset exceeded reservation",
         )
+        from .continuous_contract import JobRecord
+        from .continuous_dataset import ready_record
+        from .continuous_publication import enabled, load_frame, read_record
+
+        ready_evidence = None
+        snapshot = load_bootstrap_run_state(paths.run_state_path)
+        if enabled(snapshot):
+            frame = load_frame(paths, snapshot)
+            assert frame.state.dataset_job is not None
+            producer = read_record(paths, frame.state.dataset_job, frame.context)
+            assert isinstance(producer, JobRecord)
+            ready_evidence = ready_record(paths, snapshot, finished, producer)
         with growth_receipt_ownership(paths, wait=True):
             state = load_bootstrap_run_state(paths.run_state_path)
             _checked(paths, state, key, record)
-            _save(paths, state, key, {**finished, "reserved_bytes": actual_bytes})
+            _save(
+                paths,
+                state,
+                key,
+                {**finished, "reserved_bytes": actual_bytes},
+                ready_evidence,
+            )
 
 
 @contextmanager
@@ -534,6 +558,9 @@ def borrow_continuous(
                 accepted_dataset=Accepted.from_metadata(record["accepted"]),
             ),
         )
+        from .continuous_inputs import recover_before_consumption
+
+        recover_before_consumption(paths, args, job, ready, record, root)
         require(
             ready_record(paths, state, record, producer) == ready,
             "Consumed Ready bytes changed.",
@@ -557,6 +584,9 @@ def borrow_continuous(
         ) as prepared:
             require(prepared is not None, "Missing authoritative native inputs.")
             assert prepared is not None
+            from .continuous_inputs import consumed_owned
+
+            consumed_owned(paths, job, ready)
             yield rows, prepared
             require(
                 ready_record(paths, state, record, producer) == ready,
@@ -588,6 +618,48 @@ def _retire_leased(paths: MorpionBootstrapPaths, key: str, root: Path) -> bool:
                 record["phase"] in {"COMPLETE", "RETIRED", "SUSPENDED"},
                 "Live preparation cannot retire",
             )
+            if continuous_enabled(state) and record["ready"] is not None:
+                from .continuous_contract import ControlRecord, Ref, Retirement
+                from .continuous_publication import load_frame, put_record
+                from .generation_publication_io import PUBLICATION_KEY
+
+                data_publication = state.metadata[PUBLICATION_KEY]
+                scientific = publication_record(state, record["generation"])
+                ready_ref = Ref.from_metadata(scientific["continuous_ready"])
+                proof = put_record(
+                    paths,
+                    ControlRecord(
+                        load_frame(paths, state).context,
+                        Retirement(
+                            ready_ref,
+                            tuple(
+                                paths.relative_to_work_dir(p)
+                                for p in (
+                                    root / "rows.jsonl",
+                                    native_root / "entry/flat.pt",
+                                    native_root / "entry/relational.pt",
+                                )
+                            ),
+                            "unreferenced_operational_cache",
+                        ),
+                    ),
+                )
+                generations = [
+                    {**r, "continuous_retirement": proof.to_metadata()}
+                    if r["generation"] == record["generation"]
+                    else r
+                    for r in data_publication["generations"]
+                ]
+                state = replace(
+                    state,
+                    metadata={
+                        **state.metadata,
+                        PUBLICATION_KEY: {
+                            **data_publication,
+                            "generations": generations,
+                        },
+                    },
+                )
             retired = {**record, "phase": "RETIRED"}
             atomic_json(root / "retired.json", retired)
             _save(paths, state, key, retired)
@@ -633,8 +705,21 @@ def reconcile(paths: MorpionBootstrapPaths, args: MorpionBootstrapArgs) -> None:
     for key, record in storage.entries(state).items():
         if record["phase"] in {"PREPARING", "SUSPENDED"}:
             prepare_accepted(paths, args, record["generation"])
-        elif record["phase"] == "RETIRED" or (
-            record["phase"] == "COMPLETE"
-            and "accepted_training" in publication_record(state, record["generation"])
+        elif (
+            (record["phase"] == "COMPLETE" and _continuous_unrooted(paths, state, key))
+            or record["phase"] == "RETIRED"
+            or (
+                record["phase"] == "COMPLETE"
+                and "accepted_training"
+                in publication_record(state, record["generation"])
+            )
         ):
             retire(paths, key)
+
+
+def _continuous_unrooted(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, key: str
+) -> bool:
+    from .continuous_publication import enabled, prepared_roots
+
+    return enabled(state) and key not in prepared_roots(paths, state)

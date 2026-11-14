@@ -11,6 +11,7 @@ from .continuous_contract import (
     Comparison,
     ControlRecord,
     Disposition,
+    JobRecord,
     Opportunity,
     Population,
     ReadyRecord,
@@ -215,9 +216,7 @@ def service(
         value = record.payload
         if value.phase in {"VERIFIED", "CUTOVER"}:
             return None
-        require(
-            value.phase == "RESERVED", "Previous comparison requires fenced recovery."
-        )
+        require(value.phase in {"RESERVED", "COMPARING"}, "Invalid comparison phase.")
         opportunity_record = publication.read_record(
             paths, value.opportunity, record.context
         )
@@ -257,6 +256,17 @@ def service(
         )
         generation = opportunity.generation
         claim_path = paths.pipeline_training_claim_path_for_generation(generation)
+        from .continuous_lifecycle import release_dead_claim, remaining, retry_owned
+
+        prior_job = None
+        if value.phase == "COMPARING":
+            assert value.comparison_job is not None
+            prior_job = publication.read_record(
+                paths, value.comparison_job, record.context
+            )
+            assert isinstance(prior_job, JobRecord)
+            remaining(paths, prior_job)
+            release_dead_claim(paths, prior_job)
         metadata = claim_metadata(paths, state, generation, claim_path)
         claim = claim_pipeline_stage(
             generation=generation,
@@ -274,7 +284,39 @@ def service(
             ready,
             reserved_id=value.opportunity.sha256,
         )
-        state = _apply(paths, state, transitions.StartComparison(record, job))
+        if prior_job is not None:
+            assert isinstance(prior_job, JobRecord)
+            state, job = retry_owned(paths, state, prior_job, claim)
+        else:
+            if value.previous is not None:
+                predecessor = publication.read_record(
+                    paths, value.previous, record.context
+                )
+                assert isinstance(predecessor, ControlRecord) and isinstance(
+                    predecessor.payload, Reservation
+                )
+                assert predecessor.payload.comparison_job is not None
+                original = publication.read_record(
+                    paths, predecessor.payload.comparison_job, record.context
+                )
+                assert isinstance(original, JobRecord)
+                old_budget = remaining(paths, original)
+                from .continuous_contract import Budget
+
+                fresh = publication.read_record(
+                    paths, job.payload.budget, record.context
+                )
+                assert isinstance(fresh, ControlRecord) and isinstance(
+                    fresh.payload, Budget
+                )
+                inherited = publication.put_record(
+                    paths,
+                    ControlRecord(
+                        record.context, replace(old_budget, launch=fresh.payload.launch)
+                    ),
+                )
+                job = JobRecord(job.context, replace(job.payload, budget=inherited))
+            state = _apply(paths, state, transitions.StartComparison(record, job))
         save_bootstrap_run_state(state, paths.run_state_path, durable=True)
     try:
         with borrow_continuous(paths, args, job, ready) as (rows, _prepared):
@@ -437,28 +479,10 @@ def activate_at_boundary(paths: MorpionBootstrapPaths) -> None:
             request = publication.read_ref(paths, value.activation_request)
             if request["expected_head"] != state.metadata[PUBLICATION_KEY]["head_id"]:
                 request = _renew_automatic_request_after_drain(paths, state, request)
-        cutover = ControlRecord(
-            record.context,
-            replace(
-                value,
-                phase="CUTOVER",
-                activation_request=publication.put_proof(paths, request),
-                previous=record_ref(record)
-                if value.phase == "VERIFIED"
-                else value.previous,
-            ),
-        )
-        frame = publication.load_frame(paths, state)
-        state = replace(
+        state = _apply(
+            paths,
             state,
-            metadata={
-                **state.metadata,
-                publication.KEY: replace(
-                    frame.state,
-                    revision=frame.state.revision + 1,
-                    reserved_promotion=publication.put_record(paths, cutover),
-                ).to_metadata(),
-            },
+            transitions.BeginCutover(record, publication.put_proof(paths, request)),
         )
         save_bootstrap_run_state(state, paths.run_state_path, durable=True)
     activate_model(paths, request)

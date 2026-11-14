@@ -210,6 +210,13 @@ def _training_selection_lower_bound_generation(
     now_unix_s: float | None,
 ) -> int:
     """Return the effective lower bound for selecting a claimable generation."""
+    from .continuous_publication import enabled as continuous_enabled
+    from .run_state import load_bootstrap_run_state
+
+    if paths.run_state_path.exists() and continuous_enabled(
+        load_bootstrap_run_state(paths.run_state_path)
+    ):
+        return lower_bound.cursor_completed_generation or 0
     if started_cursor_generation_is_safely_reclaimable(
         paths,
         manifests,
@@ -648,6 +655,9 @@ def run_next_pipeline_dataset_stage_once(
     from .prepared_dataset import reconcile
 
     if paths.run_state_path.exists():
+        from .continuous_publication import reconcile_freshness
+
+        reconcile_freshness(paths)
         reconcile(paths, args)
     manifests = load_available_pipeline_manifests(paths)
     latest_dataset = _latest_dataset_summary(paths, manifests)
@@ -666,11 +676,22 @@ def run_next_pipeline_dataset_stage_once(
         from .continuous_publication import enabled as continuous_enabled
 
         if continuous_enabled(scheduling_state):
+            from .continuous_lifecycle import prepare_dispatch
+
+            prepare_dispatch(paths, training=False)
             source = dispatch_generation(paths, scheduling_state, training=False)
-            manifests = {g: m for g, m in manifests.items() if g == source}
+            manifests = {
+                g: m
+                for g, m in load_available_pipeline_manifests(paths).items()
+                if g == source
+            }
         elif window(scheduling_state) is not None:
             source = selected_source(scheduling_state)
-            manifests = {g: m for g, m in manifests.items() if g == source}
+            manifests = {
+                g: m
+                for g, m in load_available_pipeline_manifests(paths).items()
+                if g == source
+            }
     LOGGER.info(
         "[pipeline] dataset_status latest_dataset_generation=%s latest_dataset_manifest=%s latest_dataset_created_at=%s latest_dataset_rows=%s",
         _render_optional_log_value(latest_dataset.generation),
@@ -817,11 +838,22 @@ def run_next_pipeline_training_stage_once(
         from .continuous_publication import enabled as continuous_enabled
 
         if continuous_enabled(scheduling_state):
+            from .continuous_lifecycle import prepare_dispatch
+
+            prepare_dispatch(paths, training=True)
             source = dispatch_generation(paths, scheduling_state, training=True)
-            manifests = {g: m for g, m in manifests.items() if g == source}
+            manifests = {
+                g: m
+                for g, m in load_available_pipeline_manifests(paths).items()
+                if g == source
+            }
         elif window(scheduling_state) is not None:
             source = selected_source(scheduling_state)
-            manifests = {g: m for g, m in manifests.items() if g == source}
+            manifests = {
+                g: m
+                for g, m in load_available_pipeline_manifests(paths).items()
+                if g == source
+            }
     lower_bound = _training_lower_bound(paths)
     selection_lower_bound_generation = _training_selection_lower_bound_generation(
         paths,

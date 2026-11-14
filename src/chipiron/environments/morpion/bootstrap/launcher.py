@@ -1916,10 +1916,16 @@ def launcher_args_from_cli(
             diagnostic_stop_after_growth=parsed.diagnostic_stop_after_growth,
             tree_branch_limit_explicit=tree_branch_limit_explicit,
         )
+    from .continuous_contract import Policy
+    from .generation_publication_io import read_object
     from .learning_schedule import BoundedGrowthWindow, ReadyBoundedGrowthWindow
 
     bootstrap_args = MorpionBootstrapArgs(
-        learning_schedule=ReadyBoundedGrowthWindow(parsed.ready_growth_max_cycles)
+        learning_schedule=Policy.from_metadata(
+            read_object(parsed.continuous_pipeline_policy)
+        )
+        if parsed.continuous_pipeline_policy is not None
+        else ReadyBoundedGrowthWindow(parsed.ready_growth_max_cycles)
         if parsed.ready_growth_max_cycles is not None
         else BoundedGrowthWindow(parsed.growth_lookahead_cycles)
         if parsed.growth_lookahead_cycles is not None

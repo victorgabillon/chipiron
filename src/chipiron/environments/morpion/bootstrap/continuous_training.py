@@ -64,7 +64,8 @@ def admitted(
     assert isinstance(job, JobRecord) and job.payload.parents is not None
     require(
         job.payload.stage == "TRAIN"
-        and job.payload.id == admission["attempt_id"]
+        and publication.read_ref(paths, job.payload.claim)["claim_id"]
+        == admission["claim_id"]
         and job.payload.source.generation == admission["generation"]
         and job.payload.round_number == admission["round_number"]
         and job.payload.accepted_dataset
@@ -161,6 +162,11 @@ def reader_job(
     policy = policy_from_metadata(admission["configuration"])
     require(policy is not None, "Missing learner resource limits.")
     assert policy is not None
+    from .continuous_resources import reserve
+
+    output_bytes, scratch_bytes = reserve(
+        paths, state, policy, dataset=False, comparison=reserved_id is not None
+    )
     owner = monitored_identity()
     end, wall = original_deadline(paths, policy.worker_max_seconds, claim, owner)
     launch = publication.put_proof(paths, state.metadata[MANAGED]["active"])
@@ -176,8 +182,8 @@ def reader_job(
                 policy.worker_max_seconds,
                 0.0,
                 clock,
-                policy.max_workspace_mb * 2**20,
-                0,
+                output_bytes,
+                scratch_bytes,
                 object_digest(policy.to_metadata()),
             ),
         ),
@@ -215,6 +221,19 @@ def admit_owned(
 ) -> tuple[MorpionBootstrapRunState, dict[str, Any]]:
     """Consume the newest complete eligible Ready exactly once with current parents."""
     frame = publication.load_frame(paths, state)
+    if frame.state.cohort is not None:
+        from .continuous_lifecycle import previous_admission, retry_owned
+
+        previous = publication.read_record(paths, frame.state.cohort, frame.context)
+        assert isinstance(previous, JobRecord)
+        original = previous_admission(paths, state, previous)
+        state, retried = retry_owned(paths, state, previous, claim)
+        return state, {
+            **original,
+            "attempt_id": admission["attempt_id"],
+            "claim_id": claim.claim_id,
+            "continuous_admission": record_ref(retried).to_metadata(),
+        }
     require(frame.state.ready is not None, "No authoritative continuous Ready.")
     assert frame.state.ready is not None
     ready = publication.read_record(paths, frame.state.ready, frame.context)
@@ -363,6 +382,12 @@ def accept_owned(
     assert job.payload.ready is not None and job.payload.accepted_dataset is not None
     ready = publication.read_record(paths, job.payload.ready, job.context)
     assert isinstance(ready, ReadyRecord)
+    from .continuous_inputs import has_consumed
+
+    require(
+        has_consumed(paths, state, ready, job),
+        "Cohort has no authenticated consumed-input proof.",
+    )
     operational = storage.entries(state).get(
         job.payload.accepted_dataset.descriptor_sha256
     )
@@ -419,11 +444,6 @@ def accept_owned(
                 debt,
             ),
         )
-    remaining = any((
-        frame.state.pending_source,
-        frame.state.dataset_job,
-        frame.state.ready,
-    ))
     updated = publication.apply_owned(
         paths,
         state,
@@ -432,7 +452,7 @@ def accept_owned(
             job,
             Accepted.from_metadata(reference),
             opportunity,
-            frame.state.learning_debt if remaining else None,
+            publication.next_learning_debt(paths, state),
         ),
     )
     require(not isinstance(updated, transitions.NoWork), "Cohort completion suspended.")

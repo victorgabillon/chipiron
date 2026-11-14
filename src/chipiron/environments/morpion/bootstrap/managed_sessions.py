@@ -791,6 +791,9 @@ def begin_owned(
             **_anchor(state),
         }
         ref = _put(paths, "launch-" + identifier, value)
+        from .continuous_lifecycle import resume_owned
+
+        state = resume_owned(paths, state)
         _commit(paths, state, {**data, "active": ref})
         return {
             "enrollment_id": data["enrollment_id"],
@@ -841,6 +844,9 @@ def finalize_managed_session_owned(
         from .prepared_dataset_storage import settle_owned
 
         state = settle_owned(paths, state)
+        from .continuous_lifecycle import suspend_owned
+
+        state = suspend_owned(paths, state)
         consumed = _number(usage["elapsed_seconds"])
         require(
             data["consumed_seconds"]
@@ -923,6 +929,9 @@ def recover_close_owned(
             and _number(close["consumed_seconds"]) >= data["consumed_seconds"],
             "Incomplete managed close usage.",
         )
+        from .continuous_lifecycle import suspend_owned
+
+        state = suspend_owned(paths, state)
         _commit(
             paths,
             state,

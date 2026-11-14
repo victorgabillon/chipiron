@@ -308,6 +308,9 @@ def admit_dataset(
                 from .continuous_dataset import admit_owned
 
                 state, admission = admit_owned(paths, state, args, admission, claim)
+                from .continuous_lifecycle import remember_admission
+
+                state = remember_admission(paths, state, admission)
                 save_bootstrap_run_state(state, paths.run_state_path, durable=True)
             staging = _directory(paths, identifier, private=True)
             staging.mkdir(parents=True, exist_ok=False)
