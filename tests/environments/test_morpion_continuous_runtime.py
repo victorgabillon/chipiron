@@ -149,3 +149,80 @@ def test_real_two_round_own_adam_and_reserved_promotion(
         assert publication.load_frame(paths, state).state.reserved_promotion is None
         previous = reference
     assert not torch.cuda.is_initialized()
+
+
+@pytest.mark.usefixtures("continuous")
+def test_two_round_same_parent_numeric_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every candidate matches a private-input reference from the identical own parent."""
+    import json
+    import shutil
+
+    from chipiron.environments.morpion.bootstrap import cycle_training
+    from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+        MorpionBootstrapPaths,
+    )
+    from chipiron.environments.morpion.learning import (
+        morpion_supervised_rows_source_from_path,
+    )
+    from tests.environments.test_morpion_candidate_execution import assert_state_equal
+
+    train = cycle_training.train_and_select_evaluators_streaming
+    rounds = 0
+
+    def compare(**kwargs: Any) -> Any:
+        nonlocal rounds
+        result = train(**kwargs)
+        rounds += 1
+        reference = MorpionBootstrapPaths.from_work_dir(
+            tmp_path / f"reference-{rounds}"
+        )
+        rows = reference.work_dir / "rows.jsonl"
+        rows.parent.mkdir(parents=True)
+        shutil.copyfile(kwargs["rows_path"], rows)
+        with torch.random.fork_rng(devices=[]):
+            expected = train(**{
+                **kwargs,
+                "paths": reference,
+                "rows_path": rows,
+                "rows_source": morpion_supervised_rows_source_from_path(rows),
+                "prepared_inputs": None,
+            })
+        assert result.selected_evaluator_name == expected.selected_evaluator_name
+        for name in result.model_bundle_paths:
+            actual_path = kwargs["paths"].resolve_work_dir_path(
+                result.model_bundle_paths[name]
+            )
+            expected_path = reference.resolve_work_dir_path(
+                expected.model_bundle_paths[name]
+            )
+            for artifact in ("param.pt", "optimizer.pt"):
+                assert_state_equal(
+                    torch.load(actual_path / artifact, weights_only=True),
+                    torch.load(expected_path / artifact, weights_only=True),
+                )
+            actual = json.loads((actual_path / "morpion_manifest.json").read_text())[
+                "metadata"
+            ]
+            control = json.loads((expected_path / "morpion_manifest.json").read_text())[
+                "metadata"
+            ]
+            for field in ("train_loss", "validation_loss", "state_split"):
+                assert actual[field] == control[field]
+            for field in (
+                "rng_before_initialization",
+                "rng_before_training",
+                "rng_after_training",
+                "optimizer_steps",
+                "cumulative_optimizer_steps",
+                "parent_optimizer_steps",
+            ):
+                assert actual["continuation"][field] == control["continuation"][field]
+        return result
+
+    monkeypatch.setattr(
+        cycle_training, "train_and_select_evaluators_streaming", compare
+    )
+    test_real_two_round_own_adam_and_reserved_promotion(tmp_path, monkeypatch)
+    assert rounds == 2

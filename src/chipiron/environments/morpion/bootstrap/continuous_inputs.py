@@ -123,10 +123,26 @@ def recover_before_consumption(
             invalid = True
     if not invalid:
         return
-    require(
-        not has_consumed(paths, state, ready),
-        "Corrupt input after consumption is not recoverable.",
-    )
+    consumed = has_consumed(paths, state, ready)
+    # Record the failed disposable input before repair or refusal. Scientific
+    # acceptance and the admitted job remain unchanged and pinned.
+    from .continuous_contract import Disposition
+
+    with growth_receipt_ownership(paths, wait=True):
+        current = load_bootstrap_run_state(paths.run_state_path)
+        publication.authenticate_job(paths, current, job)
+        current = publication.attach_disposition(
+            paths,
+            current,
+            Disposition(
+                record_ref(job),
+                "failed_incomplete",
+                None if consumed else record_ref(ready),
+                publication.load_frame(paths, current).state.learning_debt,
+            ),
+        )
+        save_bootstrap_run_state(current, paths.run_state_path, durable=True)
+    require(not consumed, "Corrupt input after consumption is not recoverable.")
     budget = remaining(paths, job)
     clock = publication.read_ref(paths, budget.clock_evidence)
     deadline = clock["deadline"]

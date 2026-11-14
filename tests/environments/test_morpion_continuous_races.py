@@ -294,6 +294,39 @@ def test_reserved_cold_cutover_faults(
     assert compared.payload.decision == "promote"
     if patch:
         assert propose(args).patch_written
+    from tests.environments.test_morpion_committed_evaluator_restore import (
+        fingerprint,
+        link_iteration_digest,
+    )
+
+    refresh = runner_module.AnemoneMorpionSearchRunner.refresh_model_estimates
+    references = []
+
+    def canonical(instance: Any, model_path: Path) -> Any:
+        # The authority now names the exact post-drain head. Restore it independently.
+        head_state = load_bootstrap_run_state(paths.run_state_path)
+        control, effective = activation._runner(paths, head_state)
+        rng = torch.get_rng_state().clone()
+        try:
+            with torch.random.fork_rng(devices=[]):
+                control.load_or_create(
+                    paths.work_dir / head_state.latest_runtime_checkpoint_path,
+                    committed_evaluator(paths.work_dir, head_state)[1],
+                    effective,
+                )
+                refresh(control, model_path)
+            expected = (fingerprint(control), link_iteration_digest(control))
+            result = refresh(instance, model_path)
+            assert (fingerprint(instance), link_iteration_digest(instance)) == expected
+            assert torch.equal(rng, torch.get_rng_state())
+            references.append(expected)
+            return result
+        finally:
+            control.discard_uncommitted_runtime()
+
+    monkeypatch.setattr(
+        runner_module.AnemoneMorpionSearchRunner, "refresh_model_estimates", canonical
+    )
     original_save = activation._save
 
     def save(*a: Any, **k: Any) -> Any:
@@ -346,6 +379,11 @@ def test_reserved_cold_cutover_faults(
         assert root.tree_evaluation.tree_value.certainty == Certainty.FORCED
         assert root.tree_evaluation.effective_value.score == 35
         restored.validate_model_refresh_certificates()
+        assert (
+            references
+            and (fingerprint(restored), link_iteration_digest(restored))
+            == references[-1]
+        )
     finally:
         restored.discard_uncommitted_runtime()
     authority = paths.run_state_path.read_bytes()
@@ -353,3 +391,75 @@ def test_reserved_cold_cutover_faults(
     assert paths.run_state_path.read_bytes() == authority
     grown = grow(args)
     assert grown.cycle_index > after.cycle_index
+
+
+@pytest.mark.usefixtures("continuous")
+@pytest.mark.parametrize("boundary", ["extraction", "cohort-acceptance"])
+def test_admitted_work_crosses_real_activation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    endgame: tuple[Any, Any],
+    boundary: str,
+) -> None:
+    """An admitted old teacher or cohort survives one real current-head cold activation."""
+    from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
+
+    with monkeypatch.context() as initial:
+        initial.setattr(runner_module, "initial_state", lambda: endgame[0])
+        args, paths = fixture(tmp_path / "run", proof=True)
+    first = learn(args, paths)
+    promotion.service(paths, args, ttl_seconds=60, owner=None)
+    activate = promotion.activate_at_boundary
+    with monkeypatch.context() as hold:
+        hold.setattr(promotion, "activate_at_boundary", lambda paths: None)
+        second = grow(args).generation
+    before = load_bootstrap_run_state(paths.run_state_path)
+    teacher = publication.source(paths, before, second)
+    changed = False
+
+    def cross(original: Any, *a: Any, **kw: Any) -> Any:
+        nonlocal changed
+        admitted = publication.load_frame(
+            paths, load_bootstrap_run_state(paths.run_state_path)
+        )
+        activate(paths)
+        current = publication.load_frame(
+            paths, load_bootstrap_run_state(paths.run_state_path)
+        )
+        assert current.state.incumbent_epoch == admitted.state.incumbent_epoch + 1
+        assert current.state.dataset_job == admitted.state.dataset_job
+        assert current.state.cohort == admitted.state.cohort
+        changed = True
+        return original(*a, **kw)
+
+    if boundary == "extraction":
+        original = stages._run_pipeline_dataset_stage
+        with monkeypatch.context() as at:
+            at.setattr(
+                stages,
+                "_run_pipeline_dataset_stage",
+                lambda *a, **kw: cross(original, *a, **kw),
+            )
+            run_dataset(args, generation=second)
+        stages.run_pipeline_training_stage(args, generation=second)
+    else:
+        run_dataset(args, generation=second)
+        accept = training.accept_training
+        with monkeypatch.context() as at:
+            at.setattr(
+                training, "accept_training", lambda *a, **kw: cross(accept, *a, **kw)
+            )
+            stages.run_pipeline_training_stage(args, generation=second)
+    after = load_bootstrap_run_state(paths.run_state_path)
+    frame = publication.load_frame(paths, after)
+    assert changed and frame.state.last_accepted_round == 2
+    assert publication.source(paths, after, second) == teacher
+    accepted = next(
+        r["accepted_training"]
+        for r in publication_records(after.metadata)
+        if r["generation"] == second
+    )
+    assert {
+        p["generation"]
+        for p in training._proposal(paths, accepted)["admission"]["parents"].values()
+    } == {first}

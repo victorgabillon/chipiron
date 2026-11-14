@@ -312,3 +312,83 @@ def test_cohort_acceptance_does_not_recheck_incumbent_epoch() -> None:
     assert result.frame.state.learning_debt is None
     with pytest.raises(ContractError):
         transition(result.frame, boundary(result.frame), action, records)
+
+
+def test_t1_reservation_survives_t2_t3_coalescing() -> None:
+    """A reserved oldest opportunity cannot be replaced; pending debt starts at T2."""
+    from chipiron.environments.morpion.bootstrap.continuous_contract import JobRecord
+
+    frame, ready = ready_frame()
+    first = opportunity(frame)
+    reserved = ControlRecord(
+        frame.context,
+        Reservation(
+            record_ref(first),
+            ref("incumbent"),
+            ref("population"),
+            ref("comparison-job"),
+            ref("comparison"),
+            None,
+            None,
+            "VERIFIED",
+        ),
+    )
+    records = {record_ref(first): first, record_ref(reserved): reserved}
+    frame = Frame(
+        frame.context,
+        replace(
+            frame.state,
+            ready=None,
+            reserved_promotion=record_ref(reserved),
+            promotion_debt=Debt("promotion-1", 11),
+            last_accepted_round=1,
+        ),
+    )
+    for number in (2, 3):
+        job = train_job(frame, ready)
+        job = JobRecord(
+            frame.context,
+            replace(
+                job.payload,
+                source=replace(
+                    job.payload.source, generation=13 + number, cycle=10 + number
+                ),
+                round_number=number,
+            ),
+        )
+        records[record_ref(job)] = job
+        frame = Frame(
+            frame.context,
+            replace(
+                frame.state,
+                cohort=record_ref(job),
+                learning_debt=Debt("learning", 10 + number),
+            ),
+        )
+        latest = opportunity(frame, number)
+        latest = replace(
+            latest,
+            payload=replace(
+                latest.payload,
+                debt=Debt("promotion-2", 12),
+                accepted_dataset=job.payload.accepted_dataset,
+            ),
+        )
+        update = changed(
+            transition(
+                frame,
+                boundary(frame, cycle=10 + number),
+                AcceptCohort(job, latest.payload.accepted_training, latest, None),
+                records,
+            )
+        )
+        frame = update.frame
+        records.update((record_ref(r), r) for r in update.records)
+        assert frame.state.reserved_promotion == record_ref(reserved)
+        pending = records[frame.state.pending_promotion]
+        assert pending.payload.round_number == number
+        assert pending.payload.debt.anchor_cycle == 12
+        assert frame.state.promotion_debt.anchor_cycle == 11
+    assert update.displacement is not None
+    assert update.displacement.reason == "promotion_coalesced"
+    assert update.displacement.debt == Debt("promotion-2", 12)
