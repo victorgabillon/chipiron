@@ -139,7 +139,11 @@ def test_private_output_limit_checks_before_bytes_are_written(tmp_path: Path) ->
 )
 @pytest.mark.parametrize("owner", ["dead", "live", "unknown"])
 def test_six_slot_stop_and_owner_fence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, slot: str, owner: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+    slot: str,
+    owner: str,
 ) -> None:
     """Close every slot before reap; only positive OS quiescence permits suspension."""
     import json
@@ -176,8 +180,29 @@ def test_six_slot_stop_and_owner_fence(
         monitor_start_ticks=current["start_ticks"],
     )
     previous = dict(current)
-    if owner == "dead":
-        code = "import os,json; from chipiron.environments.morpion.bootstrap.managed_sessions import _local_identity; d=_local_identity(); d.update(session=os.getsid(0), monitor_pid=os.getpid(), monitor_start_ticks=d['start_ticks']); print(json.dumps(d))"
+    code = "import os,json; from chipiron.environments.morpion.bootstrap.managed_sessions import _local_identity; d=_local_identity(); d.update(session=os.getsid(0), monitor_pid=os.getpid(), monitor_start_ticks=d['start_ticks']); print(json.dumps(d), flush=True)"
+    if owner == "live":
+        # Namespace init can be session 1. Use a real independently alive session
+        # so the rejection proves liveness rather than invalid identity syntax.
+        live = subprocess.Popen(
+            [sys.executable, "-c", code + "; import sys; sys.stdin.read()"],
+            start_new_session=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+
+        def close_live() -> None:
+            try:
+                live.communicate(timeout=10)
+            except subprocess.TimeoutExpired:
+                live.kill()
+                live.communicate(timeout=10)
+
+        request.addfinalizer(close_live)
+        assert live.stdout is not None
+        previous = json.loads(live.stdout.readline())
+    elif owner == "dead":
         child = subprocess.run(
             [sys.executable, "-c", code],
             start_new_session=True,

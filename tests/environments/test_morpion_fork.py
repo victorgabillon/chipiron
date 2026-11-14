@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -465,7 +466,9 @@ def test_reserved_window_refuses_before_payload_access(
     monkeypatch.setattr(fork, "window", lambda _state: {"active": active})
     with pytest.raises(ValueError, match="Reserved learning window"):
         fork._settled(
-            MorpionBootstrapPaths.from_work_dir(tmp_path), None, fork.Metadata()
+            MorpionBootstrapPaths.from_work_dir(tmp_path),
+            SimpleNamespace(metadata={}),
+            fork.Metadata(),
         )
 
 

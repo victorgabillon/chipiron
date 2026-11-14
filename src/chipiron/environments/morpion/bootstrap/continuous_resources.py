@@ -195,6 +195,76 @@ def output_remaining(
     return result
 
 
+def reserve_recovery(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    policy: MorpionContinualLearningPolicy,
+    key: str,
+) -> MorpionBootstrapRunState:
+    """Reacquire bounded rebuild scratch before touching an unconsumed cache.
+
+    COMPLETE roots retain only their compact inventory reservation. Rebuilding
+    needs native staging again, bounded by the original producer allowance and
+    the remaining aggregate capacity; it never renews the consumer's clock.
+    Caller owns the artifact lease and Growth publication lock.
+    """
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation import (
+        _Budget,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation_reuse import (
+        _limit,
+        requested,
+    )
+
+    from .continuous_contract import Ref
+    from .dataset_publication import _proposal
+
+    data = storage.entries(state)
+    record = data[key]
+    admission = _proposal(paths, record["accepted"])["admission"]
+    context = publication.context(paths, state)
+    producer = publication.read_record(
+        paths, Ref.from_metadata(admission["continuous_admission"]), context
+    )
+    assert isinstance(producer, JobRecord)
+    original = publication.read_record(paths, producer.payload.budget, context)
+    assert isinstance(original, ControlRecord) and isinstance(original.payload, Budget)
+    limits = _Budget.configured()
+    prior = _limit() if requested() else 0
+    materialized = logical_bytes(storage.directory(paths, key))
+    output, scratch = outstanding(paths, state)
+    other_scratch = scratch - max(0, record["reserved_bytes"] - materialized)
+    other_roots = sum(
+        logical_bytes(storage.directory(paths, other)) for other in data if other != key
+    )
+    reserved = min(
+        original.payload.reserved_scratch_bytes,
+        min(limits.scratch_bytes, policy.max_scratch_mb * 2**20)
+        - prior
+        - other_roots
+        - other_scratch,
+        policy.max_workspace_mb * 2**20
+        - logical_bytes(paths.work_dir)
+        + materialized
+        - output
+        - other_scratch
+        - prior
+        - limits.headroom_bytes,
+        shutil.disk_usage(paths.work_dir).free
+        + materialized
+        - output
+        - other_scratch
+        - prior
+        - max(limits.headroom_bytes, policy.min_free_disk_mb * 2**20),
+    )
+    require(
+        reserved > record["rows"]["bytes"] + 2 * limits.chunk_bytes + COMMIT_HEADROOM,
+        "Continuous resource_backpressure: same-Dataset recovery cannot fit.",
+    )
+    data[key] = {**record, "reserved_bytes": reserved}
+    return storage.updated(state, data)
+
+
 def authenticate_reservation(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, job: JobRecord
 ) -> None:

@@ -141,8 +141,16 @@ def setup_continual(
                 evaluators={
                     name: replace(
                         spec,
-                        feature_subset_name="moves_only",
-                        feature_names=("moves",),
+                        feature_subset_name=(
+                            "moves_only"
+                            if spec.model_type in {"linear", "mlp"}
+                            else spec.feature_subset_name
+                        ),
+                        feature_names=(
+                            ("moves",)
+                            if spec.model_type in {"linear", "mlp"}
+                            else spec.feature_names
+                        ),
                         num_epochs=10,
                         batch_size=1,
                         learning_rate=0.01,

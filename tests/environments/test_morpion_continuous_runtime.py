@@ -46,9 +46,9 @@ def continuous(monitored: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MORPION_RESOURCE_MONITOR_SESSION", "42")
 
 
-def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
-    """Create fresh managed context4 with two supported tiny independent models."""
-    family = MorpionEvaluatorsConfig(
+def candidate_family() -> MorpionEvaluatorsConfig:
+    """Use the supported flat plus relational family in every continuous fixture."""
+    return MorpionEvaluatorsConfig(
         evaluators={
             "linear": MorpionEvaluatorSpec("linear", "linear", None, 1, 2, 0.001),
             "transformer_v1": replace(
@@ -62,11 +62,15 @@ def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
             ),
         }
     )
+
+
+def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
+    """Create fresh managed context4 with two supported tiny independent models."""
     args, paths = setup_continual(
         root,
         automatic=True,
         memory_floor_mb=1,
-        evaluators=family,
+        evaluators=candidate_family(),
         learning_schedule=Policy(),
         strict_execution=True,
         managed=True,

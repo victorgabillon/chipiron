@@ -146,6 +146,20 @@ def recover_before_consumption(
     budget = remaining(paths, job)
     clock = publication.read_ref(paths, budget.clock_evidence)
     deadline = clock["deadline"]
+    from .continuous_resources import COMMIT_HEADROOM, logical_bytes, reserve_recovery
+
+    assert args.continual_learning is not None
+    key = ready.payload.accepted_dataset.descriptor_sha256
+    with growth_receipt_ownership(paths, wait=True):
+        current = load_bootstrap_run_state(paths.run_state_path)
+        publication.authenticate_job(paths, current, job)
+        require(
+            not has_consumed(paths, current, ready),
+            "Corrupt input after consumption is not recoverable.",
+        )
+        current = reserve_recovery(paths, current, args.continual_learning, key)
+        record = storage.entries(current)[key]
+        save_bootstrap_run_state(current, paths.run_state_path, durable=True)
     native.mkdir(exist_ok=True)
     with _ownership(native, deadline=deadline):
         entry = native / "entry"
@@ -197,3 +211,13 @@ def recover_before_consumption(
     for ref in expected:
         storage.verify_reference(paths, ref.to_metadata())
     remaining(paths, job)
+    materialized = logical_bytes(root) + COMMIT_HEADROOM
+    require(materialized <= record["reserved_bytes"], "Recovery exceeded reservation.")
+    with growth_receipt_ownership(paths, wait=True):
+        current = load_bootstrap_run_state(paths.run_state_path)
+        publication.authenticate_job(paths, current, job)
+        data = storage.entries(current)
+        data[key] = {**data[key], "reserved_bytes": materialized}
+        save_bootstrap_run_state(
+            storage.updated(current, data), paths.run_state_path, durable=True
+        )

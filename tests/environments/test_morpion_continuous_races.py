@@ -178,6 +178,7 @@ def test_same_dataset_preconsume_repair_and_postconsume_refusal(
     root = storage.directory(paths, key)
     tensor = root / ".rows.jsonl.shared-preparation-v1/entry/flat.pt"
     original_bytes = tensor.read_bytes()
+    compact_reservation = storage.entries(state)[key]["reserved_bytes"]
     original = continuous_inputs.recover_before_consumption
     repaired = False
 
@@ -192,6 +193,12 @@ def test_same_dataset_preconsume_repair_and_postconsume_refusal(
         patch.setattr(continuous_inputs, "recover_before_consumption", damage_once)
         stages.run_pipeline_training_stage(args, generation=generation)
     assert repaired and tensor.read_bytes() == original_bytes
+    assert (
+        storage.entries(load_bootstrap_run_state(paths.run_state_path))[key][
+            "reserved_bytes"
+        ]
+        == compact_reservation
+    )
     assert not prepared.retire(paths, key)  # Pending comparison still pins this root.
     tensor.write_bytes(b"corrupt-after-consumption")
     with pytest.raises(ValueError, match="after consumption"):

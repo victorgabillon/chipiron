@@ -22,6 +22,7 @@ from chipiron.environments.morpion.bootstrap.continuous_contract import Policy
 from chipiron.environments.morpion.bootstrap.fork_origin import seeds
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments import test_morpion_managed_native as native
+from tests.environments.test_morpion_continuous_runtime import candidate_family
 from tests.environments.test_morpion_fork import cli
 
 
@@ -35,7 +36,9 @@ def test_actual_native_resume_and_settled_fork(
 
     def prepare(args: Any, policy: Any, **kwargs: Any) -> Any:
         return original(
-            replace(args, learning_schedule=Policy()),
+            replace(
+                args, learning_schedule=Policy(), evaluators_config=candidate_family()
+            ),
             replace(policy, automatic_activation=True),
             **kwargs,
         )
@@ -62,7 +65,7 @@ def test_actual_native_resume_and_settled_fork(
     assert state.metadata[managed_sessions.KEY]["active"] is None
     with pytest.raises(ValueError, match=r"[Uu]nsettled"):
         fork.plan_fork(paths.work_dir, tmp_path / "busy", 300, 10000)
-    names = list(args.resolved_evaluators_config().evaluators)
+    names = list(candidate_family().evaluators)
     parents = training_publication.latest_candidate_parents(paths, state, names)
     result = native.invoke(
         paths.work_dir,
