@@ -294,11 +294,29 @@ def test_reserved_cold_cutover_faults(
     assert compared.payload.decision == "promote"
     if patch:
         assert propose(args).patch_written
+    from anemone.checkpoints.rng_state import rollout_random_generator
+
+    from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+        artifact_digest,
+    )
+    from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
+        ShardedTrainingGenerationView,
+    )
     from tests.environments.test_morpion_committed_evaluator_restore import (
         fingerprint,
         link_iteration_digest,
     )
 
+    def signature(runner: Any) -> Any:
+        rollout = rollout_random_generator(runner._require_runtime())
+        return (
+            fingerprint(runner),
+            link_iteration_digest(runner),
+            repr(runner._random_generator.getstate()),
+            None if rollout is None else repr(rollout.getstate()),
+        )
+
+    export_references = []
     refresh = runner_module.AnemoneMorpionSearchRunner.refresh_model_estimates
     references = []
 
@@ -315,9 +333,23 @@ def test_reserved_cold_cutover_faults(
                     effective,
                 )
                 refresh(control, model_path)
-            expected = (fingerprint(control), link_iteration_digest(control))
+            expected = signature(control)
+            producer = publication_records(head_state.metadata)[-1][
+                "scientific_identity"
+            ]["producer"]["identity"]
+            exported = control.export_closed_scientific_snapshot(
+                tmp_path / f"canonical-export-{len(references)}",
+                generation=head_state.generation + 1,
+                producer={**producer, "evaluator": artifact_digest(model_path)},
+            )
+            with ShardedTrainingGenerationView(
+                exported,
+                cache_dir=tmp_path / f"canonical-index-{len(references)}",
+                allow_closed_snapshot=True,
+            ) as view:
+                export_references.append(list(view.iter_nodes_in_export_order()))
             result = refresh(instance, model_path)
-            assert (fingerprint(instance), link_iteration_digest(instance)) == expected
+            assert signature(instance) == expected
             assert torch.equal(rng, torch.get_rng_state())
             references.append(expected)
             return result
@@ -379,11 +411,13 @@ def test_reserved_cold_cutover_faults(
         assert root.tree_evaluation.tree_value.certainty == Certainty.FORCED
         assert root.tree_evaluation.effective_value.score == 35
         restored.validate_model_refresh_certificates()
-        assert (
-            references
-            and (fingerprint(restored), link_iteration_digest(restored))
-            == references[-1]
-        )
+        assert references and signature(restored) == references[-1]
+        with ShardedTrainingGenerationView(
+            paths.work_dir / after.latest_tree_snapshot_path,
+            cache_dir=tmp_path / "actual-index",
+            allow_closed_snapshot=True,
+        ) as view:
+            assert list(view.iter_nodes_in_export_order()) == export_references[-1]
     finally:
         restored.discard_uncommitted_runtime()
     authority = paths.run_state_path.read_bytes()
@@ -463,3 +497,57 @@ def test_admitted_work_crosses_real_activation(
         p["generation"]
         for p in training._proposal(paths, accepted)["admission"]["parents"].values()
     } == {first}
+
+
+@pytest.mark.usefixtures("continuous")
+def test_fresh_cold_activation_then_nonzero_growth(tmp_path: Path) -> None:
+    """An unsolved fresh tree continues the exact cold checkpoint/RNG after promotion."""
+    from anemone.checkpoints.rng_state import rollout_random_generator
+
+    from tests.environments.test_morpion_committed_evaluator_restore import fingerprint
+
+    args, paths = fixture(tmp_path / "run", proof=True)
+    activated = False
+    for _ in range(2):
+        learn(args, paths)
+        promotion.service(paths, args, ttl_seconds=60, owner=None)
+        promotion.activate_at_boundary(paths)
+        state = load_bootstrap_run_state(paths.run_state_path)
+        if publication.load_frame(paths, state).state.incumbent_epoch:
+            activated = True
+            break
+    assert activated, "The finite scientific fixture must justify a real promotion."
+    control, effective = activation._runner(paths, state)
+    try:
+        with torch.random.fork_rng(devices=[]):
+            control.load_or_create(
+                paths.work_dir / state.latest_runtime_checkpoint_path,
+                committed_evaluator(paths.work_dir, state)[1],
+                effective,
+            )
+        size = control.current_tree_size()
+        control.grow(args.max_growth_steps_per_cycle)
+        assert control.current_tree_size() > size
+        expected = fingerprint(control)
+        control_rng = rollout_random_generator(control._require_runtime())
+        expected_rng = repr(control_rng.getstate())
+        expected_selector_rng = repr(control._random_generator.getstate())
+        after = grow(args)
+        restored, effective = activation._runner(paths, after)
+        try:
+            with torch.random.fork_rng(devices=[]):
+                restored.load_or_create(
+                    paths.work_dir / after.latest_runtime_checkpoint_path,
+                    committed_evaluator(paths.work_dir, after)[1],
+                    effective,
+                )
+            assert fingerprint(restored) == expected
+            assert repr(restored._random_generator.getstate()) == expected_selector_rng
+            assert (
+                repr(rollout_random_generator(restored._require_runtime()).getstate())
+                == expected_rng
+            )
+        finally:
+            restored.discard_uncommitted_runtime()
+    finally:
+        control.discard_uncommitted_runtime()
