@@ -356,6 +356,10 @@ def activation_completion(
         and isinstance(completion.get("refresh"), dict),
         "Activation completion transition mismatch.",
     )
+    if request["schema_version"] == 2:
+        from .promotion import validate_completion
+
+        validate_completion(paths, state, record, parent, request)
     return completion
 
 

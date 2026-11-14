@@ -276,18 +276,18 @@ def service(
             owner=owner,
             metadata=metadata,
         )
-        job = reader_job(
-            paths,
-            state,
-            {**admission, "attempt_id": uuid.uuid4().hex},
-            claim,
-            ready,
-            reserved_id=value.opportunity.sha256,
-        )
         if prior_job is not None:
             assert isinstance(prior_job, JobRecord)
             state, job = retry_owned(paths, state, prior_job, claim)
         else:
+            job = reader_job(
+                paths,
+                state,
+                {**admission, "attempt_id": uuid.uuid4().hex},
+                claim,
+                ready,
+                reserved_id=value.opportunity.sha256,
+            )
             if value.previous is not None:
                 predecessor = publication.read_record(
                     paths, value.previous, record.context
@@ -486,3 +486,60 @@ def activate_at_boundary(paths: MorpionBootstrapPaths) -> None:
         )
         save_bootstrap_run_state(state, paths.run_state_path, durable=True)
     activate_model(paths, request)
+
+
+def validate_completion(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    record: dict[str, Any],
+    parent: dict[str, Any],
+    request: dict[str, Any],
+) -> None:
+    """Audit schema2 reservation/common-population proof even after caches retire."""
+    frame = publication.load_frame(paths, state)
+    reserved = publication.read_record(
+        paths, Ref.from_metadata(request["reserved_promotion"]), frame.context
+    )
+    require(
+        isinstance(reserved, ControlRecord)
+        and isinstance(reserved.payload, Reservation),
+        "Missing completed reservation.",
+    )
+    assert isinstance(reserved, ControlRecord) and isinstance(
+        reserved.payload, Reservation
+    )
+    value = reserved.payload
+    require(
+        value.phase == "VERIFIED"
+        and value.comparison == Ref.from_metadata(request["promotion_comparison"]),
+        "Completed comparison binding differs.",
+    )
+    assert value.comparison is not None
+    compared = publication.read_record(paths, value.comparison, frame.context)
+    opportunity = publication.read_record(paths, value.opportunity, frame.context)
+    assert isinstance(compared, ControlRecord) and isinstance(
+        compared.payload, Comparison
+    )
+    assert isinstance(opportunity, ControlRecord) and isinstance(
+        opportunity.payload, Opportunity
+    )
+    require(
+        compared.payload.population == value.population
+        and compared.payload.incumbent == value.incumbent
+        and compared.payload.candidate == opportunity.payload.candidate
+        and compared.payload.decision == "promote"
+        and publication.read_ref(paths, value.incumbent) == request["previous_model"]
+        and publication.read_ref(paths, opportunity.payload.candidate)
+        == request["candidate"]
+        and opportunity.payload.accepted_training.to_metadata()
+        == request["accepted_training"],
+        "Completed activation lost its comparison authority.",
+    )
+    require(
+        record["continuous_source"]
+        == {
+            "cycle": parent["continuous_source"]["cycle"],
+            "incumbent_epoch": parent["continuous_source"]["incumbent_epoch"] + 1,
+        },
+        "Activation cycle/epoch changed more than once.",
+    )

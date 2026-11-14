@@ -46,7 +46,7 @@ def continuous(monitored: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MORPION_RESOURCE_MONITOR_SESSION", "42")
 
 
-def fixture(root: Path) -> tuple[Any, Any]:
+def fixture(root: Path, *, proof: bool = False) -> tuple[Any, Any]:
     """Create fresh managed context4 with two supported tiny independent models."""
     family = MorpionEvaluatorsConfig(
         evaluators={
@@ -70,6 +70,7 @@ def fixture(root: Path) -> tuple[Any, Any]:
         learning_schedule=Policy(),
         strict_execution=True,
         managed=True,
+        proof=proof,
     )
     begin_owned(
         paths,

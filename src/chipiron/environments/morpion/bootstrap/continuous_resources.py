@@ -193,3 +193,51 @@ def output_remaining(
         "Continuous resource_backpressure: original output reservation exhausted.",
     )
     return result
+
+
+def authenticate_reservation(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, job: JobRecord
+) -> None:
+    """Reject overcommitted caller-supplied budgets at the authoritative admission."""
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation import (
+        _Budget,
+    )
+    from chipiron.environments.morpion.players.evaluators.neural_networks.training.shared_preparation_reuse import (
+        _limit,
+        requested,
+    )
+
+    from .config import load_bootstrap_config
+    from .learning_policy import policy_from_metadata
+
+    policy = policy_from_metadata(
+        load_bootstrap_config(paths.bootstrap_config_path).metadata
+    )
+    assert policy is not None
+    control = publication.read_record(paths, job.payload.budget, job.context)
+    assert isinstance(control, ControlRecord) and isinstance(control.payload, Budget)
+    budget = control.payload
+    output, scratch = outstanding(paths, state)
+    prior = _limit() if requested() else 0
+    total = (
+        logical_bytes(paths.work_dir)
+        + output
+        + scratch
+        + prior
+        + budget.reserved_output_bytes
+        + budget.reserved_scratch_bytes
+        + _Budget.configured().headroom_bytes
+    )
+    require(
+        total <= policy.max_workspace_mb * 2**20,
+        "Continuous resource_backpressure: aggregate workspace reservation.",
+    )
+    require(
+        shutil.disk_usage(paths.work_dir).free
+        >= policy.min_free_disk_mb * 2**20
+        + output
+        + scratch
+        + budget.reserved_output_bytes
+        + budget.reserved_scratch_bytes,
+        "Continuous resource_backpressure: aggregate disk reservation.",
+    )

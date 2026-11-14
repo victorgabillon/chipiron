@@ -247,6 +247,12 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
     """Explicit operator action; never invoked automatically by stop or fork."""
     with growth_receipt_ownership(paths, create=False):
         state = load_bootstrap_run_state(paths.run_state_path)
+        from .managed_sessions import KEY as MANAGED
+
+        require(
+            state.metadata[MANAGED]["active"] is None,
+            "Settled discard requires a closed managed session.",
+        )
         frame = publication.load_frame(paths, state)
         records = publication.slot_records(paths, frame)
         subjects = [
@@ -284,10 +290,11 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
         from .worker_result_io import publication_record
 
         for job in records.values():
-            if not isinstance(job, JobRecord) or job.payload.stage not in {
-                "EXTRACT",
-                "TRAIN",
-            }:
+            if not isinstance(job, JobRecord):
+                continue
+            if job.payload.stage == "COMPARE":
+                if job.payload.status == "SUSPENDED":
+                    release_dead_claim(paths, job)
                 continue
             release_dead_claim(paths, job)
             source = publication_record(state, job.payload.source.generation)
@@ -333,6 +340,15 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
                         destination.parent.mkdir(parents=True, exist_ok=True)
                         os.rename(directory, destination)
                         sync_artifact(destination, paths.work_dir)
+
+    # Artifact leases precede Growth ownership; never invert that lock order.
+    from . import prepared_dataset, prepared_dataset_storage
+
+    state = load_bootstrap_run_state(paths.run_state_path)
+    for key in tuple(prepared_dataset_storage.entries(state)):
+        require(
+            prepared_dataset.retire(paths, key), "Discarded Dataset is still leased."
+        )
 
 
 def remember_admission(

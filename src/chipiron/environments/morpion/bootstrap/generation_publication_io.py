@@ -750,7 +750,16 @@ def _validate_manifest_record(
             == {
                 k: v
                 for k, v in record.items()
-                if k not in {"accepted_dataset", "accepted_training"}
+                if k
+                not in {
+                    "accepted_dataset",
+                    "accepted_training",
+                    "continuous_admissions",
+                    "continuous_dispositions",
+                    "continuous_ready",
+                    "continuous_consumed",
+                    "continuous_retirement",
+                }
             }
             or (
                 generation == baseline

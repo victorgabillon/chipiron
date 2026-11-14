@@ -591,6 +591,17 @@ def apply_owned(
         ),
     ):
         authenticate_job(paths, state, action.job)
+    if isinstance(
+        action,
+        (
+            transitions.AdmitDataset,
+            transitions.AdmitCohort,
+            transitions.StartComparison,
+        ),
+    ):
+        from .continuous_resources import authenticate_reservation
+
+        authenticate_reservation(paths, state, action.job)
     if isinstance(action, (transitions.BindDataset, transitions.AcceptCohort)):
         record = publication_record(state, action.job.payload.source.generation)
         key = (
