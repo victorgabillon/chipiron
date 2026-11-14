@@ -10,6 +10,7 @@ import pytest
 
 from chipiron.environments.morpion.bootstrap.continuous_contract import (
     ContractError,
+    Debt,
     JobRecord,
     record_ref,
 )
@@ -38,7 +39,12 @@ def test_stop_suspend_resume_preserves_original_work() -> None:
     """Close before suspension and retain all admitted bindings across a new claim."""
     frame = initialize("a" * 64, "b" * 64)
     job = extraction(frame, source())
-    frame = Frame(frame.context, replace(frame.state, dataset_job=record_ref(job)))
+    frame = Frame(
+        frame.context,
+        replace(
+            frame.state, dataset_job=record_ref(job), learning_debt=Debt("source", 11)
+        ),
+    )
     records = {record_ref(job): job}
     with pytest.raises(ContractError, match="Close admission"):
         transition(frame, boundary(frame), Suspend(), records)
