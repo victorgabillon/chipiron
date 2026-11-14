@@ -29,21 +29,29 @@ from chipiron.environments.morpion.bootstrap.pipeline.stages import (
     run_pipeline_training_stage,
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
+from chipiron.learning.torch_runtime import (
+    configure_torch_process_threads,
+    torch_execution_profile,
+)
 from tests.environments.morpion_fenced_dataset_helpers import run_dataset
 from tests.environments.test_morpion_continual_publication import grow, setup_continual
 from tests.environments.test_morpion_learning_schedule import monitored as monitored
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 
 @pytest.fixture
-def continuous(monitored: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def continuous(monitored: Any, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Use real monitored identities and explicit shared preparation, without GPU changes."""
     monkeypatch.setenv("CHIPIRON_SHARED_PREPARATION", "1")
     monkeypatch.delenv("CHIPIRON_SHARED_PREPARATION_REUSE", raising=False)
     monkeypatch.delenv("CHIPIRON_STATE_SPLIT_CACHE_DIR", raising=False)
     monkeypatch.setenv("MORPION_RESOURCE_MONITOR_SESSION", "42")
+    configure_torch_process_threads(intra_op=1, inter_op=1)
+    with torch_execution_profile("strict_math"):
+        yield
 
 
 def candidate_family() -> MorpionEvaluatorsConfig:

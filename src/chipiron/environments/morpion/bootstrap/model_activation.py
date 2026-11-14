@@ -162,7 +162,8 @@ def _request(
     continuous = continuous_enabled(state)
     bindings: dict[str, Any] = {}
     if continuous:
-        from .promotion import request_bindings
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import request_bindings  # pylint: disable=cyclic-import
 
         bindings = request_bindings(paths, state, training_generation)
     else:
@@ -357,7 +358,8 @@ def activation_completion(
         "Activation completion transition mismatch.",
     )
     if request["schema_version"] == 2:
-        from .promotion import validate_completion
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import validate_completion  # pylint: disable=cyclic-import
 
         validate_completion(paths, state, record, parent, request)
     return completion
@@ -597,7 +599,8 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     from .continuous_publication import enabled as continuous_enabled
 
     if continuous_enabled(state):
-        from .promotion import activate_at_boundary
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import activate_at_boundary  # pylint: disable=cyclic-import
 
         activate_at_boundary(paths)
         return

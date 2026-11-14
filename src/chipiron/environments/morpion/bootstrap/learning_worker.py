@@ -94,7 +94,8 @@ def claim_metadata(
     from .managed_sessions import require_managed_execution
 
     require_managed_execution(paths, state)
-    from .continuous_publication import enabled, source
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, source  # pylint: disable=cyclic-import
 
     continuous = enabled(state)
     if not continuous and window(state) is None:
@@ -106,7 +107,9 @@ def claim_metadata(
     if continuous:
         from .continuous_contract import JobRecord
         from .continuous_lifecycle import release_dead_claim
-        from .continuous_publication import load_frame, read_record
+
+        # Deferred runtime import: both modules are initialized before this call.
+        from .continuous_publication import load_frame, read_record  # pylint: disable=cyclic-import
 
         frame = load_frame(paths, state)
         ref = (

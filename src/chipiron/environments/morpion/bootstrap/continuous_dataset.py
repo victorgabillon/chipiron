@@ -55,7 +55,8 @@ def job_owned(
     require(args.continual_learning is not None, "Missing finite continuous budgets.")
     assert args.continual_learning is not None
     policy = args.continual_learning
-    from .continuous_resources import reserve
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_resources import reserve  # pylint: disable=cyclic-import
 
     output_bytes, scratch_bytes = reserve(paths, state, policy, dataset=True)
     owner = monitored_identity()
@@ -117,7 +118,8 @@ def admit_owned(
     )
     frame = publication.load_frame(paths, state)
     if frame.state.dataset_job is not None:
-        from .continuous_lifecycle import previous_admission, retry_owned
+        # Deferred runtime import: both modules are initialized before this call.
+        from .continuous_lifecycle import previous_admission, retry_owned  # pylint: disable=cyclic-import
 
         old = publication.read_record(paths, frame.state.dataset_job, frame.context)
         assert isinstance(old, JobRecord) and old.payload.stage == "EXTRACT"

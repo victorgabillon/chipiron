@@ -181,7 +181,9 @@ def recover_before_consumption(
     relational = metadata[dict(ready.payload.files)["relational.manifest.json"]]
     rows_mtime_ns = relational["source_rows_mtime_ns"]
     require(
-        type(rows_mtime_ns) is int and rows_mtime_ns > 0, "Invalid original row mtime."
+        type(rows_mtime_ns) is int  # pylint: disable=unidiomatic-typecheck
+        and rows_mtime_ns > 0,
+        "Invalid original row mtime.",
     )
     budget = remaining(paths, job)
     clock = publication.read_ref(paths, budget.clock_evidence)

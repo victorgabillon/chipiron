@@ -57,7 +57,8 @@ MAX_RECORD_BYTES = 2**20
 def cycle(state: MorpionBootstrapRunState) -> int:
     """Translate the native zero-based cycle index; fresh genesis is index -1."""
     require(
-        type(state.cycle_index) is int and state.cycle_index >= -1,
+        type(state.cycle_index) is int  # pylint: disable=unidiomatic-typecheck
+        and state.cycle_index >= -1,
         "Invalid native ordinary-cycle index.",
     )
     return state.cycle_index + 1
@@ -249,7 +250,8 @@ def prepare_publication_owned(
                 gate is None, "Growth would cross a continuous debt/freshness gate."
             )
         if activation is not None:
-            from .promotion import resolve_owned
+            # Deferred runtime import: both modules are initialized before this call.
+            from .promotion import resolve_owned  # pylint: disable=cyclic-import
 
             proposed = resolve_owned(
                 paths, proposed, promoted=True, request=activation["request"]
@@ -271,7 +273,9 @@ def on_publication_owned(
         return proposed
     from .config import load_bootstrap_config
     from .continuous_contract import ReadyRecord
-    from .learning_policy import policy_from_metadata
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .learning_policy import policy_from_metadata  # pylint: disable=cyclic-import
 
     policy = policy_from_metadata(
         load_bootstrap_config(paths.bootstrap_config_path).metadata
@@ -513,7 +517,9 @@ def authenticate_job(
     assert isinstance(record, ControlRecord) and isinstance(record.payload, Budget)
     budget = record.payload
     from .config import load_bootstrap_config
-    from .learning_policy import policy_from_metadata
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .learning_policy import policy_from_metadata  # pylint: disable=cyclic-import
 
     policy = policy_from_metadata(
         load_bootstrap_config(paths.bootstrap_config_path).metadata
@@ -530,7 +536,8 @@ def authenticate_job(
         "Job allowance exhausted or retargeted.",
     )
     clock = read_ref(paths, budget.clock_evidence)
-    from .prepared_dataset import _remaining
+    # Deferred runtime import: both modules are initialized before this call.
+    from .prepared_dataset import _remaining  # pylint: disable=cyclic-import
 
     _remaining(clock)
     require(
@@ -599,7 +606,8 @@ def apply_owned(
             transitions.StartComparison,
         ),
     ):
-        from .continuous_resources import authenticate_reservation
+        # Deferred runtime import: both modules are initialized before this call.
+        from .continuous_resources import authenticate_reservation  # pylint: disable=cyclic-import
 
         authenticate_reservation(paths, state, action.job)
     if isinstance(action, (transitions.BindDataset, transitions.AcceptCohort)):
@@ -613,7 +621,8 @@ def apply_owned(
             record.get(key) == action.accepted.to_metadata(),
             "Transition lacks joined scientific acceptance.",
         )
-    from .continuous_lifecycle import authenticate
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_lifecycle import authenticate  # pylint: disable=cyclic-import
 
     authenticate(paths, state, action)
     if isinstance(action, transitions.AcceptCohort):
@@ -634,7 +643,8 @@ def apply_owned(
         assert isinstance(job, JobRecord)
         authenticate_job(paths, state, job)
     if isinstance(action, transitions.BeginCutover):
-        from .promotion import request_bindings
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import request_bindings  # pylint: disable=cyclic-import
 
         request = read_ref(paths, action.request)
         require(
@@ -729,7 +739,7 @@ def next_learning_debt(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
 ) -> Debt | None:
     """Roll acceptance to the oldest outstanding offer, including coalesced ancestors."""
-    from .continuous_contract import Debt, ReadyRecord
+    from .continuous_contract import ReadyRecord
     from .generation_publication_io import publication_records
 
     frame = load_frame(paths, state)
@@ -787,7 +797,9 @@ def growth_reason(
 def reconcile_freshness(paths: MorpionBootstrapPaths) -> None:
     """Dispose only ineligible unclaimed inputs; repair from the sealed frozen head."""
     from .continuous_contract import ReadyRecord
-    from .continuous_dataset import boundary
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_dataset import boundary  # pylint: disable=cyclic-import
     from .generation_publication_io import growth_receipt_ownership
     from .run_state import save_bootstrap_run_state
 

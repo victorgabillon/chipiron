@@ -116,7 +116,9 @@ def intent_owned(
         - sum(r["reserved_bytes"] for r in data.values())
     )
     from .continuous_contract import Budget, ControlRecord, JobRecord
-    from .continuous_publication import enabled, load_frame, read_record
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, load_frame, read_record  # pylint: disable=cyclic-import
 
     if enabled(state):
         frame = load_frame(paths, state)

@@ -625,7 +625,10 @@ def transition(
     dataset = _slot(frame, frame.state.dataset_job, records, JobRecord)
     ready = _slot(frame, frame.state.ready, records, ReadyRecord)
     if isinstance(action, Admission):
-        require(type(action.opened) is bool, "Invalid admission gate.")
+        require(
+            type(action.opened) is bool,  # pylint: disable=unidiomatic-typecheck
+            "Invalid admission gate.",
+        )
         return _changed(frame, replace(frame.state, admission_open=action.opened))
     if isinstance(action, Suspend):
         require(not frame.state.admission_open, "Close admission before suspension.")

@@ -830,12 +830,10 @@ def run_next_pipeline_training_stage_once(
             if g > 1 and g % args.continual_learning.training_every_generations == 0
         }
     from .learning_schedule import selected_source, window
-    from .run_state import load_bootstrap_run_state
 
     if paths.run_state_path.exists():
         scheduling_state = load_bootstrap_run_state(paths.run_state_path)
         from .continuous_publication import dispatch_generation
-        from .continuous_publication import enabled as continuous_enabled
 
         if continuous_enabled(scheduling_state):
             from .continuous_lifecycle import prepare_dispatch

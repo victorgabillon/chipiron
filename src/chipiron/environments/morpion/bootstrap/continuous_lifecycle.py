@@ -65,7 +65,8 @@ def remaining(paths: MorpionBootstrapPaths, job: JobRecord) -> Budget:
 
 def dead(paths: MorpionBootstrapPaths, job: JobRecord) -> None:
     """TTL and a missing claim file never establish worker death."""
-    from .learning_worker import require_quiescent
+    # Deferred runtime import: both modules are initialized before this call.
+    from .learning_worker import require_quiescent  # pylint: disable=cyclic-import
     from .managed_sessions import _local_identity
 
     claim = publication.read_ref(paths, job.payload.claim)
@@ -343,7 +344,8 @@ def settled_discard(paths: MorpionBootstrapPaths) -> None:
                         sync_artifact(destination, paths.work_dir)
 
     # Artifact leases precede Growth ownership; never invert that lock order.
-    from . import prepared_dataset, prepared_dataset_storage
+    # Deferred runtime import: both modules are initialized before this call.
+    from . import prepared_dataset, prepared_dataset_storage  # pylint: disable=cyclic-import
 
     state = load_bootstrap_run_state(paths.run_state_path)
     for key in tuple(prepared_dataset_storage.entries(state)):

@@ -281,7 +281,8 @@ def admit_dataset(
         else:
             descriptor = validate_capsule(paths.work_dir, record)
             validate_manifest_publication(paths.work_dir, manifest)
-            from .learning_worker import claim_metadata
+            # Deferred runtime import: both modules are initialized before this call.
+            from .learning_worker import claim_metadata  # pylint: disable=cyclic-import
 
             worker_metadata = claim_metadata(paths, state, generation, claim_path)
             claim = claim_pipeline_stage(
@@ -305,10 +306,12 @@ def admit_dataset(
                 "source_config_sha256": descriptor["bootstrap_config_hash"],
             }
             if continuous_enabled(state):
-                from .continuous_dataset import admit_owned
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import admit_owned  # pylint: disable=cyclic-import
 
                 state, admission = admit_owned(paths, state, args, admission, claim)
-                from .continuous_lifecycle import remember_admission
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_lifecycle import remember_admission  # pylint: disable=cyclic-import
 
                 state = remember_admission(paths, state, admission)
                 save_bootstrap_run_state(state, paths.run_state_path, durable=True)
@@ -438,7 +441,8 @@ def accept_dataset(
             from .learning_schedule import validate_source
 
             if continuous_enabled(state):
-                from .continuous_dataset import admitted
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import admitted  # pylint: disable=cyclic-import
                 from .continuous_publication import authenticate_job
 
                 authenticate_job(paths, state, admitted(paths, state, admission))
@@ -469,7 +473,8 @@ def accept_dataset(
                     paths, state, preparation_args, proposal, reference, claim
                 )
             if continuous_enabled(state):
-                from .continuous_dataset import accept_owned
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import accept_owned  # pylint: disable=cyclic-import
 
                 state = accept_owned(paths, state, admission, reference)
             # Accepted result and advisory preparation intent share this durable save.

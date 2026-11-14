@@ -1036,14 +1036,16 @@ def run_training(
         from chipiron.utils.bounded_output import output_allowance
 
         from .continuous_resources import output_remaining
-        from .prepared_dataset import borrow
 
-        with (
+        # Deferred runtime import: both modules are initialized before this call.
+        from .prepared_dataset import borrow  # pylint: disable=cyclic-import
+
+        with (  # pylint: disable=contextmanager-generator-missing-cleanup
             output_allowance(
                 attempt.directory, output_remaining(paths, attempt.admission)
             ),
             borrow(paths, args, attempt.admission) as borrowed,
-        ):  # pylint: disable=contextmanager-generator-missing-cleanup
+        ):
             # Existing trainers put their caches beside rows. A private byte-for-byte copy
             # keeps those existing transient caches out of the immutable accepted Dataset.
             assert manifest.rows_path is not None

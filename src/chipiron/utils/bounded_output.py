@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Buffer, Iterator
@@ -49,6 +49,11 @@ class _Writer(io.BufferedIOBase):
         super().__init__()
         self._file = path.open("wb", buffering=0)
         self._allowance = allowance
+
+    @property
+    def name(self) -> str | int:
+        """Expose the wrapped file identity required by the text I/O protocol."""
+        return cast("str | int", self._file.name)
 
     def writable(self) -> bool:
         return True

@@ -23,9 +23,12 @@ from chipiron.environments.morpion.bootstrap.fork_origin import seeds
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments import test_morpion_managed_native as native
 from tests.environments.test_morpion_continuous_runtime import candidate_family
+from tests.environments.test_morpion_continuous_runtime import continuous as continuous
 from tests.environments.test_morpion_fork import cli
+from tests.environments.test_morpion_learning_schedule import monitored as monitored
 
 
+@pytest.mark.usefixtures("continuous")
 def test_actual_native_resume_and_settled_fork(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

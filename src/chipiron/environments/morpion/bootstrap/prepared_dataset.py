@@ -519,7 +519,9 @@ def borrow_continuous(
     frame = load_frame(paths, state)
     if job.payload.stage == "COMPARE":
         from .continuous_contract import Reservation
-        from .promotion import reservation
+
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import reservation  # pylint: disable=cyclic-import
 
         reserved = reservation(paths, state)
         require(

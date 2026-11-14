@@ -121,7 +121,8 @@ class Policy(_Wire):
 
     def validate_supported(self, args: MorpionBootstrapArgs) -> None:
         """Use the public schedule validator without changing numerical settings."""
-        from .learning_schedule import validate_supported
+        # Deferred runtime import: both modules are initialized before this call.
+        from .learning_schedule import validate_supported  # pylint: disable=cyclic-import
 
         validate_supported(args)
 
@@ -922,7 +923,7 @@ class ControlRecord:
         schema = next(
             name
             for name, kind in _CONTROL_SCHEMAS.items()
-            if type(self.payload) is kind
+            if type(self.payload) is kind  # pylint: disable=unidiomatic-typecheck
         )
         return {
             "schema": schema,

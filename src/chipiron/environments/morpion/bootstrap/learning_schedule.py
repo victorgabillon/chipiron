@@ -317,7 +317,8 @@ def source_identity(record: dict[str, Any]) -> dict[str, Any]:
 
 def selected_source(state: MorpionBootstrapRunState) -> int | None:
     """Select the reserved legacy source; continuous workers own independent dispatch."""
-    from .continuous_publication import enabled
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled  # pylint: disable=cyclic-import
 
     if enabled(state):
         return None
@@ -345,7 +346,8 @@ def wait_reason(
     paths: MorpionBootstrapPaths | None = None,
 ) -> str | None:
     """Return a passive wait reason; None permits ordinary Growth."""
-    from .continuous_publication import enabled, growth_reason
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, growth_reason  # pylint: disable=cyclic-import
 
     if enabled(state):
         require(
@@ -378,7 +380,8 @@ def validate_source(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, generation: int
 ) -> None:
     """Extra admission/acceptance fence, without weakening existing validation."""
-    from .continuous_publication import enabled
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled  # pylint: disable=cyclic-import
 
     require(
         not enabled(state), "Continuous completion requires its admitted job fence."
@@ -600,7 +603,8 @@ def on_no_publication(
     previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
 ) -> MorpionBootstrapRunState:
     """Count a persisted no-save Growth attempt without inventing a publication."""
-    from .continuous_publication import KEY, enabled
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import KEY, enabled  # pylint: disable=cyclic-import
 
     if enabled(previous):
         require(

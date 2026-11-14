@@ -294,6 +294,7 @@ def learned(
             loss is not None and math.isfinite(loss),
             "Nonfinite candidate validation loss.",
         )
+        assert loss is not None
         losses[name] = float(loss)
     winner = min(losses, key=lambda name: (losses[name], name))
     require(
