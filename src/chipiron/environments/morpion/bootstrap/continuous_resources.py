@@ -18,6 +18,16 @@ if TYPE_CHECKING:
 COMMIT_HEADROOM = 2**20
 
 
+class AdmissionDeferredError(ValueError):
+    """A new job lacks capacity; no admission, clock or reservation was committed."""
+
+
+def _capacity(condition: bool, message: str) -> None:
+    """Only resource availability is deferrable; malformed authority still fails."""
+    if not condition:
+        raise AdmissionDeferredError(message)
+
+
 def logical_bytes(path: Path) -> int:
     """Count existing payloads by stat only, including unaccepted private history."""
     return int(directory_disk_usage(path)["logical_bytes"]) if path.exists() else 0
@@ -119,12 +129,12 @@ def reserve(
     # Keep capacity for the other serial producer; this divides the existing cap,
     # not a change to the scientific recipe or the run-wide resource allowance.
     new_output = min(COMMIT_HEADROOM, free) if comparison else free // 2
-    require(
+    _capacity(
         new_output > COMMIT_HEADROOM // 2
         and (not dataset or new_scratch > 2 * limits.chunk_bytes),
         "Continuous resource_backpressure: completion reservation cannot fit.",
     )
-    require(
+    _capacity(
         shutil.disk_usage(paths.work_dir).free
         >= policy.min_free_disk_mb * 2**20
         + output
@@ -134,7 +144,7 @@ def reserve(
         + COMMIT_HEADROOM,
         "Continuous resource_backpressure: disk floor.",
     )
-    require(
+    _capacity(
         available_memory_mb() >= policy.min_available_ram_mb,
         "Continuous resource_backpressure: RAM floor.",
     )

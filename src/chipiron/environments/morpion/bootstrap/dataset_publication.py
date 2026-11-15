@@ -309,7 +309,18 @@ def admit_dataset(
                 # Deferred runtime import: both modules are initialized before this call.
                 from .continuous_dataset import admit_owned  # pylint: disable=cyclic-import
 
-                state, admission = admit_owned(paths, state, args, admission, claim)
+                # Deferred until runtime: resource accounting reads Dataset admissions.
+                from .continuous_resources import AdmissionDeferredError  # pylint: disable=cyclic-import
+
+                try:
+                    state, admission = admit_owned(paths, state, args, admission, claim)
+                except AdmissionDeferredError:
+                    # No admitted job exists. Release only this advisory claim;
+                    # pending Source, debt and existing consumers remain unchanged.
+                    release_owned_pipeline_stage_claim(
+                        claim_path=claim_path, claim_id=claim.claim_id
+                    )
+                    raise
                 # Deferred runtime import: both modules are initialized before this call.
                 from .continuous_lifecycle import remember_admission  # pylint: disable=cyclic-import
 
