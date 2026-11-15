@@ -575,7 +575,10 @@ def test_genesis_helper_parent_death_releases_writer(tmp_path: Path) -> None:
     identity = json.loads((tmp_path / "helper.json").read_text())
     deadline = time.monotonic() + 5
     while psutil.pid_exists(identity["pid"]):
-        process = psutil.Process(identity["pid"])
+        try:
+            process = psutil.Process(identity["pid"])
+        except psutil.NoSuchProcess:
+            break
         if process.create_time() != identity["created"]:
             break
         assert time.monotonic() < deadline, (

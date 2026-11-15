@@ -6,6 +6,10 @@ from pathlib import Path
 from chipiron.environments.morpion.learning.target_confidence import (
     DatasetConfidencePolicy,
 )
+from chipiron.environments.morpion.learning.target_policy import (
+    TargetSource,
+    validate_target_policy,
+)
 
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
@@ -229,7 +233,7 @@ class MorpionBootstrapArgs:
     min_depth: int | None = None
     min_visit_count: int | None = None
     max_rows: int | None = None
-    use_backed_up_value: bool = True
+    use_backed_up_value: bool | None = True
     dataset_confidence_policy: DatasetConfidencePolicy = "legacy_v1"
     dataset_family_target_policy: PvFamilyTargetPolicy = "none"
     dataset_family_prediction_blend: float = 0.25
@@ -302,8 +306,27 @@ class MorpionBootstrapArgs:
     growth_state_eviction_payload_mode: MorpionGrowthStateEvictionPayloadMode = "anchor"
     growth_state_eviction_delta_chain_max_depth: int = 32
 
+    dataset_target_source: TargetSource | None = None
+
+    @classmethod
+    def new_scientific(
+        cls, work_dir: str | Path, *, target_source: TargetSource = "effective"
+    ) -> MorpionBootstrapArgs:
+        """Create an explicit new learning recipe without adopting an old workspace."""
+        return cls(
+            work_dir=work_dir,
+            use_backed_up_value=None,
+            dataset_target_source=target_source,
+            dataset_confidence_policy="selected_value_v2",
+            pipeline_mode="artifact_pipeline",
+            runtime_checkpoint_format="sharded",
+            training_export_mode="sharded",
+            evaluator_update_policy="future_only",
+        )
+
     def __post_init__(self) -> None:
         """Validate cross-cutting scalar controls."""
+        validate_target_policy(self.dataset_target_source, self.use_backed_up_value)
         if not isinstance(self.diagnostic_stop_after_growth, bool):
             raise _invalid_diagnostic_stop_after_growth_error()
         if self.growth_additional_branch_budget is not None and (

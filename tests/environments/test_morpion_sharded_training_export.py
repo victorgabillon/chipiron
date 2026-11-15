@@ -3,7 +3,7 @@
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -112,19 +112,25 @@ def _expected_snapshot(
     return TrainingTreeSnapshot(
         root_node_id=root_node_id,
         nodes=tuple(
-            make_training_node_snapshot(
-                node_id=node.id,
-                parent_ids=node.parent_ids,
-                child_ids=node.child_ids,
-                depth=node.depth,
-                state_ref_payload=checkpoint_payload_to_jsonable(node.state_payload),
-                direct_value_scalar=node.direct_value,
-                backed_up_value_scalar=node.backed_up_value,
-                is_terminal=node.is_terminal,
-                is_exact=node.is_exact,
-                over_event_label=node.over_event_label,
-                visit_count=node.visit_count,
-                metadata=dict(node.metadata),
+            replace(
+                make_training_node_snapshot(
+                    node_id=node.id,
+                    parent_ids=node.parent_ids,
+                    child_ids=node.child_ids,
+                    depth=node.depth,
+                    state_ref_payload=checkpoint_payload_to_jsonable(
+                        node.state_payload
+                    ),
+                    direct_value_scalar=node.direct_value,
+                    backed_up_value_scalar=node.backed_up_value,
+                    is_terminal=node.is_terminal,
+                    is_exact=node.is_exact,
+                    over_event_label=node.over_event_label,
+                    visit_count=node.visit_count,
+                    metadata=dict(node.metadata),
+                ),
+                effective_value_scalar=None,
+                effective_value_source="none",
             )
             for node in nodes
         ),

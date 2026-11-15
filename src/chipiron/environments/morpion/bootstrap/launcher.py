@@ -471,6 +471,13 @@ def _scientific_args(
     """Use the explicit persisted experiment configuration, preserving stage limits."""
     from .execution_profile import args_with_policy
 
+    if (
+        args.dataset_target_source is not None
+        and args.dataset_target_source != config.dataset.target_source
+    ):
+        raise ValueError(  # noqa: TRY003
+            "Dataset target policy changed on resume; start a new experiment."
+        )
     validate_explicit_epoch_requests(args, config)
     args = args_with_policy(args, config)
     from dataclasses import asdict
@@ -972,6 +979,7 @@ def _bootstrap_args_with_persisted_config(
         min_visit_count=persisted_config.dataset.min_visit_count,
         max_rows=persisted_config.dataset.max_rows,
         use_backed_up_value=persisted_config.dataset.use_backed_up_value,
+        dataset_target_source=persisted_config.dataset.target_source,
         dataset_family_target_policy=persisted_config.dataset.family_target_policy,
         dataset_family_prediction_blend=persisted_config.dataset.family_prediction_blend,
         evaluator_update_policy=persisted_config.evaluator_update_policy,
@@ -1390,6 +1398,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-depth", type=int, default=None)
     parser.add_argument("--min-visit-count", type=int, default=None)
     parser.add_argument("--max-rows", type=int, default=None)
+    parser.add_argument(
+        "--dataset-target-source",
+        choices=("effective", "tree", "direct"),
+        default=None,
+        help="Exact Anemone value slot for a scientific experiment; no fallback. New scientific preparation defaults to effective.",
+    )
     parser.add_argument(
         "--use-backed-up-value",
         action=argparse.BooleanOptionalAction,
@@ -1893,6 +1907,22 @@ def launcher_args_from_cli(
     )
     parser = build_launcher_argument_parser()
     parsed = parser.parse_args(argv_list)
+    legacy_target_explicit = any(
+        a.split("=", 1)[0] in ("--use-backed-up-value", "--no-use-backed-up-value")
+        for a in argv_list
+    )
+    if parsed.dataset_target_source is not None:
+        if not parsed.scientific or legacy_target_explicit:
+            parser.error(
+                "--dataset-target-source requires --scientific and excludes --[no-]use-backed-up-value"
+            )
+    elif (
+        parsed.scientific_operation == "prepare-continuous"
+        and not legacy_target_explicit
+    ):
+        parsed.dataset_target_source = "effective"
+    if parsed.dataset_target_source is not None:
+        parsed.use_backed_up_value = None
     quiet_worker_startup = (
         parsed.quiet_worker_startup
         or os.environ.get("MORPION_SUPERVISED_WORKER") == "1"
@@ -1944,6 +1974,10 @@ def launcher_args_from_cli(
         min_visit_count=parsed.min_visit_count,
         max_rows=parsed.max_rows,
         use_backed_up_value=parsed.use_backed_up_value,
+        dataset_target_source=parsed.dataset_target_source,
+        dataset_confidence_policy="selected_value_v2"
+        if parsed.dataset_target_source is not None
+        else "legacy_v1",
         evaluator_update_policy=parsed.evaluator_update_policy,
         pipeline_mode=parsed.pipeline_mode,
         training_export_mode=parsed.training_export_mode,
