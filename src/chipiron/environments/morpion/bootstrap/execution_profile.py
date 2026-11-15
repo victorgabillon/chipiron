@@ -224,5 +224,10 @@ def launcher_execution(
         return
     with bootstrap_execution(args, process_start=process_start):
         stage = launcher.scientific_operation or launcher.pipeline_stage
-        require_args_profile(args, stage=stage)
+        # Persistent startup only establishes the process profile. Its boundary
+        # guard handles authenticated termination after signal handlers are live.
+        require_args_profile(
+            args,
+            stage="process" if process_start and launcher.persistent_worker else stage,
+        )
         yield launcher

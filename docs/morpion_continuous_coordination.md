@@ -58,6 +58,16 @@ withholding the acknowledgement needed to release that lock. Proven closure and
 positive native reap both precede suspension/finalization. Unproven closure leaves
 explicit uncertainty and retains measured usage; unresolved jobs keep their pins
 and original allowances.
+Scientific node-budget termination is sealed into the terminal Growth publication.
+Managed workers authenticate both that seal and their live native launch before
+waiting in the existing idle state. The actual scientific-work guard still refuses
+terminal work, including a terminal commit racing dispatch. Workers remain alive
+and responsive to supervised signals; unexplained early exits and unrelated errors
+remain fatal. The idle wait has a finite lifetime fallback and does not release
+scientific pins or write new admissions. The monitor uses the same sealed terminal
+reason for orderly closure and measured finalization. Existing unsealed failed
+experiments are not migrated, reinterpreted or refunded by this correction.
+
 Resume cannot renew a job clock or accept live/unknown claim ownership. A damaged
 unconsumed disposable input may rebuild only the same admitted Dataset and exact
 recipe/path. Corruption after consumption fails and records mandatory evidence.
