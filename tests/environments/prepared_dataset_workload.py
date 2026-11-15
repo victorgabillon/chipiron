@@ -9,6 +9,9 @@ from typing import Any
 
 from chipiron.environments.morpion.bootstrap import prepared_dataset as prepared
 from chipiron.environments.morpion.bootstrap import training_publication as training
+from chipiron.environments.morpion.bootstrap.execution_profile import (
+    bootstrap_execution,
+)
 from chipiron.environments.morpion.bootstrap.pipeline.stages import (
     run_pipeline_training_stage,
 )
@@ -54,6 +57,12 @@ def main() -> None:
                 assert os.read(int(os.environ["J41_RELEASE_FD"]), 1) == b"G"
         return
     if action == "consume":
+        if point == "accepted":
+
+            def after_accept(*args: Any, **kwargs: Any) -> Any:
+                os._exit(73)
+
+            training._repair = after_accept
 
         def unexpected(*args: Any, **kwargs: Any) -> Any:
             message = "Warm consumer copied rows or rebuilt native tensors"
@@ -106,4 +115,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # Each child owns the persisted profile before any model/preparation work.
+    arguments, *_ = pickle.loads(Path(sys.argv[1]).read_bytes())
+    with bootstrap_execution(arguments, process_start=True):
+        main()

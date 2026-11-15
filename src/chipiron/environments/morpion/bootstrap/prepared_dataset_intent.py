@@ -27,9 +27,22 @@ def _deadline(
 ) -> tuple[float, float]:
     """Capture original claim/job bounds, never a renewed preparation timeout."""
     assert args.continual_learning is not None
+    return original_deadline(
+        paths, args.continual_learning.worker_max_seconds, claim, owner
+    )
+
+
+def original_deadline(
+    paths: MorpionBootstrapPaths,
+    max_seconds: int,
+    claim: MorpionPipelineStageClaim,
+    owner: dict[str, Any],
+) -> tuple[float, float]:
+    """Read the original dispatch clock for the existing Dataset or Training worker."""
+    require(claim.stage in {"dataset", "training"}, "Unsupported job clock stage.")
     now = time.monotonic()
     # A persistent worker resets this clock at original dispatch, not at acceptance.
-    status = paths.pipeline_dir / "worker_processes" / "dataset_worker.json"
+    status = paths.pipeline_dir / "worker_processes" / f"{claim.stage}_worker.json"
     # /proc start ticks use boot time (including suspend), not CLOCK_MONOTONIC.
     age = time.clock_gettime(time.CLOCK_BOOTTIME) - int(
         owner["start_ticks"]
@@ -52,9 +65,7 @@ def _deadline(
     )
     wall = time.time()
     claim_end = datetime.fromisoformat(claim.expires_at_utc).timestamp()
-    end = min(
-        now + claim_end - wall, started + args.continual_learning.worker_max_seconds
-    )
+    end = min(now + claim_end - wall, started + max_seconds)
     require(end > now, "Original Dataset job allowance exhausted")
     return end, wall + end - now
 
@@ -104,6 +115,19 @@ def intent_owned(
         - prior_reservation
         - sum(r["reserved_bytes"] for r in data.values())
     )
+    from .continuous_contract import Budget, ControlRecord, JobRecord
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, load_frame, read_record  # pylint: disable=cyclic-import
+
+    if enabled(state):
+        frame = load_frame(paths, state)
+        assert frame.state.dataset_job is not None
+        job = read_record(paths, frame.state.dataset_job, frame.context)
+        assert isinstance(job, JobRecord)
+        budget = read_record(paths, job.payload.budget, frame.context)
+        assert isinstance(budget, ControlRecord) and isinstance(budget.payload, Budget)
+        remaining = min(remaining, budget.payload.reserved_scratch_bytes)
     # No eligible reservation means ordinary private fallback, not partial reuse.
     if len(data) == 2 or remaining <= proposal["rows_bytes"] + 2 * limits.chunk_bytes:
         return state

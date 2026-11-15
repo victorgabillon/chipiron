@@ -172,6 +172,11 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=argparse.REMAINDER,
         help="Canonical fresh recipe options after --",
     )
+    commands.add_parser(
+        "settled-discard",
+        parents=[shared],
+        help="Explicitly close quiescent unaccepted continuous work before a fork",
+    )
     fork = commands.add_parser(
         "fork", help="Prepare an independent full-state copy of a settled managed run"
     )
@@ -248,6 +253,15 @@ def main(argv: list[str] | None = None) -> int:
         work_dir = resolve_work_dir(args.work_dir)
         if args.command == "current":
             print(work_dir)
+            return 0
+        if args.command == "settled-discard":
+            from .bootstrap_paths import MorpionBootstrapPaths
+            from .continuous_lifecycle import settled_discard
+
+            settled_discard(MorpionBootstrapPaths.from_work_dir(work_dir))
+            print(
+                "Continuous unaccepted work settled; accepted scientific history preserved."
+            )
             return 0
         if args.command == "status":
             from .dashboard.view_model import load_dashboard_snapshot, render_status

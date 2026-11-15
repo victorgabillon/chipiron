@@ -133,7 +133,12 @@ def validate_continual_context(
         schedule_from_metadata(config.metadata) == schedule,
         "Learning schedule changed or was disabled.",
     )
-    window(state)
+    from .continuous_publication import enabled, load_frame
+
+    if enabled(state):
+        load_frame(paths, state)
+    else:
+        window(state)
     from .managed_sessions import validate as validate_managed
 
     validate_managed(paths, config, state)

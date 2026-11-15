@@ -41,6 +41,14 @@ def main() -> None:
         assert torch.get_num_threads() == torch.get_num_interop_threads() == 1
         for _ in range(count):
             state = grow(args)
+            from chipiron.environments.morpion.bootstrap.continuous_contract import (
+                Policy,
+            )
+
+            if isinstance(args.learning_schedule, Policy):
+                from chipiron.environments.morpion.bootstrap.promotion import service
+
+                service(paths, args, ttl_seconds=60, owner=None)
             run_dataset(args, generation=state.generation)
             accepted = run_pipeline_training_stage(args, generation=state.generation)
             assert (

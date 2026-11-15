@@ -156,9 +156,18 @@ def _request(
         state.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract") == 1,
         "Activation requires an explicitly initialized format-3 workspace.",
     )
+    from .continuous_publication import enabled as continuous_enabled
     from .learning_schedule import validate_resolution
 
-    validate_resolution(paths, state, training_generation)
+    continuous = continuous_enabled(state)
+    bindings: dict[str, Any] = {}
+    if continuous:
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import request_bindings  # pylint: disable=cyclic-import
+
+        bindings = request_bindings(paths, state, training_generation)
+    else:
+        validate_resolution(paths, state, training_generation)
     transaction = transaction_state(state)
     require(
         transaction is not None and transaction["schema_version"] == 2,
@@ -170,7 +179,7 @@ def _request(
     accepted, candidate = accepted_selected_model(paths, state, training_generation)
     from .learning_schedule import window
 
-    if window(state) is not None:
+    if not continuous and window(state) is not None:
         from .training_publication import _proposal
 
         decision = _proposal(paths, accepted)["status"]["metadata"][
@@ -196,6 +205,7 @@ def _request(
         "policy": dict(POLICY),
         "expected_cursor_sha256": cursor_digest(transaction["accepted_cursor"]),
         "receipt_ledger_sha256": object_digest(state.metadata[RECEIPTS_METADATA_KEY]),
+        **bindings,
     }
 
 
@@ -317,7 +327,7 @@ def activation_completion(
     require(
         isinstance(request.get("schema_version"), int)
         and not isinstance(request["schema_version"], bool)
-        and request["schema_version"] == 1
+        and request["schema_version"] == (2 if "continuous_source" in record else 1)
         and completion.get("request_sha256")
         == record.get("activation_request_sha256")
         == object_digest(request)
@@ -347,6 +357,11 @@ def activation_completion(
         and isinstance(completion.get("refresh"), dict),
         "Activation completion transition mismatch.",
     )
+    if request["schema_version"] == 2:
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import validate_completion  # pylint: disable=cyclic-import
+
+        validate_completion(paths, state, record, parent, request)
     return completion
 
 
@@ -397,9 +412,10 @@ def activate_model(
             == object_digest(_request(paths, state, request["training_generation"])),
             "Stale or conflicting model activation request.",
         )
+        from .continuous_publication import enabled as continuous_enabled
         from .learning_schedule import window
 
-        if window(state) is not None:
+        if continuous_enabled(state) or window(state) is not None:
             from .learning_worker import monitored_identity
 
             monitored_identity()
@@ -579,6 +595,14 @@ def activate_selected_round_automatically(paths: MorpionBootstrapPaths) -> None:
     )
     state = load_bootstrap_run_state(paths.run_state_path)
     if state.metadata.get("experiment_termination") is not None:
+        return
+    from .continuous_publication import enabled as continuous_enabled
+
+    if continuous_enabled(state):
+        # Deferred runtime import: both modules are initialized before this call.
+        from .promotion import activate_at_boundary  # pylint: disable=cyclic-import
+
+        activate_at_boundary(paths)
         return
     from .learning_schedule import wait_reason, window
 

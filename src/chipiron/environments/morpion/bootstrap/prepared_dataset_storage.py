@@ -89,7 +89,15 @@ def context(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
 ) -> dict[str, Any]:
     """Bind the real workspace/configuration and existing schedule, not future policy."""
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import context as continuous_context  # pylint: disable=cyclic-import
+
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled as continuous_enabled  # pylint: disable=cyclic-import
     from .learning_schedule import schedule_from_metadata
+
+    if continuous_enabled(state):
+        return continuous_context(paths, state).to_metadata()
 
     schedule = schedule_from_metadata(state.metadata)
     return Context(

@@ -134,7 +134,11 @@ def _settled(paths: MorpionBootstrapPaths, state: Any, reader: Metadata) -> None
         not paths.pipeline_reevaluation_patch_path.exists(),
         "Pending Reevaluation patch prevents fork.",
     )
-    data = window(state)
+    from .continuous_lifecycle import require_settled as continuous_settled
+    from .continuous_publication import enabled as continuous_enabled
+
+    continuous_settled(paths, state)
+    data = None if continuous_enabled(state) else window(state)
     require(
         data is None or data["active"] is None,
         "Reserved learning window prevents fork.",

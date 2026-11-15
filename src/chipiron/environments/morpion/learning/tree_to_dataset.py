@@ -537,7 +537,9 @@ def save_morpion_supervised_rows_streaming(
     row_count = 0
     version = dataset_format_version(metadata)
     try:
-        with temporary.open("w", encoding="utf-8") as stream:
+        from chipiron.utils.bounded_output import output_file
+
+        with output_file(temporary, "w", encoding="utf-8") as stream:
             _write_jsonl_record(
                 stream,
                 {

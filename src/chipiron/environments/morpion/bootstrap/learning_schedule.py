@@ -5,8 +5,9 @@ references and the ordinary publication commit remain the scientific authority.
 """
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
+from .continuous_contract import Policy
 from .generation_publication_io import (
     object_digest,
     publication_records,
@@ -86,7 +87,7 @@ class ReadyBoundedGrowthWindow:
         }
 
 
-type LearningSchedule = BoundedGrowthWindow | ReadyBoundedGrowthWindow
+type LearningSchedule = BoundedGrowthWindow | ReadyBoundedGrowthWindow | Policy
 
 
 def window_key(schedule: LearningSchedule | None) -> str:
@@ -100,6 +101,8 @@ def window_key(schedule: LearningSchedule | None) -> str:
 
 def cycle_limit(schedule: LearningSchedule) -> int:
     """Return ordinary cycles, never publication generations or elapsed time."""
+    require(not isinstance(schedule, Policy), "Continuous policy has no legacy window.")
+    assert not isinstance(schedule, Policy)
     return (
         schedule.max_growth_cycles
         if isinstance(schedule, ReadyBoundedGrowthWindow)
@@ -123,6 +126,8 @@ def schedule_from_metadata(metadata: dict[str, Any]) -> LearningSchedule | None:
     raw = metadata[CONFIG_KEY]
     require(isinstance(raw, dict), "Invalid learning schedule.")
     assert isinstance(raw, dict)
+    if raw.get("kind") == "bounded_continuous_v1":
+        return Policy.from_metadata(raw)
     schedule: LearningSchedule
     if raw.get("kind") == "ready_bounded_growth_window_v1":
         maximum = raw.get("max_growth_cycles")
@@ -156,7 +161,9 @@ def context_marker(schedule: LearningSchedule | None) -> dict[str, Any]:
         {"schema_version": 1}
         if schedule is None
         else {
-            "schema_version": 3
+            "schema_version": 4
+            if isinstance(schedule, Policy)
+            else 3
             if isinstance(schedule, ReadyBoundedGrowthWindow)
             else 2,
             "learning_schedule_sha256": object_digest(schedule.to_metadata()),
@@ -168,7 +175,7 @@ def initial_window(schedule: LearningSchedule | None) -> dict[str, Any]:
     """Fresh genesis only; no adoption or inferred state for existing runs."""
     return (
         {}
-        if schedule is None
+        if schedule is None or isinstance(schedule, Policy)
         else {
             window_key(schedule): {
                 "policy": schedule.to_metadata(),
@@ -205,6 +212,26 @@ def validate_supported(args: MorpionBootstrapArgs) -> None:
         "Bounded Growth requires continual automatic activation, equal cadences "
         "and a closed sharded publication each ordinary cycle.",
     )
+    if isinstance(args.learning_schedule, Policy):
+        import os
+        from pathlib import Path
+
+        from .prepared_dataset_recipe import dataset_recipe
+
+        require(
+            os.environ.get("CHIPIRON_SHARED_PREPARATION") == "1"
+            and dataset_recipe(
+                args, Path(args.work_dir) / "pipeline/qualification/rows.jsonl"
+            )
+            is not None,
+            "Continuous policy requires explicit shared preparation and supported serial flat/relational candidates.",
+        )
+        require(
+            policy is not None
+            and policy.training_policy == "continue_from_previous_accepted_weights"
+            and policy.optimizer_state_policy == "continue_adam",
+            "Continuous cohorts require each candidate's own accepted weights and Adam.",
+        )
 
 
 def window(state: MorpionBootstrapRunState) -> dict[str, Any] | None:
@@ -289,7 +316,12 @@ def source_identity(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def selected_source(state: MorpionBootstrapRunState) -> int | None:
-    """Select the reserved source only; no newest-source substitution."""
+    """Select the reserved legacy source; continuous workers own independent dispatch."""
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled  # pylint: disable=cyclic-import
+
+    if enabled(state):
+        return None
     data = window(state)
     return (
         None
@@ -311,8 +343,19 @@ def source_record(
 
 def wait_reason(
     state: MorpionBootstrapRunState,
-) -> Literal["await_dataset", "await_training", "await_learning_resolution"] | None:
+    paths: MorpionBootstrapPaths | None = None,
+) -> str | None:
     """Return a passive wait reason; None permits ordinary Growth."""
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, growth_reason  # pylint: disable=cyclic-import
+
+    if enabled(state):
+        require(
+            paths is not None,
+            "Continuous Growth requires authenticated slot resolution.",
+        )
+        assert paths is not None
+        return growth_reason(paths, state)
     data = window(state)
     if data is None or data["active"] is None:
         return None
@@ -337,6 +380,12 @@ def validate_source(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState, generation: int
 ) -> None:
     """Extra admission/acceptance fence, without weakening existing validation."""
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled  # pylint: disable=cyclic-import
+
+    require(
+        not enabled(state), "Continuous completion requires its admitted job fence."
+    )
     data = window(state)
     if data is None:
         return
@@ -554,6 +603,15 @@ def on_no_publication(
     previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
 ) -> MorpionBootstrapRunState:
     """Count a persisted no-save Growth attempt without inventing a publication."""
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import KEY, enabled  # pylint: disable=cyclic-import
+
+    if enabled(previous):
+        require(
+            state.metadata.get(KEY) == previous.metadata[KEY],
+            "No-publication Growth changed continuous authority.",
+        )
+        return state
     data = window(previous)
     if data is None:
         return state

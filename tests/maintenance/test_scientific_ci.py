@@ -442,6 +442,7 @@ def test_replay_contract_preserves_pre_e3_dependency_identities() -> None:
     [
         ("parsley-coco", "parsley", "0.2.0", "0.3.0"),
         ("atomheart", "atomheart", "0.3.0", "0.3.1"),
+        ("algorhino-anemone", "anemone", "0.3.1", "0.4.0"),
     ],
 )
 @pytest.mark.parametrize(

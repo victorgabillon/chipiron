@@ -459,7 +459,9 @@ class MorpionRegressor(ChiNN):
             name: tensor.detach().cpu().tolist()
             for name, tensor in self.state_dict().items()
         }
-        with open(file_path, "w", encoding="utf-8") as handle:
+        from chipiron.utils.bounded_output import output_file
+
+        with output_file(file_path, "w", encoding="utf-8") as handle:
             json.dump(readable_state, handle, indent=2, sort_keys=True)
 
 

@@ -94,9 +94,33 @@ def claim_metadata(
     from .managed_sessions import require_managed_execution
 
     require_managed_execution(paths, state)
-    if window(state) is None:
+    # Deferred runtime import: both modules are initialized before this call.
+    from .continuous_publication import enabled, source  # pylint: disable=cyclic-import
+
+    continuous = enabled(state)
+    if not continuous and window(state) is None:
         return None
-    validate_source(paths, state, generation)
+    if continuous:
+        source(paths, state, generation)
+    else:
+        validate_source(paths, state, generation)
+    if continuous:
+        from .continuous_contract import JobRecord
+        from .continuous_lifecycle import release_dead_claim
+
+        # Deferred runtime import: both modules are initialized before this call.
+        from .continuous_publication import load_frame, read_record  # pylint: disable=cyclic-import
+
+        frame = load_frame(paths, state)
+        ref = (
+            frame.state.dataset_job
+            if claim_path.name == "dataset_claim.json"
+            else frame.state.cohort
+        )
+        if ref is not None:
+            job = read_record(paths, ref, frame.context)
+            assert isinstance(job, JobRecord)
+            release_dead_claim(paths, job)
     current = monitored_identity()
     if claim_path.exists():
         previous = load_pipeline_stage_claim(claim_path)

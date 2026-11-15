@@ -374,10 +374,16 @@ def save_morpion_model_bundle(
     manifest_path = bundle_dir / MORPION_MANIFEST_FILE_NAME
     readable_weights_path = bundle_dir / MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME
 
-    torch.save(state_dict_on_cpu(model), weights_path)
+    from chipiron.utils.bounded_output import active, output_file
+
+    if active(weights_path):
+        with output_file(weights_path, "wb") as stream:
+            torch.save(state_dict_on_cpu(model), stream)
+    else:
+        torch.save(state_dict_on_cpu(model), weights_path)
     model.log_readable_model_weights_to_file(str(readable_weights_path))
 
-    with open(args_path, "w", encoding="utf-8") as handle:
+    with output_file(args_path, "w", encoding="utf-8") as handle:
         json.dump(_model_args_to_dict(model_args), handle, indent=2, sort_keys=True)
 
     manifest = MorpionModelManifest(
@@ -408,7 +414,7 @@ def save_morpion_model_bundle(
         ),
         metadata=effective_metadata,
     )
-    with open(manifest_path, "w", encoding="utf-8") as handle:
+    with output_file(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(_manifest_to_dict(manifest), handle, indent=2, sort_keys=True)
 
 

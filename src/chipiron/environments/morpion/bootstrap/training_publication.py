@@ -312,12 +312,21 @@ def admit_training(
     with growth_receipt_ownership(paths, wait=True):
         state = load_bootstrap_run_state(paths.run_state_path)
         require(enabled(state), "Durable Training is not enabled.")
+        from .continuous_publication import enabled as continuous_enabled
         from .learning_policy import policy_from_metadata, validate_continual_context
         from .learning_schedule import schedule_from_metadata
 
-        validate_continual_context(
-            paths, state, policy_from_metadata(config), schedule_from_metadata(config)
-        )
+        if continuous_enabled(state):
+            from .continuous_training import validate_configuration
+
+            validate_configuration(paths, state, config)
+        else:
+            validate_continual_context(
+                paths,
+                state,
+                policy_from_metadata(config),
+                schedule_from_metadata(config),
+            )
         record = publication_record(state, generation)
         if ACCEPTED in record:
             proposal = _proposal(paths, record[ACCEPTED])
@@ -334,7 +343,8 @@ def admit_training(
             from .learning_schedule import validate_source
             from .pipeline.cursors import training_lower_bound_details
 
-            validate_source(paths, state, generation)
+            if not continuous_enabled(state):
+                validate_source(paths, state, generation)
 
             bound = training_lower_bound_details(paths)
             # Active claims are scheduling guards, not evidence that a process died.
@@ -374,6 +384,14 @@ def admit_training(
                     "reproducibility": reproducibility(),
                     **_continuation_admission(paths, state, config, generation),
                 }
+                if continuous_enabled(state):
+                    from .continuous_training import admit_owned
+
+                    state, admission = admit_owned(paths, state, admission, claim)
+                    from .continuous_lifecycle import remember_admission
+
+                    state = remember_admission(paths, state, admission)
+                    save_bootstrap_run_state(state, paths.run_state_path, durable=True)
                 atomic_json(staging / "admission.json", admission)
                 attempt = TrainingAttempt(admission, staging)
                 result = attempt
@@ -405,15 +423,22 @@ def _validate(
     )
     admission = proposal["admission"]
     validate_torch_execution_profile(admission["configuration"])
+    from .continuous_publication import enabled as continuous_enabled
     from .learning_policy import policy_from_metadata, validate_continual_context
     from .learning_schedule import schedule_from_metadata
 
-    validate_continual_context(
-        paths,
-        state,
-        policy_from_metadata(admission["configuration"]),
-        schedule_from_metadata(admission["configuration"]),
-    )
+    continuous = continuous_enabled(state)
+    if continuous:
+        from .continuous_training import validate_configuration
+
+        validate_configuration(paths, state, admission["configuration"])
+    else:
+        validate_continual_context(
+            paths,
+            state,
+            policy_from_metadata(admission["configuration"]),
+            schedule_from_metadata(admission["configuration"]),
+        )
     from .fork_origin import KEY as FORK
     from .fork_origin import seeds
 
@@ -441,6 +466,7 @@ def _validate(
             "reproducibility",
         }
         | ({FORK} if FORK in state.metadata else set())
+        | ({"continuous_admission"} if continuous else set())
         | (
             {
                 "parents",
@@ -456,7 +482,9 @@ def _validate(
         and not isinstance(admission["schema_version"], bool)
         and admission["schema_version"]
         == (
-            3
+            4
+            if continuous
+            else 3
             if FORK in state.metadata
             else 2
             if "continual_learning" in admission["configuration"]
@@ -533,7 +561,12 @@ def _validate(
         status.selection_policy == expected_policy, "Training selection policy changed."
     )
     if "parents" in admission:
-        _validate_continual_selection(admission, status)
+        if continuous:
+            from .continuous_training import validate_learned
+
+            validate_learned(paths, state, admission, status)
+        else:
+            _validate_continual_selection(admission, status)
     for name in names:
         model = proposal["models"][name]
         expected = paths.relative_to_work_dir(
@@ -897,9 +930,16 @@ def accept_training(
                 previous in (None, reference), "Conflicting accepted Training attempt."
             )
             if previous is None:
+                from .continuous_publication import enabled as continuous_enabled
                 from .learning_schedule import validate_source
 
-                validate_source(paths, state, generation)
+                if continuous_enabled(state):
+                    from .continuous_publication import authenticate_job
+                    from .continuous_training import admitted
+
+                    authenticate_job(paths, state, admitted(paths, state, admission))
+                else:
+                    validate_source(paths, state, generation)
                 if "parents" in admission:
                     require(
                         latest_candidate_parents(
@@ -910,11 +950,12 @@ def accept_training(
                     )
                     from .generation_publication_io import committed_evaluator
 
-                    require(
-                        committed_evaluator(paths.work_dir, state)[0]
-                        == admission["incumbent"],
-                        "Training incumbent changed before acceptance.",
-                    )
+                    if not continuous_enabled(state):
+                        require(
+                            committed_evaluator(paths.work_dir, state)[0]
+                            == admission["incumbent"],
+                            "Training incumbent changed before acceptance.",
+                        )
                 claim = load_pipeline_stage_claim(
                     paths.pipeline_training_claim_path_for_generation(generation)
                 )
@@ -928,6 +969,10 @@ def accept_training(
                     _directory(paths, admission["attempt_id"]), paths.work_dir
                 )
                 state = with_accepted_result(state, generation, ACCEPTED, reference)
+                if continuous_enabled(state):
+                    from .continuous_training import accept_owned
+
+                    state = accept_owned(paths, state, proposal, reference)
                 save_bootstrap_run_state(state, paths.run_state_path, durable=True)
             else:
                 sync_artifact(paths.run_state_path, paths.work_dir)
@@ -987,10 +1032,20 @@ def run_training(
         attempt: TrainingAttempt,
     ) -> MorpionPipelineTrainingStatusArtifact:
         """Run the unchanged private recipe within its admitted lifetime."""
-        from .prepared_dataset import borrow
-
         # The borrowed-input generator releases native/artifact ownership in finally.
-        with borrow(paths, args, attempt.admission) as borrowed:  # pylint: disable=contextmanager-generator-missing-cleanup
+        from chipiron.utils.bounded_output import output_allowance
+
+        from .continuous_resources import output_remaining
+
+        # Deferred runtime import: both modules are initialized before this call.
+        from .prepared_dataset import borrow  # pylint: disable=cyclic-import
+
+        with (  # pylint: disable=contextmanager-generator-missing-cleanup
+            output_allowance(
+                attempt.directory, output_remaining(paths, attempt.admission)
+            ),
+            borrow(paths, args, attempt.admission) as borrowed,
+        ):
             # Existing trainers put their caches beside rows. A private byte-for-byte copy
             # keeps those existing transient caches out of the immutable accepted Dataset.
             assert manifest.rows_path is not None
@@ -1050,11 +1105,20 @@ def run_training(
                 file_digest(rows) == attempt.admission["dataset"]["rows_sha256"],
                 "Training input changed during computation.",
             )
-            selection = (
-                _compare_incumbent(paths, private_paths, args, attempt, result, rows)
-                if "parents" in attempt.admission
-                else None
-            )
+            cohort = None
+            if "continuous_admission" in attempt.admission:
+                from .continuous_training import learned
+
+                cohort = learned(paths, state, attempt.admission, result, private_paths)
+                selection = None
+            else:
+                selection = (
+                    _compare_incumbent(
+                        paths, private_paths, args, attempt, result, rows
+                    )
+                    if "parents" in attempt.admission
+                    else None
+                )
             # The synchronous trainer has returned; only this attempt owned these
             # inputs/caches. Keep the accepted Dataset as the sole durable row source.
             if borrowed is None:
@@ -1082,6 +1146,7 @@ def run_training(
                     else {}
                 ),
                 **({"continual_selection": selection} if selection is not None else {}),
+                **({"learned_cohort_v1": cohort} if cohort is not None else {}),
             },
         )
 

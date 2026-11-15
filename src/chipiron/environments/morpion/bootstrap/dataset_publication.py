@@ -92,6 +92,9 @@ def _validate_binding(
     state: MorpionBootstrapRunState, admission: dict[str, Any], record: dict[str, Any]
 ) -> None:
     require(enabled(state), "Fenced Dataset authority is required.")
+    from .continuous_publication import enabled as continuous_enabled
+
+    continuous = continuous_enabled(state)
     require(
         set(admission)
         == {
@@ -105,12 +108,13 @@ def _validate_binding(
             "source_model_pins",
             "source_config_sha256",
         }
+        | ({"continuous_admission"} if continuous else set())
         and isinstance(admission["options"], dict)
         and set(admission["options"]) == set(OPTIONS),
         "Incomplete Dataset admission.",
     )
     require(
-        admission["schema_version"] == 1
+        admission["schema_version"] == (2 if continuous else 1)
         and isinstance(admission["schema_version"], int)
         and not isinstance(admission["schema_version"], bool),
         "Unsupported Dataset proposal.",
@@ -249,10 +253,13 @@ def admit_dataset(
                 options["dataset_confidence_policy"] == "selected_value_v2",
                 "Activation workspaces require selected-value-v2 Dataset confidence.",
             )
+        from .continuous_publication import enabled as continuous_enabled
         from .learning_policy import validate_continual_context
         from .learning_schedule import window
 
-        if window(state) is not None or args.learning_schedule is not None:
+        if not continuous_enabled(state) and (
+            window(state) is not None or args.learning_schedule is not None
+        ):
             validate_continual_context(
                 paths, state, args.continual_learning, args.learning_schedule
             )
@@ -274,7 +281,8 @@ def admit_dataset(
         else:
             descriptor = validate_capsule(paths.work_dir, record)
             validate_manifest_publication(paths.work_dir, manifest)
-            from .learning_worker import claim_metadata
+            # Deferred runtime import: both modules are initialized before this call.
+            from .learning_worker import claim_metadata  # pylint: disable=cyclic-import
 
             worker_metadata = claim_metadata(paths, state, generation, claim_path)
             claim = claim_pipeline_stage(
@@ -297,6 +305,16 @@ def admit_dataset(
                 "source_model_pins": descriptor["model_pins"],
                 "source_config_sha256": descriptor["bootstrap_config_hash"],
             }
+            if continuous_enabled(state):
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import admit_owned  # pylint: disable=cyclic-import
+
+                state, admission = admit_owned(paths, state, args, admission, claim)
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_lifecycle import remember_admission  # pylint: disable=cyclic-import
+
+                state = remember_admission(paths, state, admission)
+                save_bootstrap_run_state(state, paths.run_state_path, durable=True)
             staging = _directory(paths, identifier, private=True)
             staging.mkdir(parents=True, exist_ok=False)
             attempt = DatasetAttempt(admission, staging / "rows.jsonl")
@@ -419,9 +437,17 @@ def accept_dataset(
             load_pipeline_manifest(manifest_path) if manifest_path.exists() else None
         )
         if previous is None:
+            from .continuous_publication import enabled as continuous_enabled
             from .learning_schedule import validate_source
 
-            validate_source(paths, state, generation)
+            if continuous_enabled(state):
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import admitted  # pylint: disable=cyclic-import
+                from .continuous_publication import authenticate_job
+
+                authenticate_job(paths, state, admitted(paths, state, admission))
+            else:
+                validate_source(paths, state, generation)
             claim = load_pipeline_stage_claim(
                 paths.pipeline_dataset_claim_path_for_generation(generation)
             )
@@ -446,6 +472,11 @@ def accept_dataset(
                 state = intent_owned(
                     paths, state, preparation_args, proposal, reference, claim
                 )
+            if continuous_enabled(state):
+                # Deferred runtime import: both modules are initialized before this call.
+                from .continuous_dataset import accept_owned  # pylint: disable=cyclic-import
+
+                state = accept_owned(paths, state, admission, reference)
             # Accepted result and advisory preparation intent share this durable save.
             save_bootstrap_run_state(state, paths.run_state_path, durable=True)
         else:

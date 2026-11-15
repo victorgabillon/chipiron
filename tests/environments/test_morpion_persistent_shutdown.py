@@ -159,6 +159,8 @@ wait "$worker" || true
     monkeypatch.setattr(operator.time, "clock_gettime", boottime)
     monkeypatch.setattr(operator, "available_ram_mb", lambda: 20000.0)
     authority = SimpleNamespace(metadata={}, tree_size_at_last_save=1)
+    # Lifecycle shutdown reads the same legacy authority from disk.
+    (tmp_path / "run_state.json").write_text(json.dumps(vars(authority)))
 
     def load_state(_path: Path) -> SimpleNamespace:
         if cross_decision_clock:

@@ -302,6 +302,7 @@ def _discovery_metadata(state: MorpionBootstrapRunState) -> dict[str, object]:
     )  # Continuation is authoritative only in run_state.
     metadata.pop("fenced_dataset", None)
     metadata.pop("durable_training", None)
+    metadata.pop("continuous_pipeline_v1", None)
     publication = metadata.pop(PUBLICATION_KEY, None)
     receipts = metadata.pop(RECEIPTS_METADATA_KEY)
     metadata[DISCOVERY_METADATA_KEY] = {
@@ -312,7 +313,16 @@ def _discovery_metadata(state: MorpionBootstrapRunState) -> dict[str, object]:
         else {
             k: v
             for k, v in publication["generations"][-1].items()
-            if k not in {"accepted_dataset", "accepted_training"}
+            if k
+            not in {
+                "accepted_dataset",
+                "accepted_training",
+                "continuous_admissions",
+                "continuous_dispositions",
+                "continuous_ready",
+                "continuous_consumed",
+                "continuous_retirement",
+            }
         },
         "checkpoint": {
             "path": state.latest_runtime_checkpoint_path,

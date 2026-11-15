@@ -149,6 +149,8 @@ def run_sample(
         else {"experiment_termination": {"reason": termination}},
         tree_size_at_last_save=1,
     )
+    # Lifecycle shutdown reads the same legacy authority from disk.
+    paths.run_state_path.write_text(json.dumps(vars(authority)))
 
     def load_state(_path: Path) -> SimpleNamespace:
         if after_state is not None:
