@@ -22,6 +22,12 @@ from .target_confidence import (
     is_certified,
     validate_confident_row,
 )
+from .target_policy import (
+    TargetSource,
+    select_exported_target,
+    target_policy_metadata,
+    validate_target_policy,
+)
 
 MORPION_SUPERVISED_ROWS_DATASET_KIND = "morpion_supervised_rows"
 MORPION_SUPERVISED_ROWS_DATASET_VERSION = 1
@@ -226,7 +232,8 @@ def training_node_to_morpion_supervised_row(
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
     min_visit_count: int | None = None,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     _validated_state_ref_normalizer: Callable[[object], object] | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRow | None:
@@ -237,18 +244,27 @@ def training_node_to_morpion_supervised_row(
     tree backups. Terminal or exact nodes are higher-confidence targets, but
     this raw-row format does not attach a separate confidence weight yet.
     """
+    validate_target_policy(dataset_target_source, use_backed_up_value)
+    if dataset_target_source is not None and confidence is None:
+        raise DatasetConfidenceError.missing_source()
     if node.state_ref_payload is None:
         return None
 
     target = _choose_target_value_and_source(
         node,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
     )
     if target is None:
         return None
     target_value, target_source = target
     target_confidence = (
-        confidence.selected(node, target_value, target_source)
+        confidence.selected(
+            node,
+            target_value,
+            target_source,
+            explicit=dataset_target_source is not None,
+        )
         if confidence is not None
         else None
     )
@@ -288,6 +304,12 @@ def training_node_to_morpion_supervised_row(
         metadata={
             **dict(node.metadata),
             "target_source": target_source,
+            **target_policy_metadata(dataset_target_source),
+            **(
+                {"effective_value_source": node.effective_value_source}
+                if dataset_target_source == "effective"
+                else {}
+            ),
             **(
                 {"target_confidence": target_confidence}
                 if target_confidence is not None
@@ -312,7 +334,8 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     min_depth: int | None = None,
     min_visit_count: int | None = None,
     max_rows: int | None = None,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     metadata: dict[str, object] | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRows:
@@ -325,6 +348,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             min_visit_count=min_visit_count,
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
+            dataset_target_source=dataset_target_source,
             confidence=confidence,
         )
     )
@@ -338,6 +362,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             min_visit_count=min_visit_count,
             max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
+            dataset_target_source=dataset_target_source,
             confidence=confidence,
         ),
     )
@@ -350,7 +375,8 @@ def iter_morpion_supervised_rows_from_training_snapshot(
     min_depth: int | None = None,
     min_visit_count: int | None = None,
     max_rows: int | None = None,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     _validated_state_ref_normalizer: Callable[[object], object] | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> Iterable[MorpionSupervisedRow]:
@@ -363,6 +389,7 @@ def iter_morpion_supervised_rows_from_training_snapshot(
             min_depth=min_depth,
             min_visit_count=min_visit_count,
             use_backed_up_value=use_backed_up_value,
+            dataset_target_source=dataset_target_source,
             _validated_state_ref_normalizer=_validated_state_ref_normalizer,
             confidence=confidence,
         )
@@ -381,11 +408,15 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
     min_depth: int | None = None,
     min_visit_count: int | None = None,
     max_rows: int | None = None,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     metadata: dict[str, object] | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> dict[str, Any]:
     """Build extraction metadata without materializing supervised rows."""
+    validate_target_policy(dataset_target_source, use_backed_up_value)
+    if dataset_target_source is not None and confidence is None:
+        raise DatasetConfidenceError.missing_source()
     stats = _collect_extraction_stats(
         snapshot,
         require_exact_or_terminal=require_exact_or_terminal,
@@ -393,6 +424,7 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
         min_visit_count=min_visit_count,
         max_rows=max_rows,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
         confidence=confidence,
     )
     built_metadata = _build_rows_metadata(
@@ -403,6 +435,7 @@ def morpion_supervised_rows_metadata_from_training_snapshot(
         min_visit_count=min_visit_count,
         max_rows=max_rows,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
         num_rows=stats.num_rows,
         skipped_no_target_count=stats.skipped_no_target_count,
         target_source_counts=stats.target_source_counts,
@@ -419,10 +452,12 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
     min_depth: int | None = None,
     min_visit_count: int | None = None,
     max_rows: int | None = None,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     metadata: dict[str, object] | None = None,
+    confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRows:
-    """Load one persisted Anemone training snapshot and extract Morpion rows."""
+    """Load one flat snapshot; explicit targets require its scientific sidecar."""
     snapshot = load_training_tree_snapshot(path)
     return training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
@@ -431,7 +466,9 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
         min_visit_count=min_visit_count,
         max_rows=max_rows,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
         metadata=metadata,
+        confidence=confidence,
     )
 
 
@@ -444,6 +481,8 @@ def morpion_supervised_rows_to_dict(data: MorpionSupervisedRows) -> dict[str, ob
                 value=row.target_value,
                 is_exact=row.is_exact,
                 is_terminal=row.is_terminal,
+                row_metadata=row.metadata,
+                dataset_metadata=data.metadata,
             )
         return {
             "format_kind": MORPION_SCIENTIFIC_ROWS_KIND,
@@ -476,7 +515,9 @@ def morpion_supervised_rows_from_dict(
 
     return MorpionSupervisedRows(
         rows=tuple(
-            _row_from_dict(_require_row_mapping(item), version=version)
+            _row_from_dict(
+                _require_row_mapping(item), version=version, dataset_metadata=metadata
+            )
             for item in typed_rows_data
         ),
         metadata=metadata,
@@ -557,6 +598,8 @@ def save_morpion_supervised_rows_streaming(
                         value=row.target_value,
                         is_exact=row.is_exact,
                         is_terminal=row.is_terminal,
+                        row_metadata=row.metadata,
+                        dataset_metadata=metadata,
                     )
                 _write_jsonl_record(
                     stream,
@@ -640,6 +683,7 @@ def _iter_validated_morpion_jsonl_rows(
     _validate_optional_max_rows(max_rows)
     emitted = 0
     saw_metadata = False
+    metadata: dict[str, Any] = {}
     version = 1
     with source.open("r", encoding="utf-8") as stream:
         for line_number, line in enumerate(stream, start=1):
@@ -658,9 +702,8 @@ def _iter_validated_morpion_jsonl_rows(
                     version == 2 or kind == MORPION_SCIENTIFIC_METADATA_KIND
                 ):
                     raise DatasetConfidenceError.invalid_envelope()
-                version = _validate_jsonl_confidence_version(
-                    record, _metadata_dict(record.get("metadata"))
-                )
+                metadata = _metadata_dict(record.get("metadata"))
+                version = _validate_jsonl_confidence_version(record, metadata)
                 saw_metadata = True
                 continue
             if not saw_metadata:
@@ -674,7 +717,9 @@ def _iter_validated_morpion_jsonl_rows(
                 break
             emitted += 1
             yield _validated_row_from_dict(
-                _require_row_mapping(record.get("row")), version=version
+                _require_row_mapping(record.get("row")),
+                version=version,
+                dataset_metadata=metadata,
             )
     if not saw_metadata:
         raise MalformedMorpionSupervisedRowsError.missing_jsonl_metadata_record()
@@ -760,9 +805,13 @@ def _payload_mapping(payload: object) -> dict[str, Any]:
 def _choose_target_value_and_source(
     node: TrainingNodeSnapshot,
     *,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
 ) -> tuple[float, str] | None:
-    """Return the preferred target scalar together with its provenance label."""
+    """Return an explicit exported slot or the unchanged legacy preference."""
+    validate_target_policy(dataset_target_source, use_backed_up_value)
+    if dataset_target_source is not None:
+        return select_exported_target(node, dataset_target_source)
     if use_backed_up_value and node.backed_up_value_scalar is not None:
         return float(node.backed_up_value_scalar), "backed_up_value"
     if (node.is_exact or node.is_terminal) and node.direct_value_scalar is not None:
@@ -788,7 +837,8 @@ def _collect_extraction_stats(
     min_depth: int | None,
     min_visit_count: int | None,
     max_rows: int | None,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> _ExtractionStats:
     """Return compact extraction stats without building row objects."""
@@ -797,7 +847,11 @@ def _collect_extraction_stats(
     target_source_counts = (
         _empty_target_source_counts()
         if confidence is None
-        else {"tree_value": 0, "direct_value": 0}
+        else {
+            "tree_value": 0,
+            "direct_value": 0,
+            **({"effective_value": 0} if dataset_target_source is not None else {}),
+        }
     )
     for node in snapshot.nodes:
         if node.state_ref_payload is None:
@@ -805,10 +859,14 @@ def _collect_extraction_stats(
         selected_exact = None
         if confidence is not None:
             selected = _choose_target_value_and_source(
-                node, use_backed_up_value=use_backed_up_value
+                node,
+                use_backed_up_value=use_backed_up_value,
+                dataset_target_source=dataset_target_source,
             )
             selected_exact = selected is not None and is_certified(
-                confidence.selected(node, *selected)["raw_target_certainty"]
+                confidence.selected(
+                    node, *selected, explicit=dataset_target_source is not None
+                )["raw_target_certainty"]
             )
         if not _passes_filters(
             node,
@@ -821,6 +879,7 @@ def _collect_extraction_stats(
         target = _choose_target_value_and_source(
             node,
             use_backed_up_value=use_backed_up_value,
+            dataset_target_source=dataset_target_source,
         )
         if target is None:
             skipped_no_target_count += 1
@@ -830,7 +889,11 @@ def _collect_extraction_stats(
         _target_value, target_source = target
         if confidence is not None:
             target_source = (
-                "tree_value" if target_source == "backed_up_value" else "direct_value"
+                f"{dataset_target_source}_value"
+                if dataset_target_source is not None
+                else "tree_value"
+                if target_source == "backed_up_value"
+                else "direct_value"
             )
         if target_source in target_source_counts:
             target_source_counts[target_source] += 1
@@ -904,7 +967,8 @@ def _build_rows_metadata(
     min_depth: int | None,
     min_visit_count: int | None,
     max_rows: int | None,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
     num_rows: int,
     skipped_no_target_count: int,
     target_source_counts: dict[str, int],
@@ -921,6 +985,7 @@ def _build_rows_metadata(
         "min_visit_count": min_visit_count,
         "max_rows": max_rows,
         "use_backed_up_value": use_backed_up_value,
+        **target_policy_metadata(dataset_target_source),
         "num_rows": num_rows,
         "skipped_no_target_count": skipped_no_target_count,
         "target_source_counts": dict(target_source_counts),
@@ -964,14 +1029,22 @@ def _require_row_mapping(value: object) -> dict[str, object]:
 
 
 def _row_from_dict(
-    data: dict[str, object], *, version: int = 1
+    data: dict[str, object],
+    *,
+    version: int = 1,
+    dataset_metadata: Mapping[str, Any] | None = None,
 ) -> MorpionSupervisedRow:
     """Deserialize one Morpion supervised row from JSON-friendly data."""
-    return _validated_row_from_dict(data, version=version).row
+    return _validated_row_from_dict(
+        data, version=version, dataset_metadata=dataset_metadata
+    ).row
 
 
 def _validated_row_from_dict(
-    data: dict[str, object], *, version: int = 1
+    data: dict[str, object],
+    *,
+    version: int = 1,
+    dataset_metadata: Mapping[str, Any] | None = None,
 ) -> _ValidatedMorpionRow:
     """Validate exactly once and retain that decode for a trusted row consumer."""
     node_id = data.get("node_id")
@@ -1004,6 +1077,8 @@ def _validated_row_from_dict(
             value=row.target_value,
             is_exact=row.is_exact,
             is_terminal=row.is_terminal,
+            row_metadata=row.metadata,
+            dataset_metadata=dataset_metadata,
         )
     return _ValidatedMorpionRow(row, state)
 

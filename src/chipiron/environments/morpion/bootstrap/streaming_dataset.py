@@ -115,6 +115,11 @@ class DiskDatasetFamilyContext:
         validate_confidence_policy(
             args.dataset_confidence_policy, args.dataset_family_target_policy
         )
+        if (
+            args.dataset_target_source is not None
+            and args.dataset_confidence_policy != "selected_value_v2"
+        ):
+            raise DatasetConfidenceError.missing_source()
         self.confidence = None
         if args.dataset_confidence_policy == "selected_value_v2":
             if source.view.format_version != 2:
@@ -139,7 +144,13 @@ class DiskDatasetFamilyContext:
             );
         """)
         for index, node in enumerate(source.nodes):
-            raw = _node_raw_target(node, use_backed_up_value=args.use_backed_up_value)
+            raw = _node_raw_target(
+                node,
+                use_backed_up_value=args.use_backed_up_value,
+                dataset_target_source=args.dataset_target_source,
+            )
+            if args.dataset_target_source is not None and raw is None:
+                continue
             prediction = node.direct_value_scalar
             if prediction is None:
                 prediction = raw
@@ -162,6 +173,7 @@ class DiskDatasetFamilyContext:
                         _node_raw_target_is_certified(
                             node,
                             use_backed_up_value=args.use_backed_up_value,
+                            dataset_target_source=args.dataset_target_source,
                             confidence=self.confidence,
                         )
                     ),
@@ -378,6 +390,7 @@ class DiskDatasetFamilyContext:
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            dataset_target_source=args.dataset_target_source,
             confidence=self.confidence,
             # Only v2's opt-in index proves canonicality for every immutable
             # record and verifies the source plus cached payload digest. Keep
@@ -477,6 +490,7 @@ class DiskDatasetFamilyContext:
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            dataset_target_source=args.dataset_target_source,
             metadata={"bootstrap_generation": generation},
             confidence=self.confidence,
         )

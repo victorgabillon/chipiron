@@ -9,6 +9,7 @@ from weakref import WeakKeyDictionary
 
 import torch
 
+from chipiron.environments.morpion.learning.target_policy import model_target_kind
 from chipiron.learning.torch_runtime import (
     TORCH_EXECUTION_PROFILE_KEY,
     state_dict_on_cpu,
@@ -387,6 +388,7 @@ def save_morpion_model_bundle(
         json.dump(_model_args_to_dict(model_args), handle, indent=2, sort_keys=True)
 
     manifest = MorpionModelManifest(
+        target_kind=model_target_kind(effective_metadata.get("dataset_target_policy")),
         input_dim=model_args.input_dim,
         input_representation=(
             "graph_tokens_v1"
@@ -741,6 +743,9 @@ def _validate_manifest_compatibility(
     model_args: MorpionRegressorArgs,
 ) -> None:
     """Validate that the loaded Morpion manifest matches current code."""
+    policy = manifest.metadata.get("dataset_target_policy")
+    if policy is not None and manifest.target_kind != model_target_kind(policy):
+        raise ValueError("Model target kind disagrees with its target policy.")  # noqa: TRY003
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
     if model_args.legacy_graph_tokens is not None:

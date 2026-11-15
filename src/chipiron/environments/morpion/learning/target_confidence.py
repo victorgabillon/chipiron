@@ -13,6 +13,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
+from .target_policy import TARGET_CONTRACT
+
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
 
@@ -133,18 +135,48 @@ class DatasetConfidenceContext:
             )
 
     def selected(
-        self, node: TrainingNodeSnapshot, value: float, source: str
+        self,
+        node: TrainingNodeSnapshot,
+        value: float,
+        source: str,
+        *,
+        explicit: bool = False,
     ) -> dict[str, Any]:
         """Associate the raw scalar with its actual source, never node flags."""
         contract = self.load_contract(node.node_id)
         values, certainties = _validated_value_contract(contract)
-        slot = "tree" if source == "backed_up_value" else "direct"
+        slot = (
+            "effective"
+            if source == "effective_value"
+            else "tree"
+            if source in ("backed_up_value", "tree_value")
+            else "direct"
+        )
         payload = values.get(slot)
-        if payload is not None and payload["score"] != value:
+        if (source in ("effective_value", "tree_value") and payload is None) or (
+            payload is not None and payload["score"] != value
+        ):
             raise DatasetConfidenceError(
                 "Selected scalar disagrees with its scientific source"
             )
         certainty = certainties.get(slot) if payload is not None else None
+        if explicit:
+            if payload is None or certainty not in ("ESTIMATE", "FORCED", "TERMINAL"):
+                raise DatasetConfidenceError(
+                    "Selected value lacks explicit scientific certainty"
+                )
+            if slot == "effective":
+                origin = {"direct_self": "direct", "tree_child": "tree"}.get(
+                    node.effective_value_source
+                )
+                if (
+                    origin is None
+                    or payload != values.get(origin)
+                    or certainty != certainties.get(origin)
+                ):
+                    raise DatasetConfidenceError(
+                        "Effective source and Value contract disagree"
+                    )
         return {
             "contract": CONFIDENCE_CONTRACT,
             "node_is_exact": node.is_exact,
@@ -217,7 +249,13 @@ def adjusted_confidence(
 
 
 def validate_confident_row(
-    confidence: object, *, value: float, is_exact: bool, is_terminal: bool
+    confidence: object,
+    *,
+    value: float,
+    is_exact: bool,
+    is_terminal: bool,
+    row_metadata: Mapping[str, Any] | None = None,
+    dataset_metadata: Mapping[str, Any] | None = None,
 ) -> None:
     """Reject malformed serialized v2 confidence without interpreting v1 flags."""
     if (
@@ -248,9 +286,9 @@ def validate_confident_row(
         raise DatasetConfidenceError("Inconsistent Dataset v2 row confidence")
     values, certainties = _validated_value_contract(confidence["source_value_contract"])
     raw_source = confidence["raw_target_source"]
-    if raw_source not in ("direct_value", "tree_value"):
+    if raw_source not in ("direct_value", "tree_value", "effective_value"):
         raise DatasetConfidenceError("Unsupported selected target source")
-    slot = "direct" if raw_source == "direct_value" else "tree"
+    slot = raw_source.removesuffix("_value")
     payload = values.get(slot)
     raw_certainty = certainties.get(slot) if payload is not None else None
     raw_value = confidence.get("raw_target_value")
@@ -263,6 +301,33 @@ def validate_confident_row(
         or confidence.get("node_effective_certainty") != certainties.get("effective")
     ):
         raise DatasetConfidenceError("Inconsistent selected-source confidence")
+    source = (row_metadata or {}).get("dataset_target_source")
+    if dataset_metadata is not None and source != dataset_metadata.get(
+        "dataset_target_source"
+    ):
+        raise DatasetConfidenceError("Row and Dataset target policies disagree")
+    if source is not None:
+        if (
+            source != slot
+            or (row_metadata or {}).get("dataset_target_contract") != TARGET_CONTRACT
+            or payload is None
+            or raw_certainty not in ("ESTIMATE", "FORCED", "TERMINAL")
+        ):
+            raise DatasetConfidenceError(
+                "Explicit target policy disagrees with selected Value"
+            )
+        if source == "effective":
+            origin = {"direct_self": "direct", "tree_child": "tree"}.get(
+                (row_metadata or {}).get("effective_value_source", "")
+            )
+            if (
+                origin is None
+                or payload != values.get(origin)
+                or raw_certainty != certainties.get(origin)
+            ):
+                raise DatasetConfidenceError(
+                    "Effective source and Value contract disagree"
+                )
     rule = confidence["training_target_source"]
     if rule == "raw_target":
         if value != raw_value or certainty != raw_certainty:
@@ -281,6 +346,14 @@ def validate_confident_row(
 
 def dataset_format_version(metadata: Mapping[str, Any]) -> int:
     """Identify new confidence artifacts explicitly, with frozen v1 as default."""
+    if metadata.get("dataset_target_source") is not None and (
+        metadata["dataset_target_source"] not in ("effective", "tree", "direct")
+        or metadata.get("dataset_target_contract") != TARGET_CONTRACT
+        or metadata.get("dataset_version") != 2
+    ):
+        raise DatasetConfidenceError(
+            "Explicit target policy requires its scientific Dataset contract"
+        )
     if metadata.get("dataset_version", 1) == 1:
         return 1
     if (

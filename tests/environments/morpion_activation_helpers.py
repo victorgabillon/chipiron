@@ -41,6 +41,8 @@ from tests.environments.test_morpion_anemone_runner import _make_model_bundle
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from chipiron.environments.morpion.learning.target_policy import TargetSource
+
 
 def setup_activation(
     root: Path,
@@ -50,6 +52,7 @@ def setup_activation(
     seed_score: float | None = None,
     branch_limit: int = 100000,
     encoding: str | None = None,
+    target_source: TargetSource | None = None,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
     args = replace(
@@ -60,7 +63,8 @@ def setup_activation(
         save_after_seconds=0.0,
         dataset_confidence_policy="selected_value_v2",
         require_exact_or_terminal=False,
-        use_backed_up_value=False,
+        use_backed_up_value=False if target_source is None else None,
+        dataset_target_source=target_source,
         skip_evaluator_diagnostics=True,
         training_device="cpu",
         training_row_chunk_size=16,
