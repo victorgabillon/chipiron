@@ -50,6 +50,15 @@ clock is created or renewed, and admitted Training retains its pins and allowanc
 The run-wide time/resource limits still end persistent pressure. Invalid authority
 or accounting remains an error, not idle work.
 
+Admitted Training and comparison readers wait for exclusive prepared-Dataset
+leases within the original job deadline, capped by the active managed launch's
+remaining allowance and supervisor limit. Stable Dataset ownership precedes native
+preparation ownership; neither wait holds Growth ownership. Consumption then takes
+Growth ownership and revalidates the admitted slot, claim, launch and Dataset state.
+The same deadline bounds disposable recovery. Signals unwind the wait; exhaustion
+remains an explicit worker failure without consumption or a completed comparison.
+No retry renews the original allowance or weakens exclusive ownership.
+
 Stop persists its decisive reason and clock before trying to close admission.
 Closure first tries Growth ownership without waiting. If Growth holds it, the
 monitor acknowledges the supervisor and reaps native workers before retrying
