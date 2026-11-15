@@ -44,9 +44,20 @@ history, outstanding output/scratch reservations, native preparation and complet
 headroom under the existing production caps. Output quotas check writes to private
 Dataset and model attempts. A third root waits for completion/comparison/retirement;
 scientific receipts, rows and accepted model history are never deleted to make room.
+A new Dataset that cannot reserve completion capacity is deferred through the
+existing paced worker loop. Its pending Source and scheduling debt remain; no job
+clock is created or renewed, and admitted Training retains its pins and allowance.
+The run-wide time/resource limits still end persistent pressure. Invalid authority
+or accounting remains an error, not idle work.
 
-Stop closes admission before native shutdown acknowledgement. Positive native reap
-precedes suspension; unresolved jobs keep their pins and original allowances.
+Stop persists its decisive reason and clock before trying to close admission.
+Closure first tries Growth ownership without waiting. If Growth holds it, the
+monitor acknowledges the supervisor and reaps native workers before retrying
+closure within the original shutdown deadline; it never waits for a lock while
+withholding the acknowledgement needed to release that lock. Proven closure and
+positive native reap both precede suspension/finalization. Unproven closure leaves
+explicit uncertainty and retains measured usage; unresolved jobs keep their pins
+and original allowances.
 Resume cannot renew a job clock or accept live/unknown claim ownership. A damaged
 unconsumed disposable input may rebuild only the same admitted Dataset and exact
 recipe/path. Corruption after consumption fails and records mandatory evidence.

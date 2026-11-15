@@ -744,6 +744,8 @@ def run_next_pipeline_dataset_stage_once(
         paths.pipeline_manifest_path_for_generation(generation),
     )
 
+    from .continuous_resources import AdmissionDeferredError
+
     try:
         if use_streaming_sharded_reader:
             run_pipeline_dataset_stage(
@@ -762,6 +764,14 @@ def run_next_pipeline_dataset_stage_once(
                 claim_ttl_seconds=claim_ttl_seconds,
                 claim_owner=claim_owner,
             )
+    except AdmissionDeferredError as exc:
+        LOGGER.info("[pipeline] Dataset admission deferred: %s", exc)
+        return MorpionPipelineWorkerResult(
+            stage="dataset",
+            generation=generation,
+            ran_stage=False,
+            reason="resource_backpressure",
+        )
     except Exception:  # pylint: disable=broad-exception-caught
         LOGGER.exception(
             "[pipeline] dataset_worker_done action=error generation=%s elapsed=%.3fs",

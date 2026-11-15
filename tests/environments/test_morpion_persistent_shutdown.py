@@ -190,7 +190,9 @@ wait "$worker" || true
                 resources,
             )
         except ValueError as exc:
-            assert "Persistent worker group failed" in str(exc)
+            assert "Persistent worker group failed" in str(
+                exc
+            ) or "closure unconfirmed" in str(exc)
             group_failure = True
     receipt = next(
         value
