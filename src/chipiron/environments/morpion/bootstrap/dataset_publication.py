@@ -322,14 +322,14 @@ def admit_dataset(
             }
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import (
-                    admit_owned,  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    admit_owned,
                 )
 
                 state, admission = admit_owned(paths, state, args, admission, claim)
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_lifecycle import (
-                    remember_admission,  # pylint: disable=cyclic-import
+                from .continuous_lifecycle import (  # pylint: disable=cyclic-import
+                    remember_admission,
                 )
 
                 state = remember_admission(paths, state, admission)
@@ -461,8 +461,8 @@ def accept_dataset(
 
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import (
-                    admitted,  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    admitted,
                 )
                 from .continuous_publication import authenticate_job
 
@@ -495,8 +495,8 @@ def accept_dataset(
                 )
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import (
-                    accept_owned,  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    accept_owned,
                 )
 
                 state = accept_owned(paths, state, admission, reference)

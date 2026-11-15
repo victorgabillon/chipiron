@@ -20,6 +20,7 @@ from chipiron.environments.morpion.bootstrap.cycle_dataset import (
     iter_rows_from_training_snapshot,
     streaming_rows_from_training_snapshot,
 )
+from chipiron.environments.morpion.bootstrap.derived.runtime import args_from_config
 from chipiron.environments.morpion.bootstrap.sharded_training_reader import (
     ShardedTrainingGenerationView,
 )
@@ -183,6 +184,38 @@ def test_historical_configuration_identity_and_explicit_policy_refusals(
         )
         with pytest.raises(ValueError, match="target_source"):
             validate_bootstrap_config_change(current, alternative)
+
+
+@pytest.mark.parametrize(
+    ("source", "backed_up"),
+    [
+        (None, True),
+        (None, False),
+        ("effective", None),
+        ("tree", None),
+        ("direct", None),
+    ],
+)
+def test_derived_configuration_restores_target_policy(
+    tmp_path: Path, source: TargetSource | None, backed_up: bool | None
+) -> None:
+    """Persisted recipes retain exact target selection and confidence on derivation."""
+    original = (
+        MorpionBootstrapArgs(tmp_path, use_backed_up_value=backed_up)
+        if source is None
+        else MorpionBootstrapArgs.new_scientific(tmp_path, target_source=source)
+    )
+    payload = bootstrap_config_to_dict(bootstrap_config_from_args(original))
+    persisted = bootstrap_config_from_dict(json.loads(json.dumps(payload)))
+    restored = args_from_config(tmp_path / "derived", persisted)
+    assert restored.work_dir == tmp_path / "derived"
+    assert restored.dataset_target_source == source
+    assert restored.use_backed_up_value is backed_up
+    assert restored.dataset_confidence_policy == original.dataset_confidence_policy
+    assert bootstrap_config_to_dict(bootstrap_config_from_args(restored)) == payload
+    assert bootstrap_config_sha256(bootstrap_config_from_args(restored)) == (
+        bootstrap_config_sha256(persisted)
+    )
 
 
 def test_explicit_targets_require_scientific_certainty(tmp_path: Path) -> None:
