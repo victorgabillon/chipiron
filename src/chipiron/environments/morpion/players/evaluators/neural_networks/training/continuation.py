@@ -15,6 +15,10 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     file_digest,
     require,
 )
+from chipiron.environments.morpion.learning.target_policy import (
+    model_target_kind,
+    validate_model_target_provenance,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
     load_morpion_model_bundle,
     save_morpion_model_bundle,
@@ -111,6 +115,7 @@ def initialize_training(
     output_dir: str | Path,
     device: torch.device,
     learning_rate: float,
+    dataset_target_policy: dict[str, Any] | None = None,
 ) -> tuple[MorpionRegressor, torch.optim.Adam, dict[str, Any]]:
     """Load strict accepted weights before creating an optimizer; never fall back."""
     provenance: dict[str, Any] = {}
@@ -147,13 +152,20 @@ def initialize_training(
             "Accepted parent weights are missing or changed.",
         )
         model, loaded_args, manifest = load_morpion_model_bundle(parent)
+        validate_model_target_provenance(
+            manifest.target_kind,
+            manifest.metadata,
+            declared=manifest.target_kind_declared,
+            allow_implicit_legacy=dataset_target_policy is None,
+        )
         validate_torch_execution_profile(manifest.metadata)
         require(
             loaded_args == model_args,
             "Accepted parent architecture or features differ.",
         )
         require(
-            manifest.target_kind == "backup_value",
+            manifest.target_kind == model_target_kind(dataset_target_policy)
+            and manifest.metadata.get("dataset_target_policy") == dataset_target_policy,
             "Accepted parent output semantics differ.",
         )
         parent_metadata = manifest.metadata.get("continuation", {})
@@ -172,6 +184,8 @@ def initialize_training(
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     if continuation is not None:
+        if dataset_target_policy is not None:
+            provenance["dataset_target_policy"] = dict(dataset_target_policy)
         inherits = (
             continuation.parent_bundle is not None
             and continuation.training_policy != "fresh_from_scratch"
@@ -209,6 +223,11 @@ def initialize_training(
                 initial,
                 model_args=model_args,
                 metadata={
+                    **(
+                        {"dataset_target_policy": dataset_target_policy}
+                        if dataset_target_policy is not None
+                        else {}
+                    ),
                     "candidate_name": continuation.candidate_name,
                     "seed": continuation.seed,
                 },

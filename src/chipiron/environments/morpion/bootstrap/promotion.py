@@ -5,6 +5,12 @@ import uuid
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any
 
+from chipiron.environments.morpion.learning import load_morpion_supervised_rows_metadata
+from chipiron.environments.morpion.learning.target_policy import (
+    training_target_metadata,
+    validate_model_target_provenance,
+)
+
 from . import continuous_publication as publication
 from . import continuous_transitions as transitions
 from .continuous_contract import (
@@ -142,8 +148,16 @@ def _evaluate(
     assert bundle is not None
     with torch.random.fork_rng(devices=[]):
         network, model_args, manifest = load_morpion_model_bundle(bundle)
-    require(
-        manifest.target_kind == "backup_value", "Comparison target contract differs."
+    # Comparison measures both predictions against the same current Dataset;
+    # it does not change either model's historical learning policy.
+    current_targets = training_target_metadata(
+        load_morpion_supervised_rows_metadata(rows)
+    )
+    validate_model_target_provenance(
+        manifest.target_kind,
+        manifest.metadata,
+        declared=manifest.target_kind_declared,
+        allow_implicit_legacy=not current_targets,
     )
     keywords = {
         f.name: getattr(model_args, f.name)

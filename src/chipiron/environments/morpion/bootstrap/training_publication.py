@@ -13,6 +13,11 @@ from typing import TYPE_CHECKING, Any, cast
 import torch
 
 from chipiron.bootstrap import attempts
+from chipiron.environments.morpion.learning import load_morpion_supervised_rows_metadata
+from chipiron.environments.morpion.learning.target_policy import (
+    training_target_metadata,
+    validate_model_target_provenance,
+)
 from chipiron.learning.torch_runtime import (
     torch_execution_profile_metadata,
     validate_torch_execution_profile,
@@ -1198,6 +1203,9 @@ def _compare_incumbent(
     )
     from chipiron.learning.torch_runtime import resolve_torch_device
 
+    expected_targets = training_target_metadata(
+        load_morpion_supervised_rows_metadata(rows)
+    )
     populations = []
     metrics = {}
     for name, relative in result.model_bundle_paths.items():
@@ -1205,6 +1213,21 @@ def _compare_incumbent(
         require(candidate_path is not None, "Candidate output path is missing.")
         assert candidate_path is not None
         candidate_manifest = read_object(candidate_path / "morpion_manifest.json")
+        validate_model_target_provenance(
+            candidate_manifest.get("target_kind", "backup_value"),
+            candidate_manifest["metadata"],
+            declared="target_kind" in candidate_manifest,
+            allow_implicit_legacy=not expected_targets,
+        )
+        require(
+            candidate_manifest["metadata"].get("dataset_target_policy")
+            == expected_targets.get("dataset_target_policy")
+            and all(
+                candidate_manifest["metadata"].get(key) == value
+                for key, value in expected_targets.items()
+            ),
+            "Candidate target provenance differs from the current Dataset.",
+        )
         populations.append(candidate_manifest["metadata"]["state_split"])
         loss = result.evaluator_metrics[name].validation_loss
         require(
@@ -1223,9 +1246,11 @@ def _compare_incumbent(
     require(artifact_digest(bundle) == incumbent["sha256"], "Incumbent model changed.")
     with torch.random.fork_rng(devices=[]):
         model, model_args, manifest = load_morpion_model_bundle(bundle)
-    require(
-        manifest.target_kind == "backup_value",
-        "Incumbent target contract is incompatible.",
+    validate_model_target_provenance(
+        manifest.target_kind,
+        manifest.metadata,
+        declared=manifest.target_kind_declared,
+        allow_implicit_legacy=not expected_targets,
     )
     keywords = {
         f.name: getattr(model_args, f.name)

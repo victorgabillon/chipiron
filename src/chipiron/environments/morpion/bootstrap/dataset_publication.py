@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from chipiron.environments.morpion.learning.target_policy import validate_target_policy
 from chipiron.environments.morpion.learning.tree_to_dataset import (
     iter_morpion_supervised_rows_from_path,
     load_morpion_supervised_rows_metadata,
@@ -110,8 +111,20 @@ def _validate_binding(
         }
         | ({"continuous_admission"} if continuous else set())
         and isinstance(admission["options"], dict)
-        and set(admission["options"]) == set(OPTIONS),
+        and set(admission["options"])
+        == (
+            set(OPTIONS)
+            | (
+                {"dataset_target_source"}
+                if admission["options"].get("dataset_target_source") is not None
+                else set()
+            )
+        ),
         "Incomplete Dataset admission.",
+    )
+    validate_target_policy(
+        admission["options"].get("dataset_target_source"),
+        admission["options"]["use_backed_up_value"],
     )
     require(
         admission["schema_version"] == (2 if continuous else 1)
@@ -243,6 +256,8 @@ def admit_dataset(
 
     generation = manifest.generation
     options = {key: getattr(args, key) for key in OPTIONS}
+    if args.dataset_target_source is not None:
+        options["dataset_target_source"] = args.dataset_target_source
     claim_path = paths.pipeline_dataset_claim_path_for_generation(generation)
     result: DatasetAttempt | MorpionPipelineGenerationManifest
     with growth_receipt_ownership(paths, wait=True):
@@ -307,7 +322,9 @@ def admit_dataset(
             }
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import admit_owned  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    admit_owned,
+                )
 
                 # Deferred until runtime: resource accounting reads Dataset admissions.
                 from .continuous_resources import AdmissionDeferredError  # pylint: disable=cyclic-import
@@ -322,7 +339,9 @@ def admit_dataset(
                     )
                     raise
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_lifecycle import remember_admission  # pylint: disable=cyclic-import
+                from .continuous_lifecycle import (  # pylint: disable=cyclic-import
+                    remember_admission,
+                )
 
                 state = remember_admission(paths, state, admission)
                 save_bootstrap_run_state(state, paths.run_state_path, durable=True)
@@ -453,7 +472,9 @@ def accept_dataset(
 
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import admitted  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    admitted,
+                )
                 from .continuous_publication import authenticate_job
 
                 authenticate_job(paths, state, admitted(paths, state, admission))
@@ -485,7 +506,9 @@ def accept_dataset(
                 )
             if continuous_enabled(state):
                 # Deferred runtime import: both modules are initialized before this call.
-                from .continuous_dataset import accept_owned  # pylint: disable=cyclic-import
+                from .continuous_dataset import (  # pylint: disable=cyclic-import
+                    accept_owned,
+                )
 
                 state = accept_owned(paths, state, admission, reference)
             # Accepted result and advisory preparation intent share this durable save.

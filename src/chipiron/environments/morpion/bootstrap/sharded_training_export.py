@@ -126,6 +126,10 @@ class MorpionShardedTrainingNodeUpdate:
     ``child_ids`` live here because opened-child topology can change between
     generations even when the node itself is old enough to reuse its immutable
     state payload.
+
+    Effective fields are an additive export observation, not a training-target
+    policy. Older shards lack this pair and cannot recover canonical selection
+    from two scalars and node-level exactness alone.
     """
 
     node_id: str
@@ -138,6 +142,8 @@ class MorpionShardedTrainingNodeUpdate:
     over_event_label: str | None
     visit_count: int | None
     metadata: dict[str, object] = field(default_factory=_empty_metadata)
+    effective_value_scalar: float | None = None
+    effective_value_source: str = "unavailable_legacy"
 
 
 if TYPE_CHECKING:
@@ -208,6 +214,8 @@ def save_morpion_sharded_training_tree_from_live_nodes(
                 over_event_label=update_snapshot.over_event_label,
                 visit_count=update_snapshot.visit_count,
                 metadata=dict(update_snapshot.metadata),
+                effective_value_scalar=update_snapshot.effective_value_scalar,
+                effective_value_source=update_snapshot.effective_value_source,
             )
         )
         if not node_is_new:
@@ -509,14 +517,6 @@ def _merge_node_record_and_update(
 ) -> TrainingNodeSnapshot:
     """Merge immutable and mutable shard rows into one training node snapshot."""
     tree_value_scalar = update.backed_up_value_scalar
-    effective_value_scalar = (
-        tree_value_scalar
-        if tree_value_scalar is not None
-        else update.direct_value_scalar
-    )
-    effective_value_source = (
-        "tree_value" if tree_value_scalar is not None else "direct_value"
-    )
     target_value_scalar = (
         tree_value_scalar
         if tree_value_scalar is not None
@@ -532,8 +532,8 @@ def _merge_node_record_and_update(
         else checkpoint_payload_to_jsonable(record.state_ref_payload),
         direct_value_scalar=update.direct_value_scalar,
         tree_value_scalar=tree_value_scalar,
-        effective_value_scalar=effective_value_scalar,
-        effective_value_source=effective_value_source,
+        effective_value_scalar=update.effective_value_scalar,
+        effective_value_source=update.effective_value_source,
         target_value_scalar=target_value_scalar,
         backed_up_value_scalar=update.backed_up_value_scalar,
         is_terminal=update.is_terminal,
@@ -596,6 +596,8 @@ def _node_update_to_dict(update: MorpionShardedTrainingNodeUpdate) -> dict[str, 
         "child_ids": list(update.child_ids),
         "direct_value_scalar": update.direct_value_scalar,
         "backed_up_value_scalar": update.backed_up_value_scalar,
+        "effective_value_scalar": update.effective_value_scalar,
+        "effective_value_source": update.effective_value_source,
         "is_terminal": update.is_terminal,
         "is_exact": update.is_exact,
         "over_event_label": update.over_event_label,
@@ -628,6 +630,12 @@ def _node_record_from_dict(value: object) -> MorpionShardedTrainingNodeRecord:
 def _node_update_from_dict(value: object) -> MorpionShardedTrainingNodeUpdate:
     """Deserialize one mutable node update."""
     payload = cast("dict[str, object]", value)
+    # Never guess opening completeness or candidate certainty for legacy data.
+    # A missing half of the observation is also insufficient provenance.
+    effective_source = _optional_str(payload.get("effective_value_source"))
+    has_effective_observation = (
+        "effective_value_scalar" in payload and effective_source is not None
+    )
     return MorpionShardedTrainingNodeUpdate(
         node_id=str(payload["node_id"]),
         order_index=_required_int(
@@ -639,6 +647,16 @@ def _node_update_from_dict(value: object) -> MorpionShardedTrainingNodeUpdate:
         ),
         direct_value_scalar=_optional_float(payload.get("direct_value_scalar")),
         backed_up_value_scalar=_optional_float(payload.get("backed_up_value_scalar")),
+        effective_value_scalar=(
+            _optional_float(payload.get("effective_value_scalar"))
+            if has_effective_observation
+            else None
+        ),
+        effective_value_source=(
+            effective_source
+            if has_effective_observation and effective_source is not None
+            else "unavailable_legacy"
+        ),
         is_terminal=bool(payload.get("is_terminal", False)),
         is_exact=bool(payload.get("is_exact", False)),
         over_event_label=_optional_str(payload.get("over_event_label")),
