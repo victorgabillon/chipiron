@@ -15,7 +15,10 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     file_digest,
     require,
 )
-from chipiron.environments.morpion.learning.target_policy import model_target_kind
+from chipiron.environments.morpion.learning.target_policy import (
+    model_target_kind,
+    validate_model_target_provenance,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
     load_morpion_model_bundle,
     save_morpion_model_bundle,
@@ -149,6 +152,12 @@ def initialize_training(
             "Accepted parent weights are missing or changed.",
         )
         model, loaded_args, manifest = load_morpion_model_bundle(parent)
+        validate_model_target_provenance(
+            manifest.target_kind,
+            manifest.metadata,
+            declared=manifest.target_kind_declared,
+            allow_implicit_legacy=dataset_target_policy is None,
+        )
         validate_torch_execution_profile(manifest.metadata)
         require(
             loaded_args == model_args,

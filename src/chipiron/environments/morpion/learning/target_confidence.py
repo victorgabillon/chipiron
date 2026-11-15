@@ -13,13 +13,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
-from .target_policy import TARGET_CONTRACT
-
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
 
 DatasetConfidencePolicy = Literal["legacy_v1", "selected_value_v2"]
 CONFIDENCE_CONTRACT = "morpion-selected-value-confidence-1"
+TARGET_CONTRACT = "anemone-exported-target-selection-1"
 SCIENTIFIC_CONTRACT = "anemone-values-canonical-morpion-1"
 SAFE_FAMILY_POLICIES = frozenset({
     "none",

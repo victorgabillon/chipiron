@@ -7,20 +7,19 @@ historical findings and inconclusive strength pilot remain unchanged.
 
 ## Review status and integration boundary
 
-The independent Dataset/Training implementation and focused tests are complete.
-Continuous integration is **blocked** by two existing compatibility gates:
-`bootstrap/promotion.py::_evaluate` and
-`bootstrap/training_publication.py::_compare_incumbent` require model
-`target_kind == "backup_value"`. New effective bundles truthfully declare
-`effective_value`, so those gates reject them. The initial external seed's
-historical target provenance also needs an explicit comparison policy; it must
-not simply be relabeled as effective-trained.
+The independent Dataset/Training implementation and the narrowly authorized
+continuous compatibility follow-up are complete. Declared historical
+`backup_value` incumbents can be compared with effective-trained candidates on
+the same current held-out Dataset. Candidate continuation still requires the
+same target policy and candidate lineage. No bundle is relabeled or migrated.
 
-These gates have deliberately not been altered: the request explicitly protects
-J4.2's validated implementation during integration. Approval of the narrow
-semantic integration change is pending. Do not treat the fresh continuous CLI
-default as validated end-to-end promotion until that integration is resolved.
-No coordinator, promotion, activation, Anemone or Valanga implementation changed.
+The follow-up changes only target compatibility/provenance checks, including the
+two formerly hardcoded backup-only gates. J4.2's scheduling, transitions,
+activation and training algorithms remain unchanged. Both legacy and effective
+two-round continuous integration cases pass, including reserved promotion and
+independent candidate/Adam continuation. See
+[morpion_effective_target_compatibility_2026_11_15.md](morpion_effective_target_compatibility_2026_11_15.md)
+for exact follow-up changes, tests and compatibility refusals.
 
 The working branch is `feat/morpion-effective-target-semantics`, based on clean
 commit `7cd5121b838ca2243830472fef73a6f42b87ca95` in the existing
@@ -56,7 +55,6 @@ args = MorpionBootstrapArgs.new_scientific(work_dir)
 
 Fresh CLI `--scientific --scientific-operation prepare-continuous` selects
 `effective`; `--dataset-target-source tree` and `direct` are explicit alternatives.
-The compatibility boundary above still blocks the continuous promotion stage.
 A persisted explicit recipe contains:
 
 ```json
@@ -130,7 +128,8 @@ direct winners, child winners, full expansion, FORCED and TERMINAL values, DAG
 transpositions, exact alternative policies, flat/sharded/eager/streaming equality,
 serialized-policy refusals, one-epoch eager/streaming training and optimizer
 continuation, and publication through accepted Dataset/Training with checkpoint
-identity. It does not exercise or claim complete continuous promotion.
+identity. The subsequent focused follow-up additionally exercises continuous promotion and
+continuation; its results are reported separately.
 
 Affected Ruff formatting/lint, strict mypy (16 files), Pyright (15 production
 files) and Pylint checks pass. Wheel and source distribution builds and strict

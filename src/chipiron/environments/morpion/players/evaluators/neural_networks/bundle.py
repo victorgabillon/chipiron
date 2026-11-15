@@ -9,7 +9,10 @@ from weakref import WeakKeyDictionary
 
 import torch
 
-from chipiron.environments.morpion.learning.target_policy import model_target_kind
+from chipiron.environments.morpion.learning.target_policy import (
+    model_target_kind,
+    validate_model_target_kind,
+)
 from chipiron.learning.torch_runtime import (
     TORCH_EXECUTION_PROFILE_KEY,
     state_dict_on_cpu,
@@ -107,6 +110,8 @@ class MorpionModelManifest:
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
     entity_relation_schema: str | None = None
     entity_relation_type_count: int | None = None
+    # Read-time provenance only; never serialize an invented declaration.
+    target_kind_declared: bool = True
 
 
 class InvalidMorpionModelBundleError(ValueError):
@@ -710,6 +715,7 @@ def _load_manifest(path: Path) -> MorpionModelManifest:
         input_dim=input_dim,
         input_representation=input_representation,
         target_kind=str(data.get("target_kind", "backup_value")),
+        target_kind_declared="target_kind" in data,
         model_kind=model_kind,
         feature_subset_name=feature_subset.name,
         feature_names=feature_subset.feature_names,
@@ -728,7 +734,11 @@ def _manifest_to_dict(manifest: MorpionModelManifest) -> dict[str, object]:
         "feature_schema": manifest.feature_schema,
         "input_dim": manifest.input_dim,
         "input_representation": manifest.input_representation,
-        "target_kind": manifest.target_kind,
+        **(
+            {"target_kind": manifest.target_kind}
+            if manifest.target_kind_declared
+            else {}
+        ),
         "model_kind": manifest.model_kind,
         "feature_subset_name": manifest.feature_subset_name,
         "feature_names": list(manifest.feature_names),
@@ -743,9 +753,14 @@ def _validate_manifest_compatibility(
     model_args: MorpionRegressorArgs,
 ) -> None:
     """Validate that the loaded Morpion manifest matches current code."""
-    policy = manifest.metadata.get("dataset_target_policy")
-    if policy is not None and manifest.target_kind != model_target_kind(policy):
-        raise ValueError("Model target kind disagrees with its target policy.")  # noqa: TRY003
+    if (
+        not manifest.target_kind_declared
+        and "dataset_target_policy" in manifest.metadata
+    ):
+        raise ValueError(  # noqa: TRY003
+            "Explicit target policy requires a declared model target kind."
+        )
+    validate_model_target_kind(manifest.target_kind, manifest.metadata)
     if manifest.game_kind != "morpion":
         raise IncompatibleMorpionModelBundleError.wrong_game_kind(manifest.game_kind)
     if model_args.legacy_graph_tokens is not None:

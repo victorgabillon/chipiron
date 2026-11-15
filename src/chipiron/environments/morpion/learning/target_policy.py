@@ -1,14 +1,21 @@
 """Chipiron learning policy over values already selected/exported by Anemone."""
 
 import copy
+import math
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
+
+from .target_confidence import (
+    CONFIDENCE_CONTRACT,
+    SAFE_FAMILY_POLICIES,
+    TARGET_CONTRACT,
+    DatasetConfidenceContext,
+)
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
 
 TargetSource = Literal["effective", "tree", "direct"]
-TARGET_CONTRACT = "anemone-exported-target-selection-1"
 
 
 def validate_target_policy(
@@ -72,7 +79,7 @@ def training_target_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         or not metadata.get("dataset_extraction_identity")
     ):
         raise ValueError("Incomplete explicit Dataset target provenance.")  # noqa: TRY003
-    return copy.deepcopy({
+    result = copy.deepcopy({
         "dataset_target_policy": {
             "source": source,
             "contract": TARGET_CONTRACT,
@@ -83,6 +90,10 @@ def training_target_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         "scientific_source_provenance": metadata["scientific_source_provenance"],
         "dataset_confidence_contract": metadata["dataset_confidence_contract"],
     })
+    validate_model_target_provenance(
+        model_target_kind(result["dataset_target_policy"]), result
+    )
+    return result
 
 
 def model_target_kind(policy: object) -> str:
@@ -92,6 +103,8 @@ def model_target_kind(policy: object) -> str:
     if (
         not isinstance(policy, Mapping)
         or policy.get("contract") != TARGET_CONTRACT
+        or set(policy)
+        != {"source", "contract", "family_target_policy", "family_prediction_blend"}
         or policy.get("source")
         not in (
             "effective",
@@ -100,8 +113,66 @@ def model_target_kind(policy: object) -> str:
         )
     ):
         raise ValueError("Unsupported model target policy.")  # noqa: TRY003
+    family = policy["family_target_policy"]
+    blend = policy["family_prediction_blend"]
+    if not isinstance(family, str) or family not in SAFE_FAMILY_POLICIES:
+        raise ValueError("Unsupported model family target policy.")  # noqa: TRY003
+    if (
+        isinstance(blend, bool)
+        or not isinstance(blend, (float, int))
+        or not math.isfinite(blend)
+        or not 0 <= blend <= 1
+    ):
+        raise ValueError("Invalid model family prediction blend.")  # noqa: TRY003
     return (
         f"{policy['source']}_value"
         if policy["family_target_policy"] == "none"
         else "family_adjusted_value"
     )
+
+
+def validate_model_target_kind(kind: str, metadata: Mapping[str, Any]) -> None:
+    """Accept declared historical labels or a complete, consistent explicit policy."""
+    policy = metadata.get("dataset_target_policy")
+    if (
+        "dataset_target_policy" in metadata and policy is None
+    ) or kind != model_target_kind(policy):
+        raise ValueError("Model target kind disagrees with its declared target policy.")  # noqa: TRY003
+
+
+def validate_model_target_provenance(
+    kind: str,
+    metadata: Mapping[str, Any],
+    *,
+    declared: bool = True,
+    allow_implicit_legacy: bool = False,
+) -> None:
+    """Validate a trained model's own semantics, independently of comparison targets."""
+    validate_model_target_kind(kind, metadata)
+    policy = metadata.get("dataset_target_policy")
+    if not declared and not (allow_implicit_legacy and policy is None):
+        raise ValueError(  # noqa: TRY003
+            "Scientific target comparison/continuation requires a declared model target kind."
+        )
+    if policy is None:
+        # backup_value is the declared historical contract, not an effective alias.
+        return
+    identity = metadata.get("dataset_extraction_identity")
+    provenance = metadata.get("scientific_source_provenance")
+    if (
+        not isinstance(identity, str)
+        or len(identity) != 64
+        or any(c not in "0123456789abcdef" for c in identity)
+        or not isinstance(provenance, dict)
+        or metadata.get("dataset_confidence_contract") != CONFIDENCE_CONTRACT
+    ):
+        raise ValueError("Incomplete explicit model scientific target provenance.")  # noqa: TRY003
+    DatasetConfidenceContext(lambda _node_id: {}, provenance)
+    continuation = metadata.get("continuation")
+    if continuation and (
+        not isinstance(continuation, dict)
+        or continuation.get("dataset_target_policy") != policy
+    ):
+        raise ValueError(  # noqa: TRY003
+            "Model continuation target policy disagrees with its provenance."
+        )
