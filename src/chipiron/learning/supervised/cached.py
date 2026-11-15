@@ -1,0 +1,275 @@
+"""Indexed cached epochs over caller-owned tensor batches, models and optimizers.
+
+Games own targets, representations, split provenance and accepted continuation.
+This module owns only scheduling, batch updates, metrics and instrumentation.
+"""
+
+import math
+from dataclasses import dataclass
+from time import perf_counter
+from typing import TYPE_CHECKING, Literal
+
+import torch
+
+from chipiron.learning.timing import PhaseDurations
+from chipiron.learning.torch_runtime import synchronize_torch_device_if_needed
+
+from .index_schedule import (
+    cached_index_schedule,
+    index_batches,
+    shuffled_epoch_train_indices,
+    split_indices_for_streaming_policy,
+)
+from .regression import (
+    RegressionEvaluationStats,
+    evaluate_regression_batch,
+    infer_batch_sample_count,
+    train_regression_batch,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from logging import Logger
+
+    from .batches import TensorSupervisedBatch
+
+
+@dataclass(frozen=True, slots=True)
+class StreamingEpochStats:
+    """Stats returned after one streaming training epoch."""
+
+    chunk_count: int
+    train_count: int
+    validation_count: int
+    batch_count: int
+    loss: float
+    phase_durations: dict[str, float]
+    elapsed_seconds: float
+
+
+def train_cached_epoch(
+    *,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+    batch_size: int,
+    validation_fraction: float,
+    validation_indices: frozenset[int] | None,
+    shuffle: bool,
+    validation_seed: int,
+    num_epochs: int,
+    logger: Logger,
+    explicit_split_policy: str = "explicit_indices",
+    row_count: int,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    cache_mode: str,
+    row_chunk_size: int,
+    max_rows: int | None,
+    epoch_index: int,
+    progress_callback: Callable[[int, int, int, int], None] | None,
+    device: torch.device,
+    synchronize_cuda: bool = True,
+) -> StreamingEpochStats:
+    """Train one epoch using a caller-owned cache batch builder."""
+    synchronize_torch_device_if_needed(device)
+    epoch_started_at = perf_counter()
+    epoch_timings = PhaseDurations()
+    model.train()
+    with epoch_timings.time_phase("chunk_load"):
+        row_limit = _cache_row_limit(row_count=row_count, max_rows=max_rows)
+    chunk_count = _pseudo_chunk_count(
+        row_count=row_limit, row_chunk_size=row_chunk_size
+    )
+    batch_count = 0
+    squared_error_sum = 0.0
+    value_count = 0
+    with epoch_timings.time_phase("split_select"):
+        schedule = cached_index_schedule(
+            row_count=row_limit,
+            validation_fraction=validation_fraction,
+            validation_indices=validation_indices,
+            explicit_split_policy=explicit_split_policy,
+        )
+        epoch_train_indices = shuffled_epoch_train_indices(
+            train_indices=schedule.train_indices,
+            shuffle=shuffle,
+            validation_seed=validation_seed,
+            epoch_index=epoch_index,
+        )
+    logger.info(
+        "[train-schedule] mode=%s epoch=%s train_indices=%s "
+        "validation_indices=%s shuffle=%s global_shuffle=%s split_policy=%s",
+        cache_mode,
+        epoch_index + 1,
+        len(schedule.train_indices),
+        len(schedule.validation_indices),
+        str(shuffle).lower(),
+        str(shuffle).lower(),
+        schedule.split_policy,
+    )
+    processed_train_rows = 0
+    reported_chunks = 0
+    batch_iter = iter(index_batches(epoch_train_indices, batch_size=batch_size))
+    while True:
+        try:
+            with epoch_timings.time_phase("row_batching"):
+                row_indices = next(batch_iter)
+        except StopIteration:
+            break
+        batch_count += 1
+        with epoch_timings.time_phase("row_to_sample_batch"):
+            sample_batch = batch_builder(row_indices)
+        batch_stats = train_regression_batch(
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            batch=sample_batch,
+            device=device,
+            synchronize_cuda=synchronize_cuda,
+            timings=epoch_timings,
+        )
+        squared_error_sum += batch_stats.squared_error_sum
+        value_count += batch_stats.target_count
+        processed_train_rows += len(row_indices)
+        if progress_callback is not None:
+            with epoch_timings.time_phase("progress_callback"):
+                reported_chunks = _report_cached_progress(
+                    progress_callback=progress_callback,
+                    reported_chunks=reported_chunks,
+                    chunk_count=chunk_count,
+                    processed_train_rows=processed_train_rows,
+                    train_count=len(schedule.train_indices),
+                    row_limit=row_limit,
+                    epoch_number=epoch_index + 1,
+                    num_epochs=num_epochs,
+                )
+    synchronize_torch_device_if_needed(device)
+    elapsed_seconds = perf_counter() - epoch_started_at
+    epoch_timings.add_duration("epoch_total", elapsed_seconds)
+    loss_value = 0.0 if value_count == 0 else squared_error_sum / value_count
+    return StreamingEpochStats(
+        chunk_count=chunk_count,
+        train_count=len(schedule.train_indices),
+        validation_count=len(schedule.validation_indices),
+        batch_count=batch_count,
+        loss=loss_value,
+        phase_durations=epoch_timings.as_dict(),
+        elapsed_seconds=elapsed_seconds,
+    )
+
+
+def evaluate_cached_metrics(
+    *,
+    model: torch.nn.Module,
+    batch_size: int,
+    validation_fraction: float,
+    validation_indices: frozenset[int] | None,
+    row_count: int,
+    batch_builder: Callable[[tuple[int, ...]], TensorSupervisedBatch],
+    max_rows: int | None,
+    split: Literal["train", "validation"],
+    device: torch.device,
+    synchronize_cuda: bool = True,
+) -> RegressionEvaluationStats:
+    """Compute streaming metrics using a caller-owned cache batch builder."""
+    synchronize_torch_device_if_needed(device)
+    evaluation_started_at = perf_counter()
+    timings = PhaseDurations()
+    squared_error_sum = 0.0
+    absolute_error_sum = 0.0
+    sample_count = 0
+    target_count = 0
+    row_limit = _cache_row_limit(row_count=row_count, max_rows=max_rows)
+    model.eval()
+    with torch.no_grad():
+        with timings.time_phase("chunk_load"):
+            selected_row_count = row_limit
+        with timings.time_phase("split_select"):
+            selected_indices = split_indices_for_streaming_policy(
+                row_count=selected_row_count,
+                validation_fraction=validation_fraction,
+                validation_indices=validation_indices,
+                split=split,
+            )
+        batch_iter = iter(index_batches(selected_indices, batch_size=batch_size))
+        while True:
+            try:
+                with timings.time_phase("row_batching"):
+                    row_indices = next(batch_iter)
+            except StopIteration:
+                break
+            with timings.time_phase("row_to_sample_batch"):
+                sample_batch = batch_builder(row_indices)
+            sample_count += infer_batch_sample_count(sample_batch)
+            batch_metrics = evaluate_regression_batch(
+                model=model,
+                batch=sample_batch,
+                device=device,
+                synchronize_cuda=synchronize_cuda,
+                timings=timings,
+            )
+            squared_error_sum += batch_metrics.squared_error_sum
+            absolute_error_sum += batch_metrics.absolute_error_sum
+            target_count += batch_metrics.target_count
+    synchronize_torch_device_if_needed(device)
+    elapsed_seconds = perf_counter() - evaluation_started_at
+    if target_count == 0:
+        return RegressionEvaluationStats(
+            loss=0.0,
+            mae=0.0,
+            sample_count=0,
+            target_count=0,
+            phase_durations=timings.as_dict(),
+            elapsed_seconds=elapsed_seconds,
+        )
+    return RegressionEvaluationStats(
+        loss=squared_error_sum / target_count,
+        mae=absolute_error_sum / target_count,
+        sample_count=sample_count,
+        target_count=target_count,
+        phase_durations=timings.as_dict(),
+        elapsed_seconds=elapsed_seconds,
+    )
+
+
+def _cache_row_limit(*, row_count: int, max_rows: int | None) -> int:
+    """Return the effective cache row limit for one streaming pass."""
+    if max_rows is None:
+        return row_count
+    return min(row_count, max_rows)
+
+
+def _pseudo_chunk_count(*, row_count: int, row_chunk_size: int) -> int:
+    """Return a cache-compatible pseudo-chunk count for progress and logs."""
+    if row_count <= 0:
+        return 0
+    return math.ceil(row_count / row_chunk_size)
+
+
+def _report_cached_progress(
+    *,
+    progress_callback: Callable[[int, int, int, int], None],
+    reported_chunks: int,
+    chunk_count: int,
+    processed_train_rows: int,
+    train_count: int,
+    row_limit: int,
+    epoch_number: int,
+    num_epochs: int,
+) -> int:
+    """Report approximate chunk progress for globally shuffled cache training."""
+    if chunk_count == 0:
+        return reported_chunks
+    while reported_chunks < chunk_count:
+        next_chunk = reported_chunks + 1
+        threshold = math.ceil(train_count * next_chunk / chunk_count)
+        if processed_train_rows < threshold:
+            break
+        progress_callback(
+            next_chunk,
+            min(next_chunk * row_limit // chunk_count, row_limit),
+            epoch_number,
+            num_epochs,
+        )
+        reported_chunks = next_chunk
+    return reported_chunks
