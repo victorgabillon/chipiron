@@ -418,3 +418,72 @@ def test_launch_and_original_clock_bounds(
         assert prepared._continuous_reader_deadline(None, job) == expected
         monkeypatch.setattr(prepared, "time", SimpleNamespace(monotonic=lambda: 1001))
         assert prepared._continuous_reader_deadline(None, job) == expected
+
+
+@pytest.mark.fast
+@pytest.mark.usefixtures("continuous")
+def test_expired_launch_refuses_unexpired_job_before_lease(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A live admission cannot borrow after the immutable managed launch expires."""
+    from types import SimpleNamespace
+
+    from chipiron.environments.morpion.bootstrap import managed_sessions
+    from chipiron.environments.morpion.bootstrap.continuous_lifecycle import remaining
+
+    args, paths = fixture(tmp_path / "run")
+    generation = grow(args).generation
+    run_dataset(args, generation=generation)
+    original = prepared.borrow_continuous
+    observed = []
+
+    @contextmanager
+    def expired(p: Any, a: Any, job: Any, ready: Any) -> Iterator[Any]:
+        budget = remaining(paths, job)
+        clock = publication.read_ref(paths, budget.clock_evidence)
+        launch = managed_sessions._read(
+            paths,
+            publication.read_ref(paths, job.payload.managed_launch),
+            managed_sessions._reader(),
+        )
+        end = launch["started_monotonic_s"] + launch["supervisor_limit_seconds"]
+        assert end + 1 < clock["deadline"]
+        before = paths.run_state_path.read_bytes()
+        clock_bytes = (paths.work_dir / budget.clock_evidence.path).read_bytes()
+        offset = end + 1 - time.monotonic()
+        with monkeypatch.context() as expired_time:
+            expired_time.setattr(
+                prepared,
+                "time",
+                SimpleNamespace(
+                    monotonic=lambda: time.monotonic() + offset,
+                    time=lambda: time.time() + offset,
+                ),
+            )
+            expired_time.setattr(
+                storage,
+                "lease",
+                lambda *a, **k: pytest.fail("expired launch attempted a lease"),
+            )
+            # The job's own original clock is still valid at this later time.
+            publication.authenticate_job(
+                paths, load_bootstrap_run_state(paths.run_state_path), job
+            )
+            with (
+                pytest.raises(
+                    ValueError, match="Continuous reader allowance exhausted"
+                ),
+                original(p, a, job, ready),
+            ):
+                pytest.fail("expired launch yielded inputs")
+        assert paths.run_state_path.read_bytes() == before
+        assert (paths.work_dir / budget.clock_evidence.path).read_bytes() == clock_bytes
+        observed.append(True)
+        message = "fixture managed expiry observed"
+        raise RuntimeError(message)
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(prepared, "borrow_continuous", expired)
+    with pytest.raises(RuntimeError, match="fixture managed expiry observed"):
+        run_pipeline_training_stage(args, generation=generation)
+    assert observed == [True]
