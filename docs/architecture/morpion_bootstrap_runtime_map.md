@@ -279,6 +279,33 @@ See [operator README](../../src/chipiron/environments/morpion/bootstrap/README.m
 Their older historical implementation notes are not automatically today's
 feature status.
 
+## Required pre-change review discipline
+
+Before proposing another Morpion bootstrap worker, coordinator, evaluator refresh,
+cache, checkpoint writer or scientific schema:
+
+1. Identify **which run family** is active (legacy loop, four-worker artifact
+   pipeline, or opt-in closed scientific/continuous mode).
+2. Search the **current pinned source and installed dependency** for the role,
+   not only its documentation, then trace the actual launcher dispatch to the
+   owning entrypoint and tests. Old research worktrees are not current main.
+3. Write an **existing-versus-missing** table: which part is already implemented,
+   which actual contract must change, and which other consumers depend on it.
+4. Preserve **one authoritative owner** for each scientific artifact, and keep
+   operational caches, proposals, projections and receipts in their documented
+   non-authoritative roles.
+5. State whether the proposal is **current default**, **fresh opt-in**,
+   **historical compatibility**, or **research only**. Never claim production
+   equivalence or speedup from a synthetic proof/prototype alone.
+6. Update this map and the nearest operator document in the same PR when
+   interfaces/ownership change. Do not silently rewrite historical evidence.
+7. Require focused contract/crash tests and a new source/HEAD check before
+   calling the change integrated. Do not merge or bypass protections based only
+   on a previous green run.
+
+This procedure limits architectural rediscovery; it cannot honestly certify
+that every code path in the whole repository has been exhaustively verified.
+
 ## Version/status fence
 
 At this document's source commit, the reliability stack was **not yet merged**:
