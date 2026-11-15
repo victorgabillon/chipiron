@@ -10,10 +10,16 @@ from chipiron.environments.morpion.learning import (
 )
 from chipiron.environments.morpion.learning.target_confidence import (
     DatasetConfidenceContext,
+    DatasetConfidenceError,
     adjusted_confidence,
     finalize_confidence_metadata,
     is_certified,
     validate_confidence_policy,
+)
+from chipiron.environments.morpion.learning.target_policy import (
+    TargetSource,
+    select_exported_target,
+    validate_target_policy,
 )
 
 from .pv_family_targets import (
@@ -72,7 +78,8 @@ def apply_dataset_family_target_policy(
     rows: MorpionSupervisedRows,
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> MorpionSupervisedRows:
     """Apply PV-family target smoothing to exported bootstrap training rows."""
@@ -81,6 +88,7 @@ def apply_dataset_family_target_policy(
         family_target_policy=family_target_policy,
         family_prediction_blend=family_prediction_blend,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
         confidence=confidence,
     )
     adjusted_rows = tuple(context.adjust_row(row) for row in rows.rows)
@@ -96,10 +104,14 @@ def build_dataset_family_target_context(
     snapshot: TrainingTreeSource,
     family_target_policy: PvFamilyTargetPolicy,
     family_prediction_blend: float = 0.25,
-    use_backed_up_value: bool = True,
+    use_backed_up_value: bool | None = True,
+    dataset_target_source: TargetSource | None = None,
     confidence: DatasetConfidenceContext | None = None,
 ) -> DatasetFamilyTargetContext:
     """Build snapshot-level maps for per-row family target adjustment."""
+    validate_target_policy(dataset_target_source, use_backed_up_value)
+    if dataset_target_source is not None and confidence is None:
+        raise DatasetConfidenceError.missing_source()
     if not 0.0 <= family_prediction_blend <= 1.0:
         raise ValueError("dataset_family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
     if confidence is not None:
@@ -107,6 +119,7 @@ def build_dataset_family_target_context(
     raw_targets = _snapshot_raw_targets(
         snapshot=snapshot,
         use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
     )
     prediction_values = _snapshot_prediction_values(
         snapshot=snapshot,
@@ -121,13 +134,22 @@ def build_dataset_family_target_context(
             node.node_id
             for node in snapshot.nodes
             if _node_raw_target_is_certified(
-                node, use_backed_up_value=use_backed_up_value, confidence=confidence
+                node,
+                use_backed_up_value=use_backed_up_value,
+                dataset_target_source=dataset_target_source,
+                confidence=confidence,
             )
         }
     selected_child_by_node = _snapshot_selected_child_by_raw_target(
         snapshot=snapshot,
         raw_targets=raw_targets,
     )
+    if dataset_target_source is not None:
+        selected_child_by_node = {
+            key: child
+            for key, child in selected_child_by_node.items()
+            if key in raw_targets
+        }
     family_targets = family_adjusted_targets(
         raw_targets=raw_targets,
         prediction_values=prediction_values,
@@ -149,11 +171,16 @@ def build_dataset_family_target_context(
 def _snapshot_raw_targets(
     *,
     snapshot: TrainingTreeSource,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
 ) -> dict[str, float]:
     raw_targets: dict[str, float] = {}
     for node in snapshot.nodes:
-        target = _node_raw_target(node, use_backed_up_value=use_backed_up_value)
+        target = _node_raw_target(
+            node,
+            use_backed_up_value=use_backed_up_value,
+            dataset_target_source=dataset_target_source,
+        )
         if target is not None:
             raw_targets[node.node_id] = target
     return raw_targets
@@ -162,8 +189,12 @@ def _snapshot_raw_targets(
 def _node_raw_target(
     node: TrainingNodeSnapshot,
     *,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
 ) -> float | None:
+    if dataset_target_source is not None:
+        selected = select_exported_target(node, dataset_target_source)
+        return None if selected is None else selected[0]
     if use_backed_up_value and node.backed_up_value_scalar is not None:
         return float(node.backed_up_value_scalar)
     if node.direct_value_scalar is not None:
@@ -176,22 +207,33 @@ def _node_raw_target(
 def _node_raw_target_is_certified(
     node: TrainingNodeSnapshot,
     *,
-    use_backed_up_value: bool,
+    use_backed_up_value: bool | None,
+    dataset_target_source: TargetSource | None = None,
     confidence: DatasetConfidenceContext,
 ) -> bool:
     """Use the selected family input's own certainty; unknown is never a proof."""
-    raw = _node_raw_target(node, use_backed_up_value=use_backed_up_value)
+    raw = _node_raw_target(
+        node,
+        use_backed_up_value=use_backed_up_value,
+        dataset_target_source=dataset_target_source,
+    )
     if raw is None:
         return False
     source = (
-        "backed_up_value"
+        f"{dataset_target_source}_value"
+        if dataset_target_source is not None
+        else "backed_up_value"
         if (
             (use_backed_up_value and node.backed_up_value_scalar is not None)
             or node.direct_value_scalar is None
         )
         else "direct_value"
     )
-    return is_certified(confidence.selected(node, raw, source)["raw_target_certainty"])
+    return is_certified(
+        confidence.selected(
+            node, raw, source, explicit=dataset_target_source is not None
+        )["raw_target_certainty"]
+    )
 
 
 def _snapshot_prediction_values(

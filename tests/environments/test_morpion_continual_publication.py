@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.bootstrap.run_state import (
         MorpionBootstrapRunState,
     )
+    from chipiron.environments.morpion.learning.target_policy import TargetSource
 
 import pytest
 import torch
@@ -78,6 +79,7 @@ def setup_continual(
     dataset_cadence: int = 1,
     strict_execution: bool = False,
     managed: bool = False,
+    target_source: TargetSource | None = None,
 ) -> tuple[MorpionBootstrapArgs, MorpionBootstrapPaths]:
     """Start at the original single root with an explicit zero ESTIMATE evaluator."""
     args = MorpionBootstrapArgs(
@@ -91,6 +93,8 @@ def setup_continual(
         save_after_seconds=0.0,
         tree_branch_limit=1000000,
         dataset_confidence_policy="selected_value_v2",
+        dataset_target_source=target_source,
+        use_backed_up_value=True if target_source is None else None,
         training_device="cpu",
         validation_fraction=0.25,
         validation_seed=17,
@@ -120,7 +124,7 @@ def setup_continual(
         learning_schedule=learning_schedule,
         max_growth_steps_per_cycle=2,
         max_rows=128,
-        use_backed_up_value=True,
+        use_backed_up_value=True if target_source is None else None,
         continual_learning=MorpionContinualLearningPolicy(
             automatic_activation=automatic,
             max_tree_nodes=maximum,
@@ -258,7 +262,7 @@ def test_three_accepted_rounds_and_idempotent_retry(
 
 @pytest.mark.fast
 def test_automatic_activation_preserves_proofs_and_recovers_exact_request(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, endgame: tuple[Any, Any]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> None:
     """Honest held-out proof targets justify two real transitions; no forced winner."""
     from valanga.evaluations import Certainty
@@ -272,7 +276,7 @@ def test_automatic_activation_preserves_proofs_and_recovers_exact_request(
     local_leaderboard(monkeypatch, tmp_path)
     # This explicit semantic fixture is a reachable endgame. The fresh Greek-cross
     # experiments are tested separately; it is not presented as their initial tree.
-    position, _ = endgame
+    position, _ = request.getfixturevalue("endgame")
     with monkeypatch.context() as context:
         context.setattr(runner_module, "initial_state", lambda: position)
         args, paths = setup_continual(

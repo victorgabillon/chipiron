@@ -565,8 +565,8 @@ def test_actual_rows_nine_policies_exact_jsonl(tmp_path: Path) -> None:
     assert cases == 648
 
 
-def test_v1_interpretation_frozen_and_old_reader_refuses_v2(tmp_path: Path) -> None:
-    """The old scientific failures remain exactly observable in explicit v1."""
+def test_v1_targets_preserved_and_old_reader_refuses_v2(tmp_path: Path) -> None:
+    """Effective provenance is additive; v1 targets and v2 separation stay fixed."""
     nodes = nodes_fixture()
     kwargs = {
         "nodes": nodes,
@@ -585,7 +585,7 @@ def test_v1_interpretation_frozen_and_old_reader_refuses_v2(tmp_path: Path) -> N
     assert (
         legacy.nodes[2].effective_value_scalar,
         legacy.nodes[2].effective_value_source,
-    ) == (3, "tree_value")
+    ) == (9, "direct_self")
     assert legacy.nodes[3].target_value_scalar == 4  # v1 direct fallback, frozen
     before = {p: p.read_bytes() for p in (tmp_path / "v1").rglob("*.json")}
     with pytest.raises(ScientificExportError):
