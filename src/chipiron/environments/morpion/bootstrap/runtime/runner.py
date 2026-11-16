@@ -81,6 +81,9 @@ from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
 from chipiron.environments.morpion.bootstrap.pipeline_memory import (
     log_pipeline_memory,
 )
+from chipiron.environments.morpion.bootstrap.prediction_origin_tracking import (
+    GrowthPredictionOrigins,
+)
 from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
     MorpionSearchRunner,
 )
@@ -185,6 +188,9 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
         MorpionReevaluationPatch,
     )
+    from chipiron.environments.morpion.bootstrap.prediction_lineage import (
+        PatchDisposition,
+    )
 
 LOGGER = logging.getLogger(__name__)
 
@@ -250,6 +256,7 @@ class AnemoneMorpionSearchRunnerArgs:
 
     search_args: SearchArgs = field(default_factory=default_search_args)
     random_seed: int = 0
+    prediction_origin_tracking: bool = False
     reevaluation_scope: str = "leaves"
     restore_memory_profile: bool = False
     restore_memory_profile_recursive: bool = False
@@ -279,6 +286,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             "Morpion requires Anemone checkpoint format 3 (90c7ef4454ed or its validated successor).",
         )
         self._args = args if args is not None else AnemoneMorpionSearchRunnerArgs()
+        self._prediction_origins: GrowthPredictionOrigins | None = None
         self._runtime: object | None = None
         self._random_generator = Random(self._args.random_seed)
         self._dynamics = MorpionDynamics()
@@ -374,6 +382,27 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             _opening_expansion_kind_name(self._args.search_args),
         )
         _log_search_rollout_config(self._args.search_args)
+        if tree_snapshot_path is None and self._args.prediction_origin_tracking:
+            require(
+                resolved_bundle_path is not None,
+                "Tracked genesis requires a neural model.",
+            )
+            assert resolved_bundle_path is not None
+            self._prediction_origins = GrowthPredictionOrigins()
+            self._prediction_origins.bind_model(resolved_bundle_path)
+        elif tree_snapshot_path is not None:
+            from chipiron.environments.morpion.bootstrap.prediction_origin_publication import (
+                restore_prediction_origins,
+            )
+
+            self._prediction_origins = restore_prediction_origins(
+                Path(tree_snapshot_path)
+            )
+            require(
+                not self._args.prediction_origin_tracking
+                or self._prediction_origins is not None,
+                "Cannot infer prediction origins for a historical checkpoint.",
+            )
         if tree_snapshot_path is None:
             LOGGER.info(
                 "[runtime] create_start evaluator_bundle=%s",
@@ -384,6 +413,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 resolved_bundle_path,
                 search_args=self._args.search_args,
             )
+            if self._prediction_origins is not None:
+                self._prediction_origins.attach(self._runtime, fresh=True)
             apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
             self._install_state_rematerialization_phase_hooks(self._runtime)
             elapsed_s = time.perf_counter() - started_at
@@ -458,6 +489,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
 
+        if self._prediction_origins is not None:
+            require(
+                resolved_bundle_path is not None,
+                "Tracked restore has no committed neural model.",
+            )
+            assert resolved_bundle_path is not None
+            self._prediction_origins.bind_model(resolved_bundle_path)
+            self._prediction_origins.attach(self._require_runtime())
+
+    def prediction_origins(self) -> GrowthPredictionOrigins | None:
+        """Return private observed transaction state to the existing publication owner."""
+        if self._prediction_origins is not None:
+            self._prediction_origins.audit(self._require_runtime())
+        return self._prediction_origins
+
+    def last_prediction_patch_disposition(self) -> PatchDisposition | None:
+        """Expose actual native outcomes without changing the historical count API."""
+        return (
+            None
+            if self._prediction_origins is None
+            else self._prediction_origins.disposition
+        )
+
     def load_fork_genesis(
         self,
         checkpoint: Path,
@@ -531,6 +585,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self.last_node_budget_stop_reason = None
         budget_checkpoint: Path | None = None
         budget_start_step = 0
+        budget_origins = None
         for _step_index in range(max_growth_steps):
             node_limit = self._args.max_tree_nodes
             if node_limit is not None:
@@ -566,6 +621,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                         else "checkpoint.json.zst"
                     )
                     self.save_checkpoint(budget_checkpoint)
+                    if self._prediction_origins is not None:
+                        budget_origins = self._prediction_origins.fork()
                     budget_start_step = steps_executed
             if runtime.tree.root_node.tree_evaluation.has_exact_value():
                 stop_reason = "exact_solution_found"
@@ -598,6 +655,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                     model_bundle_path=self._current_evaluator_bundle_path,
                 )
                 self._runtime = runtime
+                if budget_origins is not None:
+                    self._prediction_origins = budget_origins.fork()
+                    self._prediction_origins.attach(runtime, rollback=True)
                 apply_runtime_config_to_runtime(
                     runtime, self._last_applied_runtime_config
                 )
@@ -1701,6 +1761,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def discard_uncommitted_runtime(self) -> None:
         """Require a cold restore after an aborted checkpoint/patch transaction."""
         self._runtime = None
+        self._prediction_origins = None
         self._current_evaluator_bundle_path = None
         self._last_reevaluation_patch_apply_metrics = None
         self._reset_growth_state_eviction_runtime()
@@ -1714,6 +1775,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise _uninitialized_reevaluation_patch_runtime_error()
         runtime = cast("Any", runtime)
         blend_alpha = self._last_applied_runtime_config.reevaluation_blend_alpha
+        proposed_patch = patch
+        if self._prediction_origins is not None:
+            self._prediction_origins.preflight_patch(runtime, patch, blend_alpha)
+            self._prediction_origins.valid = False
         patch, skipped_exact_node_ids = protect_exact_values_from_model_predictions(
             runtime=runtime, patch=patch
         )
@@ -1766,6 +1831,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(_blend_average(blend_metrics.blended_sum, blend_metrics)),
                 _metric_value(selector_invalidated),
             )
+        if self._prediction_origins is not None:
+            self._prediction_origins.apply_patch(
+                runtime, proposed_patch, skipped_exact_node_ids, result
+            )
+            self._prediction_origins.valid = True
         self._last_reevaluation_patch_apply_metrics = {
             "patch_id": patch.patch_id,
             "applied": result.applied_count,
@@ -2145,6 +2215,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         started_at = time.perf_counter()
         evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
+        if self._prediction_origins is not None:
+            require(
+                not reevaluate_tree, "Tracked restore cannot silently refresh origins."
+            )
+            self._prediction_origins.bind_model(model_bundle_path)
+            self._prediction_origins.allowed_evaluator = evaluator
         if reevaluate_tree:
             if not hasattr(runtime, "refresh_with_evaluator"):
                 raise NotImplementedError(
@@ -2201,6 +2277,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             with evaluator_inputs(
                 evaluator, self.current_tree_size()
             ) as refresh_evaluator:
+                if self._prediction_origins is not None:
+                    self._prediction_origins.bind_model(model_bundle_path)
+                    self._prediction_origins.allowed_evaluator = refresh_evaluator
+                    self._prediction_origins.operation = "full_refresh"
                 report = self._require_runtime().refresh_with_evaluator(
                     refresh_evaluator,
                     scope="all",
@@ -2209,9 +2289,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         except BaseException:
             # A cache integrity/resource failure can follow modified private
             # values. Never save or continue that partially refreshed runtime.
-            if requested():
+            if requested() or self._prediction_origins is not None:
                 self.discard_uncommitted_runtime()
             raise
+        if self._prediction_origins is not None:
+            self._prediction_origins.operation = "growth_birth"
         self._current_evaluator_bundle_path = model_bundle_path
         return cast("ReevaluationReport", report)
 
@@ -2392,6 +2474,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output if write_stats is None else write_stats.output_path),
             elapsed_s,
         )
+        if self._prediction_origins is not None:
+            self._prediction_origins.checkpoint(runtime, output)
         gc.collect()
         log_morpion_checkpoint_memory_phase(
             "after_checkpoint_save_cleanup",

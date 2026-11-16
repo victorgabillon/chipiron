@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
     from .config import MorpionBootstrapConfig
     from .run_state import MorpionBootstrapRunState
+    from .runtime_capabilities import PredictionOriginRuntime
 
 
 def initialize_scientific_v2_publication(
@@ -37,6 +38,7 @@ def initialize_scientific_v2_publication(
     durable_training: bool = False,
     growth_scoring: bool = False,
     model_activation: bool = False,
+    prediction_origin_runner: PredictionOriginRuntime | None = None,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -217,6 +219,18 @@ def initialize_scientific_v2_publication(
                 )
             ),
         )
+        if prediction_origin_runner is not None:
+            require(
+                model_activation,
+                "Prediction tracking requires the existing model-bound closed protocol.",
+            )
+            publication.prediction_origins = (
+                prediction_origin_runner.prediction_origins()
+            )
+            require(
+                publication.prediction_origins is not None,
+                "Genesis has no actually observed prediction writes.",
+            )
         state = publication.publish(state)
         metadata = dict(state.metadata)
         metadata[RECEIPTS_METADATA_KEY] = {
@@ -238,8 +252,13 @@ def initialize_scientific_experiment(
     *,
     seed_model: Path,
     initial_nodes: int,
+    prediction_origin_tracking: bool = False,
 ) -> MorpionBootstrapRunState:
     """Build a bounded fresh search, then use the existing complete genesis commit."""
+    require(
+        not prediction_origin_tracking or args.reevaluation_blend_alpha == 1.0,
+        "Prediction tracking requires unblended Growth writes.",
+    )
     from chipiron.learning.torch_runtime import (
         torch_execution_profile_metadata,
         validate_torch_execution_profile,
@@ -363,6 +382,7 @@ def initialize_scientific_experiment(
         runner = AnemoneMorpionSearchRunner(
             AnemoneMorpionSearchRunnerArgs(
                 random_seed=4,
+                prediction_origin_tracking=prediction_origin_tracking,
                 runtime_checkpoint_format="sharded",
                 max_tree_nodes=None
                 if args.continual_learning is None
@@ -417,16 +437,24 @@ def initialize_scientific_experiment(
                     },
                 },
             )
-        finally:
+        except BaseException:
             runner.discard_uncommitted_runtime()
-    return initialize_scientific_v2_publication(
-        paths,
-        state,
-        producer=producer,
-        closed_scientific_snapshot=True,
-        atomic_reevaluation=True,
-        growth_scoring=True,
-        fenced_dataset=True,
-        durable_training=True,
-        model_activation=True,
-    )
+            raise
+        finally:
+            if not prediction_origin_tracking:
+                runner.discard_uncommitted_runtime()
+    try:
+        return initialize_scientific_v2_publication(
+            paths,
+            state,
+            producer=producer,
+            closed_scientific_snapshot=True,
+            atomic_reevaluation=True,
+            growth_scoring=True,
+            fenced_dataset=True,
+            durable_training=True,
+            model_activation=True,
+            prediction_origin_runner=runner if prediction_origin_tracking else None,
+        )
+    finally:
+        runner.discard_uncommitted_runtime()

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from .control import MorpionBootstrapEffectiveRuntimeConfig
     from .pipeline_artifacts import MorpionReevaluationPatch
+    from .prediction_origin_tracking import GrowthPredictionOrigins
 
 
 @runtime_checkable
@@ -69,6 +70,15 @@ class ReevaluationPatchRuntime(Protocol):
 
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int | None:
         """Return the applied count, retaining the legacy None convention."""
+        ...
+
+
+@runtime_checkable
+class PredictionOriginRuntime(Protocol):
+    """Expose observed private writes to Growth's existing publication owner."""
+
+    def prediction_origins(self) -> GrowthPredictionOrigins | None:
+        """Return actual observed transaction state, or historical untracked mode."""
         ...
 
 

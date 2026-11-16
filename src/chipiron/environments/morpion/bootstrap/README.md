@@ -645,7 +645,7 @@ chipiron-bootstrap dashboard --work-dir /path/to/run
 Enjoy exploring Morpion 🚀
 
 
-### B4 provenance contract status (C2)
+### B4 provenance contract and owned writes (C2/C3)
 
 `prediction_lineage.py` defines a structural contract for a future capsule-owned
 direct-origin sidecar: interned write events, proven default/birth coverage,
@@ -661,12 +661,42 @@ readers. Dataset and model-target boundaries also reject B4 policy/lineage field
 attached to historical provenance, including legacy-target fallback attempts.
 Historical sources and `backup_value` retain their original identities; absence
 of new lineage is not evidence that their predictions were fully refreshed.
-C3 write stamping/sealing, C4 rolling traversal, C5 mixed admission and C6
-progressive activation remain unimplemented. Training acceptance and activation
+C4 rolling traversal, C5 mixed admission and C6 progressive activation remain
+separate integration work. Training acceptance and activation
 requests do not activate a model. The existing full-refresh activation policy,
 single Reevaluation worker and Growth publication owner are unchanged.
 Full refresh is the current conservative implementation policy, not a mathematical
 requirement for progressive activation, Growth or mixed-source scientific use.
+
+C3 adds opt-in actual-write tracking through
+`AnemoneMorpionSearchRunnerArgs(prediction_origin_tracking=True)` for a fresh
+neural genesis, and `prediction_origin_runner=runner` at the existing genesis
+publisher. `initialize_scientific_experiment(prediction_origin_tracking=True)`
+composes those operations; CLI/default recipes remain unchanged. Tracking requires
+unblended writes and cannot adopt a historical checkpoint. A tracked committed
+head restores tracking automatically through the existing Growth session.
+
+The runner observes Anemone's direct-value stores and native patch outcomes.
+Equal-score predictions count as writes; protected certificates and certified
+reuse never gain neural origins. External prediction writes clear the native
+local evaluator stamp, whose counter is not a durable model identity. Native
+propagation and exact-value protection remain unchanged. Unsupported numeric
+recipes, unknown native skips, unobserved mutations and incomplete coverage refuse.
+
+The same capsule seals `prediction_lineage.json`, current-origin evidence and
+exact referenced patch bytes before the existing atomic run-state replacement.
+The receipt prepared for this seal is the receipt accepted by the existing ledger;
+there is no second acceptance journal. A checkpoint hash plus observation revision
+prevents publication after unsaved writes. Cold recovery accepts only the committed
+head and authenticates write-ID membership, scientific inventory and retained model
+pins. The immutable `read_committed_prediction_origins(work_dir, record)` result
+exposes `lineage`, `creation_generations` and `current_origins` for C5.
+
+This supplementary evidence does not itself admit mixed training data or enable
+progressive activation. Mixed source header/policy binding and model-only activation
+remain separate review gates, with no complete-tree freshness requirement. Current
+maps and write evidence may require O(N) IDs and scanning; no performance or bounded
+total retention claim is made. No per-node historical journal is recorded.
 
 ### Admitted Training coordination
 

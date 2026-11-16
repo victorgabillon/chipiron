@@ -803,8 +803,6 @@ class GrowthPatchReceiptSession:
             isinstance(state.latest_runtime_checkpoint_path, str),
             "No resulting checkpoint.",
         )
-        if self.publication is not None:
-            state = self.publication.publish(state)
         assert state.latest_runtime_checkpoint_path is not None
         checkpoint = inside(self.paths.work_dir, state.latest_runtime_checkpoint_path)
         self.sync_artifact(checkpoint)
@@ -813,7 +811,24 @@ class GrowthPatchReceiptSession:
                 inside(self.paths.work_dir, state.latest_tree_snapshot_path)
             )
         checkpoint_hash = artifact_sha256(checkpoint)
+        receipt_checkpoint_path = state.latest_runtime_checkpoint_path
+        if self.publication is not None:
+            from .generation_publication_io import capsule_path
+
+            assert (
+                self.publication.staging is not None
+                and self.publication.identifier is not None
+            )
+            final = capsule_path(
+                self.paths.work_dir,
+                self.publication.identifier,
+                self.publication.version,
+            )
+            receipt_checkpoint_path = self.paths.relative_to_work_dir(
+                final / checkpoint.relative_to(self.publication.staging)
+            )
         ledger = receipt_ledger(previous)
+        receipt = None
         transaction = transaction_state(previous)
         if self.pending is not None:
             _require(
@@ -847,7 +862,7 @@ class GrowthPatchReceiptSession:
                 patch.evaluator_name,
                 patch.model_bundle_path,
                 self.model["sha256"],
-                state.latest_runtime_checkpoint_path,
+                receipt_checkpoint_path,
                 checkpoint_hash,
                 state.generation,
                 len(patch.rows),
@@ -858,6 +873,33 @@ class GrowthPatchReceiptSession:
                 else cursor_digest(transaction["accepted_cursor"]),
             )
             ledger[receipt.patch_id] = receipt
+        if self.publication is not None:
+            from .runtime_capabilities import PredictionOriginRuntime
+
+            if supports_runtime_capability(self.runner, PredictionOriginRuntime):
+                tracking = self.runner.prediction_origins()
+                self.publication.prediction_origins = tracking
+                if tracking is not None and self.pending is not None:
+                    tracking.patch_bytes[self.pending.content_sha256] = (
+                        self.paths.pipeline_reevaluation_patch_path.read_bytes()
+                    )
+                    self.publication.prediction_pending = self.pending
+                    self.publication.prediction_receipt = receipt
+            state = self.publication.publish(state)
+            if self.pending is not None:
+                _require(
+                    self.current_model() == self.model,
+                    "Active model changed during checkpoint publication.",
+                )
+                _require(
+                    observe_pending_patch(self.paths.pipeline_reevaluation_patch_path)
+                    == self.pending,
+                    "Pending patch changed during checkpoint publication.",
+                )
+            _require(
+                state.latest_runtime_checkpoint_path == receipt_checkpoint_path,
+                "Publication relocated checkpoint differently from its prepared receipt.",
+            )
         metadata = dict(state.metadata)
         if transaction is not None:
             metadata[TRANSACTION_KEY] = transaction

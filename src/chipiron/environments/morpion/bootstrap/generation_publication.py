@@ -53,6 +53,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from .bootstrap_paths import MorpionBootstrapPaths
+    from .checkpoint_patch_receipts import CheckpointPatchReceipt, PendingPatch
+    from .prediction_origin_tracking import GrowthPredictionOrigins
     from .run_state import MorpionBootstrapRunState
 
 
@@ -275,6 +277,9 @@ class DurableGenerationPublication:
         self.evaluator_contract = False
         self.active_evaluator: dict[str, Any] | None = None
         self.activation: dict[str, Any] | None = None
+        self.prediction_origins: GrowthPredictionOrigins | None = None
+        self.prediction_pending: PendingPatch | None = None
+        self.prediction_receipt: CheckpointPatchReceipt | None = None
 
     def start(self, generation: int) -> None:
         """Reserve a unique private attempt; incomplete attempts are never discovery."""
@@ -317,6 +322,10 @@ class DurableGenerationPublication:
             "Run state differs from its committed publication head.",
         )
         descriptor = validate_capsule(self.paths.work_dir, head)
+        if "prediction_lineage" in descriptor:
+            from .prediction_origin_publication import read_prediction_evidence
+
+            read_prediction_evidence(self.paths.work_dir, head, descriptor)
         if state.metadata[PUBLICATION_KEY].get("evaluator_contract") is not None:
             from .generation_publication_io import committed_evaluator
 
@@ -576,6 +585,11 @@ class DurableGenerationPublication:
         )
         scientific_identity = None
         canonical_validation = None
+        prediction_reference = None
+        require(
+            self.prediction_origins is None or self.version == 3,
+            "Prediction origins require closed publication.",
+        )
         if self.version in (2, 3):
             from .scientific_generation_publication import (
                 validate_closed_export,
@@ -610,6 +624,17 @@ class DurableGenerationPublication:
                 checkpoint.is_relative_to(self.staging),
                 "Checkpoint escaped private scientific attempt.",
             )
+            if self.prediction_origins is not None:
+                from .prediction_origin_publication import seal_prediction_origins
+
+                assert state.latest_runtime_checkpoint_path is not None
+                prediction_reference = seal_prediction_origins(
+                    self.prediction_origins,
+                    self,
+                    inside(self.paths.work_dir, state.latest_runtime_checkpoint_path),
+                    pending=self.prediction_pending,
+                    receipt=self.prediction_receipt,
+                )
             validate = (
                 validate_closed_export
                 if self.version == 3
@@ -656,6 +681,15 @@ class DurableGenerationPublication:
                         self.model_pins == initial["model_pins"],
                         "Scientific publication model epoch changed; explicit new lineage required.",
                     )
+        if previous:
+            parent_descriptor = read_committed_descriptor(
+                self.paths.work_dir, previous[-1]
+            )
+            require(
+                "prediction_lineage" not in parent_descriptor
+                or self.prediction_origins is not None,
+                "Tracked publication cannot drop prediction evidence.",
+            )
         parent_id = None if not previous else previous[-1]["id"]
         files = [p for p in sorted(self.staging.rglob("*")) if p.is_file()]
         require(
@@ -688,6 +722,8 @@ class DurableGenerationPublication:
                 scientific_identity=scientific_identity,
                 canonical_validation=canonical_validation,
             )
+        if prediction_reference is not None:
+            descriptor["prediction_lineage"] = prediction_reference
         if continuous_source is not None:
             descriptor["continuous_source"] = continuous_source
         if state.metadata.get("experiment_termination") is not None:
@@ -755,12 +791,18 @@ class DurableGenerationPublication:
                 publication_version=self.version,
                 scientific_identity=scientific_identity,
             )
+        if prediction_reference is not None:
+            record["prediction_lineage"] = prediction_reference
         if self.activation is not None:
             record["activation_request_sha256"] = self.activation["request_sha256"]
         if continuous_source is not None:
             record["continuous_source"] = continuous_source
         if self.version == 3:
-            validate_capsule(self.paths.work_dir, record)
+            sealed = validate_capsule(self.paths.work_dir, record)
+            if prediction_reference is not None:
+                from .prediction_origin_publication import read_prediction_evidence
+
+                read_prediction_evidence(self.paths.work_dir, record, sealed)
         metadata = dict(state.metadata)
         metadata[PUBLICATION_KEY] = {
             "schema_version": self.version,

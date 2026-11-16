@@ -592,6 +592,24 @@ def validate_capsule(
                 )
     if version in (2, 3) and not retired:
         validate_committed_identity(work_dir, root, record, descriptor)
+    if "prediction_lineage" in descriptor or "prediction_lineage" in record:
+        reference = descriptor.get("prediction_lineage")
+        require(
+            isinstance(reference, dict)
+            and reference == record.get("prediction_lineage"),
+            "Prediction reference differs from its committed capsule.",
+        )
+        assert isinstance(reference, dict)
+        inventory = {entry["path"]: entry["sha256"] for entry in entries}
+        for key, digest_key in (
+            ("path", "sha256"),
+            ("evidence_path", "evidence_sha256"),
+        ):
+            require(
+                isinstance(reference.get(key), str)
+                and inventory.get(reference[key]) == reference.get(digest_key),
+                "Prediction reference is not bound to the capsule inventory.",
+            )
     return descriptor
 
 
