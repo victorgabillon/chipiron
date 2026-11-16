@@ -21,7 +21,11 @@ from .continuous_contract import (
     require,
 )
 from .continuous_dataset import boundary
-from .generation_publication_io import growth_receipt_ownership, read_object
+from .generation_publication_io import (
+    GrowthOwnershipBlockingIOError,
+    growth_receipt_ownership,
+    read_object,
+)
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
 
 if TYPE_CHECKING:
@@ -132,18 +136,29 @@ def apply(
     return updated
 
 
-def close_admission(paths: MorpionBootstrapPaths) -> None:
-    """Close before native reaping, using a nonblocking Growth acquisition."""
+def close_admission(
+    paths: MorpionBootstrapPaths, *, deadline: float | None = None
+) -> bool:
+    """Try once before ACK; bounded retries are permitted only after native reap.
+
+    Never block on Growth while a supervisor may need our acknowledgement to
+    release it. A missed deadline leaves closure explicitly unproven.
+    """
     if not publication.enabled(load_bootstrap_run_state(paths.run_state_path)):
-        return
-    with growth_receipt_ownership(paths, create=False):
-        state = load_bootstrap_run_state(paths.run_state_path)
-        if (
-            publication.enabled(state)
-            and publication.load_frame(paths, state).state.admission_open
-        ):
-            state = apply(paths, state, transitions.Admission(False))
-            save_bootstrap_run_state(state, paths.run_state_path, durable=True)
+        return True
+    while deadline is None or time.monotonic() < deadline:
+        try:
+            with growth_receipt_ownership(paths, create=False):
+                state = load_bootstrap_run_state(paths.run_state_path)
+                if publication.load_frame(paths, state).state.admission_open:
+                    state = apply(paths, state, transitions.Admission(False))
+                    save_bootstrap_run_state(state, paths.run_state_path, durable=True)
+                return True
+        except GrowthOwnershipBlockingIOError:
+            if deadline is None:
+                return False
+            time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
+    return False
 
 
 def suspend_owned(
@@ -157,7 +172,7 @@ def suspend_owned(
     frame = publication.load_frame(paths, state)
     require(
         not frame.state.admission_open,
-        "Continuous admission was not closed before reap.",
+        "Continuous admission was not closed before suspension.",
     )
     return apply(paths, state, transitions.Suspend())
 

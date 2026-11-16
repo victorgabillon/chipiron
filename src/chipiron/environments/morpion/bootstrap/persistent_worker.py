@@ -147,9 +147,16 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
     from .launcher import _run_launcher_cli
 
     paths = MorpionBootstrapPaths.from_work_dir(launcher.work_dir)
-    from .managed_sessions import require_managed_execution
+    from .managed_sessions import (
+        ManagedScientificTerminationError,
+        require_managed_execution,
+    )
 
-    require_managed_execution(paths)
+    terminal = False
+    try:
+        require_managed_execution(paths)
+    except ManagedScientificTerminationError:
+        terminal = True
     _validate(launcher)
     paths.ensure_directories()
     process_device = launcher.bootstrap_args.training_device
@@ -164,34 +171,66 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
             resources.callback(signal.signal, sig, previous)
         try:
             job_id = 0
-            while launcher.worker_max_jobs is None or job_id < launcher.worker_max_jobs:
+            policy = launcher.bootstrap_args.continual_learning
+            assert policy is not None
+            wait_deadline = (
+                time.monotonic()
+                + policy.max_elapsed_seconds
+                + policy.shutdown_grace_seconds
+            )
+            while (
+                terminal
+                or launcher.worker_max_jobs is None
+                or job_id < launcher.worker_max_jobs
+            ):
+                try:
+                    require_managed_execution(paths)
+                except ManagedScientificTerminationError:
+                    terminal = True
+                if terminal:
+                    # A zero exit is also premature to the supervisor. Keep the
+                    # existing idle heartbeat until its authenticated stop signal.
+                    while time.monotonic() < wait_deadline:
+                        state.update("idle")
+                        time.sleep(1.0)
+                    message = "Scientific terminal wait exceeded supervised lifetime"
+                    raise TimeoutError(message)
                 job_id += 1
                 state.update(
                     "running", job_id=job_id, job_started_monotonic_s=time.monotonic()
                 )
                 # Re-read configuration and state through the ordinary launcher;
                 # neither admission nor permitted-source selection is duplicated.
-                with launcher_execution(launcher) as configured:
-                    _validate(configured)
-                    require(
-                        configured.bootstrap_args.training_device == process_device,
-                        "Persistent process device changed; restart required",
-                    )
-                    state.update(
-                        "running",
-                        dispatch_config_sha256=file_digest(paths.bootstrap_config_path),
-                        dispatch_state_sha256=file_digest(paths.run_state_path),
-                        dispatch_identity_scope="observed at dispatch; existing admission records select permitted source/model",
-                    )
-                    configured = replace(configured, reader_cache_dir=reader.next())
-                    try:
-                        _run_launcher_cli(configured, _job_id=job_id)
-                    except GrowthOwnershipBlockingIOError:
-                        if launcher.pipeline_stage != "growth":
-                            raise
-                        # Nonblocking admission contention owns no lease. Discard
-                        # this cold job and poll normally; computation errors fail.
-                        LOGGER.info("[persistent-worker] Growth ownership contended")
+                try:
+                    with launcher_execution(launcher) as configured:
+                        _validate(configured)
+                        require(
+                            configured.bootstrap_args.training_device == process_device,
+                            "Persistent process device changed; restart required",
+                        )
+                        state.update(
+                            "running",
+                            dispatch_config_sha256=file_digest(
+                                paths.bootstrap_config_path
+                            ),
+                            dispatch_state_sha256=file_digest(paths.run_state_path),
+                            dispatch_identity_scope="observed at dispatch; existing admission records select permitted source/model",
+                        )
+                        configured = replace(configured, reader_cache_dir=reader.next())
+                        try:
+                            _run_launcher_cli(configured, _job_id=job_id)
+                        except GrowthOwnershipBlockingIOError:
+                            if launcher.pipeline_stage != "growth":
+                                raise
+                            # Nonblocking admission contention owns no lease. Discard
+                            # this cold job and poll normally; computation errors fail.
+                            LOGGER.info(
+                                "[persistent-worker] Growth ownership contended"
+                            )
+                except ManagedScientificTerminationError:
+                    # The terminal commit may race the boundary read. This typed
+                    # refusal is emitted only after native and seal authentication.
+                    terminal = True
                 state.update("cleanup")
                 cleanup = StageMeasurement()
                 _cleanup()
@@ -211,10 +250,17 @@ def run_persistent_worker(launcher: MorpionBootstrapLauncherArgs) -> int:
                     job_id,
                     launcher.pipeline_stage,
                 )
+                if terminal:
+                    continue
                 if (
                     launcher.worker_max_jobs is not None
                     and job_id >= launcher.worker_max_jobs
                 ):
+                    try:
+                        require_managed_execution(paths)
+                    except ManagedScientificTerminationError:
+                        terminal = True
+                        continue
                     break
                 waiting = StageMeasurement()
                 completed_wait = False

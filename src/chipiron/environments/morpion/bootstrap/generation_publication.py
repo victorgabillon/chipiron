@@ -690,6 +690,10 @@ class DurableGenerationPublication:
             )
         if continuous_source is not None:
             descriptor["continuous_source"] = continuous_source
+        if state.metadata.get("experiment_termination") is not None:
+            descriptor["experiment_termination"] = state.metadata[
+                "experiment_termination"
+            ]
         if self.evaluator_contract:
             require(
                 self.active_evaluator is not None, "Missing explicit active evaluator."

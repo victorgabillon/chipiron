@@ -71,12 +71,14 @@ def has_consumed(
 
 
 def consumed_owned(
-    paths: MorpionBootstrapPaths, job: JobRecord, ready: ReadyRecord
+    paths: MorpionBootstrapPaths, job: JobRecord, ready: ReadyRecord, *, deadline: float
 ) -> None:
     """Commit before yielding a native reader; caller already holds artifact/native leases."""
+    # Deferred runtime import: both modules are initialized before consumption.
+    from .prepared_dataset import _continuous_reader_state  # pylint: disable=cyclic-import
+
     with growth_receipt_ownership(paths, wait=True):
-        state = load_bootstrap_run_state(paths.run_state_path)
-        publication.authenticate_job(paths, state, job)
+        state = _continuous_reader_state(paths, job, ready, deadline=deadline)
         if has_consumed(paths, state, ready, job):
             return
         proof = publication.put_proof(
@@ -114,6 +116,8 @@ def recover_before_consumption(
     ready: ReadyRecord,
     record: dict[str, Any],
     root: Path,
+    *,
+    deadline: float,
 ) -> None:
     """Rebuild only disposable bytes at the same stable path, under the reader allowance."""
     from chipiron.environments.morpion.players.evaluators.neural_networks.training import (
@@ -187,7 +191,7 @@ def recover_before_consumption(
     )
     budget = remaining(paths, job)
     clock = publication.read_ref(paths, budget.clock_evidence)
-    deadline = clock["deadline"]
+    deadline = min(deadline, clock["deadline"])
     from .continuous_resources import COMMIT_HEADROOM, logical_bytes, reserve_recovery
 
     assert args.continual_learning is not None

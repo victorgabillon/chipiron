@@ -53,9 +53,39 @@ history, outstanding output/scratch reservations, native preparation and complet
 headroom under the existing production caps. Output quotas check writes to private
 Dataset and model attempts. A third root waits for completion/comparison/retirement;
 scientific receipts, rows and accepted model history are never deleted to make room.
+A new Dataset that cannot reserve completion capacity is deferred through the
+existing paced worker loop. Its pending Source and scheduling debt remain; no job
+clock is created or renewed, and admitted Training retains its pins and allowance.
+The run-wide time/resource limits still end persistent pressure. Invalid authority
+or accounting remains an error, not idle work.
 
-Stop closes admission before native shutdown acknowledgement. Positive native reap
-precedes suspension; unresolved jobs keep their pins and original allowances.
+Admitted Training and comparison readers wait for exclusive prepared-Dataset
+leases within the original job deadline, capped by the active managed launch's
+remaining allowance and supervisor limit. Stable Dataset ownership precedes native
+preparation ownership; neither wait holds Growth ownership. Consumption then takes
+Growth ownership and revalidates the admitted slot, claim, launch and Dataset state.
+The same deadline bounds disposable recovery. Signals unwind the wait; exhaustion
+remains an explicit worker failure without consumption or a completed comparison.
+No retry renews the original allowance or weakens exclusive ownership.
+
+Stop persists its decisive reason and clock before trying to close admission.
+Closure first tries Growth ownership without waiting. If Growth holds it, the
+monitor acknowledges the supervisor and reaps native workers before retrying
+closure within the original shutdown deadline; it never waits for a lock while
+withholding the acknowledgement needed to release that lock. Proven closure and
+positive native reap both precede suspension/finalization. Unproven closure leaves
+explicit uncertainty and retains measured usage; unresolved jobs keep their pins
+and original allowances.
+Scientific node-budget termination is sealed into the terminal Growth publication.
+Managed workers authenticate both that seal and their live native launch before
+waiting in the existing idle state. The actual scientific-work guard still refuses
+terminal work, including a terminal commit racing dispatch. Workers remain alive
+and responsive to supervised signals; unexplained early exits and unrelated errors
+remain fatal. The idle wait has a finite lifetime fallback and does not release
+scientific pins or write new admissions. The monitor uses the same sealed terminal
+reason for orderly closure and measured finalization. Existing unsealed failed
+experiments are not migrated, reinterpreted or refunded by this correction.
+
 Resume cannot renew a job clock or accept live/unknown claim ownership. A damaged
 unconsumed disposable input may rebuild only the same admitted Dataset and exact
 recipe/path. Corruption after consumption fails and records mandatory evidence.

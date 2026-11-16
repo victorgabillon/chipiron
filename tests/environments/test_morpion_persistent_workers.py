@@ -254,6 +254,15 @@ def test_success_waits_only_after_cleanup_and_failure_never_retries(
     from chipiron.environments.morpion.bootstrap import launcher
 
     events: list[str] = []
+    waits: list[float] = []
+    sleep = time.sleep
+
+    def paced(seconds: float) -> None:
+        assert events[-1] == "cleanup"
+        waits.append(seconds)
+        sleep(seconds)
+
+    monkeypatch.setattr(worker.time, "sleep", paced)
     monkeypatch.setattr(
         worker, "monitored_identity", lambda: {**_identity(), "session": os.getpid()}
     )
@@ -291,9 +300,13 @@ def test_success_waits_only_after_cleanup_and_failure_never_retries(
         with pytest.raises(ValueError, match="injected"):
             worker.run_persistent_worker(_launcher(tmp_path))
         assert events.count("job") == 1
+        assert not waits
     else:
         assert worker.run_persistent_worker(_launcher(tmp_path)) == 0
         assert events == ["resolve", "job", "cleanup", "resolve", "job", "cleanup"]
+        assert (
+            waits and sum(waits) > 0
+        )  # Deferred jobs use this same finite paced path.
     record = json.loads(
         (tmp_path / "pipeline/worker_processes/training_worker.json").read_text()
     )

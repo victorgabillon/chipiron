@@ -503,14 +503,14 @@ def prepare_continuous(
     return ready
 
 
-@contextmanager
-def borrow_continuous(
+def _continuous_reader_state(
     paths: MorpionBootstrapPaths,
-    args: MorpionBootstrapArgs,
     job: JobRecord,
     ready: ReadyRecord,
-) -> Iterator[tuple[Path, _PreparedInputs]]:
-    """Retain stable and native leases for the admitted reader; never fall back."""
+    *,
+    deadline: float | None = None,
+) -> MorpionBootstrapRunState:
+    """Fence a reader again after every wait, including the consumption commit."""
     from .continuous_contract import record_ref
     from .continuous_publication import authenticate_job, load_frame
 
@@ -535,12 +535,54 @@ def borrow_continuous(
             frame.state.cohort == record_ref(job), "Reader is not the admitted cohort."
         )
     authenticate_job(paths, state, job)
+    record = storage.entries(state).get(
+        ready.payload.accepted_dataset.descriptor_sha256
+    )
+    require(
+        record is not None
+        and record["phase"] == "COMPLETE"
+        and record["accepted"] == ready.payload.accepted_dataset.to_metadata(),
+        "Continuous inputs unavailable or replaced.",
+    )
+    if deadline is not None:
+        require(time.monotonic() < deadline, "Continuous reader allowance exhausted.")
+    return state
+
+
+def _continuous_reader_deadline(paths: MorpionBootstrapPaths, job: JobRecord) -> float:
+    """Cap the immutable admission clock by the original managed launch allowance."""
+    from .continuous_lifecycle import remaining
+    from .continuous_publication import read_ref
+    from .managed_sessions import _number, _read, _reader
+
+    budget = remaining(paths, job)
+    end = _remaining(read_ref(paths, budget.clock_evidence))
+    launch = _read(paths, read_ref(paths, job.payload.managed_launch), _reader())
+    allowance = min(
+        _number(launch["authorized_seconds"]) - _number(launch["consumed_seconds"]),
+        _number(launch["supervisor_limit_seconds"]),
+    )
+    deadline = min(end, _number(launch["started_monotonic_s"]) + allowance)
+    require(time.monotonic() < deadline, "Continuous reader allowance exhausted.")
+    return deadline
+
+
+@contextmanager
+def borrow_continuous(
+    paths: MorpionBootstrapPaths,
+    args: MorpionBootstrapArgs,
+    job: JobRecord,
+    ready: ReadyRecord,
+) -> Iterator[tuple[Path, _PreparedInputs]]:
+    """Wait outside Growth, then retain exclusive stable/native leases for this job."""
+    _continuous_reader_state(paths, job, ready)
+    deadline = _continuous_reader_deadline(paths, job)
     key = ready.payload.accepted_dataset.descriptor_sha256
     recipe = dataset_recipe(args, storage.directory(paths, key) / "rows.jsonl")
     require(recipe is not None, "Continuous preparation recipe unavailable.")
     assert recipe is not None
-    with storage.lease(paths, key) as root:
-        state = load_bootstrap_run_state(paths.run_state_path)
+    with storage.lease(paths, key, deadline=deadline) as root:
+        state = _continuous_reader_state(paths, job, ready, deadline=deadline)
         record = storage.entries(state).get(key)
         require(
             record is not None and record["phase"] == "COMPLETE",
@@ -565,7 +607,9 @@ def borrow_continuous(
         )
         from .continuous_inputs import recover_before_consumption
 
-        recover_before_consumption(paths, args, job, ready, record, root)
+        recover_before_consumption(
+            paths, args, job, ready, record, root, deadline=deadline
+        )
         require(
             ready_record(paths, state, record, producer) == ready,
             "Consumed Ready bytes changed.",
@@ -584,14 +628,14 @@ def borrow_continuous(
             seed=recipe.seed,
             max_rows=recipe.max_rows,
             row_chunk_size=recipe.row_chunk_size,
-            deadline=time.monotonic(),
+            deadline=deadline,
             existing_only=True,
         ) as prepared:
             require(prepared is not None, "Missing authoritative native inputs.")
             assert prepared is not None
             from .continuous_inputs import consumed_owned
 
-            consumed_owned(paths, job, ready)
+            consumed_owned(paths, job, ready, deadline=deadline)
             yield rows, prepared
             require(
                 ready_record(paths, state, record, producer) == ready,
