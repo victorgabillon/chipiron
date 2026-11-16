@@ -5,6 +5,7 @@ import importlib.util
 import os
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from collections import Counter
 from datetime import UTC, datetime, timedelta
@@ -210,6 +211,7 @@ def evidence() -> dict[str, Any]:
             "parents": [{"sha": p} for p in source["parents"]],
         },
         "artifacts": artifacts,
+        "head_prs": [{"number": 17}],
         "repository_id": 19,
         "workflow_id": 23,
         "now": now,
@@ -222,6 +224,12 @@ def test_distinct_commit_same_reviewed_merge_tree_reuses(
     """Source equivalence, not commit equality, permits a normal reviewed merge."""
     assert evidence["main"]["candidate"] != evidence["q"]["source"]["candidate"]
     gate.check_reuse(**evidence)
+    evidence["run"]["pull_requests"] = []
+    gate.check_reuse(**evidence)
+    for association in ([], [{"number": 18}], [{"number": 17}, {"number": 18}]):
+        evidence["head_prs"] = association
+        with pytest.raises(ValueError, match="tested-head PR association"):
+            gate.check_reuse(**evidence)
 
 
 @pytest.mark.parametrize(
@@ -508,6 +516,20 @@ def test_workflow_preserves_resource_selection_identity_and_aggregate_contracts(
     }
     assert "schedule" in workflow["on"]
     assert workflow["permissions"] == {"contents": "read"}
+    assert "pull_request_target" not in workflow["on"]
+    assert jobs["scope"]["permissions"] == {
+        "contents": "read",
+        "actions": "read",
+        "pull-requests": "read",
+    }
+    assert jobs["full-evidence"]["permissions"] == {
+        "contents": "read",
+        "actions": "read",
+    }
+    for name, definition in jobs.items():
+        if name not in {"scope", "full-evidence"}:
+            assert "permissions" not in definition
+        assert set(definition.get("permissions", {}).values()) <= {"read"}
 
 
 @pytest.mark.parametrize("mode", ["full", "docs", "reuse"])
@@ -720,6 +742,7 @@ def test_api_discovery_reuses_only_authenticated_successful_candidate(
     monkeypatch.setattr(gate, "api", api)
     monkeypatch.setattr(gate, "download_json", lambda value: q)
     evidence["run"]["updated_at"] = datetime.now(UTC).isoformat()
+    evidence["run"]["pull_requests"] = []  # Real post-merge GitHub response.
     result = gate.try_reuse(evidence["main"])
     assert (
         result["mode"] == "reuse"
@@ -765,3 +788,34 @@ def test_download_checks_github_archive_digest_before_reading_json(
     artifact["digest"] = "sha256:" + "0" * 64
     with pytest.raises(ValueError, match="digest mismatch"):
         gate.download_json(artifact)
+
+
+@pytest.mark.parametrize("fault", ["forbidden", "missing_digest", "expired_artifact"])
+def test_unavailable_authenticated_reuse_routes_to_full(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fault: str
+) -> None:
+    """Denied read permissions or unavailable artifact evidence never skip FULL."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(gate, "git", lambda *args: "a" * 40)
+    monkeypatch.setattr(gate, "source_identity", dict)
+
+    def unavailable(source: dict[str, Any]) -> dict[str, Any]:
+        if fault == "forbidden":
+            raise urllib.error.HTTPError(
+                "https://api.github.com/fixture", 403, "Forbidden", None, None
+            )
+        if fault == "missing_digest":
+            raise KeyError("digest")
+        message = "Expired scientific artifact"
+        raise ValueError(message)
+
+    monkeypatch.setattr(gate, "try_reuse", unavailable)
+    gate.route()
+    receipt = gate.read_json(tmp_path / ".ci-reports/validation-route.json")
+    assert receipt["mode"] == "full"
+    assert receipt["tests_executed_by_scope_job"] is False
+    assert (tmp_path / "output").read_text() == "mode=full\n"

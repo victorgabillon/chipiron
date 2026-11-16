@@ -431,6 +431,7 @@ def check_reuse(
     q: dict[str, Any],
     tested: dict[str, Any],
     artifacts: list[dict[str, Any]],
+    head_prs: list[dict[str, Any]],
     *,
     repository_id: int,
     workflow_id: int,
@@ -459,7 +460,13 @@ def check_reuse(
         "Untrusted/failed workflow",
     )
     require(
-        [p["number"] for p in run["pull_requests"]] == [pr["number"]],
+        [p["number"] for p in head_prs] == [pr["number"]],
+        "Ambiguous tested-head PR association",
+    )
+    # GitHub can clear a run's PR list after merge. The authenticated head-commit
+    # association remains mandatory; a populated, conflicting run list is refused.
+    require(
+        [p["number"] for p in run["pull_requests"]] in ([], [pr["number"]]),
         "Ambiguous PR provenance",
     )
     age = now - datetime.fromisoformat(run["updated_at"].replace("Z", "+00:00"))
@@ -575,6 +582,7 @@ def try_reuse(main: dict[str, Any]) -> dict[str, Any]:
     ]
     require(len(matching) == 1, "No unambiguous merged PR")
     pr = api(f"pulls/{matching[0]['number']}")
+    head_prs = api(f"commits/{pr['head']['sha']}/pulls?per_page=100")
     workflow = api("actions/workflows/ci.yaml")
     payload = api(
         f"actions/workflows/{workflow['id']}/runs?event=pull_request&status=success"
@@ -613,6 +621,7 @@ def try_reuse(main: dict[str, Any]) -> dict[str, Any]:
                 q,
                 tested,
                 artifacts,
+                head_prs,
                 repository_id=int(os.environ["GITHUB_REPOSITORY_ID"]),
                 workflow_id=workflow["id"],
                 now=datetime.now(UTC),

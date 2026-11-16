@@ -55,8 +55,10 @@ are established through the repository's read-only GitHub API and artifact bytes
 - A unique merged same-repository PR points to the actual main commit. It is a
   two-parent merge, with the tested head and base parents in the same order.
 - The successful run is this repository's `ci.yaml` pull-request workflow, with
-  the matching head, one associated PR, exact attempt, and all required job names
-  and successful conclusions. Cancelled/partial/skipped validation is rejected.
+  the matching head, exact attempt, and all required job names and successful
+  conclusions. The tested head commit must have exactly one associated PR through
+  GitHub's commit API. GitHub may clear a run's PR list after merge; a populated
+  conflicting run list is rejected. Cancelled/partial/skipped validation is rejected.
 - The recorded PR candidate commit is verified through GitHub's Git commit API.
   Its entire tree, parents and explicit source/test/build/configuration Git objects
   equal main's. Commit SHA equality is **not** required: GitHub can create a new
