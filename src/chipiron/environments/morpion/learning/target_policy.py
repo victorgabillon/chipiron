@@ -5,6 +5,10 @@ import math
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
+from chipiron.environments.morpion.bootstrap.sharded_training_v2_contract import (
+    require_historical_source_policy,
+)
+
 from .target_confidence import (
     CONFIDENCE_CONTRACT,
     SAFE_FAMILY_POLICIES,
@@ -69,6 +73,7 @@ def target_policy_metadata(source: TargetSource | None) -> dict[str, str]:
 
 def training_target_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     """Carry explicit Dataset semantics into the existing Training/bundle metadata."""
+    require_historical_source_policy(metadata)
     source = metadata.get("dataset_target_source")
     if source is None:
         return {}
@@ -148,6 +153,7 @@ def validate_model_target_provenance(
     allow_implicit_legacy: bool = False,
 ) -> None:
     """Validate a trained model's own semantics, independently of comparison targets."""
+    require_historical_source_policy(metadata)
     validate_model_target_kind(kind, metadata)
     policy = metadata.get("dataset_target_policy")
     if not declared and not (allow_implicit_legacy and policy is None):

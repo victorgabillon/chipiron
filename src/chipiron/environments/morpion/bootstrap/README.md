@@ -611,6 +611,29 @@ chipiron-bootstrap dashboard --work-dir /path/to/run
 Enjoy exploring Morpion 🚀
 
 
+### B4 provenance contract status (C2)
+
+`prediction_lineage.py` defines a structural contract for a future capsule-owned
+direct-origin sidecar: interned write events, proven default/birth coverage,
+sparse node overrides and exact patch dispositions bound to existing receipts.
+It does not produce or authenticate Growth write evidence. Matching hashes and
+successful structural validation do not authorize scientific admission.
+Mixed evaluator origins pass this contract intentionally. Its optional homogeneous
+claim check only rejects false declarations; it is not an activation or admission
+prerequisite. The map stores current origins, not per-node history.
+
+The reserved mixed-source scientific discriminator is rejected by current
+readers. Dataset and model-target boundaries also reject B4 policy/lineage fields
+attached to historical provenance, including legacy-target fallback attempts.
+Historical sources and `backup_value` retain their original identities; absence
+of new lineage is not evidence that their predictions were fully refreshed.
+C3 write stamping/sealing, C4 rolling traversal, C5 mixed admission and C6
+progressive activation remain unimplemented. Training acceptance and activation
+requests do not activate a model. The existing full-refresh activation policy,
+single Reevaluation worker and Growth publication owner are unchanged.
+Full refresh is the current conservative implementation policy, not a mathematical
+requirement for progressive activation, Growth or mixed-source scientific use.
+
 ### Admitted Training coordination
 
 The scientific launcher's Training worker reaches `training_publication.run_training`,

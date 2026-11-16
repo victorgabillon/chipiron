@@ -13,6 +13,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
+from chipiron.environments.morpion.bootstrap.sharded_training_v2_contract import (
+    require_historical_source_policy,
+)
+
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
 
@@ -85,6 +89,7 @@ class DatasetConfidenceContext:
 
     def __post_init__(self) -> None:
         """Require an explicit scientific v2 identity, including its producer."""
+        require_historical_source_policy(self.provenance)
         generation = self.provenance.get("source_generation")
         if (
             not isinstance(generation, int)
@@ -345,6 +350,7 @@ def validate_confident_row(
 
 def dataset_format_version(metadata: Mapping[str, Any]) -> int:
     """Identify new confidence artifacts explicitly, with frozen v1 as default."""
+    require_historical_source_policy(metadata)
     if metadata.get("dataset_target_source") is not None and (
         metadata["dataset_target_source"] not in ("effective", "tree", "direct")
         or metadata.get("dataset_target_contract") != TARGET_CONTRACT
