@@ -485,6 +485,27 @@ def test_reserved_cold_cutover_faults(
     assert grown.cycle_index > after.cycle_index
 
 
+def activation_fixture(root: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Any]:
+    """Use a reachable branching position to fit real activation into the launch cap."""
+    from atomheart.games.morpion import MorpionDynamics, initial_state
+
+    from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
+
+    # A reachable-position lifecycle fixture keeps real terminal targets and
+    # branching Growth inside the unchanged 60-second managed launch. Replaying
+    # this prefix avoids expensive initial full-Greek-cross rollout expansion.
+    dynamics = MorpionDynamics()
+    position = initial_state()
+    for _ in range(30):
+        position = dynamics.step(
+            position, dynamics.all_legal_actions(position)[0]
+        ).next_state
+    assert len(dynamics.all_legal_actions(position)) > 1
+    with monkeypatch.context() as start:
+        start.setattr(runner_module, "initial_state", lambda: position)
+        return fixture(root, proof=True, extra_steps=64)
+
+
 @pytest.mark.usefixtures("continuous")
 @pytest.mark.parametrize("boundary", ["extraction", "cohort-acceptance"])
 def test_admitted_work_crosses_real_activation(
@@ -493,9 +514,7 @@ def test_admitted_work_crosses_real_activation(
     boundary: str,
 ) -> None:
     """An admitted old teacher or cohort survives one real current-head cold activation."""
-    # Long bounded rollouts reach real terminal targets without solving the root.
-    # The one-action endgame cannot publish a second Growth source.
-    args, paths = fixture(tmp_path / "run", proof=True, extra_steps=64)
+    args, paths = activation_fixture(tmp_path / "run", monkeypatch)
     first = learn(args, paths)
     promotion.service(paths, args, ttl_seconds=60, owner=None)
     activate = promotion.activate_at_boundary
@@ -556,13 +575,15 @@ def test_admitted_work_crosses_real_activation(
 
 
 @pytest.mark.usefixtures("continuous")
-def test_fresh_cold_activation_then_nonzero_growth(tmp_path: Path) -> None:
+def test_fresh_cold_activation_then_nonzero_growth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """An unsolved fresh tree continues the exact cold checkpoint/RNG after promotion."""
     from anemone.checkpoints.rng_state import rollout_random_generator
 
     from tests.environments.test_morpion_committed_evaluator_restore import fingerprint
 
-    args, paths = fixture(tmp_path / "run", proof=True, extra_steps=64)
+    args, paths = activation_fixture(tmp_path / "run", monkeypatch)
     activated = False
     for _ in range(2):
         learn(args, paths)

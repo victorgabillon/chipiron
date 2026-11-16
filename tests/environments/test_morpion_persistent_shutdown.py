@@ -56,10 +56,17 @@ def _owned_deadline(
     # Training, Growth, neural inference or scientific checkpoint is invoked.
     supervisor.write_text("""#!/usr/bin/env bash
 set -eu
+mkfifo "$MORPION_WORK_DIR/worker-ready"
 trap 'kill -TERM -- "-$worker" 2>/dev/null || true; wait "$worker" 2>/dev/null || true; exit 0' TERM
 (
   if [[ -n "${MORPION_SUPERVISOR_SHUTDOWN_FD:-}" ]]; then exec {MORPION_SUPERVISOR_SHUTDOWN_FD}>&-; fi
-  exec setsid "$PYTHON_BIN" -I -B -c 'import time; time.sleep(30)' --pipeline-stage training_worker --persistent-worker
+  exec setsid "$PYTHON_BIN" -I -B -c '
+import os,time
+from pathlib import Path
+with (Path(os.environ["MORPION_WORK_DIR"])/"worker-ready").open("w") as ready:
+    ready.write(str(os.getpid()))
+time.sleep(30)
+' --pipeline-stage training_worker --persistent-worker
 ) &
 worker=$!
 export TEST_WORKER_PID=$worker
@@ -68,7 +75,11 @@ import os,json,time
 from pathlib import Path
 root=Path(os.environ["MORPION_WORK_DIR"]); now=float(os.environ["TEST_NOW"])
 def fields(pid):return Path(f"/proc/{pid}/stat").read_text().rsplit(") ",1)[1].split()
-pid=int(os.environ["TEST_WORKER_PID"]); wf=fields(pid); sp=os.getppid(); sf=fields(sp)
+pid=int(os.environ["TEST_WORKER_PID"])
+# The worker itself acknowledges exec/setsid; sampling $! alone races setsid.
+with (root/"worker-ready").open() as ready:assert ready.read()==str(pid)
+wf=fields(pid); assert int(wf[3])==pid
+sp=os.getppid(); sf=fields(sp)
 common={"monitor_pid":int(os.environ["MORPION_RESOURCE_MONITOR_PID"]),"monitor_start_ticks":os.environ["MORPION_RESOURCE_MONITOR_START_TICKS"],"boot":Path("/proc/sys/kernel/random/boot_id").read_text().strip(),"pid_namespace":os.readlink("/proc/self/ns/pid")}
 intent=common|{"schema_version":1,"monitor_session":os.environ.get("MORPION_RESOURCE_MONITOR_SESSION","baseline-fixture"),"supervisor_pid":sp,"supervisor_start_ticks":sf[19],"supervisor_session":int(sf[3]),"reason":"supervisor_deadline","requested_monotonic_s":now-.5,"limit_seconds":int(os.environ["MORPION_CLUSTER_MAX_SECONDS"]),"grace_seconds":int(os.environ["MORPION_CLUSTER_STOP_GRACE_SECONDS"])}
 if "MORPION_SUPERVISOR_SHUTDOWN_FD" in os.environ:os.write(int(os.environ["MORPION_SUPERVISOR_SHUTDOWN_FD"]),json.dumps(intent).encode()+b"\\n")
@@ -76,7 +87,7 @@ if "MORPION_SUPERVISOR_SHUTDOWN_FD" in os.environ:os.write(int(os.environ["MORPI
 identity=common|{"pid":pid,"start_ticks":wf[19],"session":int(wf[3])}
 path=root/"pipeline/worker_processes/training_worker.json";path.parent.mkdir(parents=True,exist_ok=True)
 path.write_text(json.dumps({"schema_version":1,"worker":"training_worker","identity":identity,"phase":os.environ["TEST_PHASE"],"heartbeat_monotonic_s":now-.1,"job_started_monotonic_s":now-float(os.environ["TEST_JOB_AGE"]),"exit_code":int(os.environ["TEST_EXIT"])}))
-(root/"ready").write_text(str(pid))
+(root/"ready.tmp").write_text(str(pid)); (root/"ready.tmp").replace(root/"ready")
 '
 wait "$worker" || true
 """)
@@ -97,6 +108,8 @@ wait "$worker" || true
             real_sleep(0.01)
         assert (tmp_path / "ready").exists()
         clock[0] = base + elapsed
+        pid = int((tmp_path / "ready").read_text())
+        assert status.read_job_status(tmp_path, pid, 7199.5).record is not None
         if interrupt:
             handler = signal.getsignal(signal.SIGINT)
             assert callable(handler)
