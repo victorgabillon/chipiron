@@ -26,6 +26,7 @@ from .sharded_training_v2_contract import (
     CLOSED_LAYOUT,
     CONTRACT,
     KIND,
+    MIXED_SOURCE_CONTRACT,
     VERSION,
 )
 
@@ -865,6 +866,22 @@ def validate_committed_identity(
 ) -> None:
     """Bind managed reader sources to the sealed checkpoint/scientific identity."""
     identity = record["scientific_identity"]
+    mixed = identity.get("scientific_contract") == MIXED_SOURCE_CONTRACT
+    if mixed:
+        from chipiron.environments.morpion.learning.mixed_source import (
+            SOURCE_POLICY,
+            validate_mixed_reference,
+        )
+
+        validate_mixed_reference(identity.get("prediction_lineage"))
+        require(
+            record.get("publication_version") == 3
+            and identity.get("source_policy") == SOURCE_POLICY
+            and identity["prediction_lineage"]
+            == record.get("prediction_lineage")
+            == descriptor.get("prediction_lineage"),
+            "Mixed scientific identity lacks committed write evidence.",
+        )
     path = inside(work_dir, record["tree_snapshot_path"])
     require(
         path.is_relative_to(root)
@@ -880,7 +897,7 @@ def validate_committed_identity(
         == (
             CLOSED_KIND if record.get("publication_version") == 3 else KIND,
             VERSION,
-            CONTRACT,
+            MIXED_SOURCE_CONTRACT if mixed else CONTRACT,
         ),
         "Unsupported committed scientific identity.",
     )
@@ -888,6 +905,13 @@ def validate_committed_identity(
         # The seal binds a descriptor already checked by the scientific reader.
         # Compare its declared hashes to this freshly verified inventory.
         header = read_object(path)
+        if mixed:
+            require(
+                header.get("scientific_contract") == MIXED_SOURCE_CONTRACT
+                and header.get("source_policy") == identity["source_policy"]
+                and header.get("prediction_lineage") == identity["prediction_lineage"],
+                "Mixed source header differs from committed identity.",
+            )
         require(
             header["generation"] == record["generation"]
             and header["producer"] == identity["producer"],

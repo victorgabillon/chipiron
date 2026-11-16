@@ -116,6 +116,7 @@ def initialize_training(
     device: torch.device,
     learning_rate: float,
     dataset_target_policy: dict[str, Any] | None = None,
+    dataset_source_binding: dict[str, str] | None = None,
 ) -> tuple[MorpionRegressor, torch.optim.Adam, dict[str, Any]]:
     """Load strict accepted weights before creating an optimizer; never fall back."""
     provenance: dict[str, Any] = {}
@@ -184,6 +185,11 @@ def initialize_training(
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     if continuation is not None:
+        if dataset_source_binding is not None:
+            provenance["dataset_source_binding"] = dict(dataset_source_binding)
+            provenance["parent_dataset_source_binding"] = parent_metadata.get(
+                "dataset_source_binding"
+            )
         if dataset_target_policy is not None:
             provenance["dataset_target_policy"] = dict(dataset_target_policy)
         inherits = (

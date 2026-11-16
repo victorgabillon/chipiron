@@ -14,8 +14,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 from chipiron.environments.morpion.bootstrap.sharded_training_v2_contract import (
-    require_historical_source_policy,
+    MIXED_SOURCE_CONTRACT,
 )
+
+from .mixed_source import MixedDatasetSource, selected_origin, validate_source_policy
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingNodeSnapshot
@@ -86,10 +88,17 @@ class DatasetConfidenceContext:
 
     load_contract: Callable[[str], Mapping[str, Any]]
     provenance: Mapping[str, Any]
+    mixed_source: MixedDatasetSource | None = None
 
     def __post_init__(self) -> None:
         """Require an explicit scientific v2 identity, including its producer."""
-        require_historical_source_policy(self.provenance)
+        mixed = validate_source_policy(self.provenance)
+        if mixed and (
+            self.mixed_source is None or self.mixed_source.provenance != self.provenance
+        ):
+            raise DatasetConfidenceError(
+                "B4 extraction requires authenticated Growth origins"
+            )
         generation = self.provenance.get("source_generation")
         if (
             not isinstance(generation, int)
@@ -114,7 +123,8 @@ class DatasetConfidenceContext:
                 )
             )
             or self.provenance.get("source_format_version") != 2
-            or self.provenance.get("scientific_contract") != SCIENTIFIC_CONTRACT
+            or self.provenance.get("scientific_contract")
+            != (MIXED_SOURCE_CONTRACT if mixed else SCIENTIFIC_CONTRACT)
             or not isinstance(self.provenance.get("producer"), dict)
         ):
             raise DatasetConfidenceError(
@@ -181,7 +191,26 @@ class DatasetConfidenceContext:
                     raise DatasetConfidenceError(
                         "Effective source and Value contract disagree"
                     )
+        origin_metadata = {}
+        if self.mixed_source is not None:
+            if not explicit:
+                raise DatasetConfidenceError(
+                    "Mixed sources require explicit target selection"
+                )
+            direct_origin = self.mixed_source.direct_origin(
+                node.node_id, certainties.get("direct")
+            )
+            origin_metadata = {
+                "direct_prediction_origin": direct_origin,
+                "raw_target_origin": selected_origin(
+                    slot=slot,
+                    effective_source=node.effective_value_source,
+                    certainty=certainty,
+                    direct_origin=direct_origin,
+                ),
+            }
         return {
+            **origin_metadata,
             "contract": CONFIDENCE_CONTRACT,
             "node_is_exact": node.is_exact,
             "node_is_terminal": node.is_terminal,
@@ -332,6 +361,41 @@ def validate_confident_row(
                 raise DatasetConfidenceError(
                     "Effective source and Value contract disagree"
                 )
+    # The envelope is validated once by dataset_format_version. Do not reparse
+    # the interned origin table for every row of a large Dataset.
+    provenance = (dataset_metadata or {}).get("scientific_source_provenance", {})
+    if (
+        isinstance(provenance, Mapping)
+        and provenance.get("scientific_contract") == MIXED_SOURCE_CONTRACT
+    ):
+        direct_origin = confidence.get("direct_prediction_origin")
+        if (
+            "direct_prediction_origin" not in confidence
+            or (
+                certainties.get("direct") == "ESTIMATE"
+                and (
+                    type(direct_origin) is not int
+                    or not 0 <= direct_origin < len(provenance["prediction_origins"])
+                    or provenance["direct_origin_counts"][direct_origin] < 1
+                )
+            )
+            or (certainties.get("direct") != "ESTIMATE" and direct_origin is not None)
+        ):
+            raise DatasetConfidenceError("Invalid mixed direct prediction origin")
+        expected_origin = selected_origin(
+            slot=slot,
+            effective_source=(row_metadata or {}).get("effective_value_source", ""),
+            certainty=raw_certainty,
+            direct_origin=direct_origin,
+        )
+        if confidence.get("raw_target_origin") != expected_origin:
+            raise DatasetConfidenceError(
+                "Selected target contradicts mixed origin semantics"
+            )
+    elif "direct_prediction_origin" in confidence or "raw_target_origin" in confidence:
+        raise DatasetConfidenceError(
+            "Mixed row origins require explicit source provenance"
+        )
     rule = confidence["training_target_source"]
     if rule == "raw_target":
         if value != raw_value or certainty != raw_certainty:
@@ -350,7 +414,14 @@ def validate_confident_row(
 
 def dataset_format_version(metadata: Mapping[str, Any]) -> int:
     """Identify new confidence artifacts explicitly, with frozen v1 as default."""
-    require_historical_source_policy(metadata)
+    mixed = validate_source_policy(metadata)
+    if mixed and (
+        metadata.get("dataset_target_source") not in ("effective", "tree", "direct")
+        or metadata.get("dataset_version") != 2
+    ):
+        raise DatasetConfidenceError(
+            "Mixed sources require explicit scientific Dataset targets"
+        )
     if metadata.get("dataset_target_source") is not None and (
         metadata["dataset_target_source"] not in ("effective", "tree", "direct")
         or metadata.get("dataset_target_contract") != TARGET_CONTRACT

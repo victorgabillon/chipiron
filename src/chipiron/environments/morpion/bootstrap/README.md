@@ -903,3 +903,40 @@ models and history remain roots. Accepted Training replay does not need retired
 operational tensors. Managed close suspends unfinished preparation and releases completed input
 consumption after existing native quiescence checks; original allowances remain. Fork checks reject unsettled
 operations, and fresh fork genesis does not import this operational authority.
+
+
+### Mixed-source Dataset and Training (C5; C3/C6 integration required)
+
+The explicit `mixed_search_targets_v1` source policy uses the C2
+`anemone-values-mixed-direct-lineage-morpion-1` discriminator on both the closed
+scientific header and committed scientific identity. It binds C3's compact
+current-origin sidecar and separate actual-write evidence. Historical headers,
+Dataset versions, confidence rules and target selection keep their existing meaning.
+
+Mixed scientific snapshot readers call C3's `read_committed_prediction_origins(work_dir, record)`
+and check the complete scientific creation/direct-estimate inventory. Missing C3,
+uncommitted sources, missing evidence and contradictory per-node assignments refuse.
+A caller-supplied origin set or a model activation request is never authentication.
+The serialized interned origin distribution describes all direct predictions in
+the source, not just the extracted rows or progress through a rolling pass.
+
+Explicit direct targets carry their direct write origin; tree and tree-derived
+effective targets describe derived search values of the sealed snapshot. Direct
+and effective certificates retain their native certainty and acquire no neural
+origin. Family adjustment preserves raw provenance and its existing heuristic
+certainty rules. No scalar, split, optimizer, schedule or scientific recipe changes.
+
+Existing Dataset publication and recovery compare mixed row contracts/origins to
+that authenticated source. Existing extraction and cache identities include the
+source metadata. Training records each mixed round's Dataset/source binding while
+retaining candidate-specific parent bundle, weight and Adam checks. A later source
+may have different proven model origins without requiring evaluator activation or
+forcing every node to the newest model. Target-policy compatibility still applies.
+
+`bind_mixed_closed_source` is a private publication handoff, not an opt-in switch:
+C6 must wire it after C3 prepares actual write evidence and before closed-export
+validation and the existing capsule seal/commit. C5 introduces no activation mode,
+worker, Training implementation or fabricated production evidence. Before enabling
+this path, C6 must validate actual C3 Growth writes through mixed Dataset creation,
+acceptance/recovery and Training continuation, including crash/retry boundaries
+and the C4 rolling-source retention contract.

@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader, Subset
 
 from chipiron.environments.morpion.learning import load_morpion_supervised_rows_metadata
 from chipiron.environments.morpion.learning.target_policy import (
+    training_source_binding,
     training_target_metadata,
 )
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
@@ -217,6 +218,7 @@ def _train_morpion_regressor(
         device=device,
         learning_rate=args.learning_rate,
         dataset_target_policy=target_metadata.get("dataset_target_policy"),
+        dataset_source_binding=training_source_binding(target_metadata),
     )
     log_training_device(
         model=model,
@@ -496,6 +498,7 @@ def _train_morpion_regressor_streaming(
         device=device,
         learning_rate=training_args.learning_rate,
         dataset_target_policy=target_metadata.get("dataset_target_policy"),
+        dataset_source_binding=training_source_binding(target_metadata),
     )
     log_training_device(
         model=model,

@@ -57,6 +57,7 @@ from .sharded_training_v2_contract import (
     CLOSED_KIND,
     CLOSED_LAYOUT,
     CONTRACT,
+    MIXED_SOURCE_CONTRACT,
     VERSION,
     closed_envelope,
 )
@@ -414,10 +415,36 @@ def load_closed_scientific_snapshot(path: Path) -> ScientificGeneration:
         })
         _require(_sha(path) == manifest_hash, "closed manifest changed")
         snapshot = training_tree_snapshot_from_dict({**info, "nodes": rows})
+        from chipiron.environments.morpion.learning.mixed_source import (
+            validate_tracked_historical_source,
+        )
+
+        mixed_source = None
+        if header["scientific_contract"] == MIXED_SOURCE_CONTRACT:
+            from chipiron.environments.morpion.learning.mixed_source import (
+                read_mixed_dataset_source,
+            )
+
+            mixed_source = read_mixed_dataset_source(path, header)
+            _require(
+                mixed_source.creation_generations
+                == {key: row["creation_generation"] for key, row in records.items()},
+                "Mixed scientific creation inventory differs from Growth evidence",
+            )
+            for node_id, contract in contracts.items():
+                mixed_source.direct_origin(node_id, contract["certainties"]["direct"])
+            _require(
+                set(mixed_source.current) <= contracts.keys(),
+                "Origin absent from scientific inventory",
+            )
+        else:
+            validate_tracked_historical_source(path, header)
         return ScientificGeneration(
             snapshot,
             contracts,
-            {
+            dict(mixed_source.provenance)
+            if mixed_source is not None
+            else {
                 "source_format_kind": CLOSED_KIND,
                 "source_format_version": VERSION,
                 "scientific_contract": CONTRACT,
@@ -426,4 +453,5 @@ def load_closed_scientific_snapshot(path: Path) -> ScientificGeneration:
                 "storage_layout_version": CLOSED_LAYOUT,
             },
             {key: row["creation_generation"] for key, row in records.items()},
+            mixed_source,
         )
