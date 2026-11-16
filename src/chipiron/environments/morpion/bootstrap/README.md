@@ -1,6 +1,6 @@
 # Morpion Bootstrap Operator
 
-> **Current implementation map (2026-11-16, J5-integrated main `2a5925be`):**
+> **Current implementation map (2026-11-16, J5/B6-integrated main `7d128fa8`):**
 > Before changing worker, reevaluation, activation, model or publication behavior, read the
 > [source-verified Morpion bootstrap architecture map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md).
 > It distinguishes the legacy `artifact_pipeline` launcher from the current
@@ -18,7 +18,9 @@
 > shutdown and fixed-deadline prepared-Dataset lease waits through the existing
 > owners. See the [continuous coordination contract](../../../../../docs/morpion_continuous_coordination.md).
 > Continuous scheduling remains opt-in/default-off. B4 progressive activation
-> is research only; B6 Anemone 0.4.1 adoption is pending integration.
+> is research only. B6 Anemone 0.4.1 and its current scientific producer
+> requirement are integrated through #132; historical 0.4.0 evidence and
+> environments retain their original identities.
 
 Monitor an existing Morpion Solitaire workspace, inspect its records and models,
 and deliberately launch its prepared experiment.

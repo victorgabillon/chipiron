@@ -1,7 +1,7 @@
 # Morpion bootstrap: current implementation and ownership map
 
 > **Source-reviewed snapshot:** 2026-11-16, Chipiron protected `main`
-> `2a5925be3e70b3eb736bb919c050c1aaa32a30f1` (includes PR #127 and J5, #128–#130).
+> `7d128fa83809b3c9d29b15955d2c8f2f89065b14` (includes PR #127, J5 #128–#130 and B6 #132).
 > This is an index of **implemented contracts**, not a new design, a readiness
 > certification, or permission to enable experimental policies. Read the source
 > at the pinned commit for exact behavior. Later changes must update this map.
@@ -18,7 +18,7 @@ features that were incomplete *at their original commit*. This page records the
 current source-level boundaries to prevent inventing a second implementation.
 
 Review coverage: the current source tree contains 185 Python modules under
-`src/chipiron/environments/morpion/bootstrap/` and 194 Morpion-named test/helper
+`src/chipiron/environments/morpion/bootstrap/` and 195 Morpion-named test/helper
 modules under `tests/environments/`. The entrypoints, contracts and
 cross-boundary files named below were inspected. This is **not** a line-by-line
 verification of every branch in those modules or a fresh execution of all
@@ -374,20 +374,25 @@ that every code path in the whole repository has been exhaustively verified.
 
 ## Version/status fence
 
-J5.1/J5.2/J5.3 merged in order through #128 → #129 → #130. The resulting main
-is the source commit above, with tree `ad49b60015209adb79544c46fe2420cdc23846b0`.
-Its [post-merge CI](https://github.com/victorgabillon/chipiron/actions/runs/43878496866)
+J5.1/J5.2/J5.3 merged in order through #128 → #129 → #130 at
+`2a5925be3e70b3eb736bb919c050c1aaa32a30f1`, before the B6 integration.
+That J5 baseline's [post-merge CI](https://github.com/victorgabillon/chipiron/actions/runs/43878496866)
 passed FULL, FAST/PR, integration, quality, strict static and aggregate gates.
 This documentation refresh did not rerun those suites or a scientific pilot.
 Earlier stacked-branch pilot results retain their original source identities;
 they are not new experiments on this documentation candidate.
 
-**B6 Anemone 0.4.1 adoption is pending integration.** This source still pins
-`algorhino-anemone==0.4.0` in [`pyproject.toml`](../../pyproject.toml).
-Local B6 qualification, including its lease-fixture timing correction, does not
-change main's dependency or tests. Recheck the actual integrated pin and source
-before attributing 0.4.1 behavior to Chipiron. B4 scientific provenance and
-progressive activation remain proposed research, not enabled functionality.
+**B6 Anemone 0.4.1 is integrated through PR #132.** The current source baseline
+above has tree `79038ddfc2c286c22c8db54889269b11017885c7` and pins
+`algorhino-anemone==0.4.1` in [`pyproject.toml`](../../pyproject.toml).
+The current scientific producer requires Anemone **0.4.1** in
+[`sharded_training_v2.py`](../../src/chipiron/environments/morpion/bootstrap/sharded_training_v2.py).
+Exact producer, evaluator and configuration checks still apply; this is not a
+checkpoint migration. Historical 0.4.0 evidence, frozen contracts and experiment
+environments retain their original identities. See the
+[scientific dependency contract](../testing.md).
+B4 scientific provenance and progressive activation remain proposed research,
+not enabled functionality.
 
 Historical research reports and the September canonicalization audit retain
 their dated/source-pinned claims. Their old branch, launch and unimplemented-work
