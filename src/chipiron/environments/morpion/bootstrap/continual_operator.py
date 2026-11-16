@@ -457,6 +457,8 @@ def _run_monitored(
     process: subprocess.Popen[bytes] | None = None
     started = time.monotonic()
     reason = "supervisor_exit"
+    admission_closed = False
+    closure_deadline: float | None = None
     peaks = {"group_rss_mb": 0.0, "workspace_mb": 0.0, "scratch_mb": 0.0}
     minimum = {"available_ram_mb": float("inf"), "free_disk_mb": float("inf")}
     owned_groups: set[int] = set()
@@ -581,7 +583,7 @@ def _run_monitored(
         return None
 
     def record_decision(current: dict[str, Any], now: float) -> None:
-        nonlocal decision, control_failure
+        nonlocal decision, control_failure, admission_closed, closure_deadline
         if control_buffer:
             control_failure = "invalid_supervisor_shutdown"
         trigger = next(
@@ -622,8 +624,15 @@ def _run_monitored(
         }
         from .continuous_lifecycle import close_admission
 
-        close_admission(paths)
+        # Persist the original reason and decisive clock even if Growth owns its
+        # lease. ACK must not wait for a worker that needs supervisor shutdown.
         atomic_json(monitor / f"decision_{identifier}.json", decision)
+        closure_deadline = (
+            shutdown.deadline
+            if shutdown is not None
+            else now + policy.shutdown_grace_seconds
+        )
+        admission_closed = close_admission(paths)
         if control is not None and (
             shutdown is not None or control_failure is not None
         ):
@@ -1025,6 +1034,14 @@ def _run_monitored(
                                 os.killpg(group, signal.SIGKILL)
                         process.wait(timeout=5)
                     raise
+            if (
+                shutdown_confirmed
+                and not admission_closed
+                and closure_deadline is not None
+            ):
+                from .continuous_lifecycle import close_admission
+
+                admission_closed = close_admission(paths, deadline=closure_deadline)
             elapsed = consumed + time.monotonic() - started
             atomic_json(
                 usage_path,
@@ -1061,6 +1078,7 @@ def _run_monitored(
                     if process is None
                     else process.returncode,
                     "shutdown_confirmed": shutdown_confirmed,
+                    "admission_closed": admission_closed,
                     "decision": decision,
                     "shutdown_grace_expired": shutdown_grace_expired,
                     "cleanup_confirmed_monotonic_s": cleanup_confirmed_at,
@@ -1080,6 +1098,10 @@ def _run_monitored(
                 control.close()
             for number, handler in old_handlers.items():
                 signal.signal(number, handler)
+    require(
+        admission_closed,
+        "Continuous admission closure unconfirmed; managed completion remains uncertain.",
+    )
     require(
         not shutdown_grace_expired
         and not forced_group_cleanup
