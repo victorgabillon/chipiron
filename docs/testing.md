@@ -4,6 +4,20 @@ Use Python 3.14 and the published foundational releases pinned in `pyproject.tom
 Validate installed wheel origins and exact package bytes; a version string alone
 does not establish a scientific implementation identity.
 
+New scientific work requires `algorhino-anemone==0.4.1`. Its official wheel has
+SHA-256 `2d8b3e984a2ba3a5f663ee5ce91f9dc9c240d5cb86011b169c63405311482185`;
+the sdist has SHA-256
+`9ecedfcaa8313e7d8f98e6778bdd2560a5aa89ba985e939d2898d187a9f34f3a`.
+The release source is `96bf212444caed10aa2b025605786197c6089064`.
+Candidate CI verifies the exact installed package membership and file hashes.
+Scientific publication records the new dependency identity and retains the
+existing exact producer, evaluator, configuration and API identity checks.
+Old or mixed producers remain rejected; this is not a checkpoint migration.
+Keep historical 0.4.0 experiments with their original software environments.
+The propagation correction does not automatically repair stale checkpoints, and
+corrected priorities can change future trajectories. It changes neither target
+mathematics nor checkpoint schemas and does not enable progressive activation.
+
 ```bash
 make test-fast                 # representative science and real recovery, no coverage
 make test-pr                   # broader regression set, no coverage
