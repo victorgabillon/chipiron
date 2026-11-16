@@ -45,12 +45,16 @@ def args_from_config(
     """Forward every persisted scientific field; defaults cover diagnostics only."""
     runtime = asdict(config.runtime)
     dataset = asdict(config.dataset)
+    dataset["dataset_target_source"] = dataset.pop("target_source")
     dataset["dataset_family_prediction_blend"] = dataset.pop("family_prediction_blend")
     dataset["dataset_family_target_policy"] = dataset.pop("family_target_policy")
     return MorpionBootstrapArgs(
         work_dir=work_dir,
         **runtime,
         **dataset,
+        dataset_confidence_policy="selected_value_v2"
+        if config.dataset.target_source is not None
+        else "legacy_v1",
         search=config.search,
         evaluators_config=config.evaluators,
         validation_fraction=config.validation_fraction,

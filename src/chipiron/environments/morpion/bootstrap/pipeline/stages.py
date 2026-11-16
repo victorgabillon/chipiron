@@ -2135,6 +2135,11 @@ def _run_pipeline_dataset_stage(
         manifest_metadata["dataset_completed_at_utc"] = timestamp_utc
         manifest_metadata["dataset_rows"] = write_stats.row_count
         manifest_metadata["dataset_rows_bytes"] = rows_bytes
+        if args.dataset_target_source is not None:
+            manifest_metadata.update({
+                key: streaming_rows.metadata[key]
+                for key in ("dataset_target_source", "dataset_target_contract")
+            })
         if args.dataset_confidence_policy == "selected_value_v2":
             for key in (
                 "dataset_version",

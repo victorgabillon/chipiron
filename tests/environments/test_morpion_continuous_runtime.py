@@ -41,10 +41,15 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
+    from chipiron.environments.morpion.learning.target_policy import TargetSource
+
 
 @pytest.fixture
-def continuous(monitored: Any, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def continuous(
+    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> Iterator[None]:
     """Use real monitored identities and explicit shared preparation, without GPU changes."""
+    request.getfixturevalue("monitored")
     monkeypatch.setenv("CHIPIRON_SHARED_PREPARATION", "1")
     monkeypatch.delenv("CHIPIRON_SHARED_PREPARATION_REUSE", raising=False)
     monkeypatch.delenv("CHIPIRON_STATE_SPLIT_CACHE_DIR", raising=False)
@@ -73,7 +78,11 @@ def candidate_family() -> MorpionEvaluatorsConfig:
 
 
 def fixture(
-    root: Path, *, proof: bool = False, extra_steps: int = 2
+    root: Path,
+    *,
+    proof: bool = False,
+    extra_steps: int = 2,
+    target_source: TargetSource | None = None,
 ) -> tuple[Any, Any]:
     """Create fresh managed context4 with two supported tiny independent models."""
     args, paths = setup_continual(
@@ -84,6 +93,7 @@ def fixture(
         learning_schedule=Policy(),
         strict_execution=True,
         managed=True,
+        target_source=target_source,
         proof=proof,
         extra_steps=extra_steps,
     )
@@ -99,11 +109,12 @@ def fixture(
 
 @pytest.mark.fast
 @pytest.mark.usefixtures("continuous")
+@pytest.mark.parametrize("target_source", [None, "effective"])
 def test_real_two_round_own_adam_and_reserved_promotion(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target_source: TargetSource | None
 ) -> None:
     """Accept every candidate once, retain losing lineage, then compare separately."""
-    args, paths = fixture(tmp_path / "run")
+    args, paths = fixture(tmp_path / "run", target_source=target_source)
     previous = None
     previous_steps: dict[str, int] = {}
     for number in (1, 2):
@@ -138,6 +149,23 @@ def test_real_two_round_own_adam_and_reserved_promotion(
             else:
                 assert parent is None
             bundle = paths.work_dir / proposal["models"][name]["path"]
+            from chipiron.environments.morpion.players.evaluators.neural_networks.bundle import (
+                load_morpion_model_bundle,
+            )
+
+            _, _, manifest = load_morpion_model_bundle(bundle)
+            assert manifest.target_kind == (
+                "effective_value" if target_source else "backup_value"
+            )
+            if target_source:
+                assert (
+                    manifest.metadata["dataset_target_policy"]["source"]
+                    == target_source
+                )
+                assert (
+                    manifest.metadata["continuation"]["dataset_target_policy"]
+                    == manifest.metadata["dataset_target_policy"]
+                )
             adam = torch.load(
                 bundle / "optimizer.pt", map_location="cpu", weights_only=True
             )
@@ -239,5 +267,5 @@ def test_two_round_same_parent_numeric_reference(
     monkeypatch.setattr(
         cycle_training, "train_and_select_evaluators_streaming", compare
     )
-    test_real_two_round_own_adam_and_reserved_promotion(tmp_path, monkeypatch)
+    test_real_two_round_own_adam_and_reserved_promotion(tmp_path, monkeypatch, None)
     assert rounds == 2

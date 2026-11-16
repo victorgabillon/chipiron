@@ -8,6 +8,10 @@ from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
+from chipiron.environments.morpion.learning.target_policy import (
+    TargetSource,
+    validate_target_policy,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.entity_relations import (
     is_relational_entity_token_model_kind,
 )
@@ -200,9 +204,14 @@ class MorpionBootstrapDatasetConfig:
     min_depth: int | None
     min_visit_count: int | None
     max_rows: int | None
-    use_backed_up_value: bool
+    use_backed_up_value: bool | None
     family_target_policy: PvFamilyTargetPolicy = "none"
     family_prediction_blend: float = 0.25
+    target_source: TargetSource | None = None
+
+    def __post_init__(self) -> None:
+        """Refuse ambiguous combinations without changing historical defaults."""
+        validate_target_policy(self.target_source, self.use_backed_up_value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -520,6 +529,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            target_source=args.dataset_target_source,
             family_target_policy=args.dataset_family_target_policy,
             family_prediction_blend=args.dataset_family_prediction_blend,
         ),
@@ -610,6 +620,11 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "min_visit_count": config.dataset.min_visit_count,
             "max_rows": config.dataset.max_rows,
             "use_backed_up_value": config.dataset.use_backed_up_value,
+            **(
+                {"target_source": config.dataset.target_source}
+                if config.dataset.target_source is not None
+                else {}
+            ),
             "family_target_policy": config.dataset.family_target_policy,
             "family_prediction_blend": config.dataset.family_prediction_blend,
         },
@@ -789,10 +804,16 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                 dataset.get("max_rows"),
                 field_name="dataset.max_rows",
             ),
-            use_backed_up_value=_required_bool(
-                dataset.get("use_backed_up_value"),
-                field_name="dataset.use_backed_up_value",
+            use_backed_up_value=(
+                None
+                if dataset.get("target_source") is not None
+                and dataset.get("use_backed_up_value") is None
+                else _required_bool(
+                    dataset.get("use_backed_up_value"),
+                    field_name="dataset.use_backed_up_value",
+                )
             ),
+            target_source=cast("TargetSource | None", dataset.get("target_source")),
             family_target_policy=cast(
                 "PvFamilyTargetPolicy",
                 _required_str(
@@ -988,6 +1009,8 @@ def validate_bootstrap_config_change(
             prefix="experiment",
         )
     )
+    if previous.dataset.target_source != current.dataset.target_source:
+        unsafe_changes.append("dataset.target_source")
     if not unsafe_changes:
         return
 
@@ -1005,6 +1028,7 @@ def dataset_stage_owned_bootstrap_fields() -> tuple[str, ...]:
     return (
         "require_exact_or_terminal",
         "use_backed_up_value",
+        "dataset_target_source",
         "dataset_family_target_policy",
         "dataset_family_prediction_blend",
         "min_depth",
@@ -1219,6 +1243,7 @@ def _stage_bootstrap_config_field_values(
         "min_visit_count": config.dataset.min_visit_count,
         "max_rows": config.dataset.max_rows,
         "use_backed_up_value": config.dataset.use_backed_up_value,
+        "dataset_target_source": config.dataset.target_source,
         "dataset_family_target_policy": config.dataset.family_target_policy,
         "dataset_family_prediction_blend": config.dataset.family_prediction_blend,
         "evaluators": config.evaluators,

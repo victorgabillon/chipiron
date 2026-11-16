@@ -117,6 +117,7 @@ def extract_rows_from_training_snapshot(
         min_visit_count=args.min_visit_count,
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         metadata={"bootstrap_generation": generation},
         confidence=confidence,
     )
@@ -126,6 +127,7 @@ def extract_rows_from_training_snapshot(
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         confidence=confidence,
     )
     target_source_counts = rows.metadata.get("target_source_counts", {})
@@ -151,6 +153,8 @@ def full_dataset_confidence(
         args.dataset_confidence_policy, args.dataset_family_target_policy
     )
     if args.dataset_confidence_policy == "legacy_v1":
+        if args.dataset_target_source is not None:
+            raise DatasetConfidenceError.missing_source()
         return None
     if value_contracts is None or source_provenance is None:
         raise DatasetConfidenceError.missing_source()
@@ -174,6 +178,7 @@ def iter_rows_from_training_snapshot(
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         confidence=confidence,
     )
     for row in iter_morpion_supervised_rows_from_training_snapshot(
@@ -183,6 +188,7 @@ def iter_rows_from_training_snapshot(
         min_visit_count=args.min_visit_count,
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         confidence=confidence,
     ):
         yield context.adjust_row(row)
@@ -205,6 +211,7 @@ def streaming_rows_from_training_snapshot(
         family_target_policy=args.dataset_family_target_policy,
         family_prediction_blend=args.dataset_family_prediction_blend,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         confidence=confidence,
     )
 
@@ -216,6 +223,7 @@ def streaming_rows_from_training_snapshot(
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            dataset_target_source=args.dataset_target_source,
             confidence=confidence,
         ):
             yield context.adjust_row(row)
@@ -227,6 +235,7 @@ def streaming_rows_from_training_snapshot(
         min_visit_count=args.min_visit_count,
         max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
+        dataset_target_source=args.dataset_target_source,
         metadata={"bootstrap_generation": generation},
         confidence=confidence,
     )

@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, Any
 import torch
 from torch.utils.data import DataLoader, Subset
 
+from chipiron.environments.morpion.learning import load_morpion_supervised_rows_metadata
+from chipiron.environments.morpion.learning.target_policy import (
+    training_target_metadata,
+)
 from chipiron.environments.morpion.players.evaluators.datasets.datasets import (
     MorpionEntityTokenSupervisedDataset,
     MorpionEntityTokenSupervisedDatasetArgs,
@@ -203,12 +207,16 @@ def _train_morpion_regressor(
 
     resolved_hidden_sizes = resolve_hidden_sizes(args)
     model_args = morpion_regressor_args_from_training_args(args)
+    target_metadata = training_target_metadata(
+        load_morpion_supervised_rows_metadata(os.fspath(args.dataset_file))
+    )
     model, optimizer, continuation = initialize_training(
         model_args,
         args.continuation,
         output_dir=os.fspath(args.output_dir),
         device=device,
         learning_rate=args.learning_rate,
+        dataset_target_policy=target_metadata.get("dataset_target_policy"),
     )
     log_training_device(
         model=model,
@@ -369,6 +377,7 @@ def _train_morpion_regressor(
         training_examples_seen=training_examples_seen,
     )
     training_metadata: dict[str, object] = {
+        **target_metadata,
         "continuation": continuation,
         "state_split": state_split,
         "dataset_file": os.fspath(args.dataset_file),
@@ -477,12 +486,16 @@ def _train_morpion_regressor_streaming(
     )
     resolved_hidden_sizes = resolve_hidden_sizes(training_args)
     model_args = morpion_regressor_args_from_training_args(training_args)
+    target_metadata = training_target_metadata(
+        load_morpion_supervised_rows_metadata(os.fspath(training_args.dataset_file))
+    )
     model, optimizer, continuation = initialize_training(
         model_args,
         training_args.continuation,
         output_dir=os.fspath(training_args.output_dir),
         device=device,
         learning_rate=training_args.learning_rate,
+        dataset_target_policy=target_metadata.get("dataset_target_policy"),
     )
     log_training_device(
         model=model,
@@ -1028,6 +1041,7 @@ def _train_morpion_regressor_streaming(
         training_examples_seen=training_examples_seen,
     )
     training_metadata: dict[str, object] = {
+        **target_metadata,
         "continuation": continuation,
         "state_split": state_split,
         "dataset_file": os.fspath(training_args.dataset_file),
