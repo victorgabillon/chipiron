@@ -1411,6 +1411,41 @@ class ShardedTrainingGenerationView:
             True,
         )
 
+    def select_finite_node_window(
+        self, start_cursor: str | None, max_nodes: int
+    ) -> WindowSelection:
+        """Consume a positive prefix of one immutable inventory, never wrap.
+
+        A non-null continuation must name a retained row in this exact source;
+        disappearance is corruption, not permission to restart from the beginning.
+        """
+        if max_nodes <= 0:
+            raise ValueError("Finite Reevaluation batches require positive capacity")
+        if (
+            start_cursor is not None
+            and not self._connection.execute(
+                "SELECT 1 FROM updates WHERE node_id=?", (start_cursor,)
+            ).fetchone()
+        ):
+            raise ValueError("Finite Reevaluation cursor is absent from its inventory")
+        query = (
+            self._connection.execute(
+                "SELECT node_id FROM updates ORDER BY node_id LIMIT ?",
+                (max_nodes + 1,),
+            )
+            if start_cursor is None
+            else self._connection.execute(
+                "SELECT node_id FROM updates WHERE node_id>=? ORDER BY node_id LIMIT ?",
+                (start_cursor, max_nodes + 1),
+            )
+        )
+        rows = tuple(str(row[0]) for row in query)
+        return (
+            rows[:max_nodes],
+            rows[max_nodes] if len(rows) > max_nodes else None,
+            len(rows) <= max_nodes,
+        )
+
     def load_nodes(self, node_ids: Sequence[str]) -> tuple[TrainingNodeSnapshot, ...]:
         """Reconstruct only requested nodes, in caller order, with the legacy merge."""
         return tuple(self._load_node(node_id) for node_id in node_ids)

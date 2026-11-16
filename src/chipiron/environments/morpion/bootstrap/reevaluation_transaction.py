@@ -10,6 +10,9 @@ import uuid
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 from .generation_publication_io import RETIRED_PAYLOAD_KEY, publication_records, require
 from .pipeline_artifacts import (
     MorpionReevaluationCursor,
@@ -37,11 +40,14 @@ def cursor_digest(cursor: object) -> str:
     ).hexdigest()
 
 
-def initial_transaction(*, growth_scoring: bool = False) -> dict[str, Any]:
+def initial_transaction(
+    *, growth_scoring: bool = False, rolling: bool = False
+) -> dict[str, Any]:
     """Create identities only for a new workspace's existing durable genesis commit."""
+    require(not rolling or growth_scoring, "Rolling traversal requires Growth scoring.")
     return {
         "protocol": PROTOCOL,
-        "schema_version": 2 if growth_scoring else VERSION,
+        "schema_version": 3 if rolling else 2 if growth_scoring else VERSION,
         **({"numeric_policy": GROWTH_NUMERIC_POLICY} if growth_scoring else {}),
         "workspace_id": uuid.uuid4().hex,
         "epoch_id": uuid.uuid4().hex,
@@ -87,11 +93,11 @@ def transaction_state(state: MorpionBootstrapRunState) -> dict[str, Any] | None:
             "producer_id",
             "accepted_cursor",
         }
-        | ({"numeric_policy"} if data.get("schema_version") == 2 else set())
+        | ({"numeric_policy"} if data.get("schema_version") in (2, 3) else set())
         and data["protocol"] == PROTOCOL
         and isinstance(data["schema_version"], int)
         and not isinstance(data["schema_version"], bool)
-        and data["schema_version"] in (VERSION, 2)
+        and data["schema_version"] in (VERSION, 2, 3)
         and (
             data["schema_version"] == VERSION
             or data.get("numeric_policy") == GROWTH_NUMERIC_POLICY
@@ -161,6 +167,7 @@ def validate_proposal(
     patch: MorpionReevaluationPatch,
     *,
     duplicate_cursor_digest: str | None = None,
+    work_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Validate identity before dedup; only NEW proposals compare the current cursor.
 
@@ -252,13 +259,18 @@ def validate_proposal(
         if data["accepted_cursor"] is None
         else complete_cursor(data["accepted_cursor"])
     )
+    rolling = data["schema_version"] == 3
+    if rolling:
+        _validate_rolling_prefix(state, patch, previous, next_cursor, work_dir)
     same_model = previous is not None and (
         previous.evaluator_generation,
         previous.evaluator_name,
         previous.model_bundle_path,
     ) == (patch.evaluator_generation, patch.evaluator_name, patch.model_bundle_path)
     prior_passes = (
-        previous.completed_full_pass_count if previous is not None and same_model else 0
+        previous.completed_full_pass_count
+        if previous is not None and (same_model or rolling)
+        else 0
     )
     require(
         next_cursor.completed_full_pass_count
@@ -266,3 +278,90 @@ def validate_proposal(
         "Proposal completed-pass counter mismatch.",
     )
     return envelope
+
+
+def rolling_source_generation(state: MorpionBootstrapRunState) -> int | None:
+    """Return the durable incomplete-pass root, independent of the current model."""
+    data = transaction_state(state)
+    if data is None or data["schema_version"] != 3 or data["accepted_cursor"] is None:
+        return None
+    cursor = complete_cursor(data["accepted_cursor"])
+    require(
+        cursor.metadata.get("rolling_source")
+        == source_identity(state, cursor.tree_generation),
+        "Rolling cursor source identity changed.",
+    )
+    if cursor.next_node_cursor is None:
+        return None
+    source_identity(state, cursor.tree_generation, require_payload=True)
+    return cursor.tree_generation
+
+
+def _validate_rolling_prefix(
+    state: MorpionBootstrapRunState,
+    patch: MorpionReevaluationPatch,
+    previous: MorpionReevaluationCursor | None,
+    next_cursor: MorpionReevaluationCursor,
+    work_dir: Path | None,
+) -> None:
+    """Authenticate the exact finite inventory prefix before native application.
+
+    The existing consumer supplies its own workspace; no producer-chosen path is
+    trusted. Exact receipt retries use the original digest and need no old payload.
+    """
+    from .derived.provenance import inside
+    from .sharded_training_reader import ShardedTrainingGenerationView
+
+    require(work_dir is not None, "Rolling prefix validation requires owned workspace.")
+    assert work_dir is not None
+    frozen = rolling_source_generation(state)
+    require(
+        frozen is None or frozen == patch.tree_generation,
+        "Rolling pass source changed.",
+    )
+    if frozen is None and previous is not None:
+        require(
+            patch.tree_generation is not None
+            and previous.tree_generation is not None
+            and patch.tree_generation > previous.tree_generation,
+            "A new rolling pass requires a later committed inventory.",
+        )
+    source = source_identity(state, patch.tree_generation, require_payload=True)
+    require(
+        next_cursor.metadata
+        == {"source": "reevaluation_worker", "rolling_source": source},
+        "Rolling next cursor source mismatch.",
+    )
+    record = next(
+        r
+        for r in publication_records(state.metadata)
+        if r["generation"] == patch.tree_generation
+    )
+    limit = patch.metadata.get("max_nodes_per_patch")
+    require(
+        isinstance(limit, int) and not isinstance(limit, bool) and limit > 0,
+        "Rolling batches require positive capacity.",
+    )
+    assert isinstance(limit, int)
+    start = (
+        previous.next_node_cursor
+        if frozen is not None and previous is not None
+        else None
+    )
+    with ShardedTrainingGenerationView(
+        inside(work_dir, record["tree_snapshot_path"]),
+        allow_scientific_v2=True,
+        allow_closed_snapshot=True,
+    ) as view:
+        ids, continuation, finished = view.select_finite_node_window(start, limit)
+        view.validate_source_identity()
+    require(
+        bool(ids) and tuple(row.node_id for row in patch.rows) == ids,
+        "Rolling proposal must consume the exact nonempty inventory prefix.",
+    )
+    require(
+        (patch.start_cursor, patch.end_cursor) == (ids[0], ids[-1])
+        and next_cursor.next_node_cursor == continuation
+        and patch.metadata["completed_full_pass"] is finished,
+        "Rolling proposal continuation skipped or repeated inventory.",
+    )

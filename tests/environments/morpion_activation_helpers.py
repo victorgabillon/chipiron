@@ -53,6 +53,7 @@ def setup_activation(
     branch_limit: int = 100000,
     encoding: str | None = None,
     target_source: TargetSource | None = None,
+    rolling_reevaluation: bool = False,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
     args = replace(
@@ -167,6 +168,7 @@ def setup_activation(
         fenced_dataset=True,
         durable_training=True,
         model_activation=True,
+        rolling_reevaluation=rolling_reevaluation,
     )
     run_dataset(args)
     run_pipeline_training_stage(args, generation=1)

@@ -152,7 +152,8 @@ def _work_roots(
     cursor = None
     if transaction is not None and transaction["accepted_cursor"] is not None:
         cursor = complete_cursor(transaction["accepted_cursor"])
-        retain(cursor.tree_generation, "authoritative-accepted-cursor")
+        if transaction["schema_version"] != 3 or cursor.next_node_cursor is not None:
+            retain(cursor.tree_generation, "authoritative-accepted-cursor")
         model(cursor.model_bundle_path)
     if paths.pipeline_reevaluation_cursor_path.exists():
         projection = load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
@@ -171,6 +172,7 @@ def _work_roots(
             envelope = validate_proposal(
                 state,
                 patch,
+                work_dir=paths.work_dir,
                 duplicate_cursor_digest=None
                 if receipt is None
                 else receipt.accepted_cursor_sha256,
@@ -437,6 +439,17 @@ def _inspect(
             "dataset_policy": origin["dataset_policy"],
             "retention": "origin and all imported seed bundles remain permanent local roots",
         }
+    transaction = transaction_state(state)
+    pending = observe_pending_patch(paths.pipeline_reevaluation_patch_path)
+    # This already-required root needs a shared pin: rolling prefix validation
+    # opens the canonical reader below and must not deadlock on our exclusive pin.
+    rolling_pending_source = (
+        pending.patch.tree_generation
+        if pending is not None
+        and transaction is not None
+        and transaction["schema_version"] == 3
+        else None
+    )
     for record in ordered:
         generation, identifier = record["generation"], record["id"]
         pin = namespace / "pins" / f"{identifier}.lock"
@@ -453,7 +466,7 @@ def _inspect(
                         paths.work_dir,
                         identifier,
                         version=3,
-                        exclusive=True,
+                        exclusive=generation != rolling_pending_source,
                         nonblocking=True,
                         create=False,
                     )

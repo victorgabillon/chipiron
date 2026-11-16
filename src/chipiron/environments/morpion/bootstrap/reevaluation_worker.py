@@ -916,6 +916,18 @@ def _run_morpion_reevaluation_worker_once(
         )
 
     latest_snapshot = resolve_latest_reevaluation_tree_snapshot(paths)
+    if authority is not None:
+        from .generation_publication_io import publication_records
+        from .reevaluation_transaction import rolling_source_generation
+
+        frozen = rolling_source_generation(authority)
+        if frozen is not None:
+            record = next(
+                r
+                for r in publication_records(authority.metadata)
+                if r["generation"] == frozen
+            )
+            latest_snapshot = (frozen, paths.work_dir / record["tree_snapshot_path"])
     if latest_snapshot is None:
         _maybe_log_reevaluation_idle(
             paths=paths,
@@ -1187,9 +1199,13 @@ def _run_morpion_reevaluation_worker_once(
             except MissingMorpionPipelineArtifactError:
                 persisted_cursor = None
 
-        if persisted_cursor is None or not cursor_matches_active_model(
-            persisted_cursor,
-            active_model=active_model,
+        rolling = captured is not None and captured["schema_version"] == 3
+        if persisted_cursor is None or (
+            not rolling
+            and not cursor_matches_active_model(
+                persisted_cursor,
+                active_model=active_model,
+            )
         ):
             start_cursor = None
             completed_full_pass_count = 0
@@ -1198,7 +1214,16 @@ def _run_morpion_reevaluation_worker_once(
             completed_full_pass_count = persisted_cursor.completed_full_pass_count
 
         selection_measurement = StageMeasurement()
-        if view is None:
+        if rolling:
+            require(
+                view is not None,
+                "Rolling traversal requires the indexed scientific reader.",
+            )
+            assert view is not None
+            selected_node_ids, next_node_cursor, completed_full_pass = (
+                view.select_finite_node_window(start_cursor, max_nodes_per_patch)
+            )
+        elif view is None:
             selected_node_ids, next_node_cursor, completed_full_pass = (
                 select_reevaluation_node_window(
                     sorted_node_ids,
@@ -1377,7 +1402,10 @@ def _run_morpion_reevaluation_worker_once(
             tree_generation=tree_generation,
             completed_full_pass_count=next_completed_full_pass_count,
             last_patch_id=patch.patch_id,
-            metadata={"source": "reevaluation_worker"},
+            metadata={
+                "source": "reevaluation_worker",
+                **({"rolling_source": captured_source} if rolling else {}),
+            },
         )
         if captured is not None:
             assert captured_source is not None and captured_model is not None
@@ -1429,7 +1457,7 @@ def _run_morpion_reevaluation_worker_once(
                         model_bundle_path=active_model.model_bundle_path,
                     )
                 publication_state = load_bootstrap_run_state(paths.run_state_path)
-                validate_proposal(publication_state, patch)
+                validate_proposal(publication_state, patch, work_dir=paths.work_dir)
                 publication_model = current_model_identity(paths)
                 if publication_model != captured_model:
                     raise_for_committed_activation(
