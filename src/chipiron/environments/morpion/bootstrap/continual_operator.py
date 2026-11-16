@@ -900,6 +900,14 @@ def _run_monitored(
                     current = sample()
                     state = load_bootstrap_run_state(paths.run_state_path)
                     termination = state.metadata.get("experiment_termination")
+                    if termination is not None and managed_link is not None:
+                        from .managed_sessions import validate_scientific_termination
+
+                        validate_scientific_termination(
+                            paths,
+                            load_bootstrap_config(paths.bootstrap_config_path),
+                            state,
+                        )
                     # Sampling/status reads can cross the deadline. Decide from
                     # their completion time, before shutdown can alter the label.
                     decisive_now = time.monotonic()

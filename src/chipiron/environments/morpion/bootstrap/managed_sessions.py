@@ -4,6 +4,7 @@ Only durable run-state references admit records. Scientific publication, candida
 continuation and the native sampler remain authoritative for their own work.
 """
 
+import hashlib
 import json
 import math
 import os
@@ -15,8 +16,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from .derived.provenance import atomic_json
+from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
+    GenerationPublicationError,
     growth_receipt_ownership,
     object_digest,
     publication_records,
@@ -947,6 +949,61 @@ def recover_close_owned(
         )
 
 
+class ManagedScientificTerminationError(GenerationPublicationError):
+    """Authenticated terminal work refusal; never permission for scientific work."""
+
+
+def validate_scientific_termination(
+    paths: MorpionBootstrapPaths,
+    config: MorpionBootstrapConfig,
+    state: MorpionBootstrapRunState,
+) -> None:
+    """Authenticate a terminal snapshot against its immutable Growth seal.
+
+    This metadata-only observation authorizes waiting, never admission or takeover.
+    Old unsealed terminal workspaces are not adopted or repaired.
+    """
+    terminal = state.metadata.get("experiment_termination")
+    require(isinstance(terminal, dict), "Missing scientific termination.")
+    assert isinstance(terminal, dict)
+    head = publication_records(state.metadata)[-1]
+    reader = _reader()
+    seal = inside(paths.work_dir, head["descriptor_path"])
+    sealed = reader.data(seal)
+    require(
+        hashlib.sha256(sealed).hexdigest() == head["descriptor_sha256"],
+        "Terminal publication seal changed.",
+    )
+    descriptor = json.loads(sealed)
+    policy = config.metadata["continual_learning"]
+    require(isinstance(policy, dict), "Missing terminal learning policy.")
+    assert isinstance(policy, dict)
+    require(
+        descriptor.get("experiment_termination") == terminal
+        and descriptor["id"] == head["id"]
+        and descriptor["generation"] == head["generation"] == state.generation
+        and head["checkpoint_path"] == state.latest_runtime_checkpoint_path
+        and head["tree_snapshot_path"] == state.latest_tree_snapshot_path
+        and descriptor["bootstrap_config_hash"]
+        == state.metadata["bootstrap_config_hash"]
+        and set(terminal)
+        == {"reason", "maximum_unique_nodes", "committed_unique_nodes", "timestamp_utc"}
+        and terminal["reason"]
+        in {
+            "maximum_unique_nodes",
+            "next_complete_expansion_exceeds_unique_node_budget",
+        }
+        and _integer(terminal["maximum_unique_nodes"], 2**53 - 1)
+        == policy["max_tree_nodes"]
+        and 0
+        < _integer(terminal["committed_unique_nodes"], terminal["maximum_unique_nodes"])
+        == state.tree_size_at_last_save
+        and isinstance(terminal["timestamp_utc"], str)
+        and bool(terminal["timestamp_utc"]),
+        "Unauthenticated scientific termination.",
+    )
+
+
 def require_managed_execution(
     paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState | None = None
 ) -> None:
@@ -961,9 +1018,7 @@ def require_managed_execution(
     state = state or load_bootstrap_run_state(paths.run_state_path)
     data = validate(paths, config, state)
     require(
-        data is not None
-        and data["active"] is not None
-        and state.metadata.get("experiment_termination") is None,
+        data is not None and data["active"] is not None,
         "Managed scientific work requires an active nonterminal native session.",
     )
     assert data is not None and isinstance(data["active"], dict)
@@ -980,6 +1035,12 @@ def require_managed_execution(
         == launch["native_session"],
         "Managed writer does not belong to the active native session.",
     )
+    if state.metadata.get("experiment_termination") is not None:
+        validate_scientific_termination(paths, config, state)
+        message = (
+            "Managed scientific work requires an active nonterminal native session."
+        )
+        raise ManagedScientificTerminationError(message)
 
 
 def status_summary(paths: MorpionBootstrapPaths) -> dict[str, Any] | None:
