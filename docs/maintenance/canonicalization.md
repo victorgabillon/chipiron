@@ -1,5 +1,11 @@
 # Canonical development line
 
+> **Historical audit — September 18, 2026.** The branch instructions below
+> describe that integration's original state. Current development uses `main`;
+> see the [root quickstart](../../README.md#quickstart) and
+> [current Morpion architecture map](../architecture/morpion_bootstrap_runtime_map.md).
+> The original ancestry and workspace observations are retained as evidence.
+
 `maintenance/chipiron-canonicalization` is the proposed future `main`.
 Until its PR is reviewed and merged, GitHub's default branch remains `main`;
 contributors needing the current generic-game/evaluator code should use this

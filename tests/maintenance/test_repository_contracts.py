@@ -8,12 +8,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pr_validation_has_no_publication_credentials_or_push() -> None:
-    """PR and canonical-branch validation cannot authenticate or publish images."""
+    """PR and main-branch validation cannot authenticate or publish images."""
     text = (ROOT / ".github/workflows/ci.yaml").read_text()
     workflow = yaml.load(text, Loader=yaml.BaseLoader)
     assert "pull_request" in workflow["on"]
-    assert "main" in workflow["on"]["push"]["branches"]
-    assert "maintenance/chipiron-canonicalization" in workflow["on"]["push"]["branches"]
+    assert workflow["on"]["push"]["branches"] == ["main"]
     assert workflow["permissions"] == {"contents": "read"}
     assert "secrets." not in text
     assert "docker/login-action" not in text
