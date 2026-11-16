@@ -277,7 +277,7 @@ def _producer(identity: Mapping[str, str]) -> dict[str, Any]:
     versions = {name: importlib.metadata.version(name) for name in _PACKAGES}
     _require(
         versions["atomheart"] == "0.3.1"
-        and versions["algorhino-anemone"] == "0.4.0"
+        and versions["algorhino-anemone"] == "0.4.1"
         and versions["valanga"] == "0.3.0",
         "unsupported scientific dependency contract",
     )
