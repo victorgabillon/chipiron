@@ -48,7 +48,12 @@ if TYPE_CHECKING:
 
 @contextmanager
 def holder(
-    lock: Path, growth: Path, *, seconds: float = 0.2, interrupt: int = 0
+    lock: Path,
+    growth: Path,
+    *,
+    seconds: float = 0.2,
+    interrupt: int = 0,
+    until_exit: bool = False,
 ) -> Iterator[None]:
     """Own a real kernel lock; probe Growth while the parent is waiting, then release."""
     process = subprocess.Popen(
@@ -67,12 +72,16 @@ with open(sys.argv[1], 'a+') as lock:
     print('growth-free', flush=True)
     if int(sys.argv[4]):
         os.kill(os.getppid(), int(sys.argv[4]))
-    time.sleep(float(sys.argv[3]))
+    if int(sys.argv[5]):
+        sys.stdin.readline()
+    else:
+        time.sleep(float(sys.argv[3]))
 """,
             str(lock),
             str(growth),
             str(seconds),
             str(interrupt),
+            str(int(until_exit)),
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -202,20 +211,25 @@ def test_expiry_does_not_consume_or_renew(
 
     @contextmanager
     def expired(p: Any, a: Any, job: Any, ready: Any) -> Iterator[Any]:
-        job = short_clock(paths, job)
-        before = paths.run_state_path.read_bytes()
         with holder(
             lock_path(paths, ready, kind),
             paths.pipeline_dir / ".growth_patch_consumer.lock",
-            seconds=0.5,
+            until_exit=True,
         ):
+            # Child startup must not spend this test's immutable job allowance.
+            # Keep its lock until context exit, regardless of filesystem latency.
+            job = short_clock(paths, job)
+            before = paths.run_state_path.read_bytes()
+            deadline = prepared._continuous_reader_deadline(paths, job)
             started = time.monotonic()
             with (
                 pytest.raises((BlockingIOError, TimeoutError)),
                 original(p, a, job, ready),
             ):
                 pytest.fail("expired reader yielded inputs")
-            assert 0.15 < time.monotonic() - started < 1.5
+            # Durable proof writes already consumed part of the allowance.
+            # Expiry must respect its actual deadline, not a fresh minimum wait.
+            assert deadline <= time.monotonic() < started + 1.5
         assert paths.run_state_path.read_bytes() == before
         assert not has_consumed(
             paths, load_bootstrap_run_state(paths.run_state_path), ready, job
