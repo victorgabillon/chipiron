@@ -14,10 +14,13 @@ integer reduction. Game-specific code lives under `src/chipiron/environments/`;
 Morpion's evaluator/training/bootstrap implementation is under its `morpion/`
 subdirectory.
 
-The proposed canonical line is **`maintenance/chipiron-canonicalization`**, intended
-to become `main` after review. GitHub's current `main` is historical until that PR
-is merged. The integration preserves all `generic-game` history and the cleaned
-September evaluator work; see the [ancestry and audit](docs/maintenance/canonicalization.md).
+`main` is the current development line. The September canonicalization work is
+retained as historical
+[ancestry and audit evidence](docs/maintenance/canonicalization.md). For the
+**current** Morpion execution and ownership boundaries, see the
+[bootstrap source map](docs/architecture/morpion_bootstrap_runtime_map.md),
+which distinguishes legacy artifact-pipeline examples from the scientific
+continual-learning implementation.
 
 Store new experiments, models, datasets and run logs outside this checkout, using
 configuration-driven paths. See [artifact policy](docs/maintenance/artifacts.md),
@@ -63,7 +66,6 @@ Chipiron integrates and builds upon other personal repositories:
 ```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-git switch maintenance/chipiron-canonicalization  # until its reviewed merge into main
 cp .env.example .env  # optional local path overrides; never commit this file
 make init
 python3 -m chipiron.scripts.main_chipiron

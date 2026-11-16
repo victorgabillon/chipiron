@@ -1,5 +1,27 @@
 # Morpion Bootstrap Operator
 
+> **Current implementation map (2026-11-16, J5/B6-integrated main `7d128fa8`):**
+> Before changing worker, reevaluation, activation, model or publication behavior, read the
+> [source-verified Morpion bootstrap architecture map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md).
+> It distinguishes the legacy `artifact_pipeline` launcher from the current
+> **scientific continual** execution and identifies who actually owns each
+> checkpoint, model, patch, receipt and cursor.
+>
+> The older four-worker examples and dated implementation notes below are
+> retained for compatibility/history. They are **not** authorization to run
+> a closed scientific experiment without its managed genesis, sealed model
+> authority and verified supervisor. Training acceptance is separate from
+> model activation in the scientific path; the current atomic activation still
+> performs a complete synchronous Anemone refresh.
+>
+> J5.1/J5.2/J5.3 now provide capacity deferral, authenticated terminal-idle
+> shutdown and fixed-deadline prepared-Dataset lease waits through the existing
+> owners. See the [continuous coordination contract](../../../../../docs/morpion_continuous_coordination.md).
+> Continuous scheduling remains opt-in/default-off. B4 progressive activation
+> is research only. B6 Anemone 0.4.1 and its current scientific producer
+> requirement are integrated through #132; historical 0.4.0 evidence and
+> environments retain their original identities.
+
 Monitor an existing Morpion Solitaire workspace, inspect its records and models,
 and deliberately launch its prepared experiment.
 
@@ -158,6 +180,13 @@ All artifact-pipeline workers must share the same `--work-dir` on a filesystem
 visible to every worker.
 
 ### Recommended 4-process artifact-pipeline launch
+
+> **Legacy operational examples.** The shell loops below demonstrate the
+> original artifact-pipeline stages. The current scientific/managed launcher
+> is described in the [architecture map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md)
+> and [normal lifecycle](../../../../../docs/morpion_run_lifecycle.md).
+> In particular, scientific `active_model.json` is a discovery projection,
+> not an alternative to the sealed committed evaluator.
 
 First launch creates `<work_dir>/bootstrap_config.json`. After that, all workers
 must use the same bootstrap config. To change dataset/training/growth parameters,
@@ -356,10 +385,15 @@ artifacts.
 
 ### Active evaluator behavior
 
-Training writes and updates `pipeline/active_model.json`. Reevaluation uses the
-current active model. If the active model changes, the reevaluation cursor
-resets so the next pass starts over for that evaluator. The best selected
-evaluator remains the source for both future growth and reevaluation.
+In the legacy artifact pipeline, Training can update
+`pipeline/active_model.json`. In the current closed **scientific** pipeline,
+accepted Training and Growth-owned model activation are distinct, and the sealed
+committed evaluator is authoritative; `active_model.json` is a repairable
+projection. Reevaluation uses the selected active model. **As currently
+implemented**, changing model identity resets its circular node cursor to the
+beginning. Continuous, model-independent cursor progress is a *proposed B4
+experiment*, not a delivered feature. See the
+[current contract map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md).
 
 ### Scaling pattern
 
@@ -792,7 +826,17 @@ scientific outcome with a failed function outcome and a missing total interval.
 Metrics/sink/logger errors cannot mask computational errors. No sidecar confers
 scientific authority; exact low-level ownership correlation remains unavailable.
 
-### Continuous contract foundation (not a runnable policy)
+### Historical continuous contract foundation (2026-11-12)
+
+> **Historical scope notice:** The text below records the original pure
+> transition-only phase at `63dc4cad`; its future-work and launcher-refusal
+> statements describe that revision. Since then `bounded_continuous_v1` has
+> acquired authenticated Dataset/Training/publication wiring, a separately
+> bounded pilot and the integrated J5 reliability fixes. It remains
+> explicit/default-off and is **not** the asynchronous
+> model-only activation proposed in B4. See the
+> [current source map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md)
+> and [continuous coordination contract](../../../../../docs/morpion_continuous_coordination.md).
 
 `continuous_contract` holds strict frozen v1 wire records; `continuous_transitions`
 proposes the Dataset EXTRACT → accepted PREPARE → complete READY → admitted Training

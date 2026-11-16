@@ -344,7 +344,7 @@
         "anemone/tree_exploration.py": "c8f41d3592f39718e5af41333314b3c4b90b19fde6b5c03737ea1b4553fb8dc4",
         "anemone/tree_exploration_debug.py": "90931206814a3b7484a60b1a17dcdc8daa778911c5c1303ae75100a0db7dc941",
         "anemone/tree_manager/__init__.py": "d0ef9a5c3343437ead1c627df1e28c08ef1876c33684ab5c23adcc6ab204623a",
-        "anemone/tree_manager/algorithm_node_tree_manager.py": "cb1cca3c8edfb93a19c7e483371ce0ff2c7e7e3f995b6f23bfb9630a03a74f66",
+        "anemone/tree_manager/algorithm_node_tree_manager.py": "3986a5dac758c95fa390d3c74f9ab4562c93b94b6dcd48605399567f1100f7b0",
         "anemone/tree_manager/branch_opening_service.py": "d2a29502677b5e784558e5cc0d9ca01ae5f78034aa8a79c267f793fd14860dc2",
         "anemone/tree_manager/factory.py": "fb5c76b3f416642ebe0c352397a78aef8d75943046d53d73392a532335d57c4c",
         "anemone/tree_manager/opening_expansion_budget.py": "10312bad84ca0a037c38114ec0e63b467258dda954f6dda0808e4ba7f4a3e56d",
@@ -373,7 +373,7 @@
         "anemone/values/evaluation_ordering.py": "6a82ef1e33c6a751112b8e3aa0faab8ea8ab8103322db65915537491e1c29ca3"
       },
       "module": "anemone",
-      "version": "0.4.0"
+      "version": "0.4.1"
     }
   },
   "chipiron_reference": "a6987792796e21210315a2d76358aa48d71bce71",
