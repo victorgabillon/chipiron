@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def test_released_producer_records_exact_identity(tmp_path: Path) -> None:
     """The real release is recorded alongside unchanged codec/API identity proofs."""
     identity = _producer(PRODUCER)
-    assert identity["packages"]["algorhino-anemone"] == "0.4.0"
+    assert identity["packages"]["algorhino-anemone"] == "0.4.1"
     assert identity["packages"]["atomheart"] == "0.3.1"
     assert identity["packages"]["valanga"] == "0.3.0"
     assert identity["identity"] == PRODUCER
@@ -40,10 +40,10 @@ def test_released_producer_records_exact_identity(tmp_path: Path) -> None:
     "package,version",
     [
         ("algorhino-anemone", "0.3.1"),
-        ("algorhino-anemone", "0.4.1"),
+        ("algorhino-anemone", "0.4.0"),
         ("algorhino-anemone", "0.5.0"),
-        ("algorhino-anemone", "0.4.0rc1"),
-        ("algorhino-anemone", "0.4.0+unqualified"),
+        ("algorhino-anemone", "0.4.1rc1"),
+        ("algorhino-anemone", "0.4.1+unqualified"),
         ("atomheart", "0.3.0"),
         ("valanga", "0.4.0"),
     ],
@@ -66,7 +66,9 @@ def test_unqualified_dependency_refused_before_publication(
     assert not destination.exists()
 
 
-@pytest.mark.parametrize("change", ["old-package", "api", "state-contract", "config"])
+@pytest.mark.parametrize(
+    "change", ["old-package", "previous-release", "api", "state-contract", "config"]
+)
 def test_previous_or_changed_provenance_is_not_reinterpreted(
     tmp_path: Path, change: str
 ) -> None:
@@ -77,6 +79,8 @@ def test_previous_or_changed_provenance_is_not_reinterpreted(
     if change == "old-package":
         # Reproduce an older recorded package identity without reading history.
         producer["packages"]["algorhino-anemone"] = "0.3.1"
+    elif change == "previous-release":
+        producer["packages"]["algorhino-anemone"] = "0.4.0"
     elif change == "api":
         key = next(iter(producer["api_sha256"]))
         producer["api_sha256"][key] = "0" * 64
