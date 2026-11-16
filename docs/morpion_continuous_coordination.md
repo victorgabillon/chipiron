@@ -1,12 +1,13 @@
 # Bounded continuous coordination (opt-in scientific policy)
 
-> **Current source-review status: 2026-11-15, main `fcf0fcc7`.** This
+> **Current source-review status: 2026-11-16, main `2a5925be`.** This
 > `bounded_continuous_v1` coordination implementation is already present as a
 > fresh, explicitly selected scientific policy; it is **not** a hypothetical
-> future scheduler. A separately pinned J5.3 stacked-branch pilot completed
-> seven training rounds and four cold activations, but its reliability fixes
-> (#128–#130) had not yet merged into this `main` snapshot. That result
-> does not certify production readiness or a speedup. See the
+> future scheduler. J5.1/J5.2/J5.3 (#128–#130) are integrated and post-merge
+> CI passed. The earlier J5.3 pilot's seven training rounds and four cold
+> activations remain evidence for its separately pinned source, not a new
+> pilot on this main. Neither result certifies production readiness or a speedup.
+> B6 Anemone 0.4.1 adoption remains pending integration. See the
 > [current worker/authority map](architecture/morpion_bootstrap_runtime_map.md).
 
 The policy remains default-off and does **not** perform model-only/progressive

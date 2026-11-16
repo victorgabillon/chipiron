@@ -1,7 +1,7 @@
 # Morpion Bootstrap Operator
 
-> **Current implementation map (2026-11-15):** Before changing worker,
-> reevaluation, activation, model or publication behavior, read the
+> **Current implementation map (2026-11-16, J5-integrated main `2a5925be`):**
+> Before changing worker, reevaluation, activation, model or publication behavior, read the
 > [source-verified Morpion bootstrap architecture map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md).
 > It distinguishes the legacy `artifact_pipeline` launcher from the current
 > **scientific continual** execution and identifies who actually owns each
@@ -13,6 +13,12 @@
 > authority and verified supervisor. Training acceptance is separate from
 > model activation in the scientific path; the current atomic activation still
 > performs a complete synchronous Anemone refresh.
+>
+> J5.1/J5.2/J5.3 now provide capacity deferral, authenticated terminal-idle
+> shutdown and fixed-deadline prepared-Dataset lease waits through the existing
+> owners. See the [continuous coordination contract](../../../../../docs/morpion_continuous_coordination.md).
+> Continuous scheduling remains opt-in/default-off. B4 progressive activation
+> is research only; B6 Anemone 0.4.1 adoption is pending integration.
 
 Monitor an existing Morpion Solitaire workspace, inspect its records and models,
 and deliberately launch its prepared experiment.
@@ -795,12 +801,14 @@ scientific outcome with a failed function outcome and a missing total interval.
 Metrics/sink/logger errors cannot mask computational errors. No sidecar confers
 scientific authority; exact low-level ownership correlation remains unavailable.
 
-### Continuous contract foundation (not a runnable policy)
+### Historical continuous contract foundation (2026-11-12)
 
-> **Historical scope notice:** This paragraph records the original pure
-> transition-only phase. Since then `bounded_continuous_v1` has acquired
-> authenticated Dataset/Training/publication wiring and a separately bounded
-> pilot. It remains explicit/default-off and is **not** the asynchronous
+> **Historical scope notice:** The text below records the original pure
+> transition-only phase at `63dc4cad`; its future-work and launcher-refusal
+> statements describe that revision. Since then `bounded_continuous_v1` has
+> acquired authenticated Dataset/Training/publication wiring, a separately
+> bounded pilot and the integrated J5 reliability fixes. It remains
+> explicit/default-off and is **not** the asynchronous
 > model-only activation proposed in B4. See the
 > [current source map](../../../../../docs/architecture/morpion_bootstrap_runtime_map.md)
 > and [continuous coordination contract](../../../../../docs/morpion_continuous_coordination.md).

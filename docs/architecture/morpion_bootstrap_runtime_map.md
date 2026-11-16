@@ -1,7 +1,7 @@
 # Morpion bootstrap: current implementation and ownership map
 
-> **Source-reviewed snapshot:** 2026-11-15, Chipiron protected `main`
-> `fcf0fcc74128362f0aef99f5f0d7141adce6c1f8` (includes PR #127).
+> **Source-reviewed snapshot:** 2026-11-16, Chipiron protected `main`
+> `2a5925be3e70b3eb736bb919c050c1aaa32a30f1` (includes PR #127 and J5, #128–#130).
 > This is an index of **implemented contracts**, not a new design, a readiness
 > certification, or permission to enable experimental policies. Read the source
 > at the pinned commit for exact behavior. Later changes must update this map.
@@ -18,7 +18,7 @@ features that were incomplete *at their original commit*. This page records the
 current source-level boundaries to prevent inventing a second implementation.
 
 Review coverage: the current source tree contains 185 Python modules under
-`src/chipiron/environments/morpion/bootstrap/` and 190 Morpion-named test/helper
+`src/chipiron/environments/morpion/bootstrap/` and 194 Morpion-named test/helper
 modules under `tests/environments/`. The entrypoints, contracts and
 cross-boundary files named below were inspected. This is **not** a line-by-line
 verification of every branch in those modules or a fresh execution of all
@@ -168,6 +168,68 @@ This explains an important limit: **the current scientific activation already
 refreshes the tree synchronously.** The separate Reevaluation worker is real,
 but does not yet replace that stop-the-world activation work.
 
+The cold path restores a private runtime from the committed checkpoint, validates
+terminal/exact certificates, drains an eligible pending old-model patch durably,
+then freezes the candidate bundle and refreshes all model estimates through
+Anemone. Only the resulting checkpoint/scientific commit changes evaluator
+authority. A failed refresh discards the partially changed runtime; an exact
+accepted activation retry verifies its receipt instead of refreshing again.
+Cold restore, full refresh, export and checkpoint costs remain on the owned
+activation path. Input-feature caching does not remove these costs or make
+activation progressive. See `activate_model` and
+[`runtime/runner.py`](../../src/chipiron/environments/morpion/bootstrap/runtime/runner.py)
+(`refresh_model_estimates`).
+
+## Integrated J5 reliability: existing owners, stronger boundaries
+
+The [continuous coordination contract](../morpion_continuous_coordination.md)
+describes the operational sequence. J5 changes that sequence's failure handling,
+not the target policy, Training selection or `owned_cold_full` activation:
+
+- **J5.1 — Dataset backpressure and shutdown (#128).**
+  [`continuous_resources.py`](../../src/chipiron/environments/morpion/bootstrap/continuous_resources.py)
+  distinguishes unavailable completion capacity from invalid accounting.
+  `dataset_publication.admit_dataset` releases only the unadmitted attempt's
+  advisory claim; the paced worker defers that admission with pending Source,
+  debt, existing consumers and their pins unchanged. No new job clock is
+  created or renewed. Corrupt authority still fails. On stop,
+  `continual_operator` durably records the decisive reason/clock before
+  `continuous_lifecycle.close_admission` tries Growth ownership without waiting.
+  If busy, supervisor acknowledgement and native reap precede the bounded retry
+  under the original shutdown deadline. Finalization requires proven admission
+  closure and native shutdown; uncertainty retains measured usage and pins.
+- **J5.2 — authenticated terminal idle (#129).** Growth seals scientific
+  node-budget termination into its publication.
+  [`managed_sessions.py`](../../src/chipiron/environments/morpion/bootstrap/managed_sessions.py)
+  authenticates that seal and the worker's actual live managed launch before
+  raising `ManagedScientificTerminationError`. Existing persistent workers
+  catch this typed refusal, including a terminal commit racing dispatch, and
+  heartbeat in idle until native supervised shutdown. The finite fallback
+  prevents an endless terminal wait. This authorizes waiting, never more
+  scientific work; invalid/missing/stale worker evidence and unexplained exits
+  remain failures. Historical unsealed runs are not migrated or refunded.
+  The shutdown test fixture now hands off the actual post-`setsid` worker PID
+  and verifies its published status before monitor sampling; production
+  identity checks remain strict.
+- **J5.3 — bounded prepared-Dataset contention (#130).**
+  `prepared_dataset.borrow_continuous` computes one deadline from the original
+  admitted job, capped by the original managed launch's remaining allowance
+  and supervisor limit. It acquires stable Dataset then native preparation
+  ownership without holding Growth while waiting. It revalidates authority
+  after the stable wait and again under Growth ownership before the consumption
+  commit in
+  [`continuous_inputs.py`](../../src/chipiron/environments/morpion/bootstrap/continuous_inputs.py).
+  Ready binding, admitted slot, claim, launch and Dataset state must still
+  match. The same deadline bounds disposable recovery. Expiry refuses
+  consumption/comparison completion; retries cannot renew the clock, and
+  signals unwind ownership normally. Damaged inputs may rebuild only before
+  consumption, for the same admitted Dataset and recipe; post-consumption
+  corruption remains fatal evidence.
+
+These guarantees are part of integrated main, while continuous scheduling
+remains fresh opt-in/default-off. They do not provide B4 progressive activation
+or new per-node scientific provenance.
+
 ## Values, targets and provenance: three different owners
 
 - **Valanga** defines `Value` (score, `ESTIMATE`/`FORCED`/`TERMINAL`,
@@ -255,6 +317,10 @@ then read its existing contract tests. In particular:
 - `tests/environments/test_morpion_scientific_launcher.py`,
   `test_morpion_continual_operator.py`, `test_morpion_continuous_runtime.py`,
   `test_morpion_continuous_races.py`, `test_morpion_continuous_lifecycle.py`.
+- `test_morpion_continuous_backpressure.py`,
+  `test_morpion_continuous_shutdown_contention.py`,
+  `test_morpion_scientific_terminal_workers.py`,
+  `test_morpion_persistent_shutdown.py`, `test_morpion_continuous_lease.py`.
 - `test_morpion_bootstrap_reevaluation_worker.py`,
   `test_morpion_streaming_reevaluation.py`,
   `test_morpion_atomic_reevaluation.py`,
@@ -308,11 +374,24 @@ that every code path in the whole repository has been exhaustively verified.
 
 ## Version/status fence
 
-At this document's source commit, the reliability stack was **not yet merged**:
-PRs #128 (Growth backpressure/shutdown), #129 (terminal-idle worker), and #130
-(bounded prepared-Dataset lease), in that dependency order, were open on stacked
-branches with their respective successful CI runs. Their changes are **not**
-silently described as present on this `main` snapshot. A running B4 Codex
-experiment is also not part of this snapshot. Revisit the map when any of those
-changes lands. No production behavior or historical experiment was modified by
-this documentation review.
+J5.1/J5.2/J5.3 merged in order through #128 → #129 → #130. The resulting main
+is the source commit above, with tree `ad49b60015209adb79544c46fe2420cdc23846b0`.
+Its [post-merge CI](https://github.com/victorgabillon/chipiron/actions/runs/43878496866)
+passed FULL, FAST/PR, integration, quality, strict static and aggregate gates.
+This documentation refresh did not rerun those suites or a scientific pilot.
+Earlier stacked-branch pilot results retain their original source identities;
+they are not new experiments on this documentation candidate.
+
+**B6 Anemone 0.4.1 adoption is pending integration.** This source still pins
+`algorhino-anemone==0.4.0` in [`pyproject.toml`](../../pyproject.toml).
+Local B6 qualification, including its lease-fixture timing correction, does not
+change main's dependency or tests. Recheck the actual integrated pin and source
+before attributing 0.4.1 behavior to Chipiron. B4 scientific provenance and
+progressive activation remain proposed research, not enabled functionality.
+
+Historical research reports and the September canonicalization audit retain
+their dated/source-pinned claims. Their old branch, launch and unimplemented-work
+instructions are evidence of those revisions, not today's operational checklist.
+Use this map and the current operator/coordination contracts first. No runtime,
+dependency, scientific contract or historical experiment changes accompany this
+refresh.
