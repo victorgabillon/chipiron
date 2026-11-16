@@ -1,9 +1,20 @@
-# Bounded continuous coordination candidate
+# Bounded continuous coordination (opt-in scientific policy)
 
-This implementation is default off and awaits the affected scientific validation
-and independent integration gates. It is not a production-readiness or speedup
-claim. Historical default, fixed-window and ready-window policies retain their
-contexts and cannot be upgraded in place.
+> **Current source-review status: 2026-11-16, main `7d128fa8`.** This
+> `bounded_continuous_v1` coordination implementation is already present as a
+> fresh, explicitly selected scientific policy; it is **not** a hypothetical
+> future scheduler. J5.1/J5.2/J5.3 (#128–#130) are integrated and post-merge
+> CI passed. The earlier J5.3 pilot's seven training rounds and four cold
+> activations remain evidence for its separately pinned source, not a new
+> pilot on this main. Neither result certifies production readiness or a speedup.
+> B6 Anemone 0.4.1 and its current scientific producer requirement are integrated
+> through #132; historical 0.4.0 evidence remains unchanged. See the
+> [current worker/authority map](architecture/morpion_bootstrap_runtime_map.md).
+
+The policy remains default-off and does **not** perform model-only/progressive
+activation: it retains `owned_cold_full` activation and the existing independent
+Reevaluation worker. Historical default, fixed-window and ready-window policies
+retain their contexts and cannot be upgraded in place.
 
 Fresh managed runs may select `--continuous-pipeline-policy PATH` after `--` in
 `chipiron-bootstrap start`. The exact JSON contents become immutable configuration:
