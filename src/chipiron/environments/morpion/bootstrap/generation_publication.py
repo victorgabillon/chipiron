@@ -635,14 +635,17 @@ class DurableGenerationPublication:
                     pending=self.prediction_pending,
                     receipt=self.prediction_receipt,
                 )
-                from .scientific_generation_publication import bind_mixed_closed_source
+                # C3 alone retains its homogeneous historical source contract.
+                # The combined fresh rolling/tracked path admits mixed targets.
+                if state.metadata.get("atomic_reevaluation", {}).get("schema_version") == 3:
+                    from .scientific_generation_publication import bind_mixed_closed_source
 
-                bind_mixed_closed_source(
-                    self.sharded_path,
-                    staging=self.staging,
-                    prediction_lineage=prediction_reference,
-                    validated=self.closed_validation,
-                )
+                    bind_mixed_closed_source(
+                        self.sharded_path,
+                        staging=self.staging,
+                        prediction_lineage=prediction_reference,
+                        validated=self.closed_validation,
+                    )
             validate = (
                 validate_closed_export
                 if self.version == 3
