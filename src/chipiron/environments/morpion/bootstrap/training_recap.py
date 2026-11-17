@@ -690,65 +690,6 @@ def _selected_row(
     return None
 
 
-def _recap_from_training_status(
-    work_dir: Path,
-    status_path: Path,
-) -> MorpionTrainingRecap | None:
-    payload = _read_json_file(status_path)
-    if not isinstance(payload, dict):
-        return None
-
-    generation = _coerce_int(payload.get("generation")) or _generation_from_path(
-        status_path
-    )
-    status = _coerce_str(payload.get("status")) or _coerce_str(
-        payload.get("training_status")
-    )
-    evaluator_name = _coerce_str(payload.get("selected_evaluator_name"))
-    evaluator_results = payload.get("evaluator_results")
-    selected_result = _select_evaluator_result(evaluator_results, evaluator_name)
-    if evaluator_name is None and selected_result is not None:
-        evaluator_name = selected_result[0]
-    result_payload = selected_result[1] if selected_result is not None else {}
-
-    model_path = _coerce_model_path(
-        _find_first([result_payload, payload], "model_bundle_path"),
-        work_dir=work_dir,
-    )
-    manifest_payload, args_payload = _load_model_metadata(work_dir, model_path)
-    sources: list[object] = [result_payload, manifest_payload, args_payload, payload]
-
-    return MorpionTrainingRecap(
-        generation=generation,
-        evaluator_name=evaluator_name
-        or _coerce_str(find_key(payload, "evaluator_name")),
-        status=status or "unknown",
-        train_loss=_coerce_float(_find_first(sources, "train_loss")),
-        validation_loss=_coerce_float(_find_first(sources, "validation_loss")),
-        validation_quality_r2_vs_mean_baseline=_validation_quality_metric(
-            sources,
-            "r2_vs_mean_baseline",
-            "validation_quality_r2_vs_mean_baseline",
-        ),
-        validation_quality_pearson_correlation=_validation_quality_metric(
-            sources,
-            "pearson_correlation",
-            "validation_quality_pearson_correlation",
-        ),
-        entity_output_tanh=_coerce_bool(_find_first(sources, "entity_output_tanh")),
-        entity_token_cache_used=_coerce_bool(
-            _find_first(sources, "entity_token_cache_used")
-        ),
-        cached_global_shuffle=_coerce_bool(
-            _find_first(sources, "cached_global_shuffle")
-        ),
-        model_bundle_path=model_path,
-        source_path=_relative_to_work_dir(status_path, work_dir),
-        updated_at=_coerce_str(payload.get("updated_at_utc"))
-        or _coerce_str(payload.get("updated_at")),
-    )
-
-
 def _recap_from_model_manifest(
     work_dir: Path,
     manifest_path: Path,
@@ -882,36 +823,6 @@ def _load_model_metadata(
         manifest_payload if isinstance(manifest_payload, dict) else {},
         args_payload if isinstance(args_payload, dict) else {},
     )
-
-
-def _select_evaluator_result(
-    evaluator_results: object,
-    evaluator_name: str | None,
-) -> tuple[str, object] | None:
-    if not isinstance(evaluator_results, dict):
-        return None
-    if evaluator_name is not None:
-        result = evaluator_results.get(evaluator_name)
-        if result is not None:
-            return evaluator_name, result
-
-    scored_results: list[tuple[float, str, object]] = []
-    unscored_results: list[tuple[str, object]] = []
-    for name, result in evaluator_results.items():
-        name_text = str(name)
-        score = _coerce_float(_find_first([result], "validation_loss"))
-        if score is None:
-            score = _coerce_float(_find_first([result], "final_loss"))
-        if score is None:
-            unscored_results.append((name_text, result))
-        else:
-            scored_results.append((score, name_text, result))
-    if scored_results:
-        _, name, result = min(scored_results, key=lambda item: item[0])
-        return name, result
-    if unscored_results:
-        return sorted(unscored_results, key=lambda item: item[0])[0]
-    return None
 
 
 def _validation_quality_metric(
