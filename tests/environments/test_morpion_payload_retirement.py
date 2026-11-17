@@ -499,7 +499,9 @@ def test_all_three_recent_checkpoints_restore_and_accepted_inputs_stay_verified(
         )
     runner, effective = _runner(paths, current)
     try:
-        with pytest.raises(ValueError, match="Prediction restore requires the committed head"):
+        with pytest.raises(
+            ValueError, match="Prediction restore requires the committed head"
+        ):
             runner.load_or_create(
                 paths.work_dir / kept[0]["checkpoint_path"], model, effective
             )
