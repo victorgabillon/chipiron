@@ -1,11 +1,27 @@
 """Streaming Morpion neural-network training helpers."""
 
 import random
-from dataclasses import dataclass
 from time import perf_counter
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from chipiron.learning.supervised import train_regression_batch
+
+# Explicit aliases preserve the public exports for strict type checking.
+# pylint: disable=useless-import-alias,unused-import
+from chipiron.learning.supervised.cached import (
+    StreamingEpochStats as StreamingEpochStats,
+)
+from chipiron.learning.supervised.index_schedule import (
+    is_streaming_validation_index as is_streaming_validation_index,
+)
+from chipiron.learning.supervised.index_schedule import (
+    streaming_row_is_in_split as streaming_row_is_in_split,
+)
+from chipiron.learning.supervised.index_schedule import (
+    streaming_split_policy as streaming_split_policy,
+)
+
+# pylint: enable=useless-import-alias,unused-import
 from chipiron.learning.timing import PhaseDurations
 from chipiron.learning.torch_runtime import synchronize_torch_device_if_needed
 
@@ -22,19 +38,6 @@ if TYPE_CHECKING:
     )
 
     from .args import MorpionTrainingArgs
-
-
-@dataclass(frozen=True, slots=True)
-class StreamingEpochStats:
-    """Stats returned after one streaming training epoch."""
-
-    chunk_count: int
-    train_count: int
-    validation_count: int
-    batch_count: int
-    loss: float
-    phase_durations: dict[str, float]
-    elapsed_seconds: float
 
 
 def train_streaming_epoch(
@@ -133,44 +136,6 @@ def train_streaming_epoch(
         phase_durations=epoch_timings.as_dict(),
         elapsed_seconds=elapsed_seconds,
     )
-
-
-def streaming_row_is_in_split(
-    row_index: int,
-    *,
-    validation_fraction: float,
-    split: Literal["train", "validation"],
-    validation_indices: frozenset[int] | None = None,
-) -> bool:
-    """Return whether one row index belongs to a streaming split."""
-    is_validation = is_streaming_validation_index(
-        row_index,
-        validation_fraction=validation_fraction,
-        validation_indices=validation_indices,
-    )
-    return is_validation if split == "validation" else not is_validation
-
-
-def is_streaming_validation_index(
-    row_index: int,
-    *,
-    validation_fraction: float,
-    validation_indices: frozenset[int] | None = None,
-) -> bool:
-    """Return whether one row index belongs to streaming validation."""
-    if validation_indices is not None:
-        return row_index in validation_indices
-    if validation_fraction <= 0.0:
-        return False
-    period = max(2, round(1.0 / validation_fraction))
-    return (row_index + 1) % period == 0
-
-
-def streaming_split_policy(validation_fraction: float) -> str:
-    """Return the manifest/model metadata name for the streaming validation split."""
-    if validation_fraction <= 0.0:
-        return "none"
-    return f"index_modulo_{max(2, round(1.0 / validation_fraction))}"
 
 
 def morpion_streaming_split_policy(validation_fraction: float) -> str:
