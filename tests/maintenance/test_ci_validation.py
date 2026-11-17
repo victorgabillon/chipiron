@@ -3,6 +3,8 @@
 import copy
 import importlib.util
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -383,34 +385,96 @@ def test_artifact_redirect_strips_github_credential() -> None:
 
 
 def test_real_four_shard_xdist_selection_matches_unsharded(tmp_path: Path) -> None:
-    """Run real collection and every setup/call/teardown once across independent invocations."""
+    """Resolve the actual workflow through Tox, then execute its real pytest argv."""
     for name in {n.split("::")[0] for n in full_ids()}:
         (tmp_path / name).write_text(
             "import pytest\n@pytest.mark.parametrize('x',[0,1])\ndef test_ok(x): assert x < 2\n@pytest.mark.skip(reason='setup skip')\ndef test_skip(): pass\n"
         )
-    script = ROOT / "scripts/ci_test_metrics.py"
+    (tmp_path / "conftest.py").write_text(
+        "import json\nfrom pathlib import Path\n"
+        "def pytest_configure(config):\n"
+        " if not hasattr(config, 'workerinput'):\n"
+        "  Path('parsed.json').write_text(json.dumps({\n"
+        "   'args': list(config.invocation_params.args),\n"
+        "   'collect_only': config.option.collectonly,\n"
+        "   'workers': config.option.numprocesses,\n"
+        "   'dist': config.option.dist,\n"
+        "   'marker': config.option.markexpr,\n"
+        "   'index': config.getoption('ci_shard_index'),\n"
+        "   'count': config.getoption('ci_shard_count')}))\n"
+    )
+    workflow = yaml.load(
+        (ROOT / ".github/workflows/ci.yaml").read_text(), Loader=yaml.BaseLoader
+    )
+    steps = workflow["jobs"]["pytest"]["steps"]
+    tox = shutil.which("tox") or str(Path(sys.executable).with_name("tox"))
 
-    def run(*args: str) -> dict[str, Any]:
+    def run(index: int | None) -> dict[str, Any]:
+        name = (
+            "Collect unchanged unsharded FULL reference"
+            if index is None
+            else "Test installed package"
+        )
+        shell = next(s["run"] for s in steps if s.get("name") == name)
+        shell = shell.splitlines()[0].replace("${{ runner.temp }}", str(tmp_path))
+        shell = shell.replace("${{ matrix.shard }}", str(index))
+        invocation = shlex.split(shell)
+        assert invocation[:3] == ["python", "-m", "tox"]
+        configured = subprocess.run(
+            [
+                tox,
+                "c",
+                "--workdir",
+                str(tmp_path / "tox"),
+                "-k",
+                "commands",
+                *invocation[3:],
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        command = next(
+            shlex.split(line.strip())
+            for line in configured.stdout.splitlines()
+            if line.strip().startswith("python scripts/ci_test_metrics.py ")
+        )
+        forwarded = invocation[invocation.index("--") + 1 :]
+        assert command[-len(forwarded) :] == forwarded
+        command[:2] = [sys.executable, str(ROOT / "scripts/ci_test_metrics.py")]
         result = subprocess.run(
-            [sys.executable, str(script), "-q", *args],
+            command,
             cwd=tmp_path,
             capture_output=True,
             text=True,
             check=False,
+            timeout=60,
         )
         assert result.returncode == 0, result.stdout + result.stderr
-        return gate.read_json(tmp_path / ".ci-reports/tests.json")
+        parsed = gate.read_json(tmp_path / "parsed.json")
+        assert parsed == {
+            "args": ["-p", "ci_test_metrics", *command[2:]],
+            "collect_only": index is None,
+            "workers": 0 if index is None else 2,
+            "dist": "no" if index is None else "loadfile",
+            "marker": "not integration and not external_data",
+            "index": index,
+            "count": None if index is None else SHARD_COUNT,
+        }
+        metrics = gate.read_json(tmp_path / ".ci-reports/tests.json")
+        assert metrics["collect_only"] == (index is None)
+        return metrics
 
-    reference = run("--collect-only", "-n", "0")
+    reference = run(None)
+    assert reference["selected_ids"] == sorted([
+        *full_ids(),
+        *(f"{name}::test_skip" for name in {n.split("::")[0] for n in full_ids()}),
+    ])
     seen: list[str] = []
     for index in range(SHARD_COUNT):
-        metrics = run(
-            "-n",
-            "2",
-            "--dist=loadfile",
-            "--ci-shard-count=4",
-            f"--ci-shard-index={index}",
-        )
+        metrics = run(index)
         gate.check_execution(metrics)
         assert metrics["shard"]["full_selected_ids"] == reference["selected_ids"]
         seen.extend(metrics["selected_ids"])
