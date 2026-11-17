@@ -54,6 +54,7 @@ def setup_activation(
     encoding: str | None = None,
     target_source: TargetSource | None = None,
     prediction_origin_tracking: bool = False,
+    rolling_reevaluation: bool = False,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
     args = replace(
@@ -173,6 +174,7 @@ def setup_activation(
         durable_training=True,
         model_activation=True,
         prediction_origin_runner=runner if prediction_origin_tracking else None,
+        rolling_reevaluation=rolling_reevaluation,
     )
     runner.discard_uncommitted_runtime()
     run_dataset(args)

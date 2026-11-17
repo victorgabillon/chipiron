@@ -720,7 +720,7 @@ class GrowthPatchReceiptSession:
             "Patch model/generation does not match the selected evaluator.",
         )
         if transaction is not None:
-            envelope = validate_proposal(state, patch)
+            envelope = validate_proposal(state, patch, work_dir=self.paths.work_dir)
             _require(
                 envelope["model"] == model, "Proposal exact model identity mismatch."
             )
@@ -849,7 +849,9 @@ class GrowthPatchReceiptSession:
             patch = self.pending.patch
             assert patch.tree_generation is not None
             if transaction is not None:
-                envelope = validate_proposal(previous, patch)
+                envelope = validate_proposal(
+                    previous, patch, work_dir=self.paths.work_dir
+                )
                 transaction = {
                     **transaction,
                     "accepted_cursor": envelope["next_cursor"],

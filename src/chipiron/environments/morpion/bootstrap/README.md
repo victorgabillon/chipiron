@@ -44,6 +44,48 @@ a model. Growth remains the live-tree mutation and commit authority, using the
 same locks, receipts, checkpoint formats and explicit opt-in settings. The public
 `search_runner_protocol.MorpionSearchRunner` compatibility path is unchanged.
 
+## Rolling Reevaluation cursor (C4 foundation)
+
+Fresh scientific genesis can explicitly request `rolling_reevaluation=True` with
+atomic Reevaluation, Growth scoring and committed evaluator authority
+(`model_activation=True`). This selects transaction schema 3;
+existing schemas and the operator defaults remain unchanged. Existing workspaces
+cannot be adopted or silently migrated. C6 must wire this option into the managed
+progressive mode together with C3 prediction origins and C5 mixed-source admission.
+This option alone does not enable progressive activation: the current activation
+still performs its full native refresh.
+
+The existing Reevaluation producer starts each pass from the latest committed
+closed snapshot. Its finite, sorted node inventory stays fixed until that pass is
+accepted in full. Each positive-capacity batch consumes exactly the next prefix,
+without wrapping to fill a batch. The existing Growth consumer verifies that
+prefix and commits its continuation together with the checkpoint and receipt.
+The accepted cursor retains the immutable source identity; incomplete passes are
+retention roots even while no worker runs. Exact receipt retries never rewind it.
+A completed pass permits a later snapshot, including newly committed nodes.
+
+Evaluator identity belongs to each proposal, not to the traversal boundary.
+A → B → C changes preserve the accepted continuation and cumulative pass count.
+Each newly admitted batch uses the committed evaluator; a change during inference
+uses the existing activation-race handling to discard unpublished work without
+moving the cursor. Growth still checks the exact active model under its ownership
+before applying a packet; obsolete packets cannot overwrite newer predictions.
+Native exact-value protection and native propagation remain Growth-owned.
+
+Fairness assumes finite snapshots, positive batch capacity, eventual committed
+visibility of retained nodes, and continuing successful batch acceptance. Under
+those assumptions each pass completes after finitely many accepted batches, and
+a new retained node enters a subsequent pass. Continuous insertions cannot extend
+the current inventory. Model churn that invalidates every attempt can prevent
+progress; each accepted batch needs a sufficiently stable model interval through
+inference, publication and consumption. A pass wrap records traversal only, not
+per-node freshness. Convergence for a chosen inventory to one newest evaluator
+additionally needs that evaluator to remain committed for a complete subsequent
+traversal (and successful native disposition for each eligible surviving node).
+Continuous replacements do not provide that guarantee. C3 write evidence, rather
+than cursor position or pass count, is the authority for actual node prediction
+provenance.
+
 ## Operator commands
 
 Install dashboard support from this checkout:

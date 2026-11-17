@@ -39,6 +39,7 @@ def initialize_scientific_v2_publication(
     growth_scoring: bool = False,
     model_activation: bool = False,
     prediction_origin_runner: PredictionOriginRuntime | None = None,
+    rolling_reevaluation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -139,9 +140,14 @@ def initialize_scientific_v2_publication(
             not growth_scoring or atomic_reevaluation,
             "Growth scoring requires explicit fresh atomic genesis.",
         )
+        require(
+            not rolling_reevaluation
+            or (atomic_reevaluation and growth_scoring and model_activation),
+            "Rolling Reevaluation requires fresh Growth-compatible atomic genesis with committed evaluator authority.",
+        )
         if atomic_reevaluation:
             metadata[TRANSACTION_KEY] = initial_transaction(
-                growth_scoring=growth_scoring
+                growth_scoring=growth_scoring, rolling=rolling_reevaluation
             )
         metadata[RECEIPTS_METADATA_KEY] = {
             "schema_version": 2 if atomic_reevaluation else 1,

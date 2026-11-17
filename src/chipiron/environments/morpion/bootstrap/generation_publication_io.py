@@ -301,6 +301,16 @@ def publication_records(metadata: dict[str, Any]) -> list[dict[str, Any]]:
             "Duplicate publication root.",
         )
         if RETIRED_PAYLOAD_KEY in record:
+            # Read only the cursor here: transaction validation itself reads roots.
+            transaction = metadata.get("atomic_reevaluation", {})
+            cursor = transaction.get("accepted_cursor")
+            require(
+                transaction.get("schema_version") != 3
+                or cursor is None
+                or cursor.get("next_node_cursor") is None
+                or cursor.get("tree_generation") != generation,
+                "Cannot retire an incomplete rolling Reevaluation source.",
+            )
             # Do not call window(): it validates publication_records in turn.
             for window_key in ("learning_window_v1", "learning_window_v2"):
                 active_window = metadata.get(window_key, {}).get("active")

@@ -170,8 +170,8 @@ def _request(
         validate_resolution(paths, state, training_generation)
     transaction = transaction_state(state)
     require(
-        transaction is not None and transaction["schema_version"] == 2,
-        "Activation requires Growth-compatible atomic numeric schema 2.",
+        transaction is not None and transaction["schema_version"] in (2, 3),
+        "Activation requires Growth-compatible atomic numeric schema 2 or 3.",
     )
     assert transaction is not None
     receipt_ledger(state)
