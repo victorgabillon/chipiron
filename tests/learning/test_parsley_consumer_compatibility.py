@@ -7,6 +7,7 @@ import pytest
 import yaml
 from dacite import MissingValueError
 from parsley import create_parsley, make_partial_dataclass_with_optional_paths
+from parsley.logger import get_parsley_logger
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
@@ -30,7 +31,22 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.small_tools import get_package_root_path, resolve_package_path
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
+
+
+@pytest.fixture(autouse=True)
+def restore_parser_logging() -> Iterator[None]:
+    """Parsley verbosity also changes pytest's shared capture-handler levels."""
+    logger = get_parsley_logger()
+    level = logger.level
+    handlers = {handler: handler.level for handler in logger.handlers}
+    try:
+        yield
+    finally:
+        logger.setLevel(level)
+        for handler, previous_level in handlers.items():
+            handler.setLevel(previous_level)
 
 
 def _parser(schema: Any) -> Any:

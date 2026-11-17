@@ -20,6 +20,8 @@ def main() -> None:
         for path in (
             "tests",
             "src/chipiron",
+            "scripts",
+            ".github/scripts",
             "Makefile",
             "pyproject.toml",
             ".github/ci-source-contracts.json",
@@ -33,6 +35,12 @@ def main() -> None:
         json.dumps(
             {
                 "candidate": candidate,
+                "tree": subprocess.check_output(
+                    ["git", "rev-parse", f"{candidate}^{{tree}}"], text=True
+                ).strip(),
+                "parents": subprocess.check_output(
+                    ["git", "show", "-s", "--format=%P", candidate], text=True
+                ).split(),
                 "lane": os.environ["CI_TEST_LANE"],
                 "run_id": os.environ["GITHUB_RUN_ID"],
                 "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],

@@ -79,17 +79,26 @@ checkpoint, recovery, dependencies or CI infrastructure require whole-repository
 FULL at the final integration boundary. Keep real process termination; never
 replace it with mocked exceptions to make a selected suite pass faster.
 
-During iteration run FAST and affected tests. Before review run PR and the relevant
-complete matrices. Before scientific/recovery/dependency merges or releases run
-FULL plus the existing quality, installed-package and static gates. GitHub's
-`pytest` matrix runs FULL, FAST/PR and integration on independent hosted runners.
-FULL still runs the unchanged `tox -e py314` command; the aggregate `test`
-gate requires quality, the entire pytest matrix and static success. Its `always()`
-condition and explicit success comparisons reject failed, skipped, cancelled or
-absent dependency results. Matrix fail-fast is disabled so a failing lane does not
-cancel its siblings. Releases retain their
-existing full gate, ancestry checks and publication permissions. The same full CI
-also runs nightly and can be dispatched manually. No branch protection is changed.
+During iteration run the affected regression tests and relevant static and installed
+scientific checks. FAST is optional broader local feedback; ordinary changes do
+not require a local whole-repository FULL or PR run. Keep affected exhaustive
+matrices when they validate the changed behavior. The authoritative complete
+validation belongs on the exact PR merge candidate in GitHub, including the
+existing quality, static, installed scientific, and integration gates.
+
+GitHub runs four file-preserving FULL shards, independent FAST and PR lanes, and
+integration. Every FULL shard uses the original tox selection and coverage
+configuration with the original two workers. An independent unsharded collection
+and the aggregate evidence gate require exactly the same selected identities,
+each executed once with complete phases. The final required check remains `test`;
+failed, cancelled, missing or unexpectedly skipped work cannot pass it. Matrix
+fail-fast remains disabled.
+
+The narrow documentation policy and authenticated post-merge reuse policy are
+specified in [CI validation](ci_validation.md). Scoped/reused runs explicitly say
+that they did not execute runtime tests. Scheduled and manually dispatched runs
+always execute complete validation. Releases retain their existing full gate,
+ancestry checks and publication permissions. No branch protection is changed.
 
 ## Strict source checks
 
@@ -167,7 +176,8 @@ retains `full-tests.json`, `full.xml` and `full-coverage.json`; FAST/PR retains
 records the same selections and phases without replacing its pytest command.
 Separate runner filesystems isolate `.tox`, `.ci-reports`, pytest temporary files
 and application outputs; existing invocation/worker output isolation still applies.
-Only downloaded dependency packages are cached, never test results.
+Only downloaded dependency packages are cached. Post-merge reuse consumes authenticated
+complete PR evidence; it is not a test-result cache during PR validation.
 
 For timing comparisons, use Actions job/step timestamps, keeping raw downloads
 outside Git. Report elapsed run creation to aggregate completion (including queue

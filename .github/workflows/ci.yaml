@@ -26,6 +26,34 @@ env:
   OPENBLAS_NUM_THREADS: "1"
 
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      mode: ${{ steps.route.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.10"
+      - run: python -m pip install pytest==9.2.0
+      - name: Select complete, documentation, or authenticated reused validation
+        id: route
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m scripts.ci_validation route
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-route-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-reports/validation-route.json
+          if-no-files-found: error
+
   quality:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -52,11 +80,20 @@ jobs:
         run: python -m tox -e tooling,ruff
 
   pytest:
+    needs: scope
+    if: needs.scope.outputs.mode == 'full'
     name: pytest (${{ matrix.lane }})
     strategy:
       fail-fast: false
       matrix:
-        lane: [full, fast-pr, integration]
+        include:
+          - {lane: full-0, shard: 0}
+          - {lane: full-1, shard: 1}
+          - {lane: full-2, shard: 2}
+          - {lane: full-3, shard: 3}
+          - {lane: fast}
+          - {lane: pr}
+          - {lane: integration}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -100,22 +137,33 @@ jobs:
           cp .ci-reports/scientific-installed-identity.json .ci-reports/identity-before.json
           python .github/scripts/ci_evidence.py
           .tox/py314/bin/python scripts/check_installed_distribution.py
-      - name: Test installed package
-        if: matrix.lane == 'full'
+      - name: Collect unchanged unsharded FULL reference
+        if: matrix.lane == 'full-0'
         timeout-minutes: 60
-        run: python -m tox -e py314 -- --basetemp=${{ runner.temp }}/chipiron-py314-pytest
+        run: |
+          python -m tox -e py314 -- --collect-only -n 0 --no-cov --basetemp=${{ runner.temp }}/chipiron-full-reference
+          cp .ci-reports/tests.json .ci-reports/full-reference-tests.json
+      - name: Test installed package
+        if: startsWith(matrix.lane, 'full-')
+        timeout-minutes: 60
+        run: python -m tox -e py314 -- --basetemp=${{ runner.temp }}/chipiron-py314-pytest --ci-shard-count=4 --ci-shard-index=${{ matrix.shard }}
       - name: Preserve FULL evidence
-        if: always() && matrix.lane == 'full'
+        if: always() && startsWith(matrix.lane, 'full-')
         run: |
           cp .ci-reports/tests.json .ci-reports/full-tests.json
           cp .ci-reports/pytest.xml .ci-reports/full.xml
           cp .ci-reports/coverage.json .ci-reports/full-coverage.json
-      - name: FAST and PR installed-package lanes
-        if: matrix.lane == 'fast-pr'
+          cp .coverage .ci-reports/.coverage
+      - name: Independent FAST installed-package feedback
+        if: matrix.lane == 'fast'
         timeout-minutes: 45
         run: |
           make test-fast PYTHON=.tox/py314/bin/python TEST_ARGS=--junitxml=.ci-reports/fast.xml
           cp .ci-reports/tests.json .ci-reports/fast-tests.json
+      - name: PR installed-package regression lane
+        if: matrix.lane == 'pr'
+        timeout-minutes: 45
+        run: |
           make test-pr PYTHON=.tox/py314/bin/python TEST_ARGS=--junitxml=.ci-reports/pr.xml
           cp .ci-reports/tests.json .ci-reports/pr-tests.json
       - name: Chess and scientific integration contracts
@@ -133,7 +181,7 @@ jobs:
           cp .ci-reports/scientific-installed-identity.json .ci-reports/identity-after.json
           .tox/py314/bin/python -m pip check
       - name: Strict wheel and sdist metadata
-        if: matrix.lane == 'full'
+        if: startsWith(matrix.lane, 'full-')
         run: |
           python -m pip install twine==7.0.0
           python -m twine check --strict .tox/py314/tmp/dist/*
@@ -146,6 +194,12 @@ jobs:
           df -h .
           .tox/py314/bin/python -m pip list --format=json > .ci-reports/dependencies.json
           ps -eo pid,ppid,args > .ci-reports/processes-after-tests.txt
+      - name: Retain tested distributions
+        if: matrix.lane == 'full-0'
+        run: cp .tox/py314/tmp/dist/* .ci-reports/
+      - name: Seal runtime evidence
+        if: always()
+        run: .tox/py314/bin/python -m scripts.ci_validation seal
       - name: Retain test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -155,6 +209,8 @@ jobs:
           include-hidden-files: true
 
   static:
+    needs: scope
+    if: needs.scope.outputs.mode == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -205,18 +261,82 @@ jobs:
           path: .ci-reports/
           include-hidden-files: true
 
+  full-evidence:
+    needs: [scope, pytest]
+    if: needs.scope.outputs.mode == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.10"
+      - run: python -m pip install pytest==9.2.0 coverage==7.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ci-validation-*-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-inputs
+      - name: Require exact FULL selection and complete installed scientific evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m scripts.ci_validation assemble .ci-inputs
+      - name: Combine original line, branch, and subprocess coverage
+        run: |
+          python -m venv .tox/py314
+          .tox/py314/bin/python -m pip install coverage==7.17.0
+          .tox/py314/bin/python -m pip install --no-deps .ci-inputs/ci-validation-full-0-*/*.whl
+          .tox/py314/bin/python -m coverage combine --keep .ci-inputs/ci-validation-full-*/.coverage
+          .tox/py314/bin/python -m coverage json -o .ci-reports/full-coverage.json
+          python -m scripts.ci_validation coverage .ci-inputs
+      - name: Retain aggregate qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-qualification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-reports/
+          include-hidden-files: true
+          if-no-files-found: error
+
   test:
     if: ${{ always() }}
-    needs: [quality, pytest, static]
+    needs: [scope, quality, pytest, static, full-evidence]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require every validation gate
+      - name: Require every applicable validation gate without claiming skipped tests passed
         env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          VALIDATION_MODE: ${{ needs.scope.outputs.mode }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           PYTEST_RESULT: ${{ needs.pytest.result }}
           STATIC_RESULT: ${{ needs.static.result }}
+          EVIDENCE_RESULT: ${{ needs.full-evidence.result }}
         run: |
+          test "$SCOPE_RESULT" = success
           test "$QUALITY_RESULT" = success
-          test "$PYTEST_RESULT" = success
-          test "$STATIC_RESULT" = success
+          case "$VALIDATION_MODE" in
+            full)
+              test "$PYTEST_RESULT" = success
+              test "$STATIC_RESULT" = success
+              test "$EVIDENCE_RESULT" = success
+              echo "Complete installed-package validation and FULL selection/coverage verified." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            docs|reuse)
+              test "$PYTEST_RESULT" = skipped
+              test "$STATIC_RESULT" = skipped
+              test "$EVIDENCE_RESULT" = skipped
+              echo "Validation mode: $VALIDATION_MODE. No runtime tests executed in this run; see authenticated scope evidence." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *) exit 1 ;;
+          esac
+      - uses: actions/download-artifact@v4
+        with:
+          name: ci-route-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-route
+      - name: Report the exact scope or reused candidate
+        run: cat .ci-route/validation-route.json >> "$GITHUB_STEP_SUMMARY"
