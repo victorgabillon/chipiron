@@ -127,6 +127,7 @@ class DiskDatasetFamilyContext:
             self.confidence = DatasetConfidenceContext(
                 lambda node_id: source.view.load_value_contracts((node_id,))[0],
                 source.view.provenance,
+                mixed_source=source.view.mixed_source,
             )
         self._active_scientific_rows: Generator[MorpionSupervisedRow] | None = None
         connection.executescript("""

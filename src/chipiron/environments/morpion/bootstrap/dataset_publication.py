@@ -156,7 +156,61 @@ def _validate_rows(paths: MorpionBootstrapPaths, proposal: dict[str, Any]) -> Pa
         and file_digest(rows) == proposal["rows_sha256"],
         "Accepted Dataset rows missing, incomplete or changed.",
     )
+    _validate_mixed_rows(paths, rows, admission)
     return rows
+
+
+def _validate_mixed_rows(
+    paths: MorpionBootstrapPaths, rows: Path, admission: dict[str, Any]
+) -> None:
+    """Bind mixed rows to the same authenticated immutable source on recovery too."""
+    from chipiron.environments.morpion.learning.mixed_source import (
+        validate_source_policy,
+    )
+
+    from .sharded_training_v2_contract import MIXED_SOURCE_CONTRACT
+
+    metadata = load_morpion_supervised_rows_metadata(rows)
+    mixed = validate_source_policy(metadata)
+    expected = admission["source"]["scientific_identity"]
+    require(
+        mixed == (expected.get("scientific_contract") == MIXED_SOURCE_CONTRACT),
+        "Dataset source policy differs from its admitted source.",
+    )
+    if not mixed:
+        return
+    from .sharded_training_reader import ShardedTrainingGenerationView
+
+    state = load_bootstrap_run_state(paths.run_state_path)
+    record = _record(state, admission["generation"])
+    require(
+        admission["source"]
+        == {
+            key: record[key]
+            for key in ("id", "descriptor_sha256", "scientific_identity")
+        },
+        "Mixed Dataset admission no longer matches its source.",
+    )
+    with ShardedTrainingGenerationView(
+        inside(paths.work_dir, record["tree_snapshot_path"]), allow_closed_snapshot=True
+    ) as view:
+        require(
+            view.mixed_source is not None
+            and metadata["scientific_source_provenance"] == view.provenance,
+            "Dataset mixed provenance differs from authenticated Growth evidence.",
+        )
+        assert view.mixed_source is not None
+        for row in iter_morpion_supervised_rows_from_path(rows):
+            contract = view.load_value_contracts((row.node_id,))[0]
+            confidence = row.metadata["target_confidence"]
+            require(
+                confidence["source_value_contract"] == contract
+                and confidence["direct_prediction_origin"]
+                == view.mixed_source.direct_origin(
+                    row.node_id, contract["certainties"]["direct"]
+                ),
+                "Dataset row contradicts its authenticated source values/origins.",
+            )
 
 
 def _completion(
@@ -382,6 +436,7 @@ def publish_dataset(
         and rows.stat().st_size == manifest.metadata["dataset_rows_bytes"],
         "Incomplete Dataset output.",
     )
+    _validate_mixed_rows(paths, rows, attempt.admission)
     directory = _directory(paths, attempt.admission["attempt_id"])
     completed = replace(
         manifest, rows_path=paths.relative_to_work_dir(directory / "rows.jsonl")

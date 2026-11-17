@@ -1,19 +1,19 @@
 """Chipiron learning policy over values already selected/exported by Anemone."""
 
 import copy
+import hashlib
+import json
 import math
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
-from chipiron.environments.morpion.bootstrap.sharded_training_v2_contract import (
-    require_historical_source_policy,
-)
-
+from .mixed_source import validate_source_policy
 from .target_confidence import (
     CONFIDENCE_CONTRACT,
     SAFE_FAMILY_POLICIES,
     TARGET_CONTRACT,
     DatasetConfidenceContext,
+    dataset_format_version,
 )
 
 if TYPE_CHECKING:
@@ -73,9 +73,13 @@ def target_policy_metadata(source: TargetSource | None) -> dict[str, str]:
 
 def training_target_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     """Carry explicit Dataset semantics into the existing Training/bundle metadata."""
-    require_historical_source_policy(metadata)
+    mixed = validate_source_policy(metadata)
+    if mixed:
+        dataset_format_version(metadata)
     source = metadata.get("dataset_target_source")
     if source is None:
+        if mixed:
+            raise ValueError("Mixed Dataset requires an explicit target policy.")  # noqa: TRY003
         return {}
     if (
         source not in ("effective", "tree", "direct")
@@ -153,7 +157,7 @@ def validate_model_target_provenance(
     allow_implicit_legacy: bool = False,
 ) -> None:
     """Validate a trained model's own semantics, independently of comparison targets."""
-    require_historical_source_policy(metadata)
+    mixed = validate_source_policy(metadata)
     validate_model_target_kind(kind, metadata)
     policy = metadata.get("dataset_target_policy")
     if not declared and not (allow_implicit_legacy and policy is None):
@@ -161,6 +165,8 @@ def validate_model_target_provenance(
             "Scientific target comparison/continuation requires a declared model target kind."
         )
     if policy is None:
+        if mixed:
+            raise ValueError("Mixed model requires an explicit target policy.")  # noqa: TRY003
         # backup_value is the declared historical contract, not an effective alias.
         return
     identity = metadata.get("dataset_extraction_identity")
@@ -173,8 +179,19 @@ def validate_model_target_provenance(
         or metadata.get("dataset_confidence_contract") != CONFIDENCE_CONTRACT
     ):
         raise ValueError("Incomplete explicit model scientific target provenance.")  # noqa: TRY003
-    DatasetConfidenceContext(lambda _node_id: {}, provenance)
+    if not mixed:
+        DatasetConfidenceContext(lambda _node_id: {}, provenance)
     continuation = metadata.get("continuation")
+    if (
+        mixed
+        and continuation
+        and (
+            not isinstance(continuation, dict)
+            or continuation.get("dataset_source_binding")
+            != training_source_binding(metadata)
+        )
+    ):
+        raise ValueError("Model continuation lost its mixed Dataset source binding.")  # noqa: TRY003
     if continuation and (
         not isinstance(continuation, dict)
         or continuation.get("dataset_target_policy") != policy
@@ -182,3 +199,20 @@ def validate_model_target_provenance(
         raise ValueError(  # noqa: TRY003
             "Model continuation target policy disagrees with its provenance."
         )
+
+
+def training_source_binding(metadata: Mapping[str, Any]) -> dict[str, str] | None:
+    """Bind mixed source identity per round without constraining teacher model age."""
+    if not validate_source_policy(metadata):
+        return None
+    return {
+        "dataset_extraction_identity": metadata["dataset_extraction_identity"],
+        "scientific_source_sha256": hashlib.sha256(
+            json.dumps(
+                metadata["scientific_source_provenance"],
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode()
+        ).hexdigest(),
+    }

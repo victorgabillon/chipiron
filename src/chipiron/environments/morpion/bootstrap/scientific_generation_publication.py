@@ -231,3 +231,55 @@ def validate_closed_export(
         validator=validator_identity(),
         reused_from=None,
     )
+
+
+def bind_mixed_closed_source(
+    path: Path,
+    *,
+    staging: Path,
+    prediction_lineage: dict[str, Any],
+    validated: dict[str, Any],
+) -> None:
+    """Bind C3's prepared evidence before the existing closed-export validation.
+
+    C6 wires this after C3 seals observed writes and before the existing capsule
+    seal/commit. This helper changes only the private source header; it grants no
+    scientific admission. Committed readers still require C3 authentication.
+    """
+    from chipiron.environments.morpion.learning.mixed_source import (
+        SOURCE_POLICY,
+        validate_mixed_reference,
+    )
+
+    from .generation_publication_io import assert_artifact_writable
+    from .sharded_training_reader import read_closed_manifest
+    from .sharded_training_v2 import _write
+    from .sharded_training_v2_contract import MIXED_SOURCE_CONTRACT
+
+    require(
+        path == staging / "scientific_snapshot/generation.json"
+        and staging.parent.name == "staging",
+        "Mixed source binding requires private Growth staging.",
+    )
+    assert_artifact_writable(path)
+    validate_mixed_reference(prediction_lineage)
+    for key, hash_key in (("path", "sha256"), ("evidence_path", "evidence_sha256")):
+        require(
+            file_digest(staging / prediction_lineage[key])
+            == prediction_lineage[hash_key],
+            "Mixed header differs from C3's prepared evidence bytes.",
+        )
+    header = read_closed_manifest(path)
+    if validated:
+        require(
+            validated["manifest_sha256"] == file_digest(path),
+            "Closed writer validation changed.",
+        )
+    header.update(
+        scientific_contract=MIXED_SOURCE_CONTRACT,
+        source_policy=SOURCE_POLICY,
+        prediction_lineage=dict(prediction_lineage),
+    )
+    _write(path, header)
+    if validated:
+        validated["manifest_sha256"] = file_digest(path)

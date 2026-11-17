@@ -44,6 +44,8 @@ if TYPE_CHECKING:
 
     from anemone.node_evaluation.common.value_snapshot import NodeValueSnapshotAccess
 
+    from chipiron.environments.morpion.learning.mixed_source import MixedDatasetSource
+
 KIND = format_contract.KIND
 VERSION = format_contract.VERSION
 CONTRACT = format_contract.CONTRACT
@@ -85,6 +87,7 @@ class ScientificGeneration:
     value_contracts: dict[str, dict[str, Any]]
     provenance: dict[str, Any]
     creation_generations: dict[str, int] = field(default_factory=dict)
+    mixed_source: "MixedDatasetSource | None" = None
 
 
 @dataclass(frozen=True, slots=True)
