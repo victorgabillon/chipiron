@@ -2,12 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 from chipiron.environments.morpion.bootstrap import training_recap
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def test_collect_latest_training_recap_empty_work_dir_returns_none(
@@ -328,25 +326,74 @@ def test_training_recap_json_cli_emits_valid_json(
     assert payload["rows"][0]["validation_loss"] == 6.25
 
 
+@pytest.mark.parametrize(
+    ("selected_name", "results", "expected_name", "expected_loss"),
+    [
+        (
+            "mlp_20",
+            {
+                "linear_5": {"validation_loss": 1.0},
+                "mlp_20": {"validation_loss": 2.5},
+            },
+            "mlp_20",
+            2.5,
+        ),
+        (
+            "missing",
+            {"mlp_20": {"final_loss": 2.5}},
+            "mlp_20",
+            2.5,
+        ),
+        (
+            "missing",
+            {
+                "mlp_20": {"validation_loss": 2.5},
+                "linear_5": {"validation_loss": 2.5},
+            },
+            "linear_5",
+            2.5,
+        ),
+        ("mlp_20", {}, "mlp_20", None),
+    ],
+    ids=["selected-over-lowest-loss", "final-loss-fallback", "tie-order", "empty"],
+)
 def test_training_recap_single_json_cli_preserves_old_shape(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    selected_name: str,
+    results: dict[str, dict[str, float]],
+    expected_name: str,
+    expected_loss: float | None,
 ) -> None:
-    """The --single JSON mode should preserve the old single-recap shape."""
-    _write_training_status(
+    """Single JSON preserves the table's selection, fallback and wire fields."""
+    _write_training_status_with_results(
         tmp_path,
         generation=9,
-        evaluator_name="mlp_20",
-        validation_loss=2.5,
+        selected_evaluator_name=selected_name,
+        evaluator_results=results,
     )
 
     exit_code = training_recap.main(["--work-dir", str(tmp_path), "--single", "--json"])
 
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["generation"] == 9
-    assert payload["evaluator_name"] == "mlp_20"
-    assert payload["validation_loss"] == 2.5
+    assert payload == {
+        "generation": 9,
+        "evaluator_name": expected_name,
+        "status": "done",
+        "train_loss": None,
+        "validation_loss": expected_loss,
+        "validation_quality_r2_vs_mean_baseline": None,
+        "validation_quality_pearson_correlation": None,
+        "entity_output_tanh": None,
+        "entity_token_cache_used": None,
+        "cached_global_shuffle": None,
+        "model_bundle_path": (
+            f"models/generation_000009/{expected_name}" if results else None
+        ),
+        "source_path": "pipeline/generation_000009/training_status.json",
+        "updated_at": "2026-07-08T10:00:00Z",
+    }
 
 
 def test_find_key_finds_nested_values() -> None:
