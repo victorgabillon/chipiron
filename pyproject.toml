@@ -425,7 +425,7 @@ commands = [
     "--basetemp={envtmpdir}/pytest-tmp",
     "-m",
     "not integration and not external_data",
-    "{posargs}",
+    { replace = "posargs", extend = true },
   ],
 ]
 
