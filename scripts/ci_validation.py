@@ -6,6 +6,7 @@ selects a new FULL run; only complete same-tree PR evidence can avoid that run.
 
 import argparse
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -344,47 +345,37 @@ def assemble(inputs: Path) -> None:
 def check_coverage(inputs: Path, combined: Path) -> None:
     """Require the combined coverage report to retain every shard's lines and arcs."""
     q = read_json(Path(".ci-reports/qualification.json"))
-    parts = [
-        read_json(inputs / q["lanes"][lane]["artifact"]["name"] / "full-coverage.json")
-        for lane in FULL_LANES
-    ]
-    final = read_json(combined)
-    require(
-        final["meta"]["branch_coverage"]
-        and all(p["meta"]["branch_coverage"] for p in parts),
-        "Lost branch coverage",
+    require(q["complete"] is False, "Coverage qualification already complete")
+    require(q["source"] == source_identity(), "Coverage candidate changed")
+    check_qualification(q, q["source"])
+    parts = []
+    for lane in FULL_LANES:
+        record = q["lanes"][lane]
+        folder = inputs / record["artifact"]["name"]
+        require(check_seal(folder) == record["files"], "Coverage artifact changed")
+        parts.append(folder)
+    # Reuse the existing complete installed-source/Git byte verifier. The
+    # aggregate installs the authenticated tested wheel at its original path.
+    spec = importlib.util.spec_from_file_location(
+        "coverage_scientific_ci", Path(".github/scripts/scientific_ci.py")
     )
+    require(spec is not None and spec.loader is not None, "Missing scientific verifier")
+    assert spec is not None and spec.loader is not None
+    scientific = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(scientific)
+    tested = q["lanes"]["full-0"]["identity-before"]["chipiron"]
+    installed = Path(tested["origin"]).parent
     require(
-        all(set(p["files"]) == set(final["files"]) for p in parts),
-        "Coverage source membership mismatch",
+        scientific.verify_chipiron_sources(installed.parent, q["source"]["candidate"])
+        == (tested["source_members"], tested["package_members"]),
+        "Installed coverage source identity changed",
     )
-    for name, result in final["files"].items():
-        fragments = [p["files"][name] for p in parts]
-        for kind in ("lines", "branches"):
+    from .ci_coverage import verify_union
 
-            def values(file: dict[str, Any], key: str) -> set[Any]:
-                return {tuple(x) if isinstance(x, list) else x for x in file[key]}
-
-            executed = set().union(*(values(f, f"executed_{kind}") for f in fragments))
-            universe = values(result, f"executed_{kind}") | values(
-                result, f"missing_{kind}"
-            )
-            require(
-                all(
-                    values(f, f"executed_{kind}") | values(f, f"missing_{kind}")
-                    == universe
-                    for f in fragments
-                ),
-                "Coverage statement/branch universe changed",
-            )
-            require(
-                values(result, f"executed_{kind}") == executed,
-                "Incomplete coverage union",
-            )
-        require(
-            all(f["excluded_lines"] == result["excluded_lines"] for f in fragments),
-            "Coverage exclusions changed",
-        )
+    final = verify_union(
+        parts, Path(".coverage"), combined, installed, Path("src/chipiron").resolve()
+    )
+    write_json(combined, final)
     q["complete"] = True
     q["coverage"] = {"sha256": digest(combined.read_bytes()), "totals": final["totals"]}
     write_json(Path(".ci-reports/qualification.json"), q)

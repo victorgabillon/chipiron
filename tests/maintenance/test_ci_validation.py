@@ -1,6 +1,7 @@
 """Fail-closed partition, artifact, routing and same-tree PR reuse contracts."""
 
 import copy
+import importlib
 import importlib.util
 import os
 import shlex
@@ -30,6 +31,7 @@ spec = importlib.util.spec_from_file_location(
 assert spec is not None and spec.loader is not None
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
+coverage_gate = importlib.import_module("ci_speed_fixture.ci_coverage")
 PARTITION, SHARD_COUNT, shard_for = gate.PARTITION, gate.SHARD_COUNT, gate.shard_for
 pytestmark = pytest.mark.fast
 
@@ -663,7 +665,6 @@ def test_real_coverage_combine_preserves_lines_branches_and_child_processes(
     rc.write_text(
         "[run]\nbranch = true\nparallel = true\npatch = subprocess\nsource = sample\n"
     )
-    q: dict[str, Any] = {"lanes": {}, "complete": False}
     inputs = tmp_path / "inputs"
 
     def coverage(*args: str, data: Path) -> None:
@@ -686,16 +687,13 @@ def test_real_coverage_combine_preserves_lines_branches_and_child_processes(
         assert len(list(folder.glob(".coverage.*"))) == 2
         coverage("combine", data=data)
         coverage("json", "-o", str(folder / "full-coverage.json"), data=data)
-        q["lanes"][lane] = {"artifact": {"name": lane}}
         raw.append(str(data))
     data = tmp_path / ".coverage"
     combined = tmp_path / "combined.json"
     coverage("combine", "--keep", *raw, data=data)
     coverage("json", "-o", str(combined), data=data)
-    gate.write_json(Path(".ci-reports/qualification.json"), q)
-    gate.check_coverage(inputs, combined)
-    assert gate.read_json(Path(".ci-reports/qualification.json"))["complete"] is True
-    final = gate.read_json(combined)
+    parts = [inputs / lane for lane in gate.FULL_LANES]
+    final = coverage_gate.verify_union(parts, data, combined, source, tmp_path / "src")
     assert any(f["executed_branches"] for f in final["files"].values())
     for fault in ("lines", "branches", "membership", "exclusions", "branch_mode"):
         broken = copy.deepcopy(final)
@@ -710,7 +708,7 @@ def test_real_coverage_combine_preserves_lines_branches_and_child_processes(
             broken["meta"]["branch_coverage"] = False
         gate.write_json(combined, broken)
         with pytest.raises(ValueError):
-            gate.check_coverage(inputs, combined)
+            coverage_gate.verify_union(parts, data, combined, source, tmp_path / "src")
 
 
 def test_assemble_requires_sealed_complete_same_run_artifacts(
@@ -883,3 +881,207 @@ def test_unavailable_authenticated_reuse_routes_to_full(
     assert receipt["mode"] == "full"
     assert receipt["tests_executed_by_scope_job"] is False
     assert (tmp_path / "output").read_text() == "mode=full\n"
+
+
+def test_parser_contract_restores_shared_capture_before_metrics_warning(
+    tmp_path: Path,
+) -> None:
+    """Run the real producer/consumer order that failed in the hosted FULL-3 worker."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "--no-cov",
+            "-n",
+            "0",
+            "-q",
+            "-o",
+            f"cache_dir={tmp_path / 'cache'}",
+            f"--basetemp={tmp_path / 'pytest'}",
+            "tests/learning/test_parsley_consumer_compatibility.py::test_chess_launcher_extra_args_resolve_presets",
+            "tests/environments/test_morpion_bootstrap_performance.py::test_metrics_io_failure_does_not_fail_science",
+        ],
+        cwd=ROOT,
+        env={**os.environ, "CHIPIRON_OUTPUT_DIR": str(tmp_path / "output")},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "2 passed" in result.stdout
+
+
+def test_coverage_membership_requires_raw_evidence_and_complete_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reproduce the seven asymmetric installed/checkout paths with real raw DBs."""
+    from coverage import Coverage, CoverageData
+
+    monkeypatch.chdir(tmp_path)
+    installed = tmp_path / "site/chipiron"
+    checkout = tmp_path / "src/chipiron"
+    installed.mkdir(parents=True)
+    checkout.mkdir(parents=True)
+    # Same seven path shapes and shard membership as retained run 44040060171.
+    exclusive_installed = [
+        "environments/chess/players/args/__init__.py",
+        "environments/chess/players/args/chess_player_args.py",
+        "environments/chess/players/wiring/__init__.py",
+        "environments/chess/players/wiring/chess_wiring.py",
+    ]
+    exclusive_checkout = [
+        "debug/tree_search_debug_selector.py",
+        "environments/integer_reduction/players/evaluators/integer_reduction_state_evaluator.py",
+        "environments/integer_reduction/players/evaluators/wiring.py",
+    ]
+    code = "def choose(value):\n    if value:\n        return 1\n    return 0\nignored = 0  # pragma: no cover\n"
+    for name in [
+        "common.py",
+        "never_imported.py",
+        *exclusive_installed,
+        *exclusive_checkout,
+    ]:
+        for folder in (installed, checkout):
+            path = folder / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("" if name.endswith("__init__.py") else code)
+    (tmp_path / ".coveragerc").write_text("[run]\nbranch=true\n")
+    parts = [tmp_path / f"full-{i}" for i in range(4)]
+    raw = []
+    for index, folder in enumerate(parts):
+        folder.mkdir()
+        cov = Coverage(data_file=str(folder / ".coverage"))
+        cov.start()
+        selected = [installed / "common.py"]
+        if index == 0:
+            selected += [installed / name for name in exclusive_installed]
+            selected += [checkout / name for name in exclusive_checkout[1:]]
+        elif index == 1:
+            selected += [checkout / exclusive_checkout[0]]
+        for path in selected:
+            namespace: dict[str, Any] = {}
+            exec(compile(path.read_bytes(), str(path), "exec"), namespace)
+            if "choose" in namespace:
+                namespace["choose"](1)
+        cov.stop()
+        # Limit the fixture to its actual sources, excluding this test's frame.
+        data = CoverageData(basename=str(folder / ".coverage"))
+        data.add_arcs({str(p): cov.get_data().arcs(str(p)) or [] for p in selected})
+        data.write()
+        cov = Coverage(data_file=str(folder / ".coverage"))
+        cov.load()
+        cov.json_report(
+            morfs=[str(p) for p in selected], outfile=str(folder / "full-coverage.json")
+        )
+        gate.seal(folder)
+        raw.append(str(folder / ".coverage"))
+    cov = Coverage(data_file=str(tmp_path / ".coverage"))
+    cov.combine(data_paths=raw, keep=True)
+    cov.save()
+    combined = tmp_path / "combined.json"
+    cov.json_report(outfile=str(combined))
+
+    def verify() -> dict[str, Any]:
+        return dict(
+            coverage_gate.verify_union(
+                parts, tmp_path / ".coverage", combined, installed, checkout
+            )
+        )
+
+    final = verify()
+    sets = [set(gate.read_json(p / "full-coverage.json")["files"]) for p in parts]
+    assert len(set.union(*sets) - set.intersection(*sets)) == 7
+    never = final["files"]["site/chipiron/never_imported.py"]
+    assert never["missing_lines"] and not never["executed_lines"]
+    assert never["excluded_lines"]
+    assert len(final["files"]) == len(list(installed.rglob("*.py"))) + 3
+    # A reported execution cannot disappear merely because other shards have it.
+    fragment = parts[0] / "full-coverage.json"
+    saved = fragment.read_bytes()
+    broken = gate.read_json(fragment)
+    broken["files"].pop(
+        next(name for name in broken["files"] if "chess_player_args" in name)
+    )
+    gate.write_json(fragment, broken)
+    with pytest.raises(ValueError, match="raw/source"):
+        verify()
+    fragment.write_bytes(saved)
+    # Extra/missing source, changed executable statements and altered exclusions.
+    for mutation in ("extra", "missing", "lines", "exclusion", "total"):
+        broken = gate.read_json(fragment)
+        name = next(name for name in broken["files"] if "chess_wiring.py" in name)
+        if mutation == "extra":
+            broken["files"]["foreign.py"] = broken["files"][name]
+        elif mutation == "missing":
+            broken["files"].pop(name)
+        elif mutation == "lines":
+            broken["files"][name]["executed_lines"].append(999)
+        elif mutation == "exclusion":
+            broken["files"][name]["excluded_lines"] = []
+        else:
+            broken["totals"]["covered_lines"] += 1
+        gate.write_json(fragment, broken)
+        with pytest.raises(ValueError):
+            verify()
+        fragment.write_bytes(saved)
+    # Raw mutation cannot be hidden behind unchanged percentages/reports.
+    raw_path = parts[0] / ".coverage"
+    saved_raw = raw_path.read_bytes()
+    data = CoverageData(basename=str(raw_path))
+    data.read()
+    data.add_arcs({str(installed / "common.py"): [(2, 999)]})
+    data.write()
+    with pytest.raises(ValueError):
+        verify()
+    raw_path.write_bytes(saved_raw)
+    # A self-consistent rewrite of raw data and JSON is still unauthenticated:
+    # the aggregate must compare the seal with the GitHub-authenticated manifest.
+    data = CoverageData(basename=str(raw_path))
+    data.read()
+    data.add_arcs({str(installed / "common.py"): [(2, 1)]})
+    data.write()
+    changed = Coverage(data_file=str(raw_path))
+    changed.load()
+    changed.json_report(outfile=str(fragment))
+    with pytest.raises(ValueError, match="hash mismatch"):
+        gate.check_seal(parts[0])
+    raw_path.write_bytes(saved_raw)
+    fragment.write_bytes(saved)
+    gate.check_seal(parts[0])
+    raw_path.unlink()
+    with pytest.raises(ValueError, match="Missing raw"):
+        verify()
+    raw_path.write_bytes(saved_raw)
+    alias = checkout / exclusive_checkout[0]
+    alias.write_text(code + "changed = True\n")
+    with pytest.raises(ValueError, match="bytes changed"):
+        verify()
+
+
+@pytest.mark.parametrize("fault", ["source", "execution", "artifact"])
+def test_coverage_gate_rechecks_qualification_before_completion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    evidence: dict[str, Any],
+    fault: str,
+) -> None:
+    """Coverage cannot turn a failed execution or changed receipt into qualification."""
+    monkeypatch.chdir(tmp_path)
+    q = copy.deepcopy(evidence["q"])
+    q["complete"] = False
+    contract = tmp_path / ".github/ci-source-contracts.json"
+    contract.parent.mkdir()
+    contract.write_bytes((ROOT / ".github/ci-source-contracts.json").read_bytes())
+    current = copy.deepcopy(q["source"])
+    if fault == "source":
+        current["tree"] = "f" * 40
+    elif fault == "execution":
+        q["lanes"]["full-3"]["metrics"]["exit_code"] = 1
+    monkeypatch.setattr(gate, "source_identity", lambda: current)
+    monkeypatch.setattr(gate, "check_seal", lambda _root: {"altered": "0" * 64})
+    gate.write_json(Path(".ci-reports/qualification.json"), q)
+    with pytest.raises(ValueError):
+        gate.check_coverage(tmp_path / "inputs", tmp_path / "combined.json")
+    assert gate.read_json(Path(".ci-reports/qualification.json"))["complete"] is False
