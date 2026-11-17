@@ -50,7 +50,12 @@ class Frame:
             "Invalid state frame.",
         )
         require(
-            self.state.policy_sha256 == self.context.policy_sha256 == Policy().digest(),
+            self.state.policy_sha256 == self.context.policy_sha256
+            and self.context.policy_sha256
+            in {
+                Policy().digest(),
+                Policy(activation="owned_cold_model_only_v1").digest(),
+            },
             "Policy/context mismatch.",
         )
 
@@ -114,9 +119,13 @@ class Change:
     displacement: Displacement | None = None
 
 
-def initialize(workspace_epoch_sha256: str, config_sha256: str) -> Frame:
+def initialize(
+    workspace_epoch_sha256: str, config_sha256: str, *, policy: Policy | None = None
+) -> Frame:
     """Create fresh empty state/context without enabling any runtime policy."""
-    context = Context(workspace_epoch_sha256, config_sha256, Policy().digest())
+    context = Context(
+        workspace_epoch_sha256, config_sha256, (policy or Policy()).digest()
+    )
     return Frame(
         context,
         State(

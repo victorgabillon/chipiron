@@ -2257,6 +2257,27 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             raise UninitializedMorpionSearchRunnerError
         return self._runtime
 
+    def switch_model_evaluator(self, model_bundle_path: Path) -> None:
+        """Switch future predictions in an owned cold runtime with actual origins.
+
+        Anemone set_evaluator changes only evaluator binding/version. Existing
+        direct, backed-up and effective values are deliberately not refreshed.
+        The owning publication must discard this private runtime on any failure.
+        """
+        import torch
+
+        require(
+            self._prediction_origins is not None,
+            "Model-only activation requires actual origins.",
+        )
+        self.prediction_origins()
+        self.validate_model_refresh_certificates()
+        with torch.random.fork_rng(devices=[]):
+            self._set_runtime_evaluator_from_bundle(
+                model_bundle_path, reevaluate_tree=False
+            )
+        self.prediction_origins()
+
     def refresh_model_estimates(self, model_bundle_path: Path) -> ReevaluationReport:
         """One bounded full scientific refresh in a private, quiescent runtime.
 

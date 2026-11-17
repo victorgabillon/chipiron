@@ -40,6 +40,7 @@ def initialize_scientific_v2_publication(
     model_activation: bool = False,
     prediction_origin_runner: PredictionOriginRuntime | None = None,
     rolling_reevaluation: bool = False,
+    model_only_activation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -130,6 +131,27 @@ def initialize_scientific_v2_publication(
             and (not durable_training or fenced_dataset),
             "Durable Training requires fresh fenced genesis.",
         )
+        from .continuous_contract import Policy as ContinuousPolicy
+        from .learning_schedule import schedule_from_metadata
+        from .model_activation import MODEL_ONLY_MODE, MODEL_ONLY_POLICY
+
+        schedule = schedule_from_metadata(
+            load_bootstrap_config(paths.bootstrap_config_path).metadata
+        )
+        require(
+            not isinstance(schedule, ContinuousPolicy)
+            or (schedule.activation == MODEL_ONLY_MODE) == model_only_activation,
+            "Continuous activation policy differs from fresh genesis mode.",
+        )
+        require(
+            not model_only_activation
+            or (
+                model_activation
+                and rolling_reevaluation
+                and prediction_origin_runner is not None
+            ),
+            "Model-only activation requires fresh tracked rolling genesis.",
+        )
         checkpoint = inside(paths.work_dir, state.latest_runtime_checkpoint_path)
         metadata = dict(state.metadata)
         if durable_training:
@@ -166,6 +188,8 @@ def initialize_scientific_v2_publication(
             closed_scientific_snapshot=closed_scientific_snapshot,
         )
         publication.config_hash = metadata.get("bootstrap_config_hash")
+        if model_only_activation:
+            publication.genesis_activation_policy = dict(MODEL_ONLY_POLICY)
         if model_activation:
             from .model_activation import validate_activation_genesis
 
@@ -259,8 +283,21 @@ def initialize_scientific_experiment(
     seed_model: Path,
     initial_nodes: int,
     prediction_origin_tracking: bool = False,
+    model_only_activation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Build a bounded fresh search, then use the existing complete genesis commit."""
+    from .continuous_contract import Policy as ContinuousPolicy
+    from .model_activation import MODEL_ONLY_MODE
+
+    model_only_activation = model_only_activation or (
+        isinstance(args.learning_schedule, ContinuousPolicy)
+        and args.learning_schedule.activation == MODEL_ONLY_MODE
+    )
+    prediction_origin_tracking = prediction_origin_tracking or model_only_activation
+    require(
+        not model_only_activation or args.dataset_target_source is not None,
+        "Model-only genesis requires explicit Dataset targets.",
+    )
     require(
         not prediction_origin_tracking or args.reevaluation_blend_alpha == 1.0,
         "Prediction tracking requires unblended Growth writes.",
@@ -315,11 +352,10 @@ def initialize_scientific_experiment(
     from .scientific_stream import ENCODING
 
     validate_supported(args)
-    from .continuous_contract import Policy
     from .managed_sessions import KEY as MANAGED_KEY
 
     require(
-        not isinstance(args.learning_schedule, Policy)
+        not isinstance(args.learning_schedule, ContinuousPolicy)
         or MANAGED_KEY in config.metadata,
         "Continuous genesis requires managed-session enrollment.",
     )
@@ -461,6 +497,8 @@ def initialize_scientific_experiment(
             durable_training=True,
             model_activation=True,
             prediction_origin_runner=runner if prediction_origin_tracking else None,
+            rolling_reevaluation=model_only_activation,
+            model_only_activation=model_only_activation,
         )
     finally:
         runner.discard_uncommitted_runtime()

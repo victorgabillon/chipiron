@@ -11,8 +11,9 @@
 > retained for compatibility/history. They are **not** authorization to run
 > a closed scientific experiment without its managed genesis, sealed model
 > authority and verified supervisor. Training acceptance is separate from
-> model activation in the scientific path; the current atomic activation still
-> performs a complete synchronous Anemone refresh.
+> model activation in the scientific path; the default atomic activation
+> performs a complete synchronous Anemone refresh. C6 adds the separate fresh
+> opt-in model-only contract documented below; it is not production enablement.
 >
 > J5.1/J5.2/J5.3 now provide capacity deferral, authenticated terminal-idle
 > shutdown and fixed-deadline prepared-Dataset lease waits through the existing
@@ -50,10 +51,8 @@ Fresh scientific genesis can explicitly request `rolling_reevaluation=True` with
 atomic Reevaluation, Growth scoring and committed evaluator authority
 (`model_activation=True`). This selects transaction schema 3;
 existing schemas and the operator defaults remain unchanged. Existing workspaces
-cannot be adopted or silently migrated. C6 must wire this option into the managed
-progressive mode together with C3 prediction origins and C5 mixed-source admission.
-This option alone does not enable progressive activation: the current activation
-still performs its full native refresh.
+cannot be adopted or silently migrated. C6 combines this option with C3 origins and C5 admission only for the explicitly
+selected model-only genesis policy. Rolling alone retains full activation.
 
 The existing Reevaluation producer starts each pass from the latest committed
 closed snapshot. Its finite, sorted node inventory stays fixed until that pass is
@@ -85,6 +84,43 @@ traversal (and successful native disposition for each eligible surviving node).
 Continuous replacements do not provide that guarantee. C3 write evidence, rather
 than cursor position or pass count, is the authority for actual node prediction
 provenance.
+
+## C6 local progressive integration (fresh opt-in)
+
+`owned_cold_full` remains the default and retains its original policy and full
+refresh completion. A fresh continuous configuration may set
+`learning_schedule.activation` to `owned_cold_model_only_v1` while keeping the
+existing six slots and all other supported limits. Configure explicit
+`dataset_target_source` (`effective`, `tree` or `direct`) and unblended
+`reevaluation_blend_alpha=1.0`. The existing scientific initializer enables actual
+origin tracking and rolling schema 3 together and seals the model-only policy at
+genesis. The Python genesis API also accepts explicit `model_only_activation=True`;
+the lower publication API requires an actual tracked runner and rolling mode.
+No flag on an existing run adopts or migrates historical data.
+
+The existing prepare/activate and automatic promotion routes read that sealed
+policy. Model-only requests have schema 3, or schema 4 with the existing verified
+continuous reservation. Their completion has schema 2 and mode
+`owned_cold_model_only_v1`, with `switch.scope=future_direct_predictions` and
+`rewritten_nodes=0`; it contains no `refresh` assertion. Do not relabel old requests.
+The transaction validates native certificates, durably drains eligible old-model
+work, loads the pinned accepted candidate in a private cold runtime, switches
+future evaluation, then publishes through the existing checkpoint/capsule/state
+commit. An unresolved packet conflict refuses; it is not deleted. A crash after
+drain leaves that committed old-model head valid. Exact committed retries repair
+projections only. Existing automatic drain renewal remains the recovery owner.
+
+Old values and origins remain after a switch. Native Growth writes and accepted
+bounded patches establish new origins; a cursor pass alone is not freshness.
+The combined source header binds the exact C3 evidence before sealing, and both
+Dataset readers authenticate the complete source. Derived targets have no invented
+single-model origin. Incomplete pass sources and retained model pins survive
+recovery; checkpoint/science retirement does not remove origin evidence or models.
+
+This is a local implementation candidate, not a production rollout or performance
+claim. Focused and installed-source receipts are in the C6 delivery evidence.
+The one final authoritative FULL qualification belongs to the owner-approved CI
+gate. Historical research, dependencies and experiments are unchanged.
 
 ## Operator commands
 
@@ -689,7 +725,7 @@ Enjoy exploring Morpion 🚀
 
 ### B4 provenance contract and owned writes (C2/C3)
 
-`prediction_lineage.py` defines a structural contract for a future capsule-owned
+`prediction_lineage.py` defines the structural contract for the capsule-owned
 direct-origin sidecar: interned write events, proven default/birth coverage,
 sparse node overrides and exact patch dispositions bound to existing receipts.
 It does not produce or authenticate Growth write evidence. Matching hashes and
@@ -698,15 +734,14 @@ Mixed evaluator origins pass this contract intentionally. Its optional homogeneo
 claim check only rejects false declarations; it is not an activation or admission
 prerequisite. The map stores current origins, not per-node history.
 
-The reserved mixed-source scientific discriminator is rejected by current
-readers. Dataset and model-target boundaries also reject B4 policy/lineage fields
+The explicit mixed-source discriminator is admitted only through authenticated
+C3 evidence by the combined C6 readers. Dataset and model-target boundaries also reject B4 policy/lineage fields
 attached to historical provenance, including legacy-target fallback attempts.
 Historical sources and `backup_value` retain their original identities; absence
 of new lineage is not evidence that their predictions were fully refreshed.
-C4 rolling traversal, C5 mixed admission and C6 progressive activation remain
-separate integration work. Training acceptance and activation
-requests do not activate a model. The existing full-refresh activation policy,
-single Reevaluation worker and Growth publication owner are unchanged.
+C6 integrates C4 rolling traversal, C5 mixed admission and fresh model-only
+activation through the existing owners. Training acceptance and request creation
+do not activate a model. Full refresh remains the default policy.
 Full refresh is the current conservative implementation policy, not a mathematical
 requirement for progressive activation, Growth or mixed-source scientific use.
 
@@ -735,8 +770,9 @@ pins. The immutable `read_committed_prediction_origins(work_dir, record)` result
 exposes `lineage`, `creation_generations` and `current_origins` for C5.
 
 This supplementary evidence does not itself admit mixed training data or enable
-progressive activation. Mixed source header/policy binding and model-only activation
-remain separate review gates, with no complete-tree freshness requirement. Current
+progressive activation. C6 binds the header for combined rolling/tracked sources;
+the separate genesis policy selects model-only activation. Neither asserts
+complete-tree freshness. Current
 maps and write evidence may require O(N) IDs and scanning; no performance or bounded
 total retention claim is made. No per-node historical journal is recorded.
 
@@ -977,7 +1013,7 @@ consumption after existing native quiescence checks; original allowances remain.
 operations, and fresh fork genesis does not import this operational authority.
 
 
-### Mixed-source Dataset and Training (C5; C3/C6 integration required)
+### Mixed-source Dataset and Training (C5 integrated with actual C3 evidence)
 
 The explicit `mixed_search_targets_v1` source policy uses the C2
 `anemone-values-mixed-direct-lineage-morpion-1` discriminator on both the closed
@@ -1006,8 +1042,8 @@ may have different proven model origins without requiring evaluator activation o
 forcing every node to the newest model. Target-policy compatibility still applies.
 
 `bind_mixed_closed_source` is a private publication handoff, not an opt-in switch:
-C6 must wire it after C3 prepares actual write evidence and before closed-export
-validation and the existing capsule seal/commit. C5 introduces no activation mode,
+C6 invokes it after C3 prepares actual write evidence and before closed-export
+validation and the existing capsule seal/commit, preserving the writer manifest hash. C5 introduces no activation mode,
 worker, Training implementation or fabricated production evidence. Before enabling
 this path, C6 must validate actual C3 Growth writes through mixed Dataset creation,
 acceptance/recovery and Training continuation, including crash/retry boundaries

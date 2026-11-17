@@ -150,6 +150,15 @@ class EvaluatorRefreshRuntime(Protocol):
 
 
 @runtime_checkable
+class EvaluatorSwitchRuntime(Protocol):
+    """Install an evaluator without rewriting existing native values."""
+
+    def switch_model_evaluator(self, model_bundle_path: Path) -> None:
+        """Keep existing values, proofs, selection and RNG; track future writes."""
+        ...
+
+
+@runtime_checkable
 class ContinualGrowthRuntime(  # pylint: disable=too-many-ancestors
     BoundedGrowthRuntime,
     CheckpointWriter,

@@ -4,6 +4,8 @@ C3 owns write authentication. This module neither qualifies proposed origins nor
 changes a scalar: derived targets belong to the sealed search snapshot.
 """
 # ruff: noqa: TRY003
+# Wire integers intentionally exclude bool and integer subclasses.
+# pylint: disable=unidiomatic-typecheck
 
 import copy
 import importlib

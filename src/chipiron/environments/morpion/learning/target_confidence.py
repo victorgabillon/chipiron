@@ -369,18 +369,15 @@ def validate_confident_row(
         and provenance.get("scientific_contract") == MIXED_SOURCE_CONTRACT
     ):
         direct_origin = confidence.get("direct_prediction_origin")
-        if (
-            "direct_prediction_origin" not in confidence
-            or (
-                certainties.get("direct") == "ESTIMATE"
-                and (
-                    type(direct_origin) is not int
-                    or not 0 <= direct_origin < len(provenance["prediction_origins"])
-                    or provenance["direct_origin_counts"][direct_origin] < 1
-                )
-            )
-            or (certainties.get("direct") != "ESTIMATE" and direct_origin is not None)
-        ):
+        # Exact wire integer semantics intentionally reject bool/subclasses.
+        valid_direct_origin = (
+            type(direct_origin) is int  # pylint: disable=unidiomatic-typecheck
+            and 0 <= direct_origin < len(provenance["prediction_origins"])
+            and provenance["direct_origin_counts"][direct_origin] >= 1
+            if certainties.get("direct") == "ESTIMATE"
+            else direct_origin is None
+        )
+        if "direct_prediction_origin" not in confidence or not valid_direct_origin:
             raise DatasetConfidenceError("Invalid mixed direct prediction origin")
         expected_origin = selected_origin(
             slot=slot,

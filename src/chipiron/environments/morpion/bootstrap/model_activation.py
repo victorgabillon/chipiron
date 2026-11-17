@@ -64,6 +64,7 @@ from .runtime.runner import (
     default_search_args,
 )
 from .runtime_capabilities import (
+    EvaluatorSwitchRuntime,
     ModelActivationRuntime,
     supports_runtime_capability,
 )
@@ -84,7 +85,42 @@ POLICY = {
     "refresh_scope": "all",
     "batch_size": 64,
 }
+MODEL_ONLY_MODE = "owned_cold_model_only_v1"
+MODEL_ONLY_POLICY = {
+    "schema_version": 1,
+    "mode": MODEL_ONLY_MODE,
+    "checkpoint_format": 3,
+    "search": POLICY["search"],
+    "confidence": POLICY["confidence"],
+    "numeric": GROWTH_NUMERIC_POLICY,
+    "refresh_scope": "future_direct_predictions",
+}
 LOGGER = logging.getLogger(__name__)
+
+
+def activation_policy(
+    paths: MorpionBootstrapPaths, state: MorpionBootstrapRunState
+) -> dict[str, Any]:
+    """Authenticate mode from the original sealed genesis, never a mutable flag."""
+    records = publication_records(state.metadata)
+    genesis = read_committed_descriptor(paths.work_dir, records[0])
+    declared = genesis.get("activation_policy")
+    if declared is None:
+        return dict(POLICY)
+    require(declared == MODEL_ONLY_POLICY, "Unsupported genesis activation policy.")
+    transaction = transaction_state(state)
+    require(
+        transaction is not None
+        and transaction["schema_version"] == 3
+        and all("prediction_lineage" in record for record in (records[0], records[-1]))
+        and all(
+            record["scientific_identity"].get("source_policy")
+            == "mixed_search_targets_v1"
+            for record in (records[0], records[-1])
+        ),
+        "Model-only activation requires fresh tracked rolling mixed publication.",
+    )
+    return dict(MODEL_ONLY_POLICY)
 
 
 def _runner(
@@ -190,8 +226,13 @@ def _request(
             "Learning selection is not activation eligible.",
         )
     require(model != candidate, "Selected model is already active.")
+    policy = activation_policy(paths, state)
+    model_only = policy == MODEL_ONLY_POLICY
     return {
-        "schema_version": 1,
+        **bindings,
+        "schema_version": (4 if continuous else 3)
+        if model_only
+        else (2 if continuous else 1),
         "identity": workspace_epoch(state),
         "expected_head": state.metadata[PUBLICATION_KEY]["head_id"],
         "previous_model": model,
@@ -202,10 +243,9 @@ def _request(
         "effective_runtime": state.metadata.get(
             BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY
         ),
-        "policy": dict(POLICY),
+        "policy": policy,
         "expected_cursor_sha256": cursor_digest(transaction["accepted_cursor"]),
         "receipt_ledger_sha256": object_digest(state.metadata[RECEIPTS_METADATA_KEY]),
-        **bindings,
     }
 
 
@@ -324,15 +364,22 @@ def activation_completion(
     request = completion.get("request")
     require(isinstance(request, dict), "Missing completed activation request.")
     assert isinstance(request, dict)
+    policy = activation_policy(paths, state)
+    model_only = policy == MODEL_ONLY_POLICY
     require(
         isinstance(request.get("schema_version"), int)
         and not isinstance(request["schema_version"], bool)
-        and request["schema_version"] == (2 if "continuous_source" in record else 1)
+        and request["schema_version"]
+        == (
+            (4 if "continuous_source" in record else 3)
+            if model_only
+            else (2 if "continuous_source" in record else 1)
+        )
         and completion.get("request_sha256")
         == record.get("activation_request_sha256")
         == object_digest(request)
         and request.get("identity") == workspace_epoch(state)
-        and object_digest(request.get("policy")) == object_digest(POLICY)
+        and object_digest(request.get("policy")) == object_digest(policy)
         and request.get("config_sha256")
         == descriptor["bootstrap_config_hash"]
         == state.metadata.get("bootstrap_config_hash"),
@@ -354,10 +401,18 @@ def activation_completion(
             and r.get("accepted_training") == request["accepted_training"]
             for r in records[:index]
         )
-        and isinstance(completion.get("refresh"), dict),
+        and (
+            completion.get("schema_version") == 2
+            and completion.get("mode") == MODEL_ONLY_MODE
+            and completion.get("switch")
+            == {"scope": "future_direct_predictions", "rewritten_nodes": 0}
+            and "refresh" not in completion
+            if model_only
+            else isinstance(completion.get("refresh"), dict)
+        ),
         "Activation completion transition mismatch.",
     )
-    if request["schema_version"] == 2:
+    if request["schema_version"] in (2, 4):
         # Deferred runtime import: both modules are initialized before this call.
         from .promotion import validate_completion  # pylint: disable=cyclic-import
 
@@ -509,15 +564,40 @@ def activate_model(
                 state.generation,
                 state.metadata[PUBLICATION_KEY]["head_id"],
             )
-            with activation_inputs(paths.work_dir) as cache_observation:
-                refresh = runner.refresh_model_estimates(model_path)
+            cache_observation: dict[str, Any] | None = None
+            operation: dict[str, Any]
+            if request["policy"] == MODEL_ONLY_POLICY:
+                switch_runtime = runner
+                require(
+                    supports_runtime_capability(switch_runtime, EvaluatorSwitchRuntime),
+                    "Model-only activation requires the supported evaluator switch capability.",
+                )
+                assert supports_runtime_capability(
+                    switch_runtime, EvaluatorSwitchRuntime
+                )
+                switch_runtime.switch_model_evaluator(model_path)
+                operation = {
+                    "schema_version": 2,
+                    "mode": MODEL_ONLY_MODE,
+                    "switch": {
+                        "scope": "future_direct_predictions",
+                        "rewritten_nodes": 0,
+                    },
+                    "switch_performance": optional_finish(refresh_measurement),
+                }
+            else:
+                with activation_inputs(paths.work_dir) as cache_observation:
+                    refresh = runner.refresh_model_estimates(model_path)
+                operation = {
+                    "refresh": asdict(refresh),
+                    "refresh_performance": optional_finish(refresh_measurement),
+                }
             publication.activation = {
                 "request_sha256": digest,
                 "request": request,
                 "previous_head": state.metadata[PUBLICATION_KEY]["head_id"],
                 "previous_producer": producer,
-                "refresh": asdict(refresh),
-                "refresh_performance": optional_finish(refresh_measurement),
+                **operation,
             }
             publication.active_evaluator = model
             publication.producer = {**producer, "evaluator": model["sha256"]}

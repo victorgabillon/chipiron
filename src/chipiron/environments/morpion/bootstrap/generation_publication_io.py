@@ -896,7 +896,8 @@ def validate_committed_identity(
     identity = record["scientific_identity"]
     mixed = identity.get("scientific_contract") == MIXED_SOURCE_CONTRACT
     if mixed:
-        from chipiron.environments.morpion.learning.mixed_source import (
+        # Deferred: the reader calls this owner only after module initialization.
+        from chipiron.environments.morpion.learning.mixed_source import (  # pylint: disable=cyclic-import
             SOURCE_POLICY,
             validate_mixed_reference,
         )

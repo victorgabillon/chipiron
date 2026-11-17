@@ -400,8 +400,12 @@ def request_bindings(
     root = value.previous if value.phase == "CUTOVER" else record_ref(record)
     require(root is not None, "Missing verified cutover predecessor.")
     assert root is not None
+    from .model_activation import MODEL_ONLY_POLICY, activation_policy  # pylint: disable=cyclic-import
+
     return {
-        "schema_version": 2,
+        "schema_version": 4
+        if activation_policy(paths, state) == MODEL_ONLY_POLICY
+        else 2,
         "reserved_promotion": root.to_metadata(),
         "promotion_comparison": value.comparison.to_metadata(),
     }
@@ -448,7 +452,7 @@ def resolve_owned(
 
 
 def activate_at_boundary(paths: MorpionBootstrapPaths) -> None:
-    """Use the unchanged synchronous cold-refresh implementation for the reservation."""
+    """Use the existing Growth transaction with the sealed genesis activation mode."""
     from .model_activation import (
         _renew_automatic_request_after_drain,
         _request,

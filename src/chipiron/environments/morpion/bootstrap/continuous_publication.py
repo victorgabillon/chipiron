@@ -204,7 +204,13 @@ def prepare_publication_owned(
         )
         expected = context(paths, proposed)
         frame = transitions.initialize(
-            expected.workspace_epoch_sha256, expected.config_sha256
+            expected.workspace_epoch_sha256,
+            expected.config_sha256,
+            policy=Policy.from_metadata(
+                read_object(paths.bootstrap_config_path)["metadata"][
+                    "learning_schedule"
+                ]
+            ),
         )
         proposed = replace(
             proposed, metadata={**proposed.metadata, KEY: frame.state.to_metadata()}

@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -95,7 +95,11 @@ def test_abc_progress_and_new_nodes_wait_for_next_finite_pass(
         patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
         assert patch.tree_generation == 1
         seen.extend(row.node_id for row in patch.rows)
-        models.append(patch.metadata[tx.TRANSACTION_KEY]["model"]["sha256"])
+        models.append(
+            cast("dict[str, Any]", patch.metadata[tx.TRANSACTION_KEY])["model"][
+                "sha256"
+            ]
+        )
         state = grow(paths)
         cursor = accepted(paths)
         assert cursor["next_node_cursor"] == original[index + 1]
@@ -171,7 +175,10 @@ def test_obsolete_inference_discards_only_batch_and_stale_packet_refuses(
     assert propose(args).patch_written
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
     assert patch.start_cursor == before["next_node_cursor"]
-    assert patch.metadata[tx.TRANSACTION_KEY]["model"] == request["candidate"]
+    assert (
+        cast("dict[str, Any]", patch.metadata[tx.TRANSACTION_KEY])["model"]
+        == request["candidate"]
+    )
     grow(paths)
 
 
@@ -188,7 +195,7 @@ def test_prefix_forgery_refuses_before_native_write(
     assert propose(args, 2).patch_written
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
     state = load_bootstrap_run_state(paths.run_state_path)
-    metadata = copy.deepcopy(patch.metadata)
+    metadata = cast("dict[str, Any]", copy.deepcopy(patch.metadata))
     cursor = metadata[tx.TRANSACTION_KEY]["next_cursor"]
     if damage == "skip":
         patch = replace(patch, rows=patch.rows[1:])
@@ -276,7 +283,7 @@ def test_finite_reader_edges_and_fresh_genesis_only(
     assert propose(args, 1000).patch_written
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
     current = grow(paths)
-    metadata = copy.deepcopy(patch.metadata)
+    metadata = cast("dict[str, Any]", copy.deepcopy(patch.metadata))
     envelope = metadata[tx.TRANSACTION_KEY]
     envelope["expected_cursor_sha256"] = tx.cursor_digest(accepted(paths))
     envelope["next_cursor"]["last_patch_id"] = "repeat-pass"
@@ -345,7 +352,10 @@ def test_crash_recovers_receipt_cursor_once(
     state = load_bootstrap_run_state(paths.run_state_path)
     assert bool(receipt_ledger(state)) == (boundary == "after")
     grow(paths)
-    assert accepted(paths) == patch.metadata[tx.TRANSACTION_KEY]["next_cursor"]
+    assert (
+        accepted(paths)
+        == cast("dict[str, Any]", patch.metadata[tx.TRANSACTION_KEY])["next_cursor"]
+    )
     assert len(receipt_ledger(load_bootstrap_run_state(paths.run_state_path))) == 1
     assert propose(args).patch_written
     grow(paths)

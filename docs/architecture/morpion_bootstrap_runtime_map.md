@@ -1,7 +1,10 @@
 # Morpion bootstrap: current implementation and ownership map
 
-> **Source-reviewed snapshot:** 2026-11-16, Chipiron protected `main`
-> `7d128fa83809b3c9d29b15955d2c8f2f89065b14` (includes PR #127, J5 #128–#130 and B6 #132).
+> **Source-reviewed snapshot:** 2026-11-17, local C6 integration on shared
+> `308e04f524369733c2acdbc38876b86ac1013be5` (reviewed main `4c882db5`, C2–C5).
+> This candidate is not deployed or fully qualified. Exact source and validation
+> identities belong to the C6 delivery receipt; remote/FULL qualification requires
+> the owner's integration gate.
 > This is an index of **implemented contracts**, not a new design, a readiness
 > certification, or permission to enable experimental policies. Read the source
 > at the pinned commit for exact behavior. Later changes must update this map.
@@ -17,13 +20,10 @@ implementation reports are retained as historical evidence; some describe
 features that were incomplete *at their original commit*. This page records the
 current source-level boundaries to prevent inventing a second implementation.
 
-Review coverage: the current source tree contains 185 Python modules under
-`src/chipiron/environments/morpion/bootstrap/` and 195 Morpion-named test/helper
-modules under `tests/environments/`. The entrypoints, contracts and
-cross-boundary files named below were inspected. This is **not** a line-by-line
-verification of every branch in those modules or a fresh execution of all
-tests. Claims about crash safety are descriptions of the current code's intended
-and tested contracts, not an independent filesystem proof from this document.
+Review coverage includes the entrypoints, contracts and cross-boundary files named
+below. The original architecture review did not exhaustively verify every branch.
+C6 adds focused integration, native-state, mixed-source, promotion and recovery
+tests; it does not replace the separately authorized final FULL qualification.
 
 ## One-page process and authority map
 
@@ -76,7 +76,7 @@ Dataset reader, training optimizer or model across jobs as shared authority.
 | [`checkpoint_patch_receipts.py`](../../src/chipiron/environments/morpion/bootstrap/checkpoint_patch_receipts.py) | Exactly-one-committed-effect patch receipt and accepted cursor in durable Growth state | Producer publishing a patch does not commit its application |
 | [`dataset_publication.py`](../../src/chipiron/environments/morpion/bootstrap/dataset_publication.py) | Dataset proposal, source identity, admission and acceptance | Does not promote a model |
 | [`training_publication.py`](../../src/chipiron/environments/morpion/bootstrap/training_publication.py) | Immutable Training results, candidate continuation/selection and acceptance | Acceptance is not model activation |
-| [`model_activation.py`](../../src/chipiron/environments/morpion/bootstrap/model_activation.py) | Explicit model activation within Growth authority, current **full** scientific refresh | Does not currently offer a model-only/partial-refresh activation policy |
+| [`model_activation.py`](../../src/chipiron/environments/morpion/bootstrap/model_activation.py) | Growth-owned cold activation: full refresh by default, or fresh opt-in `owned_cold_model_only_v1` | No second scheduler, mutation owner or prediction authority |
 | [`reevaluation_worker.py`](../../src/chipiron/environments/morpion/bootstrap/reevaluation_worker.py) | Independent active-model inference over bounded saved-snapshot windows | Does not mutate Growth's live tree or authoritative checkpoint |
 | [`reevaluation_patch_consumer.py`](../../src/chipiron/environments/morpion/bootstrap/reevaluation_patch_consumer.py), [`runtime/reevaluation_patching.py`](../../src/chipiron/environments/morpion/bootstrap/runtime/reevaluation_patching.py) | Growth applies accepted direct-value patches and uses native Anemone propagation | Does not implement its own minimax/maximum backup |
 
@@ -104,7 +104,8 @@ Dataset reader, training optimizer or model across jobs as shared authority.
    publication. It does **not** replace Growth's tree owner or add a new optimizer.
 
 The `bounded_continuous_v1` policy remains explicit/default-off. Its activation
-mode in the current contract is `owned_cold_full`. Do not describe successful
+default mode is `owned_cold_full`. Fresh genesis may explicitly select
+`owned_cold_model_only_v1`, preserving the same six slots and promotion comparison. Do not describe successful
 isolated pilot results as default-on or production-certified behavior.
 
 ## Current Reevaluation: exact producer → consumer sequence
@@ -120,14 +121,19 @@ The separate producer is real; it is **not** a proposed B4 component.
    suitable tree snapshot. Non-scientific legacy mode has different discovery.
 2. A source manifest is pinned; the bounded sharded
    [reader](../../src/chipiron/environments/morpion/bootstrap/sharded_training_reader.py)
-   selects sorted node IDs through a circular cursor. The built-in evaluator
+   selects sorted node IDs through the historical circular cursor, or the fresh
+   schema-3 finite rolling cursor. The built-in evaluator
    loads the pinned bundle, reconstructs selected Morpion states, predicts
    nonterminal direct values and preserves stored terminal scores.
-3. **Current cursor is model-bound.** `cursor_matches_active_model` compares
+3. **Historical schemas retain a model-bound cursor.** `cursor_matches_active_model` compares
    evaluator generation, name and bundle path. A mismatch resets the next
    selection to the beginning and resets the completed-pass count. Tree
    generation alone does not reset it. A full-pass count measures cursor wraps,
-   not freshness against every future/new model.
+   not freshness against every future/new model. Schema 3 instead freezes one
+   source inventory and accepts exact finite prefixes without wrapping a packet.
+   Model switches preserve its source, continuation and pass count; future Growth
+   IDs enter a later pass. Incomplete sources remain retention roots. Completion
+   records traversal, not a claim that all direct predictions use the newest model.
 4. Inference runs outside the Growth mutation ownership boundary.
    [`reevaluation_publication.py`](../../src/chipiron/environments/morpion/bootstrap/reevaluation_publication.py)
    creates **one** immutable `pipeline/reevaluation_patch.json` via
@@ -160,25 +166,44 @@ sealed committed generation's `active_evaluator` pinned to the model bundle.
 a second activation authority. [`model_activation.py`](../../src/chipiron/environments/morpion/bootstrap/model_activation.py)
 requires a verified accepted Training model, an explicit request or accepted
 automatic promotion path, Growth ownership, complete certificate preflight,
-full `refresh_model_estimates`, and an atomic checkpoint/scientific commit.
+the genesis-selected operation, and an atomic checkpoint/scientific commit.
 An accepted Training cohort can legitimately retain the incumbent; each
 candidate's accepted weight/Adam lineage continues separately.
 
-This explains an important limit: **the current scientific activation already
-refreshes the tree synchronously.** The separate Reevaluation worker is real,
-but does not yet replace that stop-the-world activation work.
+Default `owned_cold_full` activation retains the synchronous native full refresh
+and its original request/completion policy. Fresh model-only genesis requires
+tracked actual origins, rolling schema 3 and explicit Dataset targets. Its sealed
+genesis descriptor authenticates a distinct versioned policy; requests use schema
+3 (explicit) or 4 (reserved continuous promotion), and completion schema 2 records
+an evaluator switch with zero rewritten nodes, without a full-refresh assertion.
+Historical workspaces cannot adopt this mode in place.
 
-The cold path restores a private runtime from the committed checkpoint, validates
-terminal/exact certificates, drains an eligible pending old-model patch durably,
-then freezes the candidate bundle and refreshes all model estimates through
-Anemone. Only the resulting checkpoint/scientific commit changes evaluator
-authority. A failed refresh discards the partially changed runtime; an exact
-accepted activation retry verifies its receipt instead of refreshing again.
-Cold restore, full refresh, export and checkpoint costs remain on the owned
-activation path. Input-feature caching does not remove these costs or make
-activation progressive. See `activate_model` and
-[`runtime/runner.py`](../../src/chipiron/environments/morpion/bootstrap/runtime/runner.py)
-(`refresh_model_estimates`).
+Both operations cold-restore a private runtime, verify certificates, drain one
+valid pending old-model patch through the existing receipt/cursor commit, pin the
+exact accepted candidate and use the same checkpoint/capsule/run-state commit.
+Model-only uses the supported runner `switch_model_evaluator()` capability and
+Anemone `set_evaluator()`. Existing direct/tree/effective values, proofs, edges,
+selector and RNG remain unchanged; only future native direct predictions use the
+new evaluator. Later accepted bounded patches update earlier nodes through native
+propagation. A novel old-model packet refuses; an exact accepted retry only repairs
+projections. Failure discards private RAM; a committed drain remains authoritative
+if activation fails afterward. Existing automatic renewal validates that precise
+adjacent drain before issuing another bound request.
+
+C3 actual-write evidence and immutable creation IDs are sealed inside the same
+capsule as the checkpoint. In the combined rolling/tracked path, C5 binds the
+mixed header *after* origin evidence preparation and *before* export validation,
+inventory, seal and run-state replacement. Header, descriptor and generation
+identity share the same reference. Both readers call the real committed-origin
+reader and authenticate every source node, including rows excluded from Dataset.
+Derived tree/effective targets do not acquire a single neural model stamp.
+C3-only homogeneous and fully untracked historical paths retain their contracts.
+Model pins and origin sidecars survive checkpoint/science retirement; incomplete
+rolling sources additionally retain their payloads.
+
+Cold restore, certificate validation, checkpoint and export remain on the activation
+path. Model-only does not establish homogeneous newest-model predictions, a
+wall-clock staleness bound, learning convergence or a measured performance gain.
 
 ## Integrated J5 reliability: existing owners, stronger boundaries
 
@@ -227,8 +252,8 @@ not the target policy, Training selection or `owned_cold_full` activation:
   corruption remains fatal evidence.
 
 These guarantees are part of integrated main, while continuous scheduling
-remains fresh opt-in/default-off. They do not provide B4 progressive activation
-or new per-node scientific provenance.
+remains fresh opt-in/default-off. C6 adds the separately versioned model-only policy and actual origins above;
+these J5 guarantees continue to apply to the existing owners.
 
 ## Values, targets and provenance: three different owners
 
@@ -249,8 +274,7 @@ or new per-node scientific provenance.
   direct-or-tree value, not necessarily the backed-up tree value.
 
 A checkpoint/row containing mixed-old/new predictions cannot silently claim
-that every direct value came from the latest model. Freshness metadata is a
-separate future contract; `direct_evaluation_version` alone is local to a
+that every direct value came from the latest model. C3 tracks actual direct-write origins separately; `direct_evaluation_version` alone is local to a
 runtime and not durable model-digest proof. Do not add model timestamps to
 Valanga's scalar `Value`.
 
@@ -305,7 +329,9 @@ B4 study should first verify these integration seams:
    patch cost, application pauses and CPU contention; a separate worker is not
    zero-cost. Preserve every terminal/exact certificate and native propagation.
 
-These items are **proposed research**, not functionality claimed to be present.
+The C6 implementation above addresses origins, finite traversal and mixed
+admission. Scientific quality, throughput and long-lived storage remain research
+questions requiring separately bounded measurements.
 Do not add another generic worker, event bus, tree database, backup, or model
 authority before proving the existing protocol cannot supply the contract.
 
@@ -391,12 +417,13 @@ Exact producer, evaluator and configuration checks still apply; this is not a
 checkpoint migration. Historical 0.4.0 evidence, frozen contracts and experiment
 environments retain their original identities. See the
 [scientific dependency contract](../testing.md).
-B4 scientific provenance and progressive activation remain proposed research,
-not enabled functionality.
+C6 integrates the reviewed local C3/C4/C5 contracts and the new fresh opt-in
+model-only path. It remains a local candidate pending owner-authorized final
+installed-package FULL qualification, review and remote integration.
 
 Historical research reports and the September canonicalization audit retain
 their dated/source-pinned claims. Their old branch, launch and unimplemented-work
 instructions are evidence of those revisions, not today's operational checklist.
-Use this map and the current operator/coordination contracts first. No runtime,
-dependency, scientific contract or historical experiment changes accompany this
-refresh.
+Use this map and the current operator/coordination contracts first. C6 changes
+local runtime contracts as described above; dependency versions and historical
+experiment bytes remain unchanged.

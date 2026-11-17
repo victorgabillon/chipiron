@@ -277,6 +277,7 @@ class DurableGenerationPublication:
         self.evaluator_contract = False
         self.active_evaluator: dict[str, Any] | None = None
         self.activation: dict[str, Any] | None = None
+        self.genesis_activation_policy: dict[str, Any] | None = None
         self.prediction_origins: GrowthPredictionOrigins | None = None
         self.prediction_pending: PendingPatch | None = None
         self.prediction_receipt: CheckpointPatchReceipt | None = None
@@ -637,8 +638,13 @@ class DurableGenerationPublication:
                 )
                 # C3 alone retains its homogeneous historical source contract.
                 # The combined fresh rolling/tracked path admits mixed targets.
-                if state.metadata.get("atomic_reevaluation", {}).get("schema_version") == 3:
-                    from .scientific_generation_publication import bind_mixed_closed_source
+                if (
+                    state.metadata.get("atomic_reevaluation", {}).get("schema_version")
+                    == 3
+                ):
+                    from .scientific_generation_publication import (
+                        bind_mixed_closed_source,
+                    )
 
                     bind_mixed_closed_source(
                         self.sharded_path,
@@ -733,6 +739,12 @@ class DurableGenerationPublication:
                 scientific_identity=scientific_identity,
                 canonical_validation=canonical_validation,
             )
+        if self.genesis_activation_policy is not None:
+            require(
+                not previous and prediction_reference is not None,
+                "Activation mode requires fresh tracked genesis.",
+            )
+            descriptor["activation_policy"] = dict(self.genesis_activation_policy)
         if prediction_reference is not None:
             descriptor["prediction_lineage"] = prediction_reference
         if continuous_source is not None:

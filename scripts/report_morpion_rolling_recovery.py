@@ -441,15 +441,20 @@ def _inspect(
         }
     transaction = transaction_state(state)
     pending = observe_pending_patch(paths.pipeline_reevaluation_patch_path)
-    # This already-required root needs a shared pin: rolling prefix validation
-    # opens the canonical reader below and must not deadlock on our exclusive pin.
-    rolling_pending_source = (
-        pending.patch.tree_generation
-        if pending is not None
+    # Existing required work roots may reopen their canonical source readers.
+    # Shared pins avoid self-deadlock; these roots are already ineligible for
+    # retirement. Every other candidate still needs an exclusive nonblocking pin.
+    read_roots = {
+        record["generation"]
+        for record in ordered
+        if "accepted_dataset" in record or "accepted_training" in record
+    }
+    if (
+        pending is not None
         and transaction is not None
         and transaction["schema_version"] == 3
-        else None
-    )
+    ):
+        read_roots.add(pending.patch.tree_generation)
     for record in ordered:
         generation, identifier = record["generation"], record["id"]
         pin = namespace / "pins" / f"{identifier}.lock"
@@ -466,7 +471,7 @@ def _inspect(
                         paths.work_dir,
                         identifier,
                         version=3,
-                        exclusive=generation != rolling_pending_source,
+                        exclusive=generation not in read_roots,
                         nonblocking=True,
                         create=False,
                     )
