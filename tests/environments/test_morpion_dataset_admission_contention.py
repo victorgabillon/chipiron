@@ -28,7 +28,7 @@ from chipiron.environments.morpion.bootstrap.pipeline_claims import (
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments.test_morpion_continual_publication import grow, setup_continual
 from tests.environments.test_morpion_continuous_runtime import continuous as continuous
-from tests.environments.test_morpion_continuous_runtime import fixture
+from tests.environments.test_morpion_continuous_runtime import candidate_family, fixture
 from tests.environments.test_morpion_learning_schedule import monitored as monitored
 
 
@@ -64,6 +64,7 @@ def test_real_growth_dataset_overlap_reloads_and_completes(
         tmp_path / "work",
         automatic=True,
         memory_floor_mb=1,
+        evaluators=candidate_family(),
         learning_schedule=Policy(activation=activation),
         strict_execution=True,
         managed=True,
