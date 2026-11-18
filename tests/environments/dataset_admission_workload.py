@@ -51,7 +51,7 @@ def main() -> int:
         "--worker-max-jobs",
         "1" if stage == "growth" else "3",
         "--worker-poll-seconds",
-        "0.1",
+        "1",
         "--max-cycles",
         "1",
         "--no-print-startup-summary",
