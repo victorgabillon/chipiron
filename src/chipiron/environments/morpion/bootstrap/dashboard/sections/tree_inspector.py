@@ -38,10 +38,12 @@ __all__ = [
 
 
 def _tree_inspector_rerun(st: Any) -> None:
-    """Rerun only the tree-inspector fragment when supported."""
+    """Prefer a fragment rerun; full-script execution requires an app rerun."""
+    from streamlit.errors import StreamlitInvalidLayoutContextError
+
     try:
         st.rerun(scope="fragment")
-    except TypeError:
+    except TypeError, StreamlitInvalidLayoutContextError:
         st.rerun()
 
 
@@ -51,6 +53,7 @@ def render_tree_inspector_section(
     paths: MorpionBootstrapPaths,
     latest_linoo_selection_table: Any,
     tree_node_classification_summary: Any,
+    expected_checkpoint: tuple[str, int] | None = None,
 ) -> None:
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
     from chipiron.environments.morpion.bootstrap.dashboard.theme import metric_row
@@ -61,12 +64,18 @@ def render_tree_inspector_section(
     selected_node_id = st.session_state.get(state_key)
     with st.spinner("Reading checkpoint for inspection…"):
         snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
-            paths.work_dir, selected_node_id=selected_node_id
+            paths.work_dir,
+            selected_node_id=selected_node_id,
+            expected_checkpoint=expected_checkpoint,
         )
     if snapshot.status_message:
         st.info(snapshot.status_message)
     if snapshot.error_message:
         st.warning(snapshot.error_message)
+        if expected_checkpoint is not None:
+            st.session_state.pop(
+                f"morpion_bootstrap_inspection::{paths.work_dir}", None
+            )
         return
     if snapshot.selected_node_id is None or snapshot.node_summary is None:
         if not snapshot.status_message:
@@ -170,6 +179,11 @@ def render_tree_inspector_section(
         st.caption(
             f"Checkpoint: {snapshot.checkpoint_path} · Reader: {time.perf_counter() - section_start_time:.2f}s"
         )
+    if expected_checkpoint is not None:
+        st.caption(
+            "Linoo selection and classification are available via Load saved whole-tree statistics."
+        )
+        return
     with st.expander("Search / Linoo and tree classification"):
         render_linoo_selection_table(
             st=st, latest_linoo_selection_table=latest_linoo_selection_table
