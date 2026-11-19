@@ -152,7 +152,8 @@ def _work_roots(
     cursor = None
     if transaction is not None and transaction["accepted_cursor"] is not None:
         cursor = complete_cursor(transaction["accepted_cursor"])
-        retain(cursor.tree_generation, "authoritative-accepted-cursor")
+        if transaction["schema_version"] != 3 or cursor.next_node_cursor is not None:
+            retain(cursor.tree_generation, "authoritative-accepted-cursor")
         model(cursor.model_bundle_path)
     if paths.pipeline_reevaluation_cursor_path.exists():
         projection = load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
@@ -171,6 +172,7 @@ def _work_roots(
             envelope = validate_proposal(
                 state,
                 patch,
+                work_dir=paths.work_dir,
                 duplicate_cursor_digest=None
                 if receipt is None
                 else receipt.accepted_cursor_sha256,
@@ -437,6 +439,22 @@ def _inspect(
             "dataset_policy": origin["dataset_policy"],
             "retention": "origin and all imported seed bundles remain permanent local roots",
         }
+    transaction = transaction_state(state)
+    pending = observe_pending_patch(paths.pipeline_reevaluation_patch_path)
+    # Existing required work roots may reopen their canonical source readers.
+    # Shared pins avoid self-deadlock; these roots are already ineligible for
+    # retirement. Every other candidate still needs an exclusive nonblocking pin.
+    read_roots = {
+        record["generation"]
+        for record in ordered
+        if "accepted_dataset" in record or "accepted_training" in record
+    }
+    if (
+        pending is not None
+        and transaction is not None
+        and transaction["schema_version"] == 3
+    ):
+        read_roots.add(pending.patch.tree_generation)
     for record in ordered:
         generation, identifier = record["generation"], record["id"]
         pin = namespace / "pins" / f"{identifier}.lock"
@@ -453,7 +471,7 @@ def _inspect(
                         paths.work_dir,
                         identifier,
                         version=3,
-                        exclusive=True,
+                        exclusive=generation not in read_roots,
                         nonblocking=True,
                         create=False,
                     )

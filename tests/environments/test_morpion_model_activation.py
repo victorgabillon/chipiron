@@ -15,6 +15,9 @@ from chipiron.environments.morpion.bootstrap.model_activation import (
     prepare_model_activation_request,
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
+from chipiron.environments.morpion.bootstrap.training_publication import (
+    accepted_selected_model,
+)
 from tests.environments.morpion_activation_helpers import setup_activation
 from tests.environments.morpion_fenced_dataset_helpers import local_leaderboard
 
@@ -32,12 +35,20 @@ def test_activate_accepted_model(
     _, paths, _ = setup_activation(tmp_path / "workspace", layout=layout)
     before = load_bootstrap_run_state(paths.run_state_path)
     m1, _ = committed_evaluator(paths.work_dir, before)
+    assert m1 is not None
+    _, accepted = accepted_selected_model(paths, before, 1)
+    assert accepted["sha256"] != m1["sha256"]
+    authority_before_request = paths.run_state_path.read_bytes()
     request = prepare_model_activation_request(paths, training_generation=1)
+    assert request["candidate"]["sha256"] == accepted["sha256"]
+    assert paths.run_state_path.read_bytes() == authority_before_request
+    assert committed_evaluator(paths.work_dir, before)[0] == m1
     rng = torch.get_rng_state().clone()
     after = activate_model(paths, request)
     assert torch.equal(rng, torch.get_rng_state())
     m2, physical = committed_evaluator(paths.work_dir, after)
     assert m2 == request["candidate"] and m2 != m1
+    assert physical is not None
     assert physical.is_dir()
     assert after.generation == before.generation + 1
     assert (

@@ -53,8 +53,15 @@ def setup_activation(
     branch_limit: int = 100000,
     encoding: str | None = None,
     target_source: TargetSource | None = None,
+    prediction_origin_tracking: bool = False,
+    rolling_reevaluation: bool = False,
+    model_only_activation: bool = False,
 ) -> Any:
     """No historical inputs or fake checkpoints; train a tiny accepted candidate."""
+    if model_only_activation:
+        prediction_origin_tracking = True
+        rolling_reevaluation = True
+        target_source = target_source or "effective"
     args = replace(
         scientific_args(root),
         runtime_checkpoint_format=layout,
@@ -83,6 +90,8 @@ def setup_activation(
             }
         ),
     )
+    if prediction_origin_tracking:
+        args = replace(args, reevaluation_blend_alpha=1.0)
     paths = MorpionBootstrapPaths.from_work_dir(root)
     paths.ensure_directories()
     config = bootstrap_config_from_args(args)
@@ -116,6 +125,7 @@ def setup_activation(
     runner = AnemoneMorpionSearchRunner(
         AnemoneMorpionSearchRunnerArgs(
             random_seed=4,
+            prediction_origin_tracking=prediction_origin_tracking,
             runtime_checkpoint_format=layout,
         )
     )
@@ -156,7 +166,8 @@ def setup_activation(
             },
         },
     )
-    runner.discard_uncommitted_runtime()
+    if not prediction_origin_tracking:
+        runner.discard_uncommitted_runtime()
     state = initialize_scientific_v2_publication(
         paths,
         state,
@@ -167,7 +178,11 @@ def setup_activation(
         fenced_dataset=True,
         durable_training=True,
         model_activation=True,
+        prediction_origin_runner=runner if prediction_origin_tracking else None,
+        rolling_reevaluation=rolling_reevaluation,
+        model_only_activation=model_only_activation,
     )
+    runner.discard_uncommitted_runtime()
     run_dataset(args)
     run_pipeline_training_stage(args, generation=1)
     return args, paths, state
