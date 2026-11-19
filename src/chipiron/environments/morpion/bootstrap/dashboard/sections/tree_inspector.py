@@ -1,6 +1,7 @@
 """Dashboard tree-inspector Streamlit rendering."""
 
 import time
+from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.morpion.bootstrap.dashboard.formatting import (
@@ -39,11 +40,11 @@ __all__ = [
 
 def _tree_inspector_rerun(st: Any) -> None:
     """Prefer a fragment rerun; full-script execution requires an app rerun."""
-    from streamlit.errors import StreamlitInvalidLayoutContextError
+    streamlit_errors = import_module("streamlit.errors")
 
     try:
         st.rerun(scope="fragment")
-    except TypeError, StreamlitInvalidLayoutContextError:
+    except TypeError, streamlit_errors.StreamlitInvalidLayoutContextError:
         st.rerun()
 
 
