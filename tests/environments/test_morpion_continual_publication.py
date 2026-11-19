@@ -141,6 +141,8 @@ def setup_continual(
             rollout=replace(args.search.rollout, max_extra_steps=extra_steps),
         ),
     )
+    if getattr(learning_schedule, "activation", None) == "owned_cold_model_only_v1":
+        args = replace(args, reevaluation_blend_alpha=1.0)
     if proof:
         args = replace(
             args,

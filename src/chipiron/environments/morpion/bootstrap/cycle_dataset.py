@@ -17,6 +17,7 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
+from chipiron.environments.morpion.learning.mixed_source import validate_source_policy
 from chipiron.environments.morpion.learning.target_confidence import (
     DatasetConfidenceContext,
     DatasetConfidenceError,
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any
 
+    from chipiron.environments.morpion.learning.mixed_source import MixedDatasetSource
     from chipiron.environments.morpion.learning.tree_to_dataset import (
         TrainingTreeSource,
     )
@@ -105,9 +107,12 @@ def extract_rows_from_training_snapshot(
     generation: int,
     value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
     source_provenance: Mapping[str, Any] | None = None,
+    mixed_source: MixedDatasetSource | None = None,
 ) -> MorpionSupervisedRows:
     """Extract and post-process supervised rows from one training snapshot."""
-    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    confidence = full_dataset_confidence(
+        args, value_contracts, source_provenance, mixed_source
+    )
     if confidence is not None:
         confidence.require_generation(generation)
     rows = training_tree_snapshot_to_morpion_supervised_rows(
@@ -147,18 +152,27 @@ def full_dataset_confidence(
     args: MorpionBootstrapArgs,
     value_contracts: Mapping[str, Mapping[str, Any]] | None,
     source_provenance: Mapping[str, Any] | None,
+    mixed_source: MixedDatasetSource | None = None,
 ) -> DatasetConfidenceContext | None:
     """Require an explicit v2 sidecar; never infer certainty for flat/v1 data."""
     validate_confidence_policy(
         args.dataset_confidence_policy, args.dataset_family_target_policy
     )
+    if (
+        source_provenance is not None
+        and validate_source_policy(source_provenance)
+        and args.dataset_confidence_policy != "selected_value_v2"
+    ):
+        raise DatasetConfidenceError.missing_source()
     if args.dataset_confidence_policy == "legacy_v1":
         if args.dataset_target_source is not None:
             raise DatasetConfidenceError.missing_source()
         return None
     if value_contracts is None or source_provenance is None:
         raise DatasetConfidenceError.missing_source()
-    return DatasetConfidenceContext(value_contracts.__getitem__, source_provenance)
+    return DatasetConfidenceContext(
+        value_contracts.__getitem__, source_provenance, mixed_source
+    )
 
 
 def iter_rows_from_training_snapshot(
@@ -168,9 +182,12 @@ def iter_rows_from_training_snapshot(
     generation: int,
     value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
     source_provenance: Mapping[str, Any] | None = None,
+    mixed_source: MixedDatasetSource | None = None,
 ) -> Iterable[MorpionSupervisedRow]:
     """Yield post-processed supervised rows from one training snapshot."""
-    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    confidence = full_dataset_confidence(
+        args, value_contracts, source_provenance, mixed_source
+    )
     if confidence is not None:
         confidence.require_generation(generation)
     context = build_dataset_family_target_context(
@@ -201,9 +218,12 @@ def streaming_rows_from_training_snapshot(
     generation: int,
     value_contracts: Mapping[str, Mapping[str, Any]] | None = None,
     source_provenance: Mapping[str, Any] | None = None,
+    mixed_source: MixedDatasetSource | None = None,
 ) -> MorpionSupervisedRowsStream:
     """Return fresh streaming rows plus extraction metadata for a dataset export."""
-    confidence = full_dataset_confidence(args, value_contracts, source_provenance)
+    confidence = full_dataset_confidence(
+        args, value_contracts, source_provenance, mixed_source
+    )
     if confidence is not None:
         confidence.require_generation(generation)
     context = build_dataset_family_target_context(

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from .bootstrap_paths import MorpionBootstrapPaths
     from .config import MorpionBootstrapConfig
     from .run_state import MorpionBootstrapRunState
+    from .runtime_capabilities import PredictionOriginRuntime
 
 
 def initialize_scientific_v2_publication(
@@ -37,6 +38,9 @@ def initialize_scientific_v2_publication(
     durable_training: bool = False,
     growth_scoring: bool = False,
     model_activation: bool = False,
+    prediction_origin_runner: PredictionOriginRuntime | None = None,
+    rolling_reevaluation: bool = False,
+    model_only_activation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Explicit genesis in a new workspace from a caller's quiescent v2/checkpoint pair.
 
@@ -127,6 +131,27 @@ def initialize_scientific_v2_publication(
             and (not durable_training or fenced_dataset),
             "Durable Training requires fresh fenced genesis.",
         )
+        from .continuous_contract import Policy as ContinuousPolicy
+        from .learning_schedule import schedule_from_metadata
+        from .model_activation import MODEL_ONLY_MODE, MODEL_ONLY_POLICY
+
+        schedule = schedule_from_metadata(
+            load_bootstrap_config(paths.bootstrap_config_path).metadata
+        )
+        require(
+            not isinstance(schedule, ContinuousPolicy)
+            or (schedule.activation == MODEL_ONLY_MODE) == model_only_activation,
+            "Continuous activation policy differs from fresh genesis mode.",
+        )
+        require(
+            not model_only_activation
+            or (
+                model_activation
+                and rolling_reevaluation
+                and prediction_origin_runner is not None
+            ),
+            "Model-only activation requires fresh tracked rolling genesis.",
+        )
         checkpoint = inside(paths.work_dir, state.latest_runtime_checkpoint_path)
         metadata = dict(state.metadata)
         if durable_training:
@@ -137,9 +162,14 @@ def initialize_scientific_v2_publication(
             not growth_scoring or atomic_reevaluation,
             "Growth scoring requires explicit fresh atomic genesis.",
         )
+        require(
+            not rolling_reevaluation
+            or (atomic_reevaluation and growth_scoring and model_activation),
+            "Rolling Reevaluation requires fresh Growth-compatible atomic genesis with committed evaluator authority.",
+        )
         if atomic_reevaluation:
             metadata[TRANSACTION_KEY] = initial_transaction(
-                growth_scoring=growth_scoring
+                growth_scoring=growth_scoring, rolling=rolling_reevaluation
             )
         metadata[RECEIPTS_METADATA_KEY] = {
             "schema_version": 2 if atomic_reevaluation else 1,
@@ -158,6 +188,8 @@ def initialize_scientific_v2_publication(
             closed_scientific_snapshot=closed_scientific_snapshot,
         )
         publication.config_hash = metadata.get("bootstrap_config_hash")
+        if model_only_activation:
+            publication.genesis_activation_policy = dict(MODEL_ONLY_POLICY)
         if model_activation:
             from .model_activation import validate_activation_genesis
 
@@ -217,6 +249,18 @@ def initialize_scientific_v2_publication(
                 )
             ),
         )
+        if prediction_origin_runner is not None:
+            require(
+                model_activation,
+                "Prediction tracking requires the existing model-bound closed protocol.",
+            )
+            publication.prediction_origins = (
+                prediction_origin_runner.prediction_origins()
+            )
+            require(
+                publication.prediction_origins is not None,
+                "Genesis has no actually observed prediction writes.",
+            )
         state = publication.publish(state)
         metadata = dict(state.metadata)
         metadata[RECEIPTS_METADATA_KEY] = {
@@ -238,8 +282,26 @@ def initialize_scientific_experiment(
     *,
     seed_model: Path,
     initial_nodes: int,
+    prediction_origin_tracking: bool = False,
+    model_only_activation: bool = False,
 ) -> MorpionBootstrapRunState:
     """Build a bounded fresh search, then use the existing complete genesis commit."""
+    from .continuous_contract import Policy as ContinuousPolicy
+    from .model_activation import MODEL_ONLY_MODE
+
+    model_only_activation = model_only_activation or (
+        isinstance(args.learning_schedule, ContinuousPolicy)
+        and args.learning_schedule.activation == MODEL_ONLY_MODE
+    )
+    prediction_origin_tracking = prediction_origin_tracking or model_only_activation
+    require(
+        not model_only_activation or args.dataset_target_source is not None,
+        "Model-only genesis requires explicit Dataset targets.",
+    )
+    require(
+        not prediction_origin_tracking or args.reevaluation_blend_alpha == 1.0,
+        "Prediction tracking requires unblended Growth writes.",
+    )
     from chipiron.learning.torch_runtime import (
         torch_execution_profile_metadata,
         validate_torch_execution_profile,
@@ -290,11 +352,10 @@ def initialize_scientific_experiment(
     from .scientific_stream import ENCODING
 
     validate_supported(args)
-    from .continuous_contract import Policy
     from .managed_sessions import KEY as MANAGED_KEY
 
     require(
-        not isinstance(args.learning_schedule, Policy)
+        not isinstance(args.learning_schedule, ContinuousPolicy)
         or MANAGED_KEY in config.metadata,
         "Continuous genesis requires managed-session enrollment.",
     )
@@ -363,6 +424,7 @@ def initialize_scientific_experiment(
         runner = AnemoneMorpionSearchRunner(
             AnemoneMorpionSearchRunnerArgs(
                 random_seed=4,
+                prediction_origin_tracking=prediction_origin_tracking,
                 runtime_checkpoint_format="sharded",
                 max_tree_nodes=None
                 if args.continual_learning is None
@@ -417,16 +479,26 @@ def initialize_scientific_experiment(
                     },
                 },
             )
-        finally:
+        except BaseException:
             runner.discard_uncommitted_runtime()
-    return initialize_scientific_v2_publication(
-        paths,
-        state,
-        producer=producer,
-        closed_scientific_snapshot=True,
-        atomic_reevaluation=True,
-        growth_scoring=True,
-        fenced_dataset=True,
-        durable_training=True,
-        model_activation=True,
-    )
+            raise
+        finally:
+            if not prediction_origin_tracking:
+                runner.discard_uncommitted_runtime()
+    try:
+        return initialize_scientific_v2_publication(
+            paths,
+            state,
+            producer=producer,
+            closed_scientific_snapshot=True,
+            atomic_reevaluation=True,
+            growth_scoring=True,
+            fenced_dataset=True,
+            durable_training=True,
+            model_activation=True,
+            prediction_origin_runner=runner if prediction_origin_tracking else None,
+            rolling_reevaluation=model_only_activation,
+            model_only_activation=model_only_activation,
+        )
+    finally:
+        runner.discard_uncommitted_runtime()

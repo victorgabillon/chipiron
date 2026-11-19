@@ -12,7 +12,7 @@
 > [current worker/authority map](architecture/morpion_bootstrap_runtime_map.md).
 
 The policy remains default-off and does **not** perform model-only/progressive
-activation: it retains `owned_cold_full` activation and the existing independent
+activation: `owned_cold_full` remains the default alongside the existing independent
 Reevaluation worker. Historical default, fixed-window and ready-window policies
 retain their contexts and cannot be upgraded in place.
 

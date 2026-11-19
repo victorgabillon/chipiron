@@ -28,7 +28,16 @@ from anemone.checkpoints import checkpoint_payload_to_jsonable
 from anemone.training_export import TrainingNodeSnapshot
 from platformdirs import user_cache_path
 
+from chipiron.environments.morpion.learning.mixed_source import (
+    SOURCE_POLICY,
+    MixedDatasetSource,
+    read_mixed_dataset_source,
+    validate_mixed_reference,
+    validate_tracked_historical_source,
+)
+
 from .generation_publication_io import (
+    _PRIVATE_VALIDATION,
     assert_artifact_writable,
     generation_read_pin,
     pinned_file_hashes,
@@ -60,15 +69,17 @@ from .sharded_training_v2 import (
     _validate_update,
 )
 from .sharded_training_v2 import (
-    CONTRACT as SCIENTIFIC_CONTRACT,
-)
-from .sharded_training_v2 import (
     KIND as SCIENTIFIC_KIND,
 )
 from .sharded_training_v2 import (
     VERSION as SCIENTIFIC_VERSION,
 )
-from .sharded_training_v2_contract import CLOSED_KIND, CLOSED_LAYOUT, closed_envelope
+from .sharded_training_v2_contract import (
+    CLOSED_KIND,
+    CLOSED_LAYOUT,
+    MIXED_SOURCE_CONTRACT,
+    closed_envelope,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -303,9 +314,16 @@ def _scientific_manifest(
             raise ValueError("Multiple scientific manifest objects")
     except (ijson.JSONError, StopIteration) as exc:
         raise ValueError(f"Malformed scientific manifest: {path}") from exc
+    envelope = (closed_envelope if closed else _envelope)(role)
+    if (
+        closed
+        and role == "generation"
+        and isinstance(data, dict)
+        and data.get("scientific_contract") == MIXED_SOURCE_CONTRACT
+    ):
+        envelope["scientific_contract"] = MIXED_SOURCE_CONTRACT
     if not isinstance(data, dict) or any(
-        data.get(key) != value
-        for key, value in (closed_envelope if closed else _envelope)(role).items()
+        data.get(key) != value for key, value in envelope.items()
     ):
         raise ValueError(f"Unsupported scientific format/contract/role: {path}")
     if not _integer(data["format_version"]):
@@ -318,10 +336,18 @@ def read_closed_manifest(path: Path) -> dict[str, Any]:
     from .sharded_training_v2 import _producer, _require
 
     manifest = _scientific_manifest(path, "generation", closed=True)
+    mixed = manifest["scientific_contract"] == MIXED_SOURCE_CONTRACT
+    if mixed:
+        _require(
+            manifest.get("source_policy") == SOURCE_POLICY,
+            "unsupported mixed source contract/policy",
+        )
+        validate_mixed_reference(manifest.get("prediction_lineage"))
     _require(
         set(manifest)
         == set(closed_envelope("generation"))
-        | {"generation", "snapshot", "producer", "record_shard", "update_shard"},
+        | {"generation", "snapshot", "producer", "record_shard", "update_shard"}
+        | ({"source_policy", "prediction_lineage"} if mixed else set()),
         "missing or unknown closed snapshot field",
     )
     _require(_integer(manifest["storage_layout_version"]), "invalid layout version")
@@ -518,6 +544,7 @@ class ShardedTrainingGenerationView:
         self.index_build_temp_logical_bytes: int
         self.format_version: int
         self.scientific_contract: str | None
+        self.mixed_source: MixedDatasetSource | None = None
         self.created_at_unix_s: float | None
         self.provenance: dict[str, Any]
         self.snapshot_metadata: dict[str, Any]
@@ -547,6 +574,8 @@ class ShardedTrainingGenerationView:
                     allow_closed_snapshot=allow_closed_snapshot,
                 )
         except BaseException:
+            if hasattr(self, "_connection"):
+                self._connection.close()
             self._publication_pin.__exit__(None, None, None)
             raise
 
@@ -640,6 +669,41 @@ class ShardedTrainingGenerationView:
         self._count = int(
             self._connection.execute("SELECT COUNT(*) FROM updates").fetchone()[0]
         )
+        if self._v2_manifest.get("scientific_contract") == MIXED_SOURCE_CONTRACT and (
+            _PRIVATE_VALIDATION.get() != self.manifest_path.parent.parent
+        ):
+            self.mixed_source = read_mixed_dataset_source(
+                self.manifest_path, self._v2_manifest
+            )
+            self.provenance = dict(self.mixed_source.provenance)
+            # Qualify the entire snapshot, including nodes filtered out of Dataset.
+            actual_estimates = 0
+            actual_count = 0
+            for node in self.iter_nodes_in_export_order():
+                actual_count += 1
+                if (
+                    self.mixed_source.creation_generations.get(node.node_id)
+                    != self.load_creation_generations((node.node_id,))[0]
+                ):
+                    raise ValueError(
+                        "Mixed scientific creation inventory differs from Growth evidence"
+                    )
+                contract = self.load_value_contracts((node.node_id,))[0]
+                certainty = contract["certainties"]["direct"]
+                self.mixed_source.direct_origin(node.node_id, certainty)
+                if certainty == "ESTIMATE":
+                    actual_estimates += 1
+            if actual_count != len(
+                self.mixed_source.creation_generations
+            ) or actual_estimates != len(self.mixed_source.current):
+                raise ValueError(
+                    "Mixed snapshot differs from authenticated direct write inventory"
+                )
+        elif (
+            self.format_kind == CLOSED_KIND
+            and _PRIVATE_VALIDATION.get() != self.manifest_path.parent.parent
+        ):
+            validate_tracked_historical_source(self.manifest_path, self._v2_manifest)
         self.index_bytes = self.index_path.stat().st_size
         self.initialization_observation = measurement.finish(
             reader_mode="sharded_indexed",
@@ -784,11 +848,11 @@ class ShardedTrainingGenerationView:
             else float(info["created_at_unix_s"])
         )
         self.format_version = SCIENTIFIC_VERSION
-        self.scientific_contract = SCIENTIFIC_CONTRACT
+        self.scientific_contract = manifest["scientific_contract"]
         self.provenance = {
             "source_format_kind": SCIENTIFIC_KIND,
             "source_format_version": SCIENTIFIC_VERSION,
-            "scientific_contract": SCIENTIFIC_CONTRACT,
+            "scientific_contract": self.scientific_contract,
             "source_generation": self.generation,
             "producer": manifest["producer"],
         }
@@ -804,6 +868,11 @@ class ShardedTrainingGenerationView:
         self.provenance.update(
             source_format_kind=CLOSED_KIND, storage_layout_version=CLOSED_LAYOUT
         )
+        if manifest["scientific_contract"] == MIXED_SOURCE_CONTRACT:
+            self.provenance.update(
+                source_policy=manifest["source_policy"],
+                prediction_lineage=manifest["prediction_lineage"],
+            )
         self._v2_manifest = manifest
         self._node_shards = [self.root / manifest["record_shard"]["path"]]
         self._update_shard = self.root / manifest["update_shard"]["path"]
@@ -1409,6 +1478,41 @@ class ShardedTrainingGenerationView:
             tail + head[:remaining],
             first if max_nodes >= self._count else head[remaining],
             True,
+        )
+
+    def select_finite_node_window(
+        self, start_cursor: str | None, max_nodes: int
+    ) -> WindowSelection:
+        """Consume a positive prefix of one immutable inventory, never wrap.
+
+        A non-null continuation must name a retained row in this exact source;
+        disappearance is corruption, not permission to restart from the beginning.
+        """
+        if max_nodes <= 0:
+            raise ValueError("Finite Reevaluation batches require positive capacity")
+        if (
+            start_cursor is not None
+            and not self._connection.execute(
+                "SELECT 1 FROM updates WHERE node_id=?", (start_cursor,)
+            ).fetchone()
+        ):
+            raise ValueError("Finite Reevaluation cursor is absent from its inventory")
+        query = (
+            self._connection.execute(
+                "SELECT node_id FROM updates ORDER BY node_id LIMIT ?",
+                (max_nodes + 1,),
+            )
+            if start_cursor is None
+            else self._connection.execute(
+                "SELECT node_id FROM updates WHERE node_id>=? ORDER BY node_id LIMIT ?",
+                (start_cursor, max_nodes + 1),
+            )
+        )
+        rows = tuple(str(row[0]) for row in query)
+        return (
+            rows[:max_nodes],
+            rows[max_nodes] if len(rows) > max_nodes else None,
+            len(rows) <= max_nodes,
         )
 
     def load_nodes(self, node_ids: Sequence[str]) -> tuple[TrainingNodeSnapshot, ...]:

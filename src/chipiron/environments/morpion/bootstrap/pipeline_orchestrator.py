@@ -656,8 +656,21 @@ def run_next_pipeline_dataset_stage_once(
 
     if paths.run_state_path.exists():
         from .continuous_publication import reconcile_freshness
+        from .generation_publication_io import GrowthOwnershipBlockingIOError
 
-        reconcile_freshness(paths)
+        try:
+            reconcile_freshness(paths)
+        except GrowthOwnershipBlockingIOError:
+            # Admission never acquired the lease. Re-enter through the ordinary
+            # persistent poll; do not bypass reconciliation or select stale work.
+            observe_wait(paths.work_dir, "dataset", "ownership_contended", None)
+            LOGGER.info("[pipeline] dataset_worker_idle reason=ownership_contended")
+            return MorpionPipelineWorkerResult(
+                stage="dataset",
+                generation=None,
+                ran_stage=False,
+                reason="ownership_contended",
+            )
         reconcile(paths, args)
     manifests = load_available_pipeline_manifests(paths)
     latest_dataset = _latest_dataset_summary(paths, manifests)

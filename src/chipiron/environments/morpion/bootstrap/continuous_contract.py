@@ -108,7 +108,10 @@ class Policy(_Wire):
         ]:
             integer(value, 1)
             require(value == expected, "Unreviewed v1 policy limit.")
-        require(self.activation == "owned_cold_full", "Unsupported activation policy.")
+        require(
+            self.activation in {"owned_cold_full", "owned_cold_model_only_v1"},
+            "Unsupported activation policy.",
+        )
         require(
             self.selection == "newest_complete_once", "Unsupported selection policy."
         )
