@@ -27,10 +27,9 @@ from chipiron.environments.morpion.bootstrap.pipeline_claims import (
 )
 from chipiron.environments.morpion.bootstrap.run_state import load_bootstrap_run_state
 from tests.environments.test_morpion_continual_publication import grow, setup_continual
-from tests.environments.test_morpion_continuous_runtime import continuous as continuous
 from tests.environments.test_morpion_continuous_runtime import candidate_family, fixture
+from tests.environments.test_morpion_continuous_runtime import continuous as continuous
 from tests.environments.test_morpion_learning_schedule import monitored as monitored
-
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +59,7 @@ def test_real_growth_dataset_overlap_reloads_and_completes(
     Growth pause and Dataset observation are hooks; no scientific result is mocked.
     """
     monkeypatch.setenv("MORPION_WORKER_OWNERSHIP_WAIT_SECONDS", "15")
-    args, paths = setup_continual(
+    _args, paths = setup_continual(
         tmp_path / "work",
         automatic=True,
         memory_floor_mb=1,
@@ -188,7 +187,8 @@ def test_initial_unexpected_error_is_fatal(
     before = paths.run_state_path.read_bytes()
 
     def fail(*_args: Any, **_kwargs: Any) -> None:
-        raise error_type("unexpected reconciliation failure")
+        message = "unexpected reconciliation failure"
+        raise error_type(message)
 
     monkeypatch.setattr(continuous_publication, "reconcile_freshness", fail)
     with pytest.raises(error_type, match="unexpected reconciliation failure"):
@@ -219,7 +219,8 @@ def test_after_dataset_admission_failure_is_fatal(
             )
             is not None
         )
-        raise error_type("after real dataset admission")
+        message = "after real dataset admission"
+        raise error_type(message)
 
     monkeypatch.setattr(stages, "publish_dataset", fail)
     with pytest.raises(error_type, match="after real dataset admission"):
