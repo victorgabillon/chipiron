@@ -826,11 +826,22 @@ def run_next_pipeline_training_stage_once(
     if paths.run_state_path.exists() and continuous_enabled(
         load_bootstrap_run_state(paths.run_state_path)
     ):
-        from .promotion import service
+        from .promotion import PromotionAdmissionContendedError, service
 
-        compared = service(
-            paths, args, ttl_seconds=claim_ttl_seconds, owner=claim_owner
-        )
+        try:
+            compared = service(
+                paths, args, ttl_seconds=claim_ttl_seconds, owner=claim_owner
+            )
+        except PromotionAdmissionContendedError:
+            # Return to the existing persistent poll; reload authority next time.
+            observe_wait(paths.work_dir, "training", "ownership_contended", None)
+            LOGGER.info("[pipeline] training_worker_idle reason=ownership_contended")
+            return MorpionPipelineWorkerResult(
+                stage="training",
+                generation=None,
+                ran_stage=False,
+                reason="ownership_contended",
+            )
         if compared is not None:
             return MorpionPipelineWorkerResult(
                 stage="training", generation=compared, ran_stage=True, reason=None

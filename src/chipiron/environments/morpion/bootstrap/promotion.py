@@ -2,6 +2,7 @@
 
 import math
 import uuid
+from contextlib import ExitStack
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any
 
@@ -28,6 +29,7 @@ from .continuous_contract import (
 from .continuous_dataset import boundary
 from .generation_publication_io import (
     PUBLICATION_KEY,
+    GrowthOwnershipBlockingIOError,
     artifact_digest,
     committed_evaluator,
     growth_receipt_ownership,
@@ -192,6 +194,10 @@ def _evaluate(
     return float(stats.loss)
 
 
+class PromotionAdmissionContendedError(GrowthOwnershipBlockingIOError):
+    """Initial promotion ownership was not acquired; no work was admitted."""
+
+
 def service(
     paths: MorpionBootstrapPaths,
     args: MorpionBootstrapArgs,
@@ -214,7 +220,13 @@ def service(
     from .prepared_dataset import borrow_continuous
     from .training_publication import _proposal
 
-    with growth_receipt_ownership(paths, wait=True):
+    with ExitStack() as admission_stack:
+        try:
+            admission_stack.enter_context(growth_receipt_ownership(paths, wait=True))
+        except GrowthOwnershipBlockingIOError as exc:
+            # Only __enter__ is deferred. Errors in owned work, comparison,
+            # acceptance or claim cleanup retain their existing fatal behavior.
+            raise PromotionAdmissionContendedError(*exc.args) from exc
         state = load_bootstrap_run_state(paths.run_state_path)
         frame = publication.load_frame(paths, state)
         if not frame.state.admission_open or frame.state.cohort is not None:

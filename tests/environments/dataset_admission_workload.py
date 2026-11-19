@@ -29,6 +29,26 @@ def main() -> int:
             return owned(*args, **kwargs)
 
         stages._run_pipeline_growth_stage_owned = paused
+    elif stage == "training_worker":
+        training = launcher.run_next_pipeline_training_stage_once
+
+        def observed_training(*args: Any, **kwargs: Any) -> Any:
+            result = training(*args, **kwargs)
+            with (signals / "training-results.jsonl").open("a") as stream:
+                stream.write(json.dumps(asdict(result)) + "\n")
+            if result.reason == "ownership_contended":
+                (signals / "training-contended").write_text("no-work")
+                # Controller releases Growth and publishes real Dataset input.
+                # The next stock persistent poll must reload that new state.
+                deadline = time.monotonic() + 60
+                while not (signals / "resume-training").exists():
+                    if time.monotonic() >= deadline:
+                        message = "Test controller did not resume Training"
+                        raise TimeoutError(message)
+                    time.sleep(0.02)
+            return result
+
+        launcher.run_next_pipeline_training_stage_once = observed_training
     else:
         dataset = launcher.run_next_pipeline_dataset_stage_once
 
@@ -49,7 +69,7 @@ def main() -> int:
         stage,
         "--persistent-worker",
         "--worker-max-jobs",
-        "1" if stage == "growth" else "3",
+        {"growth": "1", "training_worker": "2"}.get(stage, "3"),
         "--worker-poll-seconds",
         "1",
         "--max-cycles",
