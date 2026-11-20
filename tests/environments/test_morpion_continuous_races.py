@@ -486,14 +486,15 @@ def test_reserved_cold_cutover_faults(
 
 
 def activation_fixture(root: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Any]:
-    """Use a reachable branching position to fit real activation into the launch cap."""
+    """Use real branching activation with bounded CI launch headroom."""
     from atomheart.games.morpion import MorpionDynamics, initial_state
 
     from chipiron.environments.morpion.bootstrap.runtime import runner as runner_module
 
-    # A reachable-position lifecycle fixture keeps real terminal targets and
-    # branching Growth inside the unchanged 60-second managed launch. Replaying
-    # this prefix avoids expensive initial full-Greek-cross rollout expansion.
+    # Preserve real terminal targets and branching Growth. Replaying this prefix
+    # avoids expensive initial full-Greek-cross rollout expansion. The complete
+    # two-round lifecycle exceeded the ordinary 60-second launch in covered CI;
+    # allow bounded headroom here without resetting clocks or changing workload.
     dynamics = MorpionDynamics()
     position = initial_state()
     for _ in range(30):
@@ -503,7 +504,7 @@ def activation_fixture(root: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Any
     assert len(dynamics.all_legal_actions(position)) > 1
     with monkeypatch.context() as start:
         start.setattr(runner_module, "initial_state", lambda: position)
-        return fixture(root, proof=True, extra_steps=64)
+        return fixture(root, proof=True, extra_steps=64, supervisor_limit_seconds=180)
 
 
 @pytest.mark.usefixtures("continuous")

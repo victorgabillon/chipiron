@@ -169,10 +169,13 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
     include_child_summaries: bool = True,
     include_local_tree_view: bool = True,
     include_state_view: bool = True,
+    expected_checkpoint: tuple[str, int] | None = None,
 ) -> MorpionBootstrapTreeInspectorSnapshot:
     """Build one bounded dashboard snapshot from the latest runtime checkpoint."""
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     resolved_checkpoint = resolve_latest_runtime_checkpoint(paths)
+    if expected_checkpoint is not None:
+        _require_checkpoint_identity(resolved_checkpoint, expected_checkpoint)
     if resolved_checkpoint.checkpoint_path is None:
         return MorpionBootstrapTreeInspectorSnapshot(
             checkpoint_path=None,
@@ -207,6 +210,11 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
             local_tree_view=None,
         )
 
+    if expected_checkpoint is not None:
+        _require_checkpoint_identity(
+            resolve_latest_runtime_checkpoint(paths), expected_checkpoint
+        )
+
     resolved_selected_node_id, selection_warning = _resolve_selected_node_id(
         indexed_checkpoint=indexed_checkpoint,
         selected_node_id=selected_node_id,
@@ -219,6 +227,11 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         include_local_tree_view=include_local_tree_view,
         include_state_view=include_state_view,
     )
+
+    if expected_checkpoint is not None:
+        _require_checkpoint_identity(
+            resolve_latest_runtime_checkpoint(paths), expected_checkpoint
+        )
 
     return MorpionBootstrapTreeInspectorSnapshot(
         checkpoint_path=resolved_checkpoint.checkpoint_path,
@@ -252,6 +265,8 @@ def resolve_latest_runtime_checkpoint(
                 checkpoint_path=dedicated_checkpoint_path,
                 checkpoint_source="run_state_latest_runtime_checkpoint_path",
             )
+        if dedicated_checkpoint_path is not None:
+            metadata_warning = "Run state points to a missing runtime checkpoint; using a fallback if available."
         metadata_path = run_state.metadata.get(RUNTIME_CHECKPOINT_METADATA_KEY)
         if isinstance(metadata_path, str):
             resolved_path = paths.resolve_work_dir_path(metadata_path)
@@ -259,6 +274,7 @@ def resolve_latest_runtime_checkpoint(
                 return _ResolvedCheckpointReference(
                     checkpoint_path=resolved_path,
                     checkpoint_source="run_state_metadata",
+                    status_message=metadata_warning,
                 )
             metadata_warning = (
                 "Run state points to a runtime checkpoint that is not currently "
@@ -299,6 +315,36 @@ def resolve_latest_runtime_checkpoint(
         checkpoint_source=None,
         status_message="No persisted runtime checkpoint available yet.",
     )
+
+
+def checkpoint_inspection_identity(
+    paths: MorpionBootstrapPaths,
+) -> tuple[str, int] | None:
+    """Reuse the in-memory index freshness key without reading checkpoint contents."""
+    return _resolved_checkpoint_identity(resolve_latest_runtime_checkpoint(paths))
+
+
+def _resolved_checkpoint_identity(
+    reference: _ResolvedCheckpointReference,
+) -> tuple[str, int] | None:
+    """Identify one published checkpoint using the existing cache convention."""
+    if reference.checkpoint_path is None:
+        return None
+    path = reference.checkpoint_path.resolve()
+    modified = _checkpoint_mtime_ns(path)
+    if modified == 0:
+        message = f"Checkpoint freshness unavailable: {path}"
+        raise OSError(message)
+    return str(path), modified
+
+
+def _require_checkpoint_identity(
+    reference: _ResolvedCheckpointReference, expected: tuple[str, int]
+) -> None:
+    """Reject pointer or freshness changes before returning inspector data."""
+    if _resolved_checkpoint_identity(reference) != expected:
+        message = "Checkpoint changed; explicitly load the inspector again."
+        raise ValueError(message)
 
 
 def _checkpoint_mtime_ns(checkpoint_path: Path) -> int:

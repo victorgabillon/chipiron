@@ -65,7 +65,7 @@ def run_dashboard_app(work_dir: Path, runtime_root: Path | None = None) -> None:
         )
         if page == "Tree":
             st.caption(
-                "Manual by default. Refresh reads a newer checkpoint; navigation reuses the current cache."
+                "Manual by default. A changed checkpoint requires explicit loading; navigation reuses the current index."
             )
         st.divider()
         st.caption(
