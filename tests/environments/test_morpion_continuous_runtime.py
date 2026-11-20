@@ -83,6 +83,7 @@ def fixture(
     proof: bool = False,
     extra_steps: int = 2,
     target_source: TargetSource | None = None,
+    supervisor_limit_seconds: int = 60,
 ) -> tuple[Any, Any]:
     """Create fresh managed context4 with two supported tiny independent models."""
     args, paths = setup_continual(
@@ -102,7 +103,7 @@ def fixture(
         load_bootstrap_config(paths.bootstrap_config_path),
         "42",
         time.monotonic(),
-        60,
+        supervisor_limit_seconds,
     )
     return args, paths
 
