@@ -196,6 +196,7 @@ def test_original_deadline_is_not_renewed(
 
 @pytest.mark.parametrize("deadline", [float("nan"), float("inf"), True])
 def test_invalid_deadline_refused(tmp_path: Path, deadline: float) -> None:
+    """Nonfinite and boolean deadlines cannot authorize waiting."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     with (
         pytest.raises(
@@ -207,6 +208,7 @@ def test_invalid_deadline_refused(tmp_path: Path, deadline: float) -> None:
 
 
 def test_owned_body_failure_is_not_retried(tmp_path: Path) -> None:
+    """Errors after acquisition propagate unchanged and release the native lock."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     failure = GrowthOwnershipBlockingIOError("inside owned body")
     with (
