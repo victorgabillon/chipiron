@@ -474,6 +474,35 @@ def _repair(
     )
 
 
+def _acceptance_deadline(
+    paths: MorpionBootstrapPaths, reference: dict[str, Any]
+) -> float | None:
+    """Wait only on an admitted job's original allowance, never renew its claim.
+
+    This read authorizes waiting, not acceptance. The owned body reloads and
+    verifies all source, claim, session, budget and proposal evidence again.
+    Legacy and already accepted projection repairs retain their existing wait.
+    """
+    from .continuous_publication import authenticate_job, read_ref
+    from .continuous_publication import enabled as continuous_enabled
+
+    state = load_bootstrap_run_state(paths.run_state_path)
+    if not continuous_enabled(state):
+        return None
+    admission = _proposal(paths, reference)["admission"]
+    if _record(state, admission["generation"]).get(ACCEPTED) == reference:
+        return None
+    from .continuous_dataset import admitted
+    from .continuous_lifecycle import remaining
+
+    job = admitted(paths, state, admission)
+    authenticate_job(paths, state, job)
+    budget = remaining(paths, job)
+    # authenticate_job and remaining validate the immutable original clock.
+    # Read its deadline without importing preparation back into publication.
+    return float(read_ref(paths, budget.clock_evidence)["deadline"])
+
+
 def accept_dataset(
     paths: MorpionBootstrapPaths,
     reference: dict[str, Any],
@@ -484,7 +513,12 @@ def accept_dataset(
     from .checkpoint_patch_receipts import receipt_ledger
     from .generation_publication_io import growth_receipt_ownership
 
-    with growth_receipt_ownership(paths, wait=True), ExitStack() as pins:
+    with (
+        growth_receipt_ownership(
+            paths, wait=True, wait_until=_acceptance_deadline(paths, reference)
+        ),
+        ExitStack() as pins,
+    ):
         state = load_bootstrap_run_state(paths.run_state_path)
         from .managed_sessions import require_managed_execution
 
