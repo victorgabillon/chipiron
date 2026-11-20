@@ -111,12 +111,18 @@ class GrowthOwnershipBlockingIOError(BlockingIOError):
 
 @contextmanager
 def growth_receipt_ownership(
-    paths: MorpionBootstrapPaths, *, create: bool = True, wait: bool = False
+    paths: MorpionBootstrapPaths,
+    *,
+    create: bool = True,
+    wait: bool = False,
+    wait_until: float | None = None,
 ) -> Iterator[None]:
     """Keep the stable kernel lock; optionally wait a bounded time for publication.
 
     Learning workers can wait at admission/commit without repeating computation.
     Growth remains nonblocking. Waiting neither owns nor changes authority.
+    An admitted publisher may supply its authenticated original job deadline;
+    this consumes that allowance rather than starting another admission timeout.
     """
     import fcntl
 
@@ -128,6 +134,11 @@ def growth_receipt_ownership(
     require(
         math.isfinite(timeout) and 0 <= timeout <= 600, "Invalid ownership wait budget."
     )
+    require(
+        wait_until is None
+        or (wait and math.isfinite(wait_until) and not isinstance(wait_until, bool)),
+        "Invalid ownership wait deadline.",
+    )
     if create:
         paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
     path = paths.pipeline_dir / ".growth_patch_consumer.lock"
@@ -136,16 +147,23 @@ def growth_receipt_ownership(
     with path.open("a+" if create else "rb") as lock:
         started_unix_s = time.time()
         started = time.monotonic()
+        deadline = started + timeout if wait_until is None else wait_until
         contended = False
         while True:
             try:
+                if wait_until is not None and time.monotonic() >= deadline:
+                    message = "Original publication ownership deadline exhausted."
+                    raise GrowthOwnershipBlockingIOError(message)
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except BlockingIOError as exc:
                 if not contended:
-                    LOGGER.info("[ownership] contention timeout_seconds=%.3f", timeout)
+                    LOGGER.info(
+                        "[ownership] contention timeout_seconds=%.3f",
+                        deadline - started,
+                    )
                     contended = True
-                remaining = timeout - (time.monotonic() - started)
+                remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     if create:
                         observe_ownership(
