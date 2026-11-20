@@ -252,6 +252,80 @@ class MorpionBootstrapCertifiedRecordBoardView:
     board_text: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapTreeStatistics:
+    """Requested saved-tree summaries, without global history or resource scans."""
+
+    snapshot_path: Path | None
+    status_message: str | None
+    tree_status: MorpionBootstrapTreeStatus | None
+    depth_distribution: tuple[TreeDepthDistributionRow, ...]
+    classification: MorpionTreeNodeClassificationSummary | None
+    linoo: LinooSelectionTable | None
+    error_message: str | None
+
+
+def _load_current_tree_run_view(work_dir: str | Path) -> MorpionBootstrapRunView:
+    """Read current pointers and status, excluding the historical event stream."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    return MorpionBootstrapRunView(
+        work_dir=paths.work_dir,
+        run_state=(
+            load_bootstrap_run_state(paths.run_state_path)
+            if paths.run_state_path.is_file()
+            else None
+        ),
+        latest_status=load_latest_bootstrap_status(paths.latest_status_path),
+        history=(),
+    )
+
+
+def saved_tree_statistics_identity(work_dir: str | Path) -> tuple[tuple[str, int], ...]:
+    """Stat only current summary inputs; never decode a tree or read history."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    resolved = _resolve_latest_tree_snapshot_reference(
+        _load_current_tree_run_view(work_dir)
+    )
+    inputs = [
+        paths.run_state_path,
+        paths.latest_status_path,
+        paths.latest_linoo_selection_table_path,
+    ]
+    if resolved.snapshot_path is not None:
+        inputs.append(resolved.snapshot_path)
+    return tuple(
+        (str(path.resolve()), path.stat().st_mtime_ns if path.exists() else 0)
+        for path in inputs
+    )
+
+
+def load_saved_tree_statistics(work_dir: str | Path) -> MorpionBootstrapTreeStatistics:
+    """Explicit full export inspection, reusing the existing scientific summaries."""
+    run_view = _load_current_tree_run_view(work_dir)
+    resolved = _resolve_latest_tree_snapshot_reference(run_view)
+    error_message = None
+    try:
+        snapshot = _load_resolved_training_tree_snapshot(resolved)
+        if resolved.snapshot_path is not None and snapshot is None:
+            error_message = f"Saved tree snapshot unavailable, unsupported or corrupt: {resolved.snapshot_path}"
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        snapshot = None
+        error_message = f"Saved tree statistics unavailable: {exc}"
+    return MorpionBootstrapTreeStatistics(
+        snapshot_path=resolved.snapshot_path,
+        status_message=resolved.status_message,
+        tree_status=_latest_tree_status(
+            run_view, latest_snapshot=snapshot, load_snapshot_if_missing=False
+        ),
+        depth_distribution=latest_tree_depth_distribution(
+            run_view, latest_snapshot=snapshot, load_snapshot_if_missing=False
+        ),
+        classification=summarize_tree_node_classification(snapshot),
+        linoo=load_latest_linoo_selection_table_for_dashboard(work_dir),
+        error_message=error_message,
+    )
+
+
 def load_morpion_bootstrap_run_view(
     work_dir: str | Path,
 ) -> MorpionBootstrapRunView:
@@ -1087,13 +1161,14 @@ def _latest_tree_status(
     run_view: MorpionBootstrapRunView,
     *,
     latest_snapshot: object | None = None,
+    load_snapshot_if_missing: bool = True,
 ) -> MorpionBootstrapTreeStatus | None:
     """Return the latest known tree-structure status for one run view."""
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.tree
     snapshot = latest_snapshot
-    if snapshot is None:
+    if snapshot is None and load_snapshot_if_missing:
         resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
         snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
     if snapshot is not None:
@@ -1121,16 +1196,21 @@ def latest_tree_depth_distribution(
     run_view: MorpionBootstrapRunView,
     *,
     latest_snapshot: object | None = None,
+    load_snapshot_if_missing: bool = True,
 ) -> tuple[TreeDepthDistributionRow, ...]:
     """Return the latest persisted tree depth distribution for the dashboard."""
-    latest_tree_status = _latest_tree_status(run_view, latest_snapshot=latest_snapshot)
+    latest_tree_status = _latest_tree_status(
+        run_view,
+        latest_snapshot=latest_snapshot,
+        load_snapshot_if_missing=load_snapshot_if_missing,
+    )
     if latest_tree_status is not None and latest_tree_status.depth_node_counts:
         return _tree_depth_distribution_rows_from_counts(
             latest_tree_status.depth_node_counts
         )
 
     snapshot = latest_snapshot
-    if snapshot is None:
+    if snapshot is None and load_snapshot_if_missing:
         resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
         snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
     if snapshot is None:
