@@ -217,19 +217,21 @@ def test_process_registration_excludes_second_live_dispatcher(
 
 @pytest.mark.fast
 def test_job_observations_do_not_count_process_startup_repeatedly(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Distinct jobs retain separate bounded records and one actual process startup."""
+    from chipiron.environments.morpion.bootstrap import runtime_performance
+
+    # The process lifetime shares the worker slot namespace with both jobs.
+    # Fix only the storage identity: these hash to slots 248, 100 and 50.
+    # Keep actual process-startup measurement and bounded writes unchanged.
+    monkeypatch.setattr(
+        runtime_performance, "process_identity", lambda: "worker-observation-test"
+    )
     process = WorkerObservation(tmp_path, "training_worker")
     first = WorkerObservation(tmp_path, "training_worker", job_id=1)
-    # The bounded store deliberately replaces records that hash to one slot.
-    # Choose a second job with a distinct observed slot for this retention check.
-    for second_id in range(2, 258):
-        second = WorkerObservation(tmp_path, "training_worker", job_id=second_id)
-        if second.name != first.name:
-            break
-    else:
-        pytest.fail("No distinct runtime observation slot found")
+    second = WorkerObservation(tmp_path, "training_worker", job_id=2)
+    assert len({process.name, first.name, second.name}) == 3
     first.finish(0)
     second.finish(0)
     process.finish(0)
@@ -238,9 +240,10 @@ def test_job_observations_do_not_count_process_startup_repeatedly(
         for p in (tmp_path / "pipeline/performance/runtime").glob("*.json")
     ]
     assert len([v for v in values if v["stage"] == "startup"]) == 1
+    assert len([v for v in values if v["stage"] == "worker_lifetime"]) == 1
     assert {v["job_id"] for v in values if v["stage"] == "worker_job"} == {
         1,
-        second_id,
+        2,
     }
 
 

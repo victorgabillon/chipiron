@@ -483,22 +483,24 @@ def _acceptance_deadline(
     verifies all source, claim, session, budget and proposal evidence again.
     Legacy and already accepted projection repairs retain their existing wait.
     """
-    from .continuous_publication import authenticate_job, enabled, read_ref
+    from .continuous_publication import authenticate_job, read_ref
+    from .continuous_publication import enabled as continuous_enabled
 
     state = load_bootstrap_run_state(paths.run_state_path)
-    if not enabled(state):
+    if not continuous_enabled(state):
         return None
     admission = _proposal(paths, reference)["admission"]
     if _record(state, admission["generation"]).get(ACCEPTED) == reference:
         return None
     from .continuous_dataset import admitted
     from .continuous_lifecycle import remaining
-    from .prepared_dataset import _remaining
 
     job = admitted(paths, state, admission)
     authenticate_job(paths, state, job)
     budget = remaining(paths, job)
-    return _remaining(read_ref(paths, budget.clock_evidence))
+    # authenticate_job and remaining validate the immutable original clock.
+    # Read its deadline without importing preparation back into publication.
+    return float(read_ref(paths, budget.clock_evidence)["deadline"])
 
 
 def accept_dataset(
