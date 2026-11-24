@@ -839,7 +839,6 @@ def next_learning_debt(
 ) -> Debt | None:
     """Roll acceptance to the oldest outstanding offer, including coalesced ancestors."""
     from .continuous_contract import ReadyRecord
-    from .generation_publication_io import publication_records
 
     frame = load_frame(paths, state)
     sources = [frame.state.pending_source] if frame.state.pending_source else []
