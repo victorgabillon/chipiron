@@ -5,7 +5,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
     default_checkpoint_file_suffix,
