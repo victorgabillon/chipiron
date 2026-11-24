@@ -1,5 +1,6 @@
 """Serialized real owner transitions, not a claim of C7.1 worker overlap."""
 
+import json
 import time
 from contextlib import contextmanager
 from dataclasses import replace
@@ -124,8 +125,13 @@ def accept_growth(
     """Use the production acceptance and real durable writer under its owner."""
     with growth_receipt_ownership(session.paths):
         state = session.commit_growth(update)
-    assert load_bootstrap_run_state(session.paths.run_state_path) == state
-    return state
+    reloaded = load_bootstrap_run_state(session.paths.run_state_path)
+    # Runtime diagnostics contain tuples; the durable JSON representation uses lists.
+    # Compare every field and metadata value in that representation, without omissions.
+    assert reloaded == replace(
+        state, metadata=json.loads(json.dumps(state.metadata, allow_nan=False))
+    )
+    return reloaded
 
 
 @pytest.mark.usefixtures("continuous")
