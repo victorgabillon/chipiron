@@ -168,7 +168,11 @@ def main() -> None:
                             "export_scientific",
                             "scientific_snapshot",
                         ),
-                        (GrowthPatchReceiptSession, "commit", "seal_and_commit"),
+                        (
+                            GrowthPatchReceiptSession,
+                            "commit_activation",
+                            "seal_and_commit",
+                        ),
                         (
                             scientific_generation_publication,
                             "validate_closed_export",
@@ -250,7 +254,7 @@ def main() -> None:
             "export_scientific",
             "validate_closed_export",
             "publish",
-            "commit",
+            "commit_activation",
             "publish_manifest",
             "file_digest",
             "artifact_digest",

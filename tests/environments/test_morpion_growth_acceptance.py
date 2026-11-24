@@ -141,6 +141,7 @@ def test_generation_100_dataset_acceptance_in_both_orders(
         evaluators=candidate_family(),
         learning_schedule=Policy(),
         dataset_cadence=100,
+        training_cadence=100,
         maximum=100000,
         strict_execution=True,
         managed=True,

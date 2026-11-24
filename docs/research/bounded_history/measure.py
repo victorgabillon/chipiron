@@ -35,6 +35,9 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
 )
 from chipiron.environments.morpion.bootstrap.launcher import _scientific_args
 from chipiron.environments.morpion.bootstrap.model_activation import _runner
+from chipiron.environments.morpion.bootstrap.ordinary_growth import (
+    OrdinaryGrowthUpdate,
+)
 from chipiron.environments.morpion.bootstrap.reevaluation_worker import (
     run_morpion_reevaluation_worker_once,
 )
@@ -253,8 +256,11 @@ def main() -> None:
                         checkpoint
                     ),
                     latest_tree_snapshot_path=paths.relative_to_work_dir(science),
+                    active_evaluator_name=model["name"],
                 )
-                state = session.commit(previous, next_state)
+                state = session.commit_growth(
+                    OrdinaryGrowthUpdate(previous, next_state)
+                )
             finally:
                 runner.discard_uncommitted_runtime()
                 if session.publication is not None:
