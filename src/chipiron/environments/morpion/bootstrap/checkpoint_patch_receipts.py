@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from .bootstrap_args import MorpionBootstrapArgs
     from .bootstrap_paths import MorpionBootstrapPaths
     from .control import MorpionBootstrapEffectiveRuntimeConfig
+    from .ordinary_growth import OrdinaryGrowthUpdate
     from .run_state import MorpionBootstrapRunState
 
 RECEIPTS_METADATA_KEY = "checkpoint_bound_reevaluation_v1"
@@ -762,16 +763,96 @@ class GrowthPatchReceiptSession:
             ),
         )
 
-    def commit(
+    def commit_growth(self, update: OrdinaryGrowthUpdate) -> MorpionBootstrapRunState:
+        """Accept only ordinary Growth effects against the latest owned authority."""
+        from .config import bootstrap_config_sha256, load_bootstrap_config
+        from .continuous_publication import validate_growth_authority
+        from .learning_schedule import on_no_publication, wait_reason
+        from .managed_sessions import require_managed_execution
+        from .prepared_dataset_storage import context, entries
+        from .worker_result_io import publication_record
+
+        latest = load_bootstrap_run_state(self.paths.run_state_path)
+        state = update.apply(self.paths, latest)
+        _require(
+            self.publication is None or self.publication.activation is None,
+            "Activation cannot use ordinary Growth acceptance.",
+        )
+        _require(
+            bootstrap_config_sha256(
+                load_bootstrap_config(self.paths.bootstrap_config_path)
+            )
+            == latest.metadata.get("bootstrap_config_hash"),
+            "Growth configuration changed during computation.",
+        )
+        require_managed_execution(self.paths, latest)
+        if (
+            latest.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract")
+            and state.cycle_index > latest.cycle_index
+        ):
+            model, _ = committed_evaluator(self.paths.work_dir, latest)
+            _require(
+                model is not None and state.active_evaluator_name == model["name"],
+                "Ordinary Growth changed its committed evaluator.",
+            )
+        validate_growth_authority(self.paths, update.source, latest)
+        captured_inputs = entries(update.source)
+        for key, prepared in entries(latest).items():
+            record = publication_record(latest, prepared["generation"])
+            _require(
+                prepared["context"] == context(self.paths, latest)
+                and record.get("accepted_dataset") == prepared["accepted"]
+                and prepared["source"]
+                == {
+                    k: record[k]
+                    for k in ("id", "descriptor_sha256", "scientific_identity")
+                },
+                "Prepared input belongs to another Growth source or context.",
+            )
+            if key in captured_inputs:
+                _require(
+                    all(
+                        prepared[field] == captured_inputs[key][field]
+                        for field in (
+                            "accepted",
+                            "source",
+                            "context",
+                            "recipe",
+                            "generation",
+                            "deadline",
+                            "utc_deadline",
+                        )
+                    ),
+                    "Preparation changed its original scientific input or allowance.",
+                )
+        _require(
+            wait_reason(latest, self.paths) is None,
+            "Growth would cross the current learning or admission gate.",
+        )
+        if (
+            state.cycle_index > latest.cycle_index
+            and state.generation == latest.generation
+        ):
+            state = on_no_publication(latest, state)
+        return self._commit_owned(latest, state)
+
+    def commit_activation(
+        self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
+    ) -> MorpionBootstrapRunState:
+        """Commit a pre-switch patch drain or cutover; neither is ordinary Growth."""
+        _require(
+            state.cycle_index == previous.cycle_index,
+            "Activation cannot advance an ordinary Growth cycle.",
+        )
+        return self._commit_owned(previous, state)
+
+    def _commit_owned(
         self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
     ) -> MorpionBootstrapRunState:
         """Sync dependencies, then commit checkpoint and receipt in one run-state replace."""
         persisted = load_bootstrap_run_state(self.paths.run_state_path)
         _require(
-            persisted.metadata.get(RECEIPTS_METADATA_KEY)
-            == previous.metadata.get(RECEIPTS_METADATA_KEY)
-            and persisted.metadata.get(TRANSACTION_KEY)
-            == previous.metadata.get(TRANSACTION_KEY)
+            persisted == previous
             and state.metadata.get(TRANSACTION_KEY)
             == previous.metadata.get(TRANSACTION_KEY),
             "Run state changed outside the Growth ownership lock.",
@@ -783,6 +864,10 @@ class GrowthPatchReceiptSession:
                 state.latest_runtime_checkpoint_path
                 == previous.latest_runtime_checkpoint_path,
                 "No-save cycle changed its checkpoint pointer.",
+            )
+            _require(
+                load_bootstrap_run_state(self.paths.run_state_path) == previous,
+                "Run state changed outside the Growth ownership lock.",
             )
             save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
             self.discard_runtime()
@@ -887,7 +972,7 @@ class GrowthPatchReceiptSession:
                     )
                     self.publication.prediction_pending = self.pending
                     self.publication.prediction_receipt = receipt
-            state = self.publication.publish(state)
+            state = self.publication.publish(state, previous=previous)
             if self.pending is not None:
                 _require(
                     self.current_model() == self.model,
@@ -923,6 +1008,10 @@ class GrowthPatchReceiptSession:
         receipt_ledger(
             state
         )  # Validate cursor/receipt coherence before the sole commit.
+        _require(
+            load_bootstrap_run_state(self.paths.run_state_path) == previous,
+            "Run state changed outside the Growth ownership lock.",
+        )
         # This durable replacement, not checkpoint creation, is the commit point.
         save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
         if self.publication is not None:

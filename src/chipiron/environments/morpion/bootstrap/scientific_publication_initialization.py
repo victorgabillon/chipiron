@@ -261,7 +261,7 @@ def initialize_scientific_v2_publication(
                 publication.prediction_origins is not None,
                 "Genesis has no actually observed prediction writes.",
             )
-        state = publication.publish(state)
+        state = publication.publish(state, previous=None)
         metadata = dict(state.metadata)
         metadata[RECEIPTS_METADATA_KEY] = {
             **metadata[RECEIPTS_METADATA_KEY],

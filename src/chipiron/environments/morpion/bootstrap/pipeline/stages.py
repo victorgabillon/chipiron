@@ -144,6 +144,7 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
 from chipiron.environments.morpion.bootstrap.history import (
     MorpionBootstrapHistoryRecorder,
 )
+from chipiron.environments.morpion.bootstrap.ordinary_growth import OrdinaryGrowthUpdate
 from chipiron.environments.morpion.bootstrap.performance import (
     StageMeasurement,
     persist_stage_measurement,
@@ -720,6 +721,13 @@ def _run_pipeline_growth_stage_owned(
                 return run_state
         previous_state = run_state
         previous_generation = run_state.generation
+        # C7.1 still owns the broad lease across computation. No other writer may
+        # legitimately change this snapshot inside this production invocation.
+        owned_state = (
+            load_bootstrap_run_state(paths.run_state_path)
+            if receipt_session is not None
+            else None
+        )
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
         from chipiron.environments.morpion.bootstrap.learning_schedule import (
@@ -745,7 +753,8 @@ def _run_pipeline_growth_stage_owned(
             receipt_session=receipt_session,
         )
         if (
-            args.learning_schedule is not None
+            receipt_session is None
+            and args.learning_schedule is not None
             and run_state.generation == previous_generation
             and run_state.cycle_index > previous_state.cycle_index
         ):
@@ -755,7 +764,12 @@ def _run_pipeline_growth_stage_owned(
 
             run_state = on_no_publication(previous_state, run_state)
         if receipt_session is not None:
-            run_state = receipt_session.commit(previous_state, run_state)
+            if load_bootstrap_run_state(paths.run_state_path) != owned_state:
+                message = "Run state changed outside the Growth ownership lock."
+                raise CheckpointPatchReceiptError(message)
+            run_state = receipt_session.commit_growth(
+                OrdinaryGrowthUpdate(previous_state, run_state)
+            )
         elif derived_sequential:
             from dataclasses import asdict
 
