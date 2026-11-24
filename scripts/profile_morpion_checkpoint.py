@@ -213,7 +213,7 @@ def _load_runner_for_mode(
             )
         else:
             checkpoint_path = Path(args.checkpoint).resolve()
-        if args.restore_only and not checkpoint_path.is_file():
+        if args.restore_only and not checkpoint_path.exists():
             raise FileNotFoundError(checkpoint_path)
         print(f"[profile] mode=load checkpoint={checkpoint_path}")
         runner.load_or_create(
@@ -444,7 +444,7 @@ def _profile_checkpoint_restore(
 ) -> None:
     """Measure initialization, checkpoint resolution and restore, then stop."""
     output = Path(args.profile_output)
-    if output.exists():
+    if output.exists() or output.is_symlink():
         raise FileExistsError(output)
     memory = modules["restore_memory_logging_module"]
     rss_before_mb = memory.current_rss_mb()

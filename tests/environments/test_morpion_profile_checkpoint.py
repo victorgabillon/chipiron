@@ -221,7 +221,12 @@ def restore_calls(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
             """Record a read or propagate a simulated corrupt-checkpoint failure."""
             assert model_bundle_path is None
             calls.append(tree_snapshot_path)
-            if tree_snapshot_path.read_bytes() == b"corrupt":
+            payload = (
+                tree_snapshot_path / "manifest.json"
+                if tree_snapshot_path.is_dir()
+                else tree_snapshot_path
+            )
+            if payload.read_bytes() == b"corrupt":
                 message = "Corrupt checkpoint"
                 raise ValueError(message)
 
@@ -247,19 +252,24 @@ def restore_calls(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
     return calls
 
 
-@pytest.mark.parametrize("explicit_checkpoint", [True, False])
+@pytest.mark.parametrize("layout", ["explicit-file", "latest", "explicit-directory"])
 def test_restore_only_cli_stops_before_payload_construction(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     restore_calls: list[Path],
-    explicit_checkpoint: bool,
+    layout: str,
 ) -> None:
-    """Both checkpoint selection paths stop after one read and preserve the input."""
+    """File/directory inputs use the existing loader without building a payload."""
     checkpoints = tmp_path / "search_checkpoints"
     checkpoints.mkdir()
     checkpoint = checkpoint_path_for_generation(checkpoints, 1)
-    checkpoint.write_bytes(b"fixture")
-    before = checkpoint.stat()
+    payload = checkpoint
+    if layout == "explicit-directory":
+        checkpoint = checkpoints / "sharded"
+        checkpoint.mkdir()
+        payload = checkpoint / "manifest.json"
+    payload.write_bytes(b"fixture")
+    before = payload.stat()
     output = tmp_path / "profiles" / "restore.prof"
     args = [
         "--mode",
@@ -272,13 +282,13 @@ def test_restore_only_cli_stops_before_payload_construction(
         "--top",
         "1",
     ]
-    if explicit_checkpoint:
+    if layout != "latest":
         args.extend(["--checkpoint", str(checkpoint)])
 
     assert profile_module.main(args) == 0
     assert restore_calls == [checkpoint]
-    assert checkpoint.read_bytes() == b"fixture"
-    assert checkpoint.stat().st_mtime_ns == before.st_mtime_ns
+    assert payload.read_bytes() == b"fixture"
+    assert payload.stat().st_mtime_ns == before.st_mtime_ns
     assert output.is_file()
     text = capsys.readouterr().out
     assert "phase=restore elapsed_s=" in text
