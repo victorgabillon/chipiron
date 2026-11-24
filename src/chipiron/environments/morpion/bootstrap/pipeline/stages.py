@@ -719,8 +719,6 @@ def _run_pipeline_growth_stage_owned(
 
             if wait_reason(run_state, paths) is not None:
                 return run_state
-        previous_state = run_state
-        previous_generation = run_state.generation
         # C7.1 still owns the broad lease across computation. No other writer may
         # legitimately change this snapshot inside this production invocation.
         owned_state = (
@@ -728,6 +726,12 @@ def _run_pipeline_growth_stage_owned(
             if receipt_session is not None
             else None
         )
+        if owned_state is not None:
+            # Fence the persisted baseline separately from the relaunch config
+            # already validated above. Reload also keeps JSON diagnostics canonical.
+            run_state = _with_config_hash_metadata(owned_state, config_hash=config_hash)
+        previous_state = run_state
+        previous_generation = run_state.generation
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
         from chipiron.environments.morpion.bootstrap.learning_schedule import (
@@ -764,11 +768,12 @@ def _run_pipeline_growth_stage_owned(
 
             run_state = on_no_publication(previous_state, run_state)
         if receipt_session is not None:
+            assert owned_state is not None
             if load_bootstrap_run_state(paths.run_state_path) != owned_state:
                 message = "Run state changed outside the Growth ownership lock."
                 raise CheckpointPatchReceiptError(message)
             run_state = receipt_session.commit_growth(
-                OrdinaryGrowthUpdate(previous_state, run_state)
+                OrdinaryGrowthUpdate(owned_state, run_state, config_hash=config_hash)
             )
         elif derived_sequential:
             from dataclasses import asdict

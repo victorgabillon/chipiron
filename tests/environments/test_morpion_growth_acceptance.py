@@ -21,6 +21,7 @@ from chipiron.environments.morpion.bootstrap.checkpoint_patch_receipts import (
 from chipiron.environments.morpion.bootstrap.config import (
     bootstrap_config_sha256,
     load_bootstrap_config,
+    save_bootstrap_config,
 )
 from chipiron.environments.morpion.bootstrap.continuous_contract import Policy
 from chipiron.environments.morpion.bootstrap.control import (
@@ -112,7 +113,12 @@ def staged_growth(
             )
             assert result.generation == source.generation + int(save)
             assert result.cycle_index == source.cycle_index + 1
-        yield session, OrdinaryGrowthUpdate(source, result)
+        yield (
+            session,
+            OrdinaryGrowthUpdate(
+                source, result, config_hash=bootstrap_config_sha256(config)
+            ),
+        )
     finally:
         session.discard_runtime()
         assert session.publication is not None
@@ -426,7 +432,9 @@ def test_changed_prerequisite_is_not_a_worker_update(
     before = paths.run_state_path.read_bytes()
     changed = replace(source, metadata={**source.metadata, field: {"changed": True}})
     with pytest.raises(ValueError, match="prerequisite or unowned metadata"):
-        OrdinaryGrowthUpdate(source, source).apply(paths, changed)
+        OrdinaryGrowthUpdate(
+            source, source, config_hash=source.metadata["bootstrap_config_hash"]
+        ).apply(paths, changed)
     assert paths.run_state_path.read_bytes() == before
 
 
@@ -436,5 +444,46 @@ def test_result_cannot_write_worker_authority(tmp_path: Path) -> None:
     before = paths.run_state_path.read_bytes()
     changed = replace(source, latest_model_bundle_paths={"invented": "candidate"})
     with pytest.raises(ValueError, match="unowned state field"):
-        OrdinaryGrowthUpdate(source, changed).apply(paths, source)
+        OrdinaryGrowthUpdate(
+            source, changed, config_hash=source.metadata["bootstrap_config_hash"]
+        ).apply(paths, source)
     assert paths.run_state_path.read_bytes() == before
+
+
+@pytest.mark.usefixtures("continuous")
+@pytest.mark.parametrize("change", ["config-file", "result-hash"])
+def test_configuration_is_fenced_after_capture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    """Admission before capture never permits a different config during computation."""
+    args, paths = fixture(tmp_path / "run")
+    with staged_growth(args, paths, monkeypatch) as (session, update):
+        before = paths.run_state_path.read_bytes()
+        if change == "config-file":
+            config = load_bootstrap_config(paths.bootstrap_config_path)
+            save_bootstrap_config(
+                replace(
+                    config,
+                    runtime=replace(
+                        config.runtime,
+                        save_after_seconds=config.runtime.save_after_seconds + 1,
+                    ),
+                ),
+                paths.bootstrap_config_path,
+            )
+            message = "Growth configuration changed during computation"
+        else:
+            update = replace(
+                update,
+                result=replace(
+                    update.result,
+                    metadata={
+                        **update.result.metadata,
+                        "bootstrap_config_hash": "0" * 64,
+                    },
+                ),
+            )
+            message = "Growth result differs from its captured configuration"
+        with pytest.raises(ValueError, match=message):
+            accept_growth(session, update)
+        assert paths.run_state_path.read_bytes() == before

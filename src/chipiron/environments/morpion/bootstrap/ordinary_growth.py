@@ -1,8 +1,9 @@
 """The ordinary Growth write set, separate from its captured computation source.
 
 Callers hold Growth ownership. This is not a metadata merge: the result may write
-only tree/cycle observations. Accepted worker authority comes from the latest
-durable state, with all other changes treated as a computation conflict.
+only tree/cycle observations and the already admitted computation config hash.
+Accepted worker authority comes from the latest durable state, with all other
+changes treated as a computation conflict.
 """
 
 from dataclasses import dataclass, replace
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
 
 # These are the outputs of cycle_runtime and pipeline.stages, not worker outputs.
 _CYCLE_METADATA = frozenset({
+    "bootstrap_config_hash",
     "runtime_checkpoint_path",
     "bootstrap_applied_control",
     "bootstrap_applied_runtime_control",
@@ -152,10 +154,15 @@ def _worker_history(
 
 @dataclass(frozen=True)
 class OrdinaryGrowthUpdate:
-    """One captured result; its authority is deliberately not the state to save."""
+    """Capture the durable baseline and the config already admitted for computation.
+
+    Relaunch validation precedes capture. Neither a later authority change nor a
+    later config-file change is admitted by this result.
+    """
 
     source: MorpionBootstrapRunState
     result: MorpionBootstrapRunState
+    config_hash: str
 
     def apply(
         self, paths: MorpionBootstrapPaths, latest: MorpionBootstrapRunState
@@ -176,6 +183,10 @@ class OrdinaryGrowthUpdate:
             "Growth prerequisite or unowned metadata changed.",
         )
         _worker_history(paths, source, latest)
+        require(
+            result.metadata.get("bootstrap_config_hash") == self.config_hash,
+            "Growth result differs from its captured configuration.",
+        )
         require(
             result.generation in (source.generation, source.generation + 1)
             and result.cycle_index in (source.cycle_index, source.cycle_index + 1),

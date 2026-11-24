@@ -782,7 +782,7 @@ class GrowthPatchReceiptSession:
             bootstrap_config_sha256(
                 load_bootstrap_config(self.paths.bootstrap_config_path)
             )
-            == latest.metadata.get("bootstrap_config_hash"),
+            == update.config_hash,
             "Growth configuration changed during computation.",
         )
         require_managed_execution(self.paths, latest)

@@ -259,7 +259,11 @@ def main() -> None:
                     active_evaluator_name=model["name"],
                 )
                 state = session.commit_growth(
-                    OrdinaryGrowthUpdate(previous, next_state)
+                    OrdinaryGrowthUpdate(
+                        previous,
+                        next_state,
+                        config_hash=previous.metadata["bootstrap_config_hash"],
+                    )
                 )
             finally:
                 runner.discard_uncommitted_runtime()
