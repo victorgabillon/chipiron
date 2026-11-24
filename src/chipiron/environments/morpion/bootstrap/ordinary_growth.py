@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from .generation_publication_io import PUBLICATION_KEY, publication_records, require
+from .run_state import MorpionBootstrapRunState
 from .worker_result_io import (
     DATASET_NAMESPACE,
     TRAINING_NAMESPACE,
@@ -22,7 +23,6 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from .bootstrap_paths import MorpionBootstrapPaths
-    from .run_state import MorpionBootstrapRunState
 
 
 # These are the outputs of cycle_runtime and pipeline.stages, not worker outputs.
