@@ -17,6 +17,9 @@ from .generation_publication_io import (
 )
 from .reevaluation_transaction import transaction_state
 
+DATASET_NAMESPACE = "dataset_publications_v1"
+TRAINING_NAMESPACE = "training_publications_v1"
+
 if TYPE_CHECKING:
     from pathlib import Path
 

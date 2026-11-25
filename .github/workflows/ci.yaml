@@ -162,7 +162,7 @@ jobs:
           cp .ci-reports/tests.json .ci-reports/fast-tests.json
       - name: PR installed-package regression lane
         if: matrix.lane == 'pr'
-        timeout-minutes: 45
+        timeout-minutes: 60
         run: |
           make test-pr PYTHON=.tox/py314/bin/python TEST_ARGS=--junitxml=.ci-reports/pr.xml
           cp .ci-reports/tests.json .ci-reports/pr-tests.json

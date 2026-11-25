@@ -305,7 +305,7 @@ def _save(
         output_generation=generation,
         output_publication_id=output_id,
     ):
-        return session.commit(
+        return session.commit_activation(
             state,
             replace(
                 state,

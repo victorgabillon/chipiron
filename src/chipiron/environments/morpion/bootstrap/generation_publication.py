@@ -487,7 +487,7 @@ class DurableGenerationPublication:
                 "generation": receipt["evaluator_generation"],
                 "name": receipt["evaluator_name"],
             })
-        state = self.publish(state, baseline=True)
+        state = self.publish(state, previous=None, baseline=True)
         save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
         self.state = state
         return state
@@ -549,14 +549,18 @@ class DurableGenerationPublication:
         )
 
     def publish(
-        self, state: MorpionBootstrapRunState, *, baseline: bool = False
+        self,
+        state: MorpionBootstrapRunState,
+        *,
+        previous: MorpionBootstrapRunState | None,
+        baseline: bool = False,
     ) -> MorpionBootstrapRunState:
         """Publish complete dependencies; only a later durable run-state write commits."""
         assert self.staging is not None and self.identifier is not None
         from .continuous_publication import prepare_publication_owned
 
         state, continuous_source = prepare_publication_owned(
-            self.paths, self.state, state, self.activation
+            self.paths, previous, state, self.activation
         )
         if (
             self.version == 1
@@ -581,9 +585,7 @@ class DurableGenerationPublication:
             )
             validate_v1_export(export)
             self.sharded_path = export
-        previous = (
-            [] if self.state is None else publication_records(self.state.metadata)
-        )
+        history = [] if previous is None else publication_records(previous.metadata)
         scientific_identity = None
         canonical_validation = None
         prediction_reference = None
@@ -602,7 +604,7 @@ class DurableGenerationPublication:
                 and isinstance(state.generation, int)
                 and not isinstance(state.generation, bool)
                 and state.generation
-                == (1 if not previous else previous[-1]["generation"] + 1),
+                == (1 if not history else history[-1]["generation"] + 1),
                 "Scientific publication requires consecutive generations.",
             )
             require(
@@ -665,12 +667,12 @@ class DurableGenerationPublication:
                 checkpoint=checkpoint,
                 config_hash=self.config_hash,
                 work_dir=self.paths.work_dir,
-                parent=None if not previous else previous[-1],
+                parent=None if not history else history[-1],
                 **({"validated": self.closed_validation} if self.version == 3 else {}),
             )
-            if previous:
-                assert self.state is not None
-                parent = self.validate_state(self.state)
+            if history:
+                assert previous is not None
+                parent = self.validate_state(previous)
                 # Preserve the exact committed prefix, even if an adapter replaces
                 # a linked inode privately instead of using the v2 writer.
                 for entry in parent["files"]:
@@ -685,7 +687,7 @@ class DurableGenerationPublication:
                             "Scientific committed prefix changed in private attempt.",
                         )
                 initial = read_object(
-                    inside(self.paths.work_dir, previous[0]["descriptor_path"])
+                    inside(self.paths.work_dir, history[0]["descriptor_path"])
                 )
                 if self.evaluator_contract:
                     require(
@@ -698,16 +700,16 @@ class DurableGenerationPublication:
                         self.model_pins == initial["model_pins"],
                         "Scientific publication model epoch changed; explicit new lineage required.",
                     )
-        if previous:
+        if history:
             parent_descriptor = read_committed_descriptor(
-                self.paths.work_dir, previous[-1]
+                self.paths.work_dir, history[-1]
             )
             require(
                 "prediction_lineage" not in parent_descriptor
                 or self.prediction_origins is not None,
                 "Tracked publication cannot drop prediction evidence.",
             )
-        parent_id = None if not previous else previous[-1]["id"]
+        parent_id = None if not history else history[-1]["id"]
         files = [p for p in sorted(self.staging.rglob("*")) if p.is_file()]
         require(
             not any(p.is_symlink() for p in self.staging.rglob("*")),
@@ -830,7 +832,7 @@ class DurableGenerationPublication:
         metadata[PUBLICATION_KEY] = {
             "schema_version": self.version,
             "head_id": self.identifier,
-            "generations": [*previous, record],
+            "generations": [*history, record],
             **({"evaluator_contract": 1} if self.evaluator_contract else {}),
         }
         from .learning_schedule import on_publication
@@ -839,12 +841,12 @@ class DurableGenerationPublication:
             from .continuous_publication import on_publication_owned
 
             return on_publication_owned(
-                self.paths, self.state, replace(state, metadata=metadata)
+                self.paths, previous, replace(state, metadata=metadata)
             )
 
         return on_publication(
             self.paths,
-            self.state,
+            previous,
             replace(state, metadata=metadata),
             self.active_evaluator,
             self.activation,

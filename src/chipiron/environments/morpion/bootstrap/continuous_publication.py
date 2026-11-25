@@ -37,6 +37,7 @@ from .derived.provenance import inside
 from .generation_publication_io import (
     file_digest,
     object_digest,
+    publication_records,
     read_committed_descriptor,
     read_object,
     sync_directory,
@@ -267,6 +268,98 @@ def prepare_publication_owned(
         "cycle": cycle(proposed),
         "incumbent_epoch": frame.state.incumbent_epoch,
     }
+
+
+def validate_growth_authority(
+    paths: MorpionBootstrapPaths,
+    captured: MorpionBootstrapRunState,
+    latest: MorpionBootstrapRunState,
+) -> None:
+    """Authenticate current worker slots without restoring captured scheduling state."""
+    from .continuous_contract import ReadyRecord, Retirement
+
+    if not enabled(captured):
+        require(not enabled(latest), "Growth continuous protocol changed.")
+        return
+    before, current = load_frame(paths, captured), load_frame(paths, latest)
+    require(
+        before.context == current.context
+        and before.state.incumbent_epoch == current.state.incumbent_epoch
+        and current.state.revision >= before.state.revision
+        and current.state.last_accepted_round >= before.state.last_accepted_round
+        and current.state.last_consumed_generation
+        >= before.state.last_consumed_generation,
+        "Growth continuous prerequisite changed or worker authority moved backward.",
+    )
+    require(
+        current.state == before.state or current.state.revision > before.state.revision,
+        "Changed continuous authority did not advance its revision.",
+    )
+    slot_records(paths, current)
+    for old, new in zip(
+        publication_records(captured.metadata),
+        publication_records(latest.metadata),
+        strict=True,
+    ):
+        for value in new.get("continuous_admissions", [])[
+            len(old.get("continuous_admissions", [])) :
+        ]:
+            admission = read_ref(paths, Ref.from_metadata(value))
+            job = read_record(
+                paths,
+                Ref.from_metadata(admission["continuous_admission"]),
+                current.context,
+            )
+            require(
+                isinstance(job, JobRecord)
+                and job.payload.source == source(paths, latest, new["generation"])
+                and admission["generation"] == new["generation"],
+                "Growth worker admission belongs to another source.",
+            )
+        for value in new.get("continuous_dispositions", [])[
+            len(old.get("continuous_dispositions", [])) :
+        ]:
+            record = read_record(paths, Ref.from_metadata(value), current.context)
+            require(
+                isinstance(record, ControlRecord)
+                and isinstance(record.payload, Disposition),
+                "Growth worker disposition has no authenticated proof.",
+            )
+        if "continuous_ready" in new and "continuous_ready" not in old:
+            ready = read_record(
+                paths, Ref.from_metadata(new["continuous_ready"]), current.context
+            )
+            require(
+                isinstance(ready, ReadyRecord)
+                and ready.payload.source == source(paths, latest, new["generation"])
+                and ready.payload.accepted_dataset.to_metadata()
+                == new.get("accepted_dataset"),
+                "Growth Ready proof lost its accepted scientific input.",
+            )
+        for value in new.get("continuous_consumed", [])[
+            len(old.get("continuous_consumed", [])) :
+        ]:
+            proof = read_ref(paths, Ref.from_metadata(value))
+            job = read_record(paths, Ref.from_metadata(proof["job"]), current.context)
+            require(
+                set(proof) == {"job_id", "job", "ready"}
+                and isinstance(job, JobRecord)
+                and job.payload.id == proof["job_id"]
+                and job.payload.ready == Ref.from_metadata(new["continuous_ready"])
+                and proof["ready"] == new["continuous_ready"]
+                and job.payload.source == source(paths, latest, new["generation"]),
+                "Growth consumed-input proof lost its admitted job or Ready.",
+            )
+        if "continuous_retirement" in new and "continuous_retirement" not in old:
+            retired = read_record(
+                paths, Ref.from_metadata(new["continuous_retirement"]), current.context
+            )
+            require(
+                isinstance(retired, ControlRecord)
+                and isinstance(retired.payload, Retirement)
+                and retired.payload.ready == Ref.from_metadata(new["continuous_ready"]),
+                "Growth retirement proof lost its Ready identity.",
+            )
 
 
 def on_publication_owned(
@@ -746,7 +839,6 @@ def next_learning_debt(
 ) -> Debt | None:
     """Roll acceptance to the oldest outstanding offer, including coalesced ancestors."""
     from .continuous_contract import ReadyRecord
-    from .generation_publication_io import publication_records
 
     frame = load_frame(paths, state)
     sources = [frame.state.pending_source] if frame.state.pending_source else []

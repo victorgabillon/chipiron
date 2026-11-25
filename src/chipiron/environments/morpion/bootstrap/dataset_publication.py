@@ -39,6 +39,7 @@ from .pipeline_artifacts import (
 from .pipeline_claims import claim_pipeline_stage, release_owned_pipeline_stage_claim
 from .reevaluation_transaction import source_identity
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
+from .worker_result_io import DATASET_NAMESPACE as NAMESPACE
 from .worker_result_io import (
     attempt_directory,
     read_proposal,
@@ -58,7 +59,6 @@ if TYPE_CHECKING:
 
 KEY = "fenced_dataset"
 ACCEPTED = "accepted_dataset"
-NAMESPACE = "dataset_publications_v1"
 CONTRACT = {"schema_version": 1}
 OPTIONS = (
     "min_depth",
