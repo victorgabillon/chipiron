@@ -122,7 +122,7 @@ def artifact_stat_identity(path: Path) -> dict[str, tuple[int, ...]]:
     change times so a replaced, added, removed or modified entry cannot use its
     earlier validation. This is volatile evidence, never a recovery authority.
     """
-    result = {}
+    result: dict[str, tuple[int, ...]] = {}
     for entry in [path, *sorted(path.rglob("*"))] if path.is_dir() else [path]:
         require(not entry.is_symlink(), "Symlinked prepared publication artifact.")
         value = entry.stat()
