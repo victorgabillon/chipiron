@@ -4,6 +4,7 @@
 import argparse
 import cProfile
 import logging
+import marshal
 import pstats
 from pathlib import Path
 from time import perf_counter
@@ -20,6 +21,8 @@ from anemone.checkpoints import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
+
+    from chipiron.environments.morpion.bootstrap import MorpionBootstrapPaths
 
 
 DEFAULT_TARGET_NODES = 50_000
@@ -54,7 +57,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--checkpoint",
         type=Path,
         default=None,
-        help="Checkpoint path for load mode. Defaults to the latest runtime checkpoint in work-dir.",
+        help="Checkpoint path for load mode. Restore-only defaults to the workspace's committed runtime checkpoint; ordinary load defaults to the latest file.",
+    )
+    parser.add_argument(
+        "--restore-only",
+        action="store_true",
+        help="In load mode, profile restoration and return without building a payload or saving a checkpoint.",
     )
     parser.add_argument(
         "--output",
@@ -140,6 +148,25 @@ def _resolve_latest_runtime_checkpoint(runtime_checkpoint_dir: Path) -> Path:
     return resolve_latest_generation_checkpoint_path(runtime_checkpoint_dir)
 
 
+def _resolve_restore_only_checkpoint(paths: MorpionBootstrapPaths) -> Path:
+    """Use committed workspace state rather than guessing from generation files."""
+    from chipiron.environments.morpion.bootstrap.run_state import (
+        load_bootstrap_run_state,
+    )
+
+    if not paths.run_state_path.is_file():
+        message = (
+            "No committed workspace state; specify --checkpoint for --restore-only."
+        )
+        raise ValueError(message)
+    state = load_bootstrap_run_state(paths.run_state_path)
+    checkpoint = paths.resolve_work_dir_path(state.latest_runtime_checkpoint_path)
+    if checkpoint is None:
+        message = "Workspace state has no runtime checkpoint; specify --checkpoint."
+        raise ValueError(message)
+    return checkpoint
+
+
 def _configure_logging(log_level: str) -> None:
     """Enable plain INFO logs when the caller has not configured logging."""
     logging.basicConfig(level=getattr(logging, log_level), format="%(message)s")
@@ -203,11 +230,16 @@ def _load_runner_for_mode(
 
     if args.mode == "load":
         if args.checkpoint is None:
-            checkpoint_path = _resolve_latest_runtime_checkpoint(
-                bootstrap_paths.runtime_checkpoint_dir
-            )
+            if args.restore_only:
+                checkpoint_path = _resolve_restore_only_checkpoint(bootstrap_paths)
+            else:
+                checkpoint_path = _resolve_latest_runtime_checkpoint(
+                    bootstrap_paths.runtime_checkpoint_dir
+                )
         else:
             checkpoint_path = Path(args.checkpoint).resolve()
+        if args.restore_only and not checkpoint_path.exists():
+            raise FileNotFoundError(checkpoint_path)
         print(f"[profile] mode=load checkpoint={checkpoint_path}")
         runner.load_or_create(
             tree_snapshot_path=checkpoint_path,
@@ -432,6 +464,40 @@ def _print_cprofile_stats(profiler: cProfile.Profile, top: int) -> None:
     pstats.Stats(profiler).sort_stats("tottime").print_stats(top)
 
 
+def _profile_checkpoint_restore(
+    args: argparse.Namespace, modules: dict[str, Any]
+) -> None:
+    """Measure initialization, checkpoint resolution and restore, then stop."""
+    output = Path(args.profile_output)
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(output)
+    memory = modules["restore_memory_logging_module"]
+    rss_before_mb = memory.current_rss_mb()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    try:
+        (_runner, checkpoint), elapsed_s = _time_call(
+            lambda: _load_runner_for_mode(args, modules)
+        )
+    finally:
+        profiler.disable()
+    rss_after_mb = memory.current_rss_mb()
+    print(f"[profile] phase=restore elapsed_s={elapsed_s:.6f} checkpoint={checkpoint}")
+    print(
+        f"[profile-memory] rss_before_restore_mb={_format_optional_number(rss_before_mb)} rss_after_restore_mb={_format_optional_number(rss_after_mb)}"
+    )
+    print("[profile] phase=payload_build skipped=true")
+    print("[profile] phase=checkpoint_write skipped=true")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # cProfile.dump_stats uses truncating writes; publish the same stats format
+    # with exclusive creation so a concurrent profile is never overwritten.
+    stats = pstats.Stats(profiler).stats
+    with output.open("xb") as stream:
+        marshal.dump(stats, stream)
+    print(f"[profile] phase=cprofile_dump output={output}")
+    _print_cprofile_stats(profiler, args.top)
+
+
 def _format_optional_number(value: object) -> str:
     """Format optional numeric values for stable profiling output."""
     if value is None:
@@ -445,9 +511,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the standalone Morpion checkpoint profiler."""
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.restore_only and (
+        args.mode != "load"
+        or args.dump_json
+        or args.dump_zstd
+        or args.output is not None
+        or args.profile_mode == "full_save"
+    ):
+        parser.error("--restore-only requires --mode load and forbids save options.")
     _configure_logging(args.log_level)
     modules = _load_runtime_modules()
     _print_module_paths(modules)
+    if args.restore_only:
+        _profile_checkpoint_restore(args, modules)
+        return 0
     runner, _checkpoint_path = _load_runner_for_mode(args, modules)
     _profile_checkpoint_save(args=args, modules=modules, runner=runner)
     return 0
