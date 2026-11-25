@@ -255,21 +255,26 @@ def test_corrupt_config_copy_fails_before_patch_application(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A generation's immutable config must match the accepted scientific hash."""
-    import chipiron.environments.morpion.bootstrap.generation_publication as publication
-
     args, paths = setup_publication_baseline(tmp_path)
     publish_fixture_patch(paths)
-    original = publication._copy_artifact
+    original = Path.write_bytes
+    corrupted = []
 
-    def copy(source: Path, destination: Path, *, link: bool = False) -> None:
-        original(source, destination, link=link)
-        if source == paths.bootstrap_config_path:
-            destination.write_text("{}")
+    def write(destination: Path, data: bytes) -> int:
+        # C7.2 writes the bytes captured under ownership, not the live config file.
+        if destination.name == "bootstrap_config.json" and destination.is_relative_to(
+            tmp_path / PUBLICATION_NAMESPACE / "staging"
+        ):
+            assert data == paths.bootstrap_config_path.read_bytes()
+            corrupted.append(destination)
+            data = b"{}"
+        return original(destination, data)
 
-    monkeypatch.setattr(publication, "_copy_artifact", copy)
+    monkeypatch.setattr(Path, "write_bytes", write)
     runner = PublicationRunner()
     with pytest.raises(GenerationPublicationError, match="config identity"):
         run_publication(args, runner)
+    assert len(corrupted) == 1
     assert runner.apply_calls == 0
     assert paths.pipeline_reevaluation_patch_path.exists()
     assert load_bootstrap_run_state(paths.run_state_path).generation == 1

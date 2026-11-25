@@ -1,7 +1,6 @@
 """Ready-result windows preserve acceptance authority and serialize cutover races."""
 
 import copy
-import time
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -14,6 +13,7 @@ from chipiron.environments.morpion.bootstrap import training_publication as trai
 from chipiron.environments.morpion.bootstrap.bootstrap_args import MorpionBootstrapArgs
 from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from_args
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    committed_evaluator,
     growth_receipt_ownership,
     publication_records,
 )
@@ -35,6 +35,9 @@ from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
+)
+from chipiron.environments.morpion.bootstrap.runtime.runner import (
+    AnemoneMorpionSearchRunner,
 )
 from tests.environments.morpion_fenced_dataset_helpers import run_dataset
 from tests.environments.test_morpion_continual_publication import grow, setup_continual
@@ -317,10 +320,13 @@ def test_format_and_context_changes_are_read_only(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("monitored")
-def test_acceptance_waits_for_already_owned_cycle(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "during_growth", [True, False], ids=["training-first", "growth-first"]
+)
+def test_ready_acceptance_respects_growth_publication_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, during_growth: bool
 ) -> None:
-    """Real Training acceptance cannot interrupt an admitted cycle under the lease."""
+    """Ready acceptance closes the next publication gate, not just the next search."""
     # The production supervisor declares this bounded existing wait allowance.
     monkeypatch.setenv("MORPION_WORKER_OWNERSHIP_WAIT_SECONDS", "20")
     args, paths = setup_continual(
@@ -330,31 +336,57 @@ def test_acceptance_waits_for_already_owned_cycle(
         learning_schedule=ReadyBoundedGrowthWindow(4),
     )
     source = grow(args)
+    evaluator = committed_evaluator(paths.work_dir, source)[0]
     run_dataset(args, generation=source.generation)
     child, markers, output = start_blocked(paths, "training_accept", tmp_path)
-    original = stages._run_pipeline_growth_stage_owned
+    original = AnemoneMorpionSearchRunner.grow
+    references = []
 
-    def release_under_ownership(*actual: Any, **kwargs: Any) -> Any:
+    def release_during_growth(
+        runner: AnemoneMorpionSearchRunner, max_growth_steps: int
+    ) -> None:
+        original(runner, max_growth_steps)
+        assert runner.current_tree_size() > source.tree_size_at_last_save
+        # Publication is free although the real tree owner has not returned.
         (markers / "release").touch()
-        deadline = time.monotonic() + 15
-        while not (markers / "attempting").exists():
-            assert child.poll() is None and time.monotonic() < deadline
-            time.sleep(0.01)
+        assert child.wait(timeout=60) == 0, (markers / "worker.log").read_text()
         state = load_bootstrap_run_state(paths.run_state_path)
-        assert "accepted_training" not in publication_records(state.metadata)[1]
-        return original(*actual, **kwargs)
+        assert state.generation == source.generation
+        assert state.cycle_index == source.cycle_index
+        references.append(publication_records(state.metadata)[1]["accepted_training"])
+        assert wait_reason(state) == "await_learning_resolution"
 
     try:
         with monkeypatch.context() as patch:
-            patch.setattr(
-                stages, "_run_pipeline_growth_stage_owned", release_under_ownership
-            )
+            if during_growth:
+                patch.setattr(
+                    AnemoneMorpionSearchRunner, "grow", release_during_growth
+                )
             result = grow(args)
-        assert result.cycle_index == source.cycle_index + 1
+        advance = int(not during_growth)
+        assert result.cycle_index == source.cycle_index + advance
+        assert result.generation == source.generation + advance
+        if during_growth:
+            assert len(references) == 1
+            assert (
+                result.latest_runtime_checkpoint_path
+                == source.latest_runtime_checkpoint_path
+            )
+            assert (
+                publication_records(result.metadata)[1]["accepted_training"]
+                == references[0]
+            )
+        else:
+            assert "accepted_training" not in publication_records(result.metadata)[1]
     finally:
         finish_blocked(child, markers, output)
     accepted = load_bootstrap_run_state(paths.run_state_path)
-    assert accepted.cycle_index == source.cycle_index + 1
+    assert accepted.cycle_index == result.cycle_index
+    assert (
+        accepted.latest_runtime_checkpoint_path == result.latest_runtime_checkpoint_path
+    )
+    assert "accepted_training" in publication_records(accepted.metadata)[1]
+    assert committed_evaluator(paths.work_dir, accepted)[0] == evaluator
     assert wait_reason(accepted) == "await_learning_resolution"
     activation.activate_selected_round_automatically(paths)
     assert window(load_bootstrap_run_state(paths.run_state_path))["active"] is None
