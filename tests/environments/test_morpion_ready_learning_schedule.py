@@ -359,9 +359,7 @@ def test_ready_acceptance_respects_growth_publication_order(
     try:
         with monkeypatch.context() as patch:
             if during_growth:
-                patch.setattr(
-                    AnemoneMorpionSearchRunner, "grow", release_during_growth
-                )
+                patch.setattr(AnemoneMorpionSearchRunner, "grow", release_during_growth)
             result = grow(args)
         advance = int(not during_growth)
         assert result.cycle_index == source.cycle_index + advance
