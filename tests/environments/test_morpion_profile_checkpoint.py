@@ -1,6 +1,8 @@
 """Tests for the standalone Morpion checkpoint profiling script."""
 
 import importlib.util
+import pstats
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -8,6 +10,14 @@ import pytest
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
     default_checkpoint_file_suffix,
+)
+
+from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
+    MorpionBootstrapPaths,
+)
+from chipiron.environments.morpion.bootstrap.run_state import (
+    initialize_bootstrap_run_state,
+    save_bootstrap_run_state,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -234,11 +244,7 @@ def restore_calls(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
 
     modules = {
         "AnemoneMorpionSearchRunner": _FakeRunner,
-        "MorpionBootstrapPaths": SimpleNamespace(
-            from_work_dir=lambda path: SimpleNamespace(
-                runtime_checkpoint_dir=path / "search_checkpoints"
-            )
-        ),
+        "MorpionBootstrapPaths": MorpionBootstrapPaths,
         "restore_memory_logging_module": SimpleNamespace(current_rss_mb=lambda: 12.0),
         "build_search_checkpoint_payload": forbidden,
         "chipiron": SimpleNamespace(__file__="fake-chipiron"),
@@ -283,12 +289,21 @@ def test_restore_only_cli_stops_before_payload_construction(
     ]
     if layout != "latest":
         args.extend(["--checkpoint", str(checkpoint)])
+    else:
+        save_bootstrap_run_state(
+            replace(
+                initialize_bootstrap_run_state(),
+                latest_runtime_checkpoint_path=str(checkpoint.relative_to(tmp_path)),
+            ),
+            MorpionBootstrapPaths.from_work_dir(tmp_path).run_state_path,
+        )
 
     assert profile_module.main(args) == 0
     assert restore_calls == [checkpoint]
     assert payload.read_bytes() == b"fixture"
     assert payload.stat().st_mtime_ns == before.st_mtime_ns
     assert output.is_file()
+    assert pstats.Stats(str(output)).total_calls > 0
     text = capsys.readouterr().out
     assert "phase=restore elapsed_s=" in text
     assert "rss_before_restore_mb=12.000000 rss_after_restore_mb=12.000000" in text
@@ -378,5 +393,120 @@ def test_load_without_restore_only_keeps_existing_payload_profile(
         ])
         == 0
     )
+    assert restore_calls == [checkpoint]
+    assert len(saved) == 1
+
+
+@pytest.mark.parametrize(
+    "state_kind",
+    ["committed", "sharded-only", "uncommitted", "missing", "malformed", "unset"],
+)
+def test_restore_only_implicit_selection_uses_committed_sharded_generation(
+    tmp_path: Path, restore_calls: list[Path], state_kind: str
+) -> None:
+    """G40 must not silently replace committed G41 or ambiguous workspace state."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.runtime_checkpoint_dir.mkdir()
+    if state_kind != "sharded-only":
+        checkpoint_path_for_generation(paths.runtime_checkpoint_dir, 40).write_bytes(
+            b"fixture"
+        )
+    checkpoint = paths.runtime_checkpoint_dir / "generation_000041.sharded"
+    if state_kind != "missing":
+        checkpoint.mkdir()
+        (checkpoint / "manifest.json").write_bytes(b"fixture")
+    if state_kind != "uncommitted":
+        save_bootstrap_run_state(
+            replace(
+                initialize_bootstrap_run_state(),
+                generation=41,
+                latest_runtime_checkpoint_path=(
+                    None
+                    if state_kind == "unset"
+                    else str(checkpoint.relative_to(tmp_path))
+                ),
+            ),
+            paths.run_state_path,
+        )
+    if state_kind == "malformed":
+        paths.run_state_path.write_text("{", encoding="utf-8")
+    output = tmp_path / "restore.prof"
+    args = [
+        "--mode",
+        "load",
+        "--restore-only",
+        "--work-dir",
+        str(tmp_path),
+        "--profile-output",
+        str(output),
+    ]
+    if state_kind in {"committed", "sharded-only"}:
+        assert profile_module.main(args) == 0
+        assert restore_calls == [checkpoint]
+    else:
+        expected = FileNotFoundError if state_kind == "missing" else ValueError
+        with pytest.raises(expected):
+            profile_module.main(args)
+        assert restore_calls == []
+        assert not output.exists()
+
+
+@pytest.mark.parametrize("rival_kind", ["file", "symlink"])
+def test_restore_only_preserves_profile_created_during_restore(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    restore_calls: list[Path],
+    rival_kind: str,
+) -> None:
+    """Exclusive publication preserves a competing file or symlink byte for byte."""
+    checkpoint = tmp_path / "checkpoint.json"
+    checkpoint.write_bytes(b"fixture")
+    output = tmp_path / "restore.prof"
+    evidence = tmp_path / "other.prof"
+    original_loader = profile_module._load_runner_for_mode
+
+    def load_and_publish(*args: object) -> object:
+        result = original_loader(*args)
+        if rival_kind == "symlink":
+            evidence.write_bytes(b"concurrent evidence")
+            output.symlink_to(evidence)
+        else:
+            output.write_bytes(b"concurrent evidence")
+        return result
+
+    monkeypatch.setattr(profile_module, "_load_runner_for_mode", load_and_publish)
+    with pytest.raises(FileExistsError):
+        profile_module.main([
+            "--mode",
+            "load",
+            "--restore-only",
+            "--work-dir",
+            str(tmp_path),
+            "--checkpoint",
+            str(checkpoint),
+            "--profile-output",
+            str(output),
+        ])
+    assert restore_calls == [checkpoint]
+    assert output.read_bytes() == b"concurrent evidence"
+    assert output.is_symlink() == (rival_kind == "symlink")
+
+
+def test_load_without_restore_only_keeps_implicit_file_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, restore_calls: list[Path]
+) -> None:
+    """Ordinary load retains its existing file selection without run state."""
+    checkpoints = tmp_path / "search_checkpoints"
+    checkpoints.mkdir()
+    checkpoint = checkpoint_path_for_generation(checkpoints, 40)
+    checkpoint.write_bytes(b"fixture")
+    (checkpoints / "generation_000041.sharded").mkdir()
+    saved: list[object] = []
+    monkeypatch.setattr(
+        profile_module,
+        "_profile_checkpoint_save",
+        lambda **kwargs: saved.append(kwargs),
+    )
+    assert profile_module.main(["--mode", "load", "--work-dir", str(tmp_path)]) == 0
     assert restore_calls == [checkpoint]
     assert len(saved) == 1

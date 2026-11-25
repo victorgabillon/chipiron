@@ -46,6 +46,7 @@ from .pipeline_artifacts import (
 )
 from .pipeline_claims import claim_pipeline_stage, release_owned_pipeline_stage_claim
 from .run_state import load_bootstrap_run_state, save_bootstrap_run_state
+from .worker_result_io import TRAINING_NAMESPACE as NAMESPACE
 from .worker_result_io import (
     attempt_directory,
     publication_record,
@@ -67,7 +68,6 @@ if TYPE_CHECKING:
 
 KEY = "durable_training"
 ACCEPTED = "accepted_training"
-NAMESPACE = "training_publications_v1"
 CONTRACT = {"schema_version": 1}
 
 

@@ -81,7 +81,7 @@ def test_v1_capsule_refuses_scientific_v2_before_sealing(
         )
         objects = set((publication.root / "objects").iterdir())
         with pytest.raises(GenerationPublicationError, match="scientific v1"):
-            publication.publish(candidate)
+            publication.publish(candidate, previous=state)
         assert set((publication.root / "objects").iterdir()) == objects
         assert not (publication.staging / ".generation_publication_v1.json").exists()
         assert paths.run_state_path.read_bytes() == original_state
