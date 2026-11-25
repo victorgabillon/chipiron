@@ -85,14 +85,14 @@ class GenerationPublicationError(ValueError):
     """Missing transaction evidence or a conflicting immutable artifact."""
 
 
-class GrowthSourceChanged(GenerationPublicationError):
+class GrowthSourceChangedError(GenerationPublicationError):
     """A private computation lost its prerequisite; retry from current authority."""
 
 
 def require_growth_source(condition: bool, message: str) -> None:
     """Distinguish an invalidated computation from corrupt scientific evidence."""
     if not condition:
-        raise GrowthSourceChanged(message)
+        raise GrowthSourceChangedError(message)
 
 
 def require(condition: bool, message: str) -> None:

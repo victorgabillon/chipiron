@@ -140,7 +140,7 @@ from chipiron.environments.morpion.bootstrap.dataset_publication import (
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
     GrowthOwnershipBlockingIOError,
-    GrowthSourceChanged,
+    GrowthSourceChangedError,
     growth_tree_ownership,
     validate_manifest_publication,
 )
@@ -797,7 +797,7 @@ def _run_pipeline_growth_stage_owned(
                 return load_bootstrap_run_state(paths.run_state_path)
             try:
                 run_state = receipt_session.commit_growth(update)
-            except GrowthSourceChanged:
+            except GrowthSourceChangedError:
                 observe_wait(
                     paths.work_dir, "growth", "source_changed", owned_state.generation
                 )
