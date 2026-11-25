@@ -21,6 +21,7 @@ from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     capsule_path,
     growth_receipt_ownership,
 )
+from chipiron.environments.morpion.bootstrap.pipeline import stages
 from chipiron.environments.morpion.bootstrap.reevaluation_transaction import (
     TRANSACTION_KEY,
     cursor_digest,
@@ -35,7 +36,7 @@ from tests.environments.morpion_durable_closed_helpers import (
     ClosedPublicationRunner,
     run_closed_publication,
 )
-from tests.environments.morpion_patch_receipt_helpers import PATCHED
+from tests.environments.morpion_patch_receipt_helpers import BASELINE, PATCHED
 from tests.environments.test_morpion_atomic_reevaluation import checkpoint
 
 if TYPE_CHECKING:
@@ -48,6 +49,10 @@ def test_patch_arriving_during_growth_remains_until_checkpoint_receipt(
     """A real create-only proposal cannot advance the cursor of an unpatched tree."""
     args, paths, _ = setup_atomic(tmp_path)
     runner = ClosedPublicationRunner()
+    # This fixture normally has no growth and unreachable save thresholds.
+    # Add its supported third node and trigger a save before the late patch applies.
+    runner.grow_delta = 1
+    monkeypatch.setattr(stages, "should_save_progress", lambda **_: True)
     original = runner.grow
     proposals = []
 
@@ -60,6 +65,7 @@ def test_patch_arriving_during_growth_remains_until_checkpoint_receipt(
     monkeypatch.setattr(runner, "grow", arrived)
     first = run_closed_publication(args, runner)
     assert first.generation == 2 and runner.apply_calls == 0
+    assert checkpoint(paths, first) == {**BASELINE, "new": 0.0}
     assert accepted(first) is None and receipt_ledger(first) == {}
     assert paths.pipeline_reevaluation_patch_path.exists()
     next_runner = ClosedPublicationRunner()
@@ -67,7 +73,7 @@ def test_patch_arriving_during_growth_remains_until_checkpoint_receipt(
     assert second.generation == 3 and next_runner.apply_calls == 1
     [proposal] = proposals
     receipt = receipt_ledger(second)[proposal.patch_id]
-    assert checkpoint(paths, second) == PATCHED
+    assert checkpoint(paths, second) == {**PATCHED, "new": 0.0}
     assert accepted(second) == proposal.metadata[TRANSACTION_KEY]["next_cursor"]
     assert receipt.accepted_cursor_sha256 == cursor_digest(accepted(second))
     assert receipt.checkpoint_path == second.latest_runtime_checkpoint_path
@@ -119,6 +125,8 @@ def test_prepared_capsule_change_is_rejected_before_authority_write(
 ) -> None:
     """The volatile fingerprint never accepts a modified previously hashed result."""
     args, paths, source = setup_atomic(tmp_path)
+    # Applying a real pending patch requires a checkpoint even with no new nodes.
+    proposal = publish_proposal(paths)
     original = DurableGenerationPublication.prepare_capsule
 
     def changed(self: Any, *a: Any, **kw: Any) -> Any:
@@ -132,7 +140,10 @@ def test_prepared_capsule_change_is_rejected_before_authority_write(
         with pytest.raises(ValueError, match="Prepared capsule changed"):
             run_closed_publication(args, ClosedPublicationRunner())
     assert load_bootstrap_run_state(paths.run_state_path) == source
-    assert run_closed_publication(args, ClosedPublicationRunner()).generation == 2
+    assert paths.pipeline_reevaluation_patch_path.exists() and accepted(source) is None
+    retried = run_closed_publication(args, ClosedPublicationRunner())
+    assert retried.generation == 2 and checkpoint(paths, retried) == PATCHED
+    assert set(receipt_ledger(retried)) == {proposal.patch_id}
 
 
 def test_new_hardlink_revalidates_sealed_bytes_without_false_conflict(
@@ -140,6 +151,7 @@ def test_new_hardlink_revalidates_sealed_bytes_without_false_conflict(
 ) -> None:
     """Inode ctime is a fast fence, not proof that immutable payload bytes changed."""
     args, paths, _ = setup_atomic(tmp_path)
+    proposal = publish_proposal(paths)
     original = DurableGenerationPublication.prepare_capsule
 
     def linked(self: Any, *a: Any, **kw: Any) -> Any:
@@ -153,6 +165,8 @@ def test_new_hardlink_revalidates_sealed_bytes_without_false_conflict(
     monkeypatch.setattr(DurableGenerationPublication, "prepare_capsule", linked)
     state = run_closed_publication(args, ClosedPublicationRunner())
     assert state.generation == 2
+    assert checkpoint(paths, state) == PATCHED
+    assert set(receipt_ledger(state)) == {proposal.patch_id}
     assert (paths.work_dir / state.latest_runtime_checkpoint_path).read_bytes() == (
         tmp_path / "reader-link"
     ).read_bytes()
