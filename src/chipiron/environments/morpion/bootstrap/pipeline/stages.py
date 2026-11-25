@@ -139,6 +139,9 @@ from chipiron.environments.morpion.bootstrap.dataset_publication import (
 )
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
     PUBLICATION_KEY,
+    GrowthOwnershipBlockingIOError,
+    GrowthSourceChanged,
+    growth_tree_ownership,
     validate_manifest_publication,
 )
 from chipiron.environments.morpion.bootstrap.history import (
@@ -551,7 +554,8 @@ def run_pipeline_growth_stage(
     # Updated legacy callers also take this lease and cannot race a receipt owner.
     # Old binaries must be quiesced before adoption; they do not know this lock.
     resolve_ready = False
-    with growth_receipt_ownership(paths):
+    with growth_tree_ownership(paths), ExitStack() as publication_ownership:
+        publication_ownership.enter_context(growth_receipt_ownership(paths))
         if args.learning_schedule is not None:
             from chipiron.environments.morpion.bootstrap.learning_schedule import (
                 ReadyBoundedGrowthWindow,
@@ -603,6 +607,7 @@ def run_pipeline_growth_stage(
                     max_cycles=max_cycles,
                     derived_sequential=derived_sequential,
                     receipt_session=session,
+                    publication_ownership=publication_ownership,
                 )
             finally:
                 if session is not None:
@@ -656,8 +661,9 @@ def _run_pipeline_growth_stage_owned(
     max_cycles: int,
     derived_sequential: bool,
     receipt_session: GrowthPatchReceiptSession | None,
+    publication_ownership: ExitStack,
 ) -> MorpionBootstrapRunState:
-    """Hold Growth ownership across cold restore, commitment and acknowledgement."""
+    """Own the tree throughout, sharing publication only at capture and acceptance."""
     if receipt_session is not None and (
         derived_sequential or not paths.run_state_path.is_file()
     ):
@@ -719,8 +725,8 @@ def _run_pipeline_growth_stage_owned(
 
             if wait_reason(run_state, paths) is not None:
                 return run_state
-        # C7.1 still owns the broad lease across computation. No other writer may
-        # legitimately change this snapshot inside this production invocation.
+        # Capture the durable baseline under shared ownership; worker acceptances
+        # may advance independently while this tree owner computes privately.
         owned_state = (
             load_bootstrap_run_state(paths.run_state_path)
             if receipt_session is not None
@@ -745,6 +751,10 @@ def _run_pipeline_growth_stage_owned(
             and receipt_session.publication.version in (2, 3)
         ):
             receipt_session.validate_options(effective_args)
+        if receipt_session is not None:
+            if receipt_session.publication is not None:
+                receipt_session.publication.capture_source(run_state)
+            publication_ownership.close()
         run_state = _run_one_pipeline_growth_cycle(
             args=effective_args,
             paths=paths,
@@ -769,12 +779,29 @@ def _run_pipeline_growth_stage_owned(
             run_state = on_no_publication(previous_state, run_state)
         if receipt_session is not None:
             assert owned_state is not None
-            if load_bootstrap_run_state(paths.run_state_path) != owned_state:
-                message = "Run state changed outside the Growth ownership lock."
-                raise CheckpointPatchReceiptError(message)
-            run_state = receipt_session.commit_growth(
-                OrdinaryGrowthUpdate(owned_state, run_state, config_hash=config_hash)
+            update = OrdinaryGrowthUpdate(
+                owned_state, run_state, config_hash=config_hash
             )
+            receipt_session.prepare_growth(update)
+            try:
+                publication_ownership.enter_context(growth_receipt_ownership(paths))
+            except GrowthOwnershipBlockingIOError:
+                # No authority was taken; the stock worker poll may retry. Never
+                # extend a budget or turn temporary publication contention fatal.
+                observe_wait(
+                    paths.work_dir,
+                    "growth",
+                    "publication_contended",
+                    owned_state.generation,
+                )
+                return load_bootstrap_run_state(paths.run_state_path)
+            try:
+                run_state = receipt_session.commit_growth(update)
+            except GrowthSourceChanged:
+                observe_wait(
+                    paths.work_dir, "growth", "source_changed", owned_state.generation
+                )
+                return load_bootstrap_run_state(paths.run_state_path)
         elif derived_sequential:
             from dataclasses import asdict
 

@@ -18,7 +18,9 @@ from .derived.provenance import atomic_json, inside
 from .generation_publication_io import (
     ATTEMPT_MARKER,
     PUBLICATION_KEY,
+    GenerationPublicationError,
     artifact_digest,
+    artifact_stat_identity,
     capsule_lease,
     capsule_path,
     capsule_seal,
@@ -54,6 +56,7 @@ if TYPE_CHECKING:
 
     from .bootstrap_paths import MorpionBootstrapPaths
     from .checkpoint_patch_receipts import CheckpointPatchReceipt, PendingPatch
+    from .continuous_transitions import Frame
     from .prediction_origin_tracking import GrowthPredictionOrigins
     from .run_state import MorpionBootstrapRunState
 
@@ -263,6 +266,17 @@ class DurableGenerationPublication:
             else (1 if scientific_v2_producer is None else 2)
         )
         self._source_pin = ExitStack()
+        self._attempt_pin = ExitStack()
+        self._sealed_identity: dict[str, tuple[int, ...]] | None = None
+        self._sealed: (
+            tuple[MorpionBootstrapRunState, dict[str, Any], dict[str, int] | None]
+            | None
+        ) = None
+        self._capsule_input: (
+            tuple[MorpionBootstrapRunState | None, MorpionBootstrapRunState] | None
+        ) = None
+        self._captured_config: bytes | None = None
+        self._captured_frame: Frame | None = None
         self.closed_validation: dict[str, Any] = {}
         self.producer = (
             None if scientific_v2_producer is None else dict(scientific_v2_producer)
@@ -286,6 +300,13 @@ class DurableGenerationPublication:
         """Reserve a unique private attempt; incomplete attempts are never discovery."""
         self.identifier = uuid.uuid4().hex
         self.staging = self.root / "staging" / self.identifier
+        self._sealed = None
+        self._sealed_identity = None
+        self._capsule_input = None
+        self._attempt_pin.close()
+        self._attempt_pin.enter_context(
+            capsule_lease(self.paths.work_dir, self.identifier, version=self.version)
+        )
         self.staging.mkdir(parents=True)
         (self.root / "objects").mkdir(exist_ok=True)
         (self.root / "trash").mkdir(exist_ok=True)
@@ -301,7 +322,10 @@ class DurableGenerationPublication:
             },
         )
         config_copy = self.staging / "bootstrap_config.json"
-        _copy_artifact(self.paths.bootstrap_config_path, config_copy)
+        if self._captured_config is None:
+            _copy_artifact(self.paths.bootstrap_config_path, config_copy)
+        else:
+            config_copy.write_bytes(self._captured_config)
         require(
             hashlib.sha256(config_copy.read_bytes().removesuffix(b"\n")).hexdigest()
             == self.config_hash,
@@ -492,17 +516,22 @@ class DurableGenerationPublication:
         self.state = state
         return state
 
+    def capture_source(self, state: MorpionBootstrapRunState) -> None:
+        """Pin the admitted source before releasing shared publication ownership."""
+        from .continuous_publication import enabled, load_frame
+
+        self._source_pin.close()
+        head = publication_records(state.metadata)[-1]
+        self._source_pin.enter_context(
+            capsule_lease(self.paths.work_dir, head["id"], version=self.version)
+        )
+        self._captured_config = self.paths.bootstrap_config_path.read_bytes()
+        self._captured_frame = load_frame(self.paths, state) if enabled(state) else None
+        self.state = state
+
     def begin_cycle(self, model: dict[str, Any] | None) -> Path | None:
         """Create private per-cycle model state; an unsaved cycle remains an orphan."""
         assert self.state is not None
-        if self.version == 3:
-            self.close()
-            assert self.state.latest_tree_snapshot_path is not None
-            self._source_pin.enter_context(
-                generation_read_pin(
-                    inside(self.paths.work_dir, self.state.latest_tree_snapshot_path)
-                )
-            )
         self.start(self.state.generation + 1)
         return None if model is None else self.freeze_model(model)
 
@@ -548,19 +577,25 @@ class DurableGenerationPublication:
             sharded_tree_snapshot_dir=destination,
         )
 
-    def publish(
+    def prepare_capsule(
         self,
         state: MorpionBootstrapRunState,
         *,
         previous: MorpionBootstrapRunState | None,
         baseline: bool = False,
-    ) -> MorpionBootstrapRunState:
-        """Publish complete dependencies; only a later durable run-state write commits."""
+    ) -> tuple[MorpionBootstrapRunState, dict[str, int] | None]:
+        """Seal and validate private bytes before shared acceptance; keep them pinned."""
+        require(self._sealed is None, "Capsule was already prepared.")
         assert self.staging is not None and self.identifier is not None
         from .continuous_publication import prepare_publication_owned
 
+        self._capsule_input = previous, state
         state, continuous_source = prepare_publication_owned(
-            self.paths, previous, state, self.activation
+            self.paths,
+            previous,
+            state,
+            self.activation,
+            captured_frame=self._captured_frame,
         )
         if (
             self.version == 1
@@ -828,6 +863,64 @@ class DurableGenerationPublication:
                 from .prediction_origin_publication import read_prediction_evidence
 
                 read_prediction_evidence(self.paths.work_dir, record, sealed)
+        self._sealed = state, record, continuous_source
+        self._sealed_identity = artifact_stat_identity(final)
+        return state, continuous_source
+
+    def publish(
+        self,
+        state: MorpionBootstrapRunState,
+        *,
+        previous: MorpionBootstrapRunState | None,
+        baseline: bool = False,
+    ) -> MorpionBootstrapRunState:
+        """Publish complete dependencies; only a later durable run-state write commits."""
+        assert self.staging is not None and self.identifier is not None
+        from .continuous_publication import prepare_publication_owned
+
+        if self._sealed is None:
+            state, continuous_source = self.prepare_capsule(
+                state, previous=previous, baseline=baseline
+            )
+        elif self._capsule_input == (previous, state):
+            # Activation still owns publication throughout. Reuse its one
+            # transition, never resolve a promotion twice while sealing.
+            state, _, continuous_source = self._sealed
+        else:
+            state, continuous_source = prepare_publication_owned(
+                self.paths, previous, state, self.activation
+            )
+        assert self._sealed is not None
+        sealed_state, record, captured_continuous_source = self._sealed
+        if (
+            artifact_stat_identity(
+                capsule_path(self.paths.work_dir, record["id"], self.version)
+            )
+            != self._sealed_identity
+        ):
+            # Another reader may add a hardlink to immutable shared bytes,
+            # changing ctime without changing content. Reauthenticate the exact
+            # sealed inventory in that case; never treat stat data as authority.
+            try:
+                validate_capsule(self.paths.work_dir, record)
+            except GenerationPublicationError as error:
+                message = "Prepared capsule changed after validation."
+                raise GenerationPublicationError(message) from error
+        history = [] if previous is None else publication_records(previous.metadata)
+        require(
+            record["parent_id"] == (None if not history else history[-1]["id"])
+            and state.generation == sealed_state.generation
+            and state.cycle_index == sealed_state.cycle_index
+            and continuous_source == captured_continuous_source,
+            "Prepared capsule no longer belongs to the accepted Growth source.",
+        )
+        # Only physical output pointers come from the sealed private result.
+        # The metadata/history below always comes from current owned authority.
+        state = replace(
+            state,
+            latest_runtime_checkpoint_path=sealed_state.latest_runtime_checkpoint_path,
+            latest_tree_snapshot_path=sealed_state.latest_tree_snapshot_path,
+        )
         metadata = dict(state.metadata)
         metadata[PUBLICATION_KEY] = {
             "schema_version": self.version,
@@ -862,6 +955,7 @@ class DurableGenerationPublication:
     def close(self) -> None:
         """Release the predecessor only after validation/commit or failed invocation."""
         self._source_pin.close()
+        self._attempt_pin.close()
 
     def retention_roots(self, state: MorpionBootstrapRunState) -> set[Path]:
         """Conservatively pin all committed capsules and legacy provenance inputs."""

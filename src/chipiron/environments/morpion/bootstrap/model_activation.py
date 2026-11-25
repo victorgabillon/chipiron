@@ -431,7 +431,9 @@ def activate_model(
 
     require_managed_execution(paths)
     request = copy.deepcopy(request)
-    with growth_receipt_ownership(paths):
+    from .generation_publication_io import growth_tree_ownership
+
+    with growth_tree_ownership(paths), growth_receipt_ownership(paths):
         state = load_bootstrap_run_state(paths.run_state_path)
         digest = object_digest(request)
         records = publication_records(state.metadata)

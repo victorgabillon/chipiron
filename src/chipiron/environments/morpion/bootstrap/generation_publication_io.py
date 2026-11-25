@@ -85,6 +85,16 @@ class GenerationPublicationError(ValueError):
     """Missing transaction evidence or a conflicting immutable artifact."""
 
 
+class GrowthSourceChanged(GenerationPublicationError):
+    """A private computation lost its prerequisite; retry from current authority."""
+
+
+def require_growth_source(condition: bool, message: str) -> None:
+    """Distinguish an invalidated computation from corrupt scientific evidence."""
+    if not condition:
+        raise GrowthSourceChanged(message)
+
+
 def require(condition: bool, message: str) -> None:
     """Reject ambiguity before applying, acknowledging or deleting scientific data."""
     if not condition:
@@ -105,8 +115,52 @@ def file_digest(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def artifact_stat_identity(path: Path) -> dict[str, tuple[int, ...]]:
+    """Fence a pinned, already hashed private artifact without rereading payloads.
+
+    Private artifacts have one writer. Include directory membership and nanosecond
+    change times so a replaced, added, removed or modified entry cannot use its
+    earlier validation. This is volatile evidence, never a recovery authority.
+    """
+    result = {}
+    for entry in [path, *sorted(path.rglob("*"))] if path.is_dir() else [path]:
+        require(not entry.is_symlink(), "Symlinked prepared publication artifact.")
+        value = entry.stat()
+        result[entry.relative_to(path).as_posix()] = (
+            value.st_dev,
+            value.st_ino,
+            value.st_mode,
+            value.st_size,
+            value.st_mtime_ns,
+            value.st_ctime_ns,
+        )
+    return result
+
+
 class GrowthOwnershipBlockingIOError(BlockingIOError):
     """The stable Growth lease was unavailable before entering its owned body."""
+
+
+@contextmanager
+def growth_tree_ownership(paths: MorpionBootstrapPaths) -> Iterator[None]:
+    """Own the live tree, before shared publication ownership; never wait for it.
+
+    Dataset, Training and Reevaluation publishers do not acquire this lease.
+    Growth and activation always acquire tree -> publication -> capsule pins.
+    Collectors take only publication and nonblocking exclusive capsule pins.
+    """
+    import fcntl
+
+    paths.pipeline_dir.mkdir(parents=True, exist_ok=True)
+    with (paths.pipeline_dir / ".growth_tree_owner.lock").open("a+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise GrowthOwnershipBlockingIOError(*exc.args) from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 @contextmanager
