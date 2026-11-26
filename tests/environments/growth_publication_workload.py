@@ -6,6 +6,7 @@ import time
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
+from chipiron.environments.morpion.bootstrap import generation_publication as capsules
 from chipiron.environments.morpion.bootstrap import launcher
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import (
     MorpionBootstrapPaths,
@@ -100,6 +101,27 @@ def worker(args: Any, evidence: Path, stage: str, entered: Any, release: Any) ->
                 cold_restore(args, evidence)
             return
         original_grow = AnemoneMorpionSearchRunner.grow
+        original_publish = capsules.publish_directory_if_absent
+
+        def relocate(staging: Path, final: Path, work_dir: Path) -> None:
+            if final.parent.name != "objects":
+                original_publish(staging, final, work_dir)
+                return
+            (evidence / "c72-relocation-before.json").write_text(
+                json.dumps({"staging": str(staging), "final": str(final)})
+            )
+            entered.set()
+            assert release.wait(120), "Collector did not release real rename"
+            release.clear()
+            original_publish(staging, final, work_dir)
+            (evidence / "c72-relocation-after.json").write_text(
+                json.dumps({
+                    "staging_exists": staging.exists(),
+                    "final_exists": final.exists(),
+                })
+            )
+            entered.set()
+            assert release.wait(120), "Collector did not finish its scan"
 
         def grow(self: Any, max_growth_steps: int) -> None:
             runtime = self._require_runtime()
@@ -132,7 +154,7 @@ def worker(args: Any, evidence: Path, stage: str, entered: Any, release: Any) ->
             str(args.work_dir),
             "--scientific",
             "--pipeline-stage",
-            stage,
+            "growth" if stage == "growth-relocate" else stage,
             "--persistent-worker",
             "--worker-max-jobs",
             "1",
@@ -142,7 +164,10 @@ def worker(args: Any, evidence: Path, stage: str, entered: Any, release: Any) ->
             "1",
             "--no-print-startup-summary",
         ]
-        if stage == "growth":
+        if stage == "growth-relocate":
+            with patch.object(capsules, "publish_directory_if_absent", relocate):
+                result = launcher.main(arguments)
+        elif stage == "growth":
             with patch.object(AnemoneMorpionSearchRunner, "grow", grow):
                 result = launcher.main(arguments)
         else:

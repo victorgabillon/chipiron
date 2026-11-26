@@ -105,7 +105,7 @@ def staged_growth(
             control = load_bootstrap_control(paths.control_path)
             if not save:
                 patch.setattr(stages, "should_save_progress", lambda **_: False)
-            result = stages._run_one_pipeline_growth_cycle(
+            result, _event = stages._run_one_pipeline_growth_cycle(
                 args=apply_control_to_args(args, control),
                 paths=paths,
                 runner=runner,

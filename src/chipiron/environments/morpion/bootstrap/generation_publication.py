@@ -1007,17 +1007,7 @@ class DurableGenerationPublication:
             for path in sorted(directory.iterdir()):
                 if path.name in committed_ids:
                     continue
-                if not path.is_dir() or path.is_symlink() or len(path.name) != 32:
-                    continue
-                marker = path / ATTEMPT_MARKER
-                if marker.is_file():
-                    ownership = read_object(marker)
-                    require(
-                        (ownership.get("protocol"), ownership.get("id"))
-                        == (PUBLICATION_KEY, path.name),
-                        "Unrecognized orphan ownership evidence.",
-                    )
-                elif directory.name != "trash" or any(path.iterdir()):
+                if len(path.name) != 32:
                     continue
                 try:
                     with capsule_lease(
@@ -1027,6 +1017,21 @@ class DurableGenerationPublication:
                         nonblocking=True,
                         version=self.version,
                     ):
+                        # A pinned producer can relocate staging while publication
+                        # is unlocked. Inspect only after owning its stable ID and
+                        # rechecking the location returned by the directory scan.
+                        if not path.is_dir() or path.is_symlink():
+                            continue
+                        marker = path / ATTEMPT_MARKER
+                        if marker.is_file():
+                            ownership = read_object(marker)
+                            require(
+                                (ownership.get("protocol"), ownership.get("id"))
+                                == (PUBLICATION_KEY, path.name),
+                                "Unrecognized orphan ownership evidence.",
+                            )
+                        elif directory.name != "trash" or any(path.iterdir()):
+                            continue
                         trash = self.root / "trash" / path.name
                         if path != trash:
                             publish_directory_if_absent(

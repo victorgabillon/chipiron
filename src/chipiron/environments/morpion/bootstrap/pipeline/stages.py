@@ -53,13 +53,13 @@ from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     build_event_metadata as _build_event_metadata,
 )
 from chipiron.environments.morpion.bootstrap.cycle_metadata import (
+    build_no_save_cycle_event as _build_no_save_cycle_event,
+)
+from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     next_metadata as _next_metadata,
 )
 from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     pipeline_metadata as _pipeline_metadata,
-)
-from chipiron.environments.morpion.bootstrap.cycle_metadata import (
-    record_no_save_cycle_event as _record_no_save_cycle_event,
 )
 from chipiron.environments.morpion.bootstrap.cycle_metadata import (
     with_config_hash_metadata as _with_config_hash_metadata,
@@ -150,6 +150,8 @@ from chipiron.environments.morpion.bootstrap.history import (
 from chipiron.environments.morpion.bootstrap.ordinary_growth import OrdinaryGrowthUpdate
 from chipiron.environments.morpion.bootstrap.performance import (
     StageMeasurement,
+    optional_finish,
+    optional_measurement,
     persist_stage_measurement,
 )
 from chipiron.environments.morpion.bootstrap.pipeline_artifacts import (
@@ -284,6 +286,7 @@ if TYPE_CHECKING:
     from chipiron.environments.morpion.bootstrap.bootstrap_args import (
         MorpionBootstrapArgs,
     )
+    from chipiron.environments.morpion.bootstrap.history import MorpionBootstrapEvent
     from chipiron.environments.morpion.bootstrap.search_runner_protocol import (
         MorpionSearchRunner,
     )
@@ -755,7 +758,8 @@ def _run_pipeline_growth_stage_owned(
             if receipt_session.publication is not None:
                 receipt_session.publication.capture_source(run_state)
             publication_ownership.close()
-        run_state = _run_one_pipeline_growth_cycle(
+        attempt_measurement = optional_measurement()
+        run_state, event = _run_one_pipeline_growth_cycle(
             args=effective_args,
             paths=paths,
             runner=runner,
@@ -794,12 +798,26 @@ def _run_pipeline_growth_stage_owned(
                     "publication_contended",
                     owned_state.generation,
                 )
+                _record_growth_attempt(
+                    paths,
+                    previous_state,
+                    run_state,
+                    attempt_measurement,
+                    reason="publication_contended",
+                )
                 return load_bootstrap_run_state(paths.run_state_path)
             try:
                 run_state = receipt_session.commit_growth(update)
             except GrowthSourceChangedError:
                 observe_wait(
                     paths.work_dir, "growth", "source_changed", owned_state.generation
+                )
+                _record_growth_attempt(
+                    paths,
+                    previous_state,
+                    run_state,
+                    attempt_measurement,
+                    reason="source_changed",
                 )
                 return load_bootstrap_run_state(paths.run_state_path)
         elif derived_sequential:
@@ -819,6 +837,35 @@ def _run_pipeline_growth_stage_owned(
             atomic_json(paths.run_state_path, asdict(run_state))
         else:
             save_bootstrap_run_state(run_state, paths.run_state_path)
+        observation = _record_growth_attempt(
+            paths, previous_state, run_state, attempt_measurement
+        )
+        if event is not None:
+            saved = run_state.generation > previous_generation
+            event = replace(
+                event,
+                generation=run_state.generation,
+                cycle_index=run_state.cycle_index,
+                artifacts=replace(
+                    event.artifacts,
+                    runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
+                    tree_snapshot_path=run_state.latest_tree_snapshot_path,
+                ),
+                metadata={
+                    **event.metadata,
+                    "cycle_accepted": True,
+                    "checkpoint_saved": saved,
+                },
+            )
+            MorpionBootstrapHistoryRecorder(paths.history_paths()).record(event)
+            LOGGER.info(
+                "[pipeline] growth_cycle_done cycle=%s generation=%s saved=%s elapsed=%s status=%s",
+                run_state.cycle_index,
+                run_state.generation,
+                str(saved).lower(),
+                observation.get("elapsed_s"),
+                run_state.metadata.get(GROWTH_STATUS_METADATA_KEY, "accepted"),
+            )
         if run_state.generation > previous_generation and receipt_session is None:
             _prune_saved_generation_artifacts(paths)
         cycles_run += 1
@@ -854,6 +901,39 @@ def _run_pipeline_growth_stage_owned(
     return run_state
 
 
+def _record_growth_attempt(
+    paths: MorpionBootstrapPaths,
+    source: MorpionBootstrapRunState,
+    result: MorpionBootstrapRunState,
+    measurement: StageMeasurement | None,
+    *,
+    reason: str | None = None,
+) -> dict[str, object]:
+    """Keep private computation costs even when none of its work was accepted."""
+    observation = {
+        **optional_finish(measurement),
+        "source_generation": source.generation,
+        "candidate_generation": result.generation,
+        "cycle_index": result.cycle_index,
+        "outcome": "accepted" if reason is None else "discarded",
+        "reason": reason,
+        "timing_scope": "computation_and_preparation_through_acceptance_decision",
+    }
+    persist_stage_measurement(
+        paths.work_dir, source.generation, "growth_attempt", observation
+    )
+    if reason is not None:
+        LOGGER.info(
+            "[pipeline] growth_attempt_discarded cycle=%s generation=%s candidate_generation=%s saved=false elapsed=%s reason=%s",
+            result.cycle_index,
+            source.generation,
+            result.generation,
+            observation.get("elapsed_s"),
+            reason,
+        )
+    return observation
+
+
 def _run_one_pipeline_growth_cycle(
     *,
     args: MorpionBootstrapArgs,
@@ -866,7 +946,7 @@ def _run_one_pipeline_growth_cycle(
     now_unix_s: float | None = None,
     force_save: bool = False,
     receipt_session: GrowthPatchReceiptSession | None = None,
-) -> MorpionBootstrapRunState:
+) -> tuple[MorpionBootstrapRunState, MorpionBootstrapEvent | None]:
     """Run one growth-only artifact-pipeline cycle with memory hooks."""
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
     memory.log("cycle_start")
@@ -902,7 +982,7 @@ def _run_one_pipeline_growth_cycle_impl(
     memory: MemoryDiagnostics,
     force_save: bool = False,
     receipt_session: GrowthPatchReceiptSession | None = None,
-) -> MorpionBootstrapRunState:
+) -> tuple[MorpionBootstrapRunState, MorpionBootstrapEvent | None]:
     """Run one artifact-pipeline cycle that only grows and exports artifacts."""
     cycle_measurement = StageMeasurement()
     cycle_started_at = time.perf_counter()
@@ -940,7 +1020,6 @@ def _run_one_pipeline_growth_cycle_impl(
         generation=run_state.generation,
         event="start",
     )
-    history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
     committed_model = (
         receipt_session is not None
         and receipt_session.publication is not None
@@ -998,7 +1077,7 @@ def _run_one_pipeline_growth_cycle_impl(
             event="done",
             reason="low_available_ram",
         )
-        return run_state
+        return run_state, None
     if not log_available_ram_guard(
         stage="growth",
         generation=run_state.generation,
@@ -1015,7 +1094,7 @@ def _run_one_pipeline_growth_cycle_impl(
             event="done",
             reason="low_available_ram",
         )
-        return run_state
+        return run_state, None
     runner.load_or_create(
         restore_tree_path,
         receipt_session.runtime_model_path(resolved_active_model.model_bundle_path)
@@ -1065,7 +1144,7 @@ def _run_one_pipeline_growth_cycle_impl(
             branch_count=restored_branch_count,
             reason="low_available_ram",
         )
-        return run_state
+        return run_state, None
     reevaluation_patch_result = (
         receipt_session.apply(run_state, effective_runtime_config)
         if receipt_session is not None
@@ -1222,8 +1301,7 @@ def _run_one_pipeline_growth_cycle_impl(
         metadata["checkpoint_skipped_reason"] = "diagnostic_stop_after_growth"
         metadata["checkpoint_skipped"] = True
         next_run_state = replace(next_run_state, metadata=metadata)
-        _record_no_save_cycle_event(
-            history_recorder=history_recorder,
+        event = _build_no_save_cycle_event(
             cycle_index=cycle_index,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
@@ -1233,12 +1311,6 @@ def _run_one_pipeline_growth_cycle_impl(
             resolved_control=resolved_control,
             effective_runtime_config=effective_runtime_config,
         )
-        LOGGER.info(
-            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=diagnostic_stop_after_growth",
-            cycle_index,
-            next_run_state.generation,
-            cycle_duration_s,
-        )
         log_pipeline_memory(
             stage="growth",
             generation=next_run_state.generation,
@@ -1247,7 +1319,7 @@ def _run_one_pipeline_growth_cycle_impl(
             branch_count=branch_count,
             reason="diagnostic_stop_after_growth",
         )
-        return next_run_state
+        return next_run_state, event
 
     if (
         _no_growth_and_limit_reached(
@@ -1284,8 +1356,7 @@ def _run_one_pipeline_growth_cycle_impl(
             branch_count=branch_count,
             tree_branch_limit=effective_runtime_config.tree_branch_limit,
         )
-        _record_no_save_cycle_event(
-            history_recorder=history_recorder,
+        event = _build_no_save_cycle_event(
             cycle_index=cycle_index,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
@@ -1295,12 +1366,6 @@ def _run_one_pipeline_growth_cycle_impl(
             resolved_control=resolved_control,
             effective_runtime_config=effective_runtime_config,
         )
-        LOGGER.info(
-            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=growth_budget_already_exhausted",
-            cycle_index,
-            next_run_state.generation,
-            cycle_duration_s,
-        )
         log_pipeline_memory(
             stage="growth",
             generation=next_run_state.generation,
@@ -1308,7 +1373,7 @@ def _run_one_pipeline_growth_cycle_impl(
             node_count=current_tree_size,
             branch_count=branch_count,
         )
-        return next_run_state
+        return next_run_state, event
 
     is_after_initial_generation = run_state.generation > 0
     has_no_growth = nodes_added <= 0
@@ -1339,8 +1404,7 @@ def _run_one_pipeline_growth_cycle_impl(
             effective_runtime_config=effective_runtime_config,
             cycle_index=cycle_index,
         )
-        _record_no_save_cycle_event(
-            history_recorder=history_recorder,
+        event = _build_no_save_cycle_event(
             cycle_index=cycle_index,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
@@ -1350,12 +1414,6 @@ def _run_one_pipeline_growth_cycle_impl(
             resolved_control=resolved_control,
             effective_runtime_config=effective_runtime_config,
         )
-        LOGGER.info(
-            "[pipeline] growth_cycle_done cycle=%s generation=%s saved=false elapsed=%.3fs status=no_growth_changes",
-            cycle_index,
-            next_run_state.generation,
-            cycle_duration_s,
-        )
         log_pipeline_memory(
             stage="growth",
             generation=next_run_state.generation,
@@ -1363,7 +1421,7 @@ def _run_one_pipeline_growth_cycle_impl(
             node_count=current_tree_size,
             branch_count=branch_count,
         )
-        return next_run_state
+        return next_run_state, event
 
     if not save_triggered:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -1381,8 +1439,7 @@ def _run_one_pipeline_growth_cycle_impl(
             effective_runtime_config=effective_runtime_config,
             cycle_index=cycle_index,
         )
-        _record_no_save_cycle_event(
-            history_recorder=history_recorder,
+        event = _build_no_save_cycle_event(
             cycle_index=cycle_index,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
@@ -1399,7 +1456,7 @@ def _run_one_pipeline_growth_cycle_impl(
             node_count=current_tree_size,
             branch_count=branch_count,
         )
-        return next_run_state
+        return next_run_state, event
 
     generation = run_state.generation + 1
     LOGGER.info(
@@ -1454,8 +1511,7 @@ def _run_one_pipeline_growth_cycle_impl(
                 effective_runtime_config=effective_runtime_config,
                 cycle_index=cycle_index,
             )
-            _record_no_save_cycle_event(
-                history_recorder=history_recorder,
+            event = _build_no_save_cycle_event(
                 cycle_index=cycle_index,
                 timestamp_utc=timestamp_utc,
                 tree_status=tree_status,
@@ -1473,7 +1529,7 @@ def _run_one_pipeline_growth_cycle_impl(
                 branch_count=branch_count,
                 reason="low_available_ram",
             )
-            return next_run_state
+            return next_run_state, event
         log_pipeline_memory(
             stage="growth",
             generation=generation,
@@ -1671,35 +1727,33 @@ def _run_one_pipeline_growth_cycle_impl(
         latest_frontier_status=frontier_status,
         metadata=run_state_metadata,
     )
-    history_recorder.record(
-        build_bootstrap_event(
-            cycle_index=cycle_index,
-            generation=next_run_state.generation,
-            timestamp_utc=timestamp_utc,
-            tree_status=tree_status,
-            runtime_checkpoint_path=relative_runtime_checkpoint_path,
-            tree_snapshot_path=relative_tree_snapshot_path,
-            rows_path=None,
-            dataset_num_rows=None,
-            dataset_num_samples=None,
-            training_triggered=False,
-            frontier_status=frontier_status,
-            record_status=resolve_record_status_for_cycle(
-                snapshot=None,
-                previous_record_status=run_state.latest_record_status,
+    event = build_bootstrap_event(
+        cycle_index=cycle_index,
+        generation=next_run_state.generation,
+        timestamp_utc=timestamp_utc,
+        tree_status=tree_status,
+        runtime_checkpoint_path=relative_runtime_checkpoint_path,
+        tree_snapshot_path=relative_tree_snapshot_path,
+        rows_path=None,
+        dataset_num_rows=None,
+        dataset_num_samples=None,
+        training_triggered=False,
+        frontier_status=frontier_status,
+        record_status=resolve_record_status_for_cycle(
+            snapshot=None,
+            previous_record_status=run_state.latest_record_status,
+        ),
+        metadata={
+            **_build_event_metadata(
+                active_evaluator_name=next_run_state.active_evaluator_name,
+                config_hash=config_hash,
+                forced_evaluator=resolved_control.force_evaluator,
+                runtime_control=resolved_control.runtime,
+                effective_runtime_config=effective_runtime_config,
             ),
-            metadata={
-                **_build_event_metadata(
-                    active_evaluator_name=next_run_state.active_evaluator_name,
-                    config_hash=config_hash,
-                    forced_evaluator=resolved_control.force_evaluator,
-                    runtime_control=resolved_control.runtime,
-                    effective_runtime_config=effective_runtime_config,
-                ),
-                **_pipeline_metadata(args=args),
-                **observability_metadata,
-            },
-        )
+            **_pipeline_metadata(args=args),
+            **observability_metadata,
+        },
     )
     if receipt_session is None:
         _write_pipeline_manifest_for_generation(
@@ -1715,12 +1769,6 @@ def _run_one_pipeline_growth_cycle_impl(
             training_status="not_started",
             metadata={**_pipeline_metadata(args=args), **observability_metadata},
         )
-    LOGGER.info(
-        "[pipeline] growth_cycle_done cycle=%s generation=%s saved=true elapsed=%.3fs",
-        cycle_index,
-        generation,
-        cycle_duration_s,
-    )
     log_pipeline_memory(
         stage="growth",
         generation=generation,
@@ -1728,7 +1776,7 @@ def _run_one_pipeline_growth_cycle_impl(
         node_count=current_tree_size,
         branch_count=branch_count,
     )
-    return next_run_state
+    return next_run_state, event
 
 
 def _log_growth_profile_if_enabled(

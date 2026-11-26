@@ -7,7 +7,9 @@ import select
 import subprocess
 import sys
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -45,6 +47,9 @@ from tests.environments.morpion_patch_receipt_helpers import (
     publish_fixture_patch,
     save_fixture_cursor,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def _line(process: subprocess.Popen[str]) -> str:
@@ -234,3 +239,51 @@ def test_retention_requires_growth_ownership(tmp_path: Path) -> None:
     _args, paths = setup_publication_baseline(tmp_path)
     with growth_receipt_ownership(paths), pytest.raises(BlockingIOError):
         publication.prune_uncommitted_generation_artifacts(paths)
+
+
+@pytest.mark.parametrize("field", ["protocol", "id"])
+def test_collector_rejects_invalid_marker_only_after_acquiring_pin(
+    tmp_path: Path, field: str
+) -> None:
+    """An occupied ID is never inspected; an invalid orphan is never deleted."""
+    _args, paths = setup_publication_baseline(tmp_path)
+    identifier = uuid.uuid4().hex
+    orphan = tmp_path / PUBLICATION_NAMESPACE / "staging" / identifier
+    orphan.mkdir()
+    marker = {"protocol": PUBLICATION_KEY, "id": identifier, field: "invalid"}
+    atomic_json(orphan / ATTEMPT_MARKER, marker)
+    with capsule_lease(tmp_path, identifier):
+        assert publication.prune_uncommitted_generation_artifacts(paths) == []
+    with pytest.raises(ValueError, match="Unrecognized orphan ownership evidence"):
+        publication.prune_uncommitted_generation_artifacts(paths)
+    assert read_object(orphan / ATTEMPT_MARKER) == marker
+
+
+def test_collector_rechecks_location_after_acquiring_pin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A scanned attempt can relocate and release its pin before exclusive acquire."""
+    _args, paths = setup_publication_baseline(tmp_path)
+    identifier = uuid.uuid4().hex
+    staging = tmp_path / PUBLICATION_NAMESPACE / "staging" / identifier
+    final = capsule_path(tmp_path, identifier)
+    staging.mkdir()
+    atomic_json(
+        staging / ATTEMPT_MARKER, {"protocol": PUBLICATION_KEY, "id": identifier}
+    )
+    original = publication.capsule_lease
+    moved = False
+
+    @contextmanager
+    def relocate(work_dir: Path, current: str, **kw: Any) -> Iterator[None]:
+        nonlocal moved
+        if current == identifier and kw.get("exclusive") and not moved:
+            with original(work_dir, current):
+                publish_directory_if_absent(staging, final, tmp_path)
+            moved = True
+        with original(work_dir, current, **kw):
+            yield
+
+    monkeypatch.setattr(publication, "capsule_lease", relocate)
+    assert publication.prune_uncommitted_generation_artifacts(paths) == [identifier]
+    assert moved and not staging.exists() and not final.exists()
