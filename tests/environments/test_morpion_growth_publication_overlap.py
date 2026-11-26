@@ -214,7 +214,12 @@ def test_collector_overlaps_real_staging_to_objects_move(
 ) -> None:
     """The real rename races a collector scan while the producer holds its ID pin."""
     args, paths = fixture(tmp_path / "work", supervisor_limit_seconds=240)
-    source = grow(args)
+    grow(args)
+    # Compare durable authority on both sides: in-memory diagnostics contain
+    # tuples that JSON persistence normalizes to lists.
+    source = load_bootstrap_run_state(paths.run_state_path)
+    assert source.generation == 2
+    authority_before = paths.run_state_path.read_bytes()
     with workers(args, tmp_path) as (start, entered, release):
         growth = start("growth-relocate")
         assert entered.wait(120), "Growth did not reach its publication rename"
@@ -275,6 +280,7 @@ def test_collector_overlaps_real_staging_to_objects_move(
             assert removed == [orphan.name] and not orphan.exists()
             assert final.is_dir() and growth.is_alive() and not release.is_set()
             assert load_bootstrap_run_state(paths.run_state_path) == source
+            assert paths.run_state_path.read_bytes() == authority_before
         release.set()
         finished(growth)
         accepted = load_bootstrap_run_state(paths.run_state_path)
