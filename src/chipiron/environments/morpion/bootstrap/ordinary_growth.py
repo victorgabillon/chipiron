@@ -9,7 +9,12 @@ changes treated as a computation conflict.
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from .generation_publication_io import PUBLICATION_KEY, publication_records, require
+from .generation_publication_io import (
+    PUBLICATION_KEY,
+    publication_records,
+    require,
+    require_growth_source,
+)
 from .run_state import MorpionBootstrapRunState
 from .worker_result_io import (
     DATASET_NAMESPACE,
@@ -53,6 +58,11 @@ _WORKER_METADATA = frozenset({
     PUBLICATION_KEY,
     "continuous_pipeline_v1",
     "prepared_dataset_v1",
+})
+_PREREQUISITE_METADATA = frozenset({
+    "bootstrap_config_hash",
+    "managed_sessions_v1",
+    "experiment_termination",
 })
 _ACCEPTED = frozenset({"accepted_dataset", "accepted_training"})
 _WORKER_PROOFS = frozenset({"continuous_ready", "continuous_retirement"})
@@ -173,11 +183,16 @@ class OrdinaryGrowthUpdate:
         evaluates the current session and scheduling rules before its sole save.
         """
         source, result = self.source, self.result
-        require(
+        require_growth_source(
             replace(latest, metadata=source.metadata) == source,
             "Growth computation checkpoint, evaluator or cycle changed.",
         )
         require(
+            _without(latest.metadata, _WORKER_METADATA | _PREREQUISITE_METADATA)
+            == _without(source.metadata, _WORKER_METADATA | _PREREQUISITE_METADATA),
+            "Growth prerequisite or unowned metadata changed outside the publication contract.",
+        )
+        require_growth_source(
             _without(latest.metadata, _WORKER_METADATA)
             == _without(source.metadata, _WORKER_METADATA),
             "Growth prerequisite or unowned metadata changed.",

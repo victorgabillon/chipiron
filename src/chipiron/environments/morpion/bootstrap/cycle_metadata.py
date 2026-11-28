@@ -211,6 +211,44 @@ def next_metadata(
     return next_payload
 
 
+def build_no_save_cycle_event(
+    *,
+    cycle_index: int,
+    timestamp_utc: str,
+    tree_status: MorpionBootstrapTreeStatus,
+    frontier_status: MorpionBootstrapFrontierStatus,
+    run_state: MorpionBootstrapRunState,
+    next_run_state: MorpionBootstrapRunState,
+    resolved_control: MorpionBootstrapControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> MorpionBootstrapEvent:
+    """Build a private observation; its owner decides when the cycle is accepted."""
+    return build_bootstrap_event(
+        cycle_index=cycle_index,
+        generation=next_run_state.generation,
+        timestamp_utc=timestamp_utc,
+        tree_status=tree_status,
+        runtime_checkpoint_path=next_run_state.latest_runtime_checkpoint_path,
+        tree_snapshot_path=None,
+        rows_path=None,
+        dataset_num_rows=None,
+        dataset_num_samples=None,
+        training_triggered=False,
+        frontier_status=frontier_status,
+        record_status=resolve_record_status_for_cycle(
+            snapshot=None,
+            previous_record_status=run_state.latest_record_status,
+        ),
+        metadata=build_event_metadata(
+            active_evaluator_name=next_run_state.active_evaluator_name,
+            config_hash=bootstrap_config_hash_from_metadata(run_state.metadata),
+            forced_evaluator=resolved_control.force_evaluator,
+            runtime_control=resolved_control.runtime,
+            effective_runtime_config=effective_runtime_config,
+        ),
+    )
+
+
 def record_no_save_cycle_event(
     *,
     history_recorder: MorpionBootstrapHistoryRecorder,
@@ -225,29 +263,15 @@ def record_no_save_cycle_event(
 ) -> None:
     """Record the history event for a no-save cycle."""
     history_recorder.record(
-        build_bootstrap_event(
+        build_no_save_cycle_event(
             cycle_index=cycle_index,
-            generation=next_run_state.generation,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
-            runtime_checkpoint_path=next_run_state.latest_runtime_checkpoint_path,
-            tree_snapshot_path=None,
-            rows_path=None,
-            dataset_num_rows=None,
-            dataset_num_samples=None,
-            training_triggered=False,
             frontier_status=frontier_status,
-            record_status=resolve_record_status_for_cycle(
-                snapshot=None,
-                previous_record_status=run_state.latest_record_status,
-            ),
-            metadata=build_event_metadata(
-                active_evaluator_name=next_run_state.active_evaluator_name,
-                config_hash=bootstrap_config_hash_from_metadata(run_state.metadata),
-                forced_evaluator=resolved_control.force_evaluator,
-                runtime_control=resolved_control.runtime,
-                effective_runtime_config=effective_runtime_config,
-            ),
+            run_state=run_state,
+            next_run_state=next_run_state,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
         )
     )
 
@@ -259,6 +283,7 @@ __all__ = [
     "bootstrap_config_hash_from_metadata",
     "build_bootstrap_event",
     "build_event_metadata",
+    "build_no_save_cycle_event",
     "next_metadata",
     "pipeline_metadata",
     "record_no_save_cycle_event",

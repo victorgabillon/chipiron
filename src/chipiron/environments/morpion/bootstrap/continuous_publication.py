@@ -192,8 +192,18 @@ def prepare_publication_owned(
     previous: MorpionBootstrapRunState | None,
     proposed: MorpionBootstrapRunState,
     activation: dict[str, Any] | None,
+    *,
+    captured_frame: transitions.Frame | None = None,
 ) -> tuple[MorpionBootstrapRunState, dict[str, int] | None]:
-    """Bind new source clocks before the scientific descriptor is sealed."""
+    """Bind source clocks using owned authority or its captured ordinary frame.
+
+    Only ordinary private preparation may use the captured frame. Acceptance
+    rechecks current authority; activation and genesis remain entirely owned.
+    """
+    require(
+        captured_frame is None or (previous is not None and activation is None),
+        "Only ordinary Growth may prepare from captured continuous authority.",
+    )
     marker = proposed.metadata.get("continual_learning", {})
     if marker.get("schema_version") != 4:
         require(KEY not in proposed.metadata, "Continuous state lacks fresh context4.")
@@ -217,7 +227,13 @@ def prepare_publication_owned(
             proposed, metadata={**proposed.metadata, KEY: frame.state.to_metadata()}
         )
     else:
-        frame = load_frame(paths, previous)
+        frame = captured_frame or load_frame(paths, previous)
+        require(
+            frame.state.to_metadata() == previous.metadata.get(KEY)
+            and frame.context.config_sha256
+            == previous.metadata.get("bootstrap_config_hash"),
+            "Captured continuous authority differs from its computation source.",
+        )
         require(
             proposed.metadata.get(KEY) == previous.metadata.get(KEY),
             "Publication changed continuous authority before fencing.",
@@ -322,8 +338,10 @@ def validate_growth_authority(
             record = read_record(paths, Ref.from_metadata(value), current.context)
             require(
                 isinstance(record, ControlRecord)
-                and isinstance(record.payload, Disposition),
-                "Growth worker disposition has no authenticated proof.",
+                and isinstance(record.payload, Disposition)
+                and disposition_generation(paths, current, record.payload)
+                == new["generation"],
+                "Growth worker disposition has no authenticated proof for its generation.",
             )
         if "continuous_ready" in new and "continuous_ready" not in old:
             ready = read_record(
@@ -790,16 +808,12 @@ def apply_owned(
     return updated
 
 
-def attach_disposition(
-    paths: MorpionBootstrapPaths,
-    state: MorpionBootstrapRunState,
-    disposition: Disposition,
-) -> MorpionBootstrapRunState:
-    """Attach mandatory proof to its source record, in the same owned save."""
+def disposition_generation(
+    paths: MorpionBootstrapPaths, frame: transitions.Frame, disposition: Disposition
+) -> int:
+    """Resolve the source once for both attachment and acceptance validation."""
     from .continuous_contract import Opportunity, ReadyRecord
-    from .generation_publication_io import PUBLICATION_KEY
 
-    frame = load_frame(paths, state)
     subject = disposition.subject
     if isinstance(subject, Source):
         generation = subject.generation
@@ -814,6 +828,19 @@ def attach_disposition(
             )
             assert isinstance(record.payload, Opportunity)
             generation = record.payload.generation
+    return generation
+
+
+def attach_disposition(
+    paths: MorpionBootstrapPaths,
+    state: MorpionBootstrapRunState,
+    disposition: Disposition,
+) -> MorpionBootstrapRunState:
+    """Attach mandatory proof to its source record, in the same owned save."""
+    from .generation_publication_io import PUBLICATION_KEY
+
+    frame = load_frame(paths, state)
+    generation = disposition_generation(paths, frame, disposition)
     ref = put_record(paths, ControlRecord(frame.context, disposition)).to_metadata()
     publication = state.metadata[PUBLICATION_KEY]
     records = []

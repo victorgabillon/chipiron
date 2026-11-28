@@ -23,12 +23,16 @@ from chipiron.environments.morpion.bootstrap.config import (
     load_bootstrap_config,
     save_bootstrap_config,
 )
-from chipiron.environments.morpion.bootstrap.continuous_contract import Policy
+from chipiron.environments.morpion.bootstrap.continuous_contract import (
+    Disposition,
+    Policy,
+)
 from chipiron.environments.morpion.bootstrap.control import (
     apply_control_to_args,
     load_bootstrap_control,
 )
 from chipiron.environments.morpion.bootstrap.generation_publication_io import (
+    PUBLICATION_KEY,
     artifact_digest,
     committed_evaluator,
     file_digest,
@@ -72,8 +76,8 @@ def staged_growth(
 ) -> Iterator[tuple[GrowthPatchReceiptSession, OrdinaryGrowthUpdate]]:
     """Capture a real private result under the owner, then stage serial acceptances.
 
-    Only this fixture releases ownership before acceptance. Production retains its
-    broad lock and separately detects unexpected writes. No worker thread, sleeps,
+    This fixture deliberately serializes the two orders. The separate C7.2
+    process test exercises overlap through production. No worker thread, sleeps,
     edited run-state input, synthetic checkpoint or mocked acceptance is involved.
     """
     source = load_bootstrap_run_state(paths.run_state_path)
@@ -101,7 +105,7 @@ def staged_growth(
             control = load_bootstrap_control(paths.control_path)
             if not save:
                 patch.setattr(stages, "should_save_progress", lambda **_: False)
-            result = stages._run_one_pipeline_growth_cycle(
+            result, _event = stages._run_one_pipeline_growth_cycle(
                 args=apply_control_to_args(args, control),
                 paths=paths,
                 runner=runner,
@@ -212,6 +216,40 @@ def test_generation_100_dataset_acceptance_in_both_orders(
     [operational] = storage.entries(final).values()
     storage.ready_descriptor(paths, operational)
     (tmp_path / "reloaded-after.json").write_text(paths.run_state_path.read_text())
+    # Reuse the real G100/G101 history, without inventing a generation. The
+    # writer accepts the G100 proof; attaching that SAME proof to G101 must fail.
+    attached = publication.attach_disposition(
+        paths,
+        final,
+        Disposition(publication.source(paths, final, 100), "retained", None, None),
+    )
+    publication.validate_growth_authority(paths, final, attached)
+    reference = publication_record(attached, 100)["continuous_dispositions"][-1]
+    data = final.metadata[PUBLICATION_KEY]
+    misplaced = replace(
+        final,
+        metadata={
+            **final.metadata,
+            PUBLICATION_KEY: {
+                **data,
+                "generations": [
+                    {
+                        **record,
+                        "continuous_dispositions": [
+                            *record.get("continuous_dispositions", []),
+                            reference,
+                        ],
+                    }
+                    if record["generation"] == 101
+                    else record
+                    for record in data["generations"]
+                ],
+            },
+        },
+    )
+    with pytest.raises(ValueError, match="proof for its generation"):
+        publication.validate_growth_authority(paths, final, misplaced)
+    assert load_bootstrap_run_state(paths.run_state_path) == final
 
 
 @pytest.mark.usefixtures("continuous")
@@ -369,7 +407,7 @@ def test_changed_checkpoint_evaluator_refuses_and_fresh_growth_retries(
 
 
 @pytest.mark.usefixtures("continuous")
-def test_broad_production_owner_rejects_unexpected_external_write(
+def test_production_owner_rejects_unexpected_external_write(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A deliberately unauthorized write tests refusal, never compatible publication."""
@@ -389,7 +427,7 @@ def test_broad_production_owner_rejects_unexpected_external_write(
         return result
 
     monkeypatch.setattr(stages, "_run_one_pipeline_growth_cycle", interrupted)
-    with pytest.raises(ValueError, match="outside the Growth ownership lock"):
+    with pytest.raises(ValueError, match="unowned metadata changed"):
         grow(args)
     assert paths.run_state_path.read_bytes() == unauthorized[0]
 

@@ -16,7 +16,12 @@ from typing import TYPE_CHECKING, Any
 from .cycle_timing import timestamp_utc_from_unix_s
 from .derived.provenance import PROVENANCE_NAME, atomic_json, inside, sync_checkpoint
 from .generation_publication import DurableGenerationPublication
-from .generation_publication_io import PUBLICATION_KEY, committed_evaluator
+from .generation_publication_io import (
+    PUBLICATION_KEY,
+    artifact_stat_identity,
+    committed_evaluator,
+    require_growth_source,
+)
 from .generation_publication_io import (
     growth_receipt_ownership as _growth_receipt_ownership,
 )
@@ -370,17 +375,26 @@ class GrowthPatchReceiptSession:
             else None
         )
         self.frozen_model_path: Path | None = None
+        self._prepared_metadata: dict[str, Any] | None = None
+        self._prepared_result: MorpionBootstrapRunState | None = None
+        self._prepared_artifacts: dict[Path, dict[str, tuple[int, ...]]] = {}
 
     def begin_cycle(self, model_bundle_path: str | Path | None) -> None:
         """Cold restore only; bind the selected bundle before loading or applying."""
         self.discard_runtime()
         self.pending = None
+        self._prepared_metadata = None
+        self._prepared_result = None
+        self._prepared_artifacts.clear()
         self.model = None
         self.applied_count = None
         self.attempt_id = uuid.uuid4().hex
         if self.publication is not None and self.publication.version in (2, 3):
             self.runtime_model, _ = committed_evaluator(
-                self.paths.work_dir, load_bootstrap_run_state(self.paths.run_state_path)
+                self.paths.work_dir,
+                self.publication.state
+                if self.publication.state is not None
+                else load_bootstrap_run_state(self.paths.run_state_path),
             )
         else:
             self.runtime_model = (
@@ -763,131 +777,16 @@ class GrowthPatchReceiptSession:
             ),
         )
 
-    def commit_growth(self, update: OrdinaryGrowthUpdate) -> MorpionBootstrapRunState:
-        """Accept only ordinary Growth effects against the latest owned authority."""
-        from .config import bootstrap_config_sha256, load_bootstrap_config
-        from .continuous_publication import validate_growth_authority
-        from .learning_schedule import on_no_publication, wait_reason
-        from .managed_sessions import require_managed_execution
-        from .prepared_dataset_storage import context, entries
-        from .worker_result_io import publication_record
+    def prepare_growth(self, update: OrdinaryGrowthUpdate) -> None:
+        """Hash, sync and seal the private result while workers can publish."""
+        if update.result.generation != update.source.generation:
+            self._prepare_checkpoint(update.source, update.result)
 
-        latest = load_bootstrap_run_state(self.paths.run_state_path)
-        state = update.apply(self.paths, latest)
-        _require(
-            self.publication is None or self.publication.activation is None,
-            "Activation cannot use ordinary Growth acceptance.",
-        )
-        _require(
-            bootstrap_config_sha256(
-                load_bootstrap_config(self.paths.bootstrap_config_path)
-            )
-            == update.config_hash,
-            "Growth configuration changed during computation.",
-        )
-        require_managed_execution(self.paths, latest)
-        if (
-            latest.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract")
-            and state.cycle_index > latest.cycle_index
-        ):
-            model, _ = committed_evaluator(self.paths.work_dir, latest)
-            _require(
-                model is not None and state.active_evaluator_name == model["name"],
-                "Ordinary Growth changed its committed evaluator.",
-            )
-        validate_growth_authority(self.paths, update.source, latest)
-        captured_inputs = entries(update.source)
-        for key, prepared in entries(latest).items():
-            record = publication_record(latest, prepared["generation"])
-            _require(
-                prepared["context"] == context(self.paths, latest)
-                and record.get("accepted_dataset") == prepared["accepted"]
-                and prepared["source"]
-                == {
-                    k: record[k]
-                    for k in ("id", "descriptor_sha256", "scientific_identity")
-                },
-                "Prepared input belongs to another Growth source or context.",
-            )
-            if key in captured_inputs:
-                _require(
-                    all(
-                        prepared[field] == captured_inputs[key][field]
-                        for field in (
-                            "accepted",
-                            "source",
-                            "context",
-                            "recipe",
-                            "generation",
-                            "deadline",
-                            "utc_deadline",
-                        )
-                    ),
-                    "Preparation changed its original scientific input or allowance.",
-                )
-        _require(
-            wait_reason(latest, self.paths) is None,
-            "Growth would cross the current learning or admission gate.",
-        )
-        if (
-            state.cycle_index > latest.cycle_index
-            and state.generation == latest.generation
-        ):
-            state = on_no_publication(latest, state)
-        return self._commit_owned(latest, state)
-
-    def commit_activation(
+    def _prepare_checkpoint(
         self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
-    ) -> MorpionBootstrapRunState:
-        """Commit a pre-switch patch drain or cutover; neither is ordinary Growth."""
-        _require(
-            state.cycle_index == previous.cycle_index,
-            "Activation cannot advance an ordinary Growth cycle.",
-        )
-        return self._commit_owned(previous, state)
-
-    def _commit_owned(
-        self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
-    ) -> MorpionBootstrapRunState:
-        """Sync dependencies, then commit checkpoint and receipt in one run-state replace."""
-        persisted = load_bootstrap_run_state(self.paths.run_state_path)
-        _require(
-            persisted == previous
-            and state.metadata.get(TRANSACTION_KEY)
-            == previous.metadata.get(TRANSACTION_KEY),
-            "Run state changed outside the Growth ownership lock.",
-        )
-        self.validate_state(previous)
-        if state.generation == previous.generation:
-            # RAM/diagnostic refusal: no receipt for provisional effects on the old head.
-            _require(
-                state.latest_runtime_checkpoint_path
-                == previous.latest_runtime_checkpoint_path,
-                "No-save cycle changed its checkpoint pointer.",
-            )
-            _require(
-                load_bootstrap_run_state(self.paths.run_state_path) == previous,
-                "Run state changed outside the Growth ownership lock.",
-            )
-            save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
-            self.discard_runtime()
-            if self.publication is not None:
-                self.publication.committed(state)
-                self.publication.prune_uncommitted(state)
-            return state
-        _require(
-            state.generation == previous.generation + 1, "Non-sequential Growth commit."
-        )
-        _require(
-            not self.paths.pipeline_manifest_path_for_generation(
-                state.generation
-            ).exists(),
-            "Uncommitted generation already has a discovery manifest; reconcile it first.",
-        )
-        _require(
-            isinstance(state.latest_runtime_checkpoint_path, str),
-            "No resulting checkpoint.",
-        )
+    ) -> None:
+        """One payload/receipt preparation for ordinary Growth and activation."""
+        _require(self._prepared_metadata is None, "Checkpoint already prepared.")
         assert state.latest_runtime_checkpoint_path is not None
         checkpoint = inside(self.paths.work_dir, state.latest_runtime_checkpoint_path)
         self.sync_artifact(checkpoint)
@@ -972,6 +871,194 @@ class GrowthPatchReceiptSession:
                     )
                     self.publication.prediction_pending = self.pending
                     self.publication.prediction_receipt = receipt
+            self.publication.prepare_capsule(state, previous=previous)
+        metadata: dict[str, Any] = {}
+        if transaction is not None:
+            metadata[TRANSACTION_KEY] = transaction
+        metadata[RECEIPTS_METADATA_KEY] = {
+            "schema_version": 2 if transaction is not None else 1,
+            "generation": state.generation,
+            "checkpoint_path": receipt_checkpoint_path,
+            "checkpoint_sha256": checkpoint_hash,
+            "receipts": [
+                {
+                    k: v
+                    for k, v in asdict(r).items()
+                    if k != "accepted_cursor_sha256" or v is not None
+                }
+                for r in ledger.values()
+            ],
+        }
+        self._prepared_metadata = metadata
+        self._prepared_result = state
+        if self.publication is None:
+            self._prepared_artifacts = {
+                inside(self.paths.work_dir, path): artifact_stat_identity(
+                    inside(self.paths.work_dir, path)
+                )
+                for path in (
+                    state.latest_runtime_checkpoint_path,
+                    state.latest_tree_snapshot_path,
+                )
+                if path is not None
+            }
+
+    def commit_growth(self, update: OrdinaryGrowthUpdate) -> MorpionBootstrapRunState:
+        """Accept only ordinary Growth effects against the latest owned authority."""
+        from .config import bootstrap_config_sha256, load_bootstrap_config
+        from .continuous_publication import validate_growth_authority
+        from .learning_schedule import on_no_publication, wait_reason
+        from .managed_sessions import require_managed_execution
+        from .prepared_dataset_storage import context, entries
+        from .worker_result_io import publication_record
+
+        latest = load_bootstrap_run_state(self.paths.run_state_path)
+        state = update.apply(self.paths, latest)
+        _require(
+            self.publication is None or self.publication.activation is None,
+            "Activation cannot use ordinary Growth acceptance.",
+        )
+        require_growth_source(
+            bootstrap_config_sha256(
+                load_bootstrap_config(self.paths.bootstrap_config_path)
+            )
+            == update.config_hash,
+            "Growth configuration changed during computation.",
+        )
+        require_managed_execution(self.paths, latest)
+        if (
+            latest.metadata.get(PUBLICATION_KEY, {}).get("evaluator_contract")
+            and state.cycle_index > latest.cycle_index
+        ):
+            model, _ = committed_evaluator(self.paths.work_dir, latest)
+            _require(
+                model is not None and state.active_evaluator_name == model["name"],
+                "Ordinary Growth changed its committed evaluator.",
+            )
+        validate_growth_authority(self.paths, update.source, latest)
+        captured_inputs = entries(update.source)
+        for key, prepared in entries(latest).items():
+            record = publication_record(latest, prepared["generation"])
+            _require(
+                prepared["context"] == context(self.paths, latest)
+                and record.get("accepted_dataset") == prepared["accepted"]
+                and prepared["source"]
+                == {
+                    k: record[k]
+                    for k in ("id", "descriptor_sha256", "scientific_identity")
+                },
+                "Prepared input belongs to another Growth source or context.",
+            )
+            if key in captured_inputs:
+                _require(
+                    all(
+                        prepared[field] == captured_inputs[key][field]
+                        for field in (
+                            "accepted",
+                            "source",
+                            "context",
+                            "recipe",
+                            "generation",
+                            "deadline",
+                            "utc_deadline",
+                        )
+                    ),
+                    "Preparation changed its original scientific input or allowance.",
+                )
+        require_growth_source(
+            wait_reason(latest, self.paths) is None,
+            "Growth would cross the current learning or admission gate.",
+        )
+        if (
+            state.cycle_index > latest.cycle_index
+            and state.generation == latest.generation
+        ):
+            state = on_no_publication(latest, state)
+        return self._commit_owned(latest, state)
+
+    def commit_activation(
+        self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
+    ) -> MorpionBootstrapRunState:
+        """Commit a pre-switch patch drain or cutover; neither is ordinary Growth."""
+        _require(
+            state.cycle_index == previous.cycle_index,
+            "Activation cannot advance an ordinary Growth cycle.",
+        )
+        return self._commit_owned(previous, state)
+
+    def _commit_owned(
+        self, previous: MorpionBootstrapRunState, state: MorpionBootstrapRunState
+    ) -> MorpionBootstrapRunState:
+        """Sync dependencies, then commit checkpoint and receipt in one run-state replace."""
+        persisted = load_bootstrap_run_state(self.paths.run_state_path)
+        _require(
+            persisted == previous
+            and state.metadata.get(TRANSACTION_KEY)
+            == previous.metadata.get(TRANSACTION_KEY),
+            "Run state changed outside the Growth ownership lock.",
+        )
+        self.validate_state(previous)
+        if state.generation == previous.generation:
+            # RAM/diagnostic refusal: no receipt for provisional effects on the old head.
+            _require(
+                state.latest_runtime_checkpoint_path
+                == previous.latest_runtime_checkpoint_path,
+                "No-save cycle changed its checkpoint pointer.",
+            )
+            _require(
+                load_bootstrap_run_state(self.paths.run_state_path) == previous,
+                "Run state changed outside the Growth ownership lock.",
+            )
+            save_bootstrap_run_state(state, self.paths.run_state_path, durable=True)
+            self.discard_runtime()
+            if self.publication is not None:
+                self.publication.committed(state)
+                self.publication.prune_uncommitted(state)
+            return state
+        _require(
+            state.generation == previous.generation + 1, "Non-sequential Growth commit."
+        )
+        _require(
+            not self.paths.pipeline_manifest_path_for_generation(
+                state.generation
+            ).exists(),
+            "Uncommitted generation already has a discovery manifest; reconcile it first.",
+        )
+        _require(
+            isinstance(state.latest_runtime_checkpoint_path, str),
+            "No resulting checkpoint.",
+        )
+        if self._prepared_metadata is None:
+            self._prepare_checkpoint(previous, state)
+        assert self._prepared_metadata is not None and self._prepared_result is not None
+        _require(
+            (
+                state.generation,
+                state.cycle_index,
+                state.latest_runtime_checkpoint_path,
+                state.latest_tree_snapshot_path,
+            )
+            == (
+                self._prepared_result.generation,
+                self._prepared_result.cycle_index,
+                self._prepared_result.latest_runtime_checkpoint_path,
+                self._prepared_result.latest_tree_snapshot_path,
+            ),
+            "Prepared checkpoint differs from the accepted Growth result.",
+        )
+        if self.pending is not None:
+            _require(
+                self.current_model() == self.model
+                and observe_pending_patch(self.paths.pipeline_reevaluation_patch_path)
+                == self.pending,
+                "Pending patch or evaluator changed before checkpoint commit.",
+            )
+        for path, identity in self._prepared_artifacts.items():
+            _require(
+                artifact_stat_identity(path) == identity,
+                "Prepared checkpoint or export changed after validation.",
+            )
+        if self.publication is not None:
             state = self.publication.publish(state, previous=previous)
             if self.pending is not None:
                 _require(
@@ -983,27 +1070,12 @@ class GrowthPatchReceiptSession:
                     == self.pending,
                     "Pending patch changed during checkpoint publication.",
                 )
-            _require(
-                state.latest_runtime_checkpoint_path == receipt_checkpoint_path,
-                "Publication relocated checkpoint differently from its prepared receipt.",
-            )
-        metadata = dict(state.metadata)
-        if transaction is not None:
-            metadata[TRANSACTION_KEY] = transaction
-        metadata[RECEIPTS_METADATA_KEY] = {
-            "schema_version": 2 if transaction is not None else 1,
-            "generation": state.generation,
-            "checkpoint_path": state.latest_runtime_checkpoint_path,
-            "checkpoint_sha256": checkpoint_hash,
-            "receipts": [
-                {
-                    k: v
-                    for k, v in asdict(r).items()
-                    if k != "accepted_cursor_sha256" or v is not None
-                }
-                for r in ledger.values()
-            ],
-        }
+        metadata = {**state.metadata, **self._prepared_metadata}
+        _require(
+            metadata[RECEIPTS_METADATA_KEY]["checkpoint_path"]
+            == state.latest_runtime_checkpoint_path,
+            "Publication relocated checkpoint differently from its prepared receipt.",
+        )
         state = replace(state, metadata=metadata)
         receipt_ledger(
             state
